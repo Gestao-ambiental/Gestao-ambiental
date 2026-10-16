@@ -1,0 +1,6 @@
+pnpm-lock.yaml
+**/dist
+**/coverage
+# Espelho do ClickUp e guia do projeto: escritos à mão, não reformatar
+docs/arquitetura
+CLAUDE.md
