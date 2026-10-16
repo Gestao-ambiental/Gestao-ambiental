@@ -1,0 +1,34 @@
+# Dependências
+node_modules/
+.pnpm-store/
+
+# Build e cache
+dist/
+build/
+coverage/
+*.tsbuildinfo
+.vite/
+.turbo/
+.vercel/
+
+# Ambiente (segredos nunca entram no repositório)
+.env
+.env.*
+!.env.example
+
+# Supabase local
+supabase/.branches/
+supabase/.temp/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Sistema e editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
