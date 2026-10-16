@@ -22,7 +22,16 @@ corepack pnpm dev         # apps/web em http://localhost:5173
 
 Se você rodou `corepack enable pnpm`, pode omitir o `corepack` dos comandos.
 
-## Verificações (as mesmas do CI)
+### Banco
+
+Não há Supabase local obrigatório: o desenvolvimento usa o projeto de **staging**. Copie `apps/web/.env.example` para `apps/web/.env.local` e preencha com a URL e a chave pública de staging ([docs/setup.md](docs/setup.md)).
+
+Migrations e testes de banco rodam no CI (job `banco`), que sobe um Supabase descartável no runner do GitHub Actions, aplica `supabase/migrations` e `supabase/seed.sql` do zero e roda os testes pgTAP de `supabase/tests`.
+
+- Nova migration: `corepack pnpm exec supabase migration new <nome>` (não precisa de Docker).
+- Quem tiver Docker pode rodar o mesmo localmente: `supabase start`, `supabase db reset` e `supabase test db` (via `corepack pnpm exec`).
+
+## Verificações (as mesmas do job `verificar` do CI)
 
 ```sh
 corepack pnpm lint        # ESLint + Prettier

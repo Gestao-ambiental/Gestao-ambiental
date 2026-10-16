@@ -81,7 +81,7 @@ Nunca regra de negócio só no front. O front esconde coisas por apresentação,
 - Conventional Commits: `feat: adiciona cadastro de empreendimento`.
 - Nada entra na `main` sem PR. PR cita o card e os IDs de requisito (ex.: `ACC-02`).
 - Migrations só pela CLI (`supabase migration new`), nunca pelo painel. Migration que cria tabela vem com RLS, políticas e teste pgTAP negativo **no mesmo PR**.
-- Antes de dizer que terminou: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `supabase test db` e build verdes.
+- Antes de dizer que terminou: `pnpm lint`, `pnpm typecheck`, `pnpm test` e build verdes localmente, e o job `banco` do CI (migrations, seed e pgTAP) verde. Não há Supabase local (sem Docker): o desenvolvimento usa staging.
 
 ## Definition of Done (itens que você verifica)
 

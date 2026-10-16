@@ -43,3 +43,33 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+  # Substitui o Supabase local: sobe o stack no runner (que tem Docker), aplica migrations e seed
+  # do zero e roda os testes pgTAP de supabase/tests.
+  banco:
+    name: Banco (migrations, seed e pgTAP)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Instalar dependências
+        run: pnpm install --frozen-lockfile
+
+      - name: Subir Supabase (Postgres, Auth, Storage e API)
+        run: pnpm exec supabase start -x realtime,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+
+      - name: Aplicar migrations e seed do zero
+        run: pnpm exec supabase db reset
+
+      - name: Testes pgTAP
+        run: pnpm exec supabase test db
+
+      - name: Parar Supabase
+        if: always()
+        run: pnpm exec supabase stop --no-backup

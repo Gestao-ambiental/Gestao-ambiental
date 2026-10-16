@@ -1,0 +1,3 @@
+-- Seed do ambiente local (roda só em `supabase db reset`; nunca em staging ou produção).
+-- Os dados sintéticos (Filtroville e Verde Sul, com seus membros) entram na tarefa 1.3,
+-- junto das tabelas consultoria e membro.
