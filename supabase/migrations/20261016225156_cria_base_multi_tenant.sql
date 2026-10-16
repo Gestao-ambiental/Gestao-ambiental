@@ -150,7 +150,12 @@ create policy consultoria_select_membro_ativo
   to authenticated
   using ((select private.is_membro(id)));
 
--- TESTE: política de select de membro removida
+-- TESTE: política de select de membro afrouxada
+create policy membro_select_membro_ativo
+  on public.membro
+  for select
+  to authenticated
+  using (true);
 
 -- ---------------------------------------------------------------------------
 -- auditoria: append-only, preenchida só por trigger (ADR-0010).
