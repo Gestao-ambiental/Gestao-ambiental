@@ -51,10 +51,10 @@ select is(
   (select coalesce(array_agg(table_name::text || ':' || privilege_type order by table_name::text, privilege_type), '{}')
    from information_schema.role_table_grants
    where grantee = 'authenticated' and table_schema = 'public'
-     and table_name in ('consultoria', 'membro', 'auditoria')
+     and table_name in ('consultoria', 'membro', 'auditoria', 'convite')
      and privilege_type <> 'SELECT'),
   '{}'::text[],
-  'authenticated só lê consultoria, membro e auditoria (escrita será por RPC)'
+  'authenticated só lê consultoria, membro, auditoria e convite (escrita por RPC)'
 );
 
 -- Schema private fora do alcance de anon e com helpers blindados

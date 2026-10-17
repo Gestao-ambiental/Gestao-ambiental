@@ -1,11 +1,21 @@
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import axe from 'axe-core'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { renderizarApp } from '@/test/renderizar'
+import { renderizarApp, vinculoFalso } from '@/test/renderizar'
+import { falso, sessaoDe } from '@/test/supabase-falso'
+
+vi.mock('@/lib/supabase', () => import('@/test/supabase-falso'))
 
 describe('shell do app', () => {
+  beforeEach(() => {
+    falso.reiniciar({
+      sessao: sessaoDe('eduardo@filtroville.test', 'Eduardo Karnopp'),
+      rpc: { meus_vinculos: { data: [vinculoFalso('Filtroville', 'gestao')] } },
+    })
+  })
+
   it('renderiza a Visão da equipe e navega para o Calendário pelo menu', async () => {
     const usuario = userEvent.setup()
     const { router } = renderizarApp('/')
@@ -73,8 +83,11 @@ describe('shell do app', () => {
   })
 
   it('/entrar abre o layout público sem o menu do app', async () => {
+    falso.reiniciar({})
     renderizarApp('/entrar')
-    expect(await screen.findByRole('heading', { level: 1, name: 'Entrar' })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Entrar no Grama' }),
+    ).toBeInTheDocument()
     expect(screen.queryByRole('navigation', { name: 'Menu principal' })).not.toBeInTheDocument()
   })
 

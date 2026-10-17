@@ -55,18 +55,6 @@ export function PaginaAcompanhamentos() {
   )
 }
 
-export function PaginaEquipe() {
-  return (
-    <Pagina titulo="Equipe">
-      <EstadoVazio
-        icone="users"
-        titulo="Nenhum membro para mostrar"
-        descricao="As pessoas da consultoria, com papel e situação, aparecem aqui."
-      />
-    </Pagina>
-  )
-}
-
 export function PaginaNaoEncontrada() {
   return (
     <Pagina titulo="Página não encontrada">

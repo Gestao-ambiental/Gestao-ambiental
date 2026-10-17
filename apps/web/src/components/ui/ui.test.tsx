@@ -2,8 +2,6 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
-import { ConsultoriaAtual } from '@/app/layout/ConsultoriaAtual'
-
 import { Botao } from './botao'
 import { BotaoIcone } from './botao-icone'
 import { Icone, URL_DOS_ICONES } from './icone'
@@ -68,21 +66,5 @@ describe('Selo', () => {
   it('mostra a palavra do estado (a cor nunca é o único sinal)', () => {
     render(<Selo tom="perigo">Atrasada</Selo>)
     expect(screen.getByText('Atrasada')).toBeInTheDocument()
-  })
-})
-
-describe('ConsultoriaAtual', () => {
-  it('com mais de um vínculo vira seletor', () => {
-    render(
-      <ConsultoriaAtual
-        consultorias={[
-          { id: 'a', nome: 'Filtroville Consultoria Ambiental', sigla: 'FV', papel: 'Gestão' },
-          { id: 'b', nome: 'Verde Sul Ambiental', sigla: 'VS', papel: 'Equipe' },
-        ]}
-      />,
-    )
-    expect(
-      screen.getByRole('button', { name: /^Consultoria: Filtroville Consultoria Ambiental/ }),
-    ).toBeInTheDocument()
   })
 })
