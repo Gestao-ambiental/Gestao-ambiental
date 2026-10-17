@@ -1,23 +1,16 @@
-import {
-  Building2,
-  CalendarDays,
-  ClipboardCheck,
-  LayoutList,
-  Users,
-  type LucideIcon,
-} from 'lucide-react'
+import type { NomeIcone } from '@/components/ui/icone'
 
 export interface ItemNavegacao {
   para: string
   rotulo: string
-  icone: LucideIcon
+  icone: NomeIcone
 }
 
-/** Itens do menu principal, na ordem do Protótipo 05. */
+/** Itens do menu principal, na ordem do Protótipo 05; ícones do vocabulário do design system. */
 export const ITENS_NAVEGACAO: readonly ItemNavegacao[] = [
-  { para: '/', rotulo: 'Visão da equipe', icone: LayoutList },
-  { para: '/calendario', rotulo: 'Calendário', icone: CalendarDays },
-  { para: '/empreendimentos', rotulo: 'Empreendimentos', icone: Building2 },
-  { para: '/acompanhamentos', rotulo: 'Acompanhamentos', icone: ClipboardCheck },
-  { para: '/configuracoes/equipe', rotulo: 'Equipe', icone: Users },
+  { para: '/', rotulo: 'Visão da equipe', icone: 'list' },
+  { para: '/calendario', rotulo: 'Calendário', icone: 'calendar' },
+  { para: '/empreendimentos', rotulo: 'Empreendimentos', icone: 'briefcase' },
+  { para: '/acompanhamentos', rotulo: 'Acompanhamentos', icone: 'inbox' },
+  { para: '/configuracoes/equipe', rotulo: 'Equipe', icone: 'users' },
 ]

@@ -11,12 +11,12 @@ import {
 afterEach(() => {
   vi.restoreAllMocks()
   window.localStorage.clear()
-  document.documentElement.classList.remove('dark')
+  document.documentElement.removeAttribute('data-theme')
 })
 
 describe('preferência de tema', () => {
-  it('sem nada salvo, segue o sistema', () => {
-    expect(lerPreferenciaTema()).toBe('sistema')
+  it('sem nada salvo, usa o claro (padrão do design system)', () => {
+    expect(lerPreferenciaTema()).toBe('claro')
   })
 
   it('salva e lê a preferência', () => {
@@ -27,7 +27,7 @@ describe('preferência de tema', () => {
 
   it('valor inválido salvo cai no padrão', () => {
     window.localStorage.setItem('grama.tema', 'roxo')
-    expect(lerPreferenciaTema()).toBe('sistema')
+    expect(lerPreferenciaTema()).toBe('claro')
   })
 
   it('localStorage bloqueado não quebra a leitura nem a escrita', () => {
@@ -37,7 +37,7 @@ describe('preferência de tema', () => {
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new DOMException('cheio', 'QuotaExceededError')
     })
-    expect(lerPreferenciaTema()).toBe('sistema')
+    expect(lerPreferenciaTema()).toBe('claro')
     expect(() => {
       salvarPreferenciaTema('claro')
     }).not.toThrow()
@@ -57,10 +57,10 @@ describe('preferência de tema', () => {
     expect(resolverTema('escuro', false)).toBe('escuro')
   })
 
-  it('aplicar o tema escuro liga a classe dark no <html>', () => {
+  it('aplicar o tema marca data-theme no <html>, como os tokens esperam', () => {
     aplicarTema('escuro')
-    expect(document.documentElement).toHaveClass('dark')
+    expect(document.documentElement).toHaveAttribute('data-theme', 'dark')
     aplicarTema('claro')
-    expect(document.documentElement).not.toHaveClass('dark')
+    expect(document.documentElement).toHaveAttribute('data-theme', 'light')
   })
 })

@@ -1,8 +1,9 @@
-import { Menu } from 'lucide-react'
 import { useState } from 'react'
 import { Link, Outlet } from 'react-router'
 
-import { Button } from '@/components/ui/button'
+import { BarraSuperior } from '@/components/ui/barra-superior'
+import { BotaoIcone } from '@/components/ui/botao-icone'
+import { MenuLateral } from '@/components/ui/menu-lateral'
 import {
   Sheet,
   SheetContent,
@@ -13,14 +14,14 @@ import {
 } from '@/components/ui/sheet'
 
 import { BotaoTema } from './BotaoTema'
-import { Marca } from './Marca'
+import { ConsultoriaAtual } from './ConsultoriaAtual'
 import { MenuConta } from './MenuConta'
-import { MenuNavegacao } from './MenuNavegacao'
-import { SeletorConsultoria } from './SeletorConsultoria'
+import { NavegacaoPrincipal } from './NavegacaoPrincipal'
 
 /**
- * Shell do app (Protótipo 05): barra superior com marca, consultoria, tema e conta; menu lateral
- * no desktop e gaveta no celular. A página rola só na região de conteúdo.
+ * Shell fixo do design system: topbar de 56px com o nome do produto em texto, rail de 240px com a
+ * consultoria no topo e só a área principal rolando; conteúdo até 1440px. No celular o rail vira
+ * gaveta aberta por um botão com nome acessível.
  */
 export function AppShell() {
   const [gavetaAberta, setGavetaAberta] = useState(false)
@@ -29,60 +30,65 @@ export function AppShell() {
     <div className="flex h-dvh flex-col">
       <a
         href="#conteudo"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-md focus:bg-card focus:px-4 focus:py-2 focus:shadow"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-(--space-100) focus:left-(--space-100) focus:z-50 focus:rounded-(--radius) focus:bg-(--surface-overlay) focus:px-(--space-150) focus:py-(--space-100) focus:shadow-sobreposicao"
       >
         Pular para o conteúdo
       </a>
 
-      <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-card px-3 md:px-4">
-        <Sheet open={gavetaAberta} onOpenChange={setGavetaAberta}>
-          <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="md:hidden" aria-label="Abrir menu">
-              <Menu aria-hidden="true" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="w-72 bg-sidebar p-0">
-            <SheetHeader className="border-b px-4 py-3">
-              <SheetTitle>
-                <Marca />
-              </SheetTitle>
-              <SheetDescription className="sr-only">Menu principal e consultoria</SheetDescription>
-            </SheetHeader>
-            <div className="flex flex-col gap-4 p-3">
-              <SeletorConsultoria className="w-full" />
-              <MenuNavegacao
-                aoNavegar={() => {
-                  setGavetaAberta(false)
-                }}
-              />
-            </div>
-          </SheetContent>
-        </Sheet>
-
-        <Link to="/" aria-label="Grama, ir para a Visão da equipe" className="rounded-md px-1">
-          <Marca />
-        </Link>
-
-        <div className="ml-4 hidden min-w-0 max-w-xs md:block">
-          <SeletorConsultoria className="w-full" />
-        </div>
-
-        <div className="ml-auto flex items-center gap-1">
-          <BotaoTema />
-          <MenuConta />
-        </div>
-      </header>
+      <BarraSuperior
+        esquerda={
+          <>
+            <Sheet open={gavetaAberta} onOpenChange={setGavetaAberta}>
+              <SheetTrigger asChild>
+                <BotaoIcone icone="panel-left" rotulo="Abrir menu" className="md:hidden" />
+              </SheetTrigger>
+              <SheetContent aria-describedby="descricao-gaveta">
+                <SheetHeader>
+                  <SheetTitle className="text-(--text-brand)">Grama</SheetTitle>
+                  <SheetDescription id="descricao-gaveta" className="sr-only">
+                    Menu principal e consultoria
+                  </SheetDescription>
+                </SheetHeader>
+                <MenuLateral
+                  rotulo="Menu principal"
+                  cabecalho={<ConsultoriaAtual />}
+                  className="w-full border-r-0"
+                >
+                  <NavegacaoPrincipal
+                    aoNavegar={() => {
+                      setGavetaAberta(false)
+                    }}
+                  />
+                </MenuLateral>
+              </SheetContent>
+            </Sheet>
+            <Link
+              to="/"
+              aria-label="Grama, ir para a Visão da equipe"
+              className="titulo-secao text-(--text-brand) no-underline hover:text-(--text-brand) hover:no-underline"
+            >
+              Grama
+            </Link>
+          </>
+        }
+        direita={
+          <>
+            <BotaoTema />
+            <MenuConta />
+          </>
+        }
+      />
 
       <div className="flex min-h-0 flex-1">
-        <aside className="hidden w-60 shrink-0 border-r bg-sidebar p-3 md:block">
-          <MenuNavegacao />
-        </aside>
-        <main
-          id="conteudo"
-          tabIndex={-1}
-          className="min-w-0 flex-1 overflow-auto focus:outline-none"
+        <MenuLateral
+          rotulo="Menu principal"
+          cabecalho={<ConsultoriaAtual />}
+          className="hidden md:flex"
         >
-          <div className="mx-auto w-full max-w-screen-2xl p-4 md:p-6">
+          <NavegacaoPrincipal />
+        </MenuLateral>
+        <main id="conteudo" tabIndex={-1} className="min-w-0 flex-1 overflow-auto outline-none">
+          <div className="mx-auto w-full max-w-(--content-max) p-(--space-200) md:p-(--space-300)">
             <Outlet />
           </div>
         </main>

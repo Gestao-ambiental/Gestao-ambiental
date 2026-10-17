@@ -1,8 +1,7 @@
-import { Building2, CalendarDays, ClipboardCheck, LayoutList, SearchX, Users } from 'lucide-react'
 import { Link } from 'react-router'
 
 import { EstadoVazio } from '@/components/estados'
-import { Button } from '@/components/ui/button'
+import { Botao } from '@/components/ui/botao'
 
 import { Pagina } from './Pagina'
 
@@ -12,7 +11,7 @@ export function PaginaVisaoEquipe() {
   return (
     <Pagina titulo="Visão da equipe">
       <EstadoVazio
-        icone={LayoutList}
+        icone="list"
         titulo="Nenhum prazo para mostrar"
         descricao="Quando a consultoria tiver licenças com condicionantes ativas, os prazos da equipe aparecem aqui."
       />
@@ -24,7 +23,7 @@ export function PaginaCalendario() {
   return (
     <Pagina titulo="Calendário">
       <EstadoVazio
-        icone={CalendarDays}
+        icone="calendar"
         titulo="Calendário vazio"
         descricao="As entregas e os limites de protocolo aparecem aqui, dia a dia."
       />
@@ -36,7 +35,7 @@ export function PaginaEmpreendimentos() {
   return (
     <Pagina titulo="Empreendimentos">
       <EstadoVazio
-        icone={Building2}
+        icone="briefcase"
         titulo="Nenhum empreendimento cadastrado"
         descricao="Os empreendimentos da consultoria e suas licenças aparecem aqui."
       />
@@ -48,7 +47,7 @@ export function PaginaAcompanhamentos() {
   return (
     <Pagina titulo="Acompanhamentos">
       <EstadoVazio
-        icone={ClipboardCheck}
+        icone="inbox"
         titulo="Nada para acompanhar"
         descricao="Conferências pendentes e renovações em andamento aparecem aqui."
       />
@@ -60,7 +59,7 @@ export function PaginaEquipe() {
   return (
     <Pagina titulo="Equipe">
       <EstadoVazio
-        icone={Users}
+        icone="users"
         titulo="Nenhum membro para mostrar"
         descricao="As pessoas da consultoria, com papel e situação, aparecem aqui."
       />
@@ -72,13 +71,13 @@ export function PaginaNaoEncontrada() {
   return (
     <Pagina titulo="Página não encontrada">
       <EstadoVazio
-        icone={SearchX}
+        icone="search"
         titulo="Este endereço não existe"
         descricao="Confira o link ou volte para a Visão da equipe."
-        acao={
-          <Button asChild>
+        acaoPrincipal={
+          <Botao aparencia="primario" asChild>
             <Link to="/">Ir para a Visão da equipe</Link>
-          </Button>
+          </Botao>
         }
       />
     </Pagina>

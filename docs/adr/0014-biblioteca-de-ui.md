@@ -1,32 +1,47 @@
-# ADR-0014: Biblioteca de UI e design tokens
+# ADR-0014: Biblioteca de UI e design system
 
-- **Situação:** aceito (épico 1, tarefa 1.5), 17/10/2026
+- **Situação:** aceito (épico 1, tarefa 1.5), 17/10/2026. Revisado no mesmo dia, com a chegada do design system aprovado.
 - **Resolve:** "Biblioteca de UI e estratégia de componentes", pendente em 05 · Stack e ADRs
 
 ## Contexto
 
-Todas as telas dos épicos 2 a 9 entram no mesmo shell. Um dev só, prazo curto, e requisitos de interface já fixados: tema claro e escuro, WCAG 2.2 AA, celular 375 px, estados vazio/carregando/erro/sem permissão, tokens visuais do protótipo como referência (RNF 2 e 12).
+Todas as telas dos épicos 2 a 9 entram no mesmo shell. Um dev só, prazo curto, e requisitos de interface já fixados: tema claro e escuro, WCAG 2.2 AA, celular 375 px, estados vazio/carregando/erro/sem permissão (RNF 2 e 12). O design system "Gestão Ambiental" foi exportado do Claude Design para `docs/design-system/` e é a fonte da verdade visual.
 
 ## Decisão
 
-**Tailwind CSS v4 + shadcn/ui**, sobre primitivos do Radix (`radix-ui`) e ícones `lucide-react`.
+**O visual vem do design system em `docs/design-system`. O shadcn/ui (sobre Radix) é só base de comportamento e acessibilidade.** Tailwind CSS v4 é a forma de aplicar os tokens.
 
-- **Tailwind:** estilo junto do componente, sem CSS global crescendo por tela. Os tokens são variáveis CSS em `apps/web/src/styles/global.css` (`:root` e `.dark`), mapeados no `@theme`; trocar o tema troca as variáveis, não as classes.
-- **shadcn/ui:** o código dos componentes é copiado para `apps/web/src/components/ui` e fica nosso. Não há dependência de versão de um "kit" fechado. O Radix entrega teclado, foco e ARIA de menus, diálogos e gavetas, que são a parte difícil de acertar à mão.
-- **Tokens (provisórios):** marca `#176b55` e neutros do protótipo (doc 09 §9.2), cores semânticas de prazo do `style.css` do protótipo. Todos os pares usados passam AA nos dois temas (texto 4,5:1; foco e borda de campo 3:1). Viram definitivos quando o design system do Grama for fechado.
-- **Componentes de estado** (`src/components/estados`): `EstadoVazio`, `Carregando`, `EstadoErro`, `SemPermissao`. Toda tela usa estes, não variações próprias.
+- **Tokens:** `apps/web/src/styles/global.css` importa `docs/design-system/tokens/*.css` direto, sem cópia. Componentes usam os nomes semânticos (`--surface`, `--text`, `--brand`, `--border`, `--lozenge-*`, `--space-*`, `--radius`…), nas classes do Tailwind com a sintaxe `bg-(--surface-selected)`. Tema escuro por `[data-theme="dark"]` no `<html>`, como nos tokens; o claro é o padrão.
+- **Tailwind restrito ao design system:** a paleta, as sombras, os raios e a escala de texto padrão do Tailwind estão zerados (`--color-*: initial` etc.). Sobra só o que aponta para os tokens: raio 3px em tudo, sombra apenas `shadow-sobreposicao` (overlay) e `shadow-elevado` (card arrastado), escala `xs` 12 · `sm`/`base` 14 · `lg` 16 · `xl` 20 · `2xl` 24, e os papéis de tipo `titulo-tela`, `titulo-secao`, `corpo`, `corpo-medio`, `rotulo`, `rotulo-maiusculo`.
+- **shadcn/ui:** os nomes que os primitivos usam (`background`, `primary`, `border`, `ring`…) apontam para os semânticos do DS. Dos primitivos, ficam só os que trazem comportamento difícil de acertar à mão: menu suspenso (`dropdown-menu`) e gaveta (`sheet`, sobre o Dialog do Radix), reescritos com o visual do DS.
+- **Componentes** (`apps/web/src/components/ui`), recriados a partir de `docs/design-system/referencia-componentes`, com nomes em português:
+
+| Referência do DS                             | Aqui                                                                                           |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `Icon`                                       | `Icone` (máscara + `currentColor`, SVGs em `src/assets/icons`)                                 |
+| `Button`                                     | `Botao`                                                                                        |
+| `IconButton`                                 | `BotaoIcone` (rótulo obrigatório)                                                              |
+| `Lozenge`                                    | `Selo`                                                                                         |
+| `Avatar`                                     | `Avatar`                                                                                       |
+| `Skeleton` / `SkeletonRows`                  | `Esqueleto` / `EsqueletoLinhas`                                                                |
+| `SectionMessage`                             | `MensagemSecao`                                                                                |
+| `TopBar`                                     | `BarraSuperior`                                                                                |
+| `SideNav` / `SideNavSection` / `SideNavItem` | `MenuLateral` / `MenuLateralSecao` / `MenuLateralItem`                                         |
+| `EmptyState`                                 | `EstadoVazio` (em `components/estados`, com `Carregando`, `EstadoErro`, `SemPermissao`)        |
+| `ClientMark` / `ClientCard` / `PieceCard`    | `MarcaEmpreendimento` / `CartaoEmpreendimento` / `CartaoOcorrencia` (quando as telas chegarem) |
 
 ## O que não usar
 
-- Outra biblioteca de componentes (MUI, Chakra, Ant, Mantine) ou CSS-in-JS: dois sistemas de estilo no mesmo app.
-- Cor fixa em classe (`bg-green-700`, `text-[#176b55]`): sempre o token (`bg-primary`, `text-prazo-31-ou-mais`).
-- Cor como única informação: estado sempre com texto (ex.: ponto + "Atrasada há 9 dias").
-- Texto de conteúdo abaixo de 15 px; texto auxiliar abaixo de 14 px (`text-xs` não é para conteúdo).
-- Emoji na interface; fonte externa (a CSP só libera o próprio domínio); `<script>` inline (idem).
-- Componente gerado pela CLI do shadcn sem revisão: ela deve importar `cn` de `@/lib/utils`, e não instalar pacotes por conta própria.
+- Hexadecimal, `rgb()` ou cor fora dos tokens do DS no código do app; as primitivas `--af-*` e `--dk-*` direto num componente.
+- Outra biblioteca de componentes (MUI, Chakra, Ant, Mantine) ou CSS-in-JS.
+- O visual padrão do shadcn como está: todo primitivo novo é restilizado com os tokens antes de entrar.
+- Sombra para separar áreas (é linha de 1px), gradiente, imagem de fundo, ilustração, emoji.
+- Logo ou `ProductMark`: o nome é "Grama", em texto.
+- `lucide-react` ou outro pacote de ícones: só os SVGs do DS, via `Icone`.
+- Corpo fora de 14px; nada acima de 24px; maiúscula só no rótulo de 11px.
 
 ## Consequências
 
-- Componente novo do shadcn entra com `pnpm dlx shadcn@<versão> add <nome>` a partir de `apps/web` e passa pelo mesmo lint estrito.
-- Tema escuro é paleta própria (não inversão). Toda tela nova é conferida nos dois temas e em 375 px (DoD item 9).
-- O axe roda nos testes do shell; contraste é conferido nos tokens, porque o jsdom não calcula layout.
+- Mudança visual é feita em `docs/design-system` (com o export do Claude Design), não no app. O app só reflete os tokens.
+- Primitivo novo do shadcn entra com `pnpm dlx shadcn@<versão> add <nome>` a partir de `apps/web`, é revisado (deve importar `cn` de `@/lib/utils` e não instalar pacotes por conta própria) e restilizado com os tokens.
+- Pendências herdadas do DS: `--border` tem contraste 1,25:1 (o próprio README registra; campos de formulário vão precisar de `--border-strong` ou equivalente para 3:1) e as faixas de atraso do EQ-03 ainda não têm tons definidos.

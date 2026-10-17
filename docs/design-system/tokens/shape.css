@@ -1,0 +1,18 @@
+/* 3px radius on everything. Separation is a 1px line; shadow is reserved for
+   elements that float above the page (dropdown, modal, popper). */
+:root{
+  --radius:3px;
+  --radius-sm:3px;
+  --radius-pill:999px;      /* avatar, notification count — not lozenges */
+  --radius-circle:50%;
+  --border-width:1px;
+  --border-width-focus:2px;
+
+  --shadow-overlay:0 4px 8px rgba(15,26,18,0.15),0 0 1px rgba(15,26,18,0.31);
+  --shadow-raised:0 1px 1px rgba(15,26,18,0.12),0 0 1px rgba(15,26,18,0.20);
+  --focus-ring:0 0 0 2px var(--border-focus);
+}
+[data-theme="dark"]{
+  --shadow-overlay:0 4px 8px rgba(3,4,4,0.50),0 0 1px rgba(3,4,4,0.60);
+  --shadow-raised:0 1px 1px rgba(3,4,4,0.50),0 0 1px rgba(3,4,4,0.60);
+}

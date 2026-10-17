@@ -52,7 +52,9 @@ describe('shell do app', () => {
     expect(screen.getByRole('button', { name: 'Abrir menu' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /^Tema:/ })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /^Conta de / })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /^Consultoria: / })).toBeInTheDocument()
+    // Com um vínculo só, a consultoria aparece fixa no rail (sem seletor), como no design system
+    expect(screen.getByRole('group', { name: /^Consultoria: / })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Consultoria: / })).not.toBeInTheDocument()
   })
 
   it('a gaveta do celular abre pelo botão, mostra o menu e fecha ao navegar', async () => {

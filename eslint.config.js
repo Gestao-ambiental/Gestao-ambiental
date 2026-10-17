@@ -9,7 +9,14 @@ import tseslint from 'typescript-eslint'
 
 export default defineConfig(
   // database.types.ts é gerado por `supabase gen types` (não editar à mão)
-  globalIgnores(['**/dist', '**/coverage', 'supabase/**', 'apps/web/src/lib/database.types.ts']),
+  globalIgnores([
+    '**/dist',
+    '**/coverage',
+    'supabase/**',
+    'apps/web/src/lib/database.types.ts',
+    // Material exportado do design system (referência, não código do app)
+    'docs/design-system/**',
+  ]),
 
   js.configs.recommended,
   tseslint.configs.strictTypeChecked,

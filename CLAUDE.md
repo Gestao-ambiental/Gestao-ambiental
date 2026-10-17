@@ -72,7 +72,7 @@ Nunca regra de negócio só no front. O front esconde coisas por apresentação,
 - Tema claro e escuro com tokens como variáveis CSS.
 - Toda tela tem os estados: vazio, carregando, erro, sem permissão.
 - WCAG 2.2 AA: teclado em tudo, foco visível, nome acessível em botão de ícone, informação nunca só pela cor.
-- Sem emoji na interface. Texto de conteúdo 15–16 px.
+- Sem emoji na interface. Corpo 14px, conforme docs/design-system.
 - Listas paginadas desde o início.
 
 ## Fluxo de trabalho

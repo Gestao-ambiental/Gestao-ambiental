@@ -1,18 +1,22 @@
 import { Outlet } from 'react-router'
 
-import { BotaoTema } from './BotaoTema'
-import { Marca } from './Marca'
+import { BarraSuperior } from '@/components/ui/barra-superior'
 
-/** Layout das rotas públicas (sem menu): marca, tema e o conteúdo centralizado. */
+import { BotaoTema } from './BotaoTema'
+
+/** Layout das rotas públicas (sem rail): nome do produto, tema e o conteúdo num cartão central. */
 export function LayoutPublico() {
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="flex h-14 items-center justify-between border-b bg-card px-4">
-        <Marca />
-        <BotaoTema />
-      </header>
-      <main id="conteudo" className="flex flex-1 items-start justify-center p-4 pt-12">
-        <div className="w-full max-w-sm rounded-lg border bg-card p-6">
+      <BarraSuperior
+        esquerda={<span className="titulo-secao text-(--text-brand)">Grama</span>}
+        direita={<BotaoTema />}
+      />
+      <main
+        id="conteudo"
+        className="flex flex-1 items-start justify-center p-(--space-200) pt-(--space-800)"
+      >
+        <div className="w-full max-w-[400px] rounded-(--radius) border bg-(--surface) p-(--space-300)">
           <Outlet />
         </div>
       </main>

@@ -5,3 +5,5 @@ pnpm-lock.yaml
 docs/arquitetura
 CLAUDE.md
 apps/web/src/lib/database.types.ts
+# Exportado do Claude Design: mantém os bytes originais
+docs/design-system

@@ -5,15 +5,15 @@ interface Props {
   children: ReactNode
 }
 
-/** Moldura de página: título (h1) e o título da aba do navegador. */
+/** Moldura de página: título de tela (20/600) e o título da aba do navegador. */
 export function Pagina({ titulo, children }: Props) {
   useEffect(() => {
     document.title = `${titulo} · Grama`
   }, [titulo])
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold">{titulo}</h1>
+    <div className="flex flex-col gap-(--space-200)">
+      <h1 className="titulo-tela text-(--text)">{titulo}</h1>
       {children}
     </div>
   )

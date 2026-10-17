@@ -1,8 +1,7 @@
-import { CircleAlert, RotateCw } from 'lucide-react'
 import type { ReactNode } from 'react'
 
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
+import { Botao } from '@/components/ui/botao'
+import { MensagemSecao } from '@/components/ui/mensagem-secao'
 
 interface Props {
   titulo?: string
@@ -12,7 +11,10 @@ interface Props {
   className?: string
 }
 
-/** Erro ao carregar: diz o que falhou sem detalhe técnico e oferece tentar de novo. */
+/**
+ * Erro ao carregar: mensagem de seção em tom de perigo, sem detalhe técnico, com "Tentar de novo".
+ * Erro nunca é silencioso (design system).
+ */
 export function EstadoErro({
   titulo = 'Não foi possível carregar',
   descricao = 'Verifique a conexão e tente de novo. Se continuar, avise a gestão da consultoria.',
@@ -20,22 +22,20 @@ export function EstadoErro({
   className,
 }: Props) {
   return (
-    <section
+    <MensagemSecao
       role="alert"
-      className={cn(
-        'flex flex-col items-center justify-center gap-3 rounded-lg border border-border bg-card px-6 py-12 text-center',
-        className,
-      )}
+      tom="perigo"
+      titulo={titulo}
+      className={className}
+      acoes={
+        aoTentarDeNovo ? (
+          <Botao iconeAntes="refresh-cw" onClick={aoTentarDeNovo}>
+            Tentar de novo
+          </Botao>
+        ) : undefined
+      }
     >
-      <CircleAlert aria-hidden="true" className="size-8 text-destructive" />
-      <h2 className="text-base font-semibold">{titulo}</h2>
-      <p className="max-w-prose text-muted-foreground">{descricao}</p>
-      {aoTentarDeNovo ? (
-        <Button variant="outline" className="mt-2" onClick={aoTentarDeNovo}>
-          <RotateCw aria-hidden="true" />
-          Tentar de novo
-        </Button>
-      ) : null}
-    </section>
+      {descricao}
+    </MensagemSecao>
   )
 }

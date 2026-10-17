@@ -1,35 +1,58 @@
-'use client'
+// Gaveta lateral: comportamento do Dialog do Radix (foco preso, Esc, retorno do foco), visual do
+// design system: scrim do modal, superfície do rail, borda de 1px e sombra de overlay (é flutuante).
+import { Dialog as Primitivo } from 'radix-ui'
+import type { ComponentProps } from 'react'
 
-import * as React from 'react'
 import { cn } from '@/lib/utils'
-import { XIcon } from 'lucide-react'
-import { Dialog as SheetPrimitive } from 'radix-ui'
 
-function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
-  return <SheetPrimitive.Root data-slot="sheet" {...props} />
+import { BotaoIcone } from './botao-icone'
+
+export function Sheet(props: ComponentProps<typeof Primitivo.Root>) {
+  return <Primitivo.Root {...props} />
 }
 
-function SheetTrigger({ ...props }: React.ComponentProps<typeof SheetPrimitive.Trigger>) {
-  return <SheetPrimitive.Trigger data-slot="sheet-trigger" {...props} />
+export function SheetTrigger(props: ComponentProps<typeof Primitivo.Trigger>) {
+  return <Primitivo.Trigger {...props} />
 }
 
-function SheetClose({ ...props }: React.ComponentProps<typeof SheetPrimitive.Close>) {
-  return <SheetPrimitive.Close data-slot="sheet-close" {...props} />
-}
-
-function SheetPortal({ ...props }: React.ComponentProps<typeof SheetPrimitive.Portal>) {
-  return <SheetPrimitive.Portal data-slot="sheet-portal" {...props} />
-}
-
-function SheetOverlay({
+export function SheetContent({
   className,
+  children,
+  lado = 'esquerda',
   ...props
-}: React.ComponentProps<typeof SheetPrimitive.Overlay>) {
+}: ComponentProps<typeof Primitivo.Content> & { lado?: 'esquerda' | 'direita' }) {
   return (
-    <SheetPrimitive.Overlay
-      data-slot="sheet-overlay"
+    <Primitivo.Portal>
+      <Primitivo.Overlay className="fixed inset-0 z-50 bg-(--scrim) data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 duration-(--duration-medium)" />
+      <Primitivo.Content
+        className={cn(
+          'fixed inset-y-0 z-50 flex h-full w-(--nav-side-width) flex-col bg-(--surface-nav) text-(--text) shadow-sobreposicao outline-none duration-(--duration-medium)',
+          'data-[state=open]:animate-in data-[state=closed]:animate-out',
+          lado === 'esquerda'
+            ? 'left-0 border-r data-[state=open]:slide-in-from-left data-[state=closed]:slide-out-to-left'
+            : 'right-0 border-l data-[state=open]:slide-in-from-right data-[state=closed]:slide-out-to-right',
+          className,
+        )}
+        {...props}
+      >
+        {children}
+        <Primitivo.Close asChild>
+          <BotaoIcone
+            icone="x"
+            rotulo="Fechar menu"
+            className="absolute top-(--space-150) right-(--space-150)"
+          />
+        </Primitivo.Close>
+      </Primitivo.Content>
+    </Primitivo.Portal>
+  )
+}
+
+export function SheetHeader({ className, ...props }: ComponentProps<'div'>) {
+  return (
+    <div
       className={cn(
-        'fixed inset-0 z-50 bg-black/50 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0',
+        'flex h-(--nav-top-height) shrink-0 items-center border-b px-(--space-200)',
         className,
       )}
       {...props}
@@ -37,97 +60,13 @@ function SheetOverlay({
   )
 }
 
-function SheetContent({
-  className,
-  children,
-  side = 'right',
-  showCloseButton = true,
-  ...props
-}: React.ComponentProps<typeof SheetPrimitive.Content> & {
-  side?: 'top' | 'right' | 'bottom' | 'left'
-  showCloseButton?: boolean
-}) {
-  return (
-    <SheetPortal>
-      <SheetOverlay />
-      <SheetPrimitive.Content
-        data-slot="sheet-content"
-        className={cn(
-          'fixed z-50 flex flex-col gap-4 bg-background shadow-lg transition ease-in-out data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:animate-in data-[state=open]:duration-500',
-          side === 'right' &&
-            'inset-y-0 right-0 h-full w-3/4 border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-sm',
-          side === 'left' &&
-            'inset-y-0 left-0 h-full w-3/4 border-r data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:max-w-sm',
-          side === 'top' &&
-            'inset-x-0 top-0 h-auto border-b data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top',
-          side === 'bottom' &&
-            'inset-x-0 bottom-0 h-auto border-t data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom',
-          className,
-        )}
-        {...props}
-      >
-        {children}
-        {showCloseButton && (
-          <SheetPrimitive.Close className="absolute top-4 right-4 rounded-xs opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none data-[state=open]:bg-secondary">
-            <XIcon className="size-4" />
-            <span className="sr-only">Close</span>
-          </SheetPrimitive.Close>
-        )}
-      </SheetPrimitive.Content>
-    </SheetPortal>
-  )
+export function SheetTitle({ className, ...props }: ComponentProps<typeof Primitivo.Title>) {
+  return <Primitivo.Title className={cn('titulo-secao', className)} {...props} />
 }
 
-function SheetHeader({ className, ...props }: React.ComponentProps<'div'>) {
-  return (
-    <div
-      data-slot="sheet-header"
-      className={cn('flex flex-col gap-1.5 p-4', className)}
-      {...props}
-    />
-  )
-}
-
-function SheetFooter({ className, ...props }: React.ComponentProps<'div'>) {
-  return (
-    <div
-      data-slot="sheet-footer"
-      className={cn('mt-auto flex flex-col gap-2 p-4', className)}
-      {...props}
-    />
-  )
-}
-
-function SheetTitle({ className, ...props }: React.ComponentProps<typeof SheetPrimitive.Title>) {
-  return (
-    <SheetPrimitive.Title
-      data-slot="sheet-title"
-      className={cn('font-semibold text-foreground', className)}
-      {...props}
-    />
-  )
-}
-
-function SheetDescription({
+export function SheetDescription({
   className,
   ...props
-}: React.ComponentProps<typeof SheetPrimitive.Description>) {
-  return (
-    <SheetPrimitive.Description
-      data-slot="sheet-description"
-      className={cn('text-sm text-muted-foreground', className)}
-      {...props}
-    />
-  )
-}
-
-export {
-  Sheet,
-  SheetTrigger,
-  SheetClose,
-  SheetContent,
-  SheetHeader,
-  SheetFooter,
-  SheetTitle,
-  SheetDescription,
+}: ComponentProps<typeof Primitivo.Description>) {
+  return <Primitivo.Description className={cn('rotulo', className)} {...props} />
 }

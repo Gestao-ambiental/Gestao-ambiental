@@ -1,7 +1,5 @@
-import { LogOut } from 'lucide-react'
-
 import { USUARIO_PROVISORIO } from '@/app/dados-provisorios'
-import { Button } from '@/components/ui/button'
+import { Avatar } from '@/components/ui/avatar'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,6 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Icone } from '@/components/ui/icone'
 
 /** Menu da conta. "Sair" fica desabilitado até existir login (épico 2): nada finge funcionar. */
 export function MenuConta() {
@@ -17,29 +16,22 @@ export function MenuConta() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="rounded-full"
-          aria-label={`Conta de ${usuario.nome}`}
-        >
-          <span
-            aria-hidden="true"
-            className="flex size-8 items-center justify-center rounded-full bg-secondary text-sm font-semibold text-secondary-foreground ring-1 ring-border"
-          >
-            {usuario.iniciais}
-          </span>
-        </Button>
+      <DropdownMenuTrigger
+        aria-label={`Conta de ${usuario.nome}`}
+        title={usuario.nome}
+        className="inline-flex size-(--size-control) cursor-pointer items-center justify-center rounded-(--radius) transicao-estado hover:bg-(--neutral-subtle-hover)"
+      >
+        <Avatar nome={usuario.nome} />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64">
-        <DropdownMenuLabel className="flex flex-col">
-          <span>{usuario.nome}</span>
-          <span className="text-sm font-normal text-muted-foreground">{usuario.email}</span>
-        </DropdownMenuLabel>
+      <DropdownMenuContent align="end" className="min-w-[240px]">
+        <div className="flex flex-col px-(--space-150) py-(--space-100)">
+          <span className="corpo-medio text-(--text)">{usuario.nome}</span>
+          <span className="rotulo">{usuario.email}</span>
+        </div>
         <DropdownMenuSeparator />
+        <DropdownMenuLabel className="sr-only">Ações da conta</DropdownMenuLabel>
         <DropdownMenuItem disabled>
-          <LogOut aria-hidden="true" />
+          <Icone nome="log-out" />
           Sair (disponível com o login)
         </DropdownMenuItem>
       </DropdownMenuContent>

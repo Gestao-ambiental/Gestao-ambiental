@@ -6,7 +6,8 @@ export type PreferenciaTema = 'claro' | 'escuro' | 'sistema'
 export type TemaEfetivo = 'claro' | 'escuro'
 
 export const PREFERENCIAS_TEMA: readonly PreferenciaTema[] = ['claro', 'escuro', 'sistema']
-const PADRAO: PreferenciaTema = 'sistema'
+/** O design system define o claro como padrão (docs/design-system/README.md). */
+const PADRAO: PreferenciaTema = 'claro'
 
 export function chaveTema(usuarioId?: string): string {
   return usuarioId ? `grama.tema:${usuarioId}` : 'grama.tema'
@@ -47,6 +48,7 @@ export function resolverTema(preferencia: PreferenciaTema, prefereEscuro: boolea
   return preferencia
 }
 
+/** Os tokens do design system trocam por [data-theme="dark"] no <html>. */
 export function aplicarTema(tema: TemaEfetivo): void {
-  document.documentElement.classList.toggle('dark', tema === 'escuro')
+  document.documentElement.setAttribute('data-theme', tema === 'escuro' ? 'dark' : 'light')
 }

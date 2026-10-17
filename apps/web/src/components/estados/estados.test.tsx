@@ -10,7 +10,7 @@ describe('componentes de estado', () => {
       <EstadoVazio
         titulo="Nada aqui"
         descricao="Explicação"
-        acao={<button type="button">Agir</button>}
+        acaoPrincipal={<button type="button">Agir</button>}
       />,
     )
     expect(screen.getByRole('heading', { name: 'Nada aqui' })).toBeInTheDocument()
