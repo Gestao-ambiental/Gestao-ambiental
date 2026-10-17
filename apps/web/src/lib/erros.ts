@@ -4,7 +4,10 @@
 
 const MENSAGENS_DO_BANCO: Record<string, string> = {
   sem_permissao: 'Você não tem permissão para esta ação.',
-  nome_obrigatorio: 'Informe o nome da consultoria',
+  nome_obrigatorio: 'Informe o nome',
+  cnpj_invalido: 'CNPJ incompleto',
+  empreendimento_existente: 'Não foi possível salvar o empreendimento. Tente de novo.',
+  unidade_existente: 'Não foi possível salvar a unidade. Tente de novo.',
   consultoria_existente: 'Não foi possível criar a consultoria. Tente de novo.',
   email_invalido: 'Informe um e-mail válido',
   papel_obrigatorio: 'Escolha o papel',

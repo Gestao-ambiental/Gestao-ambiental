@@ -31,6 +31,26 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"cliente": {
+                  Row: {
+                    "consultoria_id": string,"criado_em": string,"id": string,"nome": string,"nome_normalizado": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "consultoria_id": string,"criado_em"?: string,"id"?: string,"nome": string,"nome_normalizado"?: never
+                  }
+                  Update: {
+                    "consultoria_id"?: string,"criado_em"?: string,"id"?: string,"nome"?: string,"nome_normalizado"?: never
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "cliente_consultoria_id_fkey"
+      columns: ["consultoria_id"]
+isOneToOne: false
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"consultoria": {
                   Row: {
                     "criada_em": string,"fuso": string,"id": string,"nome": string,"situacao": Database["public"]['Enums']["situacao_consultoria"]
@@ -77,6 +97,38 @@ isOneToOne: false
       referencedColumns: ["consultoria_id","id"]
     }
                   ]
+                },"empreendimento": {
+                  Row: {
+                    "cliente_id": string | null,"cnpj": string | null,"consultoria_id": string,"criado_em": string,"criado_por": string,"id": string,"nome": string,"nome_normalizado": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "cliente_id"?: string | null,"cnpj"?: string | null,"consultoria_id": string,"criado_em"?: string,"criado_por": string,"id"?: string,"nome": string,"nome_normalizado"?: never
+                  }
+                  Update: {
+                    "cliente_id"?: string | null,"cnpj"?: string | null,"consultoria_id"?: string,"criado_em"?: string,"criado_por"?: string,"id"?: string,"nome"?: string,"nome_normalizado"?: never
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "empreendimento_cliente_fk"
+      columns: ["consultoria_id","cliente_id"]
+isOneToOne: false
+      referencedRelation: "cliente"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "empreendimento_consultoria_id_fkey"
+      columns: ["consultoria_id"]
+isOneToOne: false
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "empreendimento_criado_por_fk"
+      columns: ["consultoria_id","criado_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    }
+                  ]
                 },"membro": {
                   Row: {
                     "consultoria_id": string,"criado_em": string,"desligado_em": string | null,"email": string,"id": string,"nome": string,"papel": Database["public"]['Enums']["papel_membro"],"situacao": Database["public"]['Enums']["situacao_membro"],"usuario_id": string
@@ -95,6 +147,32 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "consultoria"
       referencedColumns: ["id"]
+    }
+                  ]
+                },"unidade": {
+                  Row: {
+                    "consultoria_id": string,"criado_em": string,"empreendimento_id": string,"endereco": string | null,"id": string,"nome": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "consultoria_id": string,"criado_em"?: string,"empreendimento_id": string,"endereco"?: string | null,"id"?: string,"nome": string
+                  }
+                  Update: {
+                    "consultoria_id"?: string,"criado_em"?: string,"empreendimento_id"?: string,"endereco"?: string | null,"id"?: string,"nome"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "unidade_consultoria_id_fkey"
+      columns: ["consultoria_id"]
+isOneToOne: false
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "unidade_empreendimento_fk"
+      columns: ["consultoria_id","empreendimento_id"]
+isOneToOne: false
+      referencedRelation: "empreendimento"
+      referencedColumns: ["consultoria_id","id"]
     }
                   ]
                 }
@@ -125,8 +203,30 @@ isOneToOne: false
               "convite_id": string,"token": string
             }[]
                            },
+"criar_empreendimento":
+{ Args: { "p_cliente"?: string,"p_cnpj"?: string,"p_consultoria_id": string,"p_id": string,"p_nome": string,"p_primeira_unidade"?: string }; Returns: string
+                           },
+"criar_unidade":
+{ Args: { "p_empreendimento_id": string,"p_endereco"?: string,"p_id": string,"p_nome": string }; Returns: string
+                           },
 "desligar_membro":
 { Args: { "p_membro_id": string,"p_motivo"?: string }; Returns: undefined
+                           },
+"editar_empreendimento":
+{ Args: { "p_cliente": string,"p_cnpj": string,"p_id": string,"p_nome": string }; Returns: undefined
+                           },
+"editar_unidade":
+{ Args: { "p_endereco": string,"p_id": string,"p_nome": string }; Returns: undefined
+                           },
+"empreendimentos_parecidos":
+{ Args: { "p_cnpj"?: string,"p_consultoria_id": string,"p_ignorar"?: string,"p_nome": string }; Returns: {
+              "id": string,"mesmo_cnpj": boolean,"mesmo_nome": boolean,"nome": string
+            }[]
+                           },
+"listar_empreendimentos":
+{ Args: { "p_busca"?: string,"p_consultoria_id": string,"p_deslocamento"?: number,"p_limite"?: number }; Returns: {
+              "cliente_nome": string,"cnpj": string,"criado_em": string,"id": string,"nome": string,"total": number,"unidades": number
+            }[]
                            },
 "meus_vinculos":
 { Args: Record<PropertyKey, never>; Returns: {

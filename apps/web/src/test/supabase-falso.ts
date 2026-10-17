@@ -89,6 +89,7 @@ function criar() {
       eq: () => construtor,
       order: () => construtor,
       range: () => construtor,
+      maybeSingle: () => Promise.resolve({ data: linhas()[0] ?? null, error: null }),
       then: (resolver: (valor: unknown) => unknown, rejeitar?: (erro: unknown) => unknown) =>
         Promise.resolve({ data: linhas(), error: null, count: linhas().length }).then(
           resolver,
