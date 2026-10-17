@@ -37,3 +37,18 @@ export type { DatasRenovacaoLao, EtapaRenovacaoLao } from './renovacao'
 
 export { diaUtilAnterior, ehDiaUtil, prazoDeOficio } from './dias-uteis'
 export type { PrazoDeOficio, UnidadePrazo } from './dias-uteis'
+
+export {
+  VALIDADE_CONVITE_DIAS,
+  consultoriaInicial,
+  impedimentoDoVinculo,
+  situacaoDoConvite,
+} from './acesso'
+export type {
+  ImpedimentoDoVinculo,
+  PapelMembro,
+  SituacaoConvite,
+  SituacaoConviteGravada,
+  SituacaoMembro,
+  VinculoResumo,
+} from './acesso'
