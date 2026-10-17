@@ -1,0 +1,66 @@
+import { afterEach, describe, expect, it, vi } from 'vitest'
+
+import {
+  aplicarTema,
+  chaveTema,
+  lerPreferenciaTema,
+  resolverTema,
+  salvarPreferenciaTema,
+} from './tema'
+
+afterEach(() => {
+  vi.restoreAllMocks()
+  window.localStorage.clear()
+  document.documentElement.classList.remove('dark')
+})
+
+describe('preferência de tema', () => {
+  it('sem nada salvo, segue o sistema', () => {
+    expect(lerPreferenciaTema()).toBe('sistema')
+  })
+
+  it('salva e lê a preferência', () => {
+    salvarPreferenciaTema('escuro')
+    expect(window.localStorage.getItem('grama.tema')).toBe('escuro')
+    expect(lerPreferenciaTema()).toBe('escuro')
+  })
+
+  it('valor inválido salvo cai no padrão', () => {
+    window.localStorage.setItem('grama.tema', 'roxo')
+    expect(lerPreferenciaTema()).toBe('sistema')
+  })
+
+  it('localStorage bloqueado não quebra a leitura nem a escrita', () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new DOMException('bloqueado', 'SecurityError')
+    })
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('cheio', 'QuotaExceededError')
+    })
+    expect(lerPreferenciaTema()).toBe('sistema')
+    expect(() => {
+      salvarPreferenciaTema('claro')
+    }).not.toThrow()
+  })
+
+  it('com usuário, a chave é por usuário', () => {
+    expect(chaveTema()).toBe('grama.tema')
+    expect(chaveTema('a0000000-0000-4000-8000-000000000001')).toBe(
+      'grama.tema:a0000000-0000-4000-8000-000000000001',
+    )
+  })
+
+  it('"sistema" resolve pelo sistema; claro e escuro são fixos', () => {
+    expect(resolverTema('sistema', true)).toBe('escuro')
+    expect(resolverTema('sistema', false)).toBe('claro')
+    expect(resolverTema('claro', true)).toBe('claro')
+    expect(resolverTema('escuro', false)).toBe('escuro')
+  })
+
+  it('aplicar o tema escuro liga a classe dark no <html>', () => {
+    aplicarTema('escuro')
+    expect(document.documentElement).toHaveClass('dark')
+    aplicarTema('claro')
+    expect(document.documentElement).not.toHaveClass('dark')
+  })
+})

@@ -1,0 +1,177 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+/* Tema escuro por classe no <html> (definida por tema-inicial.js e ProvedorTema). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Design tokens (ADR-0014). Valores PROVISÓRIOS até o design system do Grama ser fechado.
+ * Origem: protótipo Nexo, docs/reconstrucao-integral-nexo-2026-10-05/09 §9.2 (marca, neutros, foco)
+ * e dist/style.css (cores semânticas). Contraste AA conferido em todos os pares usados pelo shell.
+ * Nomes de cor seguem o padrão do shadcn/ui; os semânticos de prazo são próprios.
+ */
+:root {
+  --fonte: 'Segoe UI Variable', 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif;
+  --texto-conteudo: 0.9375rem; /* 15 px: texto de conteúdo (RNF 12) */
+  --radius: 0.5625rem; /* 9 px: controles (protótipo --radius-control) */
+
+  --background: #f1f4f6;
+  --foreground: #1e2b36;
+  --card: #ffffff;
+  --card-foreground: #1e2b36;
+  --popover: #ffffff;
+  --popover-foreground: #1e2b36;
+  --primary: #176b55; /* marca */
+  --primary-foreground: #ffffff;
+  --secondary: #e8edf1;
+  --secondary-foreground: #1e2b36;
+  --muted: #e8edf1;
+  --muted-foreground: #4f5b66;
+  --accent: #dcebe5;
+  --accent-foreground: #124f40;
+  --destructive: #984b46;
+  --destructive-foreground: #ffffff;
+  --border: #cad3dc; /* separadores decorativos */
+  --input: #7a8794; /* borda de campo: 3:1 sobre painel e fundo */
+  --ring: #176b55;
+
+  --sidebar: #e8edf1;
+  --sidebar-foreground: #1e2b36;
+  --sidebar-accent: #dcebe5;
+  --sidebar-accent-foreground: #124f40;
+  --sidebar-border: #cad3dc;
+
+  /* Semânticas de prazo: cor sempre acompanhada de texto (RNF 12) */
+  --prazo-ate-7: #755b17;
+  --prazo-ate-7-fundo: #f4efdf;
+  --prazo-8-a-30: #8d562b;
+  --prazo-8-a-30-fundo: #f4ebe2;
+  --prazo-31-ou-mais: #984b46;
+  --prazo-31-ou-mais-fundo: #f5e9e7;
+  --sucesso: #356348;
+  --sucesso-fundo: #e8f0e9;
+  --informacao: #3e5e83;
+  --informacao-fundo: #e9eef4;
+  --conferencia: #6548d4;
+  --conferencia-fundo: #efebff;
+}
+
+.dark {
+  --background: #171b20;
+  --foreground: #e6ebf0;
+  --card: #20262c;
+  --card-foreground: #e6ebf0;
+  --popover: #20262c;
+  --popover-foreground: #e6ebf0;
+  --primary: #87c2ad;
+  --primary-foreground: #0f2a21;
+  --secondary: #2a3138;
+  --secondary-foreground: #e6ebf0;
+  --muted: #2a3138;
+  --muted-foreground: #b2bcc6;
+  --accent: #24382f;
+  --accent-foreground: #cfe8de;
+  --destructive: #d99591;
+  --destructive-foreground: #1b1112;
+  --border: #424c56;
+  --input: #6b7782;
+  --ring: #a0d1bf;
+
+  --sidebar: #1b2026;
+  --sidebar-foreground: #e6ebf0;
+  --sidebar-accent: #24382f;
+  --sidebar-accent-foreground: #cfe8de;
+  --sidebar-border: #424c56;
+
+  --prazo-ate-7: #d3bc7c;
+  --prazo-ate-7-fundo: #2a3138;
+  --prazo-8-a-30: #d9a77d;
+  --prazo-8-a-30-fundo: #2a3138;
+  --prazo-31-ou-mais: #d99591;
+  --prazo-31-ou-mais-fundo: #2a3138;
+  --sucesso: #9fc3a7;
+  --sucesso-fundo: #2a3138;
+  --informacao: #a9bddb;
+  --informacao-fundo: #2a3138;
+  --conferencia: #b7a8ff;
+  --conferencia-fundo: #2a3138;
+}
+
+@theme inline {
+  --font-sans: var(--fonte);
+  --text-conteudo: var(--texto-conteudo);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+
+  --color-prazo-ate-7: var(--prazo-ate-7);
+  --color-prazo-ate-7-fundo: var(--prazo-ate-7-fundo);
+  --color-prazo-8-a-30: var(--prazo-8-a-30);
+  --color-prazo-8-a-30-fundo: var(--prazo-8-a-30-fundo);
+  --color-prazo-31-ou-mais: var(--prazo-31-ou-mais);
+  --color-prazo-31-ou-mais-fundo: var(--prazo-31-ou-mais-fundo);
+  --color-sucesso: var(--sucesso);
+  --color-sucesso-fundo: var(--sucesso-fundo);
+  --color-informacao: var(--informacao);
+  --color-informacao-fundo: var(--informacao-fundo);
+  --color-conferencia: var(--conferencia);
+  --color-conferencia-fundo: var(--conferencia-fundo);
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-size: var(--texto-conteudo);
+    line-height: 1.5;
+  }
+  /* Foco visível e consistente em todo elemento focável por teclado (WCAG 2.4.7 / 2.4.11). */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

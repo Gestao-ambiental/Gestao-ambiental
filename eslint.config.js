@@ -8,7 +8,8 @@ import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
 export default defineConfig(
-  globalIgnores(['**/dist', '**/coverage', 'supabase/**']),
+  // database.types.ts é gerado por `supabase gen types` (não editar à mão)
+  globalIgnores(['**/dist', '**/coverage', 'supabase/**', 'apps/web/src/lib/database.types.ts']),
 
   js.configs.recommended,
   tseslint.configs.strictTypeChecked,
@@ -36,6 +37,16 @@ export default defineConfig(
       jsxA11y.flatConfigs.strict,
     ],
     languageOptions: { globals: globals.browser },
+  },
+  // Scripts servidos como arquivo estático (rodam no navegador antes do React)
+  {
+    files: ['apps/web/public/**/*.js'],
+    languageOptions: { globals: globals.browser },
+  },
+  // Componentes do shadcn/ui exportam variantes (cva) junto do componente; padrão da biblioteca.
+  {
+    files: ['apps/web/src/components/ui/**/*.tsx'],
+    rules: { 'react-refresh/only-export-components': 'off' },
   },
 
   // Domínio: TypeScript puro, sem React, Supabase, rede, DOM ou relógio (ADR-0007)

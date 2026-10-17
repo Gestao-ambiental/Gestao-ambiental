@@ -73,6 +73,23 @@ jobs:
       - name: Testes pgTAP
         run: pnpm exec supabase test db
 
+      # Sem Docker local, é aqui que os tipos do front são gerados a partir do schema real.
+      - name: Tipos do banco em dia (apps/web/src/lib/database.types.ts)
+        run: |
+          pnpm db:types
+          if ! git diff --exit-code -- apps/web/src/lib/database.types.ts; then
+            echo "::error::database.types.ts desatualizado. Baixe o artefato 'tipos-do-banco' deste job e commite o arquivo."
+            exit 1
+          fi
+
+      - name: Publicar tipos gerados
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: tipos-do-banco
+          path: apps/web/src/lib/database.types.ts
+          if-no-files-found: ignore
+
       - name: Parar Supabase
         if: always()
         run: pnpm exec supabase stop --no-backup
