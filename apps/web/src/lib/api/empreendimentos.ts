@@ -1,6 +1,9 @@
 // Acesso a dados do épico 3 (carteira, empreendimento e unidades). Escrita só por RPC; leitura
 // pela RLS de membro ativo. Erros sobem como vieram: a tela traduz com lib/erros.
 
+import type { DataCivil, LicencaResumo } from '@gestao-ambiental/domain'
+
+import type { Json } from '@/lib/database.types'
 import { obterSupabase } from '@/lib/supabase'
 
 export const TAMANHO_PAGINA_EMPREENDIMENTOS = 50
@@ -11,11 +14,24 @@ export interface EmpreendimentoNaLista {
   clienteNome: string | null
   cnpj: string | null
   unidades: number
-  /**
-   * Licenças, próxima validade e situação vêm do instrumento (épico 4). Até lá não existe
-   * licença cadastrada, então a contagem é zero de verdade, não um valor inventado.
-   */
-  licencas: number
+  /** Licenças do empreendimento, para a situação mais urgente e a próxima validade (domínio). */
+  licencas: LicencaResumo[]
+}
+
+function lerLicencas(valor: Json): LicencaResumo[] {
+  if (!Array.isArray(valor)) return []
+  return valor.flatMap((item) => {
+    if (typeof item !== 'object' || item === null || Array.isArray(item)) return []
+    const situacao: LicencaResumo['situacao'] = item.situacao === 'ativo' ? 'ativo' : 'rascunho'
+    return [
+      {
+        situacao,
+        validade: typeof item.validade === 'string' ? (item.validade as DataCivil) : null,
+        sigla: typeof item.sigla === 'string' ? item.sigla : null,
+        antecedencia: typeof item.antecedencia === 'number' ? item.antecedencia : null,
+      },
+    ]
+  })
 }
 
 export async function listarEmpreendimentos(
@@ -41,7 +57,7 @@ export async function listarEmpreendimentos(
         clienteNome,
         cnpj,
         unidades: linha.unidades,
-        licencas: 0,
+        licencas: lerLicencas(linha.licencas),
       }
     }),
     total: data[0]?.total ?? 0,

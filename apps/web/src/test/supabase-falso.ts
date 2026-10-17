@@ -99,7 +99,15 @@ function criar() {
     return construtor
   }
 
-  const cliente = { auth, rpc, from: vi.fn(consulta) }
+  const armazenamento = {
+    upload: vi.fn((caminho: string) => Promise.resolve({ data: { path: caminho }, error: null })),
+    createSignedUrl: vi.fn((caminho: string) =>
+      Promise.resolve({ data: { signedUrl: `https://falso.test/${caminho}` }, error: null }),
+    ),
+  }
+  const storage = { from: vi.fn(() => armazenamento) }
+
+  const cliente = { auth, rpc, from: vi.fn(consulta), storage }
 
   return {
     cliente,
@@ -107,7 +115,9 @@ function criar() {
       cenario = novo
       sessao = novo.sessao ?? null
       ouvintes.clear()
-      for (const funcao of [...Object.values(auth), rpc]) funcao.mockClear()
+      for (const funcao of [...Object.values(auth), ...Object.values(armazenamento), rpc]) {
+        funcao.mockClear()
+      }
     },
     /** Encerra a sessão como se tivesse expirado (sem a pessoa pedir). */
     expirarSessao() {

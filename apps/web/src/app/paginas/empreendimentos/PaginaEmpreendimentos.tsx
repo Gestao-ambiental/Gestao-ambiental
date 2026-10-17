@@ -1,13 +1,20 @@
+import {
+  formatarDataCivil,
+  hojeNoFuso,
+  proximaValidade,
+  situacaoMaisUrgente,
+  type DataCivil,
+} from '@gestao-ambiental/domain'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { useDeferredValue, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Pagina } from '@/app/paginas/Pagina'
+import { SeloSituacaoLicenca } from '@/app/paginas/licenca/SeloSituacaoLicenca'
 import { Carregando, EstadoErro, EstadoVazio } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
 import { Icone } from '@/components/ui/icone'
-import { Selo } from '@/components/ui/selo'
 import {
   TAMANHO_PAGINA_EMPREENDIMENTOS,
   listarEmpreendimentos,
@@ -25,14 +32,19 @@ function Cliente({ nome }: { nome: string | null }) {
   return nome ? <span>{nome}</span> : <span className="text-(--text-subtle)">Não informado</span>
 }
 
-// Licenças, próxima validade e situação chegam com o instrumento (épico 4). Hoje nenhum
-// empreendimento tem licença, e é isso que a tela mostra.
 function ProximaValidade({ item }: { item: EmpreendimentoNaLista }) {
-  return item.licencas === 0 ? <span className="text-(--text-subtle)">Nenhuma licença</span> : null
+  if (item.licencas.length === 0)
+    return <span className="text-(--text-subtle)">Nenhuma licença</span>
+  const validade = proximaValidade(item.licencas)
+  return validade ? (
+    <span>{formatarDataCivil(validade)}</span>
+  ) : (
+    <span className="text-(--text-subtle)">Não informada</span>
+  )
 }
 
-function Situacao({ item }: { item: EmpreendimentoNaLista }) {
-  return item.licencas === 0 ? <Selo>Sem licença</Selo> : null
+function Situacao({ item, hoje }: { item: EmpreendimentoNaLista; hoje: DataCivil }) {
+  return <SeloSituacaoLicenca situacao={situacaoMaisUrgente(item.licencas, hoje)} />
 }
 
 /**
@@ -63,6 +75,7 @@ export function PaginaEmpreendimentos() {
   const itens = consulta.data?.pages.flatMap((pagina) => pagina.itens) ?? []
   const total = consulta.data?.pages[0]?.total ?? 0
   const filtrando = buscaAdiada !== ''
+  const hoje = hojeNoFuso(new Date(), atual.fuso)
 
   function abrir(id: string) {
     void navegar(`/empreendimentos/${id}`)
@@ -159,12 +172,12 @@ export function PaginaEmpreendimentos() {
                     <Cliente nome={item.clienteNome} />
                   </td>
                   <td className={classeCelula}>{item.unidades}</td>
-                  <td className={classeCelula}>{item.licencas}</td>
+                  <td className={classeCelula}>{item.licencas.length}</td>
                   <td className={classeCelula}>
                     <ProximaValidade item={item} />
                   </td>
                   <td className={classeCelula}>
-                    <Situacao item={item} />
+                    <Situacao item={item} hoje={hoje} />
                   </td>
                 </tr>
               ))}
@@ -185,7 +198,7 @@ export function PaginaEmpreendimentos() {
                 className="flex flex-col gap-(--space-050) rounded-(--radius) border bg-(--surface) p-(--space-150) text-(--text) no-underline hover:bg-(--surface-hover) hover:text-(--text) hover:no-underline"
               >
                 <span className="flex items-center justify-between gap-(--space-100)">
-                  <Situacao item={item} />
+                  <Situacao item={item} hoje={hoje} />
                   <Icone nome="chevron-right" className="text-(--icon)" />
                 </span>
                 <span className="flex items-center gap-(--space-100)">
@@ -195,7 +208,9 @@ export function PaginaEmpreendimentos() {
                 <span className="text-xs text-(--text-subtle)">
                   {item.clienteNome ?? 'Cliente não informado'} ·{' '}
                   {item.unidades === 1 ? '1 unidade' : `${String(item.unidades)} unidades`} ·{' '}
-                  {item.licencas === 1 ? '1 licença' : `${String(item.licencas)} licenças`}
+                  {item.licencas.length === 1
+                    ? '1 licença'
+                    : `${String(item.licencas.length)} licenças`}
                 </span>
               </Link>
             </li>
