@@ -45,16 +45,48 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
-                },"membro": {
+                },"convite": {
                   Row: {
-                    "consultoria_id": string,"criado_em": string,"desligado_em": string | null,"id": string,"papel": Database["public"]['Enums']["papel_membro"],"situacao": Database["public"]['Enums']["situacao_membro"],"usuario_id": string
+                    "aceito_em": string | null,"aceito_por": string | null,"cancelado_em": string | null,"consultoria_id": string,"convidado_por": string,"criado_em": string,"email": string,"enviado_em": string,"expira_em": string,"id": string,"papel": Database["public"]['Enums']["papel_membro"],"situacao": Database["public"]['Enums']["situacao_convite"],"token_hash": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "consultoria_id": string,"criado_em"?: string,"desligado_em"?: string | null,"id"?: string,"papel": Database["public"]['Enums']["papel_membro"],"situacao"?: Database["public"]['Enums']["situacao_membro"],"usuario_id": string
+                    "aceito_em"?: string | null,"aceito_por"?: string | null,"cancelado_em"?: string | null,"consultoria_id": string,"convidado_por": string,"criado_em"?: string,"email": string,"enviado_em"?: string,"expira_em": string,"id"?: string,"papel": Database["public"]['Enums']["papel_membro"],"situacao"?: Database["public"]['Enums']["situacao_convite"],"token_hash": string
                   }
                   Update: {
-                    "consultoria_id"?: string,"criado_em"?: string,"desligado_em"?: string | null,"id"?: string,"papel"?: Database["public"]['Enums']["papel_membro"],"situacao"?: Database["public"]['Enums']["situacao_membro"],"usuario_id"?: string
+                    "aceito_em"?: string | null,"aceito_por"?: string | null,"cancelado_em"?: string | null,"consultoria_id"?: string,"convidado_por"?: string,"criado_em"?: string,"email"?: string,"enviado_em"?: string,"expira_em"?: string,"id"?: string,"papel"?: Database["public"]['Enums']["papel_membro"],"situacao"?: Database["public"]['Enums']["situacao_convite"],"token_hash"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "convite_aceito_por_fk"
+      columns: ["consultoria_id","aceito_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "convite_consultoria_id_fkey"
+      columns: ["consultoria_id"]
+isOneToOne: false
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "convite_convidado_por_fk"
+      columns: ["consultoria_id","convidado_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    }
+                  ]
+                },"membro": {
+                  Row: {
+                    "consultoria_id": string,"criado_em": string,"desligado_em": string | null,"email": string,"id": string,"nome": string,"papel": Database["public"]['Enums']["papel_membro"],"situacao": Database["public"]['Enums']["situacao_membro"],"usuario_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "consultoria_id": string,"criado_em"?: string,"desligado_em"?: string | null,"email": string,"id"?: string,"nome": string,"papel": Database["public"]['Enums']["papel_membro"],"situacao"?: Database["public"]['Enums']["situacao_membro"],"usuario_id": string
+                  }
+                  Update: {
+                    "consultoria_id"?: string,"criado_em"?: string,"desligado_em"?: string | null,"email"?: string,"id"?: string,"nome"?: string,"papel"?: Database["public"]['Enums']["papel_membro"],"situacao"?: Database["public"]['Enums']["situacao_membro"],"usuario_id"?: string
                   }
                   Relationships: [
                     {
@@ -71,10 +103,18 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            [_ in never]: never
+            "aceitar_convite": { Args: { "p_token": string }; Returns: string }
+            "alterar_papel": { Args: { "p_membro_id": string; "p_papel": Database["public"]['Enums']["papel_membro"] }; Returns: undefined }
+            "cancelar_convite": { Args: { "p_convite_id": string }; Returns: undefined }
+            "consultar_convite": { Args: { "p_token": string }; Returns: { "consultoria_nome": string; "consultoria_fuso": string; "convidado_por_nome": string; "email": string; "papel": Database["public"]['Enums']["papel_membro"]; "situacao": string; "expira_em": string; "conta_com_senha": boolean }[] }
+            "criar_consultoria": { Args: { "p_id": string; "p_nome": string }; Returns: string }
+            "criar_convite": { Args: { "p_consultoria_id": string; "p_email": string; "p_papel": Database["public"]['Enums']["papel_membro"] }; Returns: { "convite_id": string; "token": string }[] }
+            "desligar_membro": { Args: { "p_membro_id": string; "p_motivo"?: string }; Returns: undefined }
+            "meus_vinculos": { Args: never; Returns: { "membro_id": string; "consultoria_id": string; "consultoria_nome": string; "consultoria_fuso": string; "papel": Database["public"]['Enums']["papel_membro"]; "situacao": Database["public"]['Enums']["situacao_membro"]; "desligado_em": string | null }[] }
+            "reenviar_convite": { Args: { "p_convite_id": string }; Returns: string }
           }
           Enums: {
-            "acao_auditoria": "insert"|"update"|"delete","papel_membro": "gestao"|"equipe","situacao_consultoria": "ativa"|"suspensa"|"arquivada","situacao_membro": "ativo"|"desligado"
+            "acao_auditoria": "insert"|"update"|"delete","papel_membro": "gestao"|"equipe","situacao_consultoria": "ativa"|"suspensa"|"arquivada","situacao_convite": "pendente"|"aceito"|"cancelado","situacao_membro": "ativo"|"desligado"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -190,7 +230,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "acao_auditoria": ["insert", "update", "delete"],"papel_membro": ["gestao", "equipe"],"situacao_consultoria": ["ativa", "suspensa", "arquivada"],"situacao_membro": ["ativo", "desligado"]
+            "acao_auditoria": ["insert", "update", "delete"],"papel_membro": ["gestao", "equipe"],"situacao_consultoria": ["ativa", "suspensa", "arquivada"],"situacao_convite": ["pendente", "aceito", "cancelado"],"situacao_membro": ["ativo", "desligado"]
           }
         }
 } as const
