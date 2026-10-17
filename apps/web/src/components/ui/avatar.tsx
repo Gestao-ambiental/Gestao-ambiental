@@ -1,3 +1,4 @@
+import { iniciais } from '@/lib/texto'
 import { cn } from '@/lib/utils'
 
 const TAMANHOS = { pequeno: 20, medio: 24, grande: 32 } as const
@@ -6,16 +7,6 @@ interface Props {
   nome: string
   tamanho?: keyof typeof TAMANHOS
   className?: string
-}
-
-function iniciais(nome: string): string {
-  return nome
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((parte) => parte[0] ?? '')
-    .join('')
-    .toUpperCase()
 }
 
 /**

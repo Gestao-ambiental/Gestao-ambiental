@@ -14,15 +14,28 @@ interface Props {
   descricao?: ReactNode
   children?: ReactNode
   acoes?: ReactNode
+  /** Largura máxima em px (padrão 480, como o Modal do design system). */
+  largura?: number
 }
 
-export function Dialogo({ aberto, aoMudar, titulo, descricao, children, acoes }: Props) {
+export function Dialogo({
+  aberto,
+  aoMudar,
+  titulo,
+  descricao,
+  children,
+  acoes,
+  largura = 480,
+}: Props) {
   return (
     <Primitivo.Root open={aberto} onOpenChange={aoMudar}>
       <Primitivo.Portal>
         <Primitivo.Overlay className="fixed inset-0 z-50 bg-(--scrim) data-[state=open]:animate-in data-[state=open]:fade-in-0" />
         <div className="pointer-events-none fixed inset-0 z-50 flex items-start justify-center overflow-y-auto px-(--space-200) py-(--space-800)">
-          <Primitivo.Content className="pointer-events-auto w-full max-w-[480px] rounded-(--radius) bg-(--surface-overlay) text-(--text) shadow-sobreposicao outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0">
+          <Primitivo.Content
+            style={{ maxWidth: largura }}
+            className="pointer-events-auto w-full rounded-(--radius) bg-(--surface-overlay) text-(--text) shadow-sobreposicao outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0"
+          >
             <div className="flex items-start gap-(--space-100) px-(--space-300) pt-(--space-300) pb-(--space-100)">
               <Primitivo.Title className="flex-1 titulo-tela">{titulo}</Primitivo.Title>
               <Primitivo.Close asChild>

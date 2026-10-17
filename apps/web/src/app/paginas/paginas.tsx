@@ -31,18 +31,6 @@ export function PaginaCalendario() {
   )
 }
 
-export function PaginaEmpreendimentos() {
-  return (
-    <Pagina titulo="Empreendimentos">
-      <EstadoVazio
-        icone="briefcase"
-        titulo="Nenhum empreendimento cadastrado"
-        descricao="Os empreendimentos da consultoria e suas licenças aparecem aqui."
-      />
-    </Pagina>
-  )
-}
-
 export function PaginaAcompanhamentos() {
   return (
     <Pagina titulo="Acompanhamentos">

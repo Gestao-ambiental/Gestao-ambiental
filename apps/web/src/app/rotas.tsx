@@ -10,12 +10,13 @@ import { PaginaEntrar } from './paginas/acesso/PaginaEntrar'
 import { PaginaEscolherConsultoria } from './paginas/acesso/PaginaEscolherConsultoria'
 import { PaginaRecuperarSenha } from './paginas/acesso/PaginaRecuperarSenha'
 import { PaginaRedefinirSenha } from './paginas/acesso/PaginaRedefinirSenha'
+import { PaginaEmpreendimento } from './paginas/empreendimentos/PaginaEmpreendimento'
+import { PaginaEmpreendimentos } from './paginas/empreendimentos/PaginaEmpreendimentos'
 import { PaginaEquipe } from './paginas/equipe/PaginaEquipe'
 import { ErroDeRota } from './paginas/ErroDeRota'
 import {
   PaginaAcompanhamentos,
   PaginaCalendario,
-  PaginaEmpreendimentos,
   PaginaNaoEncontrada,
   PaginaVisaoEquipe,
 } from './paginas/paginas'
@@ -58,6 +59,7 @@ export const rotas: RouteObject[] = [
               { index: true, element: <PaginaVisaoEquipe /> },
               { path: 'calendario', element: <PaginaCalendario /> },
               { path: 'empreendimentos', element: <PaginaEmpreendimentos /> },
+              { path: 'empreendimentos/:id', element: <PaginaEmpreendimento /> },
               { path: 'acompanhamentos', element: <PaginaAcompanhamentos /> },
               { path: 'configuracoes/equipe', element: <PaginaEquipe /> },
               { path: '*', element: <PaginaNaoEncontrada /> },
