@@ -56,8 +56,15 @@ O `supabase/config.toml` vale só para o ambiente local; os projetos remotos sã
    - **Produção:**
      - **Site URL:** a URL de produção da Vercel (ex.: `https://gestao-ambiental.vercel.app`) ou o domínio próprio, quando existir.
      - **Redirect URLs:** a mesma URL com `/**` no final.
+3. **Authentication → Sign In / Providers → Email** (épico 2, convite e senha):
+   - **Secure password change:** desligado. Quem chega pelo link do convite define a senha logo em seguida, sem senha anterior.
+   - **Email OTP Expiration:** `3600` (1 hora). A tela de recuperação de senha diz "Ele vale por 1 hora".
+4. **Authentication → Emails → Templates** (épico 2). O convite viaja pelo e-mail do próprio Auth: a gestão convida, o app chama `signInWithOtp` para o e-mail convidado e o link volta para `/convite?token=…` já com a sessão da pessoa. Para conta nova o Auth usa o modelo **Confirm signup**; para conta existente, **Magic Link**. Troque o texto padrão (em inglês) por um neutro, que sirva para convite e para acesso, mantendo `{{ .ConfirmationURL }}`:
+   - **Assunto:** `Seu acesso ao Grama`
+   - **Corpo:** `<p>Você recebeu um link de acesso ao Grama, a ferramenta de licenças e prazos da sua consultoria.</p><p><a href="{{ .ConfirmationURL }}">Abrir o Grama</a></p><p>O link vale por 1 hora e funciona uma vez. Se você não esperava este e-mail, ignore.</p>`
+   - **Reset Password:** assunto `Criar senha nova no Grama`, corpo com o mesmo link e a validade de 1 hora.
 
-> Os e-mails de confirmação usam o SMTP padrão do Supabase, que tem limite baixo de envios por hora. O SMTP próprio (Resend) é item do go-live (F12), fora desta entrega.
+> Os e-mails (confirmação, convite e senha) usam o SMTP padrão do Supabase, que só entrega para endereços da equipe da organização no Supabase e manda poucos e-mails por hora. Para convidar a equipe real do piloto é preciso configurar o SMTP próprio (Resend) em **Authentication → Emails → SMTP Settings** — só painel, sem mudança de código. Ele é item do go-live (F12).
 
 ## 3. Access token e segredos no GitHub (staging)
 
