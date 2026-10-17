@@ -52,3 +52,5 @@ export type {
   SituacaoMembro,
   VinculoResumo,
 } from './acesso'
+
+export { formatarCnpj, mascararCnpj, normalizarCnpj, situacaoDoCnpj } from './cnpj'
