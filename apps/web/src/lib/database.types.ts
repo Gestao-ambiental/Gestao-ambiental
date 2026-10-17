@@ -103,15 +103,39 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "aceitar_convite": { Args: { "p_token": string }; Returns: string }
-            "alterar_papel": { Args: { "p_membro_id": string; "p_papel": Database["public"]['Enums']["papel_membro"] }; Returns: undefined }
-            "cancelar_convite": { Args: { "p_convite_id": string }; Returns: undefined }
-            "consultar_convite": { Args: { "p_token": string }; Returns: { "consultoria_nome": string; "consultoria_fuso": string; "convidado_por_nome": string; "email": string; "papel": Database["public"]['Enums']["papel_membro"]; "situacao": string; "expira_em": string; "conta_com_senha": boolean }[] }
-            "criar_consultoria": { Args: { "p_id": string; "p_nome": string }; Returns: string }
-            "criar_convite": { Args: { "p_consultoria_id": string; "p_email": string; "p_papel": Database["public"]['Enums']["papel_membro"] }; Returns: { "convite_id": string; "token": string }[] }
-            "desligar_membro": { Args: { "p_membro_id": string; "p_motivo"?: string }; Returns: undefined }
-            "meus_vinculos": { Args: never; Returns: { "membro_id": string; "consultoria_id": string; "consultoria_nome": string; "consultoria_fuso": string; "papel": Database["public"]['Enums']["papel_membro"]; "situacao": Database["public"]['Enums']["situacao_membro"]; "desligado_em": string | null }[] }
-            "reenviar_convite": { Args: { "p_convite_id": string }; Returns: string }
+            "aceitar_convite":
+{ Args: { "p_token": string }; Returns: string
+                           },
+"alterar_papel":
+{ Args: { "p_membro_id": string,"p_papel": Database["public"]['Enums']["papel_membro"] }; Returns: undefined
+                           },
+"cancelar_convite":
+{ Args: { "p_convite_id": string }; Returns: undefined
+                           },
+"consultar_convite":
+{ Args: { "p_token": string }; Returns: {
+              "consultoria_fuso": string,"consultoria_nome": string,"conta_com_senha": boolean,"convidado_por_nome": string,"email": string,"expira_em": string,"papel": Database["public"]['Enums']["papel_membro"],"situacao": string
+            }[]
+                           },
+"criar_consultoria":
+{ Args: { "p_id": string,"p_nome": string }; Returns: string
+                           },
+"criar_convite":
+{ Args: { "p_consultoria_id": string,"p_email": string,"p_papel": Database["public"]['Enums']["papel_membro"] }; Returns: {
+              "convite_id": string,"token": string
+            }[]
+                           },
+"desligar_membro":
+{ Args: { "p_membro_id": string,"p_motivo"?: string }; Returns: undefined
+                           },
+"meus_vinculos":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "consultoria_fuso": string,"consultoria_id": string,"consultoria_nome": string,"desligado_em": string,"membro_id": string,"papel": Database["public"]['Enums']["papel_membro"],"situacao": Database["public"]['Enums']["situacao_membro"]
+            }[]
+                           },
+"reenviar_convite":
+{ Args: { "p_convite_id": string }; Returns: string
+                           }
           }
           Enums: {
             "acao_auditoria": "insert"|"update"|"delete","papel_membro": "gestao"|"equipe","situacao_consultoria": "ativa"|"suspensa"|"arquivada","situacao_convite": "pendente"|"aceito"|"cancelado","situacao_membro": "ativo"|"desligado"
