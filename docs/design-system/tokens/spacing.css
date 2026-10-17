@@ -1,0 +1,30 @@
+/* 4px grid. --space-025 (2px) exists only for optical nudges inside controls. */
+:root{
+  --space-0:0px;
+  --space-025:2px;
+  --space-050:4px;
+  --space-075:6px;
+  --space-100:8px;
+  --space-150:12px;
+  --space-200:16px;
+  --space-250:20px;
+  --space-300:24px;
+  --space-400:32px;
+  --space-500:40px;
+  --space-600:48px;
+  --space-800:64px;
+
+  /* Control and layout sizing */
+  --size-control:32px;        /* button, input, select — the default */
+  --size-control-sm:24px;     /* icon button in a dense toolbar */
+  --size-control-lg:40px;
+  --row-height:40px;          /* table row */
+  --row-height-compact:32px;
+  --nav-side-width:240px;
+  --nav-side-width-collapsed:56px;
+  --nav-top-height:56px;
+  --content-max:1440px;
+  --icon-size:16px;
+  --icon-size-sm:12px;
+  --icon-size-lg:24px;
+}

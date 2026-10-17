@@ -1,0 +1,190 @@
+/* Tokens semânticos. Todo par é declarado claro primeiro e sobrescrito em
+   [data-theme="dark"]. Componentes consomem SOMENTE estes nomes. */
+:root{
+  --surface:var(--af-white);
+  --surface-sunken:var(--af-gray-100);
+  --surface-raised:var(--af-white);
+  --surface-overlay:var(--af-white);
+  --surface-hover:var(--af-gray-200);
+  --surface-pressed:var(--af-green-muted);
+  --surface-selected:var(--af-green-50);
+  --surface-selected-hover:var(--af-green-100);
+  --surface-nav:var(--af-white);
+  --surface-input:var(--af-gray-100);
+  --surface-input-focus:var(--af-white);
+  --surface-disabled:var(--af-gray-100);
+  --surface-skeleton:var(--af-gray-200);
+  --surface-skeleton-shine:var(--af-gray-100);
+  --surface-inverse:var(--af-forest);
+  --scrim:rgba(10,36,28,0.54);
+
+  --text:var(--af-black);
+  --text-subtle:var(--af-gray-500);
+  --text-subtlest:var(--af-gray-400);
+  --text-disabled:var(--af-gray-300);
+  --text-inverse:var(--af-white);
+  --text-on-inverse:var(--af-white);
+  --text-link:var(--af-green-800);
+  --text-link-pressed:var(--af-green-900);
+  --text-link-inverse:var(--af-green-400);
+  --text-danger:var(--af-red-700);
+  --text-success:var(--af-green-700);
+  --text-warning:var(--af-amber-700);
+  --text-info:var(--af-blue-800);
+  --text-brand:var(--af-forest);
+
+  --border:var(--af-gray-200);
+  --border-subtle:var(--af-gray-100);
+  --border-strong:var(--af-gray-300);
+  --border-focus:var(--af-green-600);
+  --border-danger:var(--af-red-600);
+  --border-input:var(--af-gray-200);
+
+  --brand:var(--af-forest);
+  --brand-hover:var(--af-brand-green);
+  --brand-pressed:var(--af-green-900);
+  --brand-subtle:var(--af-green-50);
+
+  --neutral-subtle:transparent;
+  --neutral-subtle-hover:var(--af-gray-200);
+  --neutral-subtle-pressed:var(--af-green-muted);
+  --neutral-bold:var(--af-gray-500);
+
+  --danger:var(--af-red-600);
+  --danger-hover:var(--af-red-700);
+  --danger-pressed:var(--af-red-700);
+  --danger-subtle:var(--af-red-50);
+
+  --icon:var(--af-gray-500);
+  --icon-subtle:var(--af-gray-400);
+  --icon-disabled:var(--af-gray-300);
+  --icon-inverse:var(--af-white);
+  --icon-brand:var(--af-green-800);
+  /* Ícone de estado sobre --surface-inverse (toast) */
+  --icon-on-inverse-info:var(--af-blue-100);
+  --icon-on-inverse-success:var(--af-green-400);
+  --icon-on-inverse-warning:var(--af-amber-400);
+  --icon-on-inverse-danger:var(--af-red-400);
+
+  /* Controles neutros */
+  --avatar-default:var(--af-gray-500);
+  --presence-online:var(--af-green-600);
+  --presence-away:var(--af-gray-300);
+  --toggle-off:var(--af-gray-300);
+  --toggle-thumb:var(--af-white);
+
+  /* Barras de progresso */
+  --progress-brand:var(--af-forest);
+  --progress-success:var(--af-green-600);
+  --progress-warning:var(--af-amber-500);
+  --progress-neutral:var(--af-gray-300);
+
+  /* Lozenge — fundo lavado, texto escuro */
+  --lozenge-default-bg:var(--af-gray-200);    --lozenge-default-text:var(--af-black);
+  --lozenge-inprogress-bg:var(--af-blue-100); --lozenge-inprogress-text:var(--af-blue-800);
+  --lozenge-success-bg:var(--af-green-100);   --lozenge-success-text:var(--af-green-800);
+  --lozenge-warning-bg:var(--af-amber-100);   --lozenge-warning-text:var(--af-amber-800);
+  --lozenge-danger-bg:var(--af-red-100);      --lozenge-danger-text:var(--af-red-700);
+  --lozenge-review-bg:var(--af-green-muted);  --lozenge-review-text:var(--af-green-950);
+
+  /* Identidade de fornecedor/origem — seis slots fixos, todos da paleta AgroFuturo. */
+  --client-1:var(--af-green-800);  --client-1-text:var(--af-white);
+  --client-2:var(--af-amber-500);  --client-2-text:var(--af-black);
+  --client-3:var(--af-blue-600);   --client-3-text:var(--af-white);
+  --client-4:var(--af-green-muted);--client-4-text:var(--af-green-950);
+  --client-5:var(--af-amber-800);  --client-5-text:var(--af-white);
+  --client-6:var(--af-blue-800);   --client-6-text:var(--af-white);
+
+  /* Logo: tinta oficial no claro, branca no escuro (regra do grupo Logos). */
+  --logo-ink:var(--af-brand-green);
+}
+
+[data-theme="dark"]{
+  /* Superfícies em cinza Jira; o verde AgroFuturo entra como acento (ação, seleção, foco). */
+  --surface:var(--dk-10);
+  --surface-sunken:var(--dk-0);
+  --surface-raised:var(--dk-20);
+  --surface-overlay:var(--dk-25);
+  --surface-hover:var(--dk-30);
+  --surface-pressed:var(--dk-40);
+  --surface-selected:color-mix(in srgb,var(--af-green-muted) 14%,var(--dk-10));
+  --surface-selected-hover:color-mix(in srgb,var(--af-green-muted) 20%,var(--dk-10));
+  --surface-nav:var(--dk-10);
+  --surface-input:var(--dk-20);
+  --surface-input-focus:var(--dk-10);
+  --surface-disabled:var(--dk-25);
+  --surface-skeleton:var(--dk-30);
+  --surface-skeleton-shine:var(--dk-40);
+  --surface-inverse:var(--dk-100);
+  --scrim:rgba(22,26,29,0.72);
+
+  --text:var(--dk-100);
+  --text-subtle:var(--dk-90);
+  --text-subtlest:var(--dk-80);
+  --text-disabled:var(--dk-50);
+  --text-inverse:var(--dk-0);
+  --text-on-inverse:var(--dk-0);
+  --text-link:var(--af-green-300);
+  --text-link-pressed:var(--af-green-200);
+  --text-link-inverse:var(--af-green-800);
+  --text-danger:var(--af-red-400);
+  --text-success:var(--af-green-400);
+  --text-warning:var(--af-amber-400);
+  --text-info:var(--af-blue-100);
+  --text-brand:var(--af-green-400);
+
+  --border:var(--dk-30);
+  --border-subtle:var(--dk-25);
+  --border-strong:var(--dk-70);
+  --border-focus:var(--af-green-400);
+  --border-danger:var(--af-red-400);
+  --border-input:var(--dk-40);
+
+  --brand:var(--af-green-500);
+  --brand-hover:var(--af-green-400);
+  --brand-pressed:var(--af-green-300);
+  --brand-subtle:color-mix(in srgb,var(--af-green-muted) 14%,var(--dk-10));
+
+  --neutral-subtle:transparent;
+  --neutral-subtle-hover:var(--dk-30);
+  --neutral-subtle-pressed:var(--dk-40);
+  --neutral-bold:var(--dk-90);
+
+  --danger:var(--af-red-400);
+  --danger-hover:var(--af-red-200);
+  --danger-pressed:var(--af-red-100);
+  --danger-subtle:color-mix(in srgb,var(--af-red-600) 22%,var(--dk-10));
+
+  --icon:var(--dk-90);
+  --icon-subtle:var(--dk-80);
+  --icon-disabled:var(--dk-50);
+  --icon-inverse:var(--dk-0);
+  --icon-brand:var(--af-green-300);
+  --icon-on-inverse-info:var(--af-blue-800);
+  --icon-on-inverse-success:var(--af-green-800);
+  --icon-on-inverse-warning:var(--af-amber-800);
+  --icon-on-inverse-danger:var(--af-red-700);
+
+  --avatar-default:var(--dk-60);
+  --presence-online:var(--af-green-400);
+  --presence-away:var(--dk-60);
+  --toggle-off:var(--dk-60);
+  --toggle-thumb:var(--dk-110);
+
+  --progress-brand:var(--af-green-500);
+  --progress-success:var(--af-green-400);
+  --progress-warning:var(--af-amber-400);
+  --progress-neutral:var(--dk-60);
+
+  /* Lozenge no escuro: tinta AgroFuturo misturada ao cinza, texto claro do mesmo matiz. */
+  --lozenge-default-bg:var(--dk-40);  --lozenge-default-text:var(--dk-110);
+  --lozenge-inprogress-bg:color-mix(in srgb,var(--af-blue-600) 32%,var(--dk-20));   --lozenge-inprogress-text:var(--af-blue-100);
+  --lozenge-success-bg:color-mix(in srgb,var(--af-green-600) 24%,var(--dk-20));     --lozenge-success-text:var(--af-green-200);
+  --lozenge-warning-bg:color-mix(in srgb,var(--af-amber-600) 32%,var(--dk-20));     --lozenge-warning-text:var(--af-amber-200);
+  --lozenge-danger-bg:color-mix(in srgb,var(--af-red-600) 32%,var(--dk-20));        --lozenge-danger-text:var(--af-red-200);
+  --lozenge-review-bg:color-mix(in srgb,var(--af-green-muted) 26%,var(--dk-20));    --lozenge-review-text:var(--af-green-100);
+
+  --client-1:var(--af-green-600);  --client-1-text:var(--af-black);
+
+  --logo-ink:var(--af-white);
+}

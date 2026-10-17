@@ -1,0 +1,29 @@
+/* AgroFuturo — paleta bruta. Valores exatos do design system AgroFuturo (tokens.css enviado),
+   mais a cor principal #0A241C definida pelo cliente. Nenhuma outra cor existe neste sistema.
+   Nunca consuma estas variáveis num componente; use os aliases semânticos de colors.css. */
+:root{
+  /* Cor principal */
+  --af-forest:#0A241C;
+  /* Verde */
+  --af-green-50:#f0fdf4;--af-green-100:#dcfce7;--af-green-200:#bbf7d0;--af-green-300:#86efac;--af-green-400:#4ade80;
+  --af-green-500:#22c55e;--af-green-600:#16a34a;--af-green-700:#15803d;--af-green-800:#166534;--af-green-900:#14532d;
+  --af-green-950:#0f2318;--af-green-muted:#a7c4b0;
+  /* Tinta da marca — só no logo */
+  --af-brand-green:#003d22;
+  /* Âmbar — projeção, atenção */
+  --af-amber-50:#fffbeb;--af-amber-100:#fef3c7;--af-amber-200:#fde68a;--af-amber-300:#fcd34d;--af-amber-400:#fbbf24;
+  --af-amber-500:#f59e0b;--af-amber-600:#d97706;--af-amber-700:#b45309;--af-amber-800:#78350f;
+  /* Vermelho — erro */
+  --af-red-50:#fef2f2;--af-red-100:#fee2e2;--af-red-200:#fecaca;--af-red-400:#f87171;--af-red-500:#ef4444;
+  --af-red-600:#dc2626;--af-red-700:#b91c1c;
+  /* Azul — informação, em andamento */
+  --af-blue-100:#dbeafe;--af-blue-600:#2563eb;--af-blue-800:#1e40af;
+  /* Neutros (cinza esverdeado) */
+  --af-white:#ffffff;--af-black:#0f1a12;
+  --af-gray-100:#f6f7f5;--af-gray-200:#e2e8df;--af-gray-300:#85917d;--af-gray-400:#6b7568;--af-gray-500:#656f5d;
+
+  /* Neutros do tema escuro — o cinza-azulado convencional do Jira. Única exceção à paleta
+     AgroFuturo: só superfície, texto e borda do escuro; toda cor de ação e estado continua AgroFuturo. */
+  --dk-0:#161A1D;--dk-10:#1D2125;--dk-20:#22272B;--dk-25:#282E33;--dk-30:#2C333A;--dk-40:#38414A;
+  --dk-50:#454F59;--dk-60:#596773;--dk-70:#738496;--dk-80:#8C9BAB;--dk-90:#9FADBC;--dk-100:#B6C2CF;--dk-110:#C7D1DB;
+}

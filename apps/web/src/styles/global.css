@@ -1,0 +1,109 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+/*
+ * Design system Gestão Ambiental (Grama): fonte da verdade visual em docs/design-system (ADR-0014).
+ * Os tokens são importados de lá, sem cópia: cor, raio, espaço, tipo e movimento só existem nesses
+ * arquivos. Componentes usam os nomes semânticos (--surface, --text, --brand, --border,
+ * --lozenge-*, --space-*, --radius…), nunca as primitivas --af-* / --dk-* nem hexadecimal.
+ * base.css entra na camada base para não vencer as classes utilitárias.
+ */
+@import '../../../../docs/design-system/tokens/palette.css';
+@import '../../../../docs/design-system/tokens/colors.css';
+@import '../../../../docs/design-system/tokens/typography.css';
+@import '../../../../docs/design-system/tokens/spacing.css';
+@import '../../../../docs/design-system/tokens/shape.css';
+@import '../../../../docs/design-system/tokens/motion.css';
+@import '../../../../docs/design-system/tokens/base.css' layer(base);
+
+/* Tema escuro como nos tokens: [data-theme="dark"] no <html> (tema-inicial.js e ProvedorTema). */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+@theme inline {
+  /* Sem paleta, sombra, raio ou tamanho de texto do Tailwind: só o que o design system define. */
+  --color-*: initial;
+  --shadow-*: initial;
+  --radius-*: initial;
+  --text-*: initial;
+  --font-*: initial;
+
+  --font-sans: var(--font-family);
+  --font-codigo: var(--font-mono);
+
+  /* Escala de typography.css (xs 12 · sm/base 14 corpo · lg 16 seção · xl 20 tela · 2xl 24 contador) */
+  --text-xs: var(--font-size-075);
+  --text-xs--line-height: var(--line-height-075);
+  --text-sm: var(--font-size-100);
+  --text-sm--line-height: var(--line-height-100);
+  --text-base: var(--font-size-100);
+  --text-base--line-height: var(--line-height-100);
+  --text-lg: var(--font-size-200);
+  --text-lg--line-height: var(--line-height-200);
+  --text-xl: var(--font-size-300);
+  --text-xl--line-height: var(--line-height-300);
+  --text-2xl: var(--font-size-400);
+  --text-2xl--line-height: var(--line-height-400);
+
+  /* Raio de 3px em tudo (shape.css); círculo só em avatar (rounded-full). */
+  --radius-xs: var(--radius);
+  --radius-sm: var(--radius);
+  --radius-md: var(--radius);
+  --radius-lg: var(--radius);
+  --radius-xl: var(--radius);
+
+  /* Separação é linha; sombra só em overlay flutuante e card arrastado. */
+  --shadow-sobreposicao: var(--shadow-overlay);
+  --shadow-elevado: var(--shadow-raised);
+
+  /* Nomes que os primitivos do shadcn/ui usam, apontando para os semânticos do design system. */
+  --color-background: var(--surface-sunken);
+  --color-foreground: var(--text);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--text);
+  --color-popover: var(--surface-overlay);
+  --color-popover-foreground: var(--text);
+  --color-primary: var(--brand);
+  --color-primary-foreground: var(--text-inverse);
+  --color-secondary: var(--surface-hover);
+  --color-secondary-foreground: var(--text);
+  --color-muted: var(--surface-sunken);
+  --color-muted-foreground: var(--text-subtle);
+  --color-accent: var(--surface-hover);
+  --color-accent-foreground: var(--text);
+  --color-destructive: var(--danger);
+  --color-border: var(--border);
+  --color-input: var(--border-input);
+  --color-ring: var(--border-focus);
+}
+
+/* Papéis de tipo compostos de typography.css. */
+@utility titulo-tela {
+  font: var(--text-screen-title);
+}
+@utility titulo-secao {
+  font: var(--text-section-title);
+}
+@utility corpo {
+  font: var(--text-body);
+}
+@utility corpo-medio {
+  font: var(--text-body-medium);
+}
+@utility rotulo {
+  font: var(--text-label);
+  color: var(--text-subtle);
+}
+@utility rotulo-maiusculo {
+  font: var(--text-uppercase);
+  letter-spacing: var(--tracking-uppercase);
+  text-transform: uppercase;
+}
+@utility transicao-estado {
+  transition: var(--transition-state);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+}

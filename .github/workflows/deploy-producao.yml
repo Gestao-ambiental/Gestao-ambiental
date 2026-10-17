@@ -1,0 +1,62 @@
+name: Deploy produção
+
+# Disparo manual (Actions -> Deploy produção -> Run workflow), só a partir da main.
+# O clique é a aprovação: o plano Free não tem Environments com revisor em repositório privado.
+# Ordem garantida: staging em dia -> banco de produção -> front de produção (deploy hook da Vercel).
+on:
+  workflow_dispatch:
+
+# Mesmo grupo do workflow Migrations na main: nunca dois deploys mexendo em staging ao mesmo tempo.
+concurrency:
+  group: migrations-main
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  staging:
+    name: Garantir staging em dia
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID_STAGING }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec supabase link --project-ref "$SUPABASE_PROJECT_ID"
+      - name: Aplicar migrations pendentes em staging (sem efeito se já estiver em dia)
+        run: pnpm exec supabase db push
+
+  producao:
+    name: Migrations e front em produção
+    needs: staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD_PROD }}
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID_PROD }}
+      VERCEL_DEPLOY_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK_PROD }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Ligar ao projeto de produção
+        run: pnpm exec supabase link --project-ref "$SUPABASE_PROJECT_ID"
+      - name: Aplicar migrations em produção
+        run: pnpm exec supabase db push
+      - name: Publicar front de produção na Vercel
+        run: curl --fail --silent --show-error --request POST "$VERCEL_DEPLOY_HOOK" > /dev/null
