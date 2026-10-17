@@ -1,10 +1,39 @@
-// Regras puras do domínio (ADR-0007). As funções portadas do protótipo entram na tarefa 1.4.
+// Regras puras do domínio (ADR-0007): sem React, Supabase, rede, DOM ou relógio.
+// Portadas de dist/domain.js do protótipo Nexo (commit c06f5b3); cada função cita o nome original.
 
-/** Data civil no formato ISO `AAAA-MM-DD`, sem hora nem fuso (ADR-0009). */
-export type DataCivil = `${number}-${number}-${number}`
+export {
+  adicionarDias,
+  adicionarMeses,
+  dataCivil,
+  dataEHoraNoFuso,
+  diaDaSemana,
+  diferencaEmDias,
+  ehDataCivil,
+  formatarDataCivil,
+  hojeNoFuso,
+  nomeDoDiaDaSemana,
+  semanaDe,
+  ultimoDiaDoMes,
+} from './data-civil'
+export type { DataCivil, DataEHoraNoFuso } from './data-civil'
 
-/** Formata uma data civil para exibição `dd/mm/aaaa`, sem passar por `Date`. */
-export function formatarDataCivil(data: DataCivil): string {
-  const [ano, mes, dia] = data.split('-')
-  return `${dia ?? ''}/${mes ?? ''}/${ano ?? ''}`
-}
+export {
+  MAXIMO_OCORRENCIAS,
+  MESES_POR_PERIODICIDADE,
+  ocorrencias,
+  primeiraOcorrenciaSugerida,
+  sugerirDatasDeDependencia,
+} from './recorrencia'
+export type { Periodicidade } from './recorrencia'
+
+export {
+  ANTECEDENCIA_PREPARACAO_PADRAO_DIAS,
+  DIAS_LIMITE_PROTOCOLO_LAO,
+  antecedenciaPreparacao,
+  datasRenovacaoLao,
+  etapasRenovacaoLao,
+} from './renovacao'
+export type { DatasRenovacaoLao, EtapaRenovacaoLao } from './renovacao'
+
+export { diaUtilAnterior, ehDiaUtil, prazoDeOficio } from './dias-uteis'
+export type { PrazoDeOficio, UnidadePrazo } from './dias-uteis'
