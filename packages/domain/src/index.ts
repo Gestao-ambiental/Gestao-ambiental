@@ -54,3 +54,16 @@ export type {
 } from './acesso'
 
 export { formatarCnpj, mascararCnpj, normalizarCnpj, situacaoDoCnpj } from './cnpj'
+
+export {
+  ErroDePrazo,
+  RECORRENCIAS,
+  datasDoPrazo,
+  descreverRecorrencia,
+  ehLao,
+  proximaValidade,
+  situacaoDaLicenca,
+  situacaoMaisUrgente,
+  sugerirPrimeiraData,
+} from './prazo'
+export type { LicencaResumo, Prazo, Recorrencia, SituacaoDaLicenca, UnidadeCiclo } from './prazo'
