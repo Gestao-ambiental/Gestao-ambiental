@@ -529,6 +529,44 @@ isOneToOne: false
       referencedColumns: ["consultoria_id","id"]
     }
                   ]
+                },"plano_renovacao": {
+                  Row: {
+                    "antecedencia_dias": number,"consultoria_id": string,"criado_em": string,"dias_limite_protocolo": number,"id": string,"instrumento_id": string,"protocolado_em": string | null,"protocolo_numero": string | null,"protocolo_registrado_em": string | null,"protocolo_registrado_por": string | null,"protocolo_versao_id": string | null,"row_version": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "antecedencia_dias"?: number,"consultoria_id": string,"criado_em"?: string,"dias_limite_protocolo"?: number,"id"?: string,"instrumento_id": string,"protocolado_em"?: string | null,"protocolo_numero"?: string | null,"protocolo_registrado_em"?: string | null,"protocolo_registrado_por"?: string | null,"protocolo_versao_id"?: string | null,"row_version"?: number
+                  }
+                  Update: {
+                    "antecedencia_dias"?: number,"consultoria_id"?: string,"criado_em"?: string,"dias_limite_protocolo"?: number,"id"?: string,"instrumento_id"?: string,"protocolado_em"?: string | null,"protocolo_numero"?: string | null,"protocolo_registrado_em"?: string | null,"protocolo_registrado_por"?: string | null,"protocolo_versao_id"?: string | null,"row_version"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "plano_renovacao_consultoria_id_fkey"
+      columns: ["consultoria_id"]
+isOneToOne: false
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "plano_renovacao_instrumento_fk"
+      columns: ["consultoria_id","instrumento_id"]
+isOneToOne: false
+      referencedRelation: "instrumento"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "plano_renovacao_protocolo_versao_fk"
+      columns: ["consultoria_id","protocolo_versao_id"]
+isOneToOne: false
+      referencedRelation: "documento_versao"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "plano_renovacao_registrado_por_fk"
+      columns: ["consultoria_id","protocolo_registrado_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    }
+                  ]
                 },"tipo_instrumento": {
                   Row: {
                     "consultoria_id": string,"criado_em": string,"id": string,"nome": string,"sigla": string,"sigla_normalizada": string | null
@@ -647,6 +685,9 @@ isOneToOne: false
 "criar_unidade":
 { Args: { "p_empreendimento_id": string,"p_endereco"?: string,"p_id": string,"p_nome": string }; Returns: string
                            },
+"definir_antecedencia_renovacao":
+{ Args: { "p_antecedencia": number,"p_plano_id": string,"p_row_version": number }; Returns: number
+                           },
 "definir_responsavel":
 { Args: { "p_condicionante_id": string,"p_membro_id": string }; Returns: undefined
                            },
@@ -670,6 +711,11 @@ isOneToOne: false
 "enviar_evidencia":
 { Args: { "p_caminho": string,"p_data_execucao": string,"p_evidencia_id": string,"p_nome_original": string,"p_ocorrencia_id": string,"p_sha256": string,"p_versao_id": string }; Returns: number
                            },
+"listar_aguardando_conferencia":
+{ Args: { "p_consultoria_id": string,"p_deslocamento"?: number,"p_limite"?: number }; Returns: {
+              "codigo": string,"conferente_nome": string,"empreendimento_nome": string,"enviada_em": string,"evidencia_numero": number,"ocorrencia_id": string,"responsavel_nome": string,"titulo": string,"total": number
+            }[]
+                           },
 "listar_calendario":
 { Args: { "p_ate": string,"p_consultoria_id": string,"p_de": string,"p_responsavel_id"?: string,"p_sem_responsavel"?: boolean,"p_unidade_id"?: string }; Returns: {
               "codigo": string,"data": string,"dias": number,"empreendimento_nome": string,"id": string,"instrumento_id": string,"licenca": string,"responsavel_nome": string,"sem_responsavel": boolean,"tipo_evento": string,"titulo": string,"unidade_nome": string
@@ -685,6 +731,11 @@ isOneToOne: false
               "codigo": string,"dias": number,"empreendimento_id": string,"empreendimento_nome": string,"id": string,"instrumento_id": string,"licenca": string,"prazo": string,"responsavel_id": string,"responsavel_nome": string,"row_version": number,"situacao_ocorrencia": Database["public"]['Enums']["situacao_ocorrencia"],"tipo_linha": string,"titulo": string,"total": number,"unidade_nome": string
             }[]
                            },
+"listar_renovacoes":
+{ Args: { "p_consultoria_id": string,"p_deslocamento"?: number,"p_limite"?: number }; Returns: {
+              "antecedencia_dias": number,"dias_limite_protocolo": number,"empreendimento_id": string,"empreendimento_nome": string,"hoje": string,"id": string,"instrumento_id": string,"licenca": string,"orgao": string,"protocolado_em": string,"protocolo_numero": string,"total": number,"unidade_nome": string,"validade": string
+            }[]
+                           },
 "meus_vinculos":
 { Args: Record<PropertyKey, never>; Returns: {
               "consultoria_fuso": string,"consultoria_id": string,"consultoria_nome": string,"desligado_em": string,"membro_id": string,"papel": Database["public"]['Enums']["papel_membro"],"situacao": Database["public"]['Enums']["situacao_membro"]
@@ -695,6 +746,11 @@ isOneToOne: false
               "ciclo": number,"codigo": string,"concluida_em": string,"concluida_por_nome": string,"concluida_sem_evidencia": boolean,"conferencia_independente": boolean,"conferente_id": string,"conferente_nome": string,"consultoria_id": string,"data_referencia": string,"empreendimento_id": string,"empreendimento_nome": string,"hoje": string,"id": string,"instrumento_id": string,"licenca": string,"meta_interna": string,"prazo_ciclo_anterior": string,"prazo_oficial_atual": string,"prazo_oficial_original": string,"responsavel_id": string,"responsavel_nome": string,"row_version": number,"situacao": Database["public"]['Enums']["situacao_ocorrencia"],"texto_literal": string,"titulo": string,"unidade_nome": string
             }[]
                            },
+"obter_plano_renovacao":
+{ Args: { "p_instrumento_id": string }; Returns: {
+              "antecedencia_dias": number,"comprovante_caminho": string,"comprovante_nome": string,"comprovante_tamanho": number,"consultoria_id": string,"dias_limite_protocolo": number,"empreendimento_id": string,"empreendimento_nome": string,"hoje": string,"id": string,"instrumento_id": string,"licenca": string,"orgao": string,"protocolado_em": string,"protocolo_numero": string,"registrado_em": string,"registrado_por_nome": string,"row_version": number,"unidade_nome": string,"validade": string
+            }[]
+                           },
 "reabrir_ocorrencia":
 { Args: { "p_motivo": string,"p_ocorrencia_id": string,"p_row_version": number }; Returns: number
                            },
@@ -703,6 +759,9 @@ isOneToOne: false
                            },
 "registrar_pdf_instrumento":
 { Args: { "p_caminho": string,"p_instrumento_id": string,"p_nome_original": string,"p_sha256": string,"p_versao_id": string }; Returns: string
+                           },
+"registrar_protocolo":
+{ Args: { "p_caminho": string,"p_data": string,"p_nome_original": string,"p_numero": string,"p_plano_id": string,"p_row_version": number,"p_sha256": string,"p_versao_id": string }; Returns: number
                            },
 "revisar_condicionante":
 { Args: { "p_id": string,"p_revisao": Database["public"]['Enums']["revisao_condicionante"] }; Returns: undefined
