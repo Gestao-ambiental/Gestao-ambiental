@@ -316,7 +316,7 @@ as $$
   left join public.tipo_instrumento as t on t.consultoria_id = i.consultoria_id and t.id = i.tipo_id
   left join public.documento_versao as v on v.consultoria_id = p.consultoria_id and v.id = p.protocolo_versao_id
   left join public.membro as m on m.consultoria_id = p.consultoria_id and m.id = p.protocolo_registrado_por
-  where p.id = p_id
+  where p.instrumento_id = p_instrumento_id
 $$;
 
 -- ---------------------------------------------------------------------------
