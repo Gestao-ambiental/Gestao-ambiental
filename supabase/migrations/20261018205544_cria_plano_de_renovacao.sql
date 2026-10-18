@@ -276,8 +276,8 @@ as $$
   offset greatest(coalesce(p_deslocamento, 0), 0)
 $$;
 
--- Plano de uma LAO (REN-01, REN-02), com o comprovante do protocolo quando houver.
-create function public.obter_plano_renovacao(p_id uuid)
+-- Plano de uma LAO pelo id da licença (REN-01, REN-02), com o comprovante do protocolo quando houver.
+create function public.obter_plano_renovacao(p_instrumento_id uuid)
 returns table (
   id uuid,
   consultoria_id uuid,

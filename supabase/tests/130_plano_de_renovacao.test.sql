@@ -97,7 +97,7 @@ select is(
 
 select results_eq(
   $$select licenca, empreendimento_nome, unidade_nome, validade - hoje, row_version
-    from public.obter_plano_renovacao(current_setting('testes.p1')::uuid)$$,
+    from public.obter_plano_renovacao('10000000-0000-4000-8000-000000000001')$$,
   $$values ('LAO 4821/2023', 'Metalúrgica Rio Cubatão', 'Matriz', 400, 1)$$,
   'o plano traz a licença, o empreendimento e o vencimento'
 );
@@ -234,7 +234,7 @@ select is(
 select results_eq(
   $$select protocolo_numero, protocolado_em = hoje - 1, comprovante_nome, comprovante_tamanho, registrado_por_nome,
            validade - hoje
-    from public.obter_plano_renovacao(current_setting('testes.p2')::uuid)$$,
+    from public.obter_plano_renovacao('10000000-0000-4000-8000-000000000002')$$,
   $$values ('IMA 2026/558812', true, 'Comprovante protocolo IMA.pdf', 4096::bigint, 'Eduardo Karnopp', 130)$$,
   'o plano guarda número, data e comprovante; a validade original continua a mesma'
 );
@@ -316,7 +316,7 @@ select testes.autenticar_como('helena@verdesul.test');
 select results_eq(
   $$select (select count(*) from public.plano_renovacao),
            (select count(*) from public.listar_renovacoes('c0000000-0000-4000-8000-00000000000a')),
-           (select count(*) from public.obter_plano_renovacao(current_setting('testes.p1')::uuid)),
+           (select count(*) from public.obter_plano_renovacao('10000000-0000-4000-8000-000000000001')),
            (select count(*) from public.listar_aguardando_conferencia('c0000000-0000-4000-8000-00000000000a'))$$,
   $$values (0::bigint, 0::bigint, 0::bigint, 0::bigint)$$,
   'Helena (B) recebe zero planos, radar, plano e conferências de A'
