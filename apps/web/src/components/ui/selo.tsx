@@ -8,7 +8,15 @@ import { cn } from '@/lib/utils'
  * atencao = pendente de revisão / vence em breve · revisao = em conferência ·
  * sucesso = concluída / vigente · perigo = atrasada / vencida / devolvida.
  */
-export type TomSelo = 'padrao' | 'andamento' | 'revisao' | 'sucesso' | 'atencao' | 'perigo'
+export type TomSelo =
+  | 'padrao'
+  | 'andamento'
+  | 'revisao'
+  | 'sucesso'
+  | 'atencao'
+  | 'perigo'
+  | 'perigoMedio'
+  | 'perigoForte'
 
 const TONS: Record<TomSelo, string> = {
   padrao: 'bg-(--lozenge-default-bg) text-(--lozenge-default-text)',
@@ -17,6 +25,10 @@ const TONS: Record<TomSelo, string> = {
   sucesso: 'bg-(--lozenge-success-bg) text-(--lozenge-success-text)',
   atencao: 'bg-(--lozenge-warning-bg) text-(--lozenge-warning-text)',
   perigo: 'bg-(--lozenge-danger-bg) text-(--lozenge-danger-text)',
+  // Faixas de atraso (EQ-03): mais escuro quanto maior o atraso; o número de dias vai escrito.
+  perigoMedio:
+    'bg-(--lozenge-danger-bg) text-(--lozenge-danger-text) ring-1 ring-inset ring-(--border-danger)',
+  perigoForte: 'bg-(--danger) text-(--text-inverse)',
 }
 
 type Props = ComponentProps<'span'> & { tom?: TomSelo }

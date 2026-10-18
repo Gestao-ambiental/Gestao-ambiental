@@ -435,6 +435,9 @@ isOneToOne: false
 "atribuir_a_todos":
 { Args: { "p_instrumento_id": string,"p_membro_id": string }; Returns: undefined
                            },
+"atribuir_ocorrencia":
+{ Args: { "p_membro_id": string,"p_ocorrencia_id": string,"p_row_version": number }; Returns: number
+                           },
 "cancelar_convite":
 { Args: { "p_convite_id": string }; Returns: undefined
                            },
@@ -444,6 +447,11 @@ isOneToOne: false
 "consultar_convite":
 { Args: { "p_token": string }; Returns: {
               "consultoria_fuso": string,"consultoria_nome": string,"conta_com_senha": boolean,"convidado_por_nome": string,"email": string,"expira_em": string,"papel": Database["public"]['Enums']["papel_membro"],"situacao": string
+            }[]
+                           },
+"contar_prazos":
+{ Args: { "p_aba"?: string,"p_consultoria_id": string,"p_empreendimento_id"?: string,"p_responsavel_id"?: string,"p_sem_responsavel"?: boolean,"p_tipo_id"?: string }; Returns: {
+              "atrasadas": number,"hoje": number,"proximos_7": number,"sem_responsavel": number,"total": number
             }[]
                            },
 "criar_consultoria":
@@ -483,9 +491,19 @@ isOneToOne: false
               "id": string,"mesmo_cnpj": boolean,"mesmo_nome": boolean,"nome": string
             }[]
                            },
+"listar_calendario":
+{ Args: { "p_ate": string,"p_consultoria_id": string,"p_de": string,"p_responsavel_id"?: string,"p_sem_responsavel"?: boolean,"p_unidade_id"?: string }; Returns: {
+              "codigo": string,"data": string,"dias": number,"empreendimento_nome": string,"id": string,"instrumento_id": string,"licenca": string,"responsavel_nome": string,"sem_responsavel": boolean,"tipo_evento": string,"titulo": string,"unidade_nome": string
+            }[]
+                           },
 "listar_empreendimentos":
 { Args: { "p_busca"?: string,"p_consultoria_id": string,"p_deslocamento"?: number,"p_limite"?: number }; Returns: {
               "cliente_nome": string,"cnpj": string,"criado_em": string,"id": string,"licencas": Json,"nome": string,"total": number,"unidades": number
+            }[]
+                           },
+"listar_prazos":
+{ Args: { "p_aba"?: string,"p_consultoria_id": string,"p_deslocamento"?: number,"p_empreendimento_id"?: string,"p_faixa"?: string,"p_limite"?: number,"p_ordem"?: string,"p_responsavel_id"?: string,"p_sem_responsavel"?: boolean,"p_tipo_id"?: string }; Returns: {
+              "codigo": string,"dias": number,"empreendimento_id": string,"empreendimento_nome": string,"id": string,"instrumento_id": string,"licenca": string,"prazo": string,"responsavel_id": string,"responsavel_nome": string,"row_version": number,"situacao_ocorrencia": Database["public"]['Enums']["situacao_ocorrencia"],"tipo_linha": string,"titulo": string,"total": number,"unidade_nome": string
             }[]
                            },
 "meus_vinculos":

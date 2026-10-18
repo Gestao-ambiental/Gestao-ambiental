@@ -19,12 +19,9 @@ import { PassoIdentificacao } from './paginas/licenca/PassoIdentificacao'
 import { PassoPrazos } from './paginas/licenca/PassoPrazos'
 import { PassoResponsaveis } from './paginas/licenca/PassoResponsaveis'
 import { ErroDeRota } from './paginas/ErroDeRota'
-import {
-  PaginaAcompanhamentos,
-  PaginaCalendario,
-  PaginaNaoEncontrada,
-  PaginaVisaoEquipe,
-} from './paginas/paginas'
+import { PaginaCalendario } from './paginas/calendario/PaginaCalendario'
+import { PaginaAcompanhamentos, PaginaNaoEncontrada } from './paginas/paginas'
+import { PaginaVisaoEquipe } from './paginas/visao/PaginaVisaoEquipe'
 import { RequerSessao } from './sessao/RequerSessao'
 
 /**

@@ -7,30 +7,6 @@ import { Pagina } from './Pagina'
 
 // Páginas dos épicos 2 a 9, por enquanto só com o estado vazio.
 
-export function PaginaVisaoEquipe() {
-  return (
-    <Pagina titulo="Visão da equipe">
-      <EstadoVazio
-        icone="list"
-        titulo="Nenhum prazo para mostrar"
-        descricao="Quando a consultoria tiver licenças com condicionantes ativas, os prazos da equipe aparecem aqui."
-      />
-    </Pagina>
-  )
-}
-
-export function PaginaCalendario() {
-  return (
-    <Pagina titulo="Calendário">
-      <EstadoVazio
-        icone="calendar"
-        titulo="Calendário vazio"
-        descricao="As entregas e os limites de protocolo aparecem aqui, dia a dia."
-      />
-    </Pagina>
-  )
-}
-
 export function PaginaAcompanhamentos() {
   return (
     <Pagina titulo="Acompanhamentos">

@@ -7,3 +7,44 @@ import { formatarDataCivil, hojeNoFuso } from '@gestao-ambiental/domain'
 export function formatarInstanteComoData(instante: string, fuso: string): string {
   return formatarDataCivil(hojeNoFuso(new Date(instante), fuso))
 }
+
+const MESES_CURTOS = [
+  'jan',
+  'fev',
+  'mar',
+  'abr',
+  'mai',
+  'jun',
+  'jul',
+  'ago',
+  'set',
+  'out',
+  'nov',
+  'dez',
+]
+const MESES = [
+  'janeiro',
+  'fevereiro',
+  'março',
+  'abril',
+  'maio',
+  'junho',
+  'julho',
+  'agosto',
+  'setembro',
+  'outubro',
+  'novembro',
+  'dezembro',
+]
+
+/** "28 ago" no ano de `hoje`; "15 fev 2027" em outro ano (Protótipo 05). */
+export function formatarDataCurta(data: string, hoje: string): string {
+  const [ano, mes, dia] = data.split('-')
+  const texto = `${String(Number(dia))} ${MESES_CURTOS[Number(mes) - 1] ?? ''}`
+  return ano === hoje.slice(0, 4) ? texto : `${texto} ${ano ?? ''}`
+}
+
+/** "outubro de 2026". `mes` de 1 a 12. */
+export function nomeDoMes(ano: number, mes: number): string {
+  return `${MESES[mes - 1] ?? ''} de ${String(ano)}`
+}
