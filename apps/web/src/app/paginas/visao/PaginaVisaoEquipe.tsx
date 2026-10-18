@@ -64,12 +64,16 @@ function Demanda({ linha }: { linha: LinhaDePrazo }) {
     )
   }
   return (
-    <span className="block max-w-[360px] truncate" title={linha.titulo}>
+    <Link
+      to={`/ocorrencias/${linha.id}`}
+      className="block max-w-[360px] truncate text-(--text) hover:underline"
+      title={linha.titulo}
+    >
       {linha.codigo ? (
         <span className="font-mono text-xs text-(--text-subtle)">{linha.codigo} · </span>
       ) : null}
       {linha.titulo}
-    </span>
+    </Link>
   )
 }
 

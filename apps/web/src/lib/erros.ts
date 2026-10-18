@@ -53,6 +53,22 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   arquivo_grande_demais: 'O PDF passa de 25 MB.',
   versao_existente: 'Não foi possível anexar o PDF. Tente de novo.',
   versao_congelada: 'Esta condicionante já gerou entregas e não muda por aqui.',
+  // Execução da ocorrência (épico 6)
+  etapa_existente: 'Não foi possível salvar a etapa. Tente de novo.',
+  evidencia_existente: 'Não foi possível enviar a evidência. Tente de novo.',
+  aguardando_conferencia: 'Já há uma evidência aguardando conferência.',
+  data_execucao_obrigatoria: 'Informe a data real de execução',
+  data_execucao_futura: 'A data real de execução não pode estar no futuro',
+  arquivo_tipo_invalido: 'Envie PDF, PNG ou JPEG.',
+  ocorrencia_concluida: 'Ocorrência concluída. Para mudar algo, reabra com motivo.',
+  ocorrencia_nao_concluida: 'Esta ocorrência não está concluída.',
+  conferencia_independente:
+    'Quem enviou a evidência não pode conferi-la. Outra pessoa precisa conferir.',
+  evidencia_ja_conferida: 'Esta evidência já foi conferida. Recarregue para ver a decisão.',
+  decisao_obrigatoria: 'Escolha aprovar ou devolver.',
+  motivo_obrigatorio: 'Informe o motivo',
+  evidencia_nao_aprovada: 'A evidência precisa estar aprovada para concluir.',
+  justificativa_obrigatoria: 'Informe a justificativa',
 }
 
 const MENSAGENS_DO_AUTH: Record<string, string> = {

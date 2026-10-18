@@ -1,4 +1,4 @@
-import { formatarDataCivil, hojeNoFuso } from '@gestao-ambiental/domain'
+import { dataEHoraNoFuso, formatarDataCivil, hojeNoFuso } from '@gestao-ambiental/domain'
 
 /**
  * Instante do servidor (TIMESTAMPTZ em ISO) exibido como dd/mm/aaaa no fuso da consultoria,
@@ -47,4 +47,10 @@ export function formatarDataCurta(data: string, hoje: string): string {
 /** "outubro de 2026". `mes` de 1 a 12. */
 export function nomeDoMes(ano: number, mes: number): string {
   return `${MESES[mes - 1] ?? ''} de ${String(ano)}`
+}
+
+/** Instante do servidor como "dd/mm/aaaa às HH:MM" no fuso da consultoria. */
+export function formatarInstanteComHora(instante: string, fuso: string): string {
+  const { data, hora } = dataEHoraNoFuso(new Date(instante), fuso)
+  return `${formatarDataCivil(data)} às ${hora.slice(0, 5)}`
 }

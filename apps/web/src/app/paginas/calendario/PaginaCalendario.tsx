@@ -10,6 +10,7 @@ import {
 } from '@gestao-ambiental/domain'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
+import { Link } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Pagina } from '@/app/paginas/Pagina'
@@ -93,28 +94,42 @@ function descricaoDoEvento(evento: EventoDoCalendario): string {
     .join(' · ')
 }
 
-/** Prazo oficial, meta interna, validade e limite com marcas distintas (não só cor). */
+/**
+ * Prazo oficial, meta interna, validade e limite com marcas distintas (não só cor). Prazo e meta
+ * são de uma ocorrência e abrem o detalhe.
+ */
 function Evento({ evento, inteiro = false }: { evento: EventoDoCalendario; inteiro?: boolean }) {
-  return (
-    <span
-      title={descricaoDoEvento(evento)}
-      className={cn(
-        'flex min-w-0 items-center gap-(--space-050) rounded-(--radius) px-(--space-075) py-0.5 text-xs',
-        evento.tipo === 'prazo' && 'bg-(--lozenge-default-bg) text-(--text)',
-        evento.tipo === 'meta' &&
-          'border border-dashed border-(--border-strong) text-(--text-subtle)',
-        evento.tipo === 'limite_protocolo' &&
-          'bg-(--lozenge-warning-bg) text-(--lozenge-warning-text)',
-        evento.tipo === 'validade' &&
-          'bg-(--lozenge-inprogress-bg) text-(--lozenge-inprogress-text)',
-      )}
-    >
+  const classes = cn(
+    'flex min-w-0 items-center gap-(--space-050) rounded-(--radius) px-(--space-075) py-0.5 text-xs',
+    evento.tipo === 'prazo' && 'bg-(--lozenge-default-bg) text-(--text)',
+    evento.tipo === 'meta' && 'border border-dashed border-(--border-strong) text-(--text-subtle)',
+    evento.tipo === 'limite_protocolo' && 'bg-(--lozenge-warning-bg) text-(--lozenge-warning-text)',
+    evento.tipo === 'validade' && 'bg-(--lozenge-inprogress-bg) text-(--lozenge-inprogress-text)',
+  )
+  const conteudo = (
+    <>
       {evento.tipo === 'limite_protocolo' ? <Icone nome="clock" tamanho={12} /> : null}
       {evento.tipo === 'meta' ? <span className="font-semibold">Meta</span> : null}
       <span className={inteiro ? 'break-words' : 'truncate'}>{textoDoEvento(evento)}</span>
       {evento.semResponsavel ? (
         <span className="shrink-0 text-(--text-subtle)">sem resp.</span>
       ) : null}
+    </>
+  )
+  if (evento.tipo === 'prazo' || evento.tipo === 'meta') {
+    return (
+      <Link
+        to={`/ocorrencias/${evento.id}`}
+        title={descricaoDoEvento(evento)}
+        className={cn(classes, 'no-underline hover:underline')}
+      >
+        {conteudo}
+      </Link>
+    )
+  }
+  return (
+    <span title={descricaoDoEvento(evento)} className={classes}>
+      {conteudo}
     </span>
   )
 }

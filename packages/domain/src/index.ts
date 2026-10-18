@@ -70,3 +70,11 @@ export type { LicencaResumo, Prazo, Recorrencia, SituacaoDaLicenca, UnidadeCiclo
 
 export { faixaDeAtraso, rotuloDaSituacaoDoPrazo, situacaoDoPrazo } from './situacao-prazo'
 export type { FaixaDeAtraso, SituacaoDoPrazo, TipoLinhaDePrazo } from './situacao-prazo'
+
+export { dataForaDoCiclo, janelaDoCiclo, proximaAcao, situacaoExibida } from './ocorrencia'
+export type {
+  JanelaDoCiclo,
+  SituacaoDaEvidencia,
+  SituacaoExibida,
+  SituacaoGravadaDaOcorrencia,
+} from './ocorrencia'
