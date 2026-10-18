@@ -13,6 +13,11 @@ import { PaginaRedefinirSenha } from './paginas/acesso/PaginaRedefinirSenha'
 import { PaginaEmpreendimento } from './paginas/empreendimentos/PaginaEmpreendimento'
 import { PaginaEmpreendimentos } from './paginas/empreendimentos/PaginaEmpreendimentos'
 import { PaginaEquipe } from './paginas/equipe/PaginaEquipe'
+import { PassoCondicionantes } from './paginas/licenca/PassoCondicionantes'
+import { PassoDocumento, PassoDocumentoNovo } from './paginas/licenca/PassoDocumento'
+import { PassoIdentificacao } from './paginas/licenca/PassoIdentificacao'
+import { PassoPrazos } from './paginas/licenca/PassoPrazos'
+import { PassoResponsaveis } from './paginas/licenca/PassoResponsaveis'
 import { ErroDeRota } from './paginas/ErroDeRota'
 import {
   PaginaAcompanhamentos,
@@ -53,6 +58,13 @@ export const rotas: RouteObject[] = [
       {
         element: <RequerConsultoria />,
         children: [
+          // Cadastro de licença: tela cheia, fora do shell (Protótipos 10 a 14).
+          { path: 'licencas/nova', element: <PassoDocumentoNovo /> },
+          { path: 'licencas/:id/documento', element: <PassoDocumento /> },
+          { path: 'licencas/:id/identificacao', element: <PassoIdentificacao /> },
+          { path: 'licencas/:id/condicionantes', element: <PassoCondicionantes /> },
+          { path: 'licencas/:id/prazos', element: <PassoPrazos /> },
+          { path: 'licencas/:id/responsaveis', element: <PassoResponsaveis /> },
           {
             element: <AppShell />,
             children: [

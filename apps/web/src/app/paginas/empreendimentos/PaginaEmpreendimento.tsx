@@ -1,5 +1,5 @@
-import { formatarCnpj } from '@gestao-ambiental/domain'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { formatarCnpj, hojeNoFuso } from '@gestao-ambiental/domain'
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router'
 
@@ -9,14 +9,13 @@ import { Botao } from '@/components/ui/botao'
 import { Icone } from '@/components/ui/icone'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { listarUnidades, obterEmpreendimento, type Empreendimento } from '@/lib/api/empreendimentos'
+import { TAMANHO_PAGINA_LICENCAS, listarLicencasDoEmpreendimento } from '@/lib/api/licencas'
 import { cn } from '@/lib/utils'
 
 import { DialogoEmpreendimento } from './DialogoEmpreendimento'
 import { DialogoUnidades } from './DialogoUnidades'
 import { SiglaEmpreendimento } from './SiglaEmpreendimento'
-
-const classeCabecalho =
-  'h-10 border-b px-(--space-100) text-left rotulo whitespace-nowrap first:pl-(--space-150)'
+import { TabelaLicencas } from './TabelaLicencas'
 
 function Migalhas({ nome }: { nome?: string }) {
   return (
@@ -47,9 +46,12 @@ function Migalhas({ nome }: { nome?: string }) {
 function Cabecalho({
   empreendimento,
   aoEditar,
+  cadastrarPara,
 }: {
   empreendimento: Empreendimento
   aoEditar: () => void
+  /** Só a Gestão cadastra licença; sem destino, o botão não aparece. */
+  cadastrarPara: string | null
 }) {
   const cnpj = formatarCnpj(empreendimento.cnpj)
   return (
@@ -76,14 +78,14 @@ function Cabecalho({
         <Botao iconeAntes="settings" onClick={aoEditar}>
           Editar
         </Botao>
-        <Botao
-          aparencia="primario"
-          iconeAntes="plus"
-          disabled
-          title="O cadastro de licença chega no próximo épico"
-        >
-          Cadastrar licença
-        </Botao>
+        {cadastrarPara ? (
+          <Botao aparencia="primario" asChild>
+            <Link to={cadastrarPara}>
+              <Icone nome="plus" />
+              Cadastrar licença
+            </Link>
+          </Botao>
+        ) : null}
       </div>
     </div>
   )
@@ -91,8 +93,7 @@ function Cabecalho({
 
 /**
  * /empreendimentos/:id (Protótipo 09, onda 1 "só licenças"; EMP-02). Cabeçalho, filtro rápido por
- * unidade e a lista de licenças. A lista é ligada ao instrumento no épico 4; até lá, o estado
- * vazio é a verdade: não há licença cadastrada.
+ * unidade, busca e a lista de licenças com validade e situação calculada.
  */
 export function PaginaEmpreendimento() {
   const { id = '' } = useParams()
@@ -112,6 +113,19 @@ export function PaginaEmpreendimento() {
   const unidades = useQuery({
     queryKey: ['unidades', id],
     queryFn: () => listarUnidades(id),
+    enabled: Boolean(empreendimento.data),
+  })
+  const [ordemDecrescente, setOrdemDecrescente] = useState(true)
+  const licencas = useInfiniteQuery({
+    queryKey: ['licencas', id],
+    queryFn: ({ pageParam }) => listarLicencasDoEmpreendimento(id, pageParam),
+    initialPageParam: 0,
+    getNextPageParam: (ultima, todas) => {
+      const carregados = todas.reduce((soma, p) => soma + p.itens.length, 0)
+      return ultima.itens.length === TAMANHO_PAGINA_LICENCAS && carregados < ultima.total
+        ? todas.length
+        : undefined
+    },
     enabled: Boolean(empreendimento.data),
   })
 
@@ -161,11 +175,36 @@ export function PaginaEmpreendimento() {
 
   const dados = empreendimento.data
   const listaUnidades = unidades.data ?? []
-  // Licenças por unidade chegam com o instrumento (épico 4); hoje todas têm zero.
+  const todasLicencas = licencas.data?.pages.flatMap((p) => p.itens) ?? []
+  const termo = busca.trim().toLowerCase()
+  const daBusca = todasLicencas.filter(
+    (l) =>
+      !termo ||
+      [l.numero, l.orgao, l.sigla, l.tipoNome, l.unidadeNome].some((v) =>
+        v?.toLowerCase().includes(termo),
+      ),
+  )
+  const filtradas = daBusca
+    .filter((l) => !unidadeFiltro || l.unidadeId === unidadeFiltro)
+    .sort(
+      (a, b) =>
+        (a.criadoEm < b.criadoEm ? -1 : a.criadoEm > b.criadoEm ? 1 : 0) *
+        (ordemDecrescente ? -1 : 1),
+    )
   const chips = [
-    { id: null, rotulo: 'Todos', contagem: 0 },
-    ...listaUnidades.map((u) => ({ id: u.id, rotulo: u.nome, contagem: 0 })),
+    { id: null, rotulo: 'Todos', contagem: daBusca.length },
+    ...listaUnidades.map((u) => ({
+      id: u.id,
+      rotulo: u.nome,
+      contagem: daBusca.filter((l) => l.unidadeId === u.id).length,
+    })),
   ]
+  const ehGestao = atual.papel === 'gestao'
+  const cadastrarPara = ehGestao
+    ? `/licencas/nova?empreendimento=${id}${unidadeFiltro ? `&unidade=${unidadeFiltro}` : ''}`
+    : null
+  const hoje = hojeNoFuso(new Date(), atual.fuso)
+  const filtrando = Boolean(termo || unidadeFiltro)
 
   return (
     <div className="flex flex-col gap-(--space-200)">
@@ -177,6 +216,7 @@ export function PaginaEmpreendimento() {
       ) : null}
       <Cabecalho
         empreendimento={dados}
+        cadastrarPara={cadastrarPara}
         aoEditar={() => {
           setEditarAberto(true)
         }}
@@ -253,44 +293,49 @@ export function PaginaEmpreendimento() {
         aria-label="Licenças"
         className="flex flex-col overflow-hidden rounded-(--radius) border bg-(--surface)"
       >
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse corpo">
-            <thead>
-              <tr>
-                <th scope="col" className={classeCabecalho}>
-                  Item
-                </th>
-                <th scope="col" className={classeCabecalho}>
-                  Tipo
-                </th>
-                <th scope="col" className={classeCabecalho}>
-                  Órgão
-                </th>
-                <th scope="col" className={classeCabecalho}>
-                  Unidade
-                </th>
-                <th scope="col" className={classeCabecalho}>
-                  Data
-                </th>
-                <th scope="col" className={classeCabecalho}>
-                  Situação
-                </th>
-                <th scope="col" className={classeCabecalho}>
-                  Criado em
-                </th>
-              </tr>
-            </thead>
-          </table>
+        {licencas.isPending ? (
+          <Carregando rotulo="Carregando licenças" linhas={3} className="border-0" />
+        ) : licencas.isError ? (
+          <EstadoErro
+            titulo="Não foi possível carregar as licenças."
+            aoTentarDeNovo={() => void licencas.refetch()}
+            className="m-(--space-150)"
+          />
+        ) : (
+          <TabelaLicencas
+            itens={filtradas}
+            totalSemFiltro={todasLicencas.length}
+            hoje={hoje}
+            fuso={atual.fuso}
+            podeEditar={ehGestao}
+            ordemDecrescente={ordemDecrescente}
+            aoInverterOrdem={() => {
+              setOrdemDecrescente((d) => !d)
+            }}
+            aoLimparFiltros={() => {
+              setBusca('')
+              setUnidadeFiltro(null)
+            }}
+          />
+        )}
+        <div className="flex items-center gap-(--space-100) border-t px-(--space-150) py-(--space-100)">
+          <p className="flex-1 text-xs text-(--text-subtle)">
+            {todasLicencas.length === 0
+              ? 'Nenhum item'
+              : filtrando
+                ? `${String(filtradas.length)} de ${String(todasLicencas.length)} itens`
+                : `${String(todasLicencas.length)} ${todasLicencas.length === 1 ? 'item' : 'itens'} · ${ordemDecrescente ? 'do mais recente para o mais antigo' : 'do mais antigo para o mais recente'}`}
+          </p>
+          {licencas.hasNextPage ? (
+            <Botao
+              tamanho="compacto"
+              disabled={licencas.isFetchingNextPage}
+              onClick={() => void licencas.fetchNextPage()}
+            >
+              Mostrar mais licenças
+            </Botao>
+          ) : null}
         </div>
-        <EstadoVazio
-          icone="file-text"
-          titulo="Nenhuma licença cadastrada"
-          descricao="As licenças deste empreendimento aparecem aqui, com validade e situação."
-          className="border-0"
-        />
-        <p className="border-t px-(--space-150) py-(--space-100) text-xs text-(--text-subtle)">
-          Nenhum item
-        </p>
       </section>
 
       <DialogoEmpreendimento
