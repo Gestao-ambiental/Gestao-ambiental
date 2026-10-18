@@ -20,6 +20,7 @@ import { PassoPrazos } from './paginas/licenca/PassoPrazos'
 import { PassoResponsaveis } from './paginas/licenca/PassoResponsaveis'
 import { ErroDeRota } from './paginas/ErroDeRota'
 import { PaginaCalendario } from './paginas/calendario/PaginaCalendario'
+import { PaginaOcorrencia } from './paginas/ocorrencia/PaginaOcorrencia'
 import { PaginaAcompanhamentos, PaginaNaoEncontrada } from './paginas/paginas'
 import { PaginaVisaoEquipe } from './paginas/visao/PaginaVisaoEquipe'
 import { RequerSessao } from './sessao/RequerSessao'
@@ -69,6 +70,7 @@ export const rotas: RouteObject[] = [
               { path: 'calendario', element: <PaginaCalendario /> },
               { path: 'empreendimentos', element: <PaginaEmpreendimentos /> },
               { path: 'empreendimentos/:id', element: <PaginaEmpreendimento /> },
+              { path: 'ocorrencias/:id', element: <PaginaOcorrencia /> },
               { path: 'acompanhamentos', element: <PaginaAcompanhamentos /> },
               { path: 'configuracoes/equipe', element: <PaginaEquipe /> },
               { path: '*', element: <PaginaNaoEncontrada /> },
