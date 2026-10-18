@@ -96,7 +96,7 @@ function descricaoDoEvento(evento: EventoDoCalendario): string {
 
 /**
  * Prazo oficial, meta interna, validade e limite com marcas distintas (não só cor). Prazo e meta
- * são de uma ocorrência e abrem o detalhe.
+ * são de uma ocorrência e abrem o detalhe; o limite de protocolo abre o plano de renovação.
  */
 function Evento({ evento, inteiro = false }: { evento: EventoDoCalendario; inteiro?: boolean }) {
   const classes = cn(
@@ -116,10 +116,14 @@ function Evento({ evento, inteiro = false }: { evento: EventoDoCalendario; intei
       ) : null}
     </>
   )
-  if (evento.tipo === 'prazo' || evento.tipo === 'meta') {
+  if (evento.tipo !== 'validade') {
     return (
       <Link
-        to={`/ocorrencias/${evento.id}`}
+        to={
+          evento.tipo === 'limite_protocolo'
+            ? `/renovacoes/${evento.id}`
+            : `/ocorrencias/${evento.id}`
+        }
         title={descricaoDoEvento(evento)}
         className={cn(classes, 'no-underline hover:underline')}
       >

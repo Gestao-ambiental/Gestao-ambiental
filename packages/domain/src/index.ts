@@ -28,12 +28,15 @@ export type { Periodicidade } from './recorrencia'
 
 export {
   ANTECEDENCIA_PREPARACAO_PADRAO_DIAS,
+  DIAS_AVISO_PROTOCOLO,
   DIAS_LIMITE_PROTOCOLO_LAO,
   antecedenciaPreparacao,
   datasRenovacaoLao,
   etapasRenovacaoLao,
+  rotuloDaSituacaoDaRenovacao,
+  situacaoDaRenovacao,
 } from './renovacao'
-export type { DatasRenovacaoLao, EtapaRenovacaoLao } from './renovacao'
+export type { DatasRenovacaoLao, EtapaRenovacaoLao, SituacaoDaRenovacao } from './renovacao'
 
 export { diaUtilAnterior, ehDiaUtil, prazoDeOficio } from './dias-uteis'
 export type { PrazoDeOficio, UnidadePrazo } from './dias-uteis'

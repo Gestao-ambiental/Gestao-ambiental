@@ -5,19 +5,7 @@ import { Botao } from '@/components/ui/botao'
 
 import { Pagina } from './Pagina'
 
-// Páginas dos épicos 2 a 9, por enquanto só com o estado vazio.
-
-export function PaginaAcompanhamentos() {
-  return (
-    <Pagina titulo="Acompanhamentos">
-      <EstadoVazio
-        icone="inbox"
-        titulo="Nada para acompanhar"
-        descricao="Conferências pendentes e renovações em andamento aparecem aqui."
-      />
-    </Pagina>
-  )
-}
+// Páginas sem conteúdo próprio.
 
 export function PaginaNaoEncontrada() {
   return (

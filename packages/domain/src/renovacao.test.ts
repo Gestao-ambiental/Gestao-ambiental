@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
-import { adicionarDias, diferencaEmDias } from './data-civil'
+import { adicionarDias, diferencaEmDias, type DataCivil } from './data-civil'
 import {
   ANTECEDENCIA_PREPARACAO_PADRAO_DIAS,
   DIAS_LIMITE_PROTOCOLO_LAO,
   antecedenciaPreparacao,
   datasRenovacaoLao,
   etapasRenovacaoLao,
+  rotuloDaSituacaoDaRenovacao,
+  situacaoDaRenovacao,
 } from './renovacao'
 
 describe('portados de tests/domain.test.mjs do protótipo', () => {
@@ -92,5 +94,43 @@ describe('regras de renovação da LAO', () => {
     expect(antecedenciaPreparacao('abc')).toBe(30)
     expect(antecedenciaPreparacao('45')).toBe(45)
     expect(antecedenciaPreparacao(0)).toBe(0)
+  })
+})
+
+describe('situação da renovação no radar (EQ-05)', () => {
+  // Vencimento 08/03/2027: limite 08/11/2026; com 30 dias, preparação desde 09/10/2026.
+  const rotulo = (
+    hoje: DataCivil,
+    extra: { antecedencia?: number; protocoladoEm?: DataCivil } = {},
+  ) =>
+    rotuloDaSituacaoDaRenovacao(
+      situacaoDaRenovacao({
+        vencimento: '2027-03-08',
+        antecedencia: extra.antecedencia ?? 30,
+        protocoladoEm: extra.protocoladoEm ?? null,
+        hoje,
+      }),
+    )
+
+  it('antes da preparação, em preparação e perto do limite (7 dias)', () => {
+    expect(rotulo('2026-10-08')).toBe('Preparação a partir de 09/10')
+    expect(rotulo('2026-10-09')).toBe('Em preparação · 09/10')
+    expect(rotulo('2026-10-31')).toBe('Em preparação · 09/10')
+    expect(rotulo('2026-11-01')).toBe('Protocolo em 7 dias')
+    expect(rotulo('2026-11-07')).toBe('Protocolo amanhã')
+    expect(rotulo('2026-11-08')).toBe('Protocolo hoje')
+  })
+
+  it('limite passado, licença vencida e protocolada', () => {
+    expect(rotulo('2026-11-09')).toBe('Protocolo atrasado 1 dia')
+    expect(rotulo('2027-03-10')).toBe('Vencida há 2 dias')
+    expect(rotulo('2027-03-10', { protocoladoEm: '2026-10-30' })).toBe('Protocolada')
+    expect(rotulo('2026-12-01', { protocoladoEm: '2026-11-20' })).toBe('Protocolada após o limite')
+  })
+
+  it('a antecedência move só o início; o snapshot dos dias muda o limite', () => {
+    expect(rotulo('2026-09-15', { antecedencia: 60 })).toBe('Em preparação · 09/09')
+    expect(rotulo('2026-11-09', { antecedencia: 60 })).toBe('Protocolo atrasado 1 dia')
+    expect(datasRenovacaoLao('2027-03-08', 30, 150).limiteProtocolo).toBe('2026-10-09')
   })
 })

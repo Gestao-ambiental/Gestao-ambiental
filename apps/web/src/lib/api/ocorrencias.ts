@@ -219,7 +219,7 @@ function primeiro<T>(valor: T[] | T | null): T | null {
 }
 
 export const TIPOS_DE_EVIDENCIA = ['application/pdf', 'image/png', 'image/jpeg'] as const
-const EXTENSOES: Record<(typeof TIPOS_DE_EVIDENCIA)[number], string> = {
+export const EXTENSOES: Record<(typeof TIPOS_DE_EVIDENCIA)[number], string> = {
   'application/pdf': 'pdf',
   'image/png': 'png',
   'image/jpeg': 'jpg',
@@ -237,7 +237,7 @@ export async function conferirArquivoDeEvidencia(
   return arquivo.size > 25 * 1024 * 1024 ? 'grande_demais' : null
 }
 
-async function sha256(arquivo: File): Promise<string> {
+export async function sha256(arquivo: File): Promise<string> {
   const resumo = await crypto.subtle.digest('SHA-256', await arquivo.arrayBuffer())
   return Array.from(new Uint8Array(resumo), (b) => b.toString(16).padStart(2, '0')).join('')
 }

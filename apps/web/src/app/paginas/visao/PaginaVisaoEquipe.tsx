@@ -55,6 +55,14 @@ const COLUNAS: { chave: Ordem; rotulo: string }[] = [
 ]
 
 function Demanda({ linha }: { linha: LinhaDePrazo }) {
+  if (linha.tipo === 'limite_protocolo') {
+    return (
+      <Link to={`/renovacoes/${linha.instrumentoId}`} className="text-(--text) hover:underline">
+        <span className="corpo-medio">{linha.titulo}</span>
+        {linha.licenca ? <span className="text-(--text-subtle)"> · {linha.licenca}</span> : null}
+      </Link>
+    )
+  }
   if (linha.tipo !== 'ocorrencia') {
     return (
       <span>
