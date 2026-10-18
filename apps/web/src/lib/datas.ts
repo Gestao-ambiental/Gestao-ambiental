@@ -54,3 +54,17 @@ export function formatarInstanteComHora(instante: string, fuso: string): string 
   const { data, hora } = dataEHoraNoFuso(new Date(instante), fuso)
   return `${formatarDataCivil(data)} às ${hora.slice(0, 5)}`
 }
+
+/**
+ * Tempo decorrido desde um instante, para "Enviado há" (Protótipo 17): "agora", "20 min",
+ * "3 h", "1 dia", "4 dias". Duração entre instantes, independente de fuso.
+ */
+export function tempoDesde(instante: string, agora: Date): string {
+  const minutos = Math.max(0, Math.floor((agora.getTime() - new Date(instante).getTime()) / 60000))
+  if (minutos < 1) return 'agora'
+  if (minutos < 60) return `${String(minutos)} min`
+  const horas = Math.floor(minutos / 60)
+  if (horas < 24) return `${String(horas)} h`
+  const dias = Math.floor(horas / 24)
+  return dias === 1 ? '1 dia' : `${String(dias)} dias`
+}

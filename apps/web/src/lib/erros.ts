@@ -22,7 +22,7 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   membro_desligado: 'Esta pessoa foi desligada.',
   // Cadastro de licença (épico 4)
   conflito_de_versao:
-    'Este rascunho foi salvo em outro lugar depois que você abriu. Recarregue para ver a versão atual.',
+    'Isto foi alterado em outro lugar depois que você abriu. Recarregue para ver a versão atual.',
   instrumento_ativo: 'Esta licença já está ativa: o cadastro não muda mais por aqui.',
   instrumento_existente: 'Não foi possível criar o rascunho. Tente de novo.',
   unidade_invalida: 'A unidade precisa ser deste empreendimento.',
@@ -69,6 +69,13 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   motivo_obrigatorio: 'Informe o motivo',
   evidencia_nao_aprovada: 'A evidência precisa estar aprovada para concluir.',
   justificativa_obrigatoria: 'Informe a justificativa',
+  // Renovação de LAO (épico 7)
+  antecedencia_invalida: 'Use um número inteiro de 0 ou mais.',
+  plano_protocolado: 'A renovação já foi protocolada: o plano não muda mais.',
+  numero_obrigatorio: 'Informe o número do protocolo',
+  data_protocolo_obrigatoria: 'Informe a data do protocolo',
+  data_protocolo_futura: 'A data do protocolo não pode estar no futuro',
+  comprovante_obrigatorio: 'Anexe o comprovante',
 }
 
 const MENSAGENS_DO_AUTH: Record<string, string> = {

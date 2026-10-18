@@ -19,9 +19,11 @@ import { PassoIdentificacao } from './paginas/licenca/PassoIdentificacao'
 import { PassoPrazos } from './paginas/licenca/PassoPrazos'
 import { PassoResponsaveis } from './paginas/licenca/PassoResponsaveis'
 import { ErroDeRota } from './paginas/ErroDeRota'
+import { PaginaAcompanhamentos } from './paginas/acompanhamentos/PaginaAcompanhamentos'
+import { PaginaPlanoRenovacao } from './paginas/acompanhamentos/PaginaPlanoRenovacao'
 import { PaginaCalendario } from './paginas/calendario/PaginaCalendario'
 import { PaginaOcorrencia } from './paginas/ocorrencia/PaginaOcorrencia'
-import { PaginaAcompanhamentos, PaginaNaoEncontrada } from './paginas/paginas'
+import { PaginaNaoEncontrada } from './paginas/paginas'
 import { PaginaVisaoEquipe } from './paginas/visao/PaginaVisaoEquipe'
 import { RequerSessao } from './sessao/RequerSessao'
 
@@ -72,6 +74,7 @@ export const rotas: RouteObject[] = [
               { path: 'empreendimentos/:id', element: <PaginaEmpreendimento /> },
               { path: 'ocorrencias/:id', element: <PaginaOcorrencia /> },
               { path: 'acompanhamentos', element: <PaginaAcompanhamentos /> },
+              { path: 'renovacoes/:instrumentoId', element: <PaginaPlanoRenovacao /> },
               { path: 'configuracoes/equipe', element: <PaginaEquipe /> },
               { path: '*', element: <PaginaNaoEncontrada /> },
             ],
