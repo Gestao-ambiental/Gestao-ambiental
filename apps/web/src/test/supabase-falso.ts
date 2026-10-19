@@ -16,6 +16,8 @@ export interface Cenario {
   sessao?: Session | null
   /** Resposta de cada RPC, por nome; função recebe os argumentos. */
   rpc?: Record<string, Resposta | ((args: Record<string, unknown>) => Resposta)>
+  /** Resposta de cada Edge Function, por nome; função recebe o corpo. */
+  funcoes?: Record<string, Resposta | ((corpo: Record<string, unknown>) => Resposta)>
   /** Linhas devolvidas por from(tabela).select()… (sem filtrar: o teste monta o que quer ver). */
   tabelas?: Record<string, unknown[]>
   /** Resposta de signInWithPassword; padrão: entra com `sessaoAoEntrar`. */
@@ -107,7 +109,15 @@ function criar() {
   }
   const storage = { from: vi.fn(() => armazenamento) }
 
-  const cliente = { auth, rpc, from: vi.fn(consulta), storage }
+  const functions = {
+    invoke: vi.fn((nome: string, opcoes: { body?: Record<string, unknown> } = {}) => {
+      const definida = cenario.funcoes?.[nome]
+      const resposta = typeof definida === 'function' ? definida(opcoes.body ?? {}) : definida
+      return Promise.resolve({ data: resposta?.data ?? null, error: resposta?.error ?? null })
+    }),
+  }
+
+  const cliente = { auth, rpc, from: vi.fn(consulta), storage, functions }
 
   return {
     cliente,
@@ -115,7 +125,12 @@ function criar() {
       cenario = novo
       sessao = novo.sessao ?? null
       ouvintes.clear()
-      for (const funcao of [...Object.values(auth), ...Object.values(armazenamento), rpc]) {
+      for (const funcao of [
+        ...Object.values(auth),
+        ...Object.values(armazenamento),
+        rpc,
+        functions.invoke,
+      ]) {
         funcao.mockClear()
       }
     },

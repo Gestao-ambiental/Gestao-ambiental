@@ -35,6 +35,8 @@ jobs:
       - run: pnpm exec supabase link --project-ref "$SUPABASE_PROJECT_ID"
       - name: Aplicar migrations pendentes em staging (sem efeito se já estiver em dia)
         run: pnpm exec supabase db push
+      - name: Publicar Edge Functions em staging
+        run: pnpm exec supabase functions deploy extrair-licenca --project-ref "$SUPABASE_PROJECT_ID" --use-api
 
   producao:
     name: Migrations e front em produção
@@ -58,5 +60,7 @@ jobs:
         run: pnpm exec supabase link --project-ref "$SUPABASE_PROJECT_ID"
       - name: Aplicar migrations em produção
         run: pnpm exec supabase db push
+      - name: Publicar Edge Functions em produção
+        run: pnpm exec supabase functions deploy extrair-licenca --project-ref "$SUPABASE_PROJECT_ID" --use-api
       - name: Publicar front de produção na Vercel
         run: curl --fail --silent --show-error --request POST "$VERCEL_DEPLOY_HOOK" > /dev/null

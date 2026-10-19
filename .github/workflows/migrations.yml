@@ -1,11 +1,12 @@
 name: Migrations
 
-# Staging recebe as migrations a cada push na main. Produção é manual: deploy-producao.yml.
+# Staging recebe as migrations e as Edge Functions a cada push na main. Produção é manual: deploy-producao.yml.
 # A Vercel não publica a main sozinha (vercel.json); o front de produção só sai depois da migration.
 on:
   pull_request:
     paths:
       - 'supabase/migrations/**'
+      - 'supabase/functions/**'
       - '.github/workflows/migrations.yml'
   push:
     branches: [main]
@@ -76,3 +77,6 @@ jobs:
         run: pnpm exec supabase link --project-ref "$SUPABASE_PROJECT_ID"
       - name: Aplicar migrations
         run: pnpm exec supabase db push
+      # O segredo OPENROUTER_API_KEY é cadastrado uma vez no projeto (docs/setup.md), nunca aqui.
+      - name: Publicar Edge Functions
+        run: pnpm exec supabase functions deploy extrair-licenca --project-ref "$SUPABASE_PROJECT_ID" --use-api
