@@ -7,6 +7,9 @@ import {
   antecedenciaPreparacao,
   datasRenovacaoLao,
   etapasRenovacaoLao,
+  INTERVALOS_ACOMPANHAMENTO,
+  proximoAcompanhamento,
+  rotuloDoIntervalo,
   rotuloDaSituacaoDaRenovacao,
   situacaoDaRenovacao,
 } from './renovacao'
@@ -122,15 +125,51 @@ describe('situação da renovação no radar (EQ-05)', () => {
   })
 
   it('limite passado, licença vencida e protocolada', () => {
-    expect(rotulo('2026-11-09')).toBe('Protocolo atrasado 1 dia')
+    expect(rotulo('2026-11-09')).toBe('Prazo de protocolo vencido há 1 dia')
     expect(rotulo('2027-03-10')).toBe('Vencida há 2 dias')
-    expect(rotulo('2027-03-10', { protocoladoEm: '2026-10-30' })).toBe('Protocolada')
-    expect(rotulo('2026-12-01', { protocoladoEm: '2026-11-20' })).toBe('Protocolada após o limite')
+    expect(rotulo('2027-03-10', { protocoladoEm: '2026-10-30' })).toBe('Sem retorno do órgão')
+    expect(rotulo('2026-12-01', { protocoladoEm: '2026-11-20' })).toBe(
+      'Sem retorno do órgão · protocolo após o limite',
+    )
   })
 
   it('a antecedência move só o início; o snapshot dos dias muda o limite', () => {
     expect(rotulo('2026-09-15', { antecedencia: 60 })).toBe('Em preparação · 09/09')
-    expect(rotulo('2026-11-09', { antecedencia: 60 })).toBe('Protocolo atrasado 1 dia')
+    expect(rotulo('2026-11-09', { antecedencia: 60 })).toBe('Prazo de protocolo vencido há 1 dia')
     expect(datasRenovacaoLao('2027-03-08', 30, 150).limiteProtocolo).toBe('2026-10-09')
+  })
+})
+
+describe('acompanhamento do órgão depois do protocolo (decisão de 19/10/2026)', () => {
+  it('intervalos com atalho e qualquer número de dias a partir de 1', () => {
+    expect(INTERVALOS_ACOMPANHAMENTO.map((i) => i.dias)).toEqual([1, 7, 15, 30])
+    expect(rotuloDoIntervalo(1)).toBe('Diário')
+    expect(rotuloDoIntervalo(15)).toBe('Quinzenal')
+    expect(rotuloDoIntervalo(10)).toBe('A cada 10 dias')
+  })
+
+  it('próximo acompanhamento segue a série a partir do protocolo', () => {
+    expect(proximoAcompanhamento('2026-10-30', 7, '2026-10-30')).toBe('2026-11-06')
+    expect(proximoAcompanhamento('2026-10-30', 7, '2026-11-06')).toBe('2026-11-06')
+    expect(proximoAcompanhamento('2026-10-30', 7, '2026-11-07')).toBe('2026-11-13')
+    expect(proximoAcompanhamento('2026-10-30', 1, '2026-12-01')).toBe('2026-12-01')
+    expect(proximoAcompanhamento('2026-10-30', null, '2026-11-07')).toBeNull()
+  })
+
+  it('no dia de acompanhar, o selo avisa; nos outros, "Sem retorno do órgão"', () => {
+    const situacao = (hoje: DataCivil) =>
+      situacaoDaRenovacao({
+        vencimento: '2027-03-08',
+        antecedencia: 30,
+        protocoladoEm: '2026-10-30',
+        acompanhamentoDias: 15,
+        hoje,
+      })
+    expect(rotuloDaSituacaoDaRenovacao(situacao('2026-11-14'), '2026-11-14')).toBe(
+      'Acompanhar o órgão hoje',
+    )
+    expect(rotuloDaSituacaoDaRenovacao(situacao('2026-11-15'), '2026-11-15')).toBe(
+      'Sem retorno do órgão',
+    )
   })
 })

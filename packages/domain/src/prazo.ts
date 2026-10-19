@@ -178,6 +178,10 @@ export interface LicencaResumo {
   sigla: string | null
   /** Antecedência da preparação da renovação (padrão 30). */
   antecedencia?: number | null
+  /** Dias entre o limite de protocolo e a validade, do plano da LAO (padrão 120). */
+  diasLimite?: number | null
+  /** Data do protocolo da renovação, se já houve. */
+  protocoladoEm?: DataCivil | null
 }
 
 export type SituacaoDaLicenca =
@@ -186,6 +190,7 @@ export type SituacaoDaLicenca =
   | { tipo: 'vencida' }
   | { tipo: 'protocolo'; dias: number }
   | { tipo: 'protocolo_atrasado' }
+  | { tipo: 'sem_retorno' }
   | { tipo: 'vigente' }
 
 /**
@@ -197,9 +202,11 @@ export function situacaoDaLicenca(licenca: LicencaResumo, hoje: DataCivil): Situ
   if (!licenca.validade) return { tipo: 'sem_validade' }
   if (licenca.validade < hoje) return { tipo: 'vencida' }
   if (ehLao(licenca.sigla)) {
+    if (licenca.protocoladoEm) return { tipo: 'sem_retorno' }
     const { inicioPreparacao, limiteProtocolo } = datasRenovacaoLao(
       licenca.validade,
       licenca.antecedencia ?? undefined,
+      licenca.diasLimite ?? undefined,
     )
     if (hoje >= inicioPreparacao) {
       const dias = diferencaEmDias(limiteProtocolo, hoje)
@@ -213,9 +220,10 @@ const URGENCIA: Record<SituacaoDaLicenca['tipo'], number> = {
   vencida: 0,
   protocolo_atrasado: 1,
   protocolo: 2,
-  sem_validade: 3,
-  rascunho: 4,
-  vigente: 5,
+  sem_retorno: 3,
+  sem_validade: 4,
+  rascunho: 5,
+  vigente: 6,
 }
 
 /**

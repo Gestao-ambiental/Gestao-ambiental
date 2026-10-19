@@ -60,6 +60,6 @@ export function rotuloDaSituacaoDoPrazo(situacao: SituacaoDoPrazo): string {
     case 'vencida':
       return `Vencida há ${dias(situacao.dias)}`
     case 'protocolo_atrasado':
-      return `Protocolo atrasado ${dias(situacao.dias)}`
+      return `Prazo de protocolo vencido há ${dias(situacao.dias)}`
   }
 }

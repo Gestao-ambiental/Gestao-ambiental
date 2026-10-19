@@ -36,7 +36,7 @@ describe('situação do prazo (EQ-03)', () => {
       'Vencida há 3 dias',
     )
     expect(rotuloDaSituacaoDoPrazo(situacaoDoPrazo({ tipo: 'limite_protocolo', dias: -1 }))).toBe(
-      'Protocolo atrasado 1 dia',
+      'Prazo de protocolo vencido há 1 dia',
     )
     expect(rotuloDaSituacaoDoPrazo(situacaoDoPrazo({ tipo: 'limite_protocolo', dias: 6 }))).toBe(
       'Em 6 dias',
