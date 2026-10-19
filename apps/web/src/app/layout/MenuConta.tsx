@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router'
 
+import { useBloqueio } from '@/app/bloqueio/contexto-bloqueio'
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { NOMES_PAPEL } from '@/app/papeis'
 import { useSessao, usuarioDaSessao } from '@/app/sessao/contexto-sessao'
@@ -16,10 +17,11 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Icone } from '@/components/ui/icone'
 
-/** Menu da conta (Protótipo 04): nome e e-mail, troca de consultoria e Sair. */
+/** Menu da conta (Protótipo 04): nome e e-mail, troca de consultoria, Bloquear tela e Sair. */
 export function MenuConta() {
   const { sessao, sair } = useSessao()
   const { atual, vinculos, trocar } = useConsultoria()
+  const { bloquear } = useBloqueio()
   const navegar = useNavigate()
   if (!sessao) return null
   const usuario = usuarioDaSessao(sessao)
@@ -52,6 +54,11 @@ export function MenuConta() {
           ))}
         </DropdownMenuRadioGroup>
         <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={bloquear}>
+          <Icone nome="lock" />
+          <span className="flex-1">Bloquear tela</span>
+          <kbd className="text-xs text-(--text-subtle)">Ctrl+Shift+L</kbd>
+        </DropdownMenuItem>
         <DropdownMenuItem
           onSelect={() => {
             void sair().then(() => navegar('/entrar', { replace: true }))
