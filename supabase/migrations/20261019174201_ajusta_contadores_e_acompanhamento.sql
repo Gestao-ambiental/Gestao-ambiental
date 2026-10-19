@@ -308,3 +308,63 @@ revoke all on function public.obter_plano_renovacao(uuid) from public, anon;
 grant execute on function public.definir_acompanhamento(uuid, integer, integer) to authenticated;
 grant execute on function public.listar_renovacoes(uuid, integer, integer) to authenticated;
 grant execute on function public.obter_plano_renovacao(uuid) to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Carteira de empreendimentos: a situação da LAO considera o protocolo e os dias do plano
+-- (LAO protocolada é "sem retorno do órgão", nunca "prazo de protocolo vencido").
+-- ---------------------------------------------------------------------------
+create or replace function public.listar_empreendimentos(
+  p_consultoria_id uuid,
+  p_busca text default null,
+  p_limite integer default 50,
+  p_deslocamento integer default 0
+)
+returns table (
+  id uuid,
+  nome text,
+  cliente_nome text,
+  cnpj text,
+  unidades bigint,
+  criado_em timestamptz,
+  licencas jsonb,
+  total bigint
+)
+language sql
+stable
+set search_path = ''
+as $$
+  select
+    e.id,
+    e.nome,
+    cl.nome,
+    e.cnpj,
+    (select count(*) from public.unidade as u
+     where u.consultoria_id = e.consultoria_id and u.empreendimento_id = e.id),
+    e.criado_em,
+    coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'situacao', i.situacao,
+        'validade', i.validade,
+        'sigla', t.sigla,
+        'antecedencia', coalesce(pr.antecedencia_dias, i.antecedencia_renovacao_dias),
+        'dias_limite', pr.dias_limite_protocolo,
+        'protocolado_em', pr.protocolado_em
+      ) order by i.criado_em, i.id)
+      from public.instrumento as i
+      left join public.tipo_instrumento as t on t.consultoria_id = i.consultoria_id and t.id = i.tipo_id
+      left join public.plano_renovacao as pr on pr.consultoria_id = i.consultoria_id and pr.instrumento_id = i.id
+      where i.consultoria_id = e.consultoria_id and i.empreendimento_id = e.id
+    ), '[]'::jsonb),
+    count(*) over ()
+  from public.empreendimento as e
+  left join public.cliente as cl on cl.consultoria_id = e.consultoria_id and cl.id = e.cliente_id
+  where e.consultoria_id = p_consultoria_id
+    and (
+      btrim(coalesce(p_busca, '')) = ''
+      or e.nome_normalizado like private.padrao_de_busca(p_busca)
+      or cl.nome_normalizado like private.padrao_de_busca(p_busca)
+    )
+  order by e.nome_normalizado, e.id
+  limit least(greatest(coalesce(p_limite, 50), 1), 100)
+  offset greatest(coalesce(p_deslocamento, 0), 0)
+$$;

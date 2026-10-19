@@ -3,7 +3,7 @@
 -- acompanhamento do órgão a partir de 1 dia, só pela Gestão e só depois do protocolo.
 begin;
 
-select plan(16);
+select plan(17);
 
 select testes.criar_dados_sinteticos();
 select set_config('testes.hoje',
@@ -115,6 +115,14 @@ select is(
    where tipo_evento = 'limite_protocolo'),
   0::bigint,
   'e sai do calendário'
+);
+
+select ok(
+  (select exists (
+     select 1 from jsonb_array_elements(e.licencas) as l
+     where l ->> 'sigla' = 'LAO' and l ->> 'protocolado_em' is not null and (l ->> 'dias_limite')::integer = 120
+   ) from public.listar_empreendimentos('c0000000-0000-4000-8000-00000000000a') as e),
+  'a carteira de empreendimentos sabe do protocolo e dos dias do plano'
 );
 
 select throws_ok(
