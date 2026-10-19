@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import axe from 'axe-core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -140,8 +140,10 @@ describe('cadastro de licença: permissão e passo 1 (LIC-01)', () => {
     await usuario.click(screen.getByRole('radio', { name: 'Cadastrar manualmente' }))
     await usuario.click(continuar)
 
-    expect(await screen.findByRole('heading', { name: /Cadastrar licença/ })).toBeInTheDocument()
-    expect(router.state.location.pathname).toMatch(/^\/licencas\/[0-9a-f-]{36}\/identificacao$/)
+    // O título "Cadastrar licença" já existe no passo 1: espera a rota, não o título.
+    await waitFor(() => {
+      expect(router.state.location.pathname).toMatch(/^\/licencas\/[0-9a-f-]{36}\/identificacao$/)
+    })
     expect(falso.cliente.rpc).toHaveBeenCalledWith(
       'criar_instrumento',
       expect.objectContaining({ p_unidade_id: 'u1' }) as unknown,

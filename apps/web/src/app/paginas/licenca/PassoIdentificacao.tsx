@@ -5,14 +5,16 @@ import {
   type DataCivil,
 } from '@gestao-ambiental/domain'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useNavigate, useParams } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Botao } from '@/components/ui/botao'
+import type { PedidoDePagina } from '@/components/pdf/VisualizadorPdf'
 import { CampoTexto } from '@/components/ui/campo-texto'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { listarUnidades } from '@/lib/api/empreendimentos'
+import { obterUltimaExtracao, type PropostaDeIdentificacao } from '@/lib/api/extracao'
 import {
   criarTipo,
   listarOrgaos,
@@ -25,6 +27,7 @@ import {
 import { codigoDoErro, mensagemDoErro } from '@/lib/erros'
 
 import { GuardaRascunho } from './GuardaCadastro'
+import { MarcaIa, NaoEncontrado } from './MarcaIa'
 import { MolduraCadastro, RodapeCadastro } from './MolduraCadastro'
 import { PainelPdf } from './PainelPdf'
 import { useSalvamento } from './usar-rascunho'
@@ -33,11 +36,16 @@ const NOVO_TIPO = '__novo'
 
 type CampoDeData = 'emitidoEm' | 'assinadoEm' | 'publicadoEm' | 'recebidoEm'
 
-const MARCOS: { chave: Marco; rotulo: string; campo: CampoDeData }[] = [
-  { chave: 'emissao', rotulo: 'Emissão', campo: 'emitidoEm' },
-  { chave: 'assinatura', rotulo: 'Assinatura', campo: 'assinadoEm' },
-  { chave: 'publicacao', rotulo: 'Publicação', campo: 'publicadoEm' },
-  { chave: 'recebimento', rotulo: 'Recebimento', campo: 'recebidoEm' },
+const MARCOS: {
+  chave: Marco
+  rotulo: string
+  campo: CampoDeData
+  proposta: keyof PropostaDeIdentificacao
+}[] = [
+  { chave: 'emissao', rotulo: 'Emissão', campo: 'emitidoEm', proposta: 'emitido_em' },
+  { chave: 'assinatura', rotulo: 'Assinatura', campo: 'assinadoEm', proposta: 'assinado_em' },
+  { chave: 'publicacao', rotulo: 'Publicação', campo: 'publicadoEm', proposta: 'publicado_em' },
+  { chave: 'recebimento', rotulo: 'Recebimento', campo: 'recebidoEm', proposta: 'recebido_em' },
 ]
 
 const classeSelect =
@@ -63,7 +71,10 @@ function dataDe(valor: string): DataCivil | null {
   return /^\d{4}-\d{2}-\d{2}$/.test(valor) ? (valor as DataCivil) : null
 }
 
-/** /licencas/:id/identificacao (Protótipo 11; LIC-01). Rascunho salva incompleto. */
+/**
+ * /licencas/:id/identificacao (Protótipo 11; LIC-01, IA-02). Rascunho salva incompleto. Campo
+ * vindo da IA mostra a marca e a página da fonte; o que a IA não achou fica vazio e dito.
+ */
 export function PassoIdentificacao() {
   const { id = '' } = useParams()
   // Fora do formulário: o formulário remonta com a versão salva, o "salvo às" continua.
@@ -104,6 +115,27 @@ function Identificacao({
   })
 
   const tipo = tipos.data?.find((t) => t.id === dados.tipoId)
+
+  const extracao = useQuery({
+    queryKey: ['extracao', instrumento.id],
+    queryFn: () => obterUltimaExtracao(instrumento.id),
+  })
+  const proposta = extracao.data?.situacao === 'concluida' ? extracao.data.identificacao : null
+  const [paginaPdf, setPaginaPdf] = useState<PedidoDePagina | null>(null)
+  const verPagina = (numero: number) => {
+    setPaginaPdf((anterior) => ({ numero, vez: (anterior?.vez ?? 0) + 1 }))
+  }
+  /** Marca da IA quando o valor atual é o proposto; "não encontrado" quando a IA não achou. */
+  function marca(chave: keyof PropostaDeIdentificacao, valor: string | null): ReactNode {
+    const campo = proposta?.[chave]
+    if (!campo) return undefined
+    if (!campo.valor) return valor ? undefined : <NaoEncontrado />
+    const igual =
+      chave === 'tipo'
+        ? tipo?.sigla.toUpperCase() === campo.valor.toUpperCase()
+        : valor === campo.valor
+    return igual ? <MarcaIa pagina={campo.pagina} aoVerPagina={verPagina} /> : undefined
+  }
   const marcosPreenchidos = MARCOS.filter((m) => dados[m.campo])
   const completa = Boolean(dados.tipoId && dados.marco && dados.validade)
 
@@ -202,9 +234,12 @@ function Identificacao({
 
           <fieldset className="grid gap-(--space-150) sm:grid-cols-2">
             <legend className="mb-(--space-100) titulo-secao">Licença</legend>
-            <label className="flex flex-col gap-(--space-050)">
-              <span className="rotulo">Tipo de instrumento *</span>
+            <div className="flex flex-col gap-(--space-050)">
+              <label htmlFor="tipo-instrumento" className="rotulo">
+                Tipo de instrumento *
+              </label>
               <select
+                id="tipo-instrumento"
                 className={classeSelect}
                 value={criandoTipo ? NOVO_TIPO : (dados.tipoId ?? '')}
                 onChange={(evento) => {
@@ -224,10 +259,12 @@ function Identificacao({
                 ))}
                 <option value={NOVO_TIPO}>Outro tipo…</option>
               </select>
-            </label>
+              {marca('tipo', dados.tipoId)}
+            </div>
             <CampoTexto
               rotulo="Número"
               placeholder="0000/0000"
+              ajuda={marca('numero', dados.numero || null)}
               value={dados.numero}
               onChange={(evento) => {
                 mudar('numero', evento.target.value)
@@ -282,6 +319,7 @@ function Identificacao({
               rotulo="Órgão licenciador"
               list="orgaos-usados"
               placeholder="IMA, SAMA Joinville…"
+              ajuda={marca('orgao', dados.orgao || null)}
               value={dados.orgao}
               onChange={(evento) => {
                 mudar('orgao', evento.target.value)
@@ -320,6 +358,7 @@ function Identificacao({
                   key={m.chave}
                   rotulo={m.rotulo}
                   type="date"
+                  ajuda={marca(m.proposta, dados[m.campo])}
                   value={dados[m.campo] ?? ''}
                   onChange={(evento) => {
                     mudar(m.campo, dataDe(evento.target.value))
@@ -362,6 +401,7 @@ function Identificacao({
             <CampoTexto
               rotulo="Validade confirmada *"
               type="date"
+              ajuda={marca('validade', dados.validade)}
               value={dados.validade ?? ''}
               onChange={(evento) => {
                 mudar('validade', dataDe(evento.target.value))
@@ -380,7 +420,11 @@ function Identificacao({
             </div>
           </fieldset>
         </form>
-        <PainelPdf instrumento={instrumento} className="hidden min-h-[480px] lg:flex" />
+        <PainelPdf
+          instrumento={instrumento}
+          paginaPedida={paginaPdf}
+          className="hidden min-h-[480px] lg:flex"
+        />
       </div>
     </MolduraCadastro>
   )

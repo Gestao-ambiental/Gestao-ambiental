@@ -3,6 +3,7 @@ import { useId, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 
 import { Carregando, EstadoErro, EstadoVazio } from '@/components/estados'
+import type { PedidoDePagina } from '@/components/pdf/VisualizadorPdf'
 import { Botao } from '@/components/ui/botao'
 import { CampoTexto } from '@/components/ui/campo-texto'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
@@ -19,6 +20,7 @@ import { mensagemDoErro } from '@/lib/erros'
 import { cn } from '@/lib/utils'
 
 import { GuardaRascunho } from './GuardaCadastro'
+import { MarcaIa } from './MarcaIa'
 import { MolduraCadastro, RodapeCadastro } from './MolduraCadastro'
 import { PainelPdf } from './PainelPdf'
 import { useCondicionantes, useSalvamento } from './usar-rascunho'
@@ -79,12 +81,14 @@ function Editor({
   item,
   agrupadores,
   aoSalvar,
+  aoVerPagina,
 }: {
   instrumentoId: string
   edicao: Edicao
   item: Condicionante | undefined
   agrupadores: readonly Condicionante[]
   aoSalvar: (id: string) => Promise<void>
+  aoVerPagina: (pagina: number) => void
 }) {
   const textoId = useId()
   const [id] = useState(() => (edicao.tipo === 'existente' ? edicao.id : crypto.randomUUID()))
@@ -140,6 +144,17 @@ function Editor({
           <Selo>Nova</Selo>
         )}
       </div>
+      {item?.origem === 'ia' ? (
+        <div className="flex flex-col gap-(--space-050)">
+          <MarcaIa pagina={item.fontePagina} aoVerPagina={aoVerPagina} />
+          {item.periodicidadeIa ? (
+            <p className="text-xs text-(--text-subtle)">
+              A IA leu a periodicidade “{item.periodicidadeIa}”. O prazo só vale depois de
+              confirmado no passo 4.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
       {erro ? (
         <MensagemSecao role="alert" tom="perigo">
           {mensagemDoErro(erro)}
@@ -292,6 +307,7 @@ function Condicionantes({
   const consulta = useCondicionantes(instrumento.id)
   const [filtro, setFiltro] = useState<Filtro>('todos')
   const [edicao, setEdicao] = useState<Edicao | null>(null)
+  const [paginaPdf, setPaginaPdf] = useState<PedidoDePagina | null>(null)
 
   const itens = consulta.data ?? []
   const ordem = emArvore(itens)
@@ -524,6 +540,9 @@ function Condicionantes({
                 await registrar()
                 setEdicao({ tipo: 'existente', id: salvoId })
               }}
+              aoVerPagina={(numero) => {
+                setPaginaPdf((anterior) => ({ numero, vez: (anterior?.vez ?? 0) + 1 }))
+              }}
             />
           ) : (
             <EstadoVazio
@@ -545,7 +564,11 @@ function Condicionantes({
           )}
         </section>
 
-        <PainelPdf instrumento={instrumento} className="hidden min-h-[480px] xl:flex" />
+        <PainelPdf
+          instrumento={instrumento}
+          paginaPedida={paginaPdf}
+          className="hidden min-h-[480px] xl:flex"
+        />
       </div>
     </MolduraCadastro>
   )
