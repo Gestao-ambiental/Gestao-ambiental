@@ -93,3 +93,19 @@ jobs:
       - name: Parar Supabase
         if: always()
         run: pnpm exec supabase stop --no-backup
+
+  funcoes:
+    name: Edge Functions (tipos e testes no Deno)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Checagem de tipos
+        working-directory: supabase/functions
+        run: deno check --config deno.json extrair-licenca/index.ts
+      - name: Testes das regras da extração
+        working-directory: supabase/functions
+        run: deno test --config deno.json _shared/
