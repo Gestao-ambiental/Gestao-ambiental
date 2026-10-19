@@ -77,6 +77,11 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   data_protocolo_futura: 'A data do protocolo não pode estar no futuro',
   comprovante_obrigatorio: 'Anexe o comprovante',
   plano_nao_protocolado: 'O acompanhamento do órgão começa depois do protocolo.',
+  // Extração por IA (épico 9)
+  pdf_obrigatorio: 'Anexe o PDF da licença para a IA ler.',
+  condicionantes_existentes:
+    'Este rascunho já tem condicionantes: a IA só preenche rascunho sem itens. Siga pelo manual.',
+  extracao_em_andamento: 'Já há uma extração em andamento para este rascunho. Aguarde.',
 }
 
 const MENSAGENS_DO_AUTH: Record<string, string> = {

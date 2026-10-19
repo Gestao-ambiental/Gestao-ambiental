@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router'
 
 import { EstadoErro, EstadoVazio } from '@/components/estados'
-import { VisualizadorPdf } from '@/components/pdf/VisualizadorPdf'
+import { VisualizadorPdf, type PedidoDePagina } from '@/components/pdf/VisualizadorPdf'
 import { Botao } from '@/components/ui/botao'
 import { urlDoPdf, type Instrumento } from '@/lib/api/licencas'
 import { cn } from '@/lib/utils'
@@ -11,9 +11,12 @@ import { cn } from '@/lib/utils'
 export function PainelPdf({
   instrumento,
   className,
+  paginaPedida = null,
 }: {
   instrumento: Instrumento
   className?: string
+  /** Página a mostrar (fonte de um campo ou item proposto pela IA). */
+  paginaPedida?: PedidoDePagina | null
 }) {
   const caminho = instrumento.pdf?.caminho
   const url = useQuery({
@@ -44,7 +47,12 @@ export function PainelPdf({
           className="m-(--space-200)"
         />
       ) : url.data ? (
-        <VisualizadorPdf url={url.data} nome={instrumento.pdf.nome} className="h-full" />
+        <VisualizadorPdf
+          url={url.data}
+          nome={instrumento.pdf.nome}
+          className="h-full"
+          paginaPedida={paginaPedida}
+        />
       ) : null}
     </aside>
   )

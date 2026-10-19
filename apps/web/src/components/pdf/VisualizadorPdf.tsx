@@ -23,14 +23,21 @@ async function carregarPdfjs() {
   return pdfjs
 }
 
+/** Pedido para ir a uma página (ex.: a fonte de um campo proposto pela IA). `vez` repete o pedido. */
+export interface PedidoDePagina {
+  numero: number
+  vez: number
+}
+
 interface Props {
   /** URL assinada de curta duração do Storage. */
   url: string
   nome: string
   className?: string
+  paginaPedida?: PedidoDePagina | null
 }
 
-export function VisualizadorPdf({ url, nome, className }: Props) {
+export function VisualizadorPdf({ url, nome, className, paginaPedida = null }: Props) {
   const [documento, setDocumento] = useState<PDFDocumentProxy | null>(null)
   const [falhou, setFalhou] = useState(false)
   const [tentativa, setTentativa] = useState(0)
@@ -39,6 +46,13 @@ export function VisualizadorPdf({ url, nome, className }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const textoRef = useRef<HTMLDivElement>(null)
   const paginaRef = useRef<HTMLDivElement>(null)
+  const [pedidoVisto, setPedidoVisto] = useState<PedidoDePagina | null>(null)
+
+  // Pedido novo de página: muda durante a renderização (sem efeito), como o React recomenda.
+  if (paginaPedida !== pedidoVisto) {
+    setPedidoVisto(paginaPedida)
+    if (paginaPedida) setPagina(Math.max(1, paginaPedida.numero))
+  }
 
   useEffect(() => {
     const estado = { cancelado: false }
@@ -72,7 +86,7 @@ export function VisualizadorPdf({ url, nome, className }: Props) {
     let tarefa: RenderTask | null = null
     void (async () => {
       const pdfjs = await carregarPdfjs()
-      const pag = await documento.getPage(pagina)
+      const pag = await documento.getPage(Math.min(pagina, documento.numPages))
       if (cancelado() || !canvasRef.current || !textoRef.current || !paginaRef.current) return
       const viewport = pag.getViewport({ scale: (zoom / 100) * 1.25 })
       const canvas = canvasRef.current
@@ -129,7 +143,7 @@ export function VisualizadorPdf({ url, nome, className }: Props) {
               }}
             />
             <span className="corpo whitespace-nowrap" aria-live="polite">
-              Página {pagina} de {total}
+              Página {Math.min(pagina, total)} de {total}
             </span>
             <BotaoIcone
               icone="chevron-right"

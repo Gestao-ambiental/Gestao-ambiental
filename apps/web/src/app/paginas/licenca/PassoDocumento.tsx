@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query'
+import { useIsMutating, useQuery } from '@tanstack/react-query'
 import { useId, useRef, useState, type DragEvent } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Carregando, EstadoErro } from '@/components/estados'
@@ -8,6 +8,11 @@ import { Botao } from '@/components/ui/botao'
 import { Icone } from '@/components/ui/icone'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { listarEmpreendimentos, listarUnidades } from '@/lib/api/empreendimentos'
+import {
+  EXTRACAO_ABANDONADA_MS,
+  LIMITE_PDF_IA_BYTES,
+  obterUltimaExtracao,
+} from '@/lib/api/extracao'
 import {
   conferirPdf,
   criarInstrumento,
@@ -18,6 +23,7 @@ import {
 import { mensagemDoErro } from '@/lib/erros'
 import { cn } from '@/lib/utils'
 
+import { ComoCadastrar, PainelExtracao, type Metodo } from './ExtracaoIa'
 import { GuardaRascunho, SoGestao } from './GuardaCadastro'
 import { MolduraCadastro, RodapeCadastro } from './MolduraCadastro'
 
@@ -135,48 +141,18 @@ function EnvioPdf({
   )
 }
 
-function ComoCadastrar({ manual, aoEscolher }: { manual: boolean; aoEscolher: () => void }) {
-  return (
-    <fieldset className="grid gap-(--space-150) sm:grid-cols-2">
-      <legend className="mb-(--space-100) titulo-secao">Como cadastrar</legend>
-      <label className="flex cursor-not-allowed flex-col gap-(--space-050) rounded-(--radius) border bg-(--surface) p-(--space-200) opacity-70">
-        <span className="inline-flex items-center gap-(--space-100) corpo-medio text-(--text-disabled)">
-          <input
-            type="radio"
-            name="como-cadastrar"
-            disabled
-            aria-labelledby="como-ia"
-            aria-describedby="ia-indisponivel"
-          />
-          <span id="como-ia">Extrair com IA</span>
-        </span>
-        <span id="ia-indisponivel" className="text-xs text-(--text-subtle)">
-          A extração por IA ainda não está disponível. O cadastro manual é completo.
-        </span>
-      </label>
-      <label className="flex cursor-pointer flex-col gap-(--space-050) rounded-(--radius) border bg-(--surface) p-(--space-200) transicao-estado has-checked:border-(--border-focus) has-checked:bg-(--surface-selected) hover:bg-(--surface-hover)">
-        <span className="inline-flex items-center gap-(--space-100) corpo-medio">
-          <input
-            type="radio"
-            name="como-cadastrar"
-            checked={manual}
-            onChange={aoEscolher}
-            aria-labelledby="como-manual"
-            aria-describedby="manual-descricao"
-            className="size-4 accent-(--brand)"
-          />
-          <span id="como-manual">Cadastrar manualmente</span>
-        </span>
-        <span id="manual-descricao" className="text-xs text-(--text-subtle)">
-          Você preenche a identificação e as condicionantes. Sempre disponível; aceita PDF até 25 MB
-          ou nenhum.
-        </span>
-      </label>
-    </fieldset>
-  )
+/** Por que a IA não pode ler este PDF agora (nulo = pode). */
+function motivoSemIa(arquivo: File | null, temPdf: boolean): string | null {
+  if (!arquivo && !temPdf) return 'Envie o PDF da licença para a IA ler. O manual aceita sem PDF.'
+  if (arquivo && arquivo.size > LIMITE_PDF_IA_BYTES)
+    return `A IA lê PDF com texto até 10 MB; este tem ${tamanhoLegivel(arquivo.size)}. Siga pelo manual.`
+  return null
 }
 
-/** /licencas/nova (Protótipo 10, caminho manual; LIC-01): empreendimento, unidade, PDF e método. */
+/**
+ * /licencas/nova (Protótipo 10; LIC-01, IA-01): empreendimento, unidade, PDF e método. Com IA, o
+ * rascunho é criado, o PDF enviado e a extração começa no passo do documento do rascunho.
+ */
 export function PassoDocumentoNovo() {
   return (
     <SoGestao passo="documento">
@@ -194,7 +170,7 @@ function DocumentoNovo() {
   const [empreendimentoId, setEmpreendimentoId] = useState(busca.get('empreendimento') ?? '')
   const [unidadeId, setUnidadeId] = useState(busca.get('unidade') ?? '')
   const [arquivo, setArquivo] = useState<File | null>(null)
-  const [manual, setManual] = useState(false)
+  const [metodo, setMetodo] = useState<Metodo | null>(null)
   const [falha, setFalha] = useState<string | null>(null)
   const [enviando, setEnviando] = useState(false)
 
@@ -223,7 +199,14 @@ function DocumentoNovo() {
     try {
       await criarInstrumento(id, unidadeEscolhida)
       if (arquivo) await enviarPdf(id, cid, arquivo)
-      await navegar(`/licencas/${id}/identificacao`, { replace: true })
+      if (metodoValido === 'ia') {
+        await navegar(`/licencas/${id}/documento`, {
+          replace: true,
+          state: { extrair: crypto.randomUUID() },
+        })
+      } else {
+        await navegar(`/licencas/${id}/identificacao`, { replace: true })
+      }
     } catch (erro) {
       setFalha(mensagemDoErro(erro))
     } finally {
@@ -231,14 +214,18 @@ function DocumentoNovo() {
     }
   }
 
-  const podeContinuar = Boolean(unidadeEscolhida) && manual
+  const semIa = motivoSemIa(arquivo, false)
+  const metodoValido = metodo === 'ia' && semIa ? null : metodo
+  const podeContinuar = Boolean(unidadeEscolhida) && metodoValido !== null
   const aviso = !unidadeEscolhida
     ? 'Escolha o empreendimento e a unidade.'
-    : !manual
+    : !metodoValido
       ? 'Escolha como cadastrar.'
-      : arquivo
-        ? 'O PDF é enviado ao continuar.'
-        : 'Sem PDF por enquanto: dá para anexar depois.'
+      : metodoValido === 'ia'
+        ? 'Ao continuar, a IA lê o PDF. Leva até 2 minutos.'
+        : arquivo
+          ? 'O PDF é enviado ao continuar.'
+          : 'Sem PDF por enquanto: dá para anexar depois.'
 
   return (
     <MolduraCadastro
@@ -323,12 +310,7 @@ function DocumentoNovo() {
           <EnvioPdf arquivo={arquivo} atual={null} aoEscolher={setArquivo} />
         </section>
 
-        <ComoCadastrar
-          manual={manual}
-          aoEscolher={() => {
-            setManual(true)
-          }}
-        />
+        <ComoCadastrar metodo={metodoValido} aoEscolher={setMetodo} semIa={semIa} />
       </div>
     </MolduraCadastro>
   )
@@ -347,16 +329,39 @@ export function PassoDocumento() {
 function DocumentoExistente({ instrumento }: { instrumento: Instrumento }) {
   const { atual } = useConsultoria()
   const navegar = useNavigate()
+  const local = useLocation()
+  const pedida = (local.state as { extrair?: string } | null)?.extrair ?? null
   const [arquivo, setArquivo] = useState<File | null>(null)
+  const [metodo, setMetodo] = useState<Metodo>(pedida ? 'ia' : 'manual')
+  const [extracaoId, setExtracaoId] = useState<string | null>(pedida)
   const [falha, setFalha] = useState<string | null>(null)
   const [enviando, setEnviando] = useState(false)
+  const [abertaEm] = useState(() => Date.now())
+
+  const ultima = useQuery({
+    queryKey: ['extracao', instrumento.id],
+    queryFn: () => obterUltimaExtracao(instrumento.id),
+  })
+  const pedindo = useIsMutating({ mutationKey: ['extrair', instrumento.id] }) > 0
+  const extraindo =
+    pedindo ||
+    (ultima.data?.situacao === 'em_andamento' &&
+      abertaEm - new Date(ultima.data.iniciadaEm).getTime() < EXTRACAO_ABANDONADA_MS)
+
+  const semIa = motivoSemIa(arquivo, Boolean(instrumento.pdf))
+  const metodoValido: Metodo = metodo === 'ia' && semIa ? 'manual' : metodo
+  const irParaIdentificacao = () => void navegar(`/licencas/${instrumento.id}/identificacao`)
 
   async function continuar() {
     setFalha(null)
     setEnviando(true)
     try {
-      if (arquivo) await enviarPdf(instrumento.id, atual.consultoriaId, arquivo)
-      await navegar(`/licencas/${instrumento.id}/identificacao`)
+      if (arquivo) {
+        await enviarPdf(instrumento.id, atual.consultoriaId, arquivo)
+        setArquivo(null)
+      }
+      if (metodoValido === 'ia') setExtracaoId(crypto.randomUUID())
+      else irParaIdentificacao()
     } catch (erro) {
       setFalha(mensagemDoErro(erro))
     } finally {
@@ -372,9 +377,17 @@ function DocumentoExistente({ instrumento }: { instrumento: Instrumento }) {
       sairPara={`/empreendimentos/${instrumento.empreendimentoId}`}
       rodape={
         <RodapeCadastro
-          aviso={arquivo ? 'O PDF novo é enviado ao continuar.' : undefined}
+          aviso={
+            extraindo
+              ? 'Aguardando a extração. O rascunho já está salvo.'
+              : metodoValido === 'ia'
+                ? 'Ao continuar, a IA lê o PDF. Leva até 2 minutos.'
+                : arquivo
+                  ? 'O PDF novo é enviado ao continuar.'
+                  : undefined
+          }
           aoContinuar={() => void continuar()}
-          podeContinuar
+          podeContinuar={!extraindo}
           continuando={enviando}
         />
       }
@@ -395,6 +408,19 @@ function DocumentoExistente({ instrumento }: { instrumento: Instrumento }) {
             aoEscolher={setArquivo}
           />
         </section>
+
+        <PainelExtracao
+          instrumentoId={instrumento.id}
+          extracaoId={extracaoId}
+          aoConcluir={irParaIdentificacao}
+          aoManual={irParaIdentificacao}
+          aoTentarDeNovo={() => {
+            setExtracaoId(crypto.randomUUID())
+          }}
+        />
+        {extraindo ? null : (
+          <ComoCadastrar metodo={metodoValido} aoEscolher={setMetodo} semIa={semIa} />
+        )}
       </div>
     </MolduraCadastro>
   )

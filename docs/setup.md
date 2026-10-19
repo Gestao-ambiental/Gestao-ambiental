@@ -79,8 +79,22 @@ O `supabase/config.toml` vale só para o ambiente local; os projetos remotos sã
 
 Com isso, o workflow **Migrations** (`.github/workflows/migrations.yml`):
 
-- em todo push na `main`, liga no staging e roda `supabase db push`;
+- em todo push na `main`, liga no staging, roda `supabase db push` e publica a Edge Function `extrair-licenca`;
 - em PR que mexe em `supabase/migrations/`, roda `supabase db push --dry-run` contra staging, só para mostrar o que seria aplicado.
+
+### 3.1 Segredo da extração por IA (Edge Function)
+
+A chave do OpenRouter fica **só** nos segredos das Edge Functions do Supabase: nunca no GitHub, no front ou no repositório (ADR-0006).
+
+1. Em <https://openrouter.ai/settings/keys> crie uma chave (`gestao-ambiental-staging`), com limite de crédito. Em **Settings → Privacy**, deixe desligado o uso de provedores que guardam ou treinam com os dados (a função também pede isso em cada chamada).
+2. No Supabase **de staging** → **Edge Functions → Secrets** (ou `supabase secrets set --project-ref <id>`), cadastre:
+
+| Nome                 | Valor                                                                        |
+| -------------------- | ---------------------------------------------------------------------------- |
+| `OPENROUTER_API_KEY` | a chave do item 1                                                            |
+| `OPENROUTER_MODEL`   | opcional; padrão `openai/gpt-4.1-mini` (trocar o modelo é trocar este valor) |
+
+Sem `OPENROUTER_API_KEY`, a extração falha com "IA indisponível" e o cadastro manual continua completo. Em produção, repita com uma chave própria de produção.
 
 ## 4. Vercel com preview por PR
 

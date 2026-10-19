@@ -260,13 +260,25 @@ export interface Condicionante {
   fonteRegra: string | null
   confirmadoEm: string | null
   confirmadoPor: string | null
+  /** Proposta pela IA (épico 9) ou cadastrada à mão. */
+  origem: 'manual' | 'ia'
+  /** Página do PDF onde a IA achou o item. */
+  fontePagina: number | null
+  /** Periodicidade como a IA leu no texto: só apoio, o prazo é confirmado no passo 4. */
+  periodicidadeIa: string | null
+}
+
+function periodicidadeDa(proposta: unknown): string | null {
+  if (typeof proposta !== 'object' || proposta === null) return null
+  const valor = (proposta as { periodicidade?: unknown }).periodicidade
+  return typeof valor === 'string' && valor.trim() !== '' ? valor : null
 }
 
 export async function listarCondicionantes(instrumentoId: string): Promise<Condicionante[]> {
   const { data, error } = await obterSupabase()
     .from('condicionante')
     .select(
-      `id, pai_id, codigo, posicao, revisao, responsavel_id,
+      `id, pai_id, codigo, posicao, revisao, responsavel_id, origem, fonte_pagina, proposta_ia,
        versao:condicionante_versao!condicionante_versao_vigente_fk(
          titulo, texto_literal, natureza, recorrencia, unidade_ciclo, intervalo_ciclo,
          data_referencia, primeira_data, fonte_regra, prazo_confirmado_em,
@@ -299,6 +311,9 @@ export async function listarCondicionantes(instrumentoId: string): Promise<Condi
         fonteRegra: v.fonte_regra,
         confirmadoEm: v.prazo_confirmado_em,
         confirmadoPor: v.confirmador?.nome ?? null,
+        origem: linha.origem === 'ia' ? 'ia' : 'manual',
+        fontePagina: linha.fonte_pagina,
+        periodicidadeIa: periodicidadeDa(linha.proposta_ia),
       },
     ]
   })
