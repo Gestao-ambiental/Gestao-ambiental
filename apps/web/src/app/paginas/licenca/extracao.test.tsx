@@ -191,6 +191,33 @@ describe('extrair com IA: passo 1 (IA-01, IA-04)', () => {
     expect(screen.queryByRole('button', { name: 'Tentar de novo' })).toBeNull()
   })
 
+  it('provedor recusou: explica, mostra o detalhe técnico e não oferece tentar de novo', async () => {
+    const usuario = userEvent.setup()
+    falso.reiniciar(
+      cenario({
+        funcoes: {
+          'extrair-licenca': {
+            data: {
+              situacao: 'falhou',
+              motivo: 'provedor_recusou',
+              detalhe: 'HTTP 401: No auth credentials found',
+            },
+          },
+        },
+      }),
+    )
+    renderizarApp('/licencas/i1/documento')
+    await usuario.click(await screen.findByRole('radio', { name: 'Extrair com IA' }))
+    await usuario.click(screen.getByRole('button', { name: 'Continuar' }))
+    expect(
+      await screen.findByText(/O provedor de IA recusou o pedido \(chave, créditos ou modelo\)/),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('Detalhe técnico: HTTP 401: No auth credentials found'),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Tentar de novo' })).toBeNull()
+  })
+
   it('rascunho que já tem condicionantes: a recusa do banco aparece traduzida', async () => {
     const usuario = userEvent.setup()
     falso.reiniciar(

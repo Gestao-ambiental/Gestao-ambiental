@@ -14,6 +14,7 @@ export type MotivoDaFalha =
   | 'pdf_sem_texto'
   | 'pdf_grande_demais'
   | 'provedor_indisponivel'
+  | 'provedor_recusou'
   | 'tempo_esgotado'
   | 'resposta_invalida'
   | 'configuracao_ausente'
@@ -23,6 +24,8 @@ export const MENSAGEM_DA_FALHA: Record<MotivoDaFalha, string> = {
   pdf_sem_texto: 'Este PDF é uma imagem e a IA só lê PDF com texto. Siga pelo cadastro manual.',
   pdf_grande_demais: 'A IA lê PDF com texto até 10 MB. Siga pelo cadastro manual.',
   provedor_indisponivel: 'A IA não respondeu agora. Tente de novo ou siga pelo manual.',
+  provedor_recusou:
+    'O provedor de IA recusou o pedido (chave, créditos ou modelo). Avise quem cuida da configuração e siga pelo manual.',
   tempo_esgotado: 'A extração não respondeu em 2 minutos. Tente de novo ou siga pelo manual.',
   resposta_invalida:
     'A IA devolveu algo fora do formato esperado. Tente de novo ou siga pelo manual.',
@@ -34,6 +37,7 @@ export const MENSAGEM_DA_FALHA: Record<MotivoDaFalha, string> = {
 export const FALHA_DEFINITIVA: ReadonlySet<MotivoDaFalha> = new Set([
   'pdf_sem_texto',
   'pdf_grande_demais',
+  'provedor_recusou',
   'configuracao_ausente',
 ])
 
@@ -57,6 +61,8 @@ export interface Extracao {
   id: string
   situacao: 'em_andamento' | 'concluida' | 'falhou'
   motivo: MotivoDaFalha | null
+  /** Detalhe técnico da falha (status e mensagem do provedor), para quem cuida da configuração. */
+  detalhe: string | null
   iniciadaEm: string
   itensPropostos: number | null
   identificacao: PropostaDeIdentificacao | null
@@ -72,7 +78,7 @@ function propostaDe(resultado: unknown): PropostaDeIdentificacao | null {
 export async function obterUltimaExtracao(instrumentoId: string): Promise<Extracao | null> {
   const { data, error } = await obterSupabase()
     .from('extracao_ia')
-    .select('id, situacao, motivo, iniciada_em, itens_propostos, resultado')
+    .select('id, situacao, motivo, detalhe, iniciada_em, itens_propostos, resultado')
     .eq('instrumento_id', instrumentoId)
     .order('iniciada_em', { ascending: false })
     .range(0, 0)
@@ -83,6 +89,7 @@ export async function obterUltimaExtracao(instrumentoId: string): Promise<Extrac
     id: x.id,
     situacao: x.situacao as Extracao['situacao'],
     motivo: x.motivo as MotivoDaFalha | null,
+    detalhe: x.detalhe,
     iniciadaEm: x.iniciada_em,
     itensPropostos: x.itens_propostos,
     identificacao: propostaDe(x.resultado),
@@ -92,7 +99,7 @@ export async function obterUltimaExtracao(instrumentoId: string): Promise<Extrac
 export type ResultadoDaExtracao =
   | { situacao: 'em_andamento' }
   | { situacao: 'concluida'; itens: number }
-  | { situacao: 'falhou'; motivo: MotivoDaFalha }
+  | { situacao: 'falhou'; motivo: MotivoDaFalha; detalhe?: string | null }
 
 /**
  * Pede a extração e espera (síncrona, até 2 min). `extracaoId` vem da tela: repetir depois de
