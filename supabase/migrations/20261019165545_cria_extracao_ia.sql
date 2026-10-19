@@ -117,10 +117,15 @@ revoke all on function private.valor_proposto(jsonb) from public, anon, authenti
 -- ---------------------------------------------------------------------------
 -- RPC: iniciar uma extração (Gestão, rascunho com PDF e ainda sem condicionantes). Devolve o que a
 -- Edge Function precisa: o caminho do PDF no Storage e os tipos de instrumento da consultoria.
--- Repetir com o mesmo id devolve a mesma extração.
+-- Repetir com o mesmo id devolve a mesma extração com `nova = false` e a situação atual: a função
+-- só chama a IA quando a extração é nova (retry ou clique duplo não pagam duas vezes).
 -- ---------------------------------------------------------------------------
 create function public.iniciar_extracao_ia(p_id uuid, p_instrumento_id uuid)
 returns table (
+  nova boolean,
+  situacao text,
+  motivo text,
+  itens_propostos integer,
   caminho text,
   mime text,
   tamanho_bytes bigint,
@@ -171,7 +176,8 @@ begin
   end if;
 
   return query
-  select versao.caminho, versao.mime, versao.tamanho_bytes,
+  select existente.id is null, coalesce(existente.situacao, 'em_andamento'), existente.motivo,
+         existente.itens_propostos, versao.caminho, versao.mime, versao.tamanho_bytes,
          coalesce((select array_agg(t.sigla order by t.sigla) from public.tipo_instrumento as t
                    where t.consultoria_id = alvo.consultoria_id), '{}');
 end;

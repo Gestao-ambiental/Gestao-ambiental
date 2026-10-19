@@ -59,16 +59,18 @@ select throws_ok(
 );
 
 select results_eq(
-  $$select caminho, mime, tamanho_bytes, 'LAO' = any (tipos)
+  $$select nova, situacao, caminho, mime, tamanho_bytes, 'LAO' = any (tipos)
     from public.iniciar_extracao_ia('30000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001')$$,
-  $$values ('c0000000-0000-4000-8000-00000000000a/instrumento/21000000-0000-4000-8000-000000000001.pdf',
+  $$values (true, 'em_andamento', 'c0000000-0000-4000-8000-00000000000a/instrumento/21000000-0000-4000-8000-000000000001.pdf',
             'application/pdf', 1258291::bigint, true)$$,
   'Gestão inicia e recebe o caminho do PDF e os tipos da consultoria'
 );
 
-select lives_ok(
-  $$select * from public.iniciar_extracao_ia('30000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001')$$,
-  'repetir o início (retry) devolve a mesma extração'
+select results_eq(
+  $$select nova, situacao
+    from public.iniciar_extracao_ia('30000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001')$$,
+  $$values (false, 'em_andamento')$$,
+  'repetir o início (retry) devolve a mesma extração, marcada como não nova: a IA não é chamada de novo'
 );
 
 select throws_ok(

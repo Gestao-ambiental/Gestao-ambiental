@@ -2,6 +2,7 @@
 //
 // 1. Com o JWT de quem pediu: inicia a extração (o banco confere Gestão, rascunho, PDF e se ainda
 //    não há condicionantes) e baixa o PDF do Storage. O navegador nunca envia o PDF à IA.
+//    Extração repetida (mesmo id) não chama a IA de novo: devolve a situação atual.
 // 2. Extrai o texto por página aqui; PDF sem texto (escaneado) ou acima de 10 MB não vai à IA.
 // 3. Chama o provedor pelo adapter, com tempo limite, e valida a resposta por schema.
 // 4. Com a service role: grava a proposta como rascunho ou registra a falha, com modelo, prompt,
@@ -88,8 +89,28 @@ Deno.serve(async (pedido) => {
       ERROS_DO_INICIO[codigo] ?? 500,
     )
   }
-  const pdf = (inicio_.data as { caminho: string; tamanho_bytes: number; tipos: string[] }[])[0]
+  const pdf = (
+    inicio_.data as {
+      nova: boolean
+      situacao: string
+      motivo: string | null
+      itens_propostos: number | null
+      caminho: string
+      tamanho_bytes: number
+      tipos: string[]
+    }[]
+  )[0]
   if (!pdf) return responder({ erro: 'erro_interno' }, 500)
+  // Retry ou clique duplo: não chama a IA de novo, só conta como está.
+  if (!pdf.nova) {
+    return responder(
+      pdf.situacao === 'concluida'
+        ? { situacao: 'concluida', itens: pdf.itens_propostos ?? 0 }
+        : pdf.situacao === 'falhou'
+          ? { situacao: 'falhou', motivo: pdf.motivo }
+          : { situacao: 'em_andamento' },
+    )
+  }
 
   const modelo = Deno.env.get('OPENROUTER_MODEL') || MODELO_PADRAO
   let paginas = 0
