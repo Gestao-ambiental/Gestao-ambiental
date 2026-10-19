@@ -269,7 +269,8 @@ describe('passo 4: prazos (LIC-03)', () => {
     const usuario = userEvent.setup()
     renderizarApp('/licencas/i1/prazos')
 
-    expect(await screen.findByText('Pendente de revisão')).toBeInTheDocument()
+    // Sem recorrência escolhida nem lida pela IA: não há o que confirmar na linha.
+    expect(await screen.findByRole('button', { name: 'Definir prazo de 4.2' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Continuar' })).toBeDisabled()
 
     await usuario.click(screen.getByRole('button', { name: 'Relatório trimestral' }))
@@ -293,6 +294,73 @@ describe('passo 4: prazos (LIC-03)', () => {
       p_data_referencia: '2023-02-14',
       p_primeira_data: '2023-05-14',
       p_fonte_regra: 'Texto literal de Relatório trimestral',
+    })
+  })
+})
+
+describe('passo 4: confirmação rápida com a recorrência lida pela IA', () => {
+  const daIa = (id: string, codigo: string, titulo: string, periodicidade: string) => ({
+    ...condicionante(id, codigo, titulo),
+    origem: 'ia',
+    proposta_ia: { periodicidade },
+  })
+
+  it('a tabela mostra a sugestão e o botão da linha confirma com ela', async () => {
+    falso.reiniciar(
+      cenario({
+        tabelas: { condicionante: [daIa('c1', '4.2', 'Relatório trimestral', 'trimestral')] },
+      }),
+    )
+    const usuario = userEvent.setup()
+    renderizarApp('/licencas/i1/prazos')
+
+    const tabela = await screen.findByRole('table')
+    expect(within(tabela).getByText('Trimestral')).toBeInTheDocument()
+    expect(within(tabela).getByText('sugerida pela leitura da IA')).toBeInTheDocument()
+    expect(within(tabela).getByText('14/05/2023')).toBeInTheDocument()
+
+    await usuario.click(within(tabela).getByRole('button', { name: 'Confirmar prazo de 4.2' }))
+    await waitFor(() => {
+      expect(falso.cliente.rpc).toHaveBeenCalledWith('confirmar_prazo', {
+        p_condicionante_id: 'c1',
+        p_recorrencia: 'trimestral',
+        p_unidade: null,
+        p_intervalo: null,
+        p_contagem: 'corridos',
+        p_data_referencia: '2023-02-14',
+        p_primeira_data: '2023-05-14',
+        p_fonte_regra: 'Texto literal de Relatório trimestral',
+      })
+    })
+  })
+
+  it('"Confirmar todos" confirma as sugestões claras; a ambígua fica para o painel', async () => {
+    falso.reiniciar(
+      cenario({
+        tabelas: {
+          condicionante: [
+            daIa('c1', '4.2', 'Relatório trimestral', 'trimestral'),
+            daIa('c2', '5.1', 'Laudo anual de ruído', 'anualmente'),
+            daIa('c3', '3.2', 'Inventário de resíduos', 'anual e na renovação da licença'),
+          ],
+        },
+      }),
+    )
+    const usuario = userEvent.setup()
+    renderizarApp('/licencas/i1/prazos')
+
+    const tabela = await screen.findByRole('table')
+    expect(within(tabela).getByRole('button', { name: 'Definir prazo de 3.2' })).toBeInTheDocument()
+    await usuario.click(within(tabela).getByRole('button', { name: 'Confirmar todos (2)' }))
+    await waitFor(() => {
+      expect(
+        falso.cliente.rpc.mock.calls
+          .filter(([nome]) => nome === 'confirmar_prazo')
+          .map(
+            ([, args]) =>
+              (args as { p_condicionante_id: string; p_recorrencia: string }).p_recorrencia,
+          ),
+      ).toEqual(['trimestral', 'anual'])
     })
   })
 })
