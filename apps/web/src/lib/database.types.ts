@@ -53,14 +53,14 @@ isOneToOne: false
                   ]
                 },"condicionante": {
                   Row: {
-                    "codigo": string,"consultoria_id": string,"criado_em": string,"id": string,"instrumento_id": string,"origem": string,"pai_id": string | null,"posicao": number,"responsavel_id": string | null,"revisao": Database["public"]['Enums']["revisao_condicionante"],"versao_vigente_id": string | null
+                    "aceita_sem_edicao": boolean | null,"codigo": string,"consultoria_id": string,"criado_em": string,"extracao_id": string | null,"fonte_pagina": number | null,"id": string,"instrumento_id": string,"origem": string,"pai_id": string | null,"posicao": number,"proposta_ia": Json | null,"responsavel_id": string | null,"revisao": Database["public"]['Enums']["revisao_condicionante"],"versao_vigente_id": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "codigo": string,"consultoria_id": string,"criado_em"?: string,"id"?: string,"instrumento_id": string,"origem"?: string,"pai_id"?: string | null,"posicao": number,"responsavel_id"?: string | null,"revisao"?: Database["public"]['Enums']["revisao_condicionante"],"versao_vigente_id"?: string | null
+                    "aceita_sem_edicao"?: boolean | null,"codigo": string,"consultoria_id": string,"criado_em"?: string,"extracao_id"?: string | null,"fonte_pagina"?: number | null,"id"?: string,"instrumento_id": string,"origem"?: string,"pai_id"?: string | null,"posicao": number,"proposta_ia"?: Json | null,"responsavel_id"?: string | null,"revisao"?: Database["public"]['Enums']["revisao_condicionante"],"versao_vigente_id"?: string | null
                   }
                   Update: {
-                    "codigo"?: string,"consultoria_id"?: string,"criado_em"?: string,"id"?: string,"instrumento_id"?: string,"origem"?: string,"pai_id"?: string | null,"posicao"?: number,"responsavel_id"?: string | null,"revisao"?: Database["public"]['Enums']["revisao_condicionante"],"versao_vigente_id"?: string | null
+                    "aceita_sem_edicao"?: boolean | null,"codigo"?: string,"consultoria_id"?: string,"criado_em"?: string,"extracao_id"?: string | null,"fonte_pagina"?: number | null,"id"?: string,"instrumento_id"?: string,"origem"?: string,"pai_id"?: string | null,"posicao"?: number,"proposta_ia"?: Json | null,"responsavel_id"?: string | null,"revisao"?: Database["public"]['Enums']["revisao_condicionante"],"versao_vigente_id"?: string | null
                   }
                   Relationships: [
                     {
@@ -69,6 +69,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "consultoria"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "condicionante_extracao_fk"
+      columns: ["consultoria_id","extracao_id"]
+isOneToOne: false
+      referencedRelation: "extracao_ia"
+      referencedColumns: ["consultoria_id","id"]
     },{
       foreignKeyName: "condicionante_instrumento_fk"
       columns: ["consultoria_id","instrumento_id"]
@@ -377,6 +383,44 @@ isOneToOne: false
       referencedColumns: ["consultoria_id","id"]
     }
                   ]
+                },"extracao_ia": {
+                  Row: {
+                    "concluida_em": string | null,"consultoria_id": string,"custo_micros": number | null,"documento_versao_id": string,"duracao_ms": number | null,"id": string,"iniciada_em": string,"instrumento_id": string,"itens_propostos": number | null,"modelo": string | null,"moeda": string,"motivo": string | null,"paginas": number | null,"resultado": Json | null,"situacao": string,"solicitada_por": string,"tokens_entrada": number | null,"tokens_saida": number | null,"versao_prompt": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "concluida_em"?: string | null,"consultoria_id": string,"custo_micros"?: number | null,"documento_versao_id": string,"duracao_ms"?: number | null,"id": string,"iniciada_em"?: string,"instrumento_id": string,"itens_propostos"?: number | null,"modelo"?: string | null,"moeda"?: string,"motivo"?: string | null,"paginas"?: number | null,"resultado"?: Json | null,"situacao"?: string,"solicitada_por": string,"tokens_entrada"?: number | null,"tokens_saida"?: number | null,"versao_prompt"?: string | null
+                  }
+                  Update: {
+                    "concluida_em"?: string | null,"consultoria_id"?: string,"custo_micros"?: number | null,"documento_versao_id"?: string,"duracao_ms"?: number | null,"id"?: string,"iniciada_em"?: string,"instrumento_id"?: string,"itens_propostos"?: number | null,"modelo"?: string | null,"moeda"?: string,"motivo"?: string | null,"paginas"?: number | null,"resultado"?: Json | null,"situacao"?: string,"solicitada_por"?: string,"tokens_entrada"?: number | null,"tokens_saida"?: number | null,"versao_prompt"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "extracao_ia_consultoria_id_fkey"
+      columns: ["consultoria_id"]
+isOneToOne: false
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "extracao_ia_instrumento_fk"
+      columns: ["consultoria_id","instrumento_id"]
+isOneToOne: false
+      referencedRelation: "instrumento"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "extracao_ia_solicitada_por_fk"
+      columns: ["consultoria_id","solicitada_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "extracao_ia_versao_fk"
+      columns: ["consultoria_id","documento_versao_id"]
+isOneToOne: false
+      referencedRelation: "documento_versao"
+      referencedColumns: ["consultoria_id","id"]
+    }
+                  ]
                 },"instrumento": {
                   Row: {
                     "antecedencia_renovacao_dias": number,"assinado_em": string | null,"assinado_em_texto": string | null,"ativado_em": string | null,"ativado_por": string | null,"chave_ativacao": string | null,"consultoria_id": string,"criado_em": string,"criado_por": string,"documento_id": string | null,"emitido_em": string | null,"emitido_em_texto": string | null,"empreendimento_id": string,"id": string,"marco": Database["public"]['Enums']["marco_instrumento"] | null,"numero": string | null,"orgao": string | null,"publicado_em": string | null,"publicado_em_texto": string | null,"recebido_em": string | null,"recebido_em_texto": string | null,"row_version": number,"situacao": Database["public"]['Enums']["situacao_instrumento"],"tipo_id": string | null,"unidade_id": string,"validade": string | null,"validade_texto": string | null
@@ -640,6 +684,9 @@ isOneToOne: false
 "concluir_etapa":
 { Args: { "p_etapa_id": string }; Returns: undefined
                            },
+"concluir_extracao_ia":
+{ Args: { "p_custo_micros": number,"p_duracao_ms": number,"p_id": string,"p_modelo": string,"p_paginas": number,"p_resultado": Json,"p_tokens_entrada": number,"p_tokens_saida": number,"p_versao_prompt": string }; Returns: number
+                           },
 "concluir_ocorrencia":
 { Args: { "p_ocorrencia_id": string,"p_row_version": number }; Returns: number
                            },
@@ -710,6 +757,14 @@ isOneToOne: false
                            },
 "enviar_evidencia":
 { Args: { "p_caminho": string,"p_data_execucao": string,"p_evidencia_id": string,"p_nome_original": string,"p_ocorrencia_id": string,"p_sha256": string,"p_versao_id": string }; Returns: number
+                           },
+"falhar_extracao_ia":
+{ Args: { "p_custo_micros": number,"p_duracao_ms": number,"p_id": string,"p_modelo": string,"p_motivo": string,"p_paginas": number,"p_tokens_entrada": number,"p_tokens_saida": number,"p_versao_prompt": string }; Returns: undefined
+                           },
+"iniciar_extracao_ia":
+{ Args: { "p_id": string,"p_instrumento_id": string }; Returns: {
+              "caminho": string,"itens_propostos": number,"mime": string,"motivo": string,"nova": boolean,"situacao": string,"tamanho_bytes": number,"tipos": (string)[]
+            }[]
                            },
 "listar_aguardando_conferencia":
 { Args: { "p_consultoria_id": string,"p_deslocamento"?: number,"p_limite"?: number }; Returns: {
