@@ -26,6 +26,7 @@ function renovacao(extra: Partial<Record<string, unknown>> = {}): Record<string,
     antecedencia_dias: 30,
     protocolado_em: null,
     protocolo_numero: null,
+    acompanhamento_dias: null,
     hoje,
     total: 2,
     ...extra,
@@ -88,6 +89,7 @@ function cenario(
       },
       obter_plano_renovacao: { data: [plano()] },
       definir_antecedencia_renovacao: { data: 2 },
+      definir_acompanhamento: { data: 3 },
       registrar_protocolo: { data: 2 },
       ...rpc,
     },
@@ -272,11 +274,72 @@ describe('protocolo (REN-02)', () => {
         `Protocolada em ${formatarDataCivil(adicionarDias(hoje, -2))} · protocolo IMA 2026/558812`,
       ),
     ).toBeInTheDocument()
-    expect(screen.getByText('Protocolada')).toBeInTheDocument()
+    expect(screen.getByText('Sem retorno do órgão')).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'Comprovante protocolo IMA.pdf' }),
     ).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Registrar protocolo' })).not.toBeInTheDocument()
     expect(screen.getByLabelText('Antecedência adicional (dias)')).toBeDisabled()
+  })
+})
+
+describe('acompanhamento do órgão (decisão de 19/10/2026)', () => {
+  const protocolada = (extra: Partial<Record<string, unknown>> = {}) =>
+    plano({
+      protocolado_em: adicionarDias(hoje, -2),
+      protocolo_numero: 'IMA 2026/558812',
+      comprovante_caminho: 'c-Filtroville/protocolo/x.pdf',
+      comprovante_nome: 'Comprovante protocolo IMA.pdf',
+      comprovante_tamanho: 327680,
+      registrado_por_nome: 'Ana Ribeiro',
+      registrado_em: new Date().toISOString(),
+      row_version: 2,
+      ...extra,
+    })
+
+  it('a Gestão escolhe um atalho ou outro intervalo a partir de 1 dia', async () => {
+    const usuario = userEvent.setup()
+    falso.reiniciar(cenario('gestao', { obter_plano_renovacao: { data: [protocolada()] } }))
+    renderizarApp('/renovacoes/i2')
+    expect(
+      await screen.findByText('Intervalo de acompanhamento ainda não definido.'),
+    ).toBeInTheDocument()
+
+    const seletor = screen.getByLabelText('Acompanhar o órgão')
+    await usuario.selectOptions(seletor, 'Quinzenal')
+    await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
+    await vi.waitFor(() => {
+      expect(falso.cliente.rpc).toHaveBeenCalledWith('definir_acompanhamento', {
+        p_plano_id: 'p1',
+        p_dias: 15,
+        p_row_version: 2,
+      })
+    })
+
+    await usuario.selectOptions(seletor, 'Outro intervalo…')
+    await usuario.type(screen.getByLabelText('Intervalo em dias'), '0')
+    expect(screen.getByText('Use de 1 a 365 dias.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Salvar' })).toBeDisabled()
+  })
+
+  it('no dia de acompanhar, plano e radar avisam', async () => {
+    falso.reiniciar(
+      cenario('equipe', {
+        obter_plano_renovacao: { data: [protocolada({ acompanhamento_dias: 1 })] },
+        listar_renovacoes: {
+          data: [
+            renovacao({
+              protocolado_em: adicionarDias(hoje, -2),
+              protocolo_numero: 'IMA 2026/558812',
+              acompanhamento_dias: 1,
+            }),
+          ],
+        },
+      }),
+    )
+    renderizarApp('/renovacoes/i2')
+    expect(await screen.findByText('Acompanhar o órgão hoje')).toBeInTheDocument()
+    expect(screen.getByText('Diário · próximo acompanhamento hoje')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Acompanhar o órgão')).toBeNull()
   })
 })

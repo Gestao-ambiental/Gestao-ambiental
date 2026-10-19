@@ -29,6 +29,9 @@ function lerLicencas(valor: Json): LicencaResumo[] {
         validade: typeof item.validade === 'string' ? (item.validade as DataCivil) : null,
         sigla: typeof item.sigla === 'string' ? item.sigla : null,
         antecedencia: typeof item.antecedencia === 'number' ? item.antecedencia : null,
+        diasLimite: typeof item.dias_limite === 'number' ? item.dias_limite : null,
+        protocoladoEm:
+          typeof item.protocolado_em === 'string' ? (item.protocolado_em as DataCivil) : null,
       },
     ]
   })

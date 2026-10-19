@@ -300,8 +300,10 @@ export function PaginaAcompanhamentos() {
                                 antecedencia: item.antecedencia,
                                 diasLimite: item.diasLimite,
                                 protocoladoEm: item.protocoladoEm,
+                                acompanhamentoDias: item.acompanhamentoDias,
                                 hoje: item.hoje,
                               })}
+                              hoje={item.hoje}
                             />
                           </td>
                         </tr>
@@ -335,8 +337,10 @@ export function PaginaAcompanhamentos() {
                             antecedencia: item.antecedencia,
                             diasLimite: item.diasLimite,
                             protocoladoEm: item.protocoladoEm,
+                            acompanhamentoDias: item.acompanhamentoDias,
                             hoje: item.hoje,
                           })}
+                          hoje={item.hoje}
                         />
                       </span>
                       <span className="text-xs text-(--text-subtle)">

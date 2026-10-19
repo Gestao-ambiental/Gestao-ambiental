@@ -22,6 +22,7 @@ import { formatarInstanteComHora } from '@/lib/datas'
 import { ehSemPermissao, mensagemDoErro } from '@/lib/erros'
 import { cn } from '@/lib/utils'
 
+import { AcompanhamentoOrgao } from './AcompanhamentoOrgao'
 import { DialogoProtocolo } from './DialogoProtocolo'
 import { SeloRenovacao } from './SeloRenovacao'
 
@@ -293,6 +294,7 @@ export function PaginaPlanoRenovacao() {
     antecedencia: dados.antecedencia,
     diasLimite: dados.diasLimite,
     protocoladoEm: dados.protocoladoEm,
+    acompanhamentoDias: dados.acompanhamentoDias,
     hoje: dados.hoje,
   })
 
@@ -312,7 +314,7 @@ export function PaginaPlanoRenovacao() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-(--space-150)">
-          <SeloRenovacao situacao={situacao} />
+          <SeloRenovacao situacao={situacao} hoje={dados.hoje} />
           {podeEditar ? (
             <Botao
               aparencia="primario"
@@ -349,6 +351,16 @@ export function PaginaPlanoRenovacao() {
                 {formatarInstanteComHora(dados.registradoEm, atual.fuso)}
               </span>
             ) : null}
+          </span>
+          <span className="mt-(--space-100) block">
+            <AcompanhamentoOrgao
+              key={dados.rowVersion}
+              plano={dados}
+              protocoladoEm={dados.protocoladoEm}
+              hoje={dados.hoje}
+              podeEditar={ehGestao}
+              aoSalvar={recarregar}
+            />
           </span>
         </MensagemSecao>
       ) : null}

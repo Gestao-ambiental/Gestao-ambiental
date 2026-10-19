@@ -76,6 +76,7 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   data_protocolo_obrigatoria: 'Informe a data do protocolo',
   data_protocolo_futura: 'A data do protocolo não pode estar no futuro',
   comprovante_obrigatorio: 'Anexe o comprovante',
+  plano_nao_protocolado: 'O acompanhamento do órgão começa depois do protocolo.',
 }
 
 const MENSAGENS_DO_AUTH: Record<string, string> = {

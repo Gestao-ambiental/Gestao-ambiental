@@ -35,6 +35,8 @@ export interface Renovacao {
   antecedencia: number
   protocoladoEm: DataCivil | null
   protocoloNumero: string | null
+  /** De quantos em quantos dias acompanhar o órgão depois do protocolo; nulo = não definido. */
+  acompanhamentoDias: number | null
   hoje: DataCivil
 }
 
@@ -62,6 +64,7 @@ export async function listarRenovacoes(
       antecedencia: r.antecedencia_dias,
       protocoladoEm: anulavel(r.protocolado_em) as DataCivil | null,
       protocoloNumero: anulavel(r.protocolo_numero),
+      acompanhamentoDias: anulavel(r.acompanhamento_dias) ?? null,
       hoje: r.hoje as DataCivil,
     })),
   }
@@ -102,6 +105,7 @@ export async function obterPlano(instrumentoId: string): Promise<PlanoRenovacao 
     antecedencia: p.antecedencia_dias,
     protocoladoEm: anulavel(p.protocolado_em) as DataCivil | null,
     protocoloNumero: anulavel(p.protocolo_numero),
+    acompanhamentoDias: anulavel(p.acompanhamento_dias) ?? null,
     comprovante: caminho
       ? { caminho, nome: p.comprovante_nome, tamanho: p.comprovante_tamanho }
       : null,
@@ -120,6 +124,21 @@ export async function definirAntecedencia(
   const { data, error } = await obterSupabase().rpc('definir_antecedencia_renovacao', {
     p_plano_id: planoId,
     p_antecedencia: dias,
+    p_row_version: rowVersion,
+  })
+  if (error) throw error
+  return data
+}
+
+/** Intervalo de acompanhamento do órgão (só Gestão, só depois do protocolo). */
+export async function definirAcompanhamento(
+  planoId: string,
+  dias: number,
+  rowVersion: number,
+): Promise<number> {
+  const { data, error } = await obterSupabase().rpc('definir_acompanhamento', {
+    p_plano_id: planoId,
+    p_dias: dias,
     p_row_version: rowVersion,
   })
   if (error) throw error
