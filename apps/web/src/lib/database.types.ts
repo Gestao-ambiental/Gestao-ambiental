@@ -531,14 +531,14 @@ isOneToOne: false
                   ]
                 },"plano_renovacao": {
                   Row: {
-                    "antecedencia_dias": number,"consultoria_id": string,"criado_em": string,"dias_limite_protocolo": number,"id": string,"instrumento_id": string,"protocolado_em": string | null,"protocolo_numero": string | null,"protocolo_registrado_em": string | null,"protocolo_registrado_por": string | null,"protocolo_versao_id": string | null,"row_version": number
+                    "acompanhamento_dias": number | null,"antecedencia_dias": number,"consultoria_id": string,"criado_em": string,"dias_limite_protocolo": number,"id": string,"instrumento_id": string,"protocolado_em": string | null,"protocolo_numero": string | null,"protocolo_registrado_em": string | null,"protocolo_registrado_por": string | null,"protocolo_versao_id": string | null,"row_version": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "antecedencia_dias"?: number,"consultoria_id": string,"criado_em"?: string,"dias_limite_protocolo"?: number,"id"?: string,"instrumento_id": string,"protocolado_em"?: string | null,"protocolo_numero"?: string | null,"protocolo_registrado_em"?: string | null,"protocolo_registrado_por"?: string | null,"protocolo_versao_id"?: string | null,"row_version"?: number
+                    "acompanhamento_dias"?: number | null,"antecedencia_dias"?: number,"consultoria_id": string,"criado_em"?: string,"dias_limite_protocolo"?: number,"id"?: string,"instrumento_id": string,"protocolado_em"?: string | null,"protocolo_numero"?: string | null,"protocolo_registrado_em"?: string | null,"protocolo_registrado_por"?: string | null,"protocolo_versao_id"?: string | null,"row_version"?: number
                   }
                   Update: {
-                    "antecedencia_dias"?: number,"consultoria_id"?: string,"criado_em"?: string,"dias_limite_protocolo"?: number,"id"?: string,"instrumento_id"?: string,"protocolado_em"?: string | null,"protocolo_numero"?: string | null,"protocolo_registrado_em"?: string | null,"protocolo_registrado_por"?: string | null,"protocolo_versao_id"?: string | null,"row_version"?: number
+                    "acompanhamento_dias"?: number | null,"antecedencia_dias"?: number,"consultoria_id"?: string,"criado_em"?: string,"dias_limite_protocolo"?: number,"id"?: string,"instrumento_id"?: string,"protocolado_em"?: string | null,"protocolo_numero"?: string | null,"protocolo_registrado_em"?: string | null,"protocolo_registrado_por"?: string | null,"protocolo_versao_id"?: string | null,"row_version"?: number
                   }
                   Relationships: [
                     {
@@ -685,6 +685,9 @@ isOneToOne: false
 "criar_unidade":
 { Args: { "p_empreendimento_id": string,"p_endereco"?: string,"p_id": string,"p_nome": string }; Returns: string
                            },
+"definir_acompanhamento":
+{ Args: { "p_dias": number,"p_plano_id": string,"p_row_version": number }; Returns: number
+                           },
 "definir_antecedencia_renovacao":
 { Args: { "p_antecedencia": number,"p_plano_id": string,"p_row_version": number }; Returns: number
                            },
@@ -733,7 +736,7 @@ isOneToOne: false
                            },
 "listar_renovacoes":
 { Args: { "p_consultoria_id": string,"p_deslocamento"?: number,"p_limite"?: number }; Returns: {
-              "antecedencia_dias": number,"dias_limite_protocolo": number,"empreendimento_id": string,"empreendimento_nome": string,"hoje": string,"id": string,"instrumento_id": string,"licenca": string,"orgao": string,"protocolado_em": string,"protocolo_numero": string,"total": number,"unidade_nome": string,"validade": string
+              "acompanhamento_dias": number,"antecedencia_dias": number,"dias_limite_protocolo": number,"empreendimento_id": string,"empreendimento_nome": string,"hoje": string,"id": string,"instrumento_id": string,"licenca": string,"orgao": string,"protocolado_em": string,"protocolo_numero": string,"total": number,"unidade_nome": string,"validade": string
             }[]
                            },
 "meus_vinculos":
@@ -748,7 +751,7 @@ isOneToOne: false
                            },
 "obter_plano_renovacao":
 { Args: { "p_instrumento_id": string }; Returns: {
-              "antecedencia_dias": number,"comprovante_caminho": string,"comprovante_nome": string,"comprovante_tamanho": number,"consultoria_id": string,"dias_limite_protocolo": number,"empreendimento_id": string,"empreendimento_nome": string,"hoje": string,"id": string,"instrumento_id": string,"licenca": string,"orgao": string,"protocolado_em": string,"protocolo_numero": string,"registrado_em": string,"registrado_por_nome": string,"row_version": number,"unidade_nome": string,"validade": string
+              "acompanhamento_dias": number,"antecedencia_dias": number,"comprovante_caminho": string,"comprovante_nome": string,"comprovante_tamanho": number,"consultoria_id": string,"dias_limite_protocolo": number,"empreendimento_id": string,"empreendimento_nome": string,"hoje": string,"id": string,"instrumento_id": string,"licenca": string,"orgao": string,"protocolado_em": string,"protocolo_numero": string,"registrado_em": string,"registrado_por_nome": string,"row_version": number,"unidade_nome": string,"validade": string
             }[]
                            },
 "reabrir_ocorrencia":
