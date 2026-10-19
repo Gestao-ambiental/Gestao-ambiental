@@ -363,6 +363,34 @@ describe('passo 4: confirmação rápida com a recorrência lida pela IA', () =>
       ).toEqual(['trimestral', 'anual'])
     })
   })
+
+  it('em tela larga o painel já abre na primeira linha; clicar em qualquer ponto da linha troca', async () => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() })),
+    )
+    try {
+      falso.reiniciar(
+        cenario({
+          tabelas: {
+            condicionante: [
+              daIa('c1', '4.2', 'Relatório trimestral', 'trimestral'),
+              daIa('c2', '5.1', 'Laudo anual de ruído', 'anualmente'),
+            ],
+          },
+        }),
+      )
+      const usuario = userEvent.setup()
+      renderizarApp('/licencas/i1/prazos')
+
+      expect(await screen.findByRole('region', { name: 'Prazo de 4.2' })).toBeInTheDocument()
+      const tabela = screen.getByRole('table')
+      await usuario.click(within(tabela).getByText('5.1'))
+      expect(await screen.findByRole('region', { name: 'Prazo de 5.1' })).toBeInTheDocument()
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
 })
 
 describe('passo 5: responsáveis e ativação (LIC-04, LIC-05)', () => {

@@ -436,12 +436,21 @@ function Prazos({
 }) {
   const navegar = useNavigate()
   const consulta = useCondicionantes(instrumento.id)
-  const [aberto, setAberto] = useState<string | null>(null)
+  // undefined = ainda ninguém escolheu (abre a primeira linha); null = a pessoa fechou o painel.
+  const [escolhido, setAberto] = useState<string | null | undefined>(undefined)
+  // No celular o painel cobre a tabela: lá ele só abre quando a pessoa toca numa linha.
+  // jsdom (testes) não tem matchMedia: sem ele, comporta-se como tela estreita.
+  const [telaLarga] = useState(
+    () =>
+      typeof window.matchMedia === 'function' && window.matchMedia('(min-width: 1024px)').matches,
+  )
   const { fuso } = useConsultoria().atual
 
   const obrigacoes = (consulta.data ?? []).filter(
     (i) => i.natureza === 'obrigacao' && i.revisao === 'aceita',
   )
+  const aberto =
+    escolhido === undefined ? (telaLarga ? (obrigacoes[0]?.id ?? null) : null) : escolhido
   const confirmados = obrigacoes.filter((i) => i.confirmadoEm).length
   const pendentes = obrigacoes.length - confirmados
   const item = obrigacoes.find((i) => i.id === aberto)
@@ -563,7 +572,17 @@ function Prazos({
                 </thead>
                 <tbody>
                   {obrigacoes.map((o) => (
-                    <tr key={o.id} className={cn(o.id === aberto && 'bg-(--surface-selected)')}>
+                    // A linha inteira abre o painel com o mouse; pelo teclado, o título é o botão.
+                    <tr
+                      key={o.id}
+                      onClick={() => {
+                        setAberto(o.id)
+                      }}
+                      className={cn(
+                        'cursor-pointer transicao-estado hover:bg-(--neutral-subtle-hover)',
+                        o.id === aberto && 'bg-(--surface-selected) hover:bg-(--surface-selected)',
+                      )}
+                    >
                       <td className={`${classeCelula} font-mono text-xs text-(--text-subtle)`}>
                         {o.codigo}
                       </td>
@@ -627,7 +646,9 @@ function Prazos({
                             iconeAntes="check"
                             aria-label={`Confirmar prazo de ${o.codigo || o.titulo}`}
                             disabled={confirmarRapido.isPending}
-                            onClick={() => {
+                            onClick={(evento) => {
+                              // Confirmar na linha não troca o prazo aberto no painel.
+                              evento.stopPropagation()
                               confirmarRapido.mutate([o.id])
                             }}
                           >
