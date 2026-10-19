@@ -167,6 +167,19 @@ describe('situação da licença', () => {
     })
   })
 
+  it('LAO protocolada fica "sem retorno do órgão" até vencer; protocolo não prorroga', () => {
+    const protocolada = { ...lao('2027-02-15'), protocoladoEm: '2026-10-15' as const }
+    expect(situacaoDaLicenca(protocolada, '2026-10-19')).toEqual({ tipo: 'sem_retorno' })
+    expect(situacaoDaLicenca(protocolada, '2027-02-16')).toEqual({ tipo: 'vencida' })
+  })
+
+  it('o limite segue os dias do plano', () => {
+    // Validade 15/02/2027 − 150 dias = 18/09/2026: em 19/10 o prazo já venceu.
+    expect(situacaoDaLicenca({ ...lao('2027-02-15'), diasLimite: 150 }, '2026-10-12')).toEqual({
+      tipo: 'protocolo_atrasado',
+    })
+  })
+
   it('a regra dos 120 dias não vale para outros tipos', () => {
     expect(
       situacaoDaLicenca({ situacao: 'ativo', validade: '2027-02-15', sigla: 'AuA' }, '2026-10-12'),

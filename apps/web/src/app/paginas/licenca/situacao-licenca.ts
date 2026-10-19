@@ -26,7 +26,9 @@ export function rotuloDaSituacao(situacao: SituacaoDaLicenca | null): {
         tom: 'atencao',
       }
     case 'protocolo_atrasado':
-      return { texto: 'Protocolo atrasado', tom: 'perigo' }
+      return { texto: 'Prazo de protocolo vencido', tom: 'perigo' }
+    case 'sem_retorno':
+      return { texto: 'Sem retorno do órgão', tom: 'andamento' }
     case 'vigente':
       return { texto: 'Vigente', tom: 'sucesso' }
   }

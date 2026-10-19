@@ -106,9 +106,48 @@ export function etapasRenovacaoLao(
 /** A partir de quantos dias antes do limite o radar avisa "Protocolo em N dias" (como "próximos 7"). */
 export const DIAS_AVISO_PROTOCOLO = 7
 
+/**
+ * Intervalos de acompanhamento do órgão depois do protocolo (decisão de 19/10/2026): a partir de
+ * 1 dia, com atalhos; qualquer outro número de dias também vale.
+ */
+export const INTERVALOS_ACOMPANHAMENTO = [
+  { dias: 1, rotulo: 'Diário' },
+  { dias: 7, rotulo: 'Semanal' },
+  { dias: 15, rotulo: 'Quinzenal' },
+  { dias: 30, rotulo: 'Mensal' },
+] as const
+
+/** "Diário", "Semanal"… ou "A cada N dias". */
+export function rotuloDoIntervalo(dias: number): string {
+  return (
+    INTERVALOS_ACOMPANHAMENTO.find((i) => i.dias === dias)?.rotulo ?? `A cada ${String(dias)} dias`
+  )
+}
+
+/**
+ * Próximo acompanhamento: a primeira data da série protocolo + N, protocolo + 2N… que não ficou
+ * para trás. Sem intervalo definido, nulo.
+ */
+export function proximoAcompanhamento(
+  protocoladoEm: DataCivil,
+  intervaloDias: number | null | undefined,
+  hoje: DataCivil,
+): DataCivil | null {
+  if (!intervaloDias || intervaloDias < 1) return null
+  const passados = Math.max(0, diferencaEmDias(hoje, protocoladoEm))
+  const ciclos = Math.max(1, Math.ceil(passados / intervaloDias))
+  return adicionarDias(protocoladoEm, ciclos * intervaloDias)
+}
+
 /** Situação de uma renovação no radar (EQ-05). Calculada, nunca gravada. */
 export type SituacaoDaRenovacao =
-  | { tipo: 'protocolada'; em: DataCivil; noPrazo: boolean }
+  | {
+      tipo: 'protocolada'
+      em: DataCivil
+      noPrazo: boolean
+      /** Próxima data de acompanhar o órgão; nula sem intervalo definido. */
+      proximoAcompanhamento: DataCivil | null
+    }
   | { tipo: 'vencida'; dias: number }
   | { tipo: 'protocolo_atrasado'; dias: number }
   | { tipo: 'protocolo_proximo'; dias: number }
@@ -116,15 +155,16 @@ export type SituacaoDaRenovacao =
   | { tipo: 'preparacao_futura'; inicio: DataCivil }
 
 /**
- * Protocolada vale mais que tudo (e diz se foi até o limite). Sem protocolo: licença vencida,
- * limite passado, limite em até 7 dias, preparação em curso ou ainda por começar.
- * Protocolar não prorroga a licença: "protocolada" não muda a validade.
+ * Protocolada vale mais que tudo (e diz se foi até o limite e quando acompanhar o órgão). Sem
+ * protocolo: licença vencida, limite passado, limite em até 7 dias, preparação em curso ou ainda
+ * por começar. Protocolar não prorroga a licença: "protocolada" não muda a validade.
  */
 export function situacaoDaRenovacao(entrada: {
   vencimento: DataCivil
   antecedencia: number
   diasLimite?: number
   protocoladoEm: DataCivil | null
+  acompanhamentoDias?: number | null
   hoje: DataCivil
 }): SituacaoDaRenovacao {
   const { inicioPreparacao, limiteProtocolo } = datasRenovacaoLao(
@@ -137,6 +177,11 @@ export function situacaoDaRenovacao(entrada: {
       tipo: 'protocolada',
       em: entrada.protocoladoEm,
       noPrazo: entrada.protocoladoEm <= limiteProtocolo,
+      proximoAcompanhamento: proximoAcompanhamento(
+        entrada.protocoladoEm,
+        entrada.acompanhamentoDias,
+        entrada.hoje,
+      ),
     }
   }
   if (entrada.hoje > entrada.vencimento) {
@@ -150,17 +195,27 @@ export function situacaoDaRenovacao(entrada: {
   return { tipo: 'preparacao_futura', inicio: inicioPreparacao }
 }
 
-/** Texto do selo (Protótipo 17): o número de dias ou a data vão escritos, nunca só a cor. */
-export function rotuloDaSituacaoDaRenovacao(situacao: SituacaoDaRenovacao): string {
+/**
+ * Texto do selo (Protótipo 17): o número de dias ou a data vão escritos, nunca só a cor.
+ * Protocolada sem resposta registrada é "Sem retorno do órgão"; o dia de acompanhar o órgão vira
+ * aviso. "Prazo de protocolo vencido" é perder o limite (decisão de 19/10/2026).
+ */
+export function rotuloDaSituacaoDaRenovacao(
+  situacao: SituacaoDaRenovacao,
+  hoje?: DataCivil,
+): string {
   const dias = (n: number) => (n === 1 ? '1 dia' : `${String(n)} dias`)
   const diaMes = (data: DataCivil) => formatarDataCivil(data).slice(0, 5)
   switch (situacao.tipo) {
     case 'protocolada':
-      return situacao.noPrazo ? 'Protocolada' : 'Protocolada após o limite'
+      if (hoje && situacao.proximoAcompanhamento === hoje) return 'Acompanhar o órgão hoje'
+      return situacao.noPrazo
+        ? 'Sem retorno do órgão'
+        : 'Sem retorno do órgão · protocolo após o limite'
     case 'vencida':
       return `Vencida há ${dias(situacao.dias)}`
     case 'protocolo_atrasado':
-      return `Protocolo atrasado ${dias(situacao.dias)}`
+      return `Prazo de protocolo vencido há ${dias(situacao.dias)}`
     case 'protocolo_proximo':
       if (situacao.dias === 0) return 'Protocolo hoje'
       if (situacao.dias === 1) return 'Protocolo amanhã'

@@ -442,6 +442,11 @@ export interface LicencaNaLista extends LicencaResumo {
   criadoEm: string
 }
 
+function planoDa<T>(valor: T[] | T | null): T | null {
+  if (Array.isArray(valor)) return valor[0] ?? null
+  return valor
+}
+
 export async function listarLicencasDoEmpreendimento(
   empreendimentoId: string,
   pagina: number,
@@ -453,6 +458,7 @@ export async function listarLicencasDoEmpreendimento(
       `id, numero, orgao, situacao, validade, criado_em, antecedencia_renovacao_dias, unidade_id,
        tipo:tipo_instrumento!instrumento_tipo_fk(sigla, nome),
        unidade:unidade!instrumento_unidade_fk(nome),
+       plano:plano_renovacao!plano_renovacao_instrumento_fk(antecedencia_dias, dias_limite_protocolo, protocolado_em),
        condicionante(count)`,
       { count: 'exact' },
     )
@@ -469,7 +475,10 @@ export async function listarLicencasDoEmpreendimento(
       situacao: linha.situacao,
       validade: linha.validade as DataCivil | null,
       sigla: linha.tipo?.sigla ?? null,
-      antecedencia: linha.antecedencia_renovacao_dias,
+      // Um plano por LAO (instrumento_id único): o PostgREST devolve objeto; os tipos dizem lista.
+      antecedencia: planoDa(linha.plano)?.antecedencia_dias ?? linha.antecedencia_renovacao_dias,
+      diasLimite: planoDa(linha.plano)?.dias_limite_protocolo ?? null,
+      protocoladoEm: (planoDa(linha.plano)?.protocolado_em ?? null) as DataCivil | null,
       tipoNome: linha.tipo?.nome ?? null,
       unidadeId: linha.unidade_id,
       unidadeNome: linha.unidade.nome,

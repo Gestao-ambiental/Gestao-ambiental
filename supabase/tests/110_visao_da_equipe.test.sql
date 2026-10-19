@@ -59,8 +59,8 @@ select results_eq(
 select results_eq(
   $$select atrasadas, hoje, proximos_7, sem_responsavel, total
     from public.contar_prazos('c0000000-0000-4000-8000-00000000000a')$$,
-  $$values (1::bigint, 1::bigint, 1::bigint, 1::bigint, 4::bigint)$$,
-  'contadores: atrasadas, vencem hoje, próximos 7 dias e sem responsável (só ocorrências)'
+  $$values (1::bigint, 1::bigint, 1::bigint, 1::bigint, 6::bigint)$$,
+  'contadores: atrasadas, vencem hoje, próximos 7 dias e sem responsável (este só de ocorrências); total com validade e limite'
 );
 
 select results_eq(

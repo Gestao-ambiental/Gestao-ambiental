@@ -33,7 +33,10 @@ export {
   antecedenciaPreparacao,
   datasRenovacaoLao,
   etapasRenovacaoLao,
+  INTERVALOS_ACOMPANHAMENTO,
+  proximoAcompanhamento,
   rotuloDaSituacaoDaRenovacao,
+  rotuloDoIntervalo,
   situacaoDaRenovacao,
 } from './renovacao'
 export type { DatasRenovacaoLao, EtapaRenovacaoLao, SituacaoDaRenovacao } from './renovacao'
