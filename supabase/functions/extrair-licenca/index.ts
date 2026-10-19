@@ -115,7 +115,13 @@ Deno.serve(async (pedido) => {
   const modelo = Deno.env.get('OPENROUTER_MODEL') || MODELO_PADRAO
   let paginas = 0
 
-  async function falhar(motivo: MotivoDeFalha, consumo?: Consumo): Promise<Response> {
+  async function falhar(
+    motivo: MotivoDeFalha,
+    consumo?: Consumo,
+    detalhe: string | null = null,
+  ): Promise<Response> {
+    // Log da função (Supabase → Edge Functions → Logs): só ids, motivo e o detalhe do provedor.
+    console.error(JSON.stringify({ extracaoId, instrumentoId, motivo, detalhe, modelo }))
     await admin.rpc('falhar_extracao_ia', {
       p_id: extracaoId,
       p_motivo: motivo,
@@ -126,17 +132,30 @@ Deno.serve(async (pedido) => {
       p_custo_micros: consumo?.custoMicros ?? null,
       p_paginas: paginas || null,
       p_duracao_ms: Date.now() - inicio,
+      p_detalhe: detalhe,
     })
-    return responder({ situacao: 'falhou', motivo })
+    return responder({ situacao: 'falhou', motivo, detalhe })
   }
 
   try {
     const chave = Deno.env.get('OPENROUTER_API_KEY')
-    if (!chave) return await falhar('configuracao_ausente')
+    if (!chave) {
+      return await falhar(
+        'configuracao_ausente',
+        undefined,
+        'OPENROUTER_API_KEY não encontrada na função',
+      )
+    }
     if (pdf.tamanho_bytes > LIMITE_PDF_BYTES) return await falhar('pdf_grande_demais')
 
     const arquivo = await usuario.storage.from('arquivos').download(pdf.caminho)
-    if (arquivo.error) return await falhar('erro_interno')
+    if (arquivo.error) {
+      return await falhar(
+        'erro_interno',
+        undefined,
+        `storage: ${arquivo.error.message.slice(0, 200)}`,
+      )
+    }
 
     let textos: string[]
     try {
@@ -157,7 +176,9 @@ Deno.serve(async (pedido) => {
         AbortSignal.timeout(LIMITE_TEMPO_MS - (Date.now() - inicio)),
       )
     } catch (erro) {
-      if (erro instanceof FalhaDoProvedor) return await falhar(erro.motivo, erro.consumo)
+      if (erro instanceof FalhaDoProvedor) {
+        return await falhar(erro.motivo, erro.consumo, erro.detalhe)
+      }
       throw erro
     }
 
@@ -165,7 +186,7 @@ Deno.serve(async (pedido) => {
       totalPaginas: paginas,
       tipos: pdf.tipos,
     })
-    if (!proposta) return await falhar('resposta_invalida', resultado)
+    if (!proposta) return await falhar('resposta_invalida', resultado, 'fora do schema esperado')
 
     const gravacao = await admin.rpc('concluir_extracao_ia', {
       p_id: extracaoId,
@@ -178,9 +199,15 @@ Deno.serve(async (pedido) => {
       p_paginas: paginas,
       p_duracao_ms: Date.now() - inicio,
     })
-    if (gravacao.error) return await falhar('erro_interno', resultado)
+    if (gravacao.error) {
+      return await falhar(
+        'erro_interno',
+        resultado,
+        `gravação: ${gravacao.error.message.slice(0, 200)}`,
+      )
+    }
     return responder({ situacao: 'concluida', itens: gravacao.data as number })
-  } catch {
-    return await falhar('erro_interno')
+  } catch (erro) {
+    return await falhar('erro_interno', undefined, String(erro).slice(0, 200))
   }
 })

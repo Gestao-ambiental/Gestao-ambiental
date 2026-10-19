@@ -385,14 +385,14 @@ isOneToOne: false
                   ]
                 },"extracao_ia": {
                   Row: {
-                    "concluida_em": string | null,"consultoria_id": string,"custo_micros": number | null,"documento_versao_id": string,"duracao_ms": number | null,"id": string,"iniciada_em": string,"instrumento_id": string,"itens_propostos": number | null,"modelo": string | null,"moeda": string,"motivo": string | null,"paginas": number | null,"resultado": Json | null,"situacao": string,"solicitada_por": string,"tokens_entrada": number | null,"tokens_saida": number | null,"versao_prompt": string | null
+                    "concluida_em": string | null,"consultoria_id": string,"custo_micros": number | null,"detalhe": string | null,"documento_versao_id": string,"duracao_ms": number | null,"id": string,"iniciada_em": string,"instrumento_id": string,"itens_propostos": number | null,"modelo": string | null,"moeda": string,"motivo": string | null,"paginas": number | null,"resultado": Json | null,"situacao": string,"solicitada_por": string,"tokens_entrada": number | null,"tokens_saida": number | null,"versao_prompt": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "concluida_em"?: string | null,"consultoria_id": string,"custo_micros"?: number | null,"documento_versao_id": string,"duracao_ms"?: number | null,"id": string,"iniciada_em"?: string,"instrumento_id": string,"itens_propostos"?: number | null,"modelo"?: string | null,"moeda"?: string,"motivo"?: string | null,"paginas"?: number | null,"resultado"?: Json | null,"situacao"?: string,"solicitada_por": string,"tokens_entrada"?: number | null,"tokens_saida"?: number | null,"versao_prompt"?: string | null
+                    "concluida_em"?: string | null,"consultoria_id": string,"custo_micros"?: number | null,"detalhe"?: string | null,"documento_versao_id": string,"duracao_ms"?: number | null,"id": string,"iniciada_em"?: string,"instrumento_id": string,"itens_propostos"?: number | null,"modelo"?: string | null,"moeda"?: string,"motivo"?: string | null,"paginas"?: number | null,"resultado"?: Json | null,"situacao"?: string,"solicitada_por": string,"tokens_entrada"?: number | null,"tokens_saida"?: number | null,"versao_prompt"?: string | null
                   }
                   Update: {
-                    "concluida_em"?: string | null,"consultoria_id"?: string,"custo_micros"?: number | null,"documento_versao_id"?: string,"duracao_ms"?: number | null,"id"?: string,"iniciada_em"?: string,"instrumento_id"?: string,"itens_propostos"?: number | null,"modelo"?: string | null,"moeda"?: string,"motivo"?: string | null,"paginas"?: number | null,"resultado"?: Json | null,"situacao"?: string,"solicitada_por"?: string,"tokens_entrada"?: number | null,"tokens_saida"?: number | null,"versao_prompt"?: string | null
+                    "concluida_em"?: string | null,"consultoria_id"?: string,"custo_micros"?: number | null,"detalhe"?: string | null,"documento_versao_id"?: string,"duracao_ms"?: number | null,"id"?: string,"iniciada_em"?: string,"instrumento_id"?: string,"itens_propostos"?: number | null,"modelo"?: string | null,"moeda"?: string,"motivo"?: string | null,"paginas"?: number | null,"resultado"?: Json | null,"situacao"?: string,"solicitada_por"?: string,"tokens_entrada"?: number | null,"tokens_saida"?: number | null,"versao_prompt"?: string | null
                   }
                   Relationships: [
                     {
@@ -762,7 +762,7 @@ isOneToOne: false
 { Args: { "p_caminho": string,"p_data_execucao": string,"p_evidencia_id": string,"p_nome_original": string,"p_ocorrencia_id": string,"p_sha256": string,"p_versao_id": string }; Returns: number
                            },
 "falhar_extracao_ia":
-{ Args: { "p_custo_micros": number,"p_duracao_ms": number,"p_id": string,"p_modelo": string,"p_motivo": string,"p_paginas": number,"p_tokens_entrada": number,"p_tokens_saida": number,"p_versao_prompt": string }; Returns: undefined
+{ Args: { "p_custo_micros": number,"p_detalhe": string,"p_duracao_ms": number,"p_id": string,"p_modelo": string,"p_motivo": string,"p_paginas": number,"p_tokens_entrada": number,"p_tokens_saida": number,"p_versao_prompt": string }; Returns: undefined
                            },
 "iniciar_extracao_ia":
 { Args: { "p_id": string,"p_instrumento_id": string }; Returns: {

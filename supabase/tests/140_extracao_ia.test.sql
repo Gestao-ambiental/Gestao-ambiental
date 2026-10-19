@@ -88,7 +88,7 @@ select throws_ok(
 
 select throws_ok(
   $$select public.falhar_extracao_ia('30000000-0000-4000-8000-000000000001', 'erro_interno', null, null, null, null,
-      null, null, null)$$,
+      null, null, null, null)$$,
   '42501', null,
   'o navegador (authenticated) não registra falha'
 );
@@ -227,16 +227,16 @@ select lives_ok(
 
 reset role;
 set local role service_role;
-select public.falhar_extracao_ia('30000000-0000-4000-8000-000000000003', 'tempo_esgotado', 'openai/gpt-4.1-mini',
-  'licenca-v1', 18000, null, 900, 12, 120000);
+select public.falhar_extracao_ia('30000000-0000-4000-8000-000000000003', 'provedor_recusou', 'openai/gpt-4.1-mini',
+  'licenca-v1', null, null, null, 12, 900, '  HTTP 401: No auth credentials found  ');
 reset role;
 
 select results_eq(
-  $$select x.situacao, x.motivo, x.custo_micros, i.numero is null, i.row_version
+  $$select x.situacao, x.motivo, x.detalhe, i.numero is null, i.row_version
     from public.extracao_ia as x join public.instrumento as i on i.id = x.instrumento_id
     where x.id = '30000000-0000-4000-8000-000000000003'$$,
-  $$values ('falhou', 'tempo_esgotado', 900::bigint, true, 1)$$,
-  'a falha fica registrada (com o custo que houve) e o rascunho continua intacto'
+  $$values ('falhou', 'provedor_recusou', 'HTTP 401: No auth credentials found', true, 1)$$,
+  'a recusa do provedor fica registrada com o detalhe, e o rascunho continua intacto'
 );
 
 select throws_ok(

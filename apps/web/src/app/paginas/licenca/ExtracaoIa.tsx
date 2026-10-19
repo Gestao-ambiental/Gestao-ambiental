@@ -230,6 +230,12 @@ export function PainelExtracao({
         : !extrair.data && dados?.situacao === 'em_andamento'
           ? 'tempo_esgotado'
           : null
+  const detalhe =
+    extrair.data?.situacao === 'falhou'
+      ? (extrair.data.detalhe ?? null)
+      : !extrair.data && dados?.situacao === 'falhou'
+        ? dados.detalhe
+        : null
   if (motivo) {
     const definitiva = FALHA_DEFINITIVA.has(motivo)
     return (
@@ -248,6 +254,11 @@ export function PainelExtracao({
         }
       >
         {MENSAGEM_DA_FALHA[motivo]}
+        {detalhe ? (
+          <span className="mt-(--space-050) block text-xs text-(--text-subtle)">
+            Detalhe técnico: {detalhe}
+          </span>
+        ) : null}
       </MensagemSecao>
     )
   }

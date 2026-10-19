@@ -57,10 +57,38 @@ export type MotivoDeFalha =
   | 'pdf_sem_texto'
   | 'pdf_grande_demais'
   | 'provedor_indisponivel'
+  | 'provedor_recusou'
   | 'tempo_esgotado'
   | 'resposta_invalida'
   | 'configuracao_ausente'
   | 'erro_interno'
+
+/**
+ * Resposta de erro do provedor: tempo esgotado, indisponível (vale tentar de novo) ou recusa do
+ * pedido (chave inválida, sem crédito, modelo, parâmetro ou política de dados): tentar de novo não
+ * adianta; quem cuida da configuração precisa ver o detalhe.
+ */
+export function motivoDoStatus(status: number): MotivoDeFalha {
+  if (status === 408) return 'tempo_esgotado'
+  if (status === 429 || status >= 500) return 'provedor_indisponivel'
+  return 'provedor_recusou'
+}
+
+/**
+ * Detalhe curto do erro do provedor para o registro e o log: "HTTP 401: mensagem". Só o status e
+ * a mensagem de erro do provedor, até 300 caracteres (nunca chave, PDF ou conteúdo).
+ */
+export function detalheDoProvedor(status: number, corpo: string): string {
+  let mensagem = corpo
+  try {
+    const json = JSON.parse(corpo) as { error?: { message?: unknown } }
+    if (typeof json.error?.message === 'string') mensagem = json.error.message
+  } catch {
+    // corpo não é JSON: fica o texto como veio
+  }
+  const limpa = mensagem.replace(/\s+/g, ' ').trim()
+  return `HTTP ${String(status)}${limpa ? `: ${limpa}` : ''}`.slice(0, 300)
+}
 
 export const PROMPT_SISTEMA = `Você lê licenças ambientais brasileiras (LAO, LAP, LAI, AuA e outras) e devolve um rascunho estruturado para uma pessoa revisar.
 

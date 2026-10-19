@@ -2,8 +2,10 @@ import assert from 'node:assert/strict'
 
 import {
   custoEmMicros,
+  detalheDoProvedor,
   dataValida,
   mensagemDoUsuario,
+  motivoDoStatus,
   pdfTemTexto,
   SCHEMA_DA_RESPOSTA,
   validarProposta,
@@ -128,4 +130,24 @@ Deno.test('custo em milionésimos de dólar', () => {
 Deno.test('schema estrito exige todos os campos', () => {
   assert.deepEqual(SCHEMA_DA_RESPOSTA.required, ['identificacao', 'condicionantes'])
   assert.equal(SCHEMA_DA_RESPOSTA.properties.condicionantes.items.additionalProperties, false)
+})
+
+Deno.test('erro do provedor: recusa, indisponível ou tempo esgotado', () => {
+  assert.equal(motivoDoStatus(401), 'provedor_recusou')
+  assert.equal(motivoDoStatus(402), 'provedor_recusou')
+  assert.equal(motivoDoStatus(400), 'provedor_recusou')
+  assert.equal(motivoDoStatus(404), 'provedor_recusou')
+  assert.equal(motivoDoStatus(408), 'tempo_esgotado')
+  assert.equal(motivoDoStatus(429), 'provedor_indisponivel')
+  assert.equal(motivoDoStatus(503), 'provedor_indisponivel')
+})
+
+Deno.test('detalhe do provedor: status e mensagem, curto', () => {
+  assert.equal(
+    detalheDoProvedor(401, '{"error":{"message":"No auth credentials found","code":401}}'),
+    'HTTP 401: No auth credentials found',
+  )
+  assert.equal(detalheDoProvedor(502, 'Bad   gateway\n'), 'HTTP 502: Bad gateway')
+  assert.equal(detalheDoProvedor(500, ''), 'HTTP 500')
+  assert.ok(detalheDoProvedor(400, 'x'.repeat(1000)).length <= 300)
 })
