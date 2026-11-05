@@ -1,8 +1,15 @@
-import { formatarDataCivil, type DataCivil } from '@gestao-ambiental/domain'
+import {
+  ehDataCivil,
+  formatarDataCivil,
+  hojeNoFuso,
+  type DataCivil,
+} from '@gestao-ambiental/domain'
 import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
 
+import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Botao } from '@/components/ui/botao'
+import { CampoData } from '@/components/ui/campo-data'
 import { CampoTexto } from '@/components/ui/campo-texto'
 import { Icone } from '@/components/ui/icone'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
@@ -28,6 +35,7 @@ function FormEtapa({
 }) {
   // Id gerado aqui: repetir depois de erro de rede não cria outra etapa.
   const [id] = useState(() => crypto.randomUUID())
+  const { fuso } = useConsultoria().atual
   const [titulo, setTitulo] = useState('')
   const [modo, setModo] = useState<'trabalho' | 'espera_externa'>('trabalho')
   const [responsavelId, setResponsavelId] = useState('')
@@ -133,12 +141,12 @@ function FormEtapa({
             }}
           />
         )}
-        <CampoTexto
+        <CampoData
           rotulo="Meta"
-          type="date"
-          value={meta}
-          onChange={(evento) => {
-            setMeta(evento.target.value)
+          hoje={hojeNoFuso(new Date(), fuso)}
+          valor={ehDataCivil(meta) ? meta : null}
+          aoMudar={(nova) => {
+            setMeta(nova ?? '')
           }}
         />
         {modo === 'trabalho' ? (

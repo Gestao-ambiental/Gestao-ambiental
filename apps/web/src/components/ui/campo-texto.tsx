@@ -8,6 +8,8 @@ type Props = Omit<ComponentProps<'input'>, 'id'> & {
   rotulo: string
   /** Texto de apoio abaixo do campo; some quando há erro. */
   ajuda?: ReactNode
+  /** Ao lado do rótulo, à direita (ex.: a marca da IA). */
+  acessorio?: ReactNode
   erro?: string
   /** Campo de senha com botão "Mostrar senha" / "Ocultar senha". */
   senha?: boolean
@@ -22,6 +24,7 @@ type Props = Omit<ComponentProps<'input'>, 'id'> & {
 export function CampoTexto({
   rotulo,
   ajuda,
+  acessorio,
   erro,
   senha = false,
   id,
@@ -37,9 +40,12 @@ export function CampoTexto({
 
   return (
     <div className={cn('flex flex-col gap-(--space-050)', className)}>
-      <label htmlFor={campoId} className="rotulo">
-        {rotulo}
-      </label>
+      <div className="flex min-h-5 items-center gap-(--space-100)">
+        <label htmlFor={campoId} className="flex-1 rotulo">
+          {rotulo}
+        </label>
+        {acessorio}
+      </div>
       <div className="relative flex items-center">
         <input
           id={campoId}

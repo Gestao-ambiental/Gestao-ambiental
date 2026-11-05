@@ -10,6 +10,8 @@ import { BotaoIcone } from '@/components/ui/botao-icone'
 import { Icone } from '@/components/ui/icone'
 import { cn } from '@/lib/utils'
 
+import { destacarTrecho } from './destacar-trecho'
+
 const ZOOM_MINIMO = 50
 const ZOOM_MAXIMO = 200
 const PASSO_ZOOM = 25
@@ -23,10 +25,14 @@ async function carregarPdfjs() {
   return pdfjs
 }
 
-/** Pedido para ir a uma página (ex.: a fonte de um campo proposto pela IA). `vez` repete o pedido. */
+/**
+ * Pedido para ir a uma página (ex.: a fonte de um campo proposto pela IA). `vez` repete o pedido.
+ * `trechos`: o que destacar nessa página, em ordem de preferência; o primeiro que aparecer vale.
+ */
 export interface PedidoDePagina {
   numero: number
   vez: number
+  trechos?: readonly (string | null | undefined)[]
 }
 
 interface Props {
@@ -110,6 +116,14 @@ export function VisualizadorPdf({ url, nome, className, paginaPedida = null }: P
         viewport,
       })
       await camada.render()
+      if (cancelado()) return
+      // Destaca o trecho pedido só na página do pedido; em outra página, nada fica marcado.
+      if (pedidoVisto?.trechos && pedidoVisto.numero === pagina) {
+        destacarTrecho(textoRef.current, pedidoVisto.trechos)?.scrollIntoView({
+          block: 'center',
+          inline: 'nearest',
+        })
+      }
     })().catch(() => {
       // Render cancelado ao trocar de página ou zoom: a próxima rodada desenha.
     })
@@ -117,7 +131,7 @@ export function VisualizadorPdf({ url, nome, className, paginaPedida = null }: P
       estado.cancelado = true
       tarefa?.cancel()
     }
-  }, [documento, pagina, zoom])
+  }, [documento, pagina, zoom, pedidoVisto])
 
   const total = documento?.numPages ?? 0
 
@@ -156,7 +170,7 @@ export function VisualizadorPdf({ url, nome, className, paginaPedida = null }: P
             />
             <span aria-hidden="true" className="mx-(--space-050) h-5 border-l" />
             <BotaoIcone
-              icone="chevron-down"
+              icone="minus"
               rotulo="Diminuir zoom"
               tamanho="compacto"
               disabled={zoom <= ZOOM_MINIMO}
@@ -166,7 +180,7 @@ export function VisualizadorPdf({ url, nome, className, paginaPedida = null }: P
             />
             <span className="w-10 text-center text-xs text-(--text-subtle)">{zoom}%</span>
             <BotaoIcone
-              icone="chevron-up"
+              icone="plus"
               rotulo="Aumentar zoom"
               tamanho="compacto"
               disabled={zoom >= ZOOM_MAXIMO}

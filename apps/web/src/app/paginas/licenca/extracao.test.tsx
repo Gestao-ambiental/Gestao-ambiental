@@ -13,8 +13,14 @@ vi.mock('@/components/pdf/VisualizadorPdf', () => ({
     paginaPedida,
   }: {
     nome: string
-    paginaPedida?: { numero: number }
-  }) => <section aria-label={`PDF ${nome}`} data-pagina={paginaPedida?.numero ?? 1} />,
+    paginaPedida?: { numero: number; trechos?: readonly (string | null | undefined)[] }
+  }) => (
+    <section
+      aria-label={`PDF ${nome}`}
+      data-pagina={paginaPedida?.numero ?? 1}
+      data-trechos={(paginaPedida?.trechos ?? []).filter(Boolean).join('|')}
+    />
+  ),
 }))
 
 const eduardo = sessaoDe('eduardo@filtroville.test', 'Eduardo Karnopp')
@@ -257,7 +263,7 @@ const propostaConcluida = {
       assinado_em: { valor: '2023-02-14', pagina: 1 },
       publicado_em: { valor: null, pagina: null },
       recebido_em: { valor: null, pagina: null },
-      validade: { valor: '2027-02-15', pagina: 2 },
+      validade: { valor: '2027-02-15', texto: '15 de fevereiro de 2027', pagina: 2 },
     },
     condicionantes: [],
   },
@@ -284,18 +290,28 @@ describe('revisar a proposta da IA (IA-02)', () => {
     )
     renderizarApp('/licencas/i1/identificacao')
     const formulario = await screen.findByRole('form', { name: 'Identificação da licença' })
-    expect(await within(formulario).findAllByText(/^Proposto pela IA/)).toHaveLength(4)
-    expect(within(formulario).getAllByText('Não encontrado no documento.').length).toBeGreaterThan(
-      0,
-    )
+    expect(
+      await within(formulario).findAllByRole('button', { name: /^Proposto pela IA/ }),
+    ).toHaveLength(4)
+    expect(within(formulario).getAllByText('Não encontrado no documento').length).toBeGreaterThan(0)
 
-    const [verPagina2] = within(formulario).getAllByRole('button', { name: 'ver página 2' })
+    const [verPagina2] = within(formulario).getAllByRole('button', {
+      name: 'Proposto pela IA, ver na página 2 do PDF',
+    })
     if (!verPagina2) throw new Error('marca da validade ausente')
     await usuario.click(verPagina2)
-    expect(screen.getByRole('region', { name: 'PDF LAO 4821-2023.pdf' })).toHaveAttribute(
-      'data-pagina',
-      '2',
-    )
+    const pdf = screen.getByRole('region', { name: 'PDF LAO 4821-2023.pdf' })
+    expect(pdf).toHaveAttribute('data-pagina', '2')
+    // Destaca a data como está escrita; se não achar, a data em dd/mm/aaaa.
+    expect(pdf).toHaveAttribute('data-trechos', '15 de fevereiro de 2027|15/02/2027')
+
+    const [verPagina1] = within(formulario).getAllByRole('button', {
+      name: 'Proposto pela IA, ver na página 1 do PDF',
+    })
+    if (!verPagina1) throw new Error('marca do tipo ausente')
+    await usuario.click(verPagina1)
+    expect(pdf).toHaveAttribute('data-pagina', '1')
+    expect(pdf.getAttribute('data-trechos')).toMatch(/LAO$/)
   })
 
   it('condicionante proposta: fonte e periodicidade lida, aguardando aceite', async () => {

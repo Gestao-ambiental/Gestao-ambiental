@@ -1,5 +1,6 @@
 import {
   dataForaDoCiclo,
+  ehDataCivil,
   formatarDataCivil,
   janelaDoCiclo,
   type DataCivil,
@@ -8,6 +9,7 @@ import { useMutation } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 
 import { Botao } from '@/components/ui/botao'
+import { CampoData } from '@/components/ui/campo-data'
 import { CampoTexto } from '@/components/ui/campo-texto'
 import { Dialogo } from '@/components/ui/dialogo'
 import { Icone } from '@/components/ui/icone'
@@ -150,15 +152,16 @@ function EnvioDeEvidencia({
           {problema}
         </MensagemSecao>
       ) : null}
-      <CampoTexto
+      <CampoData
         rotulo="Data real de execução *"
-        type="date"
-        max={ocorrencia.hoje}
-        value={data}
+        hoje={ocorrencia.hoje}
+        maximo={ocorrencia.hoje}
+        motivoDoLimite="A data real de execução não pode estar no futuro"
+        valor={ehDataCivil(data) ? data : null}
         erro={erroData ?? undefined}
         ajuda="Quando a coleta ou o serviço foi feito. A data do envio não substitui."
-        onChange={(evento) => {
-          setData(evento.target.value)
+        aoMudar={(nova) => {
+          setData(nova ?? '')
           setErroData(null)
         }}
       />

@@ -57,7 +57,7 @@ export function MolduraCadastro({
       >
         Pular para o conteúdo
       </a>
-      <header className="flex min-h-14 shrink-0 flex-wrap items-center gap-(--space-150) border-b bg-(--surface) px-(--space-200) py-(--space-100)">
+      <header className="flex min-h-14 shrink-0 flex-wrap items-center gap-(--space-150) border-b bg-(--surface) px-(--space-200) py-(--space-100) md:px-(--space-300)">
         <span className="titulo-secao text-(--text-brand)">Grama</span>
         <span aria-hidden="true" className="h-6 border-l" />
         <div className="flex min-w-0 flex-1 flex-col">
@@ -84,24 +84,32 @@ export function MolduraCadastro({
         aria-label="Passos do cadastro"
         className="shrink-0 overflow-x-auto border-b bg-(--surface)"
       >
-        <ol className="flex min-w-max items-center gap-(--space-100) px-(--space-200) py-(--space-100)">
+        <ol className="flex min-w-max items-center gap-(--space-100) px-(--space-200) py-(--space-150) md:px-(--space-300)">
           {PASSOS.map((item, indice) => {
             const feito = indice < indiceAtual
             const atual = indice === indiceAtual
+            const ultimo = indice === PASSOS.length - 1
             const conteudo = (
               <>
                 <span
                   aria-hidden="true"
                   className={cn(
-                    'inline-flex size-6 items-center justify-center rounded-(--radius) border text-xs font-semibold',
-                    atual && 'border-transparent bg-(--brand) text-(--text-inverse)',
-                    feito && 'border-transparent bg-(--surface-selected) text-(--text-link)',
+                    'inline-flex size-6 shrink-0 items-center justify-center rounded-(--radius) border rotulo',
+                    atual && 'border-(--brand) bg-(--brand) text-(--text-inverse)',
+                    feito &&
+                      'border-(--surface-selected) bg-(--surface-selected) text-(--text-link)',
+                    !atual && !feito && 'border-(--border-strong) text-(--text-subtle)',
                   )}
                 >
                   {feito ? <Icone nome="check" tamanho={12} /> : indice + 1}
                 </span>
                 <span
-                  className={atual ? 'corpo-medio text-(--text)' : 'corpo text-(--text-subtle)'}
+                  className={cn(
+                    'whitespace-nowrap',
+                    atual ? 'corpo-medio text-(--text)' : 'corpo',
+                    feito && 'text-(--text)',
+                    !atual && !feito && 'text-(--text-subtle)',
+                  )}
                 >
                   {item.rotulo}
                   {feito ? <span className="sr-only"> (concluído)</span> : null}
@@ -109,10 +117,13 @@ export function MolduraCadastro({
               </>
             )
             return (
-              <li key={item.chave} className="flex items-center gap-(--space-100)">
-                {indice > 0 ? (
-                  <span aria-hidden="true" className="h-px w-6 bg-(--border) sm:w-16" />
-                ) : null}
+              <li
+                key={item.chave}
+                className={cn(
+                  'flex items-center gap-(--space-100)',
+                  ultimo ? 'flex-none' : 'flex-1',
+                )}
+              >
                 {feito && instrumentoId ? (
                   <Link
                     to={`/licencas/${instrumentoId}/${item.chave}`}
@@ -127,6 +138,9 @@ export function MolduraCadastro({
                   >
                     {conteudo}
                   </span>
+                )}
+                {ultimo ? null : (
+                  <span aria-hidden="true" className="h-px min-w-3 flex-1 bg-(--border)" />
                 )}
               </li>
             )
@@ -145,7 +159,7 @@ export function MolduraCadastro({
       </main>
 
       {rodape ? (
-        <footer className="flex shrink-0 flex-wrap items-center gap-(--space-150) border-t bg-(--surface) px-(--space-200) py-(--space-150)">
+        <footer className="flex shrink-0 flex-wrap items-center gap-(--space-150) border-t bg-(--surface) px-(--space-200) py-(--space-150) md:px-(--space-300)">
           {rodape}
         </footer>
       ) : null}

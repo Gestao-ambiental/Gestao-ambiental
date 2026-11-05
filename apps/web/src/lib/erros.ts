@@ -27,6 +27,7 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   instrumento_existente: 'Não foi possível criar o rascunho. Tente de novo.',
   unidade_invalida: 'A unidade precisa ser deste empreendimento.',
   marco_sem_data: 'Preencha a data do marco escolhido.',
+  data_futura: 'Emissão, assinatura e publicação não podem estar no futuro.',
   titulo_obrigatorio: 'Informe o título',
   natureza_obrigatoria: 'Escolha a natureza',
   agrupador_invalido: 'O subitem precisa ficar dentro de um agrupador.',

@@ -44,6 +44,8 @@ export const FALHA_DEFINITIVA: ReadonlySet<MotivoDaFalha> = new Set([
 export interface CampoProposto {
   valor: string | null
   pagina: number | null
+  /** Só nas datas: como a data está escrita no documento (ADR-0009). */
+  texto?: string | null
 }
 
 export interface PropostaDeIdentificacao {

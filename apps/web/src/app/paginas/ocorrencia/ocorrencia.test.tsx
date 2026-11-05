@@ -1,4 +1,4 @@
-import { adicionarDias, hojeNoFuso } from '@gestao-ambiental/domain'
+import { adicionarDias, formatarDataCivil, hojeNoFuso } from '@gestao-ambiental/domain'
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import axe from 'axe-core'
@@ -176,7 +176,10 @@ describe('evidência (DEM-03, DEM-09)', () => {
     await usuario.click(screen.getByRole('button', { name: 'Enviar para conferência' }))
     expect(await screen.findByText('Informe a data real de execução')).toBeInTheDocument()
 
-    await usuario.type(screen.getByLabelText('Data real de execução *'), adicionarDias(hoje, 1))
+    await usuario.type(
+      screen.getByLabelText('Data real de execução *'),
+      formatarDataCivil(adicionarDias(hoje, 1)),
+    )
     await usuario.click(screen.getByRole('button', { name: 'Enviar para conferência' }))
     expect(
       await screen.findByText('A data real de execução não pode estar no futuro'),
@@ -190,7 +193,10 @@ describe('evidência (DEM-03, DEM-09)', () => {
     await escolherArquivo(usuario)
 
     const dataAntiga = adicionarDias(hoje, -200)
-    await usuario.type(screen.getByLabelText('Data real de execução *'), dataAntiga)
+    await usuario.type(
+      screen.getByLabelText('Data real de execução *'),
+      formatarDataCivil(dataAntiga),
+    )
     expect(await screen.findByText(/fora deste ciclo/)).toBeInTheDocument()
 
     await usuario.click(screen.getByRole('button', { name: 'Enviar para conferência' }))

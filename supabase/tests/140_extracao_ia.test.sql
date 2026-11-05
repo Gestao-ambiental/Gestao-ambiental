@@ -122,7 +122,7 @@ select set_config('testes.proposta', $json${
     "orgao": {"valor": "Instituto do Meio Ambiente", "pagina": 1},
     "emitido_em": {"valor": "2023-02-30", "texto": "30 de fevereiro", "pagina": 1},
     "assinado_em": {"valor": "2023-02-14", "texto": "14 de fevereiro de 2023", "pagina": 1},
-    "publicado_em": {"valor": null, "pagina": null},
+    "publicado_em": {"valor": "2999-01-01", "texto": "1º de janeiro de 2999", "pagina": 1},
     "recebido_em": {"valor": null, "pagina": null},
     "validade": {"valor": "2027-02-15", "texto": "válida até 15 de fevereiro de 2027", "pagina": 1}
   },
@@ -153,12 +153,14 @@ select is(
 reset role;
 
 select results_eq(
-  $$select t.sigla, i.numero, i.orgao, i.emitido_em, i.assinado_em, i.assinado_em_texto, i.validade, i.validade_texto
+  $$select t.sigla, i.numero, i.orgao, i.emitido_em, i.assinado_em, i.assinado_em_texto, i.publicado_em,
+           i.publicado_em_texto, i.validade, i.validade_texto
     from public.instrumento as i join public.tipo_instrumento as t on t.id = i.tipo_id
     where i.id = '10000000-0000-4000-8000-000000000001'$$,
   $$values ('LAO', '4821/2023', 'IMA (digitado)', null::date, '2023-02-14'::date, '14 de fevereiro de 2023',
+            null::date, null::text,
             '2027-02-15'::date, 'válida até 15 de fevereiro de 2027')$$,
-  'identificação: preenche só o vazio, guarda o texto original e ignora data inexistente'
+  'identificação: preenche só o vazio, guarda o texto original e ignora data inexistente ou futura'
 );
 
 select results_eq(

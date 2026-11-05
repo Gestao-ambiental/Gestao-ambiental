@@ -165,7 +165,7 @@ describe('cadastro de licença: permissão e passo 1 (LIC-01)', () => {
 })
 
 describe('passo 2: identificação (LIC-01)', () => {
-  it('Continuar exige tipo, marco e validade; salva com a versão do rascunho', async () => {
+  it('Continuar diz o que falta (tipo, marco e validade); salva com a versão do rascunho', async () => {
     falso.reiniciar(
       cenario({
         tabelas: {
@@ -179,21 +179,38 @@ describe('passo 2: identificação (LIC-01)', () => {
     const { router } = renderizarApp('/licencas/i1/identificacao')
 
     const continuar = await screen.findByRole('button', { name: 'Continuar' })
-    expect(continuar).toBeDisabled()
-    expect(
-      screen.getByText('Continuar exige tipo, marco dos prazos e validade confirmada.'),
-    ).toBeInTheDocument()
+    expect(continuar).toBeEnabled()
+    expect(screen.getByText('Dá para salvar o rascunho incompleto.')).toBeInTheDocument()
     expect(screen.getByText('Preencha ao menos uma data para escolher.')).toBeInTheDocument()
+
+    await usuario.click(continuar)
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Para continuar, confirme o tipo de instrumento, a validade e o marco dos prazos.',
+    )
+    expect(
+      screen.getByRole('combobox', { name: /Tipo de instrumento/ }),
+    ).toHaveAccessibleDescription('Escolha o tipo de instrumento')
+    expect(screen.getByLabelText('Validade confirmada *')).toHaveAccessibleDescription(
+      'Confirme a validade',
+    )
+    expect(screen.getByText('Escolha o marco dos prazos')).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/licencas/i1/identificacao')
+    expect(falso.cliente.rpc).not.toHaveBeenCalledWith('salvar_identificacao', expect.anything())
 
     await screen.findByRole('option', { name: /^LAO/ })
     await usuario.selectOptions(
       screen.getByRole('combobox', { name: /Tipo de instrumento/ }),
       't-lao',
     )
-    await usuario.type(screen.getByLabelText('Assinatura'), '2023-02-14')
+    const emissao = screen.getByLabelText('Emissão')
+    await usuario.type(emissao, '01/01/2999')
+    expect(emissao).toHaveAccessibleDescription('Datas futuras ficam bloqueadas para emissão')
+    await usuario.clear(emissao)
+    await usuario.type(screen.getByLabelText('Assinatura'), '14/02/2023')
     await usuario.click(screen.getByRole('radio', { name: 'Assinatura · 14/02/2023' }))
-    await usuario.type(screen.getByLabelText(/Validade confirmada/), '2027-02-15')
-    expect(screen.getByText('18/10/2026')).toBeInTheDocument()
+    await usuario.type(screen.getByLabelText('Validade confirmada *'), '15/02/2027')
+    expect(screen.getByText('18/10/2026 · 120 dias antes da validade')).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
 
     await usuario.click(continuar)
     expect(router.state.location.pathname).toBe('/licencas/i1/condicionantes')

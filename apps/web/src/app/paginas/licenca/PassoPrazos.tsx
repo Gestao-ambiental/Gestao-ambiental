@@ -4,6 +4,7 @@ import {
   datasDoPrazo,
   descreverRecorrencia,
   formatarDataCivil,
+  hojeNoFuso,
   nomeDoDiaDaSemana,
   recorrenciaSugerida,
   sugerirPrimeiraData,
@@ -20,6 +21,7 @@ import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Carregando, EstadoErro, EstadoVazio } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
 import { BotaoIcone } from '@/components/ui/botao-icone'
+import { CampoData } from '@/components/ui/campo-data'
 import { CampoTexto } from '@/components/ui/campo-texto'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { Selo } from '@/components/ui/selo'
@@ -107,10 +109,6 @@ function prazoProposto(
       fonteRegra: fonte,
     },
   }
-}
-
-function dataDe(valor: string): DataCivil | null {
-  return /^\d{4}-\d{2}-\d{2}$/.test(valor) ? (valor as DataCivil) : null
 }
 
 /** Painel do prazo de uma obrigação (prazo verificável, LIC-03). */
@@ -293,27 +291,25 @@ function PainelPrazo({
                   Definido no passo 2. Alterar
                 </Link>
               </div>
-              <CampoTexto
+              <CampoData
                 rotulo="Data de referência"
-                type="date"
+                hoje={hojeNoFuso(new Date(), fuso)}
                 ajuda="De onde a recorrência começa a contar."
-                value={referencia ?? ''}
-                onChange={(evento) => {
-                  setReferencia(dataDe(evento.target.value))
-                }}
+                valor={referencia}
+                aoMudar={setReferencia}
               />
-              <CampoTexto
+              <CampoData
                 rotulo="Primeira data"
-                type="date"
+                hoje={hojeNoFuso(new Date(), fuso)}
                 ajuda={
                   sugestao
                     ? `Sugerida: ${formatarDataCivil(sugestao)}.`
                     : 'Sem sugestão: informe a data que o documento determina.'
                 }
-                value={primeiraEfetiva ?? ''}
-                onChange={(evento) => {
+                valor={primeiraEfetiva}
+                aoMudar={(data) => {
                   setPrimeiraTocada(true)
-                  setPrimeira(dataDe(evento.target.value))
+                  setPrimeira(data)
                 }}
               />
               <fieldset className="flex flex-col gap-(--space-050)">
