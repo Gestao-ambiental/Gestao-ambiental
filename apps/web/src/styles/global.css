@@ -38,6 +38,18 @@
   --ia: #a78bfa;
 }
 
+/*
+ * Controles nativos (lista do select, calendário, barras de rolagem) seguem o tema do app, não o
+ * do sistema: com o Windows escuro e o app claro, a opção sob o mouse ficava branca no claro.
+ * Seletor mais forte que o ":root { color-scheme: light dark }" do CSS do pdf.js.
+ */
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+
 /* Trecho do PDF de onde a IA tirou o campo (classes do pdf.js: .highlight.appended). */
 .textLayer .highlight.destaque-ia {
   --highlight-bg-color: var(--ia-destaque);

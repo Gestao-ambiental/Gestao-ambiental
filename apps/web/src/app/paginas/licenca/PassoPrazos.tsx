@@ -470,7 +470,7 @@ function Prazos({
         <RodapeCadastro
           aviso={
             pendentes > 0
-              ? `${String(pendentes)} ${pendentes === 1 ? 'prazo pendente' : 'prazos pendentes'} de revisão. Só dá para continuar com todos confirmados.`
+              ? `${String(pendentes)} ${pendentes === 1 ? 'prazo pendente' : 'prazos pendentes'}`
               : undefined
           }
           voltarPara={`/licencas/${instrumento.id}/condicionantes`}
