@@ -127,10 +127,10 @@ select set_config('testes.proposta', $json${
     "validade": {"valor": "2027-02-15", "texto": "válida até 15 de fevereiro de 2027", "pagina": 1}
   },
   "condicionantes": [
-    {"codigo": "1", "pai_codigo": null, "titulo": "Disposições gerais", "texto_literal": "1 DISPOSIÇÕES GERAIS",
-     "natureza": "agrupador", "pagina": 2, "periodicidade": null},
     {"codigo": "1.1", "pai_codigo": "1", "titulo": "Manter cópia da licença", "texto_literal": "Manter cópia desta licença no local.",
      "natureza": "condicao_continua", "pagina": 2, "periodicidade": null},
+    {"codigo": "1", "pai_codigo": null, "titulo": "Disposições gerais", "texto_literal": "1 DISPOSIÇÕES GERAIS",
+     "natureza": "agrupador", "pagina": 2, "periodicidade": null},
     {"codigo": "4.3", "pai_codigo": "4", "titulo": "", "texto_literal": "Realizar, semestralmente, análise do corpo receptor.",
      "natureza": "obrigacao", "pagina": 4, "periodicidade": "semestral"}
   ]
@@ -170,10 +170,10 @@ select results_eq(
     join public.condicionante_versao as v on v.id = c.versao_vigente_id
     left join public.condicionante as p on p.id = c.pai_id
     where c.instrumento_id = '10000000-0000-4000-8000-000000000001' order by c.posicao$$,
-  $$values ('1', null::text, 'pendente', 'ia', 2, 'Disposições gerais', 'agrupador', null::text),
-           ('1.1', '1', 'pendente', 'ia', 2, 'Manter cópia da licença', 'condicao_continua', null),
+  $$values ('1.1', '1', 'pendente', 'ia', 2, 'Manter cópia da licença', 'condicao_continua', null::text),
+           ('1', null::text, 'pendente', 'ia', 2, 'Disposições gerais', 'agrupador', null),
            ('4.3', null, 'pendente', 'ia', 4, 'Realizar, semestralmente, análise do corpo receptor.', 'obrigacao', 'semestral')$$,
-  'condicionantes entram pendentes, com fonte, hierarquia só sob agrupador e título do texto quando falta'
+  'condicionantes entram pendentes, com fonte, hierarquia só sob agrupador (mesmo com o subitem antes do agrupador) e título do texto quando falta'
 );
 
 select results_eq(
@@ -215,7 +215,7 @@ from public.condicionante where instrumento_id = '10000000-0000-4000-8000-000000
 select results_eq(
   $$select codigo, revisao::text, aceita_sem_edicao from public.condicionante
     where instrumento_id = '10000000-0000-4000-8000-000000000001' order by posicao$$,
-  $$values ('1', 'descartada', null::boolean), ('1.1', 'aceita', true), ('4.3', 'aceita', false)$$,
+  $$values ('1.1', 'aceita', true), ('1', 'descartada', null::boolean), ('4.3', 'aceita', false)$$,
   'aceitar registra se o item da IA foi aceito sem edição (base da métrica)'
 );
 
