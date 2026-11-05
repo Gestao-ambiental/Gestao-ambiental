@@ -98,3 +98,5 @@ export type {
   SituacaoExibida,
   SituacaoGravadaDaOcorrencia,
 } from './ocorrencia'
+export { TOTAL_PASSOS_CADASTRO, passoDoRascunho } from './progresso-cadastro'
+export type { EstadoDoRascunho } from './progresso-cadastro'

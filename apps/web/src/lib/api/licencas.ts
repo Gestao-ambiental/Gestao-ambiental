@@ -2,7 +2,13 @@
 // ativo. O PDF vai direto para o Storage (política por consultoria) e vira versão pela RPC, que
 // confere caminho, MIME e tamanho no próprio Storage.
 
-import type { DataCivil, LicencaResumo, Recorrencia, UnidadeCiclo } from '@gestao-ambiental/domain'
+import {
+  passoDoRascunho,
+  type DataCivil,
+  type LicencaResumo,
+  type Recorrencia,
+  type UnidadeCiclo,
+} from '@gestao-ambiental/domain'
 
 import type { Database } from '@/lib/database.types'
 import { obterSupabase } from '@/lib/supabase'
@@ -443,6 +449,50 @@ export interface LicencaNaLista extends LicencaResumo {
   unidadeNome: string
   condicionantes: number
   criadoEm: string
+  /** Rascunho: índice (0 a 4) do passo do cadastro em que parou. Ativa: null. */
+  passoCadastro: number | null
+}
+
+/**
+ * Passo de cada rascunho da página (domínio: passoDoRascunho). Uma leitura só, das condicionantes
+ * não descartadas desses rascunhos com a natureza e a confirmação do prazo.
+ */
+async function passosDosRascunhos(
+  rascunhos: readonly { id: string; identificacaoCompleta: boolean }[],
+): Promise<Map<string, number>> {
+  const passos = new Map<string, number>()
+  if (rascunhos.length === 0) return passos
+  const { data, error } = await obterSupabase()
+    .from('condicionante')
+    .select(
+      `instrumento_id, revisao,
+       versao:condicionante_versao!condicionante_versao_vigente_fk(natureza, prazo_confirmado_em)`,
+    )
+    .in(
+      'instrumento_id',
+      rascunhos.map((r) => r.id),
+    )
+    .neq('revisao', 'descartada')
+    .range(0, 4999)
+  if (error) throw error
+  for (const rascunho of rascunhos) {
+    const itens = data.filter((c) => c.instrumento_id === rascunho.id)
+    passos.set(
+      rascunho.id,
+      passoDoRascunho({
+        identificacaoCompleta: rascunho.identificacaoCompleta,
+        condicionantes: itens.length,
+        condicionantesPendentes: itens.filter((c) => c.revisao === 'pendente').length,
+        prazosPendentes: itens.filter(
+          (c) =>
+            c.revisao === 'aceita' &&
+            c.versao?.natureza === 'obrigacao' &&
+            !c.versao.prazo_confirmado_em,
+        ).length,
+      }),
+    )
+  }
+  return passos
 }
 
 function planoDa<T>(valor: T[] | T | null): T | null {
@@ -459,6 +509,7 @@ export async function listarLicencasDoEmpreendimento(
     .from('instrumento')
     .select(
       `id, numero, orgao, situacao, validade, criado_em, antecedencia_renovacao_dias, unidade_id,
+       tipo_id, marco,
        tipo:tipo_instrumento!instrumento_tipo_fk(sigla, nome),
        unidade:unidade!instrumento_unidade_fk(nome),
        plano:plano_renovacao!plano_renovacao_instrumento_fk(antecedencia_dias, dias_limite_protocolo, protocolado_em),
@@ -470,6 +521,14 @@ export async function listarLicencasDoEmpreendimento(
     .order('id', { ascending: false })
     .range(inicio, inicio + TAMANHO_PAGINA_LICENCAS - 1)
   if (error) throw error
+  const passos = await passosDosRascunhos(
+    data
+      .filter((linha) => linha.situacao === 'rascunho')
+      .map((linha) => ({
+        id: linha.id,
+        identificacaoCompleta: Boolean(linha.tipo_id && linha.marco && linha.validade),
+      })),
+  )
   return {
     itens: data.map((linha) => ({
       id: linha.id,
@@ -487,6 +546,7 @@ export async function listarLicencasDoEmpreendimento(
       unidadeNome: linha.unidade.nome,
       condicionantes: linha.condicionante[0]?.count ?? 0,
       criadoEm: linha.criado_em,
+      passoCadastro: passos.get(linha.id) ?? null,
     })),
     total: count ?? data.length,
   }

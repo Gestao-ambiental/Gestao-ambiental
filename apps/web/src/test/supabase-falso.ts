@@ -89,6 +89,8 @@ function criar() {
     const construtor = {
       select: () => construtor,
       eq: () => construtor,
+      neq: () => construtor,
+      in: () => construtor,
       order: () => construtor,
       range: () => construtor,
       maybeSingle: () => Promise.resolve({ data: linhas()[0] ?? null, error: null }),
