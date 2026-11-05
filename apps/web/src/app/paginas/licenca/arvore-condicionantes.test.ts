@@ -4,6 +4,7 @@ import type { Condicionante } from '@/lib/api/licencas'
 
 import {
   descendentes,
+  destinoAoSoltar,
   destinoDoNovo,
   linhasVisiveis,
   montarArvore,
@@ -44,6 +45,35 @@ function item(
 const agrupador = { natureza: 'agrupador' } as const
 
 describe('árvore de condicionantes', () => {
+  it('soltar: em agrupador entra nele, em item fica junto dele, nunca dentro de si', () => {
+    const itens = [
+      item('g3', '3', null, agrupador),
+      item('g32', '3.2', 'g3', agrupador),
+      item('c321', '3.2.1', 'g32'),
+      item('solto', '3.2.2.1', null),
+      item('desc', '9', null, { ...agrupador, revisao: 'descartada' }),
+    ]
+    const [g3, g32, c321, solto, desc] = itens as [
+      Condicionante,
+      Condicionante,
+      Condicionante,
+      Condicionante,
+      Condicionante,
+    ]
+    expect(destinoAoSoltar(itens, solto, g32)).toBe('g32')
+    expect(destinoAoSoltar(itens, solto, c321)).toBe('g32')
+    expect(destinoAoSoltar(itens, c321, null)).toBeNull()
+    expect(destinoAoSoltar(itens, c321, solto)).toBeNull()
+    // Já está aí, ou seria dentro de si mesmo / de um descendente.
+    expect(destinoAoSoltar(itens, c321, g32)).toBeUndefined()
+    expect(destinoAoSoltar(itens, solto, null)).toBeUndefined()
+    expect(destinoAoSoltar(itens, g3, g32)).toBeUndefined()
+    expect(destinoAoSoltar(itens, g3, c321)).toBeUndefined()
+    expect(destinoAoSoltar(itens, g32, g32)).toBeUndefined()
+    // Agrupador descartado não recebe: soltar nele vale como soltar junto dele (na raiz).
+    expect(destinoAoSoltar(itens, c321, desc)).toBeNull()
+  })
+
   it('sugere o código do item novo pelo lugar, como o VS Code', () => {
     const itens = [
       item('g3', '3', null, agrupador),

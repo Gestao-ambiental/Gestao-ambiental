@@ -1,5 +1,13 @@
-import { useMutation } from '@tanstack/react-query'
-import { useEffect, useId, useRef, useState, type CSSProperties } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type CSSProperties,
+  type DragEvent,
+  type KeyboardEvent,
+} from 'react'
 import { useNavigate, useParams } from 'react-router'
 
 import { Carregando, EstadoErro, EstadoVazio } from '@/components/estados'
@@ -12,6 +20,7 @@ import { Icone } from '@/components/ui/icone'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { Selo, type TomSelo } from '@/components/ui/selo'
 import {
+  moverCondicionante,
   revisarCondicionante,
   salvarCondicionante,
   type Condicionante,
@@ -24,6 +33,7 @@ import { cn } from '@/lib/utils'
 
 import {
   descendentes,
+  destinoAoSoltar,
   destinoDoNovo,
   linhasVisiveis,
   montarArvore,
@@ -210,8 +220,6 @@ function Editor({
   instrumentoId,
   edicao,
   item,
-  agrupadores,
-  sugerirCodigo,
   pdfFechado,
   aoSalvar,
   aoVerPagina,
@@ -220,9 +228,6 @@ function Editor({
   instrumentoId: string
   edicao: Edicao
   item: Condicionante | undefined
-  /** Agrupadores onde o item pode ficar (sem ele mesmo e sem o que está abaixo dele). */
-  agrupadores: readonly Condicionante[]
-  sugerirCodigo: (paiId: string | null) => string
   pdfFechado: boolean
   aoSalvar: (id: string) => Promise<void>
   aoVerPagina: (pagina: number, trechos: readonly string[]) => void
@@ -240,9 +245,6 @@ function Editor({
   const [natureza, setNatureza] = useState<Natureza>(
     item?.natureza ?? (edicao.tipo === 'nova' ? edicao.natureza : 'obrigacao'),
   )
-  const [paiId, setPaiId] = useState<string | null>(
-    item?.paiId ?? (edicao.tipo === 'nova' ? edicao.paiId : null),
-  )
   const [erroTitulo, setErroTitulo] = useState<string | null>(null)
   // Item já revisado fica travado até "Editar" (Protótipo 12); proposto e novo, não.
   const [editando, setEditando] = useState(false)
@@ -255,12 +257,12 @@ function Editor({
     (codigo !== item.codigo ||
       titulo !== item.titulo ||
       texto !== item.textoLiteral ||
-      natureza !== item.natureza ||
-      paiId !== item.paiId)
+      natureza !== item.natureza)
   const textoMudou = item?.origem === 'ia' && texto !== item.textoLiteral
 
+  // O lugar na árvore muda arrastando; aqui vale o pai atual do item (ou o do novo).
   const dados = () => ({
-    paiId,
+    paiId: item ? item.paiId : edicao.tipo === 'nova' ? edicao.paiId : null,
     codigo,
     titulo,
     textoLiteral: texto,
@@ -293,7 +295,6 @@ function Editor({
     setTitulo(original.titulo)
     setTexto(original.textoLiteral)
     setNatureza(original.natureza)
-    setPaiId(original.paiId)
     setErroTitulo(null)
     setEditando(false)
     setEditandoTexto(!original.textoLiteral)
@@ -448,29 +449,6 @@ function Editor({
           vira entrega periódica.
         </p>
       </fieldset>
-      {agrupadores.length > 0 ? (
-        <label className="flex flex-col gap-(--space-050)">
-          <span className="rotulo">Dentro de</span>
-          <select
-            value={paiId ?? ''}
-            disabled={travado}
-            onChange={(evento) => {
-              const novoPai = evento.target.value || null
-              // Código ainda o sugerido: acompanha o novo lugar, como no explorador do VS Code.
-              if (!item && codigo === sugerirCodigo(paiId)) setCodigo(sugerirCodigo(novoPai))
-              setPaiId(novoPai)
-            }}
-            className={cn(classeCampo, 'h-(--size-control) disabled:bg-(--surface-sunken)')}
-          >
-            <option value="">Nenhum agrupador</option>
-            {agrupadores.map((a) => (
-              <option key={a.id} value={a.id}>
-                {[a.codigo, a.titulo].filter(Boolean).join(' · ')}
-              </option>
-            ))}
-          </select>
-        </label>
-      ) : null}
       <div className="flex flex-wrap items-center gap-(--space-100) border-t pt-(--space-200)">
         {!item ? (
           <Botao type="submit" aparencia="primario" iconeAntes="plus" disabled={ocupado}>
@@ -582,6 +560,7 @@ function Condicionantes({
   const [recolhidos, setRecolhidos] = useState<ReadonlySet<string>>(new Set())
   // Item novo ainda na linha da árvore, esperando o título (antes de abrir no centro).
   const [nomeando, setNomeando] = useState(false)
+  const dicaMoverId = useId()
 
   const itens = consulta.data ?? []
   const porId = new Map(itens.map((item) => [item.id, item]))
@@ -593,7 +572,6 @@ function Condicionantes({
     aceita: itens.filter((i) => i.revisao === 'aceita').length,
     descartada: itens.filter((i) => i.revisao === 'descartada').length,
   }
-  const agrupadores = itens.filter((i) => i.natureza === 'agrupador' && i.revisao !== 'descartada')
   const ativos = itens.length - contagem.descartada
   const podeContinuar = ativos > 0 && contagem.pendente === 0
   const selecionado = edicao?.tipo === 'existente' ? porId.get(edicao.id) : undefined
@@ -671,11 +649,114 @@ function Condicionantes({
       />
     ) : null
 
-  const opcoesDePai = (() => {
-    if (edicao?.tipo !== 'existente') return agrupadores
-    const abaixo = descendentes(arvore, edicao.id)
-    return agrupadores.filter((a) => !abaixo.has(a.id))
-  })()
+  // Mover na árvore: arrastar (soltar em agrupador entra nele; em item, fica junto dele) ou,
+  // pelo teclado, Ctrl+X no item e Ctrl+V no destino, como no explorador do VS Code.
+  const queryClient = useQueryClient()
+  const [arrastando, setArrastando] = useState<string | null>(null)
+  const [recortado, setRecortado] = useState<string | null>(null)
+  // Destino sob o cursor: id do agrupador, null para fora deles, undefined para nenhum.
+  const [alvo, setAlvo] = useState<string | null | undefined>(undefined)
+  const [aviso, setAviso] = useState('')
+  const abrirDepois = useRef<{ id: string; timer: number } | null>(null)
+  const emMovimento =
+    (arrastando ?? recortado) ? porId.get(arrastando ?? recortado ?? '') : undefined
+  const sobAlvo = typeof alvo === 'string' ? descendentes(arvore, alvo) : new Set<string>()
+  const chaveDaLista = ['condicionantes', instrumento.id]
+
+  const mover = useMutation({
+    mutationFn: ({ id, paiId }: { id: string; paiId: string | null }) =>
+      moverCondicionante(id, paiId),
+    onMutate: async ({ id, paiId }) => {
+      // Já aparece no lugar novo; se o banco recusar, volta.
+      await queryClient.cancelQueries({ queryKey: chaveDaLista })
+      const antes = queryClient.getQueryData<Condicionante[]>(chaveDaLista)
+      queryClient.setQueryData<Condicionante[]>(chaveDaLista, (atual) =>
+        atual?.map((i) => (i.id === id ? { ...i, paiId } : i)),
+      )
+      return { antes }
+    },
+    onError: (_erro, _dados, contexto) => {
+      if (contexto?.antes) queryClient.setQueryData(chaveDaLista, contexto.antes)
+      setAviso('Não foi possível mover.')
+    },
+    onSuccess: async (_vazio, { id, paiId }) => {
+      setAviso(
+        `${rotuloDe(porId.get(id))} movido para ${paiId ? rotuloDe(porId.get(paiId)) : 'fora dos agrupadores'}.`,
+      )
+      await registrar()
+    },
+  })
+
+  function moverPara(item: Condicionante, destino: string | null) {
+    setRecortado(null)
+    if (destino) alternar(destino, false)
+    mover.mutate({ id: item.id, paiId: destino })
+  }
+
+  function limparArraste() {
+    setArrastando(null)
+    setAlvo(undefined)
+    if (abrirDepois.current) window.clearTimeout(abrirDepois.current.timer)
+    abrirDepois.current = null
+  }
+
+  function aoPassar(evento: DragEvent, sobre: Condicionante | null) {
+    const arrastado = arrastando ? porId.get(arrastando) : undefined
+    if (!arrastado) return
+    const destino = destinoAoSoltar(itens, arrastado, sobre)
+    if (destino === undefined) {
+      evento.dataTransfer.dropEffect = 'none'
+      setAlvo(undefined)
+      return
+    }
+    evento.preventDefault()
+    evento.dataTransfer.dropEffect = 'move'
+    setAlvo(destino)
+    // Agrupador recolhido abre se o item ficar um instante sobre ele, como pasta no VS Code.
+    if (typeof destino === 'string' && sobre?.id === destino && recolhidos.has(destino)) {
+      if (abrirDepois.current?.id !== destino) {
+        if (abrirDepois.current) window.clearTimeout(abrirDepois.current.timer)
+        const id = destino
+        abrirDepois.current = {
+          id,
+          timer: window.setTimeout(() => {
+            alternar(id, false)
+          }, 600),
+        }
+      }
+    }
+  }
+
+  function aoSoltar(evento: DragEvent, sobre: Condicionante | null) {
+    evento.preventDefault()
+    const arrastado = arrastando ? porId.get(arrastando) : undefined
+    const destino = arrastado ? destinoAoSoltar(itens, arrastado, sobre) : undefined
+    limparArraste()
+    if (arrastado && destino !== undefined) moverPara(arrastado, destino)
+  }
+
+  /** Ctrl+X recorta o item; Ctrl+V cola no destino (agrupador: dentro; item: junto); Esc desiste. */
+  function atalhoDeMover(evento: KeyboardEvent, item: Condicionante): boolean {
+    const comando = evento.ctrlKey || evento.metaKey
+    const tecla = evento.key.toLowerCase()
+    if (comando && tecla === 'x') {
+      setRecortado(item.id)
+      setAviso(`${rotuloDe(item)} recortado. Vá até o destino e tecle Ctrl+V. Esc cancela.`)
+      return true
+    }
+    if (comando && tecla === 'v' && emMovimento && recortado) {
+      const destino = destinoAoSoltar(itens, emMovimento, item)
+      if (destino === undefined) setAviso('Não dá para mover para aí. Escolha outro agrupador.')
+      else moverPara(emMovimento, destino)
+      return true
+    }
+    if (evento.key === 'Escape' && recortado) {
+      setRecortado(null)
+      setAviso('Movimento cancelado.')
+      return true
+    }
+    return false
+  }
 
   const botoesVazio = (
     <>
@@ -822,6 +903,35 @@ function Condicionantes({
               ))}
             </div>
           </div>
+          {recortado && emMovimento ? (
+            <div className="flex items-center gap-(--space-100) border-b bg-(--surface-sunken) px-(--space-150) py-(--space-075) text-xs">
+              <Icone nome="grip-vertical" tamanho={12} className="shrink-0 text-(--icon)" />
+              <span className="min-w-0 flex-1">
+                Movendo <span className="font-semibold">{rotuloDe(emMovimento)}</span>: selecione o
+                destino e tecle Ctrl+V.
+              </span>
+              <Botao
+                aparencia="link"
+                tamanho="compacto"
+                onClick={() => {
+                  setRecortado(null)
+                }}
+              >
+                Cancelar
+              </Botao>
+            </div>
+          ) : null}
+          {mover.error ? (
+            <MensagemSecao role="alert" tom="perigo" className="m-(--space-150)">
+              {mensagemDoErro(mover.error)}
+            </MensagemSecao>
+          ) : null}
+          <p role="status" className="sr-only">
+            {aviso}
+          </p>
+          <span id={dicaMoverId} hidden>
+            Arraste para mover. Ctrl+X recorta e Ctrl+V cola no agrupador.
+          </span>
           <div className="min-h-0 flex-1 overflow-auto">
             {consulta.isPending ? (
               <Carregando
@@ -848,11 +958,30 @@ function Condicionantes({
                   const ativo = edicao?.tipo === 'existente' && edicao.id === item.id
                   const nome = item.codigo || item.titulo
                   return [
+                    // Arrastar é atalho de mouse; pelo teclado, Ctrl+X e Ctrl+V no botão da linha.
+                    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
                     <li
                       key={item.id}
+                      draggable={!nomeando}
+                      onDragStart={(evento) => {
+                        evento.dataTransfer.effectAllowed = 'move'
+                        evento.dataTransfer.setData('text/plain', item.id)
+                        setRecortado(null)
+                        setArrastando(item.id)
+                      }}
+                      onDragEnd={limparArraste}
+                      onDragOver={(evento) => {
+                        aoPassar(evento, item)
+                      }}
+                      onDrop={(evento) => {
+                        aoSoltar(evento, item)
+                      }}
                       className={cn(
                         'flex border-b transicao-estado hover:bg-(--surface-hover)',
                         ativo && 'bg-(--surface-selected) hover:bg-(--surface-selected-hover)',
+                        sobAlvo.has(item.id) && 'bg-(--surface-selected)',
+                        alvo === item.id && 'shadow-[inset_0_0_0_2px_var(--border-focus)]',
+                        emMovimento?.id === item.id && 'opacity-50',
                       )}
                       style={{ paddingLeft: `${String(nivel * 16)}px` }}
                     >
@@ -879,10 +1008,15 @@ function Condicionantes({
                         type="button"
                         aria-current={ativo ? 'true' : undefined}
                         aria-expanded={temFilhos ? !recolhido : undefined}
+                        aria-describedby={dicaMoverId}
                         onClick={() => {
                           selecionar(item)
                         }}
                         onKeyDown={(evento) => {
+                          if (atalhoDeMover(evento, item)) {
+                            evento.preventDefault()
+                            return
+                          }
                           // Setas como no explorador: esquerda recolhe, direita expande.
                           if (!temFilhos) return
                           if (evento.key === 'ArrowLeft' || evento.key === 'ArrowRight') {
@@ -922,6 +1056,29 @@ function Condicionantes({
                 })}
               </ul>
             )}
+            {emMovimento?.paiId ? (
+              <button
+                type="button"
+                disabled={!recortado}
+                onClick={() => {
+                  moverPara(emMovimento, null)
+                }}
+                onDragOver={(evento) => {
+                  aoPassar(evento, null)
+                }}
+                onDrop={(evento) => {
+                  aoSoltar(evento, null)
+                }}
+                className={cn(
+                  'm-(--space-150) flex min-h-14 w-[calc(100%-var(--space-150)*2)] items-center justify-center gap-(--space-075) rounded-(--radius) border border-dashed px-(--space-150) text-xs text-(--text-subtle) transicao-estado outline-none enabled:cursor-pointer focus-visible:shadow-[0_0_0_2px_var(--border-focus)]',
+                  alvo === null &&
+                    'border-(--border-focus) bg-(--surface-selected) text-(--text-link)',
+                )}
+              >
+                <Icone nome="arrow-left" tamanho={12} />
+                {recortado ? 'Colar fora dos agrupadores' : 'Solte aqui para tirar dos agrupadores'}
+              </button>
+            ) : null}
           </div>
         </section>
 
@@ -956,8 +1113,6 @@ function Condicionantes({
               instrumentoId={instrumento.id}
               edicao={edicao}
               item={selecionado}
-              agrupadores={opcoesDePai}
-              sugerirCodigo={(paiId) => proximoCodigo(itens, paiId)}
               pdfFechado={!pdfAberto}
               aoSalvar={async (salvoId) => {
                 await registrar()

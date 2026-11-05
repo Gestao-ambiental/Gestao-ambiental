@@ -132,6 +132,36 @@ export function proximoCodigo(itens: readonly Condicionante[], paiId: string | n
   return codigoDoPai ? `${codigoDoPai}.1` : ''
 }
 
+/**
+ * Para onde vai o item solto sobre `alvo`, como no explorador do VS Code: em agrupador, entra nele;
+ * em outro item, fica junto dele (no mesmo pai); `null` é fora de todos os agrupadores.
+ * `undefined` quando não muda nada ou não pode (dentro de si mesmo, em descartado).
+ */
+export function destinoAoSoltar(
+  itens: readonly Condicionante[],
+  arrastado: Condicionante,
+  alvo: Condicionante | null,
+): string | null | undefined {
+  const destino =
+    alvo === null
+      ? null
+      : alvo.natureza === 'agrupador' && alvo.revisao !== 'descartada'
+        ? alvo.id
+        : alvo.paiId
+  if (destino === arrastado.paiId) return undefined
+  if (destino === null) return null
+  const agrupador = itens.find((i) => i.id === destino)
+  if (agrupador?.natureza !== 'agrupador' || agrupador.revisao === 'descartada') return undefined
+  // Subindo pelos pais do destino não pode aparecer o próprio item (seria pôr dentro de si).
+  const vistos = new Set<string>()
+  for (let atual: string | null = destino; atual && !vistos.has(atual);) {
+    if (atual === arrastado.id) return undefined
+    vistos.add(atual)
+    atual = itens.find((i) => i.id === atual)?.paiId ?? null
+  }
+  return destino
+}
+
 /** Onde entra o item novo (como no explorador do VS Code): no agrupador selecionado ou no pai. */
 export function destinoDoNovo(selecionado: Condicionante | undefined): string | null {
   if (!selecionado) return null

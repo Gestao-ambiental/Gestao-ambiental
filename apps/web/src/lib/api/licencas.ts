@@ -344,6 +344,15 @@ export async function salvarCondicionante(
   if (error) throw error
 }
 
+/** Leva o item para dentro de um agrupador (ou para a raiz, com nulo). Só muda o pai. */
+export async function moverCondicionante(id: string, paiId: string | null) {
+  const { error } = await obterSupabase().rpc('mover_condicionante', {
+    p_id: id,
+    p_pai_id: aceitaNulo(paiId),
+  })
+  if (error) throw error
+}
+
 export async function revisarCondicionante(id: string, revisao: 'aceita' | 'descartada') {
   const { error } = await obterSupabase().rpc('revisar_condicionante', {
     p_id: id,
