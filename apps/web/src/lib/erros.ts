@@ -84,6 +84,7 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   condicionantes_existentes:
     'Este rascunho já tem condicionantes: a IA só preenche rascunho sem itens. Siga pelo manual.',
   extracao_em_andamento: 'Já há uma extração em andamento para este rascunho. Aguarde.',
+  cargo_longo_demais: 'O cargo pode ter até 80 caracteres.',
 }
 
 const MENSAGENS_DO_AUTH: Record<string, string> = {

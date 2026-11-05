@@ -168,7 +168,8 @@ describe('tela Equipe (ACC-02, ACC-03)', () => {
     const menu = screen.getByRole('navigation', { name: 'Menu principal' })
     expect(within(menu).queryByRole('link', { name: 'Equipe' })).toBeNull()
     expect(within(menu).getByRole('link', { name: 'Calendário' })).toBeInTheDocument()
-    expect(falso.cliente.from).not.toHaveBeenCalled()
+    // Só o menu da conta lê o próprio perfil (a foto); a tela não carrega equipe nem convites.
+    expect(falso.cliente.from.mock.calls).toEqual([['membro']])
   })
 
   it('não tem violações de acessibilidade detectáveis pelo axe', async () => {
