@@ -88,7 +88,7 @@ export function AppShell() {
           <NavegacaoPrincipal />
         </MenuLateral>
         <main id="conteudo" tabIndex={-1} className="min-w-0 flex-1 overflow-auto outline-none">
-          <div className="mx-auto w-full max-w-(--content-max) p-(--space-200) md:p-(--space-300)">
+          <div className="w-full p-(--space-200) md:p-(--space-300)">
             <Outlet />
           </div>
         </main>

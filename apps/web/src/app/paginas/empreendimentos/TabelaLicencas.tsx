@@ -1,6 +1,8 @@
 import { formatarDataCivil, situacaoDaLicenca, type DataCivil } from '@gestao-ambiental/domain'
 import { Link } from 'react-router'
 
+import { ProgressoCadastro } from '@/app/paginas/licenca/ProgressoCadastro'
+import { PASSOS } from '@/app/paginas/licenca/passos'
 import { SeloSituacaoLicenca } from '@/app/paginas/licenca/SeloSituacaoLicenca'
 import { EstadoVazio } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
@@ -20,7 +22,8 @@ function titulo(licenca: LicencaNaLista): string {
 
 /**
  * Licenças do empreendimento (Protótipo 09, onda 1): da mais recente para a mais antiga, com
- * validade e situação calculada. Rascunho mostra "Continuar" para a Gestão.
+ * validade e situação calculada. Rascunho mostra a linha de progresso do cadastro e, para a
+ * Gestão, "Continuar" no passo em que parou.
  */
 export function TabelaLicencas({
   itens,
@@ -103,6 +106,7 @@ export function TabelaLicencas({
         <tbody>
           {itens.map((licenca) => {
             const rascunho = licenca.situacao === 'rascunho'
+            const passo = licenca.passoCadastro ?? 1
             return (
               <tr key={licenca.id}>
                 <td className={classeCelula}>
@@ -135,13 +139,17 @@ export function TabelaLicencas({
                   <span className="text-xs text-(--text-subtle)">Validade </span>
                   {licenca.validade ? formatarDataCivil(licenca.validade) : '—'}
                 </td>
-                <td className={classeCelula}>
-                  <span className="flex items-center gap-(--space-100)">
-                    <SeloSituacaoLicenca situacao={situacaoDaLicenca(licenca, hoje)} />
+                <td className={`${classeCelula} whitespace-nowrap`}>
+                  <span className="flex items-center gap-(--space-150)">
+                    {rascunho ? (
+                      <ProgressoCadastro passo={passo} />
+                    ) : (
+                      <SeloSituacaoLicenca situacao={situacaoDaLicenca(licenca, hoje)} />
+                    )}
                     {rascunho && podeEditar ? (
                       <Botao tamanho="compacto" asChild>
                         <Link
-                          to={`/licencas/${licenca.id}/identificacao`}
+                          to={`/licencas/${licenca.id}/${(PASSOS[passo] ?? PASSOS[1]).chave}`}
                           aria-label={`Continuar o cadastro de ${titulo(licenca)}`}
                         >
                           Continuar

@@ -206,6 +206,55 @@ describe('tela do empreendimento (EMP-02)', () => {
     )
   })
 
+  it('rascunho mostra a linha de progresso do cadastro e continua no passo em que parou', async () => {
+    const instrumento = (id: string, extra: Record<string, unknown>) => ({
+      id,
+      numero: '4821/2023',
+      orgao: 'IMA',
+      validade: '2027-02-15',
+      criado_em: '2026-10-01T12:00:00Z',
+      antecedencia_renovacao_dias: 30,
+      unidade_id: 'u1',
+      tipo_id: 't-lao',
+      marco: 'assinatura',
+      tipo: { sigla: 'LAO', nome: 'Licença Ambiental de Operação' },
+      unidade: { nome: 'Matriz' },
+      plano: null,
+      condicionante: [{ count: 2 }],
+      ...extra,
+    })
+    falso.reiniciar(
+      cenario({
+        rpc: { meus_vinculos: { data: [vinculoFalso('Filtroville', 'gestao')] } },
+        tabelas: {
+          instrumento: [
+            instrumento('i1', { situacao: 'rascunho' }),
+            instrumento('i2', { situacao: 'ativo', numero: '1000/2020' }),
+          ],
+          condicionante: [
+            {
+              instrumento_id: 'i1',
+              revisao: 'aceita',
+              versao: { natureza: 'obrigacao', prazo_confirmado_em: '2026-10-12T13:00:00Z' },
+            },
+            {
+              instrumento_id: 'i1',
+              revisao: 'aceita',
+              versao: { natureza: 'obrigacao', prazo_confirmado_em: null },
+            },
+          ],
+        },
+      }),
+    )
+    renderizarApp('/empreendimentos/e1')
+
+    expect(await screen.findByText('Rascunho no passo 4 de 5: Prazos')).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: 'Continuar o cadastro de LAO 4821/2023' }),
+    ).toHaveAttribute('href', '/licencas/i1/prazos')
+    expect(screen.getAllByText(/Rascunho no passo/)).toHaveLength(1)
+  })
+
   it('gerenciar unidades lista, mostra endereço ausente e adiciona', async () => {
     falso.reiniciar(cenario({ rpc: { criar_unidade: (args) => ({ data: args.p_id }) } }))
     const usuario = userEvent.setup()
