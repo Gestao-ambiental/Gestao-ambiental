@@ -115,6 +115,28 @@ export function datasDoPrazo(
 }
 
 /**
+ * Próxima entrega de um prazo a partir de hoje (inclusive), para mostrar antes da ativação. Se
+ * todas já passaram, a última, marcada como vencida (vira ocorrência atrasada na ativação).
+ * Contínua, prazo incompleto ou sem validade: null (não há data a mostrar).
+ */
+export function proximaEntrega(
+  prazo: Prazo,
+  validade: DataCivil | null | undefined,
+  hoje: DataCivil,
+): { data: DataCivil; vencida: boolean } | null {
+  let datas: { prazo: DataCivil }[]
+  try {
+    datas = datasDoPrazo(prazo, validade)
+  } catch {
+    return null
+  }
+  const proxima = datas.find((d) => d.prazo >= hoje)
+  if (proxima) return { data: proxima.prazo, vencida: false }
+  const ultima = datas.at(-1)
+  return ultima ? { data: ultima.prazo, vencida: true } : null
+}
+
+/**
  * Primeira data sugerida (o humano confirma; nada é inventado quando falta base):
  * periódica = data de referência + um intervalo, se couber na validade; na renovação de LAO =
  * limite de protocolo (validade − 120 dias); única, contínua e demais casos = sem sugestão.

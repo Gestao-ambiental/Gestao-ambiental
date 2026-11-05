@@ -4,6 +4,7 @@ import {
   ErroDePrazo,
   datasDoPrazo,
   descreverRecorrencia,
+  proximaEntrega,
   proximaValidade,
   situacaoDaLicenca,
   situacaoMaisUrgente,
@@ -194,5 +195,55 @@ describe('situação da licença', () => {
     })
     expect(situacaoMaisUrgente([], '2026-10-12')).toBeNull()
     expect(proximaValidade(licencas)).toBe('2027-02-15')
+  })
+})
+
+describe('proximaEntrega', () => {
+  const validade = '2027-02-15'
+
+  it('periódica: a primeira entrega a partir de hoje, inclusive', () => {
+    const trimestral = { recorrencia: 'trimestral', primeiraData: '2023-05-14' } as const
+    expect(proximaEntrega(trimestral, validade, '2026-11-05')).toEqual({
+      data: '2026-11-14',
+      vencida: false,
+    })
+    expect(proximaEntrega(trimestral, validade, '2026-11-14')).toEqual({
+      data: '2026-11-14',
+      vencida: false,
+    })
+  })
+
+  it('personalizada em dias corridos', () => {
+    expect(
+      proximaEntrega(
+        { recorrencia: 'personalizada', unidade: 'dia', intervalo: 45, primeiraData: '2026-10-01' },
+        validade,
+        '2026-11-05',
+      ),
+    ).toEqual({ data: '2026-11-15', vencida: false })
+  })
+
+  it('única no passado: a própria data, vencida', () => {
+    expect(
+      proximaEntrega({ recorrencia: 'unica', primeiraData: '2021-08-20' }, validade, '2026-11-05'),
+    ).toEqual({ data: '2021-08-20', vencida: true })
+  })
+
+  it('todas as periódicas passadas: a última, vencida', () => {
+    expect(
+      proximaEntrega(
+        { recorrencia: 'anual', primeiraData: '2024-01-10' },
+        '2026-06-30',
+        '2026-11-05',
+      ),
+    ).toEqual({ data: '2026-01-10', vencida: true })
+  })
+
+  it('contínua, sem primeira data ou sem validade: sem data', () => {
+    expect(proximaEntrega({ recorrencia: 'continua' }, validade, '2026-11-05')).toBeNull()
+    expect(proximaEntrega({ recorrencia: 'mensal' }, validade, '2026-11-05')).toBeNull()
+    expect(
+      proximaEntrega({ recorrencia: 'mensal', primeiraData: '2026-12-01' }, null, '2026-11-05'),
+    ).toBeNull()
   })
 })
