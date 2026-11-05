@@ -31,6 +31,7 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   titulo_obrigatorio: 'Informe o título',
   natureza_obrigatoria: 'Escolha a natureza',
   agrupador_invalido: 'O subitem precisa ficar dentro de um agrupador.',
+  agrupador_dentro_de_si: 'Um agrupador não pode ficar dentro dele mesmo.',
   agrupador_com_subitens:
     'Este agrupador tem subitens: mova ou descarte os subitens antes de mudar a natureza.',
   revisao_invalida: 'Revisão inválida.',

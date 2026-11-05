@@ -94,3 +94,24 @@ function marcar(posicoes: readonly Posicao[], primeiro: Posicao, ultimo: Posicao
   if (!primeira) throw new Error('trecho sem marca')
   return primeira
 }
+
+/** Trecho curto ("Ruído") acharia a página errada: para procurar no documento, só trecho longo. */
+const MINIMO_PARA_PROCURAR = 12
+
+/**
+ * Página (1, 2…) onde aparece o primeiro trecho, na ordem de preferência; null se nenhum.
+ * `paginas` é o texto de cada página, como o pdf.js extrai.
+ */
+export function paginaComTrecho(
+  paginas: readonly string[],
+  trechos: readonly (string | null | undefined)[],
+): number | null {
+  const normalizadas = paginas.map(normalizarTrecho)
+  for (const trecho of trechos) {
+    const procurado = normalizarTrecho(trecho ?? '')
+    if (procurado.length < MINIMO_PARA_PROCURAR) continue
+    const indice = normalizadas.findIndex((texto) => texto.includes(procurado))
+    if (indice >= 0) return indice + 1
+  }
+  return null
+}

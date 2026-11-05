@@ -1,5 +1,5 @@
 import { FunctionsHttpError } from '@supabase/supabase-js'
-import { screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -397,5 +397,196 @@ describe('revisar a proposta da IA (IA-02)', () => {
     expect(divisor).toHaveAttribute('aria-valuenow', '640')
     await usuario.dblClick(divisor)
     expect(divisor).toHaveAttribute('aria-valuenow', '320')
+  })
+
+  it('condicionantes em árvore: recolhe agrupador, mostra no PDF e cria junto da seleção', async () => {
+    const usuario = userEvent.setup()
+    const linha = (
+      id: string,
+      pai: string | null,
+      codigo: string,
+      titulo: string,
+      natureza: string,
+      extra: Record<string, unknown> = {},
+    ) => ({
+      id,
+      pai_id: pai,
+      codigo,
+      posicao: 1,
+      revisao: 'aceita',
+      responsavel_id: null,
+      origem: 'ia',
+      fonte_pagina: 4,
+      proposta_ia: null,
+      versao: {
+        titulo,
+        texto_literal: `Texto literal de ${titulo}, conforme o anexo.`,
+        natureza,
+        recorrencia: null,
+        unidade_ciclo: null,
+        intervalo_ciclo: null,
+        data_referencia: null,
+        primeira_data: null,
+        fonte_regra: null,
+        prazo_confirmado_em: null,
+        confirmador: null,
+      },
+      ...extra,
+    })
+    falso.reiniciar(
+      cenario({
+        tabelas: {
+          condicionante: [
+            // O subitem chega antes do agrupador: a lista segue o código.
+            linha('c43', 'g4', '4.3', 'Análise do corpo receptor', 'obrigacao'),
+            linha('g4', null, '4', 'Monitoramento de efluentes', 'agrupador'),
+            linha('m1', null, '5', 'Manter cópia da licença', 'informacao_geral', {
+              origem: 'manual',
+              fonte_pagina: null,
+            }),
+          ],
+        },
+      }),
+    )
+    renderizarApp('/licencas/i1/condicionantes')
+
+    const lista = await screen.findByRole('list', { name: 'Condicionantes' })
+    expect(
+      within(lista)
+        .getAllByRole('listitem')
+        .map((li) => li.textContent),
+    ).toEqual([
+      expect.stringContaining('Monitoramento de efluentes'),
+      expect.stringContaining('Análise do corpo receptor'),
+      expect.stringContaining('Manter cópia da licença'),
+    ])
+
+    await usuario.click(within(lista).getByRole('button', { name: 'Recolher 4' }))
+    expect(within(lista).queryByText('Análise do corpo receptor')).not.toBeInTheDocument()
+    await usuario.click(within(lista).getByRole('button', { name: 'Expandir 4' }))
+
+    // Selecionar já leva o documento ao lugar do item.
+    await usuario.click(within(lista).getByText('Análise do corpo receptor'))
+    const pdf = screen.getByRole('region', { name: 'PDF LAO 4821-2023.pdf' })
+    expect(pdf).toHaveAttribute('data-pagina', '4')
+    expect(pdf.getAttribute('data-trechos')).toMatch(/^Texto literal de Análise/)
+
+    // Novo item entra no mesmo agrupador do item selecionado (não há mais "Dentro de").
+    await usuario.click(screen.getByRole('button', { name: 'Nova condicionante' }))
+    // A linha do título nasce logo abaixo do agrupador, um nível para dentro.
+    const [, linhaDoTitulo] = within(lista).getAllByRole('listitem')
+    expect(linhaDoTitulo).toContainElement(
+      screen.getByRole('textbox', { name: 'Título da nova condicionante' }),
+    )
+    expect(screen.getByRole('textbox', { name: 'Título da nova condicionante' })).toHaveFocus()
+    await usuario.keyboard('Coleta mensal{Enter}')
+    const form = await screen.findByRole('form', { name: 'Nova condicionante' })
+    expect(within(form).queryByLabelText('Dentro de')).not.toBeInTheDocument()
+    // Código sugerido pelo lugar: o seguinte ao último irmão (4.3 → 4.4).
+    expect(within(form).getByLabelText('Código')).toHaveValue('4.4')
+    expect(linhaDoTitulo).toHaveTextContent('4.4')
+
+    // Item cadastrado à mão não tem página: o documento procura pelo texto.
+    await usuario.click(within(lista).getByText('Manter cópia da licença'))
+    expect(pdf.getAttribute('data-trechos')).toMatch(/^Texto literal de Manter/)
+
+    // Arrastar e soltar sobre o agrupador: entra nele (como pasta no VS Code).
+    const linhaDe = (texto: string) => within(lista).getByText(texto).closest('li') as HTMLElement
+    const dataTransfer = { setData: vi.fn(), effectAllowed: '', dropEffect: '' }
+    fireEvent.dragStart(linhaDe('Manter cópia da licença'), { dataTransfer })
+    fireEvent.dragOver(linhaDe('Monitoramento de efluentes'), { dataTransfer })
+    expect(dataTransfer.dropEffect).toBe('move')
+    fireEvent.drop(linhaDe('Monitoramento de efluentes'), { dataTransfer })
+    await waitFor(() => {
+      expect(falso.cliente.rpc).toHaveBeenCalledWith('mover_condicionante', {
+        p_id: 'm1',
+        p_pai_id: 'g4',
+      })
+    })
+  })
+
+  it('move pelo teclado: Ctrl+X no item, Ctrl+V no destino ou colar fora dos agrupadores', async () => {
+    const usuario = userEvent.setup()
+    const linha = (id: string, pai: string | null, codigo: string, natureza: string) => ({
+      id,
+      pai_id: pai,
+      codigo,
+      posicao: 1,
+      revisao: 'aceita',
+      responsavel_id: null,
+      origem: 'manual',
+      fonte_pagina: null,
+      proposta_ia: null,
+      versao: {
+        titulo: `Item ${codigo}`,
+        texto_literal: '',
+        natureza,
+        recorrencia: null,
+        unidade_ciclo: null,
+        intervalo_ciclo: null,
+        data_referencia: null,
+        primeira_data: null,
+        fonte_regra: null,
+        prazo_confirmado_em: null,
+        confirmador: null,
+      },
+    })
+    falso.reiniciar(
+      cenario({
+        tabelas: {
+          condicionante: [
+            linha('g3', null, '3', 'agrupador'),
+            linha('g32', 'g3', '3.2', 'agrupador'),
+            linha('g322', 'g32', '3.2.2', 'agrupador'),
+            linha('c3221', null, '3.2.2.1', 'obrigacao'),
+          ],
+        },
+      }),
+    )
+    renderizarApp('/licencas/i1/condicionantes')
+    const lista = await screen.findByRole('list', { name: 'Condicionantes' })
+    const botaoDe = (texto: string) =>
+      within(lista).getByText(texto).closest('button') as HTMLElement
+
+    // O item solto vai para dentro do 3.2.2.
+    botaoDe('Item 3.2.2.1').focus()
+    await usuario.keyboard('{Control>}x{/Control}')
+    expect(
+      within(screen.getByRole('region', { name: 'Lista de condicionantes' })).getByRole('status'),
+    ).toHaveTextContent('recortado')
+    botaoDe('Item 3.2.2').focus()
+    await usuario.keyboard('{Control>}v{/Control}')
+    await waitFor(() => {
+      expect(falso.cliente.rpc).toHaveBeenCalledWith('mover_condicionante', {
+        p_id: 'c3221',
+        p_pai_id: 'g322',
+      })
+    })
+
+    // Agrupador não entra dentro de si mesmo nem do que está abaixo dele.
+    falso.cliente.rpc.mockClear()
+    botaoDe('Item 3').focus()
+    await usuario.keyboard('{Control>}x{/Control}')
+    botaoDe('Item 3.2.2').focus()
+    await usuario.keyboard('{Control>}v{/Control}')
+    expect(
+      within(screen.getByRole('region', { name: 'Lista de condicionantes' })).getByRole('status'),
+    ).toHaveTextContent('Não dá para mover para aí')
+    await usuario.keyboard('{Escape}')
+    expect(
+      within(screen.getByRole('region', { name: 'Lista de condicionantes' })).getByRole('status'),
+    ).toHaveTextContent('Movimento cancelado')
+
+    // Para a raiz: "Colar fora dos agrupadores".
+    botaoDe('Item 3.2').focus()
+    await usuario.keyboard('{Control>}x{/Control}')
+    await usuario.click(screen.getByRole('button', { name: 'Colar fora dos agrupadores' }))
+    await waitFor(() => {
+      expect(falso.cliente.rpc).toHaveBeenCalledWith('mover_condicionante', {
+        p_id: 'g32',
+        p_pai_id: null,
+      })
+    })
+    expect(falso.cliente.rpc).toHaveBeenCalledTimes(1)
   })
 })
