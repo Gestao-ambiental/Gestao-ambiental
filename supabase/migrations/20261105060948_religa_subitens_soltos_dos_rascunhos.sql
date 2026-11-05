@@ -1,7 +1,8 @@
--- Rascunhos extraídos antes da correção de 20261105052506: o subitem que a IA mandou antes do seu
--- agrupador ficou sem pai. Religa usando a própria resposta guardada da extração (pai_codigo),
--- sem deduzir nada do código. Só rascunho, só item ainda solto, só pai que é agrupador da mesma
--- extração, e sem fechar ciclo. Repetir não muda nada.
+-- Rascunhos extraídos antes da correção de 20261105052506: o subitem da IA ficou sem pai quando veio
+-- antes do seu agrupador ou quando a IA não disse o pai. Religa primeiro pela própria resposta
+-- guardada da extração (pai_codigo) e, sem ela, pelo código ("3.1.1" no agrupador "3.1").
+-- Só rascunho, só item da IA ainda solto, só pai que é agrupador da mesma licença, e sem fechar
+-- ciclo. Repetir não muda nada.
 do $$
 declare
   r record;
@@ -36,5 +37,13 @@ begin
     continue when ancestral = r.filho_id;
     update public.condicionante as c set pai_id = r.pai_id where c.id = r.filho_id and c.pai_id is null;
   end loop;
+
+  -- O que continuou solto vai para o agrupador do próprio código.
+  update public.condicionante as c
+  set pai_id = private.agrupador_pelo_codigo(c.instrumento_id, c.id, c.codigo)
+  from public.instrumento as i
+  where i.id = c.instrumento_id and i.situacao = 'rascunho'
+    and c.origem = 'ia' and c.pai_id is null
+    and private.agrupador_pelo_codigo(c.instrumento_id, c.id, c.codigo) is not null;
 end;
 $$;

@@ -1,6 +1,47 @@
 -- Extração da IA: o subitem que vem antes do seu agrupador na resposta (ex.: 3.1.1 antes de 3.1)
 -- ficava solto, sem pai. Agora a ligação ao agrupador é feita numa segunda passada, depois que
--- todos os itens existem. Mesma assinatura: os grants continuam.
+-- todos os itens existem; e o que vem sem pai_codigo vai para o agrupador do próprio código.
+-- Mesma assinatura: os grants continuam.
+-- Agrupador de um item deduzido pelo código, para quando a IA não diz o pai: "3.2.2.1" vai para o
+-- agrupador "3.2.2"; se não houver, "3.2"; depois "3". Só agrupador não descartado da mesma licença,
+-- nunca o próprio item nem algo abaixo dele. Sem candidato: null (o item fica na raiz).
+create function private.agrupador_pelo_codigo(p_instrumento_id uuid, p_id uuid, p_codigo text)
+returns uuid
+language plpgsql
+stable
+set search_path = ''
+as $$
+declare
+  prefixo text := regexp_replace(btrim(coalesce(p_codigo, '')), '[.[:space:]]+$', '');
+  achado uuid;
+  ancestral uuid;
+  profundidade integer;
+begin
+  while prefixo like '%.%' loop
+    prefixo := regexp_replace(prefixo, '[.][^.]*$', '');
+    select c.id into achado
+    from public.condicionante as c
+    join public.condicionante_versao as v on v.id = c.versao_vigente_id
+    where c.instrumento_id = p_instrumento_id and c.id <> p_id and btrim(c.codigo) = prefixo
+      and v.natureza = 'agrupador' and c.revisao <> 'descartada'
+    order by c.posicao
+    limit 1;
+    if achado is not null then
+      ancestral := achado;
+      profundidade := 0;
+      while ancestral is not null and ancestral <> p_id and profundidade < 100 loop
+        select c.pai_id into ancestral from public.condicionante as c where c.id = ancestral;
+        profundidade := profundidade + 1;
+      end loop;
+      return case when ancestral is distinct from p_id then achado end;
+    end if;
+  end loop;
+  return null;
+end;
+$$;
+
+revoke all on function private.agrupador_pelo_codigo(uuid, uuid, text) from public, anon, authenticated;
+
 create or replace function public.concluir_extracao_ia(
   p_id uuid,
   p_resultado jsonb,
@@ -164,6 +205,12 @@ begin
       continue when ancestral = filho::uuid;
       update public.condicionante as c set pai_id = pai where c.id = filho::uuid;
     end loop;
+
+    -- Terceira passada: o que a IA deixou sem pai vai para o agrupador do código ("3.1.1" em "3.1").
+    update public.condicionante as c
+    set pai_id = private.agrupador_pelo_codigo(c.instrumento_id, c.id, c.codigo)
+    where c.extracao_id = ext.id and c.pai_id is null
+      and private.agrupador_pelo_codigo(c.instrumento_id, c.id, c.codigo) is not null;
   end if;
 
   update public.extracao_ia as x

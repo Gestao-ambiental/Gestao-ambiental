@@ -132,21 +132,23 @@ select set_config('testes.proposta', $json${
     {"codigo": "1", "pai_codigo": null, "titulo": "Disposições gerais", "texto_literal": "1 DISPOSIÇÕES GERAIS",
      "natureza": "agrupador", "pagina": 2, "periodicidade": null},
     {"codigo": "4.3", "pai_codigo": "4", "titulo": "", "texto_literal": "Realizar, semestralmente, análise do corpo receptor.",
-     "natureza": "obrigacao", "pagina": 4, "periodicidade": "semestral"}
+     "natureza": "obrigacao", "pagina": 4, "periodicidade": "semestral"},
+    {"codigo": "1.2", "pai_codigo": null, "titulo": "Afixar a licença", "texto_literal": "Afixar cópia da licença na portaria.",
+     "natureza": "condicao_continua", "pagina": 2, "periodicidade": null}
   ]
 }$json$, true);
 
 select is(
   public.concluir_extracao_ia('30000000-0000-4000-8000-000000000001', current_setting('testes.proposta')::jsonb,
     'openai/gpt-4.1-mini', 'licenca-v1', 18000, 2400, 12345, 12, 41000),
-  3,
-  'a Edge Function grava a proposta: 3 condicionantes'
+  4,
+  'a Edge Function grava a proposta: 4 condicionantes'
 );
 
 select is(
   public.concluir_extracao_ia('30000000-0000-4000-8000-000000000001', current_setting('testes.proposta')::jsonb,
     'openai/gpt-4.1-mini', 'licenca-v1', 18000, 2400, 12345, 12, 41000),
-  3,
+  4,
   'repetir a conclusão (retry) não duplica'
 );
 
@@ -172,15 +174,16 @@ select results_eq(
     where c.instrumento_id = '10000000-0000-4000-8000-000000000001' order by c.posicao$$,
   $$values ('1.1', '1', 'pendente', 'ia', 2, 'Manter cópia da licença', 'condicao_continua', null::text),
            ('1', null::text, 'pendente', 'ia', 2, 'Disposições gerais', 'agrupador', null),
-           ('4.3', null, 'pendente', 'ia', 4, 'Realizar, semestralmente, análise do corpo receptor.', 'obrigacao', 'semestral')$$,
-  'condicionantes entram pendentes, com fonte, hierarquia só sob agrupador (mesmo com o subitem antes do agrupador) e título do texto quando falta'
+           ('4.3', null, 'pendente', 'ia', 4, 'Realizar, semestralmente, análise do corpo receptor.', 'obrigacao', 'semestral'),
+           ('1.2', '1', 'pendente', 'ia', 2, 'Afixar a licença', 'condicao_continua', null)$$,
+  'condicionantes entram pendentes, com fonte, hierarquia só sob agrupador (mesmo com o subitem antes do agrupador ou sem pai_codigo, pelo código) e título do texto quando falta'
 );
 
 select results_eq(
   $$select situacao, modelo, versao_prompt, tokens_entrada, tokens_saida, custo_micros, moeda, paginas,
            itens_propostos, duracao_ms, solicitada_por
     from public.extracao_ia where id = '30000000-0000-4000-8000-000000000001'$$,
-  $$values ('concluida', 'openai/gpt-4.1-mini', 'licenca-v1', 18000, 2400, 12345::bigint, 'USD', 12, 3, 41000,
+  $$values ('concluida', 'openai/gpt-4.1-mini', 'licenca-v1', 18000, 2400, 12345::bigint, 'USD', 12, 4, 41000,
             'd0000000-0000-4000-8000-0000000000a1'::uuid)$$,
   'a extração registra modelo, prompt, tokens, custo, páginas e duração'
 );
@@ -215,7 +218,7 @@ from public.condicionante where instrumento_id = '10000000-0000-4000-8000-000000
 select results_eq(
   $$select codigo, revisao::text, aceita_sem_edicao from public.condicionante
     where instrumento_id = '10000000-0000-4000-8000-000000000001' order by posicao$$,
-  $$values ('1.1', 'aceita', true), ('1', 'descartada', null::boolean), ('4.3', 'aceita', false)$$,
+  $$values ('1.1', 'aceita', true), ('1', 'descartada', null::boolean), ('4.3', 'aceita', false), ('1.2', 'pendente', null)$$,
   'aceitar registra se o item da IA foi aceito sem edição (base da métrica)'
 );
 

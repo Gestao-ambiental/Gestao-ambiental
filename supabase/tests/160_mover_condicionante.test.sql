@@ -2,7 +2,7 @@
 -- dentro de agrupador não descartado da mesma licença, nunca para dentro de si mesmo; só muda o pai.
 begin;
 
-select plan(13);
+select plan(16);
 
 select testes.criar_dados_sinteticos();
 
@@ -120,6 +120,29 @@ select results_eq(
   $$values ('30000000-0000-4000-8000-000000000003'::uuid, null::uuid),
            ('30000000-0000-4000-8000-000000000004'::uuid, '30000000-0000-4000-8000-000000000003'::uuid)$$,
   'os subitens acompanham o agrupador'
+);
+
+-- ---------------------------------------------------------------------------
+-- Pai deduzido pelo código (extração e religação dos rascunhos)
+-- ---------------------------------------------------------------------------
+reset role;
+
+select is(
+  private.agrupador_pelo_codigo('10000000-0000-4000-8000-000000000001', gen_random_uuid(), '3.2.2.7'),
+  '30000000-0000-4000-8000-000000000003'::uuid,
+  '"3.2.2.7" vai para o agrupador "3.2.2"'
+);
+
+select is(
+  private.agrupador_pelo_codigo('10000000-0000-4000-8000-000000000001', gen_random_uuid(), '3.9.1'),
+  '30000000-0000-4000-8000-000000000001'::uuid,
+  'sem "3.9", sobe até o "3"'
+);
+
+select is(
+  private.agrupador_pelo_codigo('10000000-0000-4000-8000-000000000001', gen_random_uuid(), '4.1'),
+  null::uuid,
+  'agrupador descartado ou de outra licença não conta'
 );
 
 select * from finish();
