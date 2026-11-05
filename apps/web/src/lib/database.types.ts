@@ -741,6 +741,9 @@ isOneToOne: false
 "definir_responsavel":
 { Args: { "p_condicionante_id": string,"p_membro_id": string }; Returns: undefined
                            },
+"desfazer_confirmacao_prazo":
+{ Args: { "p_condicionante_id": string }; Returns: undefined
+                           },
 "designar_conferente":
 { Args: { "p_membro_id": string,"p_ocorrencia_id": string }; Returns: undefined
                            },

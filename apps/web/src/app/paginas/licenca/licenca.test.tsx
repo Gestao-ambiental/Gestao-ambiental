@@ -356,6 +356,40 @@ describe('passo 4: prazos (LIC-03)', () => {
 
     expect(await screen.findByRole('region', { name: 'Prazo de 6.1' })).toBeInTheDocument()
   })
+
+  it('prazo confirmado tem "Desfazer confirmação"; o pendente não', async () => {
+    falso.reiniciar(
+      cenario({
+        tabelas: {
+          condicionante: [
+            condicionante('c1', '4.2', 'Relatório trimestral'),
+            condicionante('c2', '5.1', 'Laudo anual de ruído', {
+              recorrencia: 'anual',
+              primeira_data: '2024-02-14',
+              prazo_confirmado_em: '2026-10-12T13:00:00Z',
+              confirmador: { nome: 'Eduardo Karnopp' },
+            }),
+          ],
+        },
+      }),
+    )
+    const usuario = userEvent.setup()
+    renderizarApp('/licencas/i1/prazos')
+
+    await usuario.click(await screen.findByRole('button', { name: 'Relatório trimestral' }))
+    const pendente = await screen.findByRole('region', { name: 'Prazo de 4.2' })
+    expect(
+      within(pendente).queryByRole('button', { name: 'Desfazer confirmação' }),
+    ).not.toBeInTheDocument()
+
+    await usuario.click(within(pendente).getByRole('button', { name: 'Fechar painel do prazo' }))
+    await usuario.click(screen.getByRole('button', { name: 'Laudo anual de ruído' }))
+    const confirmado = await screen.findByRole('region', { name: 'Prazo de 5.1' })
+    await usuario.click(within(confirmado).getByRole('button', { name: 'Desfazer confirmação' }))
+    expect(falso.cliente.rpc).toHaveBeenCalledWith('desfazer_confirmacao_prazo', {
+      p_condicionante_id: 'c2',
+    })
+  })
 })
 
 describe('passo 4: confirmação rápida com a recorrência lida pela IA', () => {

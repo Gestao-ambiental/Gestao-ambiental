@@ -27,6 +27,7 @@ import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { Selo } from '@/components/ui/selo'
 import {
   confirmarPrazo,
+  desfazerConfirmacaoPrazo,
   type Condicionante,
   type DadosPrazo,
   type Instrumento,
@@ -111,12 +112,14 @@ function PainelPrazo({
   fuso,
   aoFechar,
   aoConfirmar,
+  aoDesfazer,
 }: {
   instrumento: Instrumento
   item: Condicionante
   fuso: string
   aoFechar: () => void
   aoConfirmar: () => Promise<void>
+  aoDesfazer: () => Promise<void>
 }) {
   const fonteId = useId()
   const marco = dataDoMarco(instrumento)
@@ -172,9 +175,15 @@ function PainelPrazo({
     },
     onSuccess: aoConfirmar,
   })
+  // Volta o prazo a pendente (o que foi preenchido fica no painel para ajustar).
+  const desfazer = useMutation({
+    mutationFn: () => desfazerConfirmacaoPrazo(item.id),
+    onSuccess: aoDesfazer,
+  })
 
   const semFonte = !fonte.trim()
-  const podeConfirmar = Boolean(recorrencia) && !problema && !semFonte && !confirmar.isPending
+  const ocupado = confirmar.isPending || desfazer.isPending
+  const podeConfirmar = Boolean(recorrencia) && !problema && !semFonte && !ocupado
   const confirmado = Boolean(item.confirmadoEm)
 
   return (
@@ -198,9 +207,9 @@ function PainelPrazo({
         <BotaoIcone icone="x" rotulo="Fechar painel do prazo" onClick={aoFechar} />
       </div>
       <div className="flex min-h-0 flex-1 flex-col gap-(--space-200) overflow-auto p-(--space-200)">
-        {confirmar.isError ? (
+        {confirmar.isError || desfazer.isError ? (
           <MensagemSecao role="alert" tom="perigo">
-            {mensagemDoErro(confirmar.error)}
+            {mensagemDoErro(confirmar.error ?? desfazer.error)}
           </MensagemSecao>
         ) : null}
         <label htmlFor={fonteId} className="flex flex-col gap-(--space-050)">
@@ -378,6 +387,16 @@ function PainelPrazo({
       <div className="flex items-center justify-end gap-(--space-100) border-t p-(--space-150)">
         {semFonte ? (
           <span className="flex-1 text-xs text-(--text-subtle)">Informe a fonte ou regra.</span>
+        ) : null}
+        {confirmado ? (
+          <Botao
+            disabled={ocupado}
+            onClick={() => {
+              desfazer.mutate()
+            }}
+          >
+            {desfazer.isPending ? 'Desfazendo…' : 'Desfazer confirmação'}
+          </Botao>
         ) : null}
         <Botao
           aparencia="primario"
@@ -670,6 +689,7 @@ function Prazos({
               const proximo = emOrdem.find((o) => !o.confirmadoEm)
               if (proximo) setAberto(proximo.id)
             }}
+            aoDesfazer={registrar}
           />
         ) : null}
       </div>

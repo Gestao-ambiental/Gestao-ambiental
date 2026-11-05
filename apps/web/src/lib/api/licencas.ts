@@ -384,6 +384,14 @@ export async function confirmarPrazo(condicionanteId: string, dados: DadosPrazo)
   if (error) throw error
 }
 
+/** Volta o prazo a pendente; o que foi preenchido fica para ajustar e confirmar de novo. */
+export async function desfazerConfirmacaoPrazo(condicionanteId: string): Promise<void> {
+  const { error } = await obterSupabase().rpc('desfazer_confirmacao_prazo', {
+    p_condicionante_id: condicionanteId,
+  })
+  if (error) throw error
+}
+
 // ---------------------------------------------------------------------------
 // Responsáveis e ativação
 // ---------------------------------------------------------------------------
