@@ -27,6 +27,7 @@ import {
   destinoDoNovo,
   linhasVisiveis,
   montarArvore,
+  proximoCodigo,
   type NoCondicionante,
 } from './arvore-condicionantes'
 import { GuardaRascunho } from './GuardaCadastro'
@@ -109,7 +110,7 @@ const classeLeitura =
 
 type Edicao =
   | { tipo: 'existente'; id: string }
-  | { tipo: 'nova'; natureza: Natureza; paiId: string | null; titulo: string }
+  | { tipo: 'nova'; natureza: Natureza; paiId: string | null; codigo: string; titulo: string }
 
 /**
  * Linha do item novo na árvore, como o arquivo novo no explorador do VS Code: primeiro só o
@@ -117,6 +118,7 @@ type Edicao =
  */
 function LinhaNova({
   natureza,
+  codigo,
   nivel,
   nomeando,
   titulo,
@@ -124,6 +126,7 @@ function LinhaNova({
   aoCancelar,
 }: {
   natureza: Natureza
+  codigo: string
   nivel: number
   nomeando: boolean
   titulo: string
@@ -164,6 +167,9 @@ function LinhaNova({
       <span aria-hidden="true" className="flex w-6 shrink-0 justify-center text-(--icon)">
         <Icone nome={agrupador ? 'folder' : 'file-text'} />
       </span>
+      {codigo ? (
+        <span className="shrink-0 font-mono text-xs text-(--text-subtle)">{codigo}</span>
+      ) : null}
       {nomeando ? (
         <input
           ref={campoRef}
@@ -205,6 +211,7 @@ function Editor({
   edicao,
   item,
   agrupadores,
+  sugerirCodigo,
   pdfFechado,
   aoSalvar,
   aoVerPagina,
@@ -215,6 +222,7 @@ function Editor({
   item: Condicionante | undefined
   /** Agrupadores onde o item pode ficar (sem ele mesmo e sem o que está abaixo dele). */
   agrupadores: readonly Condicionante[]
+  sugerirCodigo: (paiId: string | null) => string
   pdfFechado: boolean
   aoSalvar: (id: string) => Promise<void>
   aoVerPagina: (pagina: number, trechos: readonly string[]) => void
@@ -222,7 +230,9 @@ function Editor({
 }) {
   const textoId = useId()
   const [id] = useState(() => (edicao.tipo === 'existente' ? edicao.id : crypto.randomUUID()))
-  const [codigo, setCodigo] = useState(item?.codigo ?? '')
+  const [codigo, setCodigo] = useState(
+    item?.codigo ?? (edicao.tipo === 'nova' ? edicao.codigo : ''),
+  )
   const [titulo, setTitulo] = useState(
     item?.titulo ?? (edicao.tipo === 'nova' ? edicao.titulo : ''),
   )
@@ -445,7 +455,10 @@ function Editor({
             value={paiId ?? ''}
             disabled={travado}
             onChange={(evento) => {
-              setPaiId(evento.target.value || null)
+              const novoPai = evento.target.value || null
+              // Código ainda o sugerido: acompanha o novo lugar, como no explorador do VS Code.
+              if (!item && codigo === sugerirCodigo(paiId)) setCodigo(sugerirCodigo(novoPai))
+              setPaiId(novoPai)
             }}
             className={cn(classeCampo, 'h-(--size-control) disabled:bg-(--surface-sunken)')}
           >
@@ -602,7 +615,13 @@ function Condicionantes({
         return proximo
       })
     }
-    setEdicao({ tipo: 'nova', natureza, paiId: destino, titulo: '' })
+    setEdicao({
+      tipo: 'nova',
+      natureza,
+      paiId: destino,
+      codigo: proximoCodigo(itens, destino),
+      titulo: '',
+    })
     setNomeando(true)
   }
 
@@ -637,6 +656,7 @@ function Condicionantes({
       <LinhaNova
         key="nova"
         natureza={edicao.natureza}
+        codigo={edicao.codigo}
         nivel={posicaoDaNova >= 0 ? (linhas[posicaoDaNova]?.nivel ?? 0) + 1 : 0}
         nomeando={nomeando}
         titulo={edicao.titulo}
@@ -937,6 +957,7 @@ function Condicionantes({
               edicao={edicao}
               item={selecionado}
               agrupadores={opcoesDePai}
+              sugerirCodigo={(paiId) => proximoCodigo(itens, paiId)}
               pdfFechado={!pdfAberto}
               aoSalvar={async (salvoId) => {
                 await registrar()

@@ -103,6 +103,35 @@ export function descendentes(arvore: readonly NoCondicionante[], id: string): Se
   return ids
 }
 
+/** Avança o último pedaço do código: "3.2.5.2" → "3.2.5.3", "b)" → "c)". Sem padrão: null. */
+function avancar(codigo: string): string | null {
+  // A letra só conta sozinha no pedaço ("a)", "3.b"), para "IV" não virar "IW".
+  const partes = /^((?:.*[.\s-])?)(\d+|[a-yA-Y])([).]?)$/.exec(codigo)
+  if (!partes) return null
+  const [, prefixo = '', ultimo = '', sufixo = ''] = partes
+  const seguinte = /^\d+$/.test(ultimo)
+    ? String(Number(ultimo) + 1)
+    : String.fromCharCode(ultimo.charCodeAt(0) + 1)
+  return `${prefixo}${seguinte}${sufixo}`
+}
+
+/**
+ * Código sugerido para o item novo, como o VS Code sugere pelo lugar: o seguinte ao último irmão
+ * ("3.2.5.2" → "3.2.5.3"); sem irmãos numerados, o primeiro dentro do agrupador ("3.2.5.1").
+ * É só sugestão: a pessoa pode trocar, e numeração fora do padrão (romanos) fica em branco.
+ */
+export function proximoCodigo(itens: readonly Condicionante[], paiId: string | null): string {
+  const irmaos = itens
+    .filter((i) => i.paiId === paiId && i.revisao !== 'descartada' && i.codigo.trim())
+    .sort(compararPorCodigo)
+  const ultimo = irmaos.at(-1)
+  if (ultimo) return avancar(ultimo.codigo.trim()) ?? ''
+  const pai = paiId ? itens.find((i) => i.id === paiId) : undefined
+  if (!pai) return paiId ? '' : '1'
+  const codigoDoPai = pai.codigo.trim()
+  return codigoDoPai ? `${codigoDoPai}.1` : ''
+}
+
 /** Onde entra o item novo (como no explorador do VS Code): no agrupador selecionado ou no pai. */
 export function destinoDoNovo(selecionado: Condicionante | undefined): string | null {
   if (!selecionado) return null

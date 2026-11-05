@@ -482,6 +482,12 @@ describe('revisar a proposta da IA (IA-02)', () => {
     await usuario.keyboard('Coleta mensal{Enter}')
     const form = await screen.findByRole('form', { name: 'Nova condicionante' })
     expect(within(form).getByLabelText('Dentro de')).toHaveValue('g4')
+    // Código sugerido pelo lugar: o seguinte ao último irmão (4.3 → 4.4).
+    expect(within(form).getByLabelText('Código')).toHaveValue('4.4')
+    expect(linhaDoTitulo).toHaveTextContent('4.4')
+    // Mudar o lugar leva a sugestão junto.
+    await usuario.selectOptions(within(form).getByLabelText('Dentro de'), '')
+    expect(within(form).getByLabelText('Código')).toHaveValue('6')
 
     // Item cadastrado à mão não tem página: o documento procura pelo texto.
     await usuario.click(within(lista).getByText('Manter cópia da licença'))

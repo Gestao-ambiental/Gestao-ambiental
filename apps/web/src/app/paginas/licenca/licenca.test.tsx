@@ -271,6 +271,9 @@ describe('passo 3: condicionantes (LIC-02)', () => {
     expect(within(form).getByLabelText('Título')).toHaveValue('Relatório trimestral de efluentes')
     expect(within(lista).getByText('Relatório trimestral de efluentes')).toBeInTheDocument()
 
+    // Lista vazia: o primeiro código é sugerido, como no VS Code; dá para trocar.
+    expect(within(form).getByLabelText('Código')).toHaveValue('1')
+    await usuario.clear(within(form).getByLabelText('Código'))
     await usuario.type(within(form).getByLabelText('Código'), '4.2')
     await usuario.type(
       within(form).getByLabelText('Texto literal da licença'),

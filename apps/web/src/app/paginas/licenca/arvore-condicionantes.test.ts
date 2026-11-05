@@ -2,7 +2,13 @@ import { describe, expect, it } from 'vitest'
 
 import type { Condicionante } from '@/lib/api/licencas'
 
-import { descendentes, destinoDoNovo, linhasVisiveis, montarArvore } from './arvore-condicionantes'
+import {
+  descendentes,
+  destinoDoNovo,
+  linhasVisiveis,
+  montarArvore,
+  proximoCodigo,
+} from './arvore-condicionantes'
 
 function item(
   id: string,
@@ -38,6 +44,38 @@ function item(
 const agrupador = { natureza: 'agrupador' } as const
 
 describe('árvore de condicionantes', () => {
+  it('sugere o código do item novo pelo lugar, como o VS Code', () => {
+    const itens = [
+      item('g3', '3', null, agrupador),
+      item('g32', '3.2', 'g3', agrupador),
+      item('g325', '3.2.5', 'g32', agrupador),
+      item('c3251', '3.2.5.1', 'g325'),
+      item('c3252', '3.2.5.2', 'g325'),
+      item('c3253', '3.2.5.3', 'g325', { revisao: 'descartada' }),
+      item('g3210', '3.2.10', 'g32', agrupador),
+      item('vazio', '3.2.11', 'g32', agrupador),
+      item('sem', '', 'g32', agrupador),
+      item('alineas', 'Alíneas', null, agrupador),
+      item('a', 'a)', 'alineas'),
+      item('b', 'b)', 'alineas'),
+      item('romanos', 'IV', null, agrupador),
+      item('r1', 'IV', 'romanos'),
+      item('r2', 'Anexo', 'alineas', { revisao: 'descartada' }),
+    ]
+    // Seguinte ao último irmão, na ordem do código; descartado não conta.
+    expect(proximoCodigo(itens, 'g325')).toBe('3.2.5.3')
+    expect(proximoCodigo(itens, 'g32')).toBe('3.2.12')
+    expect(
+      proximoCodigo([item('x1', '1', null), item('x2', '2', null), item('x10', '10', null)], null),
+    ).toBe('11')
+    // Agrupador vazio: o primeiro dentro dele. Sem código no pai: em branco.
+    expect(proximoCodigo(itens, 'vazio')).toBe('3.2.11.1')
+    expect(proximoCodigo(itens, 'sem')).toBe('')
+    expect(proximoCodigo(itens, 'alineas')).toBe('c)')
+    expect(proximoCodigo(itens, 'romanos')).toBe('')
+    expect(proximoCodigo([], null)).toBe('1')
+  })
+
   // A IA às vezes manda o subitem antes do agrupador: a tela segue o código da licença.
   const itens = [
     item('311', '3.1.1', '31'),
