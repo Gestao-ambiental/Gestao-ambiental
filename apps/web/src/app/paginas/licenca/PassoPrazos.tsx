@@ -15,7 +15,7 @@ import {
 } from '@gestao-ambiental/domain'
 import { useMutation } from '@tanstack/react-query'
 import { useId, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Carregando, EstadoErro, EstadoVazio } from '@/components/estados'
@@ -38,13 +38,6 @@ import { cn } from '@/lib/utils'
 import { GuardaRascunho } from './GuardaCadastro'
 import { MolduraCadastro, RodapeCadastro } from './MolduraCadastro'
 import { useCondicionantes, useSalvamento } from './usar-rascunho'
-
-const NOMES_MARCO = {
-  emissao: 'Emissão',
-  assinatura: 'Assinatura',
-  publicacao: 'Publicação',
-  recebimento: 'Recebimento',
-} as const
 
 const classeCabecalho =
   'h-10 border-b px-(--space-100) text-left rotulo whitespace-nowrap first:pl-(--space-150)'
@@ -280,17 +273,6 @@ function PainelPrazo({
         {recorrencia && recorrencia !== 'continua' ? (
           <>
             <div className="grid gap-(--space-150) sm:grid-cols-2">
-              <div className="flex flex-col gap-(--space-050)">
-                <span className="rotulo">Marco de cálculo</span>
-                <span className="corpo">
-                  {instrumento.marco && marco
-                    ? `${NOMES_MARCO[instrumento.marco]} · ${formatarDataCivil(marco)}`
-                    : 'Não definido'}
-                </span>
-                <Link to={`/licencas/${instrumento.id}/identificacao`} className="text-xs">
-                  Definido no passo 2. Alterar
-                </Link>
-              </div>
               <CampoData
                 rotulo="Data de referência"
                 hoje={hojeNoFuso(new Date(), fuso)}
