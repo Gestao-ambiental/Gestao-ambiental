@@ -679,7 +679,15 @@ function Prazos({
             aoFechar={() => {
               setAberto(null)
             }}
-            aoConfirmar={registrar}
+            aoConfirmar={async () => {
+              await registrar()
+              // Segue para o próximo prazo a confirmar, na ordem da tabela (volta ao topo no fim).
+              // Sem nenhum pendente, o painel fica no prazo que acabou de ser confirmado.
+              const atual = obrigacoes.findIndex((o) => o.id === item.id)
+              const emOrdem = [...obrigacoes.slice(atual + 1), ...obrigacoes.slice(0, atual)]
+              const proximo = emOrdem.find((o) => !o.confirmadoEm)
+              if (proximo) setAberto(proximo.id)
+            }}
           />
         ) : null}
       </div>

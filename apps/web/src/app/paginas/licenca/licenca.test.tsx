@@ -328,6 +328,34 @@ describe('passo 4: prazos (LIC-03)', () => {
       p_fonte_regra: 'Texto literal de Relatório trimestral',
     })
   })
+
+  it('confirmar no painel segue para o próximo prazo pendente, pulando os já confirmados', async () => {
+    falso.reiniciar(
+      cenario({
+        tabelas: {
+          condicionante: [
+            condicionante('c1', '4.2', 'Relatório trimestral'),
+            condicionante('c2', '5.1', 'Laudo anual de ruído', {
+              recorrencia: 'anual',
+              primeira_data: '2024-02-14',
+              prazo_confirmado_em: '2026-10-12T13:00:00Z',
+              confirmador: { nome: 'Eduardo Karnopp' },
+            }),
+            condicionante('c3', '6.1', 'Inventário de resíduos'),
+          ],
+        },
+      }),
+    )
+    const usuario = userEvent.setup()
+    renderizarApp('/licencas/i1/prazos')
+
+    await usuario.click(await screen.findByRole('button', { name: 'Relatório trimestral' }))
+    const painel = await screen.findByRole('region', { name: 'Prazo de 4.2' })
+    await usuario.click(within(painel).getByRole('button', { name: 'Trimestral' }))
+    await usuario.click(within(painel).getByRole('button', { name: 'Confirmar prazo' }))
+
+    expect(await screen.findByRole('region', { name: 'Prazo de 6.1' })).toBeInTheDocument()
+  })
 })
 
 describe('passo 4: confirmação rápida com a recorrência lida pela IA', () => {
