@@ -277,6 +277,7 @@ function Responsaveis({
       contexto={`${instrumento.empreendimentoNome} · ${instrumento.unidadeNome}`}
       sairPara={`/empreendimentos/${instrumento.empreendimentoId}`}
       salvoEm={salvoEm}
+      larga
       rodape={
         <RodapeCadastro
           aviso={
@@ -296,7 +297,8 @@ function Responsaveis({
         />
       }
     >
-      <div className="flex flex-col gap-(--space-150)">
+      {/* Área toda: a tabela tem cinco colunas e o título da condicionante precisa de espaço. */}
+      <div className="flex flex-col gap-(--space-150) p-(--space-200) md:p-(--space-300)">
         {erro ? (
           <MensagemSecao role="alert" tom="perigo">
             {mensagemDoErro(erro)}
