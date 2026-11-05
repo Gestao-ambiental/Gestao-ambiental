@@ -5,6 +5,7 @@ import {
   descreverRecorrencia,
   formatarDataCivil,
   nomeDoDiaDaSemana,
+  recorrenciaSugerida,
   sugerirPrimeiraData,
   type DataCivil,
   type Prazo,
@@ -22,7 +23,12 @@ import { BotaoIcone } from '@/components/ui/botao-icone'
 import { CampoTexto } from '@/components/ui/campo-texto'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { Selo } from '@/components/ui/selo'
-import { confirmarPrazo, type Condicionante, type Instrumento } from '@/lib/api/licencas'
+import {
+  confirmarPrazo,
+  type Condicionante,
+  type DadosPrazo,
+  type Instrumento,
+} from '@/lib/api/licencas'
 import { formatarInstanteComoData } from '@/lib/datas'
 import { mensagemDoErro } from '@/lib/erros'
 import { cn } from '@/lib/utils'
@@ -61,6 +67,48 @@ function nomeDaRecorrencia(recorrencia: Recorrencia): string {
   return recorrencia === 'personalizada' ? 'Personalizada' : descreverRecorrencia({ recorrencia })
 }
 
+/**
+ * Prazo pronto para confirmar com um clique: a recorrência já escolhida ou a sugerida pela leitura
+ * da IA, a primeira data escolhida ou a sugerida pelo marco, e a fonte (o texto literal, se não
+ * houver outra). Sem recorrência clara, sem primeira data ou com série inválida: nada (vai ao painel).
+ */
+function prazoProposto(
+  item: Condicionante,
+  instrumento: Instrumento,
+): { dados: DadosPrazo; sugerido: boolean } | null {
+  const base = item.recorrencia
+    ? { recorrencia: item.recorrencia, unidade: item.unidade, intervalo: item.intervalo }
+    : recorrenciaSugerida(item.periodicidadeIa)
+  if (!base) return null
+  const referencia = item.dataReferencia ?? dataDoMarco(instrumento)
+  const continua = base.recorrencia === 'continua'
+  const primeira = continua
+    ? null
+    : (item.primeiraData ??
+      sugerirPrimeiraData(base, referencia, instrumento.validade, instrumento.tipoSigla))
+  if (!continua && !primeira) return null
+  if (!continua) {
+    try {
+      datasDoPrazo({ ...base, primeiraData: primeira }, instrumento.validade)
+    } catch {
+      return null
+    }
+  }
+  const fonte = item.fonteRegra ?? item.textoLiteral
+  if (!fonte.trim()) return null
+  return {
+    sugerido: !item.recorrencia || !item.primeiraData,
+    dados: {
+      recorrencia: base.recorrencia,
+      unidade: base.recorrencia === 'personalizada' ? (base.unidade ?? null) : null,
+      intervalo: base.recorrencia === 'personalizada' ? (base.intervalo ?? null) : null,
+      dataReferencia: referencia,
+      primeiraData: primeira,
+      fonteRegra: fonte,
+    },
+  }
+}
+
 function dataDe(valor: string): DataCivil | null {
   return /^\d{4}-\d{2}-\d{2}$/.test(valor) ? (valor as DataCivil) : null
 }
@@ -81,9 +129,14 @@ function PainelPrazo({
 }) {
   const fonteId = useId()
   const marco = dataDoMarco(instrumento)
-  const [recorrencia, setRecorrencia] = useState<Recorrencia | null>(item.recorrencia)
-  const [unidade, setUnidade] = useState<UnidadeCiclo>(item.unidade ?? 'mes')
-  const [intervalo, setIntervalo] = useState(item.intervalo ? String(item.intervalo) : '')
+  const sugerida = item.recorrencia ? null : recorrenciaSugerida(item.periodicidadeIa)
+  const [recorrencia, setRecorrencia] = useState<Recorrencia | null>(
+    item.recorrencia ?? sugerida?.recorrencia ?? null,
+  )
+  const [unidade, setUnidade] = useState<UnidadeCiclo>(item.unidade ?? sugerida?.unidade ?? 'mes')
+  const [intervalo, setIntervalo] = useState(
+    item.intervalo ? String(item.intervalo) : sugerida?.intervalo ? String(sugerida.intervalo) : '',
+  )
   const [referencia, setReferencia] = useState<DataCivil | null>(item.dataReferencia ?? marco)
   const [primeira, setPrimeira] = useState<DataCivil | null>(item.primeiraData)
   const [primeiraTocada, setPrimeiraTocada] = useState(Boolean(item.primeiraData))
@@ -383,15 +436,44 @@ function Prazos({
 }) {
   const navegar = useNavigate()
   const consulta = useCondicionantes(instrumento.id)
-  const [aberto, setAberto] = useState<string | null>(null)
+  // undefined = ainda ninguém escolheu (abre a primeira linha); null = a pessoa fechou o painel.
+  const [escolhido, setAberto] = useState<string | null | undefined>(undefined)
+  // No celular o painel cobre a tabela: lá ele só abre quando a pessoa toca numa linha.
+  // jsdom (testes) não tem matchMedia: sem ele, comporta-se como tela estreita.
+  const [telaLarga] = useState(
+    () =>
+      typeof window.matchMedia === 'function' && window.matchMedia('(min-width: 1024px)').matches,
+  )
   const { fuso } = useConsultoria().atual
 
   const obrigacoes = (consulta.data ?? []).filter(
     (i) => i.natureza === 'obrigacao' && i.revisao === 'aceita',
   )
+  const aberto =
+    escolhido === undefined ? (telaLarga ? (obrigacoes[0]?.id ?? null) : null) : escolhido
   const confirmados = obrigacoes.filter((i) => i.confirmadoEm).length
   const pendentes = obrigacoes.length - confirmados
   const item = obrigacoes.find((i) => i.id === aberto)
+  const propostos = new Map(
+    obrigacoes.flatMap((o) => {
+      const proposto = prazoProposto(o, instrumento)
+      return proposto ? [[o.id, proposto] as const] : []
+    }),
+  )
+  const prontos = obrigacoes.filter((o) => !o.confirmadoEm && propostos.has(o.id))
+
+  // Confirmar com um clique: a mesma RPC do painel (registra quem e quando, LIC-03).
+  const confirmarRapido = useMutation({
+    mutationFn: async (ids: readonly string[]) => {
+      for (const idItem of ids) {
+        const proposto = propostos.get(idItem)
+        if (proposto) await confirmarPrazo(idItem, proposto.dados)
+      }
+    },
+    onSettled: registrar,
+  })
+  const confirmando = (idItem: string) =>
+    confirmarRapido.isPending && confirmarRapido.variables.includes(idItem)
 
   return (
     <MolduraCadastro
@@ -432,6 +514,11 @@ function Prazos({
               {confirmados} de {obrigacoes.length} confirmados
             </span>
           </div>
+          {confirmarRapido.isError ? (
+            <MensagemSecao role="alert" tom="perigo" className="mb-(--space-150)">
+              {mensagemDoErro(confirmarRapido.error)}
+            </MensagemSecao>
+          ) : null}
           {consulta.isPending ? (
             <Carregando rotulo="Carregando prazos" linhas={5} />
           ) : consulta.isError ? (
@@ -463,13 +550,39 @@ function Prazos({
                       Confirmado por
                     </th>
                     <th scope="col" className={classeCabecalho}>
-                      Situação
+                      <span className="flex items-center justify-between gap-(--space-100)">
+                        Situação
+                        {prontos.length > 0 ? (
+                          <Botao
+                            tamanho="compacto"
+                            iconeAntes="check"
+                            disabled={confirmarRapido.isPending}
+                            onClick={() => {
+                              confirmarRapido.mutate(prontos.map((o) => o.id))
+                            }}
+                          >
+                            {prontos.length === 1
+                              ? 'Confirmar 1'
+                              : `Confirmar todos (${String(prontos.length)})`}
+                          </Botao>
+                        ) : null}
+                      </span>
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {obrigacoes.map((o) => (
-                    <tr key={o.id} className={cn(o.id === aberto && 'bg-(--surface-selected)')}>
+                    // A linha inteira abre o painel com o mouse; pelo teclado, o título é o botão.
+                    <tr
+                      key={o.id}
+                      onClick={() => {
+                        setAberto(o.id)
+                      }}
+                      className={cn(
+                        'cursor-pointer transicao-estado hover:bg-(--neutral-subtle-hover)',
+                        o.id === aberto && 'bg-(--surface-selected) hover:bg-(--surface-selected)',
+                      )}
+                    >
                       <td className={`${classeCelula} font-mono text-xs text-(--text-subtle)`}>
                         {o.codigo}
                       </td>
@@ -485,22 +598,38 @@ function Prazos({
                         </button>
                       </td>
                       <td className={classeCelula}>
-                        {o.recorrencia ? (
-                          descreverRecorrencia({
-                            recorrencia: o.recorrencia,
-                            unidade: o.unidade,
-                            intervalo: o.intervalo,
-                          })
-                        ) : (
-                          <span className="text-(--text-subtle)">Sem base</span>
-                        )}
+                        {(() => {
+                          const dados = o.recorrencia ? o : propostos.get(o.id)?.dados
+                          if (!dados) return <span className="text-(--text-subtle)">Sem base</span>
+                          return (
+                            <span className="flex flex-col">
+                              {descreverRecorrencia({
+                                recorrencia: dados.recorrencia ?? 'unica',
+                                unidade: dados.unidade,
+                                intervalo: dados.intervalo,
+                              })}
+                              {o.recorrencia ? null : (
+                                <span className="text-xs text-(--text-subtle)">
+                                  sugerida pela leitura da IA
+                                </span>
+                              )}
+                            </span>
+                          )
+                        })()}
                       </td>
                       <td className={classeCelula}>
-                        {o.primeiraData ? (
-                          formatarDataCivil(o.primeiraData)
-                        ) : (
-                          <span className="text-(--text-subtle)">—</span>
-                        )}
+                        {(() => {
+                          const primeira = o.primeiraData ?? propostos.get(o.id)?.dados.primeiraData
+                          if (!primeira) return <span className="text-(--text-subtle)">—</span>
+                          return (
+                            <span className="flex flex-col">
+                              {formatarDataCivil(primeira)}
+                              {o.primeiraData ? null : (
+                                <span className="text-xs text-(--text-subtle)">sugerida</span>
+                              )}
+                            </span>
+                          )
+                        })()}
                       </td>
                       <td className={`${classeCelula} whitespace-nowrap`}>
                         {o.confirmadoEm && o.confirmadoPor
@@ -510,8 +639,32 @@ function Prazos({
                       <td className={classeCelula}>
                         {o.confirmadoEm ? (
                           <Selo tom="sucesso">Confirmado</Selo>
+                        ) : propostos.has(o.id) ? (
+                          <Botao
+                            tamanho="compacto"
+                            aparencia="primario"
+                            iconeAntes="check"
+                            aria-label={`Confirmar prazo de ${o.codigo || o.titulo}`}
+                            disabled={confirmarRapido.isPending}
+                            onClick={(evento) => {
+                              // Confirmar na linha não troca o prazo aberto no painel.
+                              evento.stopPropagation()
+                              confirmarRapido.mutate([o.id])
+                            }}
+                          >
+                            {confirmando(o.id) ? 'Confirmando…' : 'Confirmar'}
+                          </Botao>
                         ) : (
-                          <Selo tom="atencao">Pendente de revisão</Selo>
+                          <Botao
+                            tamanho="compacto"
+                            aparencia="link"
+                            aria-label={`Definir prazo de ${o.codigo || o.titulo}`}
+                            onClick={() => {
+                              setAberto(o.id)
+                            }}
+                          >
+                            Definir prazo
+                          </Botao>
                         )}
                       </td>
                     </tr>

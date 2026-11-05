@@ -74,6 +74,9 @@ export {
 } from './prazo'
 export type { LicencaResumo, Prazo, Recorrencia, SituacaoDaLicenca, UnidadeCiclo } from './prazo'
 
+export { recorrenciaSugerida } from './recorrencia-sugerida'
+export type { RecorrenciaSugerida } from './recorrencia-sugerida'
+
 export { faixaDeAtraso, rotuloDaSituacaoDoPrazo, situacaoDoPrazo } from './situacao-prazo'
 export type { FaixaDeAtraso, SituacaoDoPrazo, TipoLinhaDePrazo } from './situacao-prazo'
 
