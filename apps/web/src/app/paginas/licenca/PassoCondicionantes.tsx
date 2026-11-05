@@ -22,6 +22,13 @@ import {
 import { mensagemDoErro } from '@/lib/erros'
 import { cn } from '@/lib/utils'
 
+import {
+  descendentes,
+  destinoDoNovo,
+  linhasVisiveis,
+  montarArvore,
+  type NoCondicionante,
+} from './arvore-condicionantes'
 import { GuardaRascunho } from './GuardaCadastro'
 import { MolduraCadastro, RodapeCadastro } from './MolduraCadastro'
 import { PainelPdf } from './PainelPdf'
@@ -66,15 +73,6 @@ type Filtro = 'todos' | 'pendente' | 'aceita' | 'descartada'
 const LISTA = { padrao: 320, minimo: 260, maximo: 640 }
 const PDF = { padrao: 420, minimo: 320, maximo: 960 }
 
-/** Pais na ordem de cadastro, cada um seguido dos seus subitens. */
-function emArvore(itens: readonly Condicionante[]): Condicionante[] {
-  const filhos = new Map<string, Condicionante[]>()
-  for (const item of itens) {
-    if (item.paiId) filhos.set(item.paiId, [...(filhos.get(item.paiId) ?? []), item])
-  }
-  return itens.filter((item) => !item.paiId).flatMap((pai) => [pai, ...(filhos.get(pai.id) ?? [])])
-}
-
 const classeCampo =
   'w-full rounded-(--radius) border border-(--border-input) bg-(--surface-input) px-(--space-100) corpo text-(--text) outline-none focus:border-(--border-focus) focus:bg-(--surface-input-focus)'
 
@@ -103,6 +101,7 @@ function Editor({
   instrumentoId: string
   edicao: Edicao
   item: Condicionante | undefined
+  /** Agrupadores onde o item pode ficar (sem ele mesmo e sem o que está abaixo dele). */
   agrupadores: readonly Condicionante[]
   pdfFechado: boolean
   aoSalvar: (id: string) => Promise<void>
@@ -137,7 +136,7 @@ function Editor({
   const textoMudou = item?.origem === 'ia' && texto !== item.textoLiteral
 
   const dados = () => ({
-    paiId: natureza === 'agrupador' ? null : paiId,
+    paiId,
     codigo,
     titulo,
     textoLiteral: texto,
@@ -325,7 +324,7 @@ function Editor({
           vira entrega periódica.
         </p>
       </fieldset>
-      {natureza !== 'agrupador' && agrupadores.length > 0 ? (
+      {agrupadores.length > 0 ? (
         <label className="flex flex-col gap-(--space-050)">
           <span className="rotulo">Dentro de</span>
           <select
@@ -337,13 +336,11 @@ function Editor({
             className={cn(classeCampo, 'h-(--size-control) disabled:bg-(--surface-sunken)')}
           >
             <option value="">Nenhum agrupador</option>
-            {agrupadores
-              .filter((a) => a.id !== id)
-              .map((a) => (
-                <option key={a.id} value={a.id}>
-                  {[a.codigo, a.titulo].filter(Boolean).join(' · ')}
-                </option>
-              ))}
+            {agrupadores.map((a) => (
+              <option key={a.id} value={a.id}>
+                {[a.codigo, a.titulo].filter(Boolean).join(' · ')}
+              </option>
+            ))}
           </select>
         </label>
       ) : null}
@@ -425,6 +422,10 @@ export function PassoCondicionantes() {
   )
 }
 
+function rotuloDe(item: Condicionante | undefined): string {
+  return item ? [item.codigo, item.titulo].filter(Boolean).join(' · ') : ''
+}
+
 function Condicionantes({
   instrumento,
   salvamento: { salvoEm, registrar },
@@ -440,29 +441,72 @@ function Condicionantes({
   const [larguraLista, setLarguraLista] = useState(LISTA.padrao)
   const [larguraPdf, setLarguraPdf] = useState(PDF.padrao)
   const [pdfAberto, setPdfAberto] = useState(true)
+  const [recolhidos, setRecolhidos] = useState<ReadonlySet<string>>(new Set())
 
   const itens = consulta.data ?? []
-  const ordem = emArvore(itens)
+  const porId = new Map(itens.map((item) => [item.id, item]))
+  const arvore = montarArvore(itens)
+  const linhas = linhasVisiveis(arvore, recolhidos, filtro)
   const contagem = {
     todos: itens.length,
     pendente: itens.filter((i) => i.revisao === 'pendente').length,
     aceita: itens.filter((i) => i.revisao === 'aceita').length,
     descartada: itens.filter((i) => i.revisao === 'descartada').length,
   }
-  const visiveis = ordem.filter((i) => filtro === 'todos' || i.revisao === filtro)
   const agrupadores = itens.filter((i) => i.natureza === 'agrupador' && i.revisao !== 'descartada')
   const ativos = itens.length - contagem.descartada
   const podeContinuar = ativos > 0 && contagem.pendente === 0
-  const selecionado =
-    edicao?.tipo === 'existente' ? itens.find((i) => i.id === edicao.id) : undefined
+  const selecionado = edicao?.tipo === 'existente' ? porId.get(edicao.id) : undefined
   const revisados = contagem.aceita + contagem.descartada
+  // Como no explorador do VS Code: o novo entra no agrupador selecionado ou junto do item.
+  const destino = destinoDoNovo(selecionado)
+  const ondeEntra = destino ? ` em ${rotuloDe(porId.get(destino))}` : ''
+  const agrupadoresComFilhos = (nos: readonly NoCondicionante[]): string[] =>
+    nos.flatMap((no) =>
+      no.filhos.length > 0 ? [no.item.id, ...agrupadoresComFilhos(no.filhos)] : [],
+    )
 
-  function nova(natureza: Natureza, paiId: string | null = null) {
-    setEdicao({ tipo: 'nova', natureza, paiId })
+  function nova(natureza: Natureza) {
+    if (destino) {
+      setRecolhidos((atual) => {
+        const proximo = new Set(atual)
+        proximo.delete(destino)
+        return proximo
+      })
+    }
+    setEdicao({ tipo: 'nova', natureza, paiId: destino })
   }
 
-  const ultimoAgrupador = agrupadores.at(-1)
-  const botoesNovos = (
+  function alternar(id: string, recolher?: boolean) {
+    setRecolhidos((atual) => {
+      const proximo = new Set(atual)
+      if (recolher ?? !atual.has(id)) proximo.add(id)
+      else proximo.delete(id)
+      return proximo
+    })
+  }
+
+  function mostrarNoPdf(item: Condicionante) {
+    // Item da IA tem a página; o cadastrado à mão é procurado pelo texto no documento.
+    setPaginaPdf((anterior) => ({
+      numero: item.origem === 'ia' ? item.fontePagina : null,
+      vez: (anterior?.vez ?? 0) + 1,
+      trechos: trechosDoItem(item),
+    }))
+  }
+
+  function selecionar(item: Condicionante) {
+    setEdicao({ tipo: 'existente', id: item.id })
+    mostrarNoPdf(item)
+  }
+
+  const opcoesDePai = (() => {
+    if (edicao?.tipo !== 'existente') return agrupadores
+    const abaixo = descendentes(arvore, edicao.id)
+    return agrupadores.filter((a) => !abaixo.has(a.id))
+  })()
+
+  const botoesVazio = (
     <>
       <Botao
         iconeAntes="plus"
@@ -482,20 +526,6 @@ function Condicionantes({
         }}
       >
         Agrupador
-      </Botao>
-      <Botao
-        iconeAntes="plus"
-        tamanho="compacto"
-        disabled={!ultimoAgrupador}
-        title={ultimoAgrupador ? undefined : 'Subitem fica disponível depois do primeiro agrupador'}
-        onClick={() => {
-          nova(
-            'obrigacao',
-            selecionado?.natureza === 'agrupador' ? selecionado.id : (ultimoAgrupador?.id ?? null),
-          )
-        }}
-      >
-        Subitem
       </Botao>
     </>
   )
@@ -542,21 +572,55 @@ function Condicionantes({
           className="flex min-h-0 flex-col border-r bg-(--surface) md:min-w-[260px] md:flex-[0_1_var(--largura-lista)]"
         >
           <div className="flex flex-col gap-(--space-100) border-b p-(--space-150)">
-            <div className="flex flex-col gap-(--space-050)">
-              <span className="self-end text-xs text-(--text-subtle)">
+            <div className="flex items-center gap-(--space-050)">
+              <span className="flex-1 text-xs text-(--text-subtle)">
                 {revisados} de {itens.length} revisados
               </span>
               <div
-                className="h-1 overflow-hidden rounded-(--radius) bg-(--border)"
-                aria-hidden="true"
+                role="toolbar"
+                aria-label="Ações da lista"
+                className="flex items-center gap-(--space-025)"
               >
-                <div
-                  className="h-full bg-(--brand)"
-                  style={{
-                    width: `${String(itens.length ? (revisados / itens.length) * 100 : 0)}%`,
+                <BotaoIcone
+                  icone="file-plus"
+                  rotulo="Nova condicionante"
+                  title={`Nova condicionante${ondeEntra}`}
+                  tamanho="compacto"
+                  onClick={() => {
+                    nova('obrigacao')
+                  }}
+                />
+                <BotaoIcone
+                  icone="folder-plus"
+                  rotulo="Novo agrupador"
+                  title={`Novo agrupador${ondeEntra}`}
+                  tamanho="compacto"
+                  onClick={() => {
+                    nova('agrupador')
+                  }}
+                />
+                <BotaoIcone
+                  icone="chevrons-down-up"
+                  rotulo="Recolher todos"
+                  title="Recolher todos"
+                  tamanho="compacto"
+                  disabled={!agrupadores.length}
+                  onClick={() => {
+                    setRecolhidos(new Set(agrupadoresComFilhos(arvore)))
                   }}
                 />
               </div>
+            </div>
+            <div
+              className="h-1 overflow-hidden rounded-(--radius) bg-(--border)"
+              aria-hidden="true"
+            >
+              <div
+                className="h-full bg-(--brand)"
+                style={{
+                  width: `${String(itens.length ? (revisados / itens.length) * 100 : 0)}%`,
+                }}
+              />
             </div>
             <div
               role="group"
@@ -606,28 +670,60 @@ function Condicionantes({
               <EstadoVazio
                 icone="file-check"
                 titulo="Adicione a primeira condicionante"
-                descricao="Use obrigação para o que tem entrega, agrupador para títulos e subitem para o que fica dentro de um agrupador."
+                descricao="Use obrigação para o que tem entrega e agrupador para títulos. Com um agrupador selecionado, o novo item entra dentro dele."
               />
             ) : (
               <ul aria-label="Condicionantes">
-                {visiveis.map((item) => {
+                {linhas.map(({ item, nivel, temFilhos, recolhido }) => {
                   const natureza = NATUREZAS.find((n) => n.chave === item.natureza)
                   const ativo = edicao?.tipo === 'existente' && edicao.id === item.id
+                  const nome = item.codigo || item.titulo
                   return (
-                    <li key={item.id}>
+                    <li
+                      key={item.id}
+                      className={cn(
+                        'flex border-b transicao-estado hover:bg-(--surface-hover)',
+                        ativo && 'bg-(--surface-selected) hover:bg-(--surface-selected-hover)',
+                      )}
+                      style={{ paddingLeft: `${String(nivel * 16)}px` }}
+                    >
+                      {temFilhos ? (
+                        <button
+                          type="button"
+                          aria-expanded={!recolhido}
+                          aria-label={`${recolhido ? 'Expandir' : 'Recolher'} ${nome}`}
+                          onClick={() => {
+                            alternar(item.id)
+                          }}
+                          className="flex w-6 shrink-0 cursor-pointer items-start justify-center pt-(--space-100) text-(--icon) outline-none focus-visible:shadow-[inset_0_0_0_2px_var(--border-focus)]"
+                        >
+                          <Icone
+                            nome="chevron-right"
+                            tamanho={12}
+                            className={cn('mt-0.5 transicao-estado', !recolhido && 'rotate-90')}
+                          />
+                        </button>
+                      ) : (
+                        <span aria-hidden="true" className="w-6 shrink-0" />
+                      )}
                       <button
                         type="button"
                         aria-current={ativo ? 'true' : undefined}
+                        aria-expanded={temFilhos ? !recolhido : undefined}
                         onClick={() => {
-                          setEdicao({ tipo: 'existente', id: item.id })
+                          selecionar(item)
                         }}
-                        className={cn(
-                          'flex w-full cursor-pointer gap-(--space-100) border-b px-(--space-150) py-(--space-100) text-left transicao-estado hover:bg-(--surface-hover)',
-                          ativo && 'bg-(--surface-selected) hover:bg-(--surface-selected-hover)',
-                          item.paiId && 'pl-(--space-400)',
-                        )}
+                        onKeyDown={(evento) => {
+                          // Setas como no explorador: esquerda recolhe, direita expande.
+                          if (!temFilhos) return
+                          if (evento.key === 'ArrowLeft' || evento.key === 'ArrowRight') {
+                            evento.preventDefault()
+                            alternar(item.id, evento.key === 'ArrowLeft')
+                          }
+                        }}
+                        className="flex min-w-0 flex-1 cursor-pointer gap-(--space-100) py-(--space-100) pr-(--space-150) text-left outline-none focus-visible:shadow-[inset_0_0_0_2px_var(--border-focus)]"
                       >
-                        <span className="w-10 shrink-0 pt-0.5 font-mono text-xs text-(--text-subtle)">
+                        <span className="shrink-0 pt-0.5 font-mono text-xs text-(--text-subtle)">
                           {item.codigo}
                         </span>
                         <span className="flex min-w-0 flex-1 flex-col gap-(--space-050)">
@@ -657,9 +753,6 @@ function Condicionantes({
               </ul>
             )}
           </div>
-          <div className="flex flex-wrap gap-(--space-050) border-t p-(--space-150)">
-            {botoesNovos}
-          </div>
         </section>
 
         <DivisorRedimensionavel
@@ -686,7 +779,7 @@ function Condicionantes({
               instrumentoId={instrumento.id}
               edicao={edicao}
               item={selecionado}
-              agrupadores={agrupadores}
+              agrupadores={opcoesDePai}
               pdfFechado={!pdfAberto}
               aoSalvar={async (salvoId) => {
                 await registrar()
@@ -726,15 +819,8 @@ function Condicionantes({
                     : 'Ou adicione outro item.'
                 }
                 acaoPrincipal={
-                  <div className="flex flex-col items-center gap-(--space-100)">
-                    <div className="flex flex-wrap justify-center gap-(--space-100)">
-                      {botoesNovos}
-                    </div>
-                    {!ultimoAgrupador ? (
-                      <p className="text-xs text-(--text-subtle)">
-                        Subitem fica disponível depois do primeiro agrupador.
-                      </p>
-                    ) : null}
+                  <div className="flex flex-wrap justify-center gap-(--space-100)">
+                    {botoesVazio}
                   </div>
                 }
               />

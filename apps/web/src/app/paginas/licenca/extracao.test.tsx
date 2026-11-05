@@ -398,4 +398,86 @@ describe('revisar a proposta da IA (IA-02)', () => {
     await usuario.dblClick(divisor)
     expect(divisor).toHaveAttribute('aria-valuenow', '320')
   })
+
+  it('condicionantes em árvore: recolhe agrupador, mostra no PDF e cria junto da seleção', async () => {
+    const usuario = userEvent.setup()
+    const linha = (
+      id: string,
+      pai: string | null,
+      codigo: string,
+      titulo: string,
+      natureza: string,
+      extra: Record<string, unknown> = {},
+    ) => ({
+      id,
+      pai_id: pai,
+      codigo,
+      posicao: 1,
+      revisao: 'aceita',
+      responsavel_id: null,
+      origem: 'ia',
+      fonte_pagina: 4,
+      proposta_ia: null,
+      versao: {
+        titulo,
+        texto_literal: `Texto literal de ${titulo}, conforme o anexo.`,
+        natureza,
+        recorrencia: null,
+        unidade_ciclo: null,
+        intervalo_ciclo: null,
+        data_referencia: null,
+        primeira_data: null,
+        fonte_regra: null,
+        prazo_confirmado_em: null,
+        confirmador: null,
+      },
+      ...extra,
+    })
+    falso.reiniciar(
+      cenario({
+        tabelas: {
+          condicionante: [
+            // O subitem chega antes do agrupador: a lista segue o código.
+            linha('c43', 'g4', '4.3', 'Análise do corpo receptor', 'obrigacao'),
+            linha('g4', null, '4', 'Monitoramento de efluentes', 'agrupador'),
+            linha('m1', null, '5', 'Manter cópia da licença', 'informacao_geral', {
+              origem: 'manual',
+              fonte_pagina: null,
+            }),
+          ],
+        },
+      }),
+    )
+    renderizarApp('/licencas/i1/condicionantes')
+
+    const lista = await screen.findByRole('list', { name: 'Condicionantes' })
+    expect(
+      within(lista)
+        .getAllByRole('listitem')
+        .map((li) => li.textContent),
+    ).toEqual([
+      expect.stringContaining('Monitoramento de efluentes'),
+      expect.stringContaining('Análise do corpo receptor'),
+      expect.stringContaining('Manter cópia da licença'),
+    ])
+
+    await usuario.click(within(lista).getByRole('button', { name: 'Recolher 4' }))
+    expect(within(lista).queryByText('Análise do corpo receptor')).not.toBeInTheDocument()
+    await usuario.click(within(lista).getByRole('button', { name: 'Expandir 4' }))
+
+    // Selecionar já leva o documento ao lugar do item.
+    await usuario.click(within(lista).getByText('Análise do corpo receptor'))
+    const pdf = screen.getByRole('region', { name: 'PDF LAO 4821-2023.pdf' })
+    expect(pdf).toHaveAttribute('data-pagina', '4')
+    expect(pdf.getAttribute('data-trechos')).toMatch(/^Texto literal de Análise/)
+
+    // Novo item entra no mesmo agrupador do item selecionado.
+    await usuario.click(screen.getByRole('button', { name: 'Nova condicionante' }))
+    const form = await screen.findByRole('form', { name: 'Nova condicionante' })
+    expect(within(form).getByLabelText('Dentro de')).toHaveValue('g4')
+
+    // Item cadastrado à mão não tem página: o documento procura pelo texto.
+    await usuario.click(within(lista).getByText('Manter cópia da licença'))
+    expect(pdf.getAttribute('data-trechos')).toMatch(/^Texto literal de Manter/)
+  })
 })

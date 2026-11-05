@@ -10,7 +10,7 @@ import { BotaoIcone } from '@/components/ui/botao-icone'
 import { Icone } from '@/components/ui/icone'
 import { cn } from '@/lib/utils'
 
-import { destacarTrecho } from './destacar-trecho'
+import { destacarTrecho, paginaComTrecho } from './destacar-trecho'
 
 const ZOOM_MINIMO = 50
 const ZOOM_MAXIMO = 200
@@ -32,9 +32,10 @@ async function carregarPdfjs() {
 /**
  * Pedido para ir a uma página (ex.: a fonte de um campo proposto pela IA). `vez` repete o pedido.
  * `trechos`: o que destacar nessa página, em ordem de preferência; o primeiro que aparecer vale.
+ * Sem `numero`, o visualizador procura os trechos no documento e vai à primeira página que tiver.
  */
 export interface PedidoDePagina {
-  numero: number
+  numero: number | null
   vez: number
   trechos?: readonly (string | null | undefined)[]
 }
@@ -62,12 +63,49 @@ export function VisualizadorPdf({ url, nome, className, paginaPedida = null, aco
   const areaRef = useRef<HTMLDivElement>(null)
   const [largura, setLargura] = useState(0)
   const [pedidoVisto, setPedidoVisto] = useState<PedidoDePagina | null>(null)
+  // Página onde o trecho do pedido deve ser destacado (achada direto ou pela busca).
+  const [paginaDoDestaque, setPaginaDoDestaque] = useState<number | null>(null)
+  // Texto de cada página, extraído uma vez por documento, para a busca.
+  const textosRef = useRef<{ doc: PDFDocumentProxy; paginas: Promise<string[]> } | null>(null)
 
   // Pedido novo de página: muda durante a renderização (sem efeito), como o React recomenda.
   if (paginaPedida !== pedidoVisto) {
     setPedidoVisto(paginaPedida)
-    if (paginaPedida) setPagina(Math.max(1, paginaPedida.numero))
+    setPaginaDoDestaque(paginaPedida?.numero ?? null)
+    if (paginaPedida?.numero) setPagina(Math.max(1, paginaPedida.numero))
   }
+
+  // Pedido sem página: procura os trechos no texto do documento.
+  useEffect(() => {
+    if (!documento || pedidoVisto?.numero !== null || !pedidoVisto.trechos) return
+    const trechos = pedidoVisto.trechos
+    const estado = { cancelado: false }
+    if (textosRef.current?.doc !== documento) {
+      const doc = documento
+      textosRef.current = {
+        doc,
+        paginas: Promise.all(
+          Array.from({ length: doc.numPages }, async (_, indice) => {
+            const conteudo = await (await doc.getPage(indice + 1)).getTextContent()
+            return conteudo.items.map((item) => ('str' in item ? item.str : '')).join(' ')
+          }),
+        ),
+      }
+    }
+    void textosRef.current.paginas
+      .then((paginas) => {
+        const achada = paginaComTrecho(paginas, trechos)
+        if (estado.cancelado || achada === null) return
+        setPagina(achada)
+        setPaginaDoDestaque(achada)
+      })
+      .catch(() => {
+        // Sem texto extraível (PDF escaneado): fica na página atual.
+      })
+    return () => {
+      estado.cancelado = true
+    }
+  }, [documento, pedidoVisto])
 
   useEffect(() => {
     const estado = { cancelado: false }
@@ -146,7 +184,7 @@ export function VisualizadorPdf({ url, nome, className, paginaPedida = null, aco
       await camada.render()
       if (cancelado()) return
       // Destaca o trecho pedido só na página do pedido; em outra página, nada fica marcado.
-      if (pedidoVisto?.trechos && pedidoVisto.numero === pagina) {
+      if (pedidoVisto?.trechos && paginaDoDestaque === pagina) {
         destacarTrecho(textoRef.current, pedidoVisto.trechos)?.scrollIntoView({
           block: 'center',
           inline: 'nearest',
@@ -159,7 +197,7 @@ export function VisualizadorPdf({ url, nome, className, paginaPedida = null, aco
       estado.cancelado = true
       tarefa?.cancel()
     }
-  }, [documento, pagina, zoom, pedidoVisto, largura])
+  }, [documento, pagina, zoom, pedidoVisto, paginaDoDestaque, largura])
 
   const total = documento?.numPages ?? 0
 

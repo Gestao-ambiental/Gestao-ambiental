@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { destacarTrecho, limparDestaques } from './destacar-trecho'
+import { destacarTrecho, limparDestaques, paginaComTrecho } from './destacar-trecho'
 
 /** Camada de texto como a do pdf.js: um span por pedaço de linha. */
 function camada(...pedacos: string[]): HTMLElement {
@@ -49,5 +49,27 @@ describe('destacar o trecho de onde a IA tirou o campo', () => {
     limparDestaques(div)
     expect(div.querySelectorAll('.destaque-ia')).toHaveLength(0)
     expect(div.querySelector('span')?.childNodes).toHaveLength(1)
+  })
+})
+
+describe('achar a página do trecho', () => {
+  const paginas = [
+    'LICENÇA AMBIENTAL\nRuído',
+    'Anexo I\n4.3 Realizar, semestralmente,\nanálise do corpo',
+  ]
+
+  it('acha a página mesmo com quebra de linha e acento diferente', () => {
+    expect(paginaComTrecho(paginas, ['Realizar, semestralmente, analise do corpo'])).toBe(2)
+  })
+
+  it('trecho curto não procura (acharia a página errada)', () => {
+    expect(paginaComTrecho(paginas, ['Ruído'])).toBeNull()
+  })
+
+  it('tenta os trechos na ordem e devolve null se nenhum aparece', () => {
+    expect(
+      paginaComTrecho(paginas, [null, 'não está no documento', '4.3 Realizar, semestralmente']),
+    ).toBe(2)
+    expect(paginaComTrecho(paginas, ['não está no documento'])).toBeNull()
   })
 })
