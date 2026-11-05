@@ -357,7 +357,7 @@ describe('passo 4: prazos (LIC-03)', () => {
     expect(await screen.findByRole('region', { name: 'Prazo de 6.1' })).toBeInTheDocument()
   })
 
-  it('prazo confirmado tem "Desfazer confirmação"; o pendente não', async () => {
+  it('prazo confirmado fica só para leitura, com "Desfazer confirmação" no lugar de confirmar', async () => {
     falso.reiniciar(
       cenario({
         tabelas: {
@@ -385,6 +385,12 @@ describe('passo 4: prazos (LIC-03)', () => {
     await usuario.click(within(pendente).getByRole('button', { name: 'Fechar painel do prazo' }))
     await usuario.click(screen.getByRole('button', { name: 'Laudo anual de ruído' }))
     const confirmado = await screen.findByRole('region', { name: 'Prazo de 5.1' })
+    // Confirmado fica só para leitura: sem "Confirmar prazo" e com os campos travados.
+    expect(
+      within(confirmado).queryByRole('button', { name: 'Confirmar prazo' }),
+    ).not.toBeInTheDocument()
+    expect(within(confirmado).getByRole('group', { name: 'Dados do prazo' })).toBeDisabled()
+    expect(within(confirmado).getByRole('button', { name: 'Anual' })).toBeDisabled()
     await usuario.click(within(confirmado).getByRole('button', { name: 'Desfazer confirmação' }))
     expect(falso.cliente.rpc).toHaveBeenCalledWith('desfazer_confirmacao_prazo', {
       p_condicionante_id: 'c2',
