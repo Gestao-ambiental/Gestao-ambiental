@@ -28,12 +28,25 @@
   --brand: var(--af-green-700);
   --brand-hover: var(--af-green-800);
   --brand-pressed: var(--af-green-900);
-  --ia: #7c3aed;
+  --ia: #8b5cf6;
+  /* Fundo do trecho destacado no PDF; a página é sempre branca, então não muda no tema escuro. */
+  --ia-destaque: color-mix(in srgb, #8b5cf6 28%, transparent);
 }
 [data-theme='dark'] {
   --brand: var(--af-green-500);
   --brand-hover: var(--af-green-400);
   --ia: #a78bfa;
+}
+
+/* Trecho do PDF de onde a IA tirou o campo (classes do pdf.js: .highlight.appended). */
+.textLayer .highlight.destaque-ia {
+  --highlight-bg-color: var(--ia-destaque);
+  /* A marca fica dentro do span do pedaço, que já tem a escala e o tamanho da fonte. */
+  transform: none;
+  font-size: inherit;
+  /* A camada de texto usa fonte genérica e escorrega alguns pixels do desenho: a folga cobre. */
+  margin: -2px -4px;
+  padding: 2px 4px;
 }
 
 /* Tema escuro como nos tokens: [data-theme="dark"] no <html> (tema-inicial.js e ProvedorTema). */

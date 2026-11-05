@@ -159,8 +159,22 @@ function Identificacao({
   })
   const proposta = extracao.data?.situacao === 'concluida' ? extracao.data.identificacao : null
   const [paginaPdf, setPaginaPdf] = useState<PedidoDePagina | null>(null)
-  const verPagina = (numero: number) => {
-    setPaginaPdf((anterior) => ({ numero, vez: (anterior?.vez ?? 0) + 1 }))
+  const verPagina = (numero: number, trechos?: PedidoDePagina['trechos']) => {
+    setPaginaPdf((anterior) => ({ numero, vez: (anterior?.vez ?? 0) + 1, trechos }))
+  }
+  /**
+   * O que procurar no PDF para destacar a fonte do campo: a data como está escrita, o valor lido
+   * e, no tipo, o nome por extenso (o documento diz "Licença Ambiental de Operação", não "LAO").
+   */
+  function trechosDe(chave: keyof PropostaDeIdentificacao): PedidoDePagina['trechos'] {
+    const campo = proposta?.[chave]
+    if (!campo?.valor) return []
+    if (chave === 'tipo') {
+      const lido = tipos.data?.find((t) => t.sigla.toUpperCase() === campo.valor?.toUpperCase())
+      return [lido?.nome, campo.valor]
+    }
+    const data = dataDe(campo.valor)
+    return data ? [campo.texto, formatarDataCivil(data)] : [campo.valor]
   }
   /** Ícone da IA ao lado do rótulo quando o valor atual é o proposto. */
   function marca(chave: keyof PropostaDeIdentificacao, valor: string | null): ReactNode {
@@ -170,7 +184,14 @@ function Identificacao({
       chave === 'tipo'
         ? tipo?.sigla.toUpperCase() === campo.valor.toUpperCase()
         : valor === campo.valor
-    return igual ? <BotaoIa pagina={campo.pagina} aoVerPagina={verPagina} /> : undefined
+    return igual ? (
+      <BotaoIa
+        pagina={campo.pagina}
+        aoVerPagina={(pagina) => {
+          verPagina(pagina, trechosDe(chave))
+        }}
+      />
+    ) : undefined
   }
   /** Abaixo do campo, quando a IA procurou e não achou e o campo segue vazio. */
   function naoAchou(chave: keyof PropostaDeIdentificacao, valor: string | null): ReactNode {
