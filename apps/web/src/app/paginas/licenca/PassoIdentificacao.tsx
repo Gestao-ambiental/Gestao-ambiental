@@ -45,11 +45,37 @@ const MARCOS: {
   rotulo: string
   campo: CampoDeData
   proposta: keyof PropostaDeIdentificacao
+  /** Fatos já ocorridos não aceitam data futura (o banco também recusa). */
+  semFuturo: boolean
 }[] = [
-  { chave: 'emissao', rotulo: 'Emissão', campo: 'emitidoEm', proposta: 'emitido_em' },
-  { chave: 'assinatura', rotulo: 'Assinatura', campo: 'assinadoEm', proposta: 'assinado_em' },
-  { chave: 'publicacao', rotulo: 'Publicação', campo: 'publicadoEm', proposta: 'publicado_em' },
-  { chave: 'recebimento', rotulo: 'Recebimento', campo: 'recebidoEm', proposta: 'recebido_em' },
+  {
+    chave: 'emissao',
+    rotulo: 'Emissão',
+    campo: 'emitidoEm',
+    proposta: 'emitido_em',
+    semFuturo: true,
+  },
+  {
+    chave: 'assinatura',
+    rotulo: 'Assinatura',
+    campo: 'assinadoEm',
+    proposta: 'assinado_em',
+    semFuturo: true,
+  },
+  {
+    chave: 'publicacao',
+    rotulo: 'Publicação',
+    campo: 'publicadoEm',
+    proposta: 'publicado_em',
+    semFuturo: true,
+  },
+  {
+    chave: 'recebimento',
+    rotulo: 'Recebimento',
+    campo: 'recebidoEm',
+    proposta: 'recebido_em',
+    semFuturo: false,
+  },
 ]
 
 const classeSelect =
@@ -469,6 +495,12 @@ function Identificacao({
                   key={m.chave}
                   rotulo={m.rotulo}
                   hoje={hoje}
+                  maximo={m.semFuturo ? hoje : undefined}
+                  motivoDoLimite={
+                    m.semFuturo
+                      ? `Datas futuras ficam bloqueadas para ${m.rotulo.toLowerCase()}`
+                      : undefined
+                  }
                   acessorio={marca(m.proposta, dados[m.campo])}
                   ajuda={naoAchou(m.proposta, dados[m.campo])}
                   valor={dados[m.campo]}

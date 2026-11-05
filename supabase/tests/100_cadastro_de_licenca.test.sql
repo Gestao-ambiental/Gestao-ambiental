@@ -2,7 +2,7 @@
 -- ativação gera as ocorrências uma vez, em transação, com as mesmas datas do packages/domain.
 begin;
 
-select plan(47);
+select plan(48);
 
 select testes.criar_dados_sinteticos();
 
@@ -180,6 +180,14 @@ select throws_ok(
       'f0000000-0000-4000-8000-0000000000f1', null, null, null, null, null, null, null, 'assinatura', null)$$,
   '22023', 'marco_sem_data',
   'marco escolhido sem a data correspondente é recusado'
+);
+
+select throws_ok(
+  $$select public.salvar_identificacao('10000000-0000-4000-8000-000000000001', 2,
+      'f0000000-0000-4000-8000-0000000000f1', null, null, null, null, current_date + 400, null, null,
+      'assinatura', null)$$,
+  '22023', 'data_futura',
+  'assinatura no futuro é recusada'
 );
 
 select is(
