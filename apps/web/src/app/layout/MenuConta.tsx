@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router'
 
 import { useBloqueio } from '@/app/bloqueio/contexto-bloqueio'
@@ -16,13 +17,23 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Icone } from '@/components/ui/icone'
+import { meuPerfil } from '@/lib/api/perfil'
 
-/** Menu da conta (Protótipo 04): nome e e-mail, troca de consultoria, Bloquear tela e Sair. */
+/**
+ * Menu da conta (Protótipo 04): nome e e-mail, Meu perfil (foto e cargo), troca de consultoria,
+ * Bloquear tela e Sair.
+ */
 export function MenuConta() {
   const { sessao, sair } = useSessao()
   const { atual, vinculos, trocar } = useConsultoria()
   const { bloquear } = useBloqueio()
   const navegar = useNavigate()
+  // Só para a foto no avatar: sem ela (ou com erro), ficam as iniciais.
+  const perfil = useQuery({
+    queryKey: ['meu-perfil', atual.membroId],
+    queryFn: () => meuPerfil(atual.membroId),
+    retry: false,
+  })
   if (!sessao) return null
   const usuario = usuarioDaSessao(sessao)
   const ativos = vinculos.filter((v) => v.situacao === 'ativo')
@@ -34,13 +45,21 @@ export function MenuConta() {
         title={usuario.nome}
         className="inline-flex size-(--size-control) cursor-pointer items-center justify-center rounded-(--radius) transicao-estado hover:bg-(--neutral-subtle-hover)"
       >
-        <Avatar nome={usuario.nome} />
+        <Avatar nome={usuario.nome} fotoUrl={perfil.data?.fotoUrl} />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-[240px]">
         <div className="flex flex-col px-(--space-150) py-(--space-100)">
           <span className="corpo-medio text-(--text)">{usuario.nome}</span>
           <span className="rotulo">{usuario.email}</span>
         </div>
+        <DropdownMenuItem
+          onSelect={() => {
+            void navegar('/perfil')
+          }}
+        >
+          <Icone nome="circle-user" />
+          Meu perfil
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuLabel>Consultoria</DropdownMenuLabel>
         <DropdownMenuRadioGroup value={atual.consultoriaId} onValueChange={trocar}>

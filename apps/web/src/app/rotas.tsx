@@ -24,6 +24,7 @@ import { PaginaPlanoRenovacao } from './paginas/acompanhamentos/PaginaPlanoRenov
 import { PaginaCalendario } from './paginas/calendario/PaginaCalendario'
 import { PaginaOcorrencia } from './paginas/ocorrencia/PaginaOcorrencia'
 import { PaginaNaoEncontrada } from './paginas/paginas'
+import { PaginaPerfil } from './paginas/perfil/PaginaPerfil'
 import { PaginaVisaoEquipe } from './paginas/visao/PaginaVisaoEquipe'
 import { RequerSessao } from './sessao/RequerSessao'
 
@@ -76,6 +77,7 @@ export const rotas: RouteObject[] = [
               { path: 'acompanhamentos', element: <PaginaAcompanhamentos /> },
               { path: 'renovacoes/:instrumentoId', element: <PaginaPlanoRenovacao /> },
               { path: 'configuracoes/equipe', element: <PaginaEquipe /> },
+              { path: 'perfil', element: <PaginaPerfil /> },
               { path: '*', element: <PaginaNaoEncontrada /> },
             ],
           },

@@ -1,9 +1,16 @@
-import { hojeNoFuso, formatarDataCivil } from '@gestao-ambiental/domain'
+import {
+  descreverRecorrencia,
+  formatarDataCivil,
+  hojeNoFuso,
+  proximaEntrega,
+  type DataCivil,
+} from '@gestao-ambiental/domain'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
+import { NOMES_PAPEL } from '@/app/papeis'
 import { useSessao, usuarioDaSessao } from '@/app/sessao/contexto-sessao'
 import { Carregando, EstadoErro, EstadoVazio } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
@@ -11,6 +18,7 @@ import { Dialogo } from '@/components/ui/dialogo'
 import { Icone } from '@/components/ui/icone'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { Selo } from '@/components/ui/selo'
+import { SeletorPessoa, type PessoaDoSeletor } from '@/components/ui/seletor-pessoa'
 import {
   ativarPlano,
   atribuirATodos,
@@ -18,6 +26,7 @@ import {
   listarMembrosAtivos,
   type Condicionante,
   type Instrumento,
+  type MembroAtivo,
 } from '@/lib/api/licencas'
 import { mensagemDoErro } from '@/lib/erros'
 
@@ -25,10 +34,70 @@ import { GuardaRascunho } from './GuardaCadastro'
 import { MolduraCadastro, RodapeCadastro } from './MolduraCadastro'
 import { useCondicionantes, useSalvamento } from './usar-rascunho'
 
-const SEM_RESPONSAVEL = ''
 const classeCabecalho =
   'h-10 border-b px-(--space-100) text-left rotulo whitespace-nowrap first:pl-(--space-150)'
 const classeCelula = 'h-10 border-b px-(--space-100) align-middle first:pl-(--space-150)'
+
+/** Para o seletor: embaixo do nome vai o cargo; sem cargo, o papel. */
+function pessoaDoSeletor(membro: MembroAtivo): PessoaDoSeletor {
+  return {
+    id: membro.id,
+    nome: membro.nome,
+    fotoUrl: membro.fotoUrl,
+    detalhe: membro.cargo ?? (membro.papel ? NOMES_PAPEL[membro.papel] : null),
+  }
+}
+
+const SEM_PRAZO: Partial<Record<Condicionante['natureza'], string>> = {
+  informacao_geral: 'Informação geral',
+  condicao_continua: 'Condição contínua',
+}
+
+function Recorrencia({ item }: { item: Condicionante }) {
+  if (item.natureza !== 'obrigacao' || !item.recorrencia) {
+    return <span className="text-(--text-subtle)">{SEM_PRAZO[item.natureza] ?? '—'}</span>
+  }
+  return (
+    <>
+      {descreverRecorrencia({
+        recorrencia: item.recorrencia,
+        unidade: item.unidade,
+        intervalo: item.intervalo,
+      })}
+    </>
+  )
+}
+
+function ProximoPrazo({
+  item,
+  validade,
+  hoje,
+}: {
+  item: Condicionante
+  validade: DataCivil | null
+  hoje: DataCivil
+}) {
+  const proxima =
+    item.natureza === 'obrigacao' && item.recorrencia
+      ? proximaEntrega(
+          {
+            recorrencia: item.recorrencia,
+            unidade: item.unidade,
+            intervalo: item.intervalo,
+            primeiraData: item.primeiraData,
+          },
+          validade,
+          hoje,
+        )
+      : null
+  if (!proxima) return <span className="text-(--text-subtle)">Sem prazo</span>
+  return (
+    <span className="flex flex-col">
+      <span className="tabular-nums">{formatarDataCivil(proxima.data)}</span>
+      {proxima.vencida ? <span className="text-xs text-(--text-danger)">Vencido</span> : null}
+    </span>
+  )
+}
 
 /** Responsável mais frequente: o "geral"; quem difere dele é exceção (Protótipo 14). */
 function responsavelGeral(itens: readonly Condicionante[]): string | null {
@@ -165,6 +234,8 @@ function Responsaveis({
     ? itens.filter((i) => i.responsavelId && i.responsavelId !== geral).length
     : 0
   const nomeDe = (id: string | null) => membros.data?.find((m) => m.id === id)?.nome
+  const pessoas = (membros.data ?? []).map(pessoaDoSeletor)
+  const hoje = hojeNoFuso(new Date(), atual.fuso)
 
   const definir = useMutation({
     mutationFn: ({
@@ -269,6 +340,12 @@ function Responsaveis({
                     Condicionante
                   </th>
                   <th scope="col" className={classeCabecalho}>
+                    Recorrência
+                  </th>
+                  <th scope="col" className={classeCabecalho}>
+                    Próximo prazo
+                  </th>
+                  <th scope="col" className={classeCabecalho}>
                     <span className="flex items-center gap-(--space-100)">
                       Responsável
                       <Botao
@@ -297,27 +374,24 @@ function Responsaveis({
                         {item.codigo}
                       </td>
                       <td className={classeCelula}>{item.titulo}</td>
-                      <td className={`${classeCelula} w-[320px]`}>
+                      <td className={`${classeCelula} whitespace-nowrap`}>
+                        <Recorrencia item={item} />
+                      </td>
+                      <td className={`${classeCelula} whitespace-nowrap`}>
+                        <ProximoPrazo item={item} validade={instrumento.validade} hoje={hoje} />
+                      </td>
+                      <td className={`${classeCelula} w-[300px] py-(--space-050)`}>
                         <span className="flex items-center gap-(--space-100)">
-                          <select
-                            aria-label={`Responsável por ${item.codigo || item.titulo}`}
-                            value={item.responsavelId ?? SEM_RESPONSAVEL}
+                          <SeletorPessoa
+                            rotulo={`Responsável por ${item.codigo || item.titulo}`}
+                            pessoas={pessoas}
+                            valor={item.responsavelId}
                             disabled={definir.isPending || todos.isPending}
-                            onChange={(evento) => {
-                              definir.mutate({
-                                condicionanteId: item.id,
-                                membroId: evento.target.value || null,
-                              })
+                            aoMudar={(membroId) => {
+                              definir.mutate({ condicionanteId: item.id, membroId })
                             }}
-                            className="h-(--size-control) min-w-0 flex-1 rounded-(--radius) border border-(--border-input) bg-(--surface-input) px-(--space-100) corpo"
-                          >
-                            <option value={SEM_RESPONSAVEL}>Atribuir</option>
-                            {membros.data.map((m) => (
-                              <option key={m.id} value={m.id}>
-                                {m.nome}
-                              </option>
-                            ))}
-                          </select>
+                            className="min-w-0 flex-1"
+                          />
                           {excecao ? <Selo>Exceção</Selo> : null}
                         </span>
                       </td>
@@ -356,23 +430,19 @@ function Responsaveis({
           </>
         }
       >
-        <label className="flex flex-col gap-(--space-050)">
+        <div className="flex flex-col gap-(--space-050)">
           <span className="rotulo">Responsável</span>
-          <select
-            value={escolhidoTodos}
-            onChange={(evento) => {
-              setEscolhidoTodos(evento.target.value)
+          <SeletorPessoa
+            rotulo="Responsável"
+            pessoas={pessoas}
+            valor={escolhidoTodos || null}
+            vazio="Escolha a pessoa"
+            rotuloSemPessoa={null}
+            aoMudar={(membroId) => {
+              setEscolhidoTodos(membroId ?? '')
             }}
-            className="h-(--size-control) rounded-(--radius) border border-(--border-input) bg-(--surface-input) px-(--space-100) corpo"
-          >
-            <option value="">Escolha a pessoa</option>
-            {(membros.data ?? []).map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.nome}
-              </option>
-            ))}
-          </select>
-        </label>
+          />
+        </div>
       </Dialogo>
     </MolduraCadastro>
   )

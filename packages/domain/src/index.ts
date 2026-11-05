@@ -77,6 +77,7 @@ export {
   datasDoPrazo,
   descreverRecorrencia,
   ehLao,
+  proximaEntrega,
   proximaValidade,
   situacaoDaLicenca,
   situacaoMaisUrgente,

@@ -108,8 +108,14 @@ function cenario(extra: Partial<Cenario> = {}, papel: 'gestao' | 'equipe' = 'ges
       instrumento: [rascunho()],
       condicionante: [],
       membro: [
-        { id: 'm-bruno', nome: 'Bruno Kist' },
-        { id: 'm-elisa', nome: 'Elisa Prado' },
+        {
+          id: 'm-bruno',
+          nome: 'Bruno Kist',
+          papel: 'equipe',
+          cargo: 'Analista ambiental',
+          foto: { excluido_em: null, versao: { caminho: 'c-Filtroville/membro/f1.png' } },
+        },
+        { id: 'm-elisa', nome: 'Elisa Prado', papel: 'equipe', cargo: null, foto: null },
       ],
       ...extra.tabelas,
     },
@@ -518,10 +524,8 @@ describe('passo 5: responsáveis e ativação (LIC-04, LIC-05)', () => {
     expect(await screen.findByText(/1 sem responsável/)).toBeInTheDocument()
     await usuario.click(screen.getByRole('button', { name: 'Atribuir a todos' }))
     const dialogo = await screen.findByRole('dialog', { name: 'Atribuir a todos' })
-    await usuario.selectOptions(
-      within(dialogo).getByRole('combobox', { name: 'Responsável' }),
-      'm-bruno',
-    )
+    await usuario.click(within(dialogo).getByRole('combobox', { name: 'Responsável' }))
+    await usuario.click(await screen.findByRole('option', { name: /Bruno Kist/ }))
     await usuario.click(within(dialogo).getByRole('button', { name: 'Atribuir a Bruno Kist' }))
     expect(falso.cliente.rpc).toHaveBeenCalledWith('atribuir_a_todos', {
       p_instrumento_id: 'i1',
@@ -538,6 +542,95 @@ describe('passo 5: responsáveis e ativação (LIC-04, LIC-05)', () => {
       'href',
       '/',
     )
+  })
+
+  it('seletor mostra foto e, embaixo do nome, o cargo (ou o papel); escolher grava o responsável', async () => {
+    const usuario = userEvent.setup()
+    renderizarApp('/licencas/i1/responsaveis')
+
+    const seletor = await screen.findByRole('combobox', { name: 'Responsável por 4.2' })
+    expect(seletor).toHaveTextContent('Atribuir')
+    await usuario.click(seletor)
+
+    const bruno = await screen.findByRole('option', { name: /Bruno Kist/ })
+    expect(bruno).toHaveTextContent('Analista ambiental')
+    expect(bruno.querySelector('img')).toHaveAttribute(
+      'src',
+      'https://falso.test/c-Filtroville/membro/f1.png',
+    )
+    const elisa = screen.getByRole('option', { name: /Elisa Prado/ })
+    expect(elisa).toHaveTextContent('Equipe')
+    expect(elisa.querySelector('img')).toBeNull()
+    expect(screen.getByRole('option', { name: 'Sem responsável' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    )
+
+    await usuario.click(bruno)
+    expect(falso.cliente.rpc).toHaveBeenCalledWith('definir_responsavel', {
+      p_condicionante_id: 'c1',
+      p_membro_id: 'm-bruno',
+    })
+  })
+
+  it('seletor pelo teclado: busca sem acento, setas e Enter', async () => {
+    const usuario = userEvent.setup()
+    renderizarApp('/licencas/i1/responsaveis')
+
+    const seletor = await screen.findByRole('combobox', { name: 'Responsável por 4.2' })
+    seletor.focus()
+    await usuario.keyboard('{ArrowDown}')
+    const busca = await screen.findByRole('combobox', { name: 'Buscar pessoa' })
+    expect(busca).toHaveFocus()
+    await usuario.type(busca, 'analista')
+    expect(screen.getAllByRole('option')).toHaveLength(1)
+    await usuario.clear(busca)
+    await usuario.type(busca, 'éli')
+    await usuario.keyboard('{Enter}')
+    expect(falso.cliente.rpc).toHaveBeenCalledWith('definir_responsavel', {
+      p_condicionante_id: 'c1',
+      p_membro_id: 'm-elisa',
+    })
+  })
+
+  it('tabela mostra a recorrência e o próximo prazo de cada condicionante', async () => {
+    falso.reiniciar(
+      cenario({
+        tabelas: {
+          condicionante: [
+            condicionante('c1', '4.2', 'Relatório trimestral', {
+              recorrencia: 'trimestral',
+              primeira_data: '2023-05-14',
+              prazo_confirmado_em: '2026-10-12T13:00:00Z',
+            }),
+            condicionante('c2', '3.3.8', 'Anuência para alterações', {
+              recorrencia: 'unica',
+              primeira_data: '2021-08-20',
+              prazo_confirmado_em: '2026-10-12T13:00:00Z',
+            }),
+            condicionante('c3', '2.1', 'Manter o sistema de drenagem', {
+              natureza: 'condicao_continua',
+            }),
+          ],
+        },
+      }),
+    )
+    renderizarApp('/licencas/i1/responsaveis')
+
+    const tabela = await screen.findByRole('table')
+    expect(within(tabela).getByRole('columnheader', { name: 'Recorrência' })).toBeInTheDocument()
+    expect(within(tabela).getByRole('columnheader', { name: 'Próximo prazo' })).toBeInTheDocument()
+    const linha = (codigo: string) => {
+      const celula = within(tabela).getByText(codigo).closest('tr')
+      if (!celula) throw new Error(`linha ${codigo} ausente`)
+      return within(celula)
+    }
+    expect(linha('4.2').getByText('Trimestral')).toBeInTheDocument()
+    expect(linha('3.3.8').getByText('Única')).toBeInTheDocument()
+    expect(linha('3.3.8').getByText('20/08/2021')).toBeInTheDocument()
+    expect(linha('3.3.8').getByText('Vencido')).toBeInTheDocument()
+    expect(linha('2.1').getByText('Condição contínua')).toBeInTheDocument()
+    expect(linha('2.1').getByText('Sem prazo')).toBeInTheDocument()
   })
 
   it('não tem violações de acessibilidade detectáveis pelo axe', async () => {

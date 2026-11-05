@@ -396,22 +396,8 @@ export async function desfazerConfirmacaoPrazo(condicionanteId: string): Promise
 // Responsáveis e ativação
 // ---------------------------------------------------------------------------
 
-export interface MembroAtivo {
-  id: string
-  nome: string
-}
-
-export async function listarMembrosAtivos(consultoriaId: string): Promise<MembroAtivo[]> {
-  const { data, error } = await obterSupabase()
-    .from('membro')
-    .select('id, nome')
-    .eq('consultoria_id', consultoriaId)
-    .eq('situacao', 'ativo')
-    .order('nome')
-    .range(0, 199)
-  if (error) throw error
-  return data
-}
+// Membros com cargo e foto: lib/api/perfil.
+export { listarMembrosAtivos, type MembroAtivo } from './perfil'
 
 export async function definirResponsavel(condicionanteId: string, membroId: string | null) {
   const { error } = await obterSupabase().rpc('definir_responsavel', {

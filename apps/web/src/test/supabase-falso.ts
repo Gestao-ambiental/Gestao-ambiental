@@ -106,6 +106,16 @@ function criar() {
     createSignedUrl: vi.fn((caminho: string) =>
       Promise.resolve({ data: { signedUrl: `https://falso.test/${caminho}` }, error: null }),
     ),
+    createSignedUrls: vi.fn((caminhos: string[]) =>
+      Promise.resolve({
+        data: caminhos.map((caminho) => ({
+          path: caminho,
+          signedUrl: `https://falso.test/${caminho}`,
+          error: null,
+        })),
+        error: null,
+      }),
+    ),
   }
   const storage = { from: vi.fn(() => armazenamento) }
 
