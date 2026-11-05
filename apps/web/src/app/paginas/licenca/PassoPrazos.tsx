@@ -15,7 +15,7 @@ import {
 } from '@gestao-ambiental/domain'
 import { useMutation } from '@tanstack/react-query'
 import { useId, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Carregando, EstadoErro, EstadoVazio } from '@/components/estados'
@@ -27,6 +27,7 @@ import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { Selo } from '@/components/ui/selo'
 import {
   confirmarPrazo,
+  desfazerConfirmacaoPrazo,
   type Condicionante,
   type DadosPrazo,
   type Instrumento,
@@ -38,13 +39,6 @@ import { cn } from '@/lib/utils'
 import { GuardaRascunho } from './GuardaCadastro'
 import { MolduraCadastro, RodapeCadastro } from './MolduraCadastro'
 import { useCondicionantes, useSalvamento } from './usar-rascunho'
-
-const NOMES_MARCO = {
-  emissao: 'Emissão',
-  assinatura: 'Assinatura',
-  publicacao: 'Publicação',
-  recebimento: 'Recebimento',
-} as const
 
 const classeCabecalho =
   'h-10 border-b px-(--space-100) text-left rotulo whitespace-nowrap first:pl-(--space-150)'
@@ -118,12 +112,14 @@ function PainelPrazo({
   fuso,
   aoFechar,
   aoConfirmar,
+  aoDesfazer,
 }: {
   instrumento: Instrumento
   item: Condicionante
   fuso: string
   aoFechar: () => void
   aoConfirmar: () => Promise<void>
+  aoDesfazer: () => Promise<void>
 }) {
   const fonteId = useId()
   const marco = dataDoMarco(instrumento)
@@ -179,9 +175,15 @@ function PainelPrazo({
     },
     onSuccess: aoConfirmar,
   })
+  // Volta o prazo a pendente (o que foi preenchido fica no painel para ajustar).
+  const desfazer = useMutation({
+    mutationFn: () => desfazerConfirmacaoPrazo(item.id),
+    onSuccess: aoDesfazer,
+  })
 
   const semFonte = !fonte.trim()
-  const podeConfirmar = Boolean(recorrencia) && !problema && !semFonte && !confirmar.isPending
+  const ocupado = confirmar.isPending || desfazer.isPending
+  const podeConfirmar = Boolean(recorrencia) && !problema && !semFonte && !ocupado
   const confirmado = Boolean(item.confirmadoEm)
 
   return (
@@ -205,186 +207,184 @@ function PainelPrazo({
         <BotaoIcone icone="x" rotulo="Fechar painel do prazo" onClick={aoFechar} />
       </div>
       <div className="flex min-h-0 flex-1 flex-col gap-(--space-200) overflow-auto p-(--space-200)">
-        {confirmar.isError ? (
+        {confirmar.isError || desfazer.isError ? (
           <MensagemSecao role="alert" tom="perigo">
-            {mensagemDoErro(confirmar.error)}
+            {mensagemDoErro(confirmar.error ?? desfazer.error)}
           </MensagemSecao>
         ) : null}
-        <label htmlFor={fonteId} className="flex flex-col gap-(--space-050)">
-          <span className="rotulo">Fonte ou regra *</span>
-          <textarea
-            id={fonteId}
-            rows={3}
-            value={fonte}
-            aria-invalid={semFonte || undefined}
-            onChange={(evento) => {
-              setFonte(evento.target.value)
-            }}
-            className="w-full rounded-(--radius) border border-(--border-input) bg-(--surface-input) px-(--space-100) py-(--space-100) corpo outline-none focus:border-(--border-focus)"
-          />
-          <span className="text-xs text-(--text-subtle)">
-            Trecho do documento ou norma que define o prazo. Sem base no documento, o prazo fica
-            pendente: nada é inventado.
-          </span>
-        </label>
+        {/* Confirmado fica só para leitura: para mudar, primeiro desfaz a confirmação. */}
+        <fieldset
+          disabled={confirmado}
+          aria-label="Dados do prazo"
+          className="m-0 flex min-w-0 flex-col gap-(--space-200) border-0 p-0"
+        >
+          <label htmlFor={fonteId} className="flex flex-col gap-(--space-050)">
+            <span className="rotulo">Fonte ou regra *</span>
+            <textarea
+              id={fonteId}
+              rows={3}
+              value={fonte}
+              aria-invalid={semFonte || undefined}
+              onChange={(evento) => {
+                setFonte(evento.target.value)
+              }}
+              className="w-full rounded-(--radius) border border-(--border-input) bg-(--surface-input) px-(--space-100) py-(--space-100) corpo outline-none focus:border-(--border-focus)"
+            />
+            <span className="text-xs text-(--text-subtle)">
+              Trecho do documento ou norma que define o prazo. Sem base no documento, o prazo fica
+              pendente: nada é inventado.
+            </span>
+          </label>
 
-        <fieldset className="flex flex-col gap-(--space-100)">
-          <legend className="mb-(--space-050) rotulo">Recorrência</legend>
-          <div className="flex flex-wrap gap-(--space-050)">
-            {RECORRENCIAS.map((r) => (
-              <button
-                key={r}
-                type="button"
-                aria-pressed={recorrencia === r}
-                onClick={() => {
-                  setRecorrencia(r)
-                }}
-                className={cn(
-                  'h-(--size-control) cursor-pointer rounded-(--radius) border px-(--space-100) corpo transicao-estado',
-                  recorrencia === r
-                    ? 'border-(--border-focus) bg-(--surface-selected) text-(--text-link)'
-                    : 'hover:bg-(--surface-hover)',
-                )}
-              >
-                {nomeDaRecorrencia(r)}
-              </button>
-            ))}
-          </div>
-          {recorrencia === 'personalizada' ? (
-            <div className="grid grid-cols-[1fr_120px] gap-(--space-150) rounded-(--radius) border p-(--space-150)">
-              <label className="flex flex-col gap-(--space-050)">
-                <span className="rotulo">Unidade</span>
-                <select
-                  value={unidade}
-                  onChange={(evento) => {
-                    setUnidade(evento.target.value as UnidadeCiclo)
+          <fieldset className="flex flex-col gap-(--space-100)">
+            <legend className="mb-(--space-050) rotulo">Recorrência</legend>
+            <div className="flex flex-wrap gap-(--space-050)">
+              {RECORRENCIAS.map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  aria-pressed={recorrencia === r}
+                  onClick={() => {
+                    setRecorrencia(r)
                   }}
-                  className="h-(--size-control) rounded-(--radius) border border-(--border-input) bg-(--surface-input) px-(--space-100) corpo"
+                  className={cn(
+                    'h-(--size-control) cursor-pointer rounded-(--radius) border px-(--space-100) corpo transicao-estado',
+                    recorrencia === r
+                      ? 'border-(--border-focus) bg-(--surface-selected) text-(--text-link)'
+                      : 'hover:bg-(--surface-hover)',
+                  )}
                 >
-                  <option value="mes">Mês</option>
-                  <option value="dia">Dia</option>
-                </select>
-              </label>
-              <CampoTexto
-                rotulo="A cada"
-                inputMode="numeric"
-                value={intervalo}
-                onChange={(evento) => {
-                  setIntervalo(evento.target.value.replace(/\D/g, ''))
-                }}
-              />
+                  {nomeDaRecorrencia(r)}
+                </button>
+              ))}
             </div>
-          ) : null}
-        </fieldset>
-
-        {recorrencia && recorrencia !== 'continua' ? (
-          <>
-            <div className="grid gap-(--space-150) sm:grid-cols-2">
-              <div className="flex flex-col gap-(--space-050)">
-                <span className="rotulo">Marco de cálculo</span>
-                <span className="corpo">
-                  {instrumento.marco && marco
-                    ? `${NOMES_MARCO[instrumento.marco]} · ${formatarDataCivil(marco)}`
-                    : 'Não definido'}
-                </span>
-                <Link to={`/licencas/${instrumento.id}/identificacao`} className="text-xs">
-                  Definido no passo 2. Alterar
-                </Link>
-              </div>
-              <CampoData
-                rotulo="Data de referência"
-                hoje={hojeNoFuso(new Date(), fuso)}
-                ajuda="De onde a recorrência começa a contar."
-                valor={referencia}
-                aoMudar={setReferencia}
-              />
-              <CampoData
-                rotulo="Primeira data"
-                hoje={hojeNoFuso(new Date(), fuso)}
-                ajuda={
-                  sugestao
-                    ? `Sugerida: ${formatarDataCivil(sugestao)}.`
-                    : 'Sem sugestão: informe a data que o documento determina.'
-                }
-                valor={primeiraEfetiva}
-                aoMudar={(data) => {
-                  setPrimeiraTocada(true)
-                  setPrimeira(data)
-                }}
-              />
-              <fieldset className="flex flex-col gap-(--space-050)">
-                <legend className="rotulo">Contagem</legend>
-                <label className="inline-flex items-center gap-(--space-100) corpo">
-                  <input
-                    type="radio"
-                    name="contagem"
-                    checked
-                    readOnly
-                    className="size-4 accent-(--brand)"
-                  />
-                  Dias corridos
-                </label>
-                <label className="inline-flex items-center gap-(--space-100) corpo text-(--text-disabled)">
-                  <input
-                    type="radio"
-                    name="contagem"
-                    disabled
-                    aria-describedby="uteis-indisponivel"
-                  />
-                  Dias úteis
-                </label>
-                <span id="uteis-indisponivel" className="text-xs text-(--text-subtle)">
-                  Dias úteis entram com o calendário de feriados.
-                </span>
-              </fieldset>
-            </div>
-
-            <div className="flex flex-col gap-(--space-100)">
-              <span className="rotulo">Simulação · próximas datas</span>
-              {problema ? (
-                <MensagemSecao tom="atencao">{problema}</MensagemSecao>
-              ) : simulacao.length === 0 ? (
-                <p className="text-xs text-(--text-subtle)">
-                  Informe as datas para ver a simulação.
-                </p>
-              ) : (
-                <>
-                  <ol
-                    className="grid grid-cols-2 gap-(--space-100) sm:grid-cols-3"
-                    aria-label="Próximas datas"
+            {recorrencia === 'personalizada' ? (
+              <div className="grid grid-cols-[1fr_120px] gap-(--space-150) rounded-(--radius) border p-(--space-150)">
+                <label className="flex flex-col gap-(--space-050)">
+                  <span className="rotulo">Unidade</span>
+                  <select
+                    value={unidade}
+                    onChange={(evento) => {
+                      setUnidade(evento.target.value as UnidadeCiclo)
+                    }}
+                    className="h-(--size-control) rounded-(--radius) border border-(--border-input) bg-(--surface-input) px-(--space-100) corpo"
                   >
-                    {simulacao.slice(0, 6).map((d) => (
-                      <li
-                        key={d.ciclo}
-                        className="flex flex-col rounded-(--radius) border px-(--space-100) py-(--space-075)"
-                      >
-                        <span className="corpo-medio">{formatarDataCivil(d.prazo)}</span>
-                        <span className="text-xs text-(--text-subtle)">
-                          {nomeDoDiaDaSemana(d.prazo)}
-                        </span>
-                      </li>
-                    ))}
-                  </ol>
-                  <span className="text-xs text-(--text-subtle)">
-                    {simulacao.length === 1 ? '1 entrega' : `${String(simulacao.length)} entregas`}
-                    {recorrencia === 'unica' || recorrencia === 'na_renovacao'
-                      ? ''
-                      : ' até a validade'}
-                    .
+                    <option value="mes">Mês</option>
+                    <option value="dia">Dia</option>
+                  </select>
+                </label>
+                <CampoTexto
+                  rotulo="A cada"
+                  inputMode="numeric"
+                  value={intervalo}
+                  onChange={(evento) => {
+                    setIntervalo(evento.target.value.replace(/\D/g, ''))
+                  }}
+                />
+              </div>
+            ) : null}
+          </fieldset>
+
+          {recorrencia && recorrencia !== 'continua' ? (
+            <>
+              <div className="grid gap-(--space-150) sm:grid-cols-2">
+                <CampoData
+                  rotulo="Data de referência"
+                  hoje={hojeNoFuso(new Date(), fuso)}
+                  ajuda="De onde a recorrência começa a contar."
+                  valor={referencia}
+                  aoMudar={setReferencia}
+                />
+                <CampoData
+                  rotulo="Primeira data"
+                  hoje={hojeNoFuso(new Date(), fuso)}
+                  ajuda={
+                    sugestao
+                      ? `Sugerida: ${formatarDataCivil(sugestao)}.`
+                      : 'Sem sugestão: informe a data que o documento determina.'
+                  }
+                  valor={primeiraEfetiva}
+                  aoMudar={(data) => {
+                    setPrimeiraTocada(true)
+                    setPrimeira(data)
+                  }}
+                />
+                <fieldset className="flex flex-col gap-(--space-050)">
+                  <legend className="rotulo">Contagem</legend>
+                  <label className="inline-flex items-center gap-(--space-100) corpo">
+                    <input
+                      type="radio"
+                      name="contagem"
+                      checked
+                      readOnly
+                      className="size-4 accent-(--brand)"
+                    />
+                    Dias corridos
+                  </label>
+                  <label className="inline-flex items-center gap-(--space-100) corpo text-(--text-disabled)">
+                    <input
+                      type="radio"
+                      name="contagem"
+                      disabled
+                      aria-describedby="uteis-indisponivel"
+                    />
+                    Dias úteis
+                  </label>
+                  <span id="uteis-indisponivel" className="text-xs text-(--text-subtle)">
+                    Dias úteis entram com o calendário de feriados.
                   </span>
-                </>
-              )}
-            </div>
-          </>
-        ) : recorrencia === 'continua' ? (
-          <MensagemSecao tom="informacao">
-            Condição contínua: cumprida o tempo todo, não gera entrega periódica.
-          </MensagemSecao>
-        ) : (
-          <MensagemSecao tom="atencao">
-            Escolha a recorrência para confirmar. Enquanto isso, não dá para continuar.
-          </MensagemSecao>
-        )}
+                </fieldset>
+              </div>
+
+              <div className="flex flex-col gap-(--space-100)">
+                <span className="rotulo">Simulação · próximas datas</span>
+                {problema ? (
+                  <MensagemSecao tom="atencao">{problema}</MensagemSecao>
+                ) : simulacao.length === 0 ? (
+                  <p className="text-xs text-(--text-subtle)">
+                    Informe as datas para ver a simulação.
+                  </p>
+                ) : (
+                  <>
+                    <ol
+                      className="grid grid-cols-2 gap-(--space-100) sm:grid-cols-3"
+                      aria-label="Próximas datas"
+                    >
+                      {simulacao.slice(0, 6).map((d) => (
+                        <li
+                          key={d.ciclo}
+                          className="flex flex-col rounded-(--radius) border px-(--space-100) py-(--space-075)"
+                        >
+                          <span className="corpo-medio">{formatarDataCivil(d.prazo)}</span>
+                          <span className="text-xs text-(--text-subtle)">
+                            {nomeDoDiaDaSemana(d.prazo)}
+                          </span>
+                        </li>
+                      ))}
+                    </ol>
+                    <span className="text-xs text-(--text-subtle)">
+                      {simulacao.length === 1
+                        ? '1 entrega'
+                        : `${String(simulacao.length)} entregas`}
+                      {recorrencia === 'unica' || recorrencia === 'na_renovacao'
+                        ? ''
+                        : ' até a validade'}
+                      .
+                    </span>
+                  </>
+                )}
+              </div>
+            </>
+          ) : recorrencia === 'continua' ? (
+            <MensagemSecao tom="informacao">
+              Condição contínua: cumprida o tempo todo, não gera entrega periódica.
+            </MensagemSecao>
+          ) : (
+            <MensagemSecao tom="atencao">
+              Escolha a recorrência para confirmar. Enquanto isso, não dá para continuar.
+            </MensagemSecao>
+          )}
+        </fieldset>
 
         {item.confirmadoEm && item.confirmadoPor ? (
           <p className="text-xs text-(--text-subtle)">
@@ -394,19 +394,30 @@ function PainelPrazo({
         ) : null}
       </div>
       <div className="flex items-center justify-end gap-(--space-100) border-t p-(--space-150)">
-        {semFonte ? (
+        {semFonte && !confirmado ? (
           <span className="flex-1 text-xs text-(--text-subtle)">Informe a fonte ou regra.</span>
         ) : null}
-        <Botao
-          aparencia="primario"
-          iconeAntes="check"
-          disabled={!podeConfirmar}
-          onClick={() => {
-            confirmar.mutate()
-          }}
-        >
-          {confirmar.isPending ? 'Confirmando…' : 'Confirmar prazo'}
-        </Botao>
+        {confirmado ? (
+          <Botao
+            disabled={ocupado}
+            onClick={() => {
+              desfazer.mutate()
+            }}
+          >
+            {desfazer.isPending ? 'Desfazendo…' : 'Desfazer confirmação'}
+          </Botao>
+        ) : (
+          <Botao
+            aparencia="primario"
+            iconeAntes="check"
+            disabled={!podeConfirmar}
+            onClick={() => {
+              confirmar.mutate()
+            }}
+          >
+            {confirmar.isPending ? 'Confirmando…' : 'Confirmar prazo'}
+          </Botao>
+        )}
       </div>
     </section>
   )
@@ -488,7 +499,7 @@ function Prazos({
         <RodapeCadastro
           aviso={
             pendentes > 0
-              ? `${String(pendentes)} ${pendentes === 1 ? 'prazo pendente' : 'prazos pendentes'} de revisão. Só dá para continuar com todos confirmados.`
+              ? `${String(pendentes)} ${pendentes === 1 ? 'prazo pendente' : 'prazos pendentes'}`
               : undefined
           }
           voltarPara={`/licencas/${instrumento.id}/condicionantes`}
@@ -679,7 +690,16 @@ function Prazos({
             aoFechar={() => {
               setAberto(null)
             }}
-            aoConfirmar={registrar}
+            aoConfirmar={async () => {
+              await registrar()
+              // Segue para o próximo prazo a confirmar, na ordem da tabela (volta ao topo no fim).
+              // Sem nenhum pendente, o painel fica no prazo que acabou de ser confirmado.
+              const atual = obrigacoes.findIndex((o) => o.id === item.id)
+              const emOrdem = [...obrigacoes.slice(atual + 1), ...obrigacoes.slice(0, atual)]
+              const proximo = emOrdem.find((o) => !o.confirmadoEm)
+              if (proximo) setAberto(proximo.id)
+            }}
+            aoDesfazer={registrar}
           />
         ) : null}
       </div>
