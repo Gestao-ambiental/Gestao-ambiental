@@ -1,8 +1,9 @@
-import type { DataCivil } from '@gestao-ambiental/domain'
+import { ehDataCivil, type DataCivil } from '@gestao-ambiental/domain'
 import { useMutation } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 
 import { Botao } from '@/components/ui/botao'
+import { CampoData } from '@/components/ui/campo-data'
 import { CampoTexto } from '@/components/ui/campo-texto'
 import { Dialogo } from '@/components/ui/dialogo'
 import { Icone } from '@/components/ui/icone'
@@ -109,14 +110,15 @@ export function DialogoProtocolo({
             setErros((e) => ({ ...e, numero: undefined }))
           }}
         />
-        <CampoTexto
+        <CampoData
           rotulo="Data *"
-          type="date"
-          max={plano.hoje}
-          value={data}
+          hoje={plano.hoje}
+          maximo={plano.hoje}
+          motivoDoLimite="A data do protocolo não pode estar no futuro"
+          valor={ehDataCivil(data) ? data : null}
           erro={erros.data}
-          onChange={(evento) => {
-            setData(evento.target.value)
+          aoMudar={(nova) => {
+            setData(nova ?? '')
             setErros((e) => ({ ...e, data: undefined }))
           }}
         />

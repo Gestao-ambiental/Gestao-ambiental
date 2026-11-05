@@ -18,6 +18,16 @@ export {
 export type { DataCivil, DataEHoraNoFuso } from './data-civil'
 
 export {
+  dataPorExtenso,
+  lerDataDigitada,
+  mascararData,
+  montarData,
+  nomeDoMes,
+  semanasDoMes,
+} from './calendario'
+export type { LeituraDeData } from './calendario'
+
+export {
   MAXIMO_OCORRENCIAS,
   MESES_POR_PERIODICIDADE,
   ocorrencias,

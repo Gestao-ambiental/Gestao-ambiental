@@ -190,7 +190,7 @@ describe('passo 2: identificação (LIC-01)', () => {
     expect(
       screen.getByRole('combobox', { name: /Tipo de instrumento/ }),
     ).toHaveAccessibleDescription('Escolha o tipo de instrumento')
-    expect(screen.getByLabelText(/Validade confirmada/)).toHaveAccessibleDescription(
+    expect(screen.getByLabelText('Validade confirmada *')).toHaveAccessibleDescription(
       'Confirme a validade',
     )
     expect(screen.getByText('Escolha o marco dos prazos')).toBeInTheDocument()
@@ -202,9 +202,9 @@ describe('passo 2: identificação (LIC-01)', () => {
       screen.getByRole('combobox', { name: /Tipo de instrumento/ }),
       't-lao',
     )
-    await usuario.type(screen.getByLabelText('Assinatura'), '2023-02-14')
+    await usuario.type(screen.getByLabelText('Assinatura'), '14/02/2023')
     await usuario.click(screen.getByRole('radio', { name: 'Assinatura · 14/02/2023' }))
-    await usuario.type(screen.getByLabelText(/Validade confirmada/), '2027-02-15')
+    await usuario.type(screen.getByLabelText('Validade confirmada *'), '15/02/2027')
     expect(screen.getByText('18/10/2026 · 120 dias antes da validade')).toBeInTheDocument()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
 

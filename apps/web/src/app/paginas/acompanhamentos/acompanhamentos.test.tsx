@@ -225,7 +225,10 @@ describe('protocolo (REN-02)', () => {
     expect(within(dialogo).getByText('Anexe o comprovante')).toBeInTheDocument()
 
     await usuario.type(within(dialogo).getByLabelText('Número do protocolo *'), 'IMA 2026/558812')
-    await usuario.type(within(dialogo).getByLabelText('Data *'), adicionarDias(hoje, -1))
+    await usuario.type(
+      within(dialogo).getByLabelText('Data *'),
+      formatarDataCivil(adicionarDias(hoje, -1)),
+    )
     const entrada = document.querySelector<HTMLInputElement>('input[type="file"]')
     if (!entrada) throw new Error('campo de arquivo ausente')
     await usuario.upload(entrada, new File(['png'], 'comprovante.png', { type: 'image/png' }))

@@ -3,6 +3,7 @@ import {
   datasRenovacaoLao,
   ehLao,
   formatarDataCivil,
+  hojeNoFuso,
   type DataCivil,
 } from '@gestao-ambiental/domain'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -12,6 +13,7 @@ import { useNavigate, useParams } from 'react-router'
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Botao } from '@/components/ui/botao'
 import type { PedidoDePagina } from '@/components/pdf/VisualizadorPdf'
+import { CampoData } from '@/components/ui/campo-data'
 import { CampoTexto } from '@/components/ui/campo-texto'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { listarUnidades } from '@/lib/api/empreendimentos'
@@ -138,6 +140,7 @@ function Identificacao({
 }) {
   const { atual } = useConsultoria()
   const cid = atual.consultoriaId
+  const hoje = hojeNoFuso(new Date(), atual.fuso)
   const navegar = useNavigate()
   const queryClient = useQueryClient()
   const [dados, setDados] = useState(() => inicial(instrumento))
@@ -254,10 +257,11 @@ function Identificacao({
   }
 
   const conflito = codigoDoErro(salvar.error) === 'conflito_de_versao'
-  const limite =
-    dados.validade && ehLao(tipo?.sigla)
-      ? `${formatarDataCivil(datasRenovacaoLao(dados.validade).limiteProtocolo)} · ${String(DIAS_LIMITE_PROTOCOLO_LAO)} dias antes da validade`
-      : null
+  const dataLimite =
+    dados.validade && ehLao(tipo?.sigla) ? datasRenovacaoLao(dados.validade).limiteProtocolo : null
+  const limite = dataLimite
+    ? `${formatarDataCivil(dataLimite)} · ${String(DIAS_LIMITE_PROTOCOLO_LAO)} dias antes da validade`
+    : null
 
   return (
     <MolduraCadastro
@@ -461,15 +465,15 @@ function Identificacao({
             <legend className="mb-(--space-100) titulo-secao">Dados do documento</legend>
             <div className="grid gap-(--space-150) sm:grid-cols-2">
               {MARCOS.map((m) => (
-                <CampoTexto
+                <CampoData
                   key={m.chave}
                   rotulo={m.rotulo}
-                  type="date"
+                  hoje={hoje}
                   acessorio={marca(m.proposta, dados[m.campo])}
                   ajuda={naoAchou(m.proposta, dados[m.campo])}
-                  value={dados[m.campo] ?? ''}
-                  onChange={(evento) => {
-                    mudar(m.campo, dataDe(evento.target.value))
+                  valor={dados[m.campo]}
+                  aoMudar={(data) => {
+                    mudar(m.campo, data)
                   }}
                 />
               ))}
@@ -519,15 +523,18 @@ function Identificacao({
 
           <fieldset className="grid gap-(--space-150) sm:grid-cols-2">
             <legend className="mb-(--space-100) titulo-secao">Validade</legend>
-            <CampoTexto
+            <CampoData
               rotulo="Validade confirmada *"
-              type="date"
+              hoje={hoje}
               acessorio={marca('validade', dados.validade)}
               ajuda={naoAchou('validade', dados.validade)}
               erro={mostrarFaltas && faltaValidade ? 'Confirme a validade' : undefined}
-              value={dados.validade ?? ''}
-              onChange={(evento) => {
-                mudar('validade', dataDe(evento.target.value))
+              nota={
+                dataLimite ? `Limite de protocolo: ${formatarDataCivil(dataLimite)}` : undefined
+              }
+              valor={dados.validade}
+              aoMudar={(data) => {
+                mudar('validade', data)
               }}
             />
             <div className="flex flex-col gap-(--space-050) sm:pt-(--space-300)">
