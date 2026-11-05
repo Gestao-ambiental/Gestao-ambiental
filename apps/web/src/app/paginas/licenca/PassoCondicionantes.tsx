@@ -71,7 +71,34 @@ type Filtro = 'todos' | 'pendente' | 'aceita' | 'descartada'
 
 // Larguras dos painéis (Protótipo 12): a lista vai de 260 a 640 px; o detalhe nunca some.
 const LISTA = { padrao: 320, minimo: 260, maximo: 640 }
-const PDF = { padrao: 420, minimo: 320, maximo: 960 }
+const PDF = { minimo: 320, maximo: 960 }
+
+/** O documento começa com cerca de um terço da tela (420 px em 1366, ~690 px em 1920). */
+function larguraPadraoDoPdf(): number {
+  const tela = typeof window === 'undefined' ? 1366 : window.innerWidth
+  return Math.round(Math.min(PDF.maximo, Math.max(420, tela * 0.36)))
+}
+
+/** Largura ajustada pela pessoa, lembrada neste aparelho. É só preferência de tela. */
+function useLarguraLembrada(chave: string, padrao: number, minimo: number, maximo: number) {
+  const [largura, setLargura] = useState(() => {
+    try {
+      const salva = Number(window.localStorage.getItem(chave))
+      return salva >= minimo && salva <= maximo ? salva : padrao
+    } catch {
+      return padrao
+    }
+  })
+  function mudar(nova: number) {
+    setLargura(nova)
+    try {
+      window.localStorage.setItem(chave, String(nova))
+    } catch {
+      // Sem armazenamento (modo privado): vale só nesta tela.
+    }
+  }
+  return [largura, mudar] as const
+}
 
 const classeCampo =
   'w-full rounded-(--radius) border border-(--border-input) bg-(--surface-input) px-(--space-100) corpo text-(--text) outline-none focus:border-(--border-focus) focus:bg-(--surface-input-focus)'
@@ -438,8 +465,19 @@ function Condicionantes({
   const [filtro, setFiltro] = useState<Filtro>('todos')
   const [edicao, setEdicao] = useState<Edicao | null>(null)
   const [paginaPdf, setPaginaPdf] = useState<PedidoDePagina | null>(null)
-  const [larguraLista, setLarguraLista] = useState(LISTA.padrao)
-  const [larguraPdf, setLarguraPdf] = useState(PDF.padrao)
+  const [larguraLista, setLarguraLista] = useLarguraLembrada(
+    'grama:condicionantes:lista',
+    LISTA.padrao,
+    LISTA.minimo,
+    LISTA.maximo,
+  )
+  const [pdfPadrao] = useState(larguraPadraoDoPdf)
+  const [larguraPdf, setLarguraPdf] = useLarguraLembrada(
+    'grama:condicionantes:documento',
+    pdfPadrao,
+    PDF.minimo,
+    PDF.maximo,
+  )
   const [pdfAberto, setPdfAberto] = useState(true)
   const [recolhidos, setRecolhidos] = useState<ReadonlySet<string>>(new Set())
 
@@ -465,6 +503,7 @@ function Condicionantes({
     nos.flatMap((no) =>
       no.filhos.length > 0 ? [no.item.id, ...agrupadoresComFilhos(no.filhos)] : [],
     )
+  const recolhiveis = agrupadoresComFilhos(arvore)
 
   function nova(natureza: Natureza) {
     if (destino) {
@@ -585,7 +624,6 @@ function Condicionantes({
                   icone="file-plus"
                   rotulo="Nova condicionante"
                   title={`Nova condicionante${ondeEntra}`}
-                  tamanho="compacto"
                   onClick={() => {
                     nova('obrigacao')
                   }}
@@ -594,7 +632,6 @@ function Condicionantes({
                   icone="folder-plus"
                   rotulo="Novo agrupador"
                   title={`Novo agrupador${ondeEntra}`}
-                  tamanho="compacto"
                   onClick={() => {
                     nova('agrupador')
                   }}
@@ -603,10 +640,9 @@ function Condicionantes({
                   icone="chevrons-down-up"
                   rotulo="Recolher todos"
                   title="Recolher todos"
-                  tamanho="compacto"
-                  disabled={!agrupadores.length}
+                  disabled={recolhiveis.length === 0}
                   onClick={() => {
-                    setRecolhidos(new Set(agrupadoresComFilhos(arvore)))
+                    setRecolhidos(new Set(recolhiveis))
                   }}
                 />
               </div>
@@ -834,7 +870,7 @@ function Condicionantes({
             valor={larguraPdf}
             minimo={PDF.minimo}
             maximo={PDF.maximo}
-            padrao={PDF.padrao}
+            padrao={pdfPadrao}
             painel="direita"
             aoMudar={setLarguraPdf}
             className="hidden xl:block"
