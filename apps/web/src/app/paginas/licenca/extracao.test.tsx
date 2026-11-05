@@ -473,6 +473,13 @@ describe('revisar a proposta da IA (IA-02)', () => {
 
     // Novo item entra no mesmo agrupador do item selecionado.
     await usuario.click(screen.getByRole('button', { name: 'Nova condicionante' }))
+    // A linha do título nasce logo abaixo do agrupador, um nível para dentro.
+    const [, linhaDoTitulo] = within(lista).getAllByRole('listitem')
+    expect(linhaDoTitulo).toContainElement(
+      screen.getByRole('textbox', { name: 'Título da nova condicionante' }),
+    )
+    expect(screen.getByRole('textbox', { name: 'Título da nova condicionante' })).toHaveFocus()
+    await usuario.keyboard('Coleta mensal{Enter}')
     const form = await screen.findByRole('form', { name: 'Nova condicionante' })
     expect(within(form).getByLabelText('Dentro de')).toHaveValue('g4')
 

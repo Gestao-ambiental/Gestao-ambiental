@@ -254,12 +254,24 @@ describe('passo 3: condicionantes (LIC-02)', () => {
 
     const detalhe = screen.getByRole('region', { name: 'Detalhe da condicionante' })
     await usuario.click(within(detalhe).getByRole('button', { name: 'Obrigação' }))
+
+    // Como no VS Code: a linha nasce na lista pedindo só o título; Esc desiste.
+    expect(screen.getByRole('textbox', { name: 'Título da nova condicionante' })).toHaveFocus()
+    expect(within(detalhe).queryByRole('form')).not.toBeInTheDocument()
+    await usuario.keyboard('{Escape}')
+    expect(screen.queryByRole('textbox', { name: 'Título da nova condicionante' })).toBeNull()
+    expect(screen.queryByRole('list', { name: 'Condicionantes' })).toBeNull()
+
+    await usuario.click(within(detalhe).getByRole('button', { name: 'Obrigação' }))
+    const lista = screen.getByRole('list', { name: 'Condicionantes' })
+    await usuario.keyboard('Relatório trimestral de efluentes{Enter}')
+
+    // Só depois o resto abre no centro, já com o título.
     const form = await screen.findByRole('form', { name: 'Nova condicionante' })
-    await usuario.click(within(form).getByRole('button', { name: 'Adicionar' }))
-    expect(await within(form).findByText('Informe o título')).toBeInTheDocument()
+    expect(within(form).getByLabelText('Título')).toHaveValue('Relatório trimestral de efluentes')
+    expect(within(lista).getByText('Relatório trimestral de efluentes')).toBeInTheDocument()
 
     await usuario.type(within(form).getByLabelText('Código'), '4.2')
-    await usuario.type(within(form).getByLabelText('Título'), 'Relatório trimestral de efluentes')
     await usuario.type(
       within(form).getByLabelText('Texto literal da licença'),
       'Apresentar trimestralmente…',

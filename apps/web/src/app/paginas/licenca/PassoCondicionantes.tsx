@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query'
-import { useId, useState, type CSSProperties } from 'react'
+import { useEffect, useId, useRef, useState, type CSSProperties } from 'react'
 import { useNavigate, useParams } from 'react-router'
 
 import { Carregando, EstadoErro, EstadoVazio } from '@/components/estados'
@@ -108,7 +108,92 @@ const classeLeitura =
   'read-only:border-transparent read-only:bg-(--surface-sunken) read-only:focus:border-(--border-focus)'
 
 type Edicao =
-  { tipo: 'existente'; id: string } | { tipo: 'nova'; natureza: Natureza; paiId: string | null }
+  | { tipo: 'existente'; id: string }
+  | { tipo: 'nova'; natureza: Natureza; paiId: string | null; titulo: string }
+
+/**
+ * Linha do item novo na árvore, como o arquivo novo no explorador do VS Code: primeiro só o
+ * título; Enter (ou sair do campo) confirma e abre o resto no centro; Esc cancela.
+ */
+function LinhaNova({
+  natureza,
+  nivel,
+  nomeando,
+  titulo,
+  aoConfirmar,
+  aoCancelar,
+}: {
+  natureza: Natureza
+  nivel: number
+  nomeando: boolean
+  titulo: string
+  aoConfirmar: (titulo: string) => void
+  aoCancelar: () => void
+}) {
+  const campoRef = useRef<HTMLInputElement>(null)
+  const [texto, setTexto] = useState(titulo)
+  // Enter e Esc já resolvem; o blur que vem logo depois não pode decidir de novo.
+  const resolvido = useRef(false)
+  const agrupador = natureza === 'agrupador'
+
+  useEffect(() => {
+    if (!nomeando) return
+    resolvido.current = false
+    campoRef.current?.focus()
+  }, [nomeando])
+
+  function confirmar() {
+    if (resolvido.current) return
+    resolvido.current = true
+    const limpo = texto.trim()
+    if (limpo) aoConfirmar(limpo)
+    else aoCancelar()
+  }
+
+  function cancelar() {
+    if (resolvido.current) return
+    resolvido.current = true
+    aoCancelar()
+  }
+
+  return (
+    <li
+      className="flex min-h-11 items-center gap-(--space-100) border-b bg-(--surface-selected) py-(--space-075) pr-(--space-150)"
+      style={{ paddingLeft: `${String(nivel * 16)}px` }}
+    >
+      <span aria-hidden="true" className="flex w-6 shrink-0 justify-center text-(--icon)">
+        <Icone nome={agrupador ? 'folder' : 'file-text'} />
+      </span>
+      {nomeando ? (
+        <input
+          ref={campoRef}
+          aria-label={agrupador ? 'Título do novo agrupador' : 'Título da nova condicionante'}
+          placeholder={agrupador ? 'Título do agrupador' : 'Título da condicionante'}
+          value={texto}
+          onChange={(evento) => {
+            setTexto(evento.target.value)
+          }}
+          onKeyDown={(evento) => {
+            if (evento.key === 'Enter') {
+              evento.preventDefault()
+              confirmar()
+            } else if (evento.key === 'Escape') {
+              evento.preventDefault()
+              cancelar()
+            }
+          }}
+          onBlur={confirmar}
+          className="h-7 min-w-0 flex-1 rounded-(--radius) border border-(--border-focus) bg-(--surface-input) px-(--space-075) corpo text-(--text) outline-none"
+        />
+      ) : (
+        <span className="flex min-w-0 flex-1 items-center gap-(--space-100)">
+          <span className="truncate corpo-medio text-(--text-link)">{titulo}</span>
+          <Selo>Nova</Selo>
+        </span>
+      )}
+    </li>
+  )
+}
 
 /** Onde o item está no PDF: o texto literal inteiro, o começo dele ou o título. */
 function trechosDoItem(item: Condicionante): string[] {
@@ -138,7 +223,9 @@ function Editor({
   const textoId = useId()
   const [id] = useState(() => (edicao.tipo === 'existente' ? edicao.id : crypto.randomUUID()))
   const [codigo, setCodigo] = useState(item?.codigo ?? '')
-  const [titulo, setTitulo] = useState(item?.titulo ?? '')
+  const [titulo, setTitulo] = useState(
+    item?.titulo ?? (edicao.tipo === 'nova' ? edicao.titulo : ''),
+  )
   const [texto, setTexto] = useState(item?.textoLiteral ?? '')
   const [natureza, setNatureza] = useState<Natureza>(
     item?.natureza ?? (edicao.tipo === 'nova' ? edicao.natureza : 'obrigacao'),
@@ -480,6 +567,8 @@ function Condicionantes({
   )
   const [pdfAberto, setPdfAberto] = useState(true)
   const [recolhidos, setRecolhidos] = useState<ReadonlySet<string>>(new Set())
+  // Item novo ainda na linha da árvore, esperando o título (antes de abrir no centro).
+  const [nomeando, setNomeando] = useState(false)
 
   const itens = consulta.data ?? []
   const porId = new Map(itens.map((item) => [item.id, item]))
@@ -513,7 +602,8 @@ function Condicionantes({
         return proximo
       })
     }
-    setEdicao({ tipo: 'nova', natureza, paiId: destino })
+    setEdicao({ tipo: 'nova', natureza, paiId: destino, titulo: '' })
+    setNomeando(true)
   }
 
   function alternar(id: string, recolher?: boolean) {
@@ -535,9 +625,31 @@ function Condicionantes({
   }
 
   function selecionar(item: Condicionante) {
+    setNomeando(false)
     setEdicao({ tipo: 'existente', id: item.id })
     mostrarNoPdf(item)
   }
+
+  const novaEm = edicao?.tipo === 'nova' ? edicao.paiId : null
+  const posicaoDaNova = novaEm ? linhas.findIndex((l) => l.item.id === novaEm) : -1
+  const linhaNova =
+    edicao?.tipo === 'nova' ? (
+      <LinhaNova
+        key="nova"
+        natureza={edicao.natureza}
+        nivel={posicaoDaNova >= 0 ? (linhas[posicaoDaNova]?.nivel ?? 0) + 1 : 0}
+        nomeando={nomeando}
+        titulo={edicao.titulo}
+        aoConfirmar={(titulo) => {
+          setEdicao({ ...edicao, titulo })
+          setNomeando(false)
+        }}
+        aoCancelar={() => {
+          setEdicao(null)
+          setNomeando(false)
+        }}
+      />
+    ) : null
 
   const opcoesDePai = (() => {
     if (edicao?.tipo !== 'existente') return agrupadores
@@ -702,7 +814,7 @@ function Condicionantes({
                 aoTentarDeNovo={() => void consulta.refetch()}
                 className="m-(--space-150)"
               />
-            ) : itens.length === 0 ? (
+            ) : itens.length === 0 && edicao?.tipo !== 'nova' ? (
               <EstadoVazio
                 icone="file-check"
                 titulo="Adicione a primeira condicionante"
@@ -710,11 +822,12 @@ function Condicionantes({
               />
             ) : (
               <ul aria-label="Condicionantes">
-                {linhas.map(({ item, nivel, temFilhos, recolhido }) => {
+                {edicao?.tipo === 'nova' && posicaoDaNova === -1 ? linhaNova : null}
+                {linhas.map(({ item, nivel, temFilhos, recolhido }, indice) => {
                   const natureza = NATUREZAS.find((n) => n.chave === item.natureza)
                   const ativo = edicao?.tipo === 'existente' && edicao.id === item.id
                   const nome = item.codigo || item.titulo
-                  return (
+                  return [
                     <li
                       key={item.id}
                       className={cn(
@@ -783,8 +896,9 @@ function Condicionantes({
                           </span>
                         </span>
                       </button>
-                    </li>
-                  )
+                    </li>,
+                    indice === posicaoDaNova ? linhaNova : null,
+                  ]
                 })}
               </ul>
             )}
@@ -805,12 +919,19 @@ function Condicionantes({
           aria-label="Detalhe da condicionante"
           className="min-h-0 overflow-auto bg-(--surface) p-(--space-200) md:min-w-[360px] md:flex-1 md:p-(--space-300)"
         >
-          {edicao ? (
+          {edicao?.tipo === 'nova' && nomeando ? (
+            <EstadoVazio
+              icone={edicao.natureza === 'agrupador' ? 'folder' : 'file-text'}
+              titulo={edicao.natureza === 'agrupador' ? 'Novo agrupador' : 'Nova condicionante'}
+              descricao="Escreva o título na lista e tecle Enter. Esc cancela."
+              className="h-full justify-center"
+            />
+          ) : edicao ? (
             <Editor
               key={
                 edicao.tipo === 'existente'
                   ? edicao.id
-                  : `nova:${edicao.natureza}:${edicao.paiId ?? ''}`
+                  : `nova:${edicao.natureza}:${edicao.paiId ?? ''}:${edicao.titulo}`
               }
               instrumentoId={instrumento.id}
               edicao={edicao}
