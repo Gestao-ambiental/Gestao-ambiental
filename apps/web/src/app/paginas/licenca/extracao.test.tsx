@@ -11,15 +11,19 @@ vi.mock('@/components/pdf/VisualizadorPdf', () => ({
   VisualizadorPdf: ({
     nome,
     paginaPedida,
+    acoes,
   }: {
     nome: string
     paginaPedida?: { numero: number; trechos?: readonly (string | null | undefined)[] }
+    acoes?: React.ReactNode
   }) => (
     <section
       aria-label={`PDF ${nome}`}
       data-pagina={paginaPedida?.numero ?? 1}
       data-trechos={(paginaPedida?.trechos ?? []).filter(Boolean).join('|')}
-    />
+    >
+      {acoes}
+    </section>
   ),
 }))
 
@@ -353,13 +357,45 @@ describe('revisar a proposta da IA (IA-02)', () => {
       await screen.findByRole('button', { name: /Análise semestral do corpo receptor/ }),
     )
     const form = await screen.findByRole('form', { name: 'Condicionante 4.3' })
-    expect(within(form).getByText(/^Proposto pela IA/)).toBeInTheDocument()
     expect(within(form).getByText(/A IA leu a periodicidade “semestral”/)).toBeInTheDocument()
     expect(within(form).getByRole('button', { name: 'Aceitar' })).toBeInTheDocument()
-    await usuario.click(within(form).getByRole('button', { name: 'ver página 4' }))
-    expect(screen.getByRole('region', { name: 'PDF LAO 4821-2023.pdf' })).toHaveAttribute(
-      'data-pagina',
-      '4',
+    // O texto vindo do documento fica em leitura até "Editar texto".
+    const texto = within(form).getByLabelText('Texto literal da licença')
+    expect(texto).toHaveAttribute('readonly')
+    await usuario.click(within(form).getByRole('button', { name: 'Editar texto' }))
+    expect(texto).not.toHaveAttribute('readonly')
+    await usuario.type(texto, ' Alterado.')
+    expect(within(form).getByText(/Texto alterado em relação ao documento/)).toBeInTheDocument()
+    expect(within(form).getByRole('button', { name: 'Aceitar edição' })).toBeInTheDocument()
+
+    await usuario.click(
+      within(form).getByRole('button', {
+        name: 'Proposto pela IA. Mostrar no documento: Página 4, item 4.3',
+      }),
     )
+    const pdf = screen.getByRole('region', { name: 'PDF LAO 4821-2023.pdf' })
+    expect(pdf).toHaveAttribute('data-pagina', '4')
+    expect(pdf.getAttribute('data-trechos')).toMatch(/^Realizar, semestralmente/)
+  })
+
+  it('condicionantes: fechar o documento dá espaço; abrir ou ver a fonte traz de volta', async () => {
+    const usuario = userEvent.setup()
+    falso.reiniciar(cenario())
+    renderizarApp('/licencas/i1/condicionantes')
+    const pdf = await screen.findByRole('region', { name: 'PDF LAO 4821-2023.pdf' })
+    await usuario.click(within(pdf).getByRole('button', { name: 'Fechar documento' }))
+    expect(screen.queryByRole('complementary', { name: 'Documento' })).not.toBeInTheDocument()
+    await usuario.click(screen.getByRole('button', { name: 'Abrir documento' }))
+    expect(screen.getByRole('complementary', { name: 'Documento' })).toBeInTheDocument()
+
+    const divisor = screen.getByRole('separator', { name: 'Ajustar largura da lista' })
+    expect(divisor).toHaveAttribute('aria-valuenow', '320')
+    divisor.focus()
+    await usuario.keyboard('{ArrowRight}{ArrowRight}')
+    expect(divisor).toHaveAttribute('aria-valuenow', '352')
+    await usuario.keyboard('{End}')
+    expect(divisor).toHaveAttribute('aria-valuenow', '640')
+    await usuario.dblClick(divisor)
+    expect(divisor).toHaveAttribute('aria-valuenow', '320')
   })
 })

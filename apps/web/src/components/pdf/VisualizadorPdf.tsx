@@ -3,7 +3,7 @@
 import 'pdfjs-dist/web/pdf_viewer.css'
 
 import type { PDFDocumentLoadingTask, PDFDocumentProxy, RenderTask } from 'pdfjs-dist'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 
 import { Carregando, EstadoErro } from '@/components/estados'
 import { BotaoIcone } from '@/components/ui/botao-icone'
@@ -15,6 +15,10 @@ import { destacarTrecho } from './destacar-trecho'
 const ZOOM_MINIMO = 50
 const ZOOM_MAXIMO = 200
 const PASSO_ZOOM = 25
+/** Sem largura medida (teste, painel oculto), a página sai nesta escala. */
+const ESCALA_SEM_LARGURA = 1.25
+/** A largura medida anda de 8 em 8 px: arrastar o divisor não redesenha a cada pixel. */
+const GRAO_LARGURA = 8
 
 async function carregarPdfjs() {
   const [pdfjs, worker] = await Promise.all([
@@ -41,9 +45,12 @@ interface Props {
   nome: string
   className?: string
   paginaPedida?: PedidoDePagina | null
+  /** Botões extras no fim da barra (ex.: fechar o painel). */
+  acoes?: ReactNode
 }
 
-export function VisualizadorPdf({ url, nome, className, paginaPedida = null }: Props) {
+/** 100% de zoom = a página na largura do painel; o zoom aumenta ou diminui a partir daí. */
+export function VisualizadorPdf({ url, nome, className, paginaPedida = null, acoes }: Props) {
   const [documento, setDocumento] = useState<PDFDocumentProxy | null>(null)
   const [falhou, setFalhou] = useState(false)
   const [tentativa, setTentativa] = useState(0)
@@ -52,6 +59,8 @@ export function VisualizadorPdf({ url, nome, className, paginaPedida = null }: P
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const textoRef = useRef<HTMLDivElement>(null)
   const paginaRef = useRef<HTMLDivElement>(null)
+  const areaRef = useRef<HTMLDivElement>(null)
+  const [largura, setLargura] = useState(0)
   const [pedidoVisto, setPedidoVisto] = useState<PedidoDePagina | null>(null)
 
   // Pedido novo de página: muda durante a renderização (sem efeito), como o React recomenda.
@@ -84,6 +93,21 @@ export function VisualizadorPdf({ url, nome, className, paginaPedida = null }: P
     }
   }, [url, tentativa])
 
+  // Mede a área da página para caber na largura do painel, inclusive ao arrastar o divisor.
+  useEffect(() => {
+    const area = areaRef.current
+    if (!area || typeof ResizeObserver === 'undefined') return
+    const observador = new ResizeObserver(([entrada]) => {
+      // Painel escondido mede 0: guarda a última largura para não redesenhar à toa.
+      if (!entrada || entrada.contentRect.width === 0) return
+      setLargura(Math.floor(entrada.contentRect.width / GRAO_LARGURA) * GRAO_LARGURA)
+    })
+    observador.observe(area)
+    return () => {
+      observador.disconnect()
+    }
+  }, [])
+
   useEffect(() => {
     if (!documento) return
     const estado = { cancelado: false }
@@ -94,7 +118,11 @@ export function VisualizadorPdf({ url, nome, className, paginaPedida = null }: P
       const pdfjs = await carregarPdfjs()
       const pag = await documento.getPage(Math.min(pagina, documento.numPages))
       if (cancelado() || !canvasRef.current || !textoRef.current || !paginaRef.current) return
-      const viewport = pag.getViewport({ scale: (zoom / 100) * 1.25 })
+      // Desconta a borda da página (1px de cada lado).
+      const ajuste = largura > 0 ? (largura - 2) / pag.getViewport({ scale: 1 }).width : 0
+      const viewport = pag.getViewport({
+        scale: (zoom / 100) * (ajuste > 0 ? ajuste : ESCALA_SEM_LARGURA),
+      })
       const canvas = canvasRef.current
       const escala = window.devicePixelRatio || 1
       canvas.width = Math.floor(viewport.width * escala)
@@ -131,7 +159,7 @@ export function VisualizadorPdf({ url, nome, className, paginaPedida = null }: P
       estado.cancelado = true
       tarefa?.cancel()
     }
-  }, [documento, pagina, zoom, pedidoVisto])
+  }, [documento, pagina, zoom, pedidoVisto, largura])
 
   const total = documento?.numPages ?? 0
 
@@ -190,8 +218,12 @@ export function VisualizadorPdf({ url, nome, className, paginaPedida = null }: P
             />
           </>
         ) : null}
+        {acoes}
       </div>
-      <div className="min-h-0 flex-1 overflow-auto p-(--space-200)">
+      <div
+        ref={areaRef}
+        className="min-h-0 flex-1 overflow-auto p-(--space-200) [scrollbar-gutter:stable]"
+      >
         {falhou ? (
           <EstadoErro
             titulo="Não foi possível abrir o PDF."
