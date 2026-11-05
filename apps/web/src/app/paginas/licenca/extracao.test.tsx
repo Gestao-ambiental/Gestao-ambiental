@@ -284,12 +284,14 @@ describe('revisar a proposta da IA (IA-02)', () => {
     )
     renderizarApp('/licencas/i1/identificacao')
     const formulario = await screen.findByRole('form', { name: 'Identificação da licença' })
-    expect(await within(formulario).findAllByText(/^Proposto pela IA/)).toHaveLength(4)
-    expect(within(formulario).getAllByText('Não encontrado no documento.').length).toBeGreaterThan(
-      0,
-    )
+    expect(
+      await within(formulario).findAllByRole('button', { name: /^Proposto pela IA/ }),
+    ).toHaveLength(4)
+    expect(within(formulario).getAllByText('Não encontrado no documento').length).toBeGreaterThan(0)
 
-    const [verPagina2] = within(formulario).getAllByRole('button', { name: 'ver página 2' })
+    const [verPagina2] = within(formulario).getAllByRole('button', {
+      name: 'Proposto pela IA, ver na página 2 do PDF',
+    })
     if (!verPagina2) throw new Error('marca da validade ausente')
     await usuario.click(verPagina2)
     expect(screen.getByRole('region', { name: 'PDF LAO 4821-2023.pdf' })).toHaveAttribute(

@@ -11,7 +11,7 @@ import { Selo } from './selo'
 describe('Icone', () => {
   it('a lista tipada de nomes bate com os SVGs copiados do design system', () => {
     expect([...NOMES_ICONES].sort()).toEqual(Object.keys(URL_DOS_ICONES).sort())
-    expect(NOMES_ICONES).toHaveLength(64)
+    expect(NOMES_ICONES).toHaveLength(66)
   })
 
   it('é decorativo sem rótulo e vira imagem com nome acessível quando rotulado', () => {

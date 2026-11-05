@@ -156,7 +156,7 @@ export function VisualizadorPdf({ url, nome, className, paginaPedida = null }: P
             />
             <span aria-hidden="true" className="mx-(--space-050) h-5 border-l" />
             <BotaoIcone
-              icone="chevron-down"
+              icone="minus"
               rotulo="Diminuir zoom"
               tamanho="compacto"
               disabled={zoom <= ZOOM_MINIMO}
@@ -166,7 +166,7 @@ export function VisualizadorPdf({ url, nome, className, paginaPedida = null }: P
             />
             <span className="w-10 text-center text-xs text-(--text-subtle)">{zoom}%</span>
             <BotaoIcone
-              icone="chevron-up"
+              icone="plus"
               rotulo="Aumentar zoom"
               tamanho="compacto"
               disabled={zoom >= ZOOM_MAXIMO}
