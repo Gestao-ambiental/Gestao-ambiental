@@ -287,7 +287,7 @@ insert into storage.objects (bucket_id, name, metadata) values
    '{"mimetype": "application/pdf", "size": 2048}');
 
 select testes.autenticar_como('bruno@filtroville.test');
-select public.enviar_evidencia(current_setting('testes.o1')::uuid, '70000000-0000-4000-8000-000000000001',
+select testes.enviar_um_arquivo(current_setting('testes.o1')::uuid, '70000000-0000-4000-8000-000000000001',
   '50000001-0000-4000-8000-000000000000',
   'c0000000-0000-4000-8000-00000000000a/evidencia/50000001-0000-4000-8000-000000000000.pdf',
   'Relatório.pdf', repeat('a', 64), current_setting('testes.hoje')::date);

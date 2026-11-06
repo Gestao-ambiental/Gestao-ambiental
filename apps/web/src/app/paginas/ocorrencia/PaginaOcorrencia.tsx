@@ -1,122 +1,183 @@
 import {
-  diferencaEmDias,
+  distanciaEmDias,
+  estaAtrasada,
   formatarDataCivil,
-  proximaAcao,
-  situacaoDoPrazo,
-  situacaoExibida,
-  type DataCivil,
+  resumoDoEnvio,
+  rotuloDoCiclo,
+  secaoDaOcorrencia,
   type SituacaoExibida,
 } from '@gestao-ambiental/domain'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, type ReactNode } from 'react'
-import { Link, useParams } from 'react-router'
+import { useMutation } from '@tanstack/react-query'
+import { useEffect, useState, type ReactNode } from 'react'
+import { Link, useNavigate, useParams } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/estados'
+import { Avatar } from '@/components/ui/avatar'
 import { Botao } from '@/components/ui/botao'
-import { Icone } from '@/components/ui/icone'
-import { MensagemSecao } from '@/components/ui/mensagem-secao'
-import { Selo, type TomSelo } from '@/components/ui/selo'
-import { listarMembrosAtivos } from '@/lib/api/licencas'
+import { BotaoIcone } from '@/components/ui/botao-icone'
 import {
-  designarConferente,
-  listarEtapas,
-  listarEvidencias,
-  listarHistorico,
-  obterOcorrencia,
-  type Ocorrencia,
-} from '@/lib/api/ocorrencias'
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Icone, type NomeIcone } from '@/components/ui/icone'
+import { MensagemSecao } from '@/components/ui/mensagem-secao'
+import { PilulaStatus } from '@/components/ui/pilula-status'
+import { Selo } from '@/components/ui/selo'
+import { designarConferente, type Evidencia, type Ocorrencia } from '@/lib/api/ocorrencias'
+import type { MembroAtivo } from '@/lib/api/perfil'
 import { ehSemPermissao, mensagemDoErro } from '@/lib/erros'
+import { cn } from '@/lib/utils'
 
-import { SeloSituacaoPrazo } from '../visao/SeloSituacaoPrazo'
+import { diaEHora, STATUS } from './apoio'
+import { useDadosDaOcorrencia } from './dados'
+import { PainelAtividade } from './PainelAtividade'
 import { SecaoConclusao } from './SecaoConclusao'
-import { SecaoEtapas } from './SecaoEtapas'
+import { SecaoConferencia } from './SecaoConferencia'
 import { SecaoEvidencia } from './SecaoEvidencia'
-import { SecaoHistorico } from './SecaoHistorico'
+import {
+  AvisoDeRegularizacao,
+  SecaoRegularizar,
+  type OpcaoDeRegularizacao,
+} from './SecaoRegularizar'
 
-const SITUACAO: Record<SituacaoExibida, { texto: string; tom: TomSelo }> = {
-  a_fazer: { texto: 'A fazer', tom: 'padrao' },
-  em_conferencia: { texto: 'Em conferência', tom: 'revisao' },
-  aprovada: { texto: 'Aprovada', tom: 'sucesso' },
-  devolvida: { texto: 'Devolvida', tom: 'perigo' },
-  concluida: { texto: 'Concluída', tom: 'sucesso' },
-}
+/** Barra de 48px: breadcrumb (no celular, voltar + "Empreendimento / Licença"), ⋯ e fechar. */
+function BarraDaOcorrencia({ ocorrencia }: { ocorrencia: Ocorrencia | null }) {
+  const navigate = useNavigate()
+  const [copiado, setCopiado] = useState(false)
+  useEffect(() => {
+    if (!copiado) return
+    const relogio = setTimeout(() => {
+      setCopiado(false)
+    }, 2000)
+    return () => {
+      clearTimeout(relogio)
+    }
+  }, [copiado])
 
-const classeSelect =
-  'h-(--size-control) w-full rounded-(--radius) border border-(--border-input) bg-(--surface-input) px-(--space-100) corpo text-(--text)'
+  function fechar() {
+    // Volta para a lista de origem; aberta por link direto, vai para a Visão da equipe.
+    if (window.history.length > 1) void navigate(-1)
+    else void navigate('/')
+  }
 
-function Voltar() {
+  const empreendimento = ocorrencia ? (
+    <Link
+      to={`/empreendimentos/${ocorrencia.empreendimentoId}`}
+      className="text-(--text-subtle) hover:text-(--text)"
+    >
+      {ocorrencia.empreendimentoNome}
+    </Link>
+  ) : null
+  const licenca = ocorrencia?.licenca ? (
+    <Link
+      to={`/empreendimentos/${ocorrencia.empreendimentoId}`}
+      className="text-(--text-subtle) hover:text-(--text)"
+    >
+      {ocorrencia.licenca}
+    </Link>
+  ) : null
+
   return (
-    <nav aria-label="Caminho" className="flex items-center gap-(--space-050) corpo">
-      <Link
-        to="/"
-        aria-label="Voltar para a Visão da equipe"
-        title="Voltar para a Visão da equipe"
-        className="inline-flex size-(--size-control) items-center justify-center rounded-(--radius) text-(--icon) transicao-estado hover:bg-(--neutral-subtle-hover)"
-      >
-        <Icone nome="chevron-left" />
-      </Link>
-      <Link to="/">Visão da equipe</Link>
-    </nav>
-  )
-}
-
-function emDias(data: DataCivil, hoje: DataCivil): string {
-  const dias = diferencaEmDias(data, hoje)
-  if (dias === 0) return 'hoje'
-  if (dias === 1) return 'amanhã'
-  if (dias > 1) return `em ${String(dias)} dias`
-  return dias === -1 ? 'há 1 dia' : `há ${String(-dias)} dias`
-}
-
-function Linha({ rotulo, children }: { rotulo: string; children: ReactNode }) {
-  return (
-    <div className="flex flex-col gap-(--space-025)">
-      <dt className="text-xs text-(--text-subtle)">{rotulo}</dt>
-      <dd className="corpo">{children}</dd>
+    <div className="flex h-12 shrink-0 items-center gap-(--space-100) border-b px-(--space-300) max-md:px-(--space-100)">
+      <BotaoIcone
+        icone="chevron-left"
+        rotulo="Voltar"
+        aparencia="sutil"
+        className="md:hidden"
+        onClick={fechar}
+      />
+      <nav aria-label="Caminho" className="min-w-0 flex-1">
+        <ol className="flex min-w-0 items-center gap-(--space-075) corpo whitespace-nowrap">
+          {empreendimento ? <li className="truncate">{empreendimento}</li> : null}
+          {licenca ? (
+            <>
+              <li aria-hidden="true" className="text-(--text-subtle)">
+                /
+              </li>
+              <li className="truncate">{licenca}</li>
+            </>
+          ) : null}
+          {ocorrencia ? (
+            <>
+              <li aria-hidden="true" className="text-(--text-subtle) max-md:hidden">
+                /
+              </li>
+              <li aria-current="page" className="truncate text-(--text) max-md:hidden">
+                Condicionante {ocorrencia.codigo}
+              </li>
+            </>
+          ) : null}
+        </ol>
+      </nav>
+      {copiado ? (
+        <span role="status" className="text-xs text-(--text-subtle)">
+          Link copiado
+        </span>
+      ) : null}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <BotaoIcone icone="ellipsis" rotulo="Mais ações" aparencia="sutil" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            onSelect={() => {
+              void navigator.clipboard.writeText(window.location.href).then(() => {
+                setCopiado(true)
+              })
+            }}
+          >
+            <Icone nome="link" />
+            Copiar link
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <BotaoIcone
+        icone="x"
+        rotulo="Fechar"
+        aparencia="sutil"
+        className="max-md:hidden"
+        onClick={fechar}
+      />
     </div>
   )
 }
 
-function Datas({ ocorrencia }: { ocorrencia: Ocorrencia }) {
-  const mudou = ocorrencia.prazoAtual !== ocorrencia.prazoOriginal
+function Propriedade({
+  icone,
+  rotulo,
+  children,
+  rotuloId,
+  className,
+}: {
+  icone: NomeIcone
+  rotulo: string
+  children: ReactNode
+  rotuloId?: string
+  className?: string
+}) {
   return (
-    <section aria-labelledby="titulo-datas" className="flex flex-col gap-(--space-100)">
-      <h2 id="titulo-datas" className="rotulo-maiusculo text-(--text-subtle)">
-        Datas
-      </h2>
-      <dl className="flex flex-col gap-(--space-100)">
-        <Linha rotulo="Prazo oficial">
-          {formatarDataCivil(ocorrencia.prazoOriginal)}
-          {mudou ? null : (
-            <span className="text-(--text-subtle)">
-              {' '}
-              · {emDias(ocorrencia.prazoOriginal, ocorrencia.hoje)}
-            </span>
-          )}
-        </Linha>
-        {mudou ? (
-          <Linha rotulo="Prazo atual">
-            {formatarDataCivil(ocorrencia.prazoAtual)}
-            <span className="text-(--text-subtle)">
-              {' '}
-              · {emDias(ocorrencia.prazoAtual, ocorrencia.hoje)}
-            </span>
-          </Linha>
-        ) : null}
-        <Linha rotulo="Meta interna">
-          {ocorrencia.metaInterna ? (
-            formatarDataCivil(ocorrencia.metaInterna)
-          ) : (
-            <span className="text-(--text-subtlest)">Sem meta</span>
-          )}
-        </Linha>
-      </dl>
-    </section>
+    <div className={cn('flex min-h-8 items-center gap-(--space-100)', className)}>
+      <dt
+        id={rotuloId}
+        className="flex w-[132px] shrink-0 items-center gap-(--space-100) corpo text-(--text-subtle)"
+      >
+        <Icone nome={icone} className="text-(--icon-subtle)" />
+        {rotulo}
+      </dt>
+      <dd className="flex min-w-0 items-center gap-(--space-100) corpo whitespace-nowrap">
+        {children}
+      </dd>
+    </div>
   )
 }
 
-function Pessoas({
+const classeSelect =
+  'h-(--size-control-sm) max-w-full rounded-(--radius) border border-(--border-input) bg-(--surface-input) px-(--space-075) corpo text-(--text)'
+
+function Conferente({
   ocorrencia,
   ehGestao,
   membros,
@@ -124,127 +185,173 @@ function Pessoas({
 }: {
   ocorrencia: Ocorrencia
   ehGestao: boolean
-  membros: readonly { id: string; nome: string }[]
+  membros: readonly MembroAtivo[]
   aoMudar: () => Promise<void>
 }) {
   const designar = useMutation({
     mutationFn: (membroId: string | null) => designarConferente(ocorrencia.id, membroId),
     onSuccess: aoMudar,
   })
-  const podeDesignar = ehGestao && ocorrencia.situacao !== 'concluida'
-
+  if (!ehGestao || ocorrencia.situacao === 'concluida') {
+    return <>{ocorrencia.conferenteNome ?? 'Gestão'}</>
+  }
   return (
-    <section aria-labelledby="titulo-pessoas" className="flex flex-col gap-(--space-100)">
-      <h2 id="titulo-pessoas" className="rotulo-maiusculo text-(--text-subtle)">
-        Pessoas
-      </h2>
+    <>
+      <select
+        aria-labelledby="rotulo-conferente"
+        className={classeSelect}
+        value={ocorrencia.conferenteId ?? ''}
+        disabled={designar.isPending}
+        onChange={(evento) => {
+          designar.mutate(evento.target.value || null)
+        }}
+      >
+        <option value="">Gestão</option>
+        {membros.map((m) => (
+          <option key={m.id} value={m.id}>
+            {m.nome}
+          </option>
+        ))}
+      </select>
       {designar.isError ? (
-        <MensagemSecao role="alert" tom="perigo">
+        <span role="alert" className="text-xs text-(--text-danger)">
           {mensagemDoErro(designar.error)}
-        </MensagemSecao>
+        </span>
       ) : null}
-      <dl className="flex flex-col gap-(--space-100)">
-        <Linha rotulo="Responsável">
-          {ocorrencia.responsavelNome ?? (
-            <span className="text-(--text-subtlest)">Sem responsável</span>
-          )}
-        </Linha>
-        {podeDesignar ? (
-          <div className="flex flex-col gap-(--space-025)">
-            <dt>
-              <label htmlFor="conferente" className="text-xs text-(--text-subtle)">
-                Conferente
-              </label>
-            </dt>
-            <dd>
-              <select
-                id="conferente"
-                className={classeSelect}
-                value={ocorrencia.conferenteId ?? ''}
-                disabled={designar.isPending}
-                onChange={(evento) => {
-                  designar.mutate(evento.target.value || null)
-                }}
-              >
-                <option value="">Qualquer pessoa da Gestão</option>
-                {membros.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.nome}
-                  </option>
-                ))}
-              </select>
-            </dd>
-          </div>
+    </>
+  )
+}
+
+function Propriedades({
+  ocorrencia,
+  exibida,
+  atrasada,
+  ehGestao,
+  membros,
+  aoMudar,
+}: {
+  ocorrencia: Ocorrencia
+  exibida: SituacaoExibida
+  atrasada: boolean
+  ehGestao: boolean
+  membros: readonly MembroAtivo[]
+  aoMudar: () => Promise<void>
+}) {
+  const status = STATUS[exibida]
+  const responsavel = membros.find((m) => m.id === ocorrencia.responsavelId)
+  const nomeResponsavel = ocorrencia.responsavelNome ?? responsavel?.nome ?? null
+  return (
+    <dl className="grid grid-cols-2 gap-x-(--space-300) gap-y-(--space-050) max-md:grid-cols-1">
+      <Propriedade icone="circle-check" rotulo="Status" className="md:order-1">
+        <PilulaStatus texto={status.texto} tom={status.tom} />
+        {atrasada ? <Selo tom="perigo">Atrasada</Selo> : null}
+      </Propriedade>
+      <Propriedade icone="calendar" rotulo="Prazo oficial" className="md:order-3">
+        <span className={cn(atrasada && 'text-(--text-danger)')}>
+          {formatarDataCivil(ocorrencia.prazoAtual)} ·{' '}
+          {distanciaEmDias(ocorrencia.prazoAtual, ocorrencia.hoje)}
+        </span>
+      </Propriedade>
+      <Propriedade icone="clock" rotulo="Meta interna" className="max-md:hidden md:order-5">
+        {ocorrencia.metaInterna ? formatarDataCivil(ocorrencia.metaInterna) : '—'}
+      </Propriedade>
+      <Propriedade icone="users" rotulo="Responsável" className="md:order-2">
+        {nomeResponsavel ? (
+          <>
+            <Avatar nome={nomeResponsavel} fotoUrl={responsavel?.fotoUrl ?? null} />
+            <span className="truncate">{nomeResponsavel}</span>
+          </>
         ) : (
-          <Linha rotulo="Conferente">
-            {ocorrencia.conferenteNome ?? (
-              <span className="text-(--text-subtle)">Qualquer pessoa da Gestão</span>
-            )}
-          </Linha>
+          '—'
         )}
-      </dl>
-    </section>
+      </Propriedade>
+      <Propriedade
+        icone="users"
+        rotulo="Conferente"
+        rotuloId="rotulo-conferente"
+        className="max-md:hidden md:order-4"
+      >
+        <Conferente
+          ocorrencia={ocorrencia}
+          ehGestao={ehGestao}
+          membros={membros}
+          aoMudar={aoMudar}
+        />
+      </Propriedade>
+      <Propriedade icone="refresh-cw" rotulo="Ciclo" className="max-md:hidden md:order-6">
+        {rotuloDoCiclo(ocorrencia.recorrencia, ocorrencia.prazoOriginal, ocorrencia.ciclo)}
+      </Propriedade>
+    </dl>
+  )
+}
+
+/** "Ciclo anterior: 1 PDF + 4 fotos · aprovado por Ana Ribeiro em 14/08 · Ver". */
+function CicloAnterior({
+  anteriorId,
+  evidencias,
+  fuso,
+}: {
+  anteriorId: string
+  evidencias: readonly Evidencia[]
+  fuso: string
+}) {
+  const aprovado = evidencias.find((e) => e.situacao === 'aprovada' && e.conferencia)
+  if (!aprovado?.conferencia) return null
+  return (
+    <p className="flex items-start gap-(--space-075) text-xs text-(--text-subtle)">
+      <Icone nome="file-check" tamanho={12} className="mt-0.5 shrink-0" />
+      <span>
+        Ciclo anterior: {resumoDoEnvio(aprovado.arquivos)} · aprovado por{' '}
+        {aprovado.conferencia.conferenteNome} em{' '}
+        {diaEHora(aprovado.conferencia.em, fuso).slice(0, 5)} ·{' '}
+        <Link to={`/ocorrencias/${anteriorId}`} className="text-(--text-link)">
+          Ver
+        </Link>
+      </span>
+    </p>
+  )
+}
+
+function Moldura({ ocorrencia, children }: { ocorrencia: Ocorrencia | null; children: ReactNode }) {
+  return (
+    <div className="flex h-full min-h-0 flex-col bg-(--surface)">
+      <BarraDaOcorrencia ocorrencia={ocorrencia} />
+      <div className="min-h-0 flex-1 overflow-y-auto px-(--space-400) py-(--space-300) max-md:px-(--space-200)">
+        {children}
+      </div>
+    </div>
   )
 }
 
 /**
- * /ocorrencias/:id (Protótipo 16; DEM-01 a DEM-04, DEM-09). Origem, próxima ação, etapas,
- * evidência com conferência, conclusão e histórico. Quem pode o quê é decidido no banco.
+ * /ocorrencias/:id (Tela 16 v2; DEM-01, DEM-03, DEM-09): a ocorrência na visão de quem executa.
+ * Propriedades, condicionante, evidência (ou Regularizar, se atrasada) e Atividade à direita.
+ * Conferir e concluir aparecem só para quem pode; quem pode o quê é decidido no banco.
  */
 export function PaginaOcorrencia() {
   const { id = '' } = useParams()
   const { atual } = useConsultoria()
-  const queryClient = useQueryClient()
   const ehGestao = atual.papel === 'gestao'
-
-  const ocorrencia = useQuery({ queryKey: ['ocorrencia', id], queryFn: () => obterOcorrencia(id) })
-  const existe = Boolean(ocorrencia.data)
-  const etapas = useQuery({
-    queryKey: ['ocorrencia', id, 'etapas'],
-    queryFn: () => listarEtapas(id),
-    enabled: existe,
-  })
-  const evidencias = useQuery({
-    queryKey: ['ocorrencia', id, 'evidencias'],
-    queryFn: () => listarEvidencias(id),
-    enabled: existe,
-  })
-  const historico = useQuery({
-    queryKey: ['ocorrencia', id, 'historico'],
-    queryFn: () => listarHistorico(id),
-    enabled: existe,
-  })
-  const membros = useQuery({
-    queryKey: ['membros-ativos', atual.consultoriaId],
-    queryFn: () => listarMembrosAtivos(atual.consultoriaId),
-    enabled: existe,
-  })
+  const dados = useDadosDaOcorrencia(id)
+  const { ocorrencia, evidencias, atividade, membros, anteriores, urls, ultima, exibida } = dados
+  // Sucesso do Regularizar: fica na página para sobreviver à troca de seção (ex.: vira leitura).
+  const [regularizado, setRegularizado] = useState<OpcaoDeRegularizacao | null>(null)
 
   const codigo = ocorrencia.data?.codigo
   useEffect(() => {
-    document.title = `${codigo ?? 'Ocorrência'} · Grama`
+    document.title = `${codigo ? `Condicionante ${codigo}` : 'Ocorrência'} · Grama`
   }, [codigo])
-
-  async function recarregar() {
-    // A Visão e o calendário mostram "em conferência" e responsável: também ficam velhos.
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['ocorrencia', id] }),
-      queryClient.invalidateQueries({ queryKey: ['prazos'] }),
-    ])
-  }
 
   if (ocorrencia.isPending) {
     return (
-      <div className="flex flex-col gap-(--space-200)">
-        <Voltar />
-        <Carregando rotulo="Carregando a ocorrência" linhas={5} />
-      </div>
+      <Moldura ocorrencia={null}>
+        <Carregando rotulo="Carregando a ocorrência" linhas={6} />
+      </Moldura>
     )
   }
   if (ocorrencia.isError) {
     return (
-      <div className="flex flex-col gap-(--space-200)">
-        <Voltar />
+      <Moldura ocorrencia={null}>
         {ehSemPermissao(ocorrencia.error) ? (
           <SemPermissao />
         ) : (
@@ -253,14 +360,13 @@ export function PaginaOcorrencia() {
             aoTentarDeNovo={() => void ocorrencia.refetch()}
           />
         )}
-      </div>
+      </Moldura>
     )
   }
-  if (!ocorrencia.data) {
+  if (!ocorrencia.data || !exibida) {
     // Inexistente ou de outra consultoria: a RLS não distingue, e a tela também não.
     return (
-      <div className="flex flex-col gap-(--space-200)">
-        <Voltar />
+      <Moldura ocorrencia={null}>
         <h1 className="sr-only">Ocorrência não encontrada</h1>
         <EstadoVazio
           icone="file-text"
@@ -272,130 +378,145 @@ export function PaginaOcorrencia() {
             </Botao>
           }
         />
-      </div>
+      </Moldura>
     )
   }
 
-  const dados = ocorrencia.data
-  const listaEtapas = etapas.data ?? []
-  const listaEvidencias = evidencias.data ?? []
-  const ultima = listaEvidencias[0]
-  const exibida = situacaoExibida(dados.situacao, ultima?.situacao ?? null)
-  const situacao = SITUACAO[exibida]
-  const dias = diferencaEmDias(dados.prazoAtual, dados.hoje)
-  const filhosCarregando = etapas.isPending || evidencias.isPending
-  const filhosComErro = etapas.isError || evidencias.isError
+  const o = ocorrencia.data
+  const listaMembros = membros.data ?? []
+  const atrasada = estaAtrasada(o.prazoAtual, o.hoje, o.situacao)
+  const secao = secaoDaOcorrencia(exibida, atrasada)
+  const comentarios = (atividade.data ?? []).filter((e) => e.tipo === 'comentario').length
+
+  async function aoRegularizar(opcao: OpcaoDeRegularizacao) {
+    setRegularizado(opcao)
+    await dados.recarregar()
+  }
+
+  let conteudoDaSecao: ReactNode
+  if (evidencias.isError) {
+    conteudoDaSecao = (
+      <EstadoErro
+        titulo="Não foi possível carregar a evidência."
+        aoTentarDeNovo={() => void evidencias.refetch()}
+      />
+    )
+  } else if (evidencias.isPending) {
+    conteudoDaSecao = <Carregando rotulo="Carregando a evidência" linhas={3} />
+  } else if (secao === 'regularizar') {
+    conteudoDaSecao = (
+      <SecaoRegularizar
+        ocorrencia={o}
+        ultima={ultima}
+        urls={urls}
+        sucesso={regularizado}
+        aoConcluir={aoRegularizar}
+      />
+    )
+  } else if (secao === 'concluida') {
+    conteudoDaSecao = null
+  } else {
+    conteudoDaSecao = (
+      <>
+        {regularizado ? <AvisoDeRegularizacao opcao={regularizado} /> : null}
+        <SecaoEvidencia
+          ocorrencia={o}
+          exibida={exibida}
+          ultima={ultima}
+          membroId={atual.membroId}
+          fuso={atual.fuso}
+          urls={urls}
+          aoMudar={dados.recarregar}
+        />
+      </>
+    )
+  }
 
   return (
-    <div className="flex flex-col gap-(--space-200)">
-      <Voltar />
-
-      <header className="flex flex-col gap-(--space-050)">
-        <h1 className="titulo-tela text-(--text)">
-          <span className="font-mono text-(--text-subtle)">{dados.codigo}</span> · {dados.titulo}
-        </h1>
-        <p className="flex flex-wrap items-center gap-(--space-100) corpo text-(--text-subtle)">
-          <Selo tom={situacao.tom}>{situacao.texto}</Selo>
-          {dados.situacao === 'concluida' ? null : (
-            <SeloSituacaoPrazo
-              situacao={situacaoDoPrazo({
-                tipo: 'ocorrencia',
-                dias,
-                emConferencia: dados.situacao === 'em_conferencia',
-              })}
-            />
-          )}
-          <span>Ciclo {dados.ciclo}</span>
-          <span aria-hidden="true">·</span>
-          <Link to={`/empreendimentos/${dados.empreendimentoId}`}>{dados.empreendimentoNome}</Link>
-          {dados.licenca ? (
-            <>
-              <span aria-hidden="true">·</span>
-              <span>{dados.licenca}</span>
-            </>
-          ) : null}
-        </p>
-      </header>
-
-      <div className="grid gap-(--space-300) lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="flex min-w-0 flex-col gap-(--space-300)">
-          <section aria-labelledby="titulo-proxima" className="flex flex-col gap-(--space-050)">
-            <h2 id="titulo-proxima" className="rotulo-maiusculo text-(--text-subtle)">
-              Próxima ação
-            </h2>
-            <p className="corpo-medio">
-              {filhosCarregando ? '…' : proximaAcao(exibida, listaEtapas)}
-            </p>
-          </section>
-
-          <section aria-labelledby="titulo-origem" className="flex flex-col gap-(--space-050)">
-            <h2 id="titulo-origem" className="rotulo-maiusculo text-(--text-subtle)">
-              Texto da condicionante
-            </h2>
-            <blockquote className="border-l-2 border-(--border-strong) pl-(--space-150) corpo whitespace-pre-line">
-              {dados.textoLiteral}
-            </blockquote>
-            <p className="text-xs text-(--text-subtle)">{dados.unidadeNome}</p>
-          </section>
-
-          {filhosComErro ? (
-            <EstadoErro
-              titulo="Não foi possível carregar etapas e evidências."
-              aoTentarDeNovo={() => {
-                void etapas.refetch()
-                void evidencias.refetch()
-              }}
-            />
-          ) : filhosCarregando ? (
-            <Carregando rotulo="Carregando etapas e evidências" linhas={3} />
-          ) : (
-            <>
-              <SecaoEtapas
-                ocorrenciaId={dados.id}
-                etapas={listaEtapas}
-                membros={membros.data ?? []}
-                podeEditar={dados.situacao !== 'concluida'}
-                aoMudar={recarregar}
-              />
-              <SecaoEvidencia
-                ocorrencia={dados}
-                evidencias={listaEvidencias}
-                membroId={atual.membroId}
+    <div className="flex h-full min-h-0">
+      <div className="flex min-w-0 flex-1 flex-col">
+        <Moldura ocorrencia={o}>
+          <article className="mx-auto flex w-full max-w-[1040px] flex-col gap-(--space-300) max-md:gap-(--space-250) max-md:pb-32">
+            <header className="flex flex-col gap-(--space-250)">
+              <h1 className="text-2xl leading-8 font-semibold text-pretty text-(--text) max-md:text-[22px] max-md:leading-7">
+                {o.titulo}
+              </h1>
+              <Propriedades
+                ocorrencia={o}
+                exibida={exibida}
+                atrasada={atrasada}
                 ehGestao={ehGestao}
-                fuso={atual.fuso}
-                aoMudar={recarregar}
+                membros={listaMembros}
+                aoMudar={dados.recarregar}
               />
+            </header>
+
+            <div className="flex flex-col gap-(--space-100) border-t pt-(--space-300)">
+              <p className="text-[15px] leading-6 whitespace-pre-line text-(--text)">
+                {o.textoLiteral}
+              </p>
+              {o.ocorrenciaAnteriorId && anteriores.data ? (
+                <CicloAnterior
+                  anteriorId={o.ocorrenciaAnteriorId}
+                  evidencias={anteriores.data}
+                  fuso={atual.fuso}
+                />
+              ) : null}
+            </div>
+
+            {o.situacao === 'concluida' ? null : (
+              <div className="flex flex-col gap-(--space-200)">{conteudoDaSecao}</div>
+            )}
+
+            <SecaoConferencia
+              ocorrencia={o}
+              ultima={ultima}
+              membroId={atual.membroId}
+              ehGestao={ehGestao}
+              aoMudar={dados.recarregar}
+            />
+            {ehGestao ? (
               <SecaoConclusao
-                ocorrencia={dados}
+                ocorrencia={o}
                 ultimaAprovada={ultima?.situacao === 'aprovada'}
                 ehGestao={ehGestao}
                 fuso={atual.fuso}
-                aoMudar={recarregar}
+                aoMudar={dados.recarregar}
               />
-            </>
-          )}
-        </div>
+            ) : o.situacao === 'concluida' ? (
+              <MensagemSecao tom="sucesso" titulo="Concluída">
+                {o.concluidaPorNome ? `Concluída por ${o.concluidaPorNome}.` : null}
+              </MensagemSecao>
+            ) : null}
 
-        <aside className="flex flex-col gap-(--space-300)" aria-label="Detalhes">
-          <Datas ocorrencia={dados} />
-          <Pessoas
-            ocorrencia={dados}
-            ehGestao={ehGestao}
-            membros={membros.data ?? []}
-            aoMudar={recarregar}
-          />
-          {historico.isError ? (
-            <EstadoErro
-              titulo="Não foi possível carregar o histórico."
-              aoTentarDeNovo={() => void historico.refetch()}
-            />
-          ) : historico.isPending ? (
-            <Carregando rotulo="Carregando o histórico" linhas={3} />
-          ) : (
-            <SecaoHistorico eventos={historico.data} fuso={atual.fuso} />
-          )}
-        </aside>
+            <Link
+              to="atividade"
+              className="flex h-12 items-center gap-(--space-100) rounded-(--radius) border px-(--space-150) transicao-estado hover:bg-(--surface-hover) md:hidden"
+            >
+              <Icone nome="inbox" className="text-(--icon)" />
+              <span className="flex-1 corpo font-medium">Atividade</span>
+              <span className="text-xs text-(--text-subtle)">
+                {comentarios === 1 ? '1 comentário' : `${String(comentarios)} comentários`}
+              </span>
+              <Icone nome="chevron-right" className="text-(--icon)" />
+            </Link>
+          </article>
+        </Moldura>
       </div>
+
+      <PainelAtividade
+        className="w-[420px] shrink-0 border-l max-md:hidden"
+        ocorrencia={o}
+        eventos={atividade.data}
+        carregando={atividade.isPending}
+        comErro={atividade.isError}
+        aoTentarDeNovo={() => void atividade.refetch()}
+        evidencias={evidencias.data ?? []}
+        membros={listaMembros}
+        urls={urls}
+        fuso={atual.fuso}
+        aoComentar={dados.recarregar}
+      />
     </div>
   )
 }

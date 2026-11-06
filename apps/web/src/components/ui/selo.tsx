@@ -31,6 +31,11 @@ const TONS: Record<TomSelo, string> = {
   perigoForte: 'bg-(--danger) text-(--text-inverse)',
 }
 
+/** Classes de fundo e texto de um tom (para componentes que reaproveitam a paleta do selo). */
+export function classesDoTom(tom: TomSelo): string {
+  return TONS[tom]
+}
+
 type Props = ComponentProps<'span'> & { tom?: TomSelo }
 
 /**

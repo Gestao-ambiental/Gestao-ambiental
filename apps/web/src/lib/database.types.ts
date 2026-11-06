@@ -347,17 +347,23 @@ isOneToOne: false
                   ]
                 },"evidencia": {
                   Row: {
-                    "consultoria_id": string,"data_execucao": string,"documento_versao_id": string,"enviada_em": string,"enviada_por": string,"id": string,"numero": number,"ocorrencia_id": string,"situacao": Database["public"]['Enums']["situacao_evidencia"]
+                    "cancelada_em": string | null,"cancelada_por": string | null,"consultoria_id": string,"data_execucao": string,"enviada_em": string,"enviada_por": string,"id": string,"numero": number,"observacoes": string | null,"ocorrencia_id": string,"situacao": Database["public"]['Enums']["situacao_evidencia"]
                   }
                   ComputedFields: never
                   Insert: {
-                    "consultoria_id": string,"data_execucao": string,"documento_versao_id": string,"enviada_em"?: string,"enviada_por": string,"id"?: string,"numero": number,"ocorrencia_id": string,"situacao"?: Database["public"]['Enums']["situacao_evidencia"]
+                    "cancelada_em"?: string | null,"cancelada_por"?: string | null,"consultoria_id": string,"data_execucao": string,"enviada_em"?: string,"enviada_por": string,"id"?: string,"numero": number,"observacoes"?: string | null,"ocorrencia_id": string,"situacao"?: Database["public"]['Enums']["situacao_evidencia"]
                   }
                   Update: {
-                    "consultoria_id"?: string,"data_execucao"?: string,"documento_versao_id"?: string,"enviada_em"?: string,"enviada_por"?: string,"id"?: string,"numero"?: number,"ocorrencia_id"?: string,"situacao"?: Database["public"]['Enums']["situacao_evidencia"]
+                    "cancelada_em"?: string | null,"cancelada_por"?: string | null,"consultoria_id"?: string,"data_execucao"?: string,"enviada_em"?: string,"enviada_por"?: string,"id"?: string,"numero"?: number,"observacoes"?: string | null,"ocorrencia_id"?: string,"situacao"?: Database["public"]['Enums']["situacao_evidencia"]
                   }
                   Relationships: [
                     {
+      foreignKeyName: "evidencia_cancelada_por_fk"
+      columns: ["consultoria_id","cancelada_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    },{
       foreignKeyName: "evidencia_consultoria_id_fkey"
       columns: ["consultoria_id"]
 isOneToOne: false
@@ -375,8 +381,34 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "ocorrencia"
       referencedColumns: ["consultoria_id","id"]
+    }
+                  ]
+                },"evidencia_arquivo": {
+                  Row: {
+                    "consultoria_id": string,"documento_versao_id": string,"evidencia_id": string,"id": string,"posicao": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "consultoria_id": string,"documento_versao_id": string,"evidencia_id": string,"id"?: string,"posicao": number
+                  }
+                  Update: {
+                    "consultoria_id"?: string,"documento_versao_id"?: string,"evidencia_id"?: string,"id"?: string,"posicao"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "evidencia_arquivo_consultoria_id_fkey"
+      columns: ["consultoria_id"]
+isOneToOne: false
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
     },{
-      foreignKeyName: "evidencia_versao_fk"
+      foreignKeyName: "evidencia_arquivo_evidencia_fk"
+      columns: ["consultoria_id","evidencia_id"]
+isOneToOne: false
+      referencedRelation: "evidencia"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "evidencia_arquivo_versao_fk"
       columns: ["consultoria_id","documento_versao_id"]
 isOneToOne: false
       referencedRelation: "documento_versao"
@@ -549,14 +581,14 @@ isOneToOne: false
                   ]
                 },"ocorrencia_historico": {
                   Row: {
-                    "ator_id": string | null,"consultoria_id": string,"detalhe": string | null,"evidencia_numero": number | null,"id": number,"instante": string,"ocorrencia_id": string,"tipo": string
+                    "ator_id": string | null,"chave": string | null,"consultoria_id": string,"dados": Json | null,"detalhe": string | null,"evidencia_numero": number | null,"id": number,"instante": string,"ocorrencia_id": string,"tipo": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "ator_id"?: string | null,"consultoria_id": string,"detalhe"?: string | null,"evidencia_numero"?: number | null,"id"?: never,"instante"?: string,"ocorrencia_id": string,"tipo": string
+                    "ator_id"?: string | null,"chave"?: string | null,"consultoria_id": string,"dados"?: Json | null,"detalhe"?: string | null,"evidencia_numero"?: number | null,"id"?: never,"instante"?: string,"ocorrencia_id": string,"tipo": string
                   }
                   Update: {
-                    "ator_id"?: string | null,"consultoria_id"?: string,"detalhe"?: string | null,"evidencia_numero"?: number | null,"id"?: never,"instante"?: string,"ocorrencia_id"?: string,"tipo"?: string
+                    "ator_id"?: string | null,"chave"?: string | null,"consultoria_id"?: string,"dados"?: Json | null,"detalhe"?: string | null,"evidencia_numero"?: number | null,"id"?: never,"instante"?: string,"ocorrencia_id"?: string,"tipo"?: string
                   }
                   Relationships: [
                     {
@@ -576,6 +608,44 @@ isOneToOne: false
       columns: ["consultoria_id","ocorrencia_id"]
 isOneToOne: false
       referencedRelation: "ocorrencia"
+      referencedColumns: ["consultoria_id","id"]
+    }
+                  ]
+                },"pedido_encerramento": {
+                  Row: {
+                    "consultoria_id": string,"decidido_em": string | null,"decidido_por": string | null,"decisao": string | null,"id": string,"justificativa": string,"ocorrencia_id": string,"solicitado_em": string,"solicitado_por": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "consultoria_id": string,"decidido_em"?: string | null,"decidido_por"?: string | null,"decisao"?: string | null,"id"?: string,"justificativa": string,"ocorrencia_id": string,"solicitado_em"?: string,"solicitado_por": string
+                  }
+                  Update: {
+                    "consultoria_id"?: string,"decidido_em"?: string | null,"decidido_por"?: string | null,"decisao"?: string | null,"id"?: string,"justificativa"?: string,"ocorrencia_id"?: string,"solicitado_em"?: string,"solicitado_por"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "pedido_encerramento_consultoria_id_fkey"
+      columns: ["consultoria_id"]
+isOneToOne: false
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "pedido_encerramento_decidido_por_fk"
+      columns: ["consultoria_id","decidido_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "pedido_encerramento_ocorrencia_fk"
+      columns: ["consultoria_id","ocorrencia_id"]
+isOneToOne: false
+      referencedRelation: "ocorrencia"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "pedido_encerramento_solicitado_por_fk"
+      columns: ["consultoria_id","solicitado_por"]
+isOneToOne: false
+      referencedRelation: "membro"
       referencedColumns: ["consultoria_id","id"]
     }
                   ]
@@ -614,6 +684,44 @@ isOneToOne: false
       columns: ["consultoria_id","protocolo_registrado_por"]
 isOneToOne: false
       referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    }
+                  ]
+                },"prorrogacao": {
+                  Row: {
+                    "consultoria_id": string,"documento_versao_id": string,"id": string,"novo_prazo": string,"numero_oficio": string,"ocorrencia_id": string,"prazo_anterior": string,"registrada_em": string,"registrada_por": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "consultoria_id": string,"documento_versao_id": string,"id"?: string,"novo_prazo": string,"numero_oficio": string,"ocorrencia_id": string,"prazo_anterior": string,"registrada_em"?: string,"registrada_por": string
+                  }
+                  Update: {
+                    "consultoria_id"?: string,"documento_versao_id"?: string,"id"?: string,"novo_prazo"?: string,"numero_oficio"?: string,"ocorrencia_id"?: string,"prazo_anterior"?: string,"registrada_em"?: string,"registrada_por"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "prorrogacao_consultoria_id_fkey"
+      columns: ["consultoria_id"]
+isOneToOne: false
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "prorrogacao_ocorrencia_fk"
+      columns: ["consultoria_id","ocorrencia_id"]
+isOneToOne: false
+      referencedRelation: "ocorrencia"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "prorrogacao_registrada_por_fk"
+      columns: ["consultoria_id","registrada_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "prorrogacao_versao_fk"
+      columns: ["consultoria_id","documento_versao_id"]
+isOneToOne: false
+      referencedRelation: "documento_versao"
       referencedColumns: ["consultoria_id","id"]
     }
                   ]
@@ -684,8 +792,14 @@ isOneToOne: false
 "atribuir_ocorrencia":
 { Args: { "p_membro_id": string,"p_ocorrencia_id": string,"p_row_version": number }; Returns: number
                            },
+"cancelar_envio":
+{ Args: { "p_evidencia_id": string }; Returns: undefined
+                           },
 "cancelar_convite":
 { Args: { "p_convite_id": string }; Returns: undefined
+                           },
+"comentar_ocorrencia":
+{ Args: { "p_chave": string,"p_mencoes": string[],"p_ocorrencia_id": string,"p_texto": string }; Returns: number
                            },
 "concluir_etapa":
 { Args: { "p_etapa_id": string }; Returns: undefined
@@ -747,6 +861,9 @@ isOneToOne: false
 "definir_cargo":
 { Args: { "p_cargo": string,"p_membro_id": string }; Returns: undefined
                            },
+"definir_meta_interna":
+{ Args: { "p_meta": string,"p_ocorrencia_id": string }; Returns: undefined
+                           },
 "definir_responsavel":
 { Args: { "p_condicionante_id": string,"p_membro_id": string }; Returns: undefined
                            },
@@ -771,7 +888,7 @@ isOneToOne: false
             }[]
                            },
 "enviar_evidencia":
-{ Args: { "p_caminho": string,"p_data_execucao": string,"p_evidencia_id": string,"p_nome_original": string,"p_ocorrencia_id": string,"p_sha256": string,"p_versao_id": string }; Returns: number
+{ Args: { "p_arquivos": Json,"p_data_execucao": string,"p_evidencia_id": string,"p_mantidos": string[],"p_observacoes": string,"p_ocorrencia_id": string }; Returns: number
                            },
 "falhar_extracao_ia":
 { Args: { "p_custo_micros": number,"p_detalhe": string,"p_duracao_ms": number,"p_id": string,"p_modelo": string,"p_motivo": string,"p_paginas": number,"p_tokens_entrada": number,"p_tokens_saida": number,"p_versao_prompt": string }; Returns: undefined
@@ -816,7 +933,7 @@ isOneToOne: false
                            },
 "obter_ocorrencia":
 { Args: { "p_id": string }; Returns: {
-              "ciclo": number,"codigo": string,"concluida_em": string,"concluida_por_nome": string,"concluida_sem_evidencia": boolean,"conferencia_independente": boolean,"conferente_id": string,"conferente_nome": string,"consultoria_id": string,"data_referencia": string,"empreendimento_id": string,"empreendimento_nome": string,"hoje": string,"id": string,"instrumento_id": string,"licenca": string,"meta_interna": string,"prazo_ciclo_anterior": string,"prazo_oficial_atual": string,"prazo_oficial_original": string,"responsavel_id": string,"responsavel_nome": string,"row_version": number,"situacao": Database["public"]['Enums']["situacao_ocorrencia"],"texto_literal": string,"titulo": string,"unidade_nome": string
+              "ciclo": number,"codigo": string,"concluida_em": string,"concluida_por_nome": string,"concluida_sem_evidencia": boolean,"conferencia_independente": boolean,"conferente_id": string,"conferente_nome": string,"consultoria_id": string,"criado_em": string,"data_referencia": string,"empreendimento_id": string,"empreendimento_nome": string,"encerramento_solicitado_em": string,"hoje": string,"id": string,"instrumento_id": string,"licenca": string,"meta_interna": string,"ocorrencia_anterior_id": string,"prazo_ciclo_anterior": string,"prazo_oficial_atual": string,"prazo_oficial_original": string,"recorrencia": Database["public"]['Enums']["recorrencia_prazo"],"responsavel_id": string,"responsavel_nome": string,"row_version": number,"situacao": Database["public"]['Enums']["situacao_ocorrencia"],"texto_literal": string,"titulo": string,"unidade_nome": string
             }[]
                            },
 "obter_plano_renovacao":
@@ -836,6 +953,9 @@ isOneToOne: false
 "registrar_pdf_instrumento":
 { Args: { "p_caminho": string,"p_instrumento_id": string,"p_nome_original": string,"p_sha256": string,"p_versao_id": string }; Returns: string
                            },
+"registrar_prorrogacao":
+{ Args: { "p_caminho": string,"p_id": string,"p_nome_original": string,"p_novo_prazo": string,"p_numero_oficio": string,"p_ocorrencia_id": string,"p_sha256": string,"p_versao_id": string }; Returns: number
+                           },
 "registrar_protocolo":
 { Args: { "p_caminho": string,"p_data": string,"p_nome_original": string,"p_numero": string,"p_plano_id": string,"p_row_version": number,"p_sha256": string,"p_versao_id": string }; Returns: number
                            },
@@ -850,10 +970,13 @@ isOneToOne: false
                            },
 "salvar_identificacao":
 { Args: { "p_assinado_em": string,"p_emitido_em": string,"p_id": string,"p_marco": Database["public"]['Enums']["marco_instrumento"],"p_numero": string,"p_orgao": string,"p_publicado_em": string,"p_recebido_em": string,"p_row_version": number,"p_tipo_id": string,"p_unidade_id": string,"p_validade": string }; Returns: number
+                           },
+"solicitar_encerramento":
+{ Args: { "p_id": string,"p_justificativa": string,"p_ocorrencia_id": string }; Returns: undefined
                            }
           }
           Enums: {
-            "acao_auditoria": "insert"|"update"|"delete","contagem_prazo": "corridos"|"uteis","decisao_conferencia": "aprovada"|"devolvida","marco_instrumento": "emissao"|"assinatura"|"publicacao"|"recebimento","modo_etapa": "trabalho"|"espera_externa","natureza_condicionante": "obrigacao"|"agrupador"|"informacao_geral"|"condicao_continua","papel_membro": "gestao"|"equipe","recorrencia_prazo": "anual"|"semestral"|"trimestral"|"bimestral"|"mensal"|"unica"|"na_renovacao"|"continua"|"personalizada","revisao_condicionante": "pendente"|"aceita"|"descartada","situacao_consultoria": "ativa"|"suspensa"|"arquivada","situacao_convite": "pendente"|"aceito"|"cancelado","situacao_evidencia": "em_conferencia"|"aprovada"|"devolvida","situacao_instrumento": "rascunho"|"ativo","situacao_membro": "ativo"|"desligado","situacao_ocorrencia": "aberta"|"em_conferencia"|"concluida","unidade_ciclo": "mes"|"dia"
+            "acao_auditoria": "insert"|"update"|"delete","contagem_prazo": "corridos"|"uteis","decisao_conferencia": "aprovada"|"devolvida","marco_instrumento": "emissao"|"assinatura"|"publicacao"|"recebimento","modo_etapa": "trabalho"|"espera_externa","natureza_condicionante": "obrigacao"|"agrupador"|"informacao_geral"|"condicao_continua","papel_membro": "gestao"|"equipe","recorrencia_prazo": "anual"|"semestral"|"trimestral"|"bimestral"|"mensal"|"unica"|"na_renovacao"|"continua"|"personalizada","revisao_condicionante": "pendente"|"aceita"|"descartada","situacao_consultoria": "ativa"|"suspensa"|"arquivada","situacao_convite": "pendente"|"aceito"|"cancelado","situacao_evidencia": "em_conferencia"|"aprovada"|"devolvida"|"cancelada","situacao_instrumento": "rascunho"|"ativo","situacao_membro": "ativo"|"desligado","situacao_ocorrencia": "aberta"|"em_conferencia"|"concluida","unidade_ciclo": "mes"|"dia"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -969,7 +1092,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "acao_auditoria": ["insert", "update", "delete"],"contagem_prazo": ["corridos", "uteis"],"decisao_conferencia": ["aprovada", "devolvida"],"marco_instrumento": ["emissao", "assinatura", "publicacao", "recebimento"],"modo_etapa": ["trabalho", "espera_externa"],"natureza_condicionante": ["obrigacao", "agrupador", "informacao_geral", "condicao_continua"],"papel_membro": ["gestao", "equipe"],"recorrencia_prazo": ["anual", "semestral", "trimestral", "bimestral", "mensal", "unica", "na_renovacao", "continua", "personalizada"],"revisao_condicionante": ["pendente", "aceita", "descartada"],"situacao_consultoria": ["ativa", "suspensa", "arquivada"],"situacao_convite": ["pendente", "aceito", "cancelado"],"situacao_evidencia": ["em_conferencia", "aprovada", "devolvida"],"situacao_instrumento": ["rascunho", "ativo"],"situacao_membro": ["ativo", "desligado"],"situacao_ocorrencia": ["aberta", "em_conferencia", "concluida"],"unidade_ciclo": ["mes", "dia"]
+            "acao_auditoria": ["insert", "update", "delete"],"contagem_prazo": ["corridos", "uteis"],"decisao_conferencia": ["aprovada", "devolvida"],"marco_instrumento": ["emissao", "assinatura", "publicacao", "recebimento"],"modo_etapa": ["trabalho", "espera_externa"],"natureza_condicionante": ["obrigacao", "agrupador", "informacao_geral", "condicao_continua"],"papel_membro": ["gestao", "equipe"],"recorrencia_prazo": ["anual", "semestral", "trimestral", "bimestral", "mensal", "unica", "na_renovacao", "continua", "personalizada"],"revisao_condicionante": ["pendente", "aceita", "descartada"],"situacao_consultoria": ["ativa", "suspensa", "arquivada"],"situacao_convite": ["pendente", "aceito", "cancelado"],"situacao_evidencia": ["em_conferencia", "aprovada", "devolvida", "cancelada"],"situacao_instrumento": ["rascunho", "ativo"],"situacao_membro": ["ativo", "desligado"],"situacao_ocorrencia": ["aberta", "em_conferencia", "concluida"],"unidade_ciclo": ["mes", "dia"]
           }
         }
 } as const
