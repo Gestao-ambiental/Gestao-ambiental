@@ -5,7 +5,15 @@ import {
   rotuloDoDia,
 } from '@gestao-ambiental/domain'
 import { useMutation } from '@tanstack/react-query'
-import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+} from 'react'
 
 import { Carregando, EstadoErro } from '@/components/estados'
 import { Avatar } from '@/components/ui/avatar'
@@ -372,6 +380,16 @@ function CampoComentario({
   const [mencionados, setMencionados] = useState<readonly MembroAtivo[]>([])
   const [busca, setBusca] = useState<{ termo: string; inicio: number } | null>(null)
   const [ativa, setAtiva] = useState(0)
+  // Depois de escolher a menção, o cursor vai para depois do nome antes do próximo toque de tecla
+  // (no mesmo commit do texto novo; num quadro seguinte, digitação rápida cairia no lugar errado).
+  const cursorPendente = useRef<number | null>(null)
+  useLayoutEffect(() => {
+    const cursor = cursorPendente.current
+    if (cursor === null) return
+    cursorPendente.current = null
+    campo.current?.focus()
+    campo.current?.setSelectionRange(cursor, cursor)
+  }, [texto])
 
   const sugestoes = busca
     ? membros.filter((m) => normalizar(m.nome).includes(normalizar(busca.termo))).slice(0, 6)
@@ -402,13 +420,10 @@ function CampoComentario({
     const fim = busca.inicio + 1 + busca.termo.length
     const novo = `${texto.slice(0, busca.inicio)}@${membro.nome} ${texto.slice(fim)}`
     const cursor = busca.inicio + membro.nome.length + 2
+    cursorPendente.current = cursor
     setTexto(novo)
     setMencionados((atuais) => [...atuais, membro])
     setBusca(null)
-    requestAnimationFrame(() => {
-      campo.current?.focus()
-      campo.current?.setSelectionRange(cursor, cursor)
-    })
   }
 
   function publicar() {

@@ -36,7 +36,8 @@ alter table public.evidencia drop column documento_versao_id;
 -- Ofício da prorrogação também é documento versionado.
 alter table public.documento drop constraint documento_entidade_valida;
 alter table public.documento
-  add constraint documento_entidade_valida check (entidade in ('instrumento', 'evidencia', 'prorrogacao'));
+  add constraint documento_entidade_valida
+  check (entidade in ('instrumento', 'evidencia', 'protocolo', 'membro', 'prorrogacao'));
 
 -- prorrogacao: único caminho para mudar o prazo oficial atual (o original nunca muda).
 create table public.prorrogacao (
