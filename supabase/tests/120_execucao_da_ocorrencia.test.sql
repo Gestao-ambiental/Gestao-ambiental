@@ -91,7 +91,7 @@ select results_eq(
 -- Evidência
 -- ---------------------------------------------------------------------------
 select throws_ok(
-  $$select public.enviar_evidencia(current_setting('testes.o1')::uuid, gen_random_uuid(), gen_random_uuid(),
+  $$select testes.enviar_um_arquivo(current_setting('testes.o1')::uuid, gen_random_uuid(), gen_random_uuid(),
       'c0000000-0000-4000-8000-00000000000a/evidencia/50000001-0000-4000-8000-000000000000.pdf',
       'relatorio.pdf', repeat('a', 64), current_setting('testes.hoje')::date + 1)$$,
   '22023', 'data_execucao_futura',
@@ -99,7 +99,7 @@ select throws_ok(
 );
 
 select is(
-  public.enviar_evidencia(current_setting('testes.o1')::uuid, '70000000-0000-4000-8000-000000000001',
+  testes.enviar_um_arquivo(current_setting('testes.o1')::uuid, '70000000-0000-4000-8000-000000000001',
     '50000001-0000-4000-8000-000000000000',
     'c0000000-0000-4000-8000-00000000000a/evidencia/50000001-0000-4000-8000-000000000000.pdf',
     'Relatório v1.pdf', repeat('a', 64), current_setting('testes.hoje')::date - 2),
@@ -108,7 +108,7 @@ select is(
 );
 
 select is(
-  public.enviar_evidencia(current_setting('testes.o1')::uuid, '70000000-0000-4000-8000-000000000001',
+  testes.enviar_um_arquivo(current_setting('testes.o1')::uuid, '70000000-0000-4000-8000-000000000001',
     '50000001-0000-4000-8000-000000000000',
     'c0000000-0000-4000-8000-00000000000a/evidencia/50000001-0000-4000-8000-000000000000.pdf',
     'Relatório v1.pdf', repeat('a', 64), current_setting('testes.hoje')::date - 2),
@@ -120,14 +120,15 @@ select results_eq(
   $$select o.situacao, e.situacao, e.data_execucao = current_setting('testes.hoje')::date - 2, v.tamanho_bytes
     from public.ocorrencia as o
     join public.evidencia as e on e.ocorrencia_id = o.id
-    join public.documento_versao as v on v.id = e.documento_versao_id
+    join public.evidencia_arquivo as a on a.evidencia_id = e.id
+    join public.documento_versao as v on v.id = a.documento_versao_id
     where o.id = current_setting('testes.o1')::uuid$$,
   $$values ('em_conferencia'::public.situacao_ocorrencia, 'em_conferencia'::public.situacao_evidencia, true, 2048::bigint)$$,
   'upload deixa a ocorrência em conferência (não conclui) e guarda a data real'
 );
 
 select throws_ok(
-  $$select public.enviar_evidencia(current_setting('testes.o1')::uuid, gen_random_uuid(),
+  $$select testes.enviar_um_arquivo(current_setting('testes.o1')::uuid, gen_random_uuid(),
       '50000002-0000-4000-8000-000000000000',
       'c0000000-0000-4000-8000-00000000000a/evidencia/50000002-0000-4000-8000-000000000000.pdf',
       'outro.pdf', repeat('b', 64), current_setting('testes.hoje')::date)$$,
@@ -200,7 +201,7 @@ select throws_ok(
 select testes.autenticar_como('bruno@filtroville.test');
 
 select is(
-  public.enviar_evidencia(current_setting('testes.o1')::uuid, '70000000-0000-4000-8000-000000000002',
+  testes.enviar_um_arquivo(current_setting('testes.o1')::uuid, '70000000-0000-4000-8000-000000000002',
     '50000002-0000-4000-8000-000000000000',
     'c0000000-0000-4000-8000-00000000000a/evidencia/50000002-0000-4000-8000-000000000000.pdf',
     'Relatório v2.pdf', repeat('b', 64), current_setting('testes.hoje')::date - 1),
@@ -283,7 +284,7 @@ select is(
 select testes.autenticar_como('bruno@filtroville.test');
 
 select throws_ok(
-  $$select public.enviar_evidencia(current_setting('testes.o1')::uuid, gen_random_uuid(),
+  $$select testes.enviar_um_arquivo(current_setting('testes.o1')::uuid, gen_random_uuid(),
       '50000003-0000-4000-8000-000000000000',
       'c0000000-0000-4000-8000-00000000000a/evidencia/50000003-0000-4000-8000-000000000000.pdf',
       'tarde.pdf', repeat('c', 64), current_setting('testes.hoje')::date)$$,
@@ -334,7 +335,7 @@ select ok(
 -- Sem conferente: Gestão confere; concluir sem evidência
 -- ---------------------------------------------------------------------------
 select testes.autenticar_como('bruno@filtroville.test');
-select public.enviar_evidencia(current_setting('testes.o2')::uuid, '70000000-0000-4000-8000-000000000003',
+select testes.enviar_um_arquivo(current_setting('testes.o2')::uuid, '70000000-0000-4000-8000-000000000003',
   '50000004-0000-4000-8000-000000000000',
   'c0000000-0000-4000-8000-00000000000a/evidencia/50000004-0000-4000-8000-000000000000.pdf',
   'Relatório 2.pdf', repeat('d', 64), current_setting('testes.hoje')::date);

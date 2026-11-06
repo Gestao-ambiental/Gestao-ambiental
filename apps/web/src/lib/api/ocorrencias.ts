@@ -1,5 +1,6 @@
-// Detalhe e execução da ocorrência (épico 6). Escrita só por RPC (o banco decide quem confere,
-// quem conclui e a independência); o arquivo vai direto ao Storage e vira versão pela RPC.
+// Detalhe e execução da ocorrência (épico 6; Tela 16 v2). Escrita só por RPC (o banco decide quem
+// confere, quem conclui, quem cancela e a independência); os arquivos vão direto ao Storage como
+// objetos novos e viram versões imutáveis pela RPC, que confere caminho, tipo e tamanho.
 
 import type {
   DataCivil,
@@ -7,6 +8,7 @@ import type {
   SituacaoGravadaDaOcorrencia,
 } from '@gestao-ambiental/domain'
 
+import type { Json } from '@/lib/database.types'
 import { conferirPdf, type ProblemaDoPdf } from '@/lib/api/licencas'
 import { obterSupabase } from '@/lib/supabase'
 
@@ -15,9 +17,15 @@ function anulavel<T>(valor: T): T | null {
   return valor
 }
 
+/** O gerador marca todo argumento de RPC como não nulo; o banco aceita nulo. */
+function aceitaNulo<T>(valor: T | null): T {
+  return valor as unknown as T
+}
+
 export interface Ocorrencia {
   id: string
   consultoriaId: string
+  instrumentoId: string
   ciclo: number
   codigo: string
   titulo: string
@@ -30,9 +38,13 @@ export interface Ocorrencia {
   prazoAtual: DataCivil
   metaInterna: DataCivil | null
   prazoCicloAnterior: DataCivil | null
+  ocorrenciaAnteriorId: string | null
   dataReferencia: DataCivil | null
   hoje: DataCivil
+  recorrencia: string
+  criadoEm: string
   situacao: SituacaoGravadaDaOcorrencia
+  responsavelId: string | null
   responsavelNome: string | null
   conferenteId: string | null
   conferenteNome: string | null
@@ -40,6 +52,7 @@ export interface Ocorrencia {
   concluidaPorNome: string | null
   concluidaSemEvidencia: boolean
   conferenciaIndependente: boolean
+  encerramentoSolicitadoEm: string | null
   rowVersion: number
 }
 
@@ -51,6 +64,7 @@ export async function obterOcorrencia(id: string): Promise<Ocorrencia | null> {
   return {
     id: o.id,
     consultoriaId: o.consultoria_id,
+    instrumentoId: o.instrumento_id,
     ciclo: o.ciclo,
     codigo: o.codigo,
     titulo: o.titulo,
@@ -63,9 +77,13 @@ export async function obterOcorrencia(id: string): Promise<Ocorrencia | null> {
     prazoAtual: o.prazo_oficial_atual as DataCivil,
     metaInterna: anulavel(o.meta_interna) as DataCivil | null,
     prazoCicloAnterior: anulavel(o.prazo_ciclo_anterior) as DataCivil | null,
+    ocorrenciaAnteriorId: anulavel(o.ocorrencia_anterior_id),
     dataReferencia: anulavel(o.data_referencia) as DataCivil | null,
     hoje: o.hoje as DataCivil,
+    recorrencia: o.recorrencia,
+    criadoEm: o.criado_em,
     situacao: o.situacao,
+    responsavelId: anulavel(o.responsavel_id),
     responsavelNome: anulavel(o.responsavel_nome),
     conferenteId: anulavel(o.conferente_id),
     conferenteNome: anulavel(o.conferente_nome),
@@ -73,113 +91,52 @@ export async function obterOcorrencia(id: string): Promise<Ocorrencia | null> {
     concluidaPorNome: anulavel(o.concluida_por_nome),
     concluidaSemEvidencia: o.concluida_sem_evidencia,
     conferenciaIndependente: o.conferencia_independente,
+    encerramentoSolicitadoEm: anulavel(o.encerramento_solicitado_em),
     rowVersion: o.row_version,
   }
 }
 
 // ---------------------------------------------------------------------------
-// Etapas
+// Envios (evidência) e conferência
 // ---------------------------------------------------------------------------
 
-export interface Etapa {
-  id: string
-  titulo: string
-  modo: 'trabalho' | 'espera_externa'
-  responsavelNome: string | null
-  responsavelExterno: string | null
-  meta: DataCivil | null
-  horas: number | null
-  concluida: boolean
+export interface ArquivoDoEnvio {
+  versaoId: string
+  caminho: string
+  nome: string
+  tamanho: number
+  mime: string
 }
-
-export async function listarEtapas(ocorrenciaId: string): Promise<Etapa[]> {
-  const { data, error } = await obterSupabase()
-    .from('etapa')
-    .select(
-      'id, titulo, modo, responsavel_externo, meta, horas_estimadas, concluida_em, responsavel:membro!etapa_responsavel_fk(nome)',
-    )
-    .eq('ocorrencia_id', ocorrenciaId)
-    .order('posicao')
-    .range(0, 199)
-  if (error) throw error
-  return data.map((e) => ({
-    id: e.id,
-    titulo: e.titulo,
-    modo: e.modo,
-    responsavelNome: e.responsavel?.nome ?? null,
-    responsavelExterno: e.responsavel_externo,
-    meta: e.meta as DataCivil | null,
-    horas: e.horas_estimadas,
-    concluida: e.concluida_em !== null,
-  }))
-}
-
-export interface DadosEtapa {
-  titulo: string
-  modo: 'trabalho' | 'espera_externa'
-  responsavelId: string | null
-  responsavelExterno: string
-  meta: DataCivil | null
-  horas: number | null
-}
-
-/** O gerador marca todo argumento de RPC como não nulo; o banco aceita nulo. */
-function aceitaNulo<T>(valor: T | null): T {
-  return valor as unknown as T
-}
-
-export async function criarEtapa(
-  id: string,
-  ocorrenciaId: string,
-  dados: DadosEtapa,
-): Promise<void> {
-  const { error } = await obterSupabase().rpc('criar_etapa', {
-    p_id: id,
-    p_ocorrencia_id: ocorrenciaId,
-    p_titulo: dados.titulo,
-    p_modo: dados.modo,
-    p_responsavel_id: aceitaNulo(dados.responsavelId),
-    p_responsavel_externo: dados.responsavelExterno,
-    p_meta: aceitaNulo(dados.meta),
-    p_horas: aceitaNulo(dados.horas),
-  })
-  if (error) throw error
-}
-
-export async function concluirEtapa(etapaId: string): Promise<void> {
-  const { error } = await obterSupabase().rpc('concluir_etapa', { p_etapa_id: etapaId })
-  if (error) throw error
-}
-
-// ---------------------------------------------------------------------------
-// Evidência e conferência
-// ---------------------------------------------------------------------------
 
 export interface Evidencia {
   id: string
   numero: number
   situacao: SituacaoDaEvidencia
   dataExecucao: DataCivil
+  observacoes: string | null
   enviadaEm: string
   enviadaPorId: string
   enviadaPorNome: string
-  arquivo: { caminho: string; nome: string; tamanho: number }
+  arquivos: ArquivoDoEnvio[]
   conferencia: {
     decisao: 'aprovada' | 'devolvida'
     motivo: string | null
+    conferenteId: string
     conferenteNome: string
     em: string
   } | null
 }
 
+/** Envios da ocorrência, do mais novo para o mais antigo, com os arquivos em ordem. */
 export async function listarEvidencias(ocorrenciaId: string): Promise<Evidencia[]> {
   const { data, error } = await obterSupabase()
     .from('evidencia')
     .select(
-      `id, numero, situacao, data_execucao, enviada_em, enviada_por,
+      `id, numero, situacao, data_execucao, observacoes, enviada_em, enviada_por,
        autor:membro!evidencia_enviada_por_fk(nome),
-       versao:documento_versao!evidencia_versao_fk(caminho, nome_original, tamanho_bytes),
-       conferencia(decisao, motivo, decidida_em, conferente:membro!conferencia_conferente_fk(nome))`,
+       arquivos:evidencia_arquivo!evidencia_arquivo_evidencia_fk(posicao,
+         versao:documento_versao!evidencia_arquivo_versao_fk(id, caminho, nome_original, tamanho_bytes, mime)),
+       conferencia(decisao, motivo, decidida_em, conferente_id, conferente:membro!conferencia_conferente_fk(nome))`,
     )
     .eq('ocorrencia_id', ocorrenciaId)
     .order('numero', { ascending: false })
@@ -193,18 +150,24 @@ export async function listarEvidencias(ocorrenciaId: string): Promise<Evidencia[
       numero: e.numero,
       situacao: e.situacao,
       dataExecucao: e.data_execucao as DataCivil,
+      observacoes: e.observacoes,
       enviadaEm: e.enviada_em,
       enviadaPorId: e.enviada_por,
       enviadaPorNome: e.autor.nome,
-      arquivo: {
-        caminho: e.versao.caminho,
-        nome: e.versao.nome_original,
-        tamanho: e.versao.tamanho_bytes,
-      },
+      arquivos: [...e.arquivos]
+        .sort((a, b) => a.posicao - b.posicao)
+        .map((a) => ({
+          versaoId: a.versao.id,
+          caminho: a.versao.caminho,
+          nome: a.versao.nome_original,
+          tamanho: a.versao.tamanho_bytes,
+          mime: a.versao.mime,
+        })),
       conferencia: conferencia
         ? {
             decisao: conferencia.decisao,
             motivo: conferencia.motivo,
+            conferenteId: conferencia.conferente_id,
             conferenteNome: conferencia.conferente.nome,
             em: conferencia.decidida_em,
           }
@@ -224,6 +187,8 @@ export const EXTENSOES: Record<(typeof TIPOS_DE_EVIDENCIA)[number], string> = {
   'image/png': 'png',
   'image/jpeg': 'jpg',
 }
+/** Igual ao limite da RPC: até 20 arquivos por envio. */
+export const MAXIMO_DE_ARQUIVOS = 20
 
 export type ProblemaDaEvidencia = ProblemaDoPdf | 'tipo'
 
@@ -242,36 +207,81 @@ export async function sha256(arquivo: File): Promise<string> {
   return Array.from(new Uint8Array(resumo), (b) => b.toString(16).padStart(2, '0')).join('')
 }
 
+/** Objeto já existe no Storage: é uma nova tentativa do mesmo envio (IDs estáveis na tela). */
+function jaExiste(erro: unknown): boolean {
+  if (typeof erro !== 'object' || erro === null) return false
+  const { statusCode, message } = erro as { statusCode?: unknown; message?: unknown }
+  return (
+    String(statusCode) === '409' || (typeof message === 'string' && /already exists/i.test(message))
+  )
+}
+
+/** Arquivo novo escolhido na tela: o ID da versão nasce na escolha e vale para as novas tentativas. */
+export interface ArquivoNovo {
+  versaoId: string
+  arquivo: File
+}
+
+interface ArquivoEnviado {
+  versao_id: string
+  caminho: string
+  nome_original: string
+  sha256: string
+}
+
+async function subirArquivo(
+  consultoriaId: string,
+  entidade: 'evidencia' | 'prorrogacao',
+  novo: ArquivoNovo,
+): Promise<ArquivoEnviado> {
+  const tipo = novo.arquivo.type as (typeof TIPOS_DE_EVIDENCIA)[number]
+  const caminho = `${consultoriaId}/${entidade}/${novo.versaoId}.${EXTENSOES[tipo]}`
+  const [hash, envio] = await Promise.all([
+    sha256(novo.arquivo),
+    obterSupabase()
+      .storage.from('arquivos')
+      .upload(caminho, novo.arquivo, { contentType: tipo, upsert: false }),
+  ])
+  if (envio.error && !jaExiste(envio.error)) throw envio.error
+  return { versao_id: novo.versaoId, caminho, nome_original: novo.arquivo.name, sha256: hash }
+}
+
+export interface DadosDoEnvio {
+  /** Gerado na tela: repetir o envio não duplica. */
+  evidenciaId: string
+  dataExecucao: DataCivil
+  observacoes: string
+  novos: readonly ArquivoNovo[]
+  /** Versões de envios anteriores desta ocorrência que seguem no envio (reenvio). */
+  mantidos: readonly string[]
+}
+
 /**
- * Envia o arquivo como objeto novo em consultoria_id/evidencia/<uuid>.<ext> e registra a evidência
- * com a data real de execução. `evidenciaId` vem da tela: repetir não duplica.
+ * Sobe os arquivos novos como objetos em consultoria_id/evidencia/<uuid>.<ext> e registra o envio
+ * com a data real de execução e as observações. A ocorrência passa a Em conferência.
  */
 export async function enviarEvidencia(
   ocorrencia: Pick<Ocorrencia, 'id' | 'consultoriaId'>,
-  evidenciaId: string,
-  arquivo: File,
-  dataExecucao: DataCivil,
+  dados: DadosDoEnvio,
 ): Promise<number> {
-  const supabase = obterSupabase()
-  const tipo = arquivo.type as (typeof TIPOS_DE_EVIDENCIA)[number]
-  const versaoId = crypto.randomUUID()
-  const caminho = `${ocorrencia.consultoriaId}/evidencia/${versaoId}.${EXTENSOES[tipo]}`
-  const hash = await sha256(arquivo)
-  const envio = await supabase.storage
-    .from('arquivos')
-    .upload(caminho, arquivo, { contentType: tipo, upsert: false })
-  if (envio.error) throw envio.error
-  const { data, error } = await supabase.rpc('enviar_evidencia', {
+  const enviados = await Promise.all(
+    dados.novos.map((novo) => subirArquivo(ocorrencia.consultoriaId, 'evidencia', novo)),
+  )
+  const { data, error } = await obterSupabase().rpc('enviar_evidencia', {
     p_ocorrencia_id: ocorrencia.id,
-    p_evidencia_id: evidenciaId,
-    p_versao_id: versaoId,
-    p_caminho: caminho,
-    p_nome_original: arquivo.name,
-    p_sha256: hash,
-    p_data_execucao: dataExecucao,
+    p_evidencia_id: dados.evidenciaId,
+    p_data_execucao: dados.dataExecucao,
+    p_observacoes: dados.observacoes,
+    p_arquivos: enviados as unknown as Json,
+    p_mantidos: [...dados.mantidos],
   })
   if (error) throw error
   return data
+}
+
+export async function cancelarEnvio(evidenciaId: string): Promise<void> {
+  const { error } = await obterSupabase().rpc('cancelar_envio', { p_evidencia_id: evidenciaId })
+  if (error) throw error
 }
 
 export async function urlDoArquivo(caminho: string): Promise<string> {
@@ -280,6 +290,20 @@ export async function urlDoArquivo(caminho: string): Promise<string> {
     .createSignedUrl(caminho, 300)
   if (error) throw error
   return data.signedUrl
+}
+
+/** URLs assinadas (1 h) para miniaturas e carrossel, numa chamada só. */
+export async function urlsDosArquivos(caminhos: readonly string[]): Promise<Map<string, string>> {
+  const urls = new Map<string, string>()
+  if (caminhos.length === 0) return urls
+  const { data, error } = await obterSupabase()
+    .storage.from('arquivos')
+    .createSignedUrls([...caminhos], 60 * 60)
+  if (error) throw error
+  for (const item of data) {
+    if (item.path && item.signedUrl) urls.set(item.path, item.signedUrl)
+  }
+  return urls
 }
 
 export async function designarConferente(
@@ -307,7 +331,58 @@ export async function conferirEvidencia(
 }
 
 // ---------------------------------------------------------------------------
-// Conclusão
+// Regularizar (ocorrência atrasada)
+// ---------------------------------------------------------------------------
+
+export interface DadosDaProrrogacao {
+  id: string
+  numeroOficio: string
+  novoPrazo: DataCivil
+  oficio: ArquivoNovo
+}
+
+/** Ofício (PDF) em consultoria_id/prorrogacao/<uuid>.pdf e novo prazo oficial. */
+export async function registrarProrrogacao(
+  ocorrencia: Pick<Ocorrencia, 'id' | 'consultoriaId'>,
+  dados: DadosDaProrrogacao,
+): Promise<void> {
+  const enviado = await subirArquivo(ocorrencia.consultoriaId, 'prorrogacao', dados.oficio)
+  const { error } = await obterSupabase().rpc('registrar_prorrogacao', {
+    p_id: dados.id,
+    p_ocorrencia_id: ocorrencia.id,
+    p_numero_oficio: dados.numeroOficio,
+    p_novo_prazo: dados.novoPrazo,
+    p_versao_id: enviado.versao_id,
+    p_caminho: enviado.caminho,
+    p_nome_original: enviado.nome_original,
+    p_sha256: enviado.sha256,
+  })
+  if (error) throw error
+}
+
+export async function solicitarEncerramento(
+  id: string,
+  ocorrenciaId: string,
+  justificativa: string,
+): Promise<void> {
+  const { error } = await obterSupabase().rpc('solicitar_encerramento', {
+    p_id: id,
+    p_ocorrencia_id: ocorrenciaId,
+    p_justificativa: justificativa,
+  })
+  if (error) throw error
+}
+
+export async function definirMetaInterna(ocorrenciaId: string, meta: DataCivil): Promise<void> {
+  const { error } = await obterSupabase().rpc('definir_meta_interna', {
+    p_ocorrencia_id: ocorrenciaId,
+    p_meta: meta,
+  })
+  if (error) throw error
+}
+
+// ---------------------------------------------------------------------------
+// Conclusão (Gestão)
 // ---------------------------------------------------------------------------
 
 export async function concluirOcorrencia(id: string, rowVersion: number): Promise<void> {
@@ -337,34 +412,59 @@ export async function reabrirOcorrencia(id: string, motivo: string, rowVersion: 
 }
 
 // ---------------------------------------------------------------------------
-// Histórico
+// Atividade (eventos + comentários)
 // ---------------------------------------------------------------------------
 
-export interface EventoDoHistorico {
+export interface EventoDaAtividade {
   id: number
   tipo: string
+  /** Nulo = Sistema. */
+  atorId: string | null
   atorNome: string | null
   instante: string
   evidenciaNumero: number | null
   detalhe: string | null
+  dados: Record<string, unknown> | null
 }
 
-export async function listarHistorico(ocorrenciaId: string): Promise<EventoDoHistorico[]> {
+/** Feed em ordem cronológica (mais antigo primeiro). Até 500 itens por ocorrência. */
+export async function listarAtividade(ocorrenciaId: string): Promise<EventoDaAtividade[]> {
   const { data, error } = await obterSupabase()
     .from('ocorrencia_historico')
     .select(
-      'id, tipo, instante, evidencia_numero, detalhe, ator:membro!ocorrencia_historico_ator_fk(nome)',
+      'id, tipo, instante, evidencia_numero, detalhe, dados, ator_id, ator:membro!ocorrencia_historico_ator_fk(nome)',
     )
     .eq('ocorrencia_id', ocorrenciaId)
-    .order('id', { ascending: false })
-    .range(0, 99)
+    .order('id', { ascending: true })
+    .range(0, 499)
   if (error) throw error
   return data.map((h) => ({
     id: h.id,
     tipo: h.tipo,
+    atorId: h.ator_id,
     atorNome: h.ator?.nome ?? null,
     instante: h.instante,
     evidenciaNumero: h.evidencia_numero,
     detalhe: h.detalhe,
+    dados:
+      typeof h.dados === 'object' && h.dados !== null && !Array.isArray(h.dados)
+        ? (h.dados as Record<string, unknown>)
+        : null,
   }))
+}
+
+/** Comentário com menções. `chave` vem da tela: repetir não duplica. */
+export async function comentar(
+  chave: string,
+  ocorrenciaId: string,
+  texto: string,
+  mencoes: readonly string[],
+): Promise<void> {
+  const { error } = await obterSupabase().rpc('comentar_ocorrencia', {
+    p_chave: chave,
+    p_ocorrencia_id: ocorrenciaId,
+    p_texto: texto,
+    p_mencoes: [...mencoes],
+  })
+  if (error) throw error
 }

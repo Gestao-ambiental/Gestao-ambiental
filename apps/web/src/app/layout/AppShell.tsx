@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, Outlet } from 'react-router'
+import { Link, Outlet, matchPath, useLocation } from 'react-router'
 
 import { BarraSuperior } from '@/components/ui/barra-superior'
 import { BotaoIcone } from '@/components/ui/botao-icone'
@@ -19,12 +19,22 @@ import { MenuConta } from './MenuConta'
 import { NavegacaoPrincipal } from './NavegacaoPrincipal'
 
 /**
+ * Telas que ocupam a área principal inteira e cuidam da própria rolagem (ex.: ocorrência, com o
+ * painel de Atividade ao lado): sem o respiro padrão e sem rolar a área toda.
+ */
+const TELAS_INTEIRAS = ['/ocorrencias/:id']
+
+/**
  * Shell fixo do design system: topbar de 56px com o nome do produto em texto, rail de 240px com a
  * consultoria no topo e só a área principal rolando; conteúdo até 1440px. No celular o rail vira
  * gaveta aberta por um botão com nome acessível.
  */
 export function AppShell() {
   const [gavetaAberta, setGavetaAberta] = useState(false)
+  const { pathname } = useLocation()
+  const telaInteira = TELAS_INTEIRAS.some((padrao) =>
+    matchPath({ path: padrao, end: false }, pathname),
+  )
 
   return (
     <div className="flex h-dvh flex-col">
@@ -87,10 +97,22 @@ export function AppShell() {
         >
           <NavegacaoPrincipal />
         </MenuLateral>
-        <main id="conteudo" tabIndex={-1} className="min-w-0 flex-1 overflow-auto outline-none">
-          <div className="w-full p-(--space-200) md:p-(--space-300)">
+        <main
+          id="conteudo"
+          tabIndex={-1}
+          className={
+            telaInteira
+              ? 'min-w-0 flex-1 overflow-hidden outline-none'
+              : 'min-w-0 flex-1 overflow-auto outline-none'
+          }
+        >
+          {telaInteira ? (
             <Outlet />
-          </div>
+          ) : (
+            <div className="w-full p-(--space-200) md:p-(--space-300)">
+              <Outlet />
+            </div>
+          )}
         </main>
       </div>
     </div>

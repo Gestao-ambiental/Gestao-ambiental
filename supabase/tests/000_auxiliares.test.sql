@@ -93,6 +93,21 @@ begin
 end;
 $$;
 
+-- Envio de evidência com um arquivo só (assinatura antiga, usada pelos testes de execução e
+-- renovação). O envio com vários arquivos é testado direto em 190.
+create or replace function testes.enviar_um_arquivo(
+  p_ocorrencia_id uuid, p_evidencia_id uuid, p_versao_id uuid, p_caminho text, p_nome_original text,
+  p_sha256 text, p_data_execucao date
+)
+returns integer
+language sql
+as $$
+  select public.enviar_evidencia(p_ocorrencia_id, p_evidencia_id, p_data_execucao, null,
+    jsonb_build_array(jsonb_build_object('versao_id', p_versao_id, 'caminho', p_caminho,
+                                         'nome_original', p_nome_original, 'sha256', p_sha256)),
+    null)
+$$;
+
 grant execute on all functions in schema testes to anon, authenticated;
 
 select plan(1);

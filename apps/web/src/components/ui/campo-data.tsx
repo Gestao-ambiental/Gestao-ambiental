@@ -85,6 +85,13 @@ interface Props {
   nota?: ReactNode
   ajuda?: ReactNode
   erro?: string
+  /** Aviso que não bloqueia (âmbar, com ícone), mostrado quando não há erro. */
+  aviso?: string
+  /**
+   * Quem usa o campo valida o texto (ex.: regras de domínio com mensagens próprias): o campo não
+   * mostra os erros dele e avisa cada mudança de texto e a saída do campo.
+   */
+  validacaoExterna?: { aoMudarTexto: (texto: string) => void; aoSair?: () => void }
   /** Ao lado do rótulo, à direita (ex.: a marca da IA). */
   acessorio?: ReactNode
   disabled?: boolean
@@ -107,6 +114,8 @@ export function CampoData({
   nota,
   ajuda,
   erro,
+  aviso,
+  validacaoExterna,
   acessorio,
   disabled = false,
   id,
@@ -143,7 +152,10 @@ export function CampoData({
     const colado = /^\d{4}-/.test(bruto.trim())
     const mascarado = colado ? bruto.trim().slice(0, 10) : mascararData(bruto)
     const leitura = lerDataDigitada(mascarado)
-    setTexto(colado && leitura.situacao === 'valida' ? formatarDataCivil(leitura.data) : mascarado)
+    const novoTexto =
+      colado && leitura.situacao === 'valida' ? formatarDataCivil(leitura.data) : mascarado
+    setTexto(novoTexto)
+    validacaoExterna?.aoMudarTexto(novoTexto)
     if (leitura.situacao === 'valida') {
       if (foraDoLimite(leitura.data, minimo, maximo)) {
         setErroDigitado(erroDoLimite())
@@ -161,6 +173,7 @@ export function CampoData({
   }
 
   function aoSair() {
+    validacaoExterna?.aoSair?.()
     if (lerDataDigitada(texto).situacao === 'incompleta') {
       setErroDigitado('Data incompleta. Use dd/mm/aaaa')
     }
@@ -168,13 +181,15 @@ export function CampoData({
 
   function escolher(data: DataCivil | null) {
     setTexto(formatarDataCivil(data))
+    validacaoExterna?.aoMudarTexto(formatarDataCivil(data))
     setErroDigitado(null)
     emitir(data)
     setAberto(false)
   }
 
-  const mensagemErro = erroDigitado ?? erro
-  const apoio = mensagemErro ?? ajuda
+  const mensagemErro = (validacaoExterna ? null : erroDigitado) ?? erro
+  const avisoVisivel = mensagemErro ? undefined : aviso
+  const apoio = mensagemErro ?? avisoVisivel ?? ajuda
 
   const painel = (
     <PainelCalendario
@@ -297,10 +312,15 @@ export function CampoData({
           id={apoioId}
           className={cn(
             'inline-flex items-start gap-(--space-075) text-xs',
-            mensagemErro ? 'text-(--text-danger)' : 'text-(--text-subtle)',
+            mensagemErro
+              ? 'text-(--text-danger)'
+              : avisoVisivel
+                ? 'text-(--text-warning)'
+                : 'text-(--text-subtle)',
           )}
         >
           {mensagemErro ? <Icone nome="circle-alert" tamanho={12} className="mt-0.5" /> : null}
+          {avisoVisivel ? <Icone nome="triangle-alert" tamanho={12} className="mt-0.5" /> : null}
           {apoio}
         </span>
       ) : null}

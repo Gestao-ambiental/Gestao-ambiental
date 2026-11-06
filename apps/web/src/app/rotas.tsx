@@ -22,6 +22,7 @@ import { ErroDeRota } from './paginas/ErroDeRota'
 import { PaginaAcompanhamentos } from './paginas/acompanhamentos/PaginaAcompanhamentos'
 import { PaginaPlanoRenovacao } from './paginas/acompanhamentos/PaginaPlanoRenovacao'
 import { PaginaCalendario } from './paginas/calendario/PaginaCalendario'
+import { PaginaAtividadeOcorrencia } from './paginas/ocorrencia/PaginaAtividadeOcorrencia'
 import { PaginaOcorrencia } from './paginas/ocorrencia/PaginaOcorrencia'
 import { PaginaNaoEncontrada } from './paginas/paginas'
 import { PaginaPerfil } from './paginas/perfil/PaginaPerfil'
@@ -74,6 +75,7 @@ export const rotas: RouteObject[] = [
               { path: 'empreendimentos', element: <PaginaEmpreendimentos /> },
               { path: 'empreendimentos/:id', element: <PaginaEmpreendimento /> },
               { path: 'ocorrencias/:id', element: <PaginaOcorrencia /> },
+              { path: 'ocorrencias/:id/atividade', element: <PaginaAtividadeOcorrencia /> },
               { path: 'acompanhamentos', element: <PaginaAcompanhamentos /> },
               { path: 'renovacoes/:instrumentoId', element: <PaginaPlanoRenovacao /> },
               { path: 'configuracoes/equipe', element: <PaginaEquipe /> },

@@ -91,9 +91,32 @@ export type { RecorrenciaSugerida } from './recorrencia-sugerida'
 export { faixaDeAtraso, rotuloDaSituacaoDoPrazo, situacaoDoPrazo } from './situacao-prazo'
 export type { FaixaDeAtraso, SituacaoDoPrazo, TipoLinhaDePrazo } from './situacao-prazo'
 
-export { dataForaDoCiclo, janelaDoCiclo, proximaAcao, situacaoExibida } from './ocorrencia'
+export {
+  avisoForaDoCiclo,
+  dataForaDoCiclo,
+  distanciaEmDias,
+  estaAtrasada,
+  janelaDoCiclo,
+  listarPendencias,
+  MENSAGEM_DO_ERRO_DE_DATA,
+  partesDoComentario,
+  pendenciasDoEnvio,
+  proximaAcao,
+  resumoDoEnvio,
+  rotuloDoCiclo,
+  rotuloDoDia,
+  secaoDaOcorrencia,
+  situacaoExibida,
+  textoDaPendencia,
+  validarDataDeExecucao,
+  validarDataFutura,
+} from './ocorrencia'
 export type {
+  ErroDeData,
   JanelaDoCiclo,
+  ParteDoComentario,
+  SecaoDaOcorrencia,
+  ValidacaoDaDataDeExecucao,
   SituacaoDaEvidencia,
   SituacaoExibida,
   SituacaoGravadaDaOcorrencia,
