@@ -1,0 +1,272 @@
+// Orçamentos (onda 5; ORC-02, ORC-03): formação do preço e cronograma de pagamento.
+// Dinheiro sempre em centavos inteiros; percentuais em pontos-base (1% = 100), para a conta nunca
+// passar por ponto flutuante de moeda. Custo e margem são internos: nada daqui vai para a proposta
+// do cliente (09 Regras de negócio, §7.1). O banco confere o que for regra de escrita.
+
+/** 100% em pontos-base. */
+export const PONTOS_BASE_TOTAL = 10_000
+
+/** Limites conferidos na tela e no banco (ORC-03). */
+export const MAXIMO_PARCELAS = 60
+export const PRECO_MAXIMO_CENTAVOS = 99_999_999_999
+export const HORAS_MAXIMAS_DO_ITEM = 10_000
+
+export class ErroDeOrcamento extends Error {
+  constructor(
+    readonly codigo:
+      | 'percentuais_invalidos'
+      | 'valor_invalido'
+      | 'parcelas_demais'
+      | 'pesos_invalidos'
+      | 'sem_parcelas',
+  ) {
+    super(codigo)
+    this.name = 'ErroDeOrcamento'
+  }
+}
+
+function exigirCentavos(valor: number): void {
+  if (!Number.isSafeInteger(valor) || valor < 0 || valor > PRECO_MAXIMO_CENTAVOS) {
+    throw new ErroDeOrcamento('valor_invalido')
+  }
+}
+
+function exigirPontosBase(valor: number): void {
+  if (!Number.isSafeInteger(valor) || valor < 0 || valor > PONTOS_BASE_TOTAL) {
+    throw new ErroDeOrcamento('percentuais_invalidos')
+  }
+}
+
+/** Parte inteira de `valor × pontosBase ÷ 10.000`, arredondada ao centavo mais próximo. */
+export function aplicarPontosBase(valorCentavos: number, pontosBase: number): number {
+  exigirCentavos(valorCentavos)
+  exigirPontosBase(pontosBase)
+  return Math.round((valorCentavos * pontosBase) / PONTOS_BASE_TOTAL)
+}
+
+// ---------------------------------------------------------------------------
+// Base de custos da consultoria
+// ---------------------------------------------------------------------------
+
+export interface BaseDeCustos {
+  /** Custo direto de uma hora técnica (salários e encargos), sem custos fixos. */
+  horaTecnicaCentavos: number
+  /** Custos fixos do mês (aluguel, energia, internet, sistemas…). */
+  custosFixosMensaisCentavos: number
+  /** Horas que a equipe consegue faturar no mês. Zero = rateio ainda não configurado. */
+  horasFaturaveisMes: number
+}
+
+/**
+ * Custo fixo por hora faturável. `null` quando a base não está configurada: rateio pendente nunca
+ * é apresentado como zero.
+ */
+export function custoFixoPorHora(base: BaseDeCustos): number | null {
+  exigirCentavos(base.custosFixosMensaisCentavos)
+  if (!Number.isFinite(base.horasFaturaveisMes) || base.horasFaturaveisMes <= 0) return null
+  return Math.round(base.custosFixosMensaisCentavos / base.horasFaturaveisMes)
+}
+
+export interface CustoDoItem {
+  /** Horas × hora técnica + custos diretos do item (deslocamento, ART…). */
+  diretoCentavos: number
+  /** Horas × custo fixo por hora. `null` se o rateio está pendente. */
+  rateioCentavos: number | null
+  /** Direto + rateio. `null` se o rateio está pendente. */
+  totalCentavos: number | null
+}
+
+/** Custo interno de um item: cada custo entra uma única vez (direto ou rateado). */
+export function custoDoItem(
+  item: { horas: number; custoDiretoExtraCentavos: number },
+  base: BaseDeCustos,
+): CustoDoItem {
+  if (!Number.isFinite(item.horas) || item.horas < 0 || item.horas > HORAS_MAXIMAS_DO_ITEM) {
+    throw new ErroDeOrcamento('valor_invalido')
+  }
+  exigirCentavos(item.custoDiretoExtraCentavos)
+  exigirCentavos(base.horaTecnicaCentavos)
+  const diretoCentavos =
+    Math.round(item.horas * base.horaTecnicaCentavos) + item.custoDiretoExtraCentavos
+  const porHora = custoFixoPorHora(base)
+  const rateioCentavos = porHora === null ? null : Math.round(item.horas * porHora)
+  return {
+    diretoCentavos,
+    rateioCentavos,
+    totalCentavos: rateioCentavos === null ? null : diretoCentavos + rateioCentavos,
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Preço sugerido e resultado
+// ---------------------------------------------------------------------------
+
+export interface PercentuaisDoPreco {
+  /** Margem desejada sobre o preço de venda (não é acréscimo sobre o custo). */
+  margemPontosBase: number
+  /** Tributos sobre o faturamento, alíquota efetiva informada pela contabilidade. */
+  tributosPontosBase: number
+  /** Taxas de cobrança que são percentual do preço (cartão). Pix e boleto são fixas. */
+  taxasPontosBase: number
+}
+
+/**
+ * Preço = (custos + custos fixos por cobrança e assinatura) ÷ (1 − margem − tributos − taxas).
+ * Percentuais que somam 100% ou mais não têm preço possível.
+ */
+export function precoSugerido(
+  custoTotalCentavos: number,
+  custosFixosPorCobrancaCentavos: number,
+  percentuais: PercentuaisDoPreco,
+): number {
+  exigirCentavos(custoTotalCentavos)
+  exigirCentavos(custosFixosPorCobrancaCentavos)
+  exigirPontosBase(percentuais.margemPontosBase)
+  exigirPontosBase(percentuais.tributosPontosBase)
+  exigirPontosBase(percentuais.taxasPontosBase)
+  const soma =
+    percentuais.margemPontosBase + percentuais.tributosPontosBase + percentuais.taxasPontosBase
+  if (soma >= PONTOS_BASE_TOTAL) throw new ErroDeOrcamento('percentuais_invalidos')
+  const preco = Math.round(
+    ((custoTotalCentavos + custosFixosPorCobrancaCentavos) * PONTOS_BASE_TOTAL) /
+      (PONTOS_BASE_TOTAL - soma),
+  )
+  exigirCentavos(preco)
+  return preco
+}
+
+export interface ResultadoDoPreco {
+  tributosCentavos: number
+  taxasCentavos: number
+  /** Preço − custos − fixos por cobrança − tributos − taxas. Pode ser negativo. */
+  resultadoCentavos: number
+  /** Resultado ÷ preço. `null` com preço zero. */
+  margemPontosBase: number | null
+}
+
+/** O que sobra com o preço praticado, depois de tributos e taxas. */
+export function resultadoDoPreco(
+  precoCentavos: number,
+  custoTotalCentavos: number,
+  custosFixosPorCobrancaCentavos: number,
+  percentuais: Pick<PercentuaisDoPreco, 'tributosPontosBase' | 'taxasPontosBase'>,
+): ResultadoDoPreco {
+  exigirCentavos(custoTotalCentavos)
+  exigirCentavos(custosFixosPorCobrancaCentavos)
+  const tributosCentavos = aplicarPontosBase(precoCentavos, percentuais.tributosPontosBase)
+  const taxasCentavos = aplicarPontosBase(precoCentavos, percentuais.taxasPontosBase)
+  const resultadoCentavos =
+    precoCentavos -
+    custoTotalCentavos -
+    custosFixosPorCobrancaCentavos -
+    tributosCentavos -
+    taxasCentavos
+  return {
+    tributosCentavos,
+    taxasCentavos,
+    resultadoCentavos,
+    margemPontosBase:
+      precoCentavos === 0
+        ? null
+        : Math.round((resultadoCentavos * PONTOS_BASE_TOTAL) / precoCentavos),
+  }
+}
+
+/** Acréscimo sobre o custo que equivale a uma margem sobre o preço: m ÷ (1 − m). */
+export function acrescimoEquivalente(margemPontosBase: number): number {
+  exigirPontosBase(margemPontosBase)
+  if (margemPontosBase >= PONTOS_BASE_TOTAL) throw new ErroDeOrcamento('percentuais_invalidos')
+  return Math.round((margemPontosBase * PONTOS_BASE_TOTAL) / (PONTOS_BASE_TOTAL - margemPontosBase))
+}
+
+export type SituacaoDaMargem = 'pendente' | 'adequada' | 'abaixo_da_minima'
+
+/**
+ * A margem mínima trava pelo total do orçamento (decisão de 10/11/2026). Item abaixo dela é só
+ * aviso: use esta mesma função por item para decidir o aviso, nunca para bloquear o envio.
+ */
+export function situacaoDaMargem(
+  margemPontosBase: number | null,
+  minimaPontosBase: number,
+): SituacaoDaMargem {
+  exigirPontosBase(minimaPontosBase)
+  if (margemPontosBase === null) return 'pendente'
+  return margemPontosBase < minimaPontosBase ? 'abaixo_da_minima' : 'adequada'
+}
+
+// ---------------------------------------------------------------------------
+// Cronograma de pagamento (ORC-03)
+// ---------------------------------------------------------------------------
+
+/**
+ * Divide o total pelos pesos (percentuais ou qualquer proporção) com centavos por maior resto:
+ * a soma é sempre igual ao total, nenhuma parcela é negativa e, no empate, ganha a primeira.
+ */
+export function distribuirPorMaiorResto(totalCentavos: number, pesos: readonly number[]): number[] {
+  exigirCentavos(totalCentavos)
+  if (pesos.length === 0) throw new ErroDeOrcamento('sem_parcelas')
+  if (pesos.length > MAXIMO_PARCELAS) throw new ErroDeOrcamento('parcelas_demais')
+  if (pesos.some((peso) => !Number.isSafeInteger(peso) || peso < 0)) {
+    throw new ErroDeOrcamento('pesos_invalidos')
+  }
+  const somaDosPesos = pesos.reduce((soma, peso) => soma + peso, 0)
+  if (somaDosPesos <= 0) throw new ErroDeOrcamento('pesos_invalidos')
+
+  const partes = pesos.map((peso, indice) => {
+    const bruto = totalCentavos * peso
+    return { indice, valor: Math.floor(bruto / somaDosPesos), resto: bruto % somaDosPesos }
+  })
+  let faltam = totalCentavos - partes.reduce((soma, parte) => soma + parte.valor, 0)
+  const porResto = [...partes].sort((a, b) => b.resto - a.resto || a.indice - b.indice)
+  for (const parte of porResto) {
+    if (faltam <= 0) break
+    parte.valor += 1
+    faltam -= 1
+  }
+  return partes.map((parte) => parte.valor)
+}
+
+/** Os percentuais das parcelas fecham 100%? Devolve quanto falta (positivo) ou sobra (negativo). */
+export function diferencaDasParcelas(percentuaisPontosBase: readonly number[]): number {
+  return PONTOS_BASE_TOTAL - percentuaisPontosBase.reduce((soma, valor) => soma + valor, 0)
+}
+
+// ---------------------------------------------------------------------------
+// Apresentação
+// ---------------------------------------------------------------------------
+
+/** "ORC-2026-041": numeração por consultoria e ano (ORC-04). */
+export function numeroDoOrcamento(ano: number, sequencia: number): string {
+  return `ORC-${String(ano)}-${String(sequencia).padStart(3, '0')}`
+}
+
+/** 890000 → "8.900,00" (sem o símbolo, para colunas alinhadas). */
+export function formatarCentavos(centavos: number): string {
+  const negativo = centavos < 0
+  const absoluto = Math.abs(Math.trunc(centavos))
+  const inteiro = String(Math.floor(absoluto / 100)).replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+  const fracao = String(absoluto % 100).padStart(2, '0')
+  return `${negativo ? '−' : ''}${inteiro},${fracao}`
+}
+
+/** 890000 → "R$ 8.900,00". */
+export function formatarReais(centavos: number): string {
+  return `R$ ${formatarCentavos(centavos)}`
+}
+
+/** 2928 → "29,3%" (uma casa). */
+export function formatarPontosBase(pontosBase: number): string {
+  const decimos = Math.round(pontosBase / 10)
+  const negativo = decimos < 0
+  const absoluto = Math.abs(decimos)
+  return `${negativo ? '−' : ''}${String(Math.floor(absoluto / 10))},${String(absoluto % 10)}%`
+}
+
+/** "8.900,00", "8900" ou "R$ 8.900,5" → centavos. `null` se não for um valor em reais. */
+export function lerReais(texto: string): number | null {
+  const limpo = texto.replace(/[R$\s.]/g, '').replace(',', '.')
+  if (!/^\d+(\.\d{1,2})?$/.test(limpo)) return null
+  const [inteiro = '0', fracao = ''] = limpo.split('.')
+  const centavos = Number(inteiro) * 100 + Number(fracao.padEnd(2, '0'))
+  return Number.isSafeInteger(centavos) && centavos <= PRECO_MAXIMO_CENTAVOS ? centavos : null
+}

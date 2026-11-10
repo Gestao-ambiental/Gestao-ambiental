@@ -100,3 +100,32 @@ export type {
 } from './ocorrencia'
 export { TOTAL_PASSOS_CADASTRO, passoDoRascunho } from './progresso-cadastro'
 export type { EstadoDoRascunho } from './progresso-cadastro'
+
+export {
+  ErroDeOrcamento,
+  HORAS_MAXIMAS_DO_ITEM,
+  MAXIMO_PARCELAS,
+  PONTOS_BASE_TOTAL,
+  PRECO_MAXIMO_CENTAVOS,
+  acrescimoEquivalente,
+  aplicarPontosBase,
+  custoDoItem,
+  custoFixoPorHora,
+  diferencaDasParcelas,
+  distribuirPorMaiorResto,
+  formatarCentavos,
+  formatarPontosBase,
+  formatarReais,
+  lerReais,
+  numeroDoOrcamento,
+  precoSugerido,
+  resultadoDoPreco,
+  situacaoDaMargem,
+} from './orcamento'
+export type {
+  BaseDeCustos,
+  CustoDoItem,
+  PercentuaisDoPreco,
+  ResultadoDoPreco,
+  SituacaoDaMargem,
+} from './orcamento'
