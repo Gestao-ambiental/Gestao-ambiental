@@ -6,7 +6,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderizarApp, vinculoFalso } from '@/test/renderizar'
 import { falso, sessaoDe, type Cenario } from '@/test/supabase-falso'
 
-import { calcularOrcamento, lerHoras, lerPercentual, textoDoPercentual } from './calculo'
+import {
+  calcularOrcamento,
+  lerDias,
+  lerEstimativa,
+  lerHoras,
+  lerPercentual,
+  textoDoPercentual,
+} from './calculo'
 
 vi.mock('@/lib/supabase', () => import('@/test/supabase-falso'))
 
@@ -50,21 +57,24 @@ function orcamento(extra: Record<string, unknown> = {}) {
       {
         id: 'i1',
         descricao: 'Visita técnica e diagnóstico',
-        horas: 8,
+        minutos: 480,
+        preco_automatico: false,
         preco_centavos: 170_000,
         custo_direto_extra_centavos: 24_000,
       },
       {
         id: 'i2',
         descricao: 'RCA/PCA e PGRS',
-        horas: 24,
+        minutos: 1_440,
+        preco_automatico: false,
         preco_centavos: 510_000,
         custo_direto_extra_centavos: 26_000,
       },
       {
         id: 'i3',
         descricao: 'Protocolo e acompanhamento',
-        horas: 10,
+        minutos: 600,
+        preco_automatico: false,
         preco_centavos: 210_000,
         custo_direto_extra_centavos: 0,
       },
@@ -78,9 +88,9 @@ function orcamento(extra: Record<string, unknown> = {}) {
       },
     ],
     parcelas: [
-      { id: 'p1', descricao: '3 dias após a assinatura', percentual_pb: 4_000 },
-      { id: 'p2', descricao: '5 dias após o protocolo', percentual_pb: 3_000 },
-      { id: 'p3', descricao: 'Na emissão da licença', percentual_pb: 3_000 },
+      { id: 'p1', descricao: 'Assinatura do contrato', dias: 3, percentual_pb: 4_000 },
+      { id: 'p2', descricao: 'Protocolo no órgão', dias: 5, percentual_pb: 3_000 },
+      { id: 'p3', descricao: 'Emissão da licença', dias: 0, percentual_pb: 3_000 },
     ],
     ...extra,
   }
@@ -117,25 +127,28 @@ function cenario(papel: 'gestao' | 'equipe' = 'gestao', extra: Partial<Cenario> 
   }
 }
 
+const baseDoCalculo = {
+  horaTecnicaCentavos: 9_500,
+  custoFixoHoraCentavos: 3_000,
+  margemDesejadaPb: 3_000,
+  margemMinimaPb: 2_500,
+  tributosPb: 600,
+  taxasPb: 0,
+  taxaPorCobrancaCentavos: 199,
+  taxaPorAssinaturaCentavos: 400,
+}
+
+function manual(minutos: number, precoManualCentavos: number, custoDiretoExtraCentavos = 0) {
+  return { minutos, precoAutomatico: false, precoManualCentavos, custoDiretoExtraCentavos }
+}
+
 describe('cálculo da tela de orçamento', () => {
   it('reproduz o exemplo conferido: sugerido R$ 8.999,95 e margem 29,3%', () => {
     const calculo = calcularOrcamento(
-      [
-        { horas: 8, precoCentavos: 170_000, custoDiretoExtraCentavos: 24_000 },
-        { horas: 24, precoCentavos: 510_000, custoDiretoExtraCentavos: 26_000 },
-        { horas: 10, precoCentavos: 210_000, custoDiretoExtraCentavos: 0 },
-      ],
+      [manual(480, 170_000, 24_000), manual(1_440, 510_000, 26_000), manual(600, 210_000)],
+      [],
       [4_000, 3_000, 3_000],
-      {
-        horaTecnicaCentavos: 9_500,
-        custoFixoHoraCentavos: 3_000,
-        margemDesejadaPb: 3_000,
-        margemMinimaPb: 2_500,
-        tributosPb: 600,
-        taxasPb: 0,
-        taxaPorCobrancaCentavos: 199,
-        taxaPorAssinaturaCentavos: 400,
-      },
+      baseDoCalculo,
     )
     expect(calculo.custoTotalCentavos).toBe(575_000)
     expect(calculo.fixosPorCobrancaCentavos).toBe(997)
@@ -150,12 +163,31 @@ describe('cálculo da tela de orçamento', () => {
     expect(calculo.parcelasCentavos).toEqual([356_000, 267_000, 267_000])
   })
 
-  it('sem base de custos, o rateio fica pendente e não há preço sugerido', () => {
+  it('preço automático: 1h a R$ 195,31 atinge a margem desejada', () => {
     const calculo = calcularOrcamento(
-      [{ horas: 8, precoCentavos: 100_000, custoDiretoExtraCentavos: 0 }],
+      [{ minutos: 60, precoAutomatico: true, precoManualCentavos: 0, custoDiretoExtraCentavos: 0 }],
+      [],
       [10_000],
-      null,
+      baseDoCalculo,
     )
+    expect(calculo.itens[0]).toMatchObject({ precoCentavos: 19_531, margemPontosBase: 3_000 })
+    expect(calculo.precoPraticadoCentavos).toBe(19_531)
+  })
+
+  it('despesa incluída entra no custo; a cotar deixa custo e sugerido pendentes', () => {
+    const itens = [manual(480, 170_000, 24_000)]
+    const com = calcularOrcamento(itens, [26_000], [10_000], baseDoCalculo)
+    const sem = calcularOrcamento(itens, [], [10_000], baseDoCalculo)
+    expect(com.custoTotalCentavos).toBe((sem.custoTotalCentavos ?? 0) + 26_000)
+    const aCotar = calcularOrcamento(itens, [null], [10_000], baseDoCalculo)
+    expect(aCotar.despesaIncluidaACotar).toBe(true)
+    expect(aCotar.custoTotalCentavos).toBeNull()
+    expect(aCotar.precoSugeridoCentavos).toBeNull()
+    expect(aCotar.margemPontosBase).toBeNull()
+  })
+
+  it('sem base de custos, o rateio fica pendente e não há preço sugerido', () => {
+    const calculo = calcularOrcamento([manual(480, 100_000)], [], [10_000], null)
     expect(calculo.custoTotalCentavos).toBeNull()
     expect(calculo.precoSugeridoCentavos).toBeNull()
     expect(calculo.margemPontosBase).toBeNull()
@@ -163,16 +195,7 @@ describe('cálculo da tela de orçamento', () => {
   })
 
   it('sem itens não há preço sugerido, mesmo com taxas fixas', () => {
-    const calculo = calcularOrcamento([], [], {
-      horaTecnicaCentavos: 9_500,
-      custoFixoHoraCentavos: 3_000,
-      margemDesejadaPb: 3_000,
-      margemMinimaPb: 2_500,
-      tributosPb: 600,
-      taxasPb: 0,
-      taxaPorCobrancaCentavos: 199,
-      taxaPorAssinaturaCentavos: 400,
-    })
+    const calculo = calcularOrcamento([], [], [], baseDoCalculo)
     expect(calculo.precoSugeridoCentavos).toBeNull()
   })
 
@@ -184,6 +207,11 @@ describe('cálculo da tela de orçamento', () => {
     expect(lerPercentual('101')).toBeNull()
     expect(textoDoPercentual(3_333)).toBe('33,33')
     expect(textoDoPercentual(4_000)).toBe('40')
+    expect(lerDias('')).toBe(0)
+    expect(lerDias('366')).toBeNull()
+    expect(lerEstimativa('')).toBeNull()
+    expect(lerEstimativa('1.180,00')).toBe(118_000)
+    expect(lerEstimativa('abc')).toBeUndefined()
   })
 })
 
@@ -238,12 +266,82 @@ describe('orçamentos (onda 5)', () => {
       p_dados: {
         objeto: 'Licenciamento (LO)',
         parcelas: [
-          { id: 'p1', percentual_pb: 4_000 },
-          { id: 'p2', percentual_pb: 3_000 },
-          { id: 'p3', percentual_pb: 2_500 },
+          { id: 'p1', descricao: 'Assinatura do contrato', dias: 3, percentual_pb: 4_000 },
+          { id: 'p2', dias: 5, percentual_pb: 3_000 },
+          { id: 'p3', dias: 0, percentual_pb: 2_500 },
         ],
       },
     })
+  })
+
+  it('horas aceitam 1h30; digitar o preço vira manual e apagar volta ao automático', async () => {
+    const usuario = userEvent.setup()
+    renderizarApp('/orcamentos/o1')
+    await screen.findByRole('heading', { name: 'Indústria Horizonte' })
+    await usuario.click(screen.getByRole('button', { name: 'Adicionar item' }))
+    await usuario.type(screen.getByLabelText('Serviço do item 4'), 'Revisão técnica')
+    const horas = screen.getByLabelText('Horas do item 4')
+    await usuario.type(horas, '1:30')
+    await usuario.tab()
+    expect(horas).toHaveValue('1h30')
+    // 1h30 custa 142,50 + 45,00 de rateio = 187,50 ÷ 0,64 = 292,97, automático.
+    const preco = screen.getByLabelText('Preço do item 4')
+    expect(preco).toHaveValue('292,97')
+
+    await usuario.clear(preco)
+    await usuario.type(preco, '350')
+    expect(
+      screen.getByRole('button', { name: 'Usar preço automático no item 4' }),
+    ).toBeInTheDocument()
+    await usuario.clear(horas)
+    await usuario.type(horas, '2h')
+    expect(preco).toHaveValue('350,00')
+
+    await usuario.clear(preco)
+    await usuario.tab()
+    // 2h: 190 + 60 = 250 ÷ 0,64 = 390,63.
+    expect(preco).toHaveValue('390,63')
+
+    await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
+    const chamada = falso.cliente.rpc.mock.calls.find(([nome]) => nome === 'salvar_orcamento')
+    const dados = (chamada?.[1] as { p_dados: { itens: unknown[] } }).p_dados
+    expect(dados.itens[3]).toMatchObject({
+      descricao: 'Revisão técnica',
+      minutos: 120,
+      preco_automatico: true,
+    })
+    expect(dados.itens[0]).toMatchObject({ minutos: 480, preco_automatico: false })
+  })
+
+  it('horas fora do formato são marcadas e explicadas ao salvar', async () => {
+    const usuario = userEvent.setup()
+    renderizarApp('/orcamentos/o1')
+    const horas = await screen.findByLabelText('Horas do item 1')
+    await usuario.clear(horas)
+    await usuario.type(horas, '1h90')
+    expect(horas).toHaveAttribute('aria-invalid', 'true')
+    await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Use 1h30, 1:30 ou 1,5')
+  })
+
+  it('despesa incluída sem valor fica a cotar e deixa a margem pendente', async () => {
+    const usuario = userEvent.setup()
+    renderizarApp('/orcamentos/o1')
+    await screen.findByRole('heading', { name: 'Indústria Horizonte' })
+    await usuario.click(screen.getByRole('button', { name: 'Adicionar despesa' }))
+    await usuario.type(screen.getByLabelText('Despesa 2'), 'Análises laboratoriais')
+    await usuario.selectOptions(screen.getByLabelText('Como é paga a despesa 2'), 'incluida')
+    expect(screen.getByLabelText('Estimativa da despesa 2')).toHaveAttribute(
+      'placeholder',
+      'A cotar',
+    )
+    expect(screen.getByText(/Há despesa incluída no preço ainda a cotar/)).toBeInTheDocument()
+    expect(screen.queryByText('29,3%')).not.toBeInTheDocument()
+
+    await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
+    const chamada = falso.cliente.rpc.mock.calls.find(([nome]) => nome === 'salvar_orcamento')
+    const dados = (chamada?.[1] as { p_dados: { despesas: unknown[] } }).p_dados
+    expect(dados.despesas[1]).toMatchObject({ estimativa_centavos: null, tratamento: 'incluida' })
   })
 
   it('sem base de custos, avisa e não inventa preço sugerido', async () => {

@@ -1,9 +1,9 @@
 -- Orçamentos, fatia 1 (ORC-02, ORC-03, ORC-04): só a Gestão lê e escreve; numeração por
 -- consultoria e ano; rascunho salvo inteiro com controle otimista; base de custos copiada;
--- isolamento entre consultorias; FK composta.
+-- preço automático calculado no banco; despesa a cotar; isolamento entre consultorias; FK composta.
 begin;
 
-select plan(35);
+select plan(38);
 
 select testes.criar_dados_sinteticos();
 
@@ -133,21 +133,23 @@ select is(
     "objeto": "Licenciamento (LO)", "destinatario": " Marina Couto ", "validade_dias": 30,
     "premissas": ["Uma visita técnica", "  "], "exclusoes": ["EIA/RIMA"],
     "itens": [
-      {"id": "10000000-0000-4000-8000-000000000001", "descricao": "Visita técnica", "horas": 8,
+      {"id": "10000000-0000-4000-8000-000000000001", "descricao": "Visita técnica", "minutos": 480,
        "preco_centavos": 170000, "custo_direto_extra_centavos": 24000},
-      {"id": "10000000-0000-4000-8000-000000000002", "descricao": "RCA/PCA e PGRS", "horas": 24,
+      {"id": "10000000-0000-4000-8000-000000000002", "descricao": "RCA/PCA e PGRS", "minutos": 1440,
        "preco_centavos": 510000, "custo_direto_extra_centavos": 26000},
-      {"id": "10000000-0000-4000-8000-000000000003", "descricao": "Protocolo", "horas": 10,
+      {"id": "10000000-0000-4000-8000-000000000003", "descricao": "Protocolo", "minutos": 600,
        "preco_centavos": 210000, "custo_direto_extra_centavos": 0}
     ],
     "despesas": [
       {"id": "20000000-0000-4000-8000-000000000001", "descricao": "Taxa do órgão",
-       "estimativa_centavos": 341200, "tratamento": "cliente_direto"}
+       "estimativa_centavos": 341200, "tratamento": "cliente_direto"},
+      {"id": "20000000-0000-4000-8000-000000000002", "descricao": "Análises laboratoriais",
+       "estimativa_centavos": null, "tratamento": "incluida"}
     ],
     "parcelas": [
-      {"id": "30000000-0000-4000-8000-000000000001", "descricao": "Após a assinatura", "percentual_pb": 4000},
-      {"id": "30000000-0000-4000-8000-000000000002", "descricao": "Após o protocolo", "percentual_pb": 3000},
-      {"id": "30000000-0000-4000-8000-000000000003", "descricao": "Na licença", "percentual_pb": 3000}
+      {"id": "30000000-0000-4000-8000-000000000001", "descricao": "Assinatura do contrato", "dias": 3, "percentual_pb": 4000},
+      {"id": "30000000-0000-4000-8000-000000000002", "descricao": "Protocolo no órgão", "dias": 5, "percentual_pb": 3000},
+      {"id": "30000000-0000-4000-8000-000000000003", "descricao": "Emissão da licença", "percentual_pb": 3000}
     ]}$json$::jsonb),
   2,
   'salvar devolve a nova versão'
@@ -161,8 +163,17 @@ select results_eq(
            (select sum(percentual_pb) from public.orcamento_parcela where orcamento_id = o.id)
     from public.orcamento as o where o.id = 'f0000000-0000-4000-8000-000000000001'$$,
   $$values ('Marina Couto', array['Uma visita técnica'], 9500::bigint, 3000::bigint, 2500,
-            3::bigint, 1::bigint, 10000::bigint)$$,
+            3::bigint, 2::bigint, 10000::bigint)$$,
   'grava textos aparados, listas e a base de custos atual (custo fixo por hora = 9.600 ÷ 320)'
+);
+
+select results_eq(
+  $$select (select estimativa_centavos from public.orcamento_despesa
+            where id = '20000000-0000-4000-8000-000000000002'),
+           (select array_agg(dias order by ordem) from public.orcamento_parcela
+            where orcamento_id = 'f0000000-0000-4000-8000-000000000001')$$,
+  $$values (null::bigint, array[3, 5, 0])$$,
+  'despesa a cotar fica nula (nunca zero) e cada parcela guarda os dias após o marco'
 );
 
 select throws_ok(
@@ -177,9 +188,11 @@ select is(
     "objeto": "Licenciamento (LO)", "validade_dias": 45,
     "itens": [
       {"id": "10000000-0000-4000-8000-000000000003", "descricao": "Protocolo e acompanhamento",
-       "horas": 10, "preco_centavos": 210000},
-      {"id": "10000000-0000-4000-8000-000000000001", "descricao": "Visita técnica", "horas": 8,
-       "preco_centavos": 170000, "custo_direto_extra_centavos": 24000}
+       "minutos": 600, "preco_centavos": 210000},
+      {"id": "10000000-0000-4000-8000-000000000001", "descricao": "Visita técnica", "minutos": 480,
+       "preco_centavos": 170000, "custo_direto_extra_centavos": 24000},
+      {"id": "10000000-0000-4000-8000-000000000004", "descricao": "Revisão técnica", "minutos": 60,
+       "preco_automatico": true, "preco_centavos": 1}
     ]}$json$::jsonb),
   3,
   'salvar de novo com menos itens e outra ordem'
@@ -188,8 +201,16 @@ select is(
 select results_eq(
   $$select descricao, ordem from public.orcamento_item
     where orcamento_id = 'f0000000-0000-4000-8000-000000000001' order by ordem$$,
-  $$values ('Protocolo e acompanhamento', 1), ('Visita técnica', 2)$$,
+  $$values ('Protocolo e acompanhamento', 1), ('Visita técnica', 2), ('Revisão técnica', 3)$$,
   'o item que não veio sai, o que veio muda e a ordem é a da lista'
+);
+
+select results_eq(
+  $$select preco_automatico, preco_centavos from public.orcamento_item
+    where id in ('10000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000004')
+    order by ordem$$,
+  $$values (false, 170000::bigint), (true, 19531::bigint)$$,
+  'preço manual vale o digitado; o automático é calculado no banco: 1h custa 95 + 30 = 125 ÷ (1 − 30% − 6%) = 195,31'
 );
 
 select results_eq(
@@ -246,7 +267,7 @@ select results_eq(
   $$select sequencia, empreendimento_nome, total_centavos, total
     from public.listar_orcamentos('c0000000-0000-4000-8000-00000000000a', 'horizonte')
     order by sequencia$$,
-  $$values (1, 'Indústria Horizonte', 380000::bigint, 2::bigint),
+  $$values (1, 'Indústria Horizonte', 399531::bigint, 2::bigint),
            (2, 'Indústria Horizonte', 0::bigint, 2::bigint)$$,
   'a lista traz o total dos itens e o total de linhas'
 );
@@ -255,7 +276,7 @@ select results_eq(
   $$select (j ->> 'row_version')::integer, jsonb_array_length(j -> 'itens'),
            (j -> 'base' ->> 'custo_fixo_hora_centavos')::bigint, j -> 'itens' -> 0 ->> 'descricao'
     from public.obter_orcamento('f0000000-0000-4000-8000-000000000001') as j$$,
-  $$values (3, 2, 3000::bigint, 'Protocolo e acompanhamento')$$,
+  $$values (3, 3, 3000::bigint, 'Protocolo e acompanhamento')$$,
   'o detalhe traz cabeçalho, base e itens na ordem'
 );
 
@@ -309,6 +330,14 @@ select lives_ok(
   $$select public.criar_orcamento('f0000000-0000-4000-8000-0000000000b1', 'c0000000-0000-4000-8000-00000000000b',
       'e0000000-0000-4000-8000-0000000000f2', 'Outorga')$$,
   'a numeração de B é independente da de A'
+);
+
+select throws_ok(
+  $$select public.salvar_orcamento('f0000000-0000-4000-8000-0000000000b1', 1, '{"objeto": "Outorga",
+      "itens": [{"id": "10000000-0000-4000-8000-0000000000b1", "descricao": "Requerimento", "minutos": 120,
+                 "preco_automatico": true}]}'::jsonb)$$,
+  '22023', 'preco_automatico_sem_base',
+  'sem custos e taxas configurados não há preço automático (nunca vira zero)'
 );
 
 -- FK composta: item de B não aponta para orçamento de A, nem como dono da tabela

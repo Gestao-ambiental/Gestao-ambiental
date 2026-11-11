@@ -38,11 +38,14 @@ function texto(valor: Json | undefined): string {
 function textoOuNulo(valor: Json | undefined): string | null {
   return typeof valor === 'string' ? valor : null
 }
-function numero(valor: Json | undefined): number {
+function numeroOuNulo(valor: Json | undefined): number | null {
   if (typeof valor === 'number') return valor
   if (typeof valor === 'string' && valor.trim() !== '' && Number.isFinite(Number(valor)))
     return Number(valor)
-  return 0
+  return null
+}
+function numero(valor: Json | undefined): number {
+  return numeroOuNulo(valor) ?? 0
 }
 function lista(valor: Json | undefined): Objeto[] {
   if (!Array.isArray(valor)) return []
@@ -117,7 +120,10 @@ export async function listarOrcamentos(
 export interface ItemDoOrcamento {
   id: string
   descricao: string
-  horas: number
+  /** Duração estimada em minutos inteiros. */
+  minutos: number
+  /** Verdadeiro: o banco calcula o preço pelo custo e pela margem desejada a cada salvamento. */
+  precoAutomatico: boolean
   precoCentavos: number
   custoDiretoExtraCentavos: number
 }
@@ -125,13 +131,17 @@ export interface ItemDoOrcamento {
 export interface DespesaDoOrcamento {
   id: string
   descricao: string
-  estimativaCentavos: number
+  /** `null` = a cotar (nunca zero). */
+  estimativaCentavos: number | null
   tratamento: TratamentoDespesa
 }
 
 export interface ParcelaDoOrcamento {
   id: string
+  /** Marco que dispara a parcela (ex.: "Assinatura do contrato"). */
   descricao: string
+  /** Dias corridos após o marco. */
+  dias: number
   percentualPb: number
 }
 
@@ -207,19 +217,21 @@ export async function obterOrcamento(id: string): Promise<Orcamento | null> {
     itens: lista(o.itens).map((i) => ({
       id: texto(i.id),
       descricao: texto(i.descricao),
-      horas: numero(i.horas),
+      minutos: numero(i.minutos),
+      precoAutomatico: i.preco_automatico === true,
       precoCentavos: numero(i.preco_centavos),
       custoDiretoExtraCentavos: numero(i.custo_direto_extra_centavos),
     })),
     despesas: lista(o.despesas).map((d) => ({
       id: texto(d.id),
       descricao: texto(d.descricao),
-      estimativaCentavos: numero(d.estimativa_centavos),
+      estimativaCentavos: numeroOuNulo(d.estimativa_centavos),
       tratamento: tratamento(d.tratamento),
     })),
     parcelas: lista(o.parcelas).map((p) => ({
       id: texto(p.id),
       descricao: texto(p.descricao),
+      dias: numero(p.dias),
       percentualPb: numero(p.percentual_pb),
     })),
   }
@@ -277,7 +289,8 @@ export async function salvarOrcamento(
       itens: dados.itens.map((i) => ({
         id: i.id,
         descricao: i.descricao,
-        horas: i.horas,
+        minutos: i.minutos,
+        preco_automatico: i.precoAutomatico,
         preco_centavos: i.precoCentavos,
         custo_direto_extra_centavos: i.custoDiretoExtraCentavos,
       })),
@@ -290,6 +303,7 @@ export async function salvarOrcamento(
       parcelas: dados.parcelas.map((p) => ({
         id: p.id,
         descricao: p.descricao,
+        dias: p.dias,
         percentual_pb: p.percentualPb,
       })),
     },

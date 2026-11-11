@@ -1,5 +1,5 @@
-// Liga o rascunho da tela às regras de preço do domínio. Só apresentação: os números gravados
-// são os que a pessoa digitou; o banco confere limites e permissões.
+// Liga o rascunho da tela às regras de preço do domínio. Só apresentação: o banco confere limites e
+// permissões e grava o preço automático com a mesma regra (private.preco_automatico_do_item).
 
 import {
   aplicarPontosBase,
@@ -7,6 +7,7 @@ import {
   distribuirPorMaiorResto,
   diferencaDasParcelas,
   lerReais,
+  precoAutomaticoDoItem,
   precoSugerido,
   resultadoDoPreco,
   situacaoDaMargem,
@@ -32,6 +33,15 @@ export function lerPercentual(texto: string): number | null {
   return pontos <= 10_000 ? pontos : null
 }
 
+/** Dias após o marco: inteiro de 0 a 365; vazio é zero. */
+export function lerDias(texto: string): number | null {
+  const limpo = texto.trim()
+  if (limpo === '') return 0
+  if (!/^\d{1,3}$/.test(limpo)) return null
+  const dias = Number(limpo)
+  return dias <= 365 ? dias : null
+}
+
 /** 4000 → "40"; 3333 → "33,33". */
 export function textoDoPercentual(pontosBase: number): string {
   const inteiro = Math.floor(pontosBase / 100)
@@ -49,25 +59,39 @@ export function lerReaisOuZero(texto: string): number | null {
   return texto.trim() === '' ? 0 : lerReais(texto)
 }
 
+/** Estimativa de despesa: vazio é "a cotar" (`null`), nunca zero. `undefined` = valor inválido. */
+export function lerEstimativa(texto: string): number | null | undefined {
+  if (texto.trim() === '') return null
+  return lerReais(texto) ?? undefined
+}
+
 export interface LinhaParaCalculo {
-  horas: number
-  precoCentavos: number
+  minutos: number
+  /** Verdadeiro: o preço sai do custo do item e da margem desejada. */
+  precoAutomatico: boolean
+  /** Preço digitado; só vale quando o preço é manual. */
+  precoManualCentavos: number
   custoDiretoExtraCentavos: number
 }
 
 export interface CalculoDoItem {
   /** Custo interno (direto + rateio). `null` com rateio pendente. */
   custoCentavos: number | null
+  /** Preço do item. `null` quando é automático e não há base de custos. */
+  precoCentavos: number | null
   margemPontosBase: number | null
   situacao: SituacaoDaMargem
 }
 
 export interface CalculoDoOrcamento {
   itens: CalculoDoItem[]
+  /** Custo dos itens + despesas incluídas no preço. `null` com rateio ou despesa a cotar pendentes. */
   custoTotalCentavos: number | null
+  /** Há despesa incluída no preço ainda a cotar. */
+  despesaIncluidaACotar: boolean
   fixosPorCobrancaCentavos: number
   precoPraticadoCentavos: number
-  /** `null` com rateio pendente ou percentuais impossíveis. */
+  /** `null` com custo pendente ou percentuais impossíveis. */
   precoSugeridoCentavos: number | null
   margemPontosBase: number | null
   situacaoDaMargem: SituacaoDaMargem
@@ -80,9 +104,12 @@ export interface CalculoDoOrcamento {
 /**
  * O custo fixo por hora já vem calculado na base do orçamento: a conta do domínio recebe esse
  * valor como custo do mês de uma hora, o que dá o mesmo resultado.
+ *
+ * `despesasIncluidasCentavos`: estimativas das despesas incluídas no preço (`null` = a cotar).
  */
 export function calcularOrcamento(
   linhas: readonly LinhaParaCalculo[],
+  despesasIncluidasCentavos: readonly (number | null)[],
   percentuaisDasParcelas: readonly number[],
   base: BaseDoOrcamento | null,
 ): CalculoDoOrcamento {
@@ -100,27 +127,53 @@ export function calcularOrcamento(
   const minima = base?.margemMinimaPb ?? 0
 
   const itens = linhas.map((linha): CalculoDoItem => {
-    if (!baseDeCustos) return { custoCentavos: null, margemPontosBase: null, situacao: 'pendente' }
-    const custo = custoDoItem(
-      { horas: linha.horas, custoDiretoExtraCentavos: linha.custoDiretoExtraCentavos },
-      baseDeCustos,
-    ).totalCentavos
-    if (custo === null) return { custoCentavos: null, margemPontosBase: null, situacao: 'pendente' }
-    const margem = resultadoDoPreco(linha.precoCentavos, custo, 0, percentuais).margemPontosBase
+    const custo = baseDeCustos
+      ? custoDoItem(
+          { minutos: linha.minutos, custoDiretoExtraCentavos: linha.custoDiretoExtraCentavos },
+          baseDeCustos,
+        ).totalCentavos
+      : null
+    let preco: number | null = linha.precoManualCentavos
+    if (linha.precoAutomatico) {
+      preco = null
+      if (base && custo !== null) {
+        try {
+          preco = precoAutomaticoDoItem(custo, {
+            margemPontosBase: base.margemDesejadaPb,
+            ...percentuais,
+          })
+        } catch {
+          preco = null
+        }
+      }
+    }
+    if (custo === null || preco === null) {
+      return {
+        custoCentavos: custo,
+        precoCentavos: preco,
+        margemPontosBase: null,
+        situacao: 'pendente',
+      }
+    }
+    const margem = resultadoDoPreco(preco, custo, 0, percentuais).margemPontosBase
     return {
       custoCentavos: custo,
+      precoCentavos: preco,
       margemPontosBase: margem,
       situacao: situacaoDaMargem(margem, minima),
     }
   })
 
-  const custoTotalCentavos = itens.every((item) => item.custoCentavos !== null)
-    ? itens.reduce((soma, item) => soma + (item.custoCentavos ?? 0), 0)
-    : null
+  const despesaIncluidaACotar = despesasIncluidasCentavos.some((valor) => valor === null)
+  const custoTotalCentavos =
+    itens.every((item) => item.custoCentavos !== null) && !despesaIncluidaACotar
+      ? itens.reduce((soma, item) => soma + (item.custoCentavos ?? 0), 0) +
+        despesasIncluidasCentavos.reduce<number>((soma, valor) => soma + (valor ?? 0), 0)
+      : null
   const fixosPorCobrancaCentavos = base
     ? percentuaisDasParcelas.length * base.taxaPorCobrancaCentavos + base.taxaPorAssinaturaCentavos
     : 0
-  const precoPraticadoCentavos = linhas.reduce((soma, linha) => soma + linha.precoCentavos, 0)
+  const precoPraticadoCentavos = itens.reduce((soma, item) => soma + (item.precoCentavos ?? 0), 0)
 
   let precoSugeridoCentavos: number | null = null
   // Sem itens não há o que precificar: só as taxas fixas não viram "preço sugerido".
@@ -158,6 +211,7 @@ export function calcularOrcamento(
   return {
     itens,
     custoTotalCentavos,
+    despesaIncluidaACotar,
     fixosPorCobrancaCentavos,
     precoPraticadoCentavos,
     precoSugeridoCentavos,

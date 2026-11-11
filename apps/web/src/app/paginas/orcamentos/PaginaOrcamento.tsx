@@ -1,7 +1,9 @@
 import {
   formatarCentavos,
+  formatarDuracao,
   formatarPontosBase,
   formatarReais,
+  lerDuracao,
   lerReais,
 } from '@gestao-ambiental/domain'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -26,13 +28,16 @@ import { mensagemDoErro } from '@/lib/erros'
 
 import {
   calcularOrcamento,
-  lerHoras,
+  lerDias,
+  lerEstimativa,
   lerPercentual,
   lerReaisOuZero,
-  textoDasHoras,
   textoDoPercentual,
 } from './calculo'
 import { classeCabecalho, classeCampo, classeCelula, numeroComRevisao } from './comum'
+
+/** Texto longo quebra linha e o campo cresce com ele (Chromium e Safari; nos demais, rola). */
+const classeTextoQueCresce = `${classeCampo} h-auto min-h-(--size-control) resize-none py-(--space-075) [field-sizing:content]`
 import { SeloSituacaoOrcamento } from './SeloSituacaoOrcamento'
 
 // ---------------------------------------------------------------------------
@@ -42,8 +47,11 @@ import { SeloSituacaoOrcamento } from './SeloSituacaoOrcamento'
 interface LinhaItem {
   id: string
   descricao: string
+  /** Duração digitada: "1h30", "1:30", "1,5" ou "90min". */
   horas: string
   extra: string
+  /** Preço automático: sai do custo e da margem desejada. Manual: vale `preco`. */
+  automatico: boolean
   preco: string
 }
 interface LinhaDespesa {
@@ -55,6 +63,7 @@ interface LinhaDespesa {
 interface LinhaParcela {
   id: string
   descricao: string
+  dias: string
   percentual: string
 }
 interface Rascunho {
@@ -80,19 +89,21 @@ function rascunhoDe(o: Orcamento): Rascunho {
     itens: o.itens.map((i) => ({
       id: i.id,
       descricao: i.descricao,
-      horas: textoDasHoras(i.horas),
+      horas: i.minutos ? formatarDuracao(i.minutos) : '',
       extra: i.custoDiretoExtraCentavos ? formatarCentavos(i.custoDiretoExtraCentavos) : '',
-      preco: formatarCentavos(i.precoCentavos),
+      automatico: i.precoAutomatico,
+      preco: i.precoAutomatico ? '' : formatarCentavos(i.precoCentavos),
     })),
     despesas: o.despesas.map((d) => ({
       id: d.id,
       descricao: d.descricao,
-      estimativa: formatarCentavos(d.estimativaCentavos),
+      estimativa: d.estimativaCentavos === null ? '' : formatarCentavos(d.estimativaCentavos),
       tratamento: d.tratamento,
     })),
     parcelas: o.parcelas.map((p) => ({
       id: p.id,
       descricao: p.descricao,
+      dias: String(p.dias),
       percentual: textoDoPercentual(p.percentualPb),
     })),
   }
@@ -105,33 +116,39 @@ function linhasDeTexto(texto: string): string[] {
     .filter(Boolean)
 }
 
-/** Converte o rascunho para o formato da RPC. Devolve a primeira mensagem de erro, se houver. */
-function paraSalvar(r: Rascunho): DadosDoRascunho | string {
+/**
+ * Converte o rascunho para o formato da RPC. Devolve a primeira mensagem de erro, se houver.
+ * Preço manual apagado volta ao automático quando há base de custos (nunca vira zero sem querer).
+ */
+function paraSalvar(r: Rascunho, temBase: boolean): DadosDoRascunho | string {
   if (!r.objeto.trim()) return 'Diga o que está sendo orçado.'
   const validade = Number(r.validade)
   if (!Number.isInteger(validade) || validade < 1 || validade > 365)
     return 'Validade: um número de 1 a 365 dias.'
   const itens: DadosDoRascunho['itens'] = []
   for (const [indice, i] of r.itens.entries()) {
-    const horas = lerHoras(i.horas)
-    const preco = lerReaisOuZero(i.preco)
+    const minutos = lerDuracao(i.horas)
+    const automatico = i.automatico || (temBase && i.preco.trim() === '')
+    const preco = automatico ? 0 : lerReaisOuZero(i.preco)
     const extra = lerReaisOuZero(i.extra)
     if (!i.descricao.trim()) return `Item ${String(indice + 1)}: informe o serviço.`
-    if (horas === null) return `Item ${String(indice + 1)}: horas inválidas.`
+    if (minutos === null)
+      return `Item ${String(indice + 1)}: horas inválidas. Use 1h30, 1:30 ou 1,5.`
     if (preco === null || extra === null) return `Item ${String(indice + 1)}: valor inválido.`
     itens.push({
       id: i.id,
       descricao: i.descricao,
-      horas,
+      minutos,
+      precoAutomatico: automatico,
       precoCentavos: preco,
       custoDiretoExtraCentavos: extra,
     })
   }
   const despesas: DadosDoRascunho['despesas'] = []
   for (const [indice, d] of r.despesas.entries()) {
-    const estimativa = lerReaisOuZero(d.estimativa)
+    const estimativa = lerEstimativa(d.estimativa)
     if (!d.descricao.trim()) return `Despesa ${String(indice + 1)}: informe a despesa.`
-    if (estimativa === null) return `Despesa ${String(indice + 1)}: valor inválido.`
+    if (estimativa === undefined) return `Despesa ${String(indice + 1)}: valor inválido.`
     despesas.push({
       id: d.id,
       descricao: d.descricao,
@@ -142,9 +159,11 @@ function paraSalvar(r: Rascunho): DadosDoRascunho | string {
   const parcelas: DadosDoRascunho['parcelas'] = []
   for (const [indice, p] of r.parcelas.entries()) {
     const percentual = lerPercentual(p.percentual)
-    if (!p.descricao.trim()) return `Parcela ${String(indice + 1)}: diga quando vence.`
+    const dias = lerDias(p.dias)
+    if (!p.descricao.trim()) return `Parcela ${String(indice + 1)}: informe o marco.`
+    if (dias === null) return `Parcela ${String(indice + 1)}: dias após o marco, de 0 a 365.`
     if (percentual === null) return `Parcela ${String(indice + 1)}: percentual de 0 a 100.`
-    parcelas.push({ id: p.id, descricao: p.descricao, percentualPb: percentual })
+    parcelas.push({ id: p.id, descricao: p.descricao, dias, percentualPb: percentual })
   }
   return {
     objeto: r.objeto,
@@ -231,16 +250,27 @@ function Editor({ orcamento }: { orcamento: Orcamento }) {
 
   const calculo = useMemo(() => {
     const linhas = r.itens.map((i) => ({
-      horas: lerHoras(i.horas) ?? 0,
-      precoCentavos: lerReaisOuZero(i.preco) ?? 0,
+      minutos: lerDuracao(i.horas) ?? 0,
+      precoAutomatico: i.automatico,
+      precoManualCentavos: lerReaisOuZero(i.preco) ?? 0,
       custoDiretoExtraCentavos: lerReaisOuZero(i.extra) ?? 0,
     }))
+    const incluidas = r.despesas
+      .filter((d) => d.tratamento === 'incluida')
+      .map((d) => {
+        const valor = lerEstimativa(d.estimativa)
+        return valor === undefined ? 0 : valor
+      })
     const percentuais = r.parcelas.map((p) => lerPercentual(p.percentual) ?? 0)
-    return calcularOrcamento(linhas, percentuais, orcamento.base)
-  }, [r.itens, r.parcelas, orcamento.base])
+    return calcularOrcamento(linhas, incluidas, percentuais, orcamento.base)
+  }, [r.itens, r.despesas, r.parcelas, orcamento.base])
+
+  function mudarItem(id: string, alterar: (item: LinhaItem) => LinhaItem) {
+    mudar((a) => ({ ...a, itens: a.itens.map((x) => (x.id === id ? alterar(x) : x)) }))
+  }
 
   async function salvar() {
-    const dados = paraSalvar(r)
+    const dados = paraSalvar(r, orcamento.base !== null)
     if (typeof dados === 'string') {
       setFalha(dados)
       return
@@ -343,6 +373,14 @@ function Editor({ orcamento }: { orcamento: Orcamento }) {
             </MensagemSecao>
           </div>
         ) : null}
+        {calculo.despesaIncluidaACotar ? (
+          <div className="border-b p-(--space-200)">
+            <MensagemSecao tom="atencao">
+              Há despesa incluída no preço ainda a cotar: custo, margem e preço sugerido ficam
+              pendentes até ela ter valor.
+            </MensagemSecao>
+          </div>
+        ) : null}
         {calculo.situacaoDaMargem === 'abaixo_da_minima' ? (
           <div className="border-b p-(--space-200)">
             <MensagemSecao role="status" tom="perigo">
@@ -353,7 +391,8 @@ function Editor({ orcamento }: { orcamento: Orcamento }) {
 
         {/* Itens */}
         <Secao titulo="Itens">
-          <div className="overflow-x-auto">
+          {/* relative: textos sr-only (absolutos) ficam presos à área que rola, não à página. */}
+          <div className="relative overflow-x-auto">
             <table className="w-full min-w-[720px] border-collapse corpo">
               <thead>
                 <tr>
@@ -393,35 +432,28 @@ function Editor({ orcamento }: { orcamento: Orcamento }) {
                   return (
                     <tr key={item.id}>
                       <td className={classeCelula}>
-                        <input
+                        <textarea
                           aria-label={`Serviço do item ${n}`}
-                          className={classeCampo}
+                          rows={1}
+                          className={classeTextoQueCresce}
                           value={item.descricao}
                           disabled={!editavel}
                           onChange={(e) => {
                             const valor = e.target.value
-                            mudar((a) => ({
-                              ...a,
-                              itens: a.itens.map((x) =>
-                                x.id === item.id ? { ...x, descricao: valor } : x,
-                              ),
-                            }))
+                            mudarItem(item.id, (x) => ({ ...x, descricao: valor }))
                           }}
                         />
                       </td>
                       <td className={classeCelula}>
                         <CampoNumero
                           rotulo={`Horas do item ${n}`}
+                          duracao
                           valor={item.horas}
-                          invalido={lerHoras(item.horas) === null}
+                          placeholder="1h30"
+                          invalido={lerDuracao(item.horas) === null}
                           desabilitado={!editavel}
                           aoMudar={(valor) => {
-                            mudar((a) => ({
-                              ...a,
-                              itens: a.itens.map((x) =>
-                                x.id === item.id ? { ...x, horas: valor } : x,
-                              ),
-                            }))
+                            mudarItem(item.id, (x) => ({ ...x, horas: valor }))
                           }}
                         />
                       </td>
@@ -433,31 +465,53 @@ function Editor({ orcamento }: { orcamento: Orcamento }) {
                           invalido={lerReaisOuZero(item.extra) === null}
                           desabilitado={!editavel}
                           aoMudar={(valor) => {
-                            mudar((a) => ({
-                              ...a,
-                              itens: a.itens.map((x) =>
-                                x.id === item.id ? { ...x, extra: valor } : x,
-                              ),
-                            }))
+                            mudarItem(item.id, (x) => ({ ...x, extra: valor }))
                           }}
                         />
                       </td>
-                      <td className={classeCelula}>
+                      <td className={`${classeCelula} py-(--space-050)`}>
                         <CampoNumero
                           rotulo={`Preço do item ${n}`}
                           reais
-                          valor={item.preco}
-                          invalido={lerReaisOuZero(item.preco) === null}
+                          valor={
+                            item.automatico
+                              ? c?.precoCentavos === null || c === undefined
+                                ? ''
+                                : formatarCentavos(c.precoCentavos)
+                              : item.preco
+                          }
+                          placeholder={item.automatico ? 'pendente' : undefined}
+                          invalido={!item.automatico && lerReaisOuZero(item.preco) === null}
                           desabilitado={!editavel}
                           aoMudar={(valor) => {
-                            mudar((a) => ({
-                              ...a,
-                              itens: a.itens.map((x) =>
-                                x.id === item.id ? { ...x, preco: valor } : x,
-                              ),
-                            }))
+                            // Digitar no preço passa o item para preço manual.
+                            mudarItem(item.id, (x) => ({ ...x, automatico: false, preco: valor }))
+                          }}
+                          aoSair={() => {
+                            // Preço manual apagado volta ao automático, nunca vira zero.
+                            if (!item.automatico && item.preco.trim() === '' && orcamento.base) {
+                              mudarItem(item.id, (x) => ({ ...x, automatico: true }))
+                            }
                           }}
                         />
+                        <span className="mt-(--space-025) flex justify-end text-xs text-(--text-subtle)">
+                          {item.automatico ? (
+                            'Automático'
+                          ) : editavel && orcamento.base ? (
+                            <button
+                              type="button"
+                              className="underline underline-offset-2 hover:text-(--text)"
+                              aria-label={`Usar preço automático no item ${n}`}
+                              onClick={() => {
+                                mudarItem(item.id, (x) => ({ ...x, automatico: true, preco: '' }))
+                              }}
+                            >
+                              Usar automático
+                            </button>
+                          ) : (
+                            'Manual'
+                          )}
+                        </span>
                       </td>
                       <td className={`${classeCelula} text-right tabular-nums`}>
                         {c?.margemPontosBase === null || c === undefined ? (
@@ -507,7 +561,14 @@ function Editor({ orcamento }: { orcamento: Orcamento }) {
                     ...a,
                     itens: [
                       ...a.itens,
-                      { id: crypto.randomUUID(), descricao: '', horas: '', extra: '', preco: '' },
+                      {
+                        id: crypto.randomUUID(),
+                        descricao: '',
+                        horas: '',
+                        extra: '',
+                        automatico: orcamento.base !== null,
+                        preco: '',
+                      },
                     ],
                   }))
                 }}
@@ -528,7 +589,8 @@ function Editor({ orcamento }: { orcamento: Orcamento }) {
 
         {/* Despesas de terceiros */}
         <Secao titulo="Despesas de terceiros">
-          <div className="overflow-x-auto">
+          {/* relative: textos sr-only (absolutos) ficam presos à área que rola, não à página. */}
+          <div className="relative overflow-x-auto">
             <table className="w-full min-w-[600px] border-collapse corpo">
               <thead>
                 <tr>
@@ -561,9 +623,10 @@ function Editor({ orcamento }: { orcamento: Orcamento }) {
                   return (
                     <tr key={d.id}>
                       <td className={classeCelula}>
-                        <input
+                        <textarea
                           aria-label={`Despesa ${n}`}
-                          className={classeCampo}
+                          rows={1}
+                          className={classeTextoQueCresce}
                           value={d.descricao}
                           disabled={!editavel}
                           onChange={(e) => {
@@ -605,7 +668,8 @@ function Editor({ orcamento }: { orcamento: Orcamento }) {
                           rotulo={`Estimativa da despesa ${n}`}
                           reais
                           valor={d.estimativa}
-                          invalido={lerReaisOuZero(d.estimativa) === null}
+                          placeholder="A cotar"
+                          invalido={lerEstimativa(d.estimativa) === undefined}
                           desabilitado={!editavel}
                           aoMudar={(valor) => {
                             mudar((a) => ({
@@ -638,7 +702,7 @@ function Editor({ orcamento }: { orcamento: Orcamento }) {
             </table>
           </div>
           {editavel ? (
-            <div className="px-(--space-150) py-(--space-100)">
+            <div className="flex flex-wrap items-center justify-between gap-(--space-100) px-(--space-150) py-(--space-100)">
               <Botao
                 aparencia="link"
                 iconeAntes="plus"
@@ -659,18 +723,25 @@ function Editor({ orcamento }: { orcamento: Orcamento }) {
               >
                 Adicionar despesa
               </Botao>
+              <p className="text-xs text-(--text-subtle)">
+                Sem valor ainda? Deixe a estimativa em branco: ela fica a cotar.
+              </p>
             </div>
           ) : null}
         </Secao>
 
         {/* Parcelas */}
         <Secao titulo="Parcelas">
-          <div className="overflow-x-auto">
+          {/* relative: textos sr-only (absolutos) ficam presos à área que rola, não à página. */}
+          <div className="relative overflow-x-auto">
             <table className="w-full min-w-[600px] border-collapse corpo">
               <thead>
                 <tr>
                   <th scope="col" className={classeCabecalho}>
-                    Quando vence
+                    Marco
+                  </th>
+                  <th scope="col" className={`${classeCabecalho} w-28 text-right`}>
+                    Dias após
                   </th>
                   <th scope="col" className={`${classeCabecalho} w-24 text-right`}>
                     %
@@ -688,7 +759,7 @@ function Editor({ orcamento }: { orcamento: Orcamento }) {
               <tbody>
                 {r.parcelas.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className={`${classeCelula} text-(--text-subtle)`}>
+                    <td colSpan={5} className={`${classeCelula} text-(--text-subtle)`}>
                       Nenhuma parcela. Adicione ao menos uma antes de enviar.
                     </td>
                   </tr>
@@ -700,8 +771,8 @@ function Editor({ orcamento }: { orcamento: Orcamento }) {
                     <tr key={p.id}>
                       <td className={classeCelula}>
                         <input
-                          aria-label={`Quando vence a parcela ${n}`}
-                          placeholder="Ex.: 3 dias após a assinatura do contrato"
+                          aria-label={`Marco da parcela ${n}`}
+                          placeholder="Ex.: Assinatura do contrato"
                           className={classeCampo}
                           value={p.descricao}
                           disabled={!editavel}
@@ -711,6 +782,23 @@ function Editor({ orcamento }: { orcamento: Orcamento }) {
                               ...a,
                               parcelas: a.parcelas.map((x) =>
                                 x.id === p.id ? { ...x, descricao: texto } : x,
+                              ),
+                            }))
+                          }}
+                        />
+                      </td>
+                      <td className={classeCelula}>
+                        <CampoNumero
+                          rotulo={`Dias após o marco da parcela ${n}`}
+                          valor={p.dias}
+                          placeholder="0"
+                          invalido={lerDias(p.dias) === null}
+                          desabilitado={!editavel}
+                          aoMudar={(texto) => {
+                            mudar((a) => ({
+                              ...a,
+                              parcelas: a.parcelas.map((x) =>
+                                x.id === p.id ? { ...x, dias: texto } : x,
                               ),
                             }))
                           }}
@@ -765,7 +853,7 @@ function Editor({ orcamento }: { orcamento: Orcamento }) {
                     ...a,
                     parcelas: [
                       ...a.parcelas,
-                      { id: crypto.randomUUID(), descricao: '', percentual: '' },
+                      { id: crypto.randomUUID(), descricao: '', dias: '', percentual: '' },
                     ],
                   }))
                 }}
@@ -869,7 +957,7 @@ function Editor({ orcamento }: { orcamento: Orcamento }) {
           >
             <dl className="grid max-w-xl grid-cols-[1fr_auto] gap-x-(--space-200) gap-y-(--space-075) corpo">
               <dt className="text-(--text-subtle)">
-                Custo dos itens (horas, outros custos e rateio)
+                Custo dos itens (horas, outros custos e rateio) e despesas incluídas
               </dt>
               <dd className="text-right tabular-nums">
                 {calculo.custoTotalCentavos === null
@@ -898,6 +986,10 @@ function Editor({ orcamento }: { orcamento: Orcamento }) {
                 {formatarCentavos(orcamento.base.custoFixoHoraCentavos)}
               </dd>
             </dl>
+            <p className="mt-(--space-150) max-w-xl text-xs text-(--text-subtle)">
+              Item com preço automático: custo do item ÷ (1 − margem desejada − tributos − taxas).
+              As taxas fixas por cobrança e assinatura entram só no preço sugerido do total.
+            </p>
           </Recolhido>
         ) : null}
       </div>
@@ -964,33 +1056,48 @@ function CampoNumero({
   valor,
   invalido,
   desabilitado,
+  placeholder,
   reais = false,
+  duracao = false,
   aoMudar,
+  aoSair,
 }: {
   rotulo: string
   valor: string
   invalido: boolean
   desabilitado: boolean
+  placeholder?: string
   /** Valor em reais: ao sair do campo, formata como "8.900,00". */
   reais?: boolean
+  /** Duração: ao sair do campo, formata como "1h30". */
+  duracao?: boolean
   aoMudar: (valor: string) => void
+  aoSair?: () => void
 }) {
   return (
     <input
       aria-label={rotulo}
-      inputMode="decimal"
+      inputMode={duracao ? 'text' : 'decimal'}
       aria-invalid={invalido || undefined}
       className={`${classeCampo} text-right tabular-nums`}
       value={valor}
+      placeholder={placeholder}
       disabled={desabilitado}
       onChange={(e) => {
         aoMudar(e.target.value)
       }}
       onBlur={() => {
-        // Reais digitados ficam no formato da tela ao sair do campo.
-        if (!reais) return
-        const centavos = lerReais(valor)
-        if (centavos !== null) aoMudar(formatarCentavos(centavos))
+        // Valores digitados ficam no formato da tela ao sair do campo. Só muda se ficou diferente.
+        let formatado: string | null = null
+        if (reais) {
+          const centavos = lerReais(valor)
+          if (centavos !== null) formatado = formatarCentavos(centavos)
+        } else if (duracao && valor.trim() !== '') {
+          const minutos = lerDuracao(valor)
+          if (minutos !== null) formatado = formatarDuracao(minutos)
+        }
+        if (formatado !== null && formatado !== valor) aoMudar(formatado)
+        aoSair?.()
       }}
     />
   )

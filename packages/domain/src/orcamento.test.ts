@@ -10,10 +10,13 @@ import {
   diferencaDasParcelas,
   distribuirPorMaiorResto,
   formatarCentavos,
+  formatarDuracao,
   formatarPontosBase,
   formatarReais,
+  lerDuracao,
   lerReais,
   numeroDoOrcamento,
+  precoAutomaticoDoItem,
   precoSugerido,
   resultadoDoPreco,
   situacaoDaMargem,
@@ -37,7 +40,7 @@ describe('base de custos', () => {
   it('sem horas faturáveis o rateio fica pendente, nunca zero', () => {
     expect(custoFixoPorHora({ ...base, horasFaturaveisMes: 0 })).toBeNull()
     const custo = custoDoItem(
-      { horas: 8, custoDiretoExtraCentavos: 0 },
+      { minutos: 480, custoDiretoExtraCentavos: 0 },
       { ...base, horasFaturaveisMes: 0 },
     )
     expect(custo.diretoCentavos).toBe(76_000)
@@ -46,28 +49,99 @@ describe('base de custos', () => {
   })
 
   it('custo do item soma horas, custos diretos e rateio, cada um uma vez', () => {
-    expect(custoDoItem({ horas: 8, custoDiretoExtraCentavos: 24_000 }, base)).toEqual({
+    expect(custoDoItem({ minutos: 480, custoDiretoExtraCentavos: 24_000 }, base)).toEqual({
       diretoCentavos: 100_000,
       rateioCentavos: 24_000,
       totalCentavos: 124_000,
     })
-    expect(custoDoItem({ horas: 24, custoDiretoExtraCentavos: 26_000 }, base)).toEqual({
+    expect(custoDoItem({ minutos: 1_440, custoDiretoExtraCentavos: 26_000 }, base)).toEqual({
       diretoCentavos: 254_000,
       rateioCentavos: 72_000,
       totalCentavos: 326_000,
     })
-    expect(custoDoItem({ horas: 10, custoDiretoExtraCentavos: 0 }, base).totalCentavos).toBe(
+    expect(custoDoItem({ minutos: 600, custoDiretoExtraCentavos: 0 }, base).totalCentavos).toBe(
       125_000,
     )
   })
 
+  it('conta por minuto: 1h20 não vira dízima', () => {
+    // 80 min × R$ 95/h = R$ 126,666… → R$ 126,67; rateio 80 min × R$ 30/h = R$ 40,00.
+    expect(custoDoItem({ minutos: 80, custoDiretoExtraCentavos: 0 }, base)).toEqual({
+      diretoCentavos: 12_667,
+      rateioCentavos: 4_000,
+      totalCentavos: 16_667,
+    })
+  })
+
+  it('recusa minutos fracionados', () => {
+    expect(() => custoDoItem({ minutos: 1.5, custoDiretoExtraCentavos: 0 }, base)).toThrow(
+      ErroDeOrcamento,
+    )
+  })
+
   it('recusa horas negativas ou fora do limite', () => {
-    expect(() => custoDoItem({ horas: -1, custoDiretoExtraCentavos: 0 }, base)).toThrow(
+    expect(() => custoDoItem({ minutos: -1, custoDiretoExtraCentavos: 0 }, base)).toThrow(
       ErroDeOrcamento,
     )
-    expect(() => custoDoItem({ horas: 10_001, custoDiretoExtraCentavos: 0 }, base)).toThrow(
+    expect(() => custoDoItem({ minutos: 600_001, custoDiretoExtraCentavos: 0 }, base)).toThrow(
       ErroDeOrcamento,
     )
+  })
+})
+
+describe('preço automático do item', () => {
+  const percentuais = { margemPontosBase: 3_000, tributosPontosBase: 600, taxasPontosBase: 0 }
+
+  it('parte do custo do item e atinge a margem desejada, sem taxas fixas por cobrança', () => {
+    // 1h: R$ 95 de hora técnica + R$ 30 de rateio = R$ 125 ÷ (1 − 30% − 6%) = R$ 195,31.
+    const custo = custoDoItem({ minutos: 60, custoDiretoExtraCentavos: 0 }, base).totalCentavos
+    expect(custo).toBe(12_500)
+    const preco = precoAutomaticoDoItem(12_500, percentuais)
+    expect(preco).toBe(19_531)
+    const margem = resultadoDoPreco(preco, 12_500, 0, percentuais).margemPontosBase
+    expect(margem).toBe(3_000)
+  })
+
+  it('outros custos do item também recebem tributos e margem', () => {
+    // Só R$ 240 de deslocamento: o preço cobre os 6% de tributo e a margem.
+    expect(precoAutomaticoDoItem(24_000, percentuais)).toBe(37_500)
+  })
+})
+
+describe('duração digitada', () => {
+  it.each([
+    ['', 0],
+    ['2', 120],
+    ['2h', 120],
+    ['1,5', 90],
+    ['1.5h', 90],
+    ['1,25', 75],
+    ['1h30', 90],
+    ['1h 30', 90],
+    ['1H30MIN', 90],
+    ['1h5', 65],
+    ['1:30', 90],
+    ['01:30', 90],
+    ['90min', 90],
+    ['45 m', 45],
+    ['10000', 600_000],
+  ])('"%s" → %i minutos', (texto, minutos) => {
+    expect(lerDuracao(texto)).toBe(minutos)
+  })
+
+  it.each(['1h90', '1:5', '1:75', 'abc', '-1', '1,333', '10001', '1h30h', 'h30'])(
+    'recusa "%s"',
+    (texto) => {
+      expect(lerDuracao(texto)).toBeNull()
+    },
+  )
+
+  it('formata minutos como horas e minutos', () => {
+    expect(formatarDuracao(90)).toBe('1h30')
+    expect(formatarDuracao(120)).toBe('2h')
+    expect(formatarDuracao(45)).toBe('45min')
+    expect(formatarDuracao(65)).toBe('1h05')
+    expect(formatarDuracao(0)).toBe('0h')
   })
 })
 

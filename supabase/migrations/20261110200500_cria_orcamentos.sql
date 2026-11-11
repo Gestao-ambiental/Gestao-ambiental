@@ -115,7 +115,9 @@ create index orcamento_consultoria_atualizado_idx on public.orcamento (consultor
 create index orcamento_empreendimento_idx on public.orcamento (consultoria_id, empreendimento_id);
 
 -- ---------------------------------------------------------------------------
--- orcamento_item: serviço com horas estimadas, preço e custo direto além das horas.
+-- orcamento_item: serviço com duração estimada, preço e custo direto além das horas.
+-- Duração em minutos inteiros ("1h20" não vira dízima). Preço automático: o banco calcula a partir
+-- do custo do item e da margem desejada (private.preco_automatico_do_item); manual: vale o digitado.
 -- ---------------------------------------------------------------------------
 create table public.orcamento_item (
   id uuid primary key default gen_random_uuid(),
@@ -123,13 +125,14 @@ create table public.orcamento_item (
   orcamento_id uuid not null,
   ordem integer not null,
   descricao text not null,
-  horas numeric(7, 2) not null default 0,
+  minutos integer not null default 0,
+  preco_automatico boolean not null default false,
   preco_centavos bigint not null default 0,
   custo_direto_extra_centavos bigint not null default 0,
   constraint orcamento_item_consultoria_id_id_key unique (consultoria_id, id),
   constraint orcamento_item_descricao_preenchida check (length(btrim(descricao)) > 0),
   constraint orcamento_item_valores check (
-    horas between 0 and 10000
+    minutos between 0 and 600000
     and preco_centavos between 0 and 99999999999
     and custo_direto_extra_centavos between 0 and 99999999999
   ),
@@ -137,6 +140,8 @@ create table public.orcamento_item (
     references public.orcamento (consultoria_id, id) on delete restrict
 );
 
+comment on column public.orcamento_item.preco_automatico is
+  'Verdadeiro: o preço segue custo ÷ (1 − margem desejada − tributos − taxas) e é recalculado a cada salvamento do rascunho.';
 comment on column public.orcamento_item.custo_direto_extra_centavos is
   'Custo direto além das horas (deslocamento, ART). Interno: não vai para a proposta.';
 
@@ -151,14 +156,17 @@ create table public.orcamento_despesa (
   orcamento_id uuid not null,
   ordem integer not null,
   descricao text not null,
-  estimativa_centavos bigint not null default 0,
+  estimativa_centavos bigint,
   tratamento public.tratamento_despesa not null,
   constraint orcamento_despesa_consultoria_id_id_key unique (consultoria_id, id),
   constraint orcamento_despesa_descricao_preenchida check (length(btrim(descricao)) > 0),
-  constraint orcamento_despesa_valor check (estimativa_centavos between 0 and 99999999999),
+  constraint orcamento_despesa_valor check (estimativa_centavos is null or estimativa_centavos between 0 and 99999999999),
   constraint orcamento_despesa_orcamento_fk foreign key (consultoria_id, orcamento_id)
     references public.orcamento (consultoria_id, id) on delete restrict
 );
+
+comment on column public.orcamento_despesa.estimativa_centavos is
+  'Nulo = a cotar. Despesa incluída no preço e ainda a cotar deixa o custo do orçamento pendente.';
 
 create index orcamento_despesa_orcamento_idx on public.orcamento_despesa (consultoria_id, orcamento_id, ordem);
 
@@ -172,16 +180,20 @@ create table public.orcamento_parcela (
   orcamento_id uuid not null,
   ordem integer not null,
   descricao text not null,
+  dias integer not null default 0,
   percentual_pb integer not null,
   constraint orcamento_parcela_consultoria_id_id_key unique (consultoria_id, id),
   constraint orcamento_parcela_descricao_preenchida check (length(btrim(descricao)) > 0),
   constraint orcamento_parcela_percentual check (percentual_pb between 0 and 10000),
+  constraint orcamento_parcela_dias check (dias between 0 and 365),
   constraint orcamento_parcela_orcamento_fk foreign key (consultoria_id, orcamento_id)
     references public.orcamento (consultoria_id, id) on delete restrict
 );
 
 comment on column public.orcamento_parcela.descricao is
-  'Quando a parcela vence, em texto (ex.: "3 dias após a assinatura do contrato").';
+  'Marco que dispara a parcela (ex.: "Assinatura do contrato", "Protocolo no órgão").';
+comment on column public.orcamento_parcela.dias is
+  'Dias corridos depois do marco para o vencimento. Zero = no próprio marco.';
 
 create index orcamento_parcela_orcamento_idx on public.orcamento_parcela (consultoria_id, orcamento_id, ordem);
 
@@ -295,7 +307,30 @@ as $$
   ) with ordinality as t (valor, ordem)
 $$;
 
+-- Preço automático de um item, igual a precoAutomaticoDoItem (packages/domain): custo do item
+-- (minutos × hora técnica ÷ 60 + outros custos + minutos × custo fixo por hora ÷ 60, cada parcela
+-- arredondada ao centavo) ÷ (1 − margem desejada − tributos − taxas).
+create function private.preco_automatico_do_item(
+  p_minutos integer,
+  p_custo_direto_extra_centavos bigint,
+  p_hora_tecnica_centavos bigint,
+  p_custo_fixo_hora_centavos bigint,
+  p_percentuais_pb integer
+)
+returns bigint
+language sql
+immutable
+set search_path = ''
+as $$
+  select round(
+    (round(p_minutos::numeric * p_hora_tecnica_centavos / 60)
+     + p_custo_direto_extra_centavos
+     + round(p_minutos::numeric * p_custo_fixo_hora_centavos / 60)) * 10000
+    / (10000 - p_percentuais_pb))::bigint
+$$;
+
 revoke all on function private.aplicar_base_ao_orcamento(uuid) from public, anon, authenticated;
+revoke all on function private.preco_automatico_do_item(integer, bigint, bigint, bigint, integer) from public, anon, authenticated;
 revoke all on function private.textos_do_json(jsonb) from public, anon, authenticated;
 
 -- ---------------------------------------------------------------------------
@@ -435,9 +470,10 @@ $$;
 -- RPC: salvar o rascunho inteiro (cabeçalho, itens, despesas e parcelas) numa transação.
 -- Só rascunho é editável (ORC-04). Controle otimista: devolve a nova row_version.
 -- p_dados: { objeto, destinatario, prazos, validade_dias, premissas[], exclusoes[],
---   itens[{ id, descricao, horas, preco_centavos, custo_direto_extra_centavos }],
---   despesas[{ id, descricao, estimativa_centavos, tratamento }],
---   parcelas[{ id, descricao, percentual_pb }] }. A ordem das listas é a ordem gravada.
+--   itens[{ id, descricao, minutos, preco_automatico, preco_centavos, custo_direto_extra_centavos }],
+--   despesas[{ id, descricao, estimativa_centavos (nulo = a cotar), tratamento }],
+--   parcelas[{ id, descricao, dias, percentual_pb }] }. A ordem das listas é a ordem gravada.
+-- Item com preco_automatico tem o preço calculado aqui; o preco_centavos enviado é ignorado.
 -- ---------------------------------------------------------------------------
 create function public.salvar_orcamento(p_id uuid, p_row_version integer, p_dados jsonb)
 returns integer
@@ -490,7 +526,8 @@ begin
     select 1 from jsonb_array_elements(itens) as e (valor)
     where nullif(e.valor ->> 'id', '') is null
        or btrim(coalesce(e.valor ->> 'descricao', '')) = ''
-       or coalesce((e.valor ->> 'horas')::numeric, 0) not between 0 and 10000
+       or coalesce((e.valor ->> 'minutos')::integer, 0) not between 0 and 600000
+       or coalesce(e.valor ->> 'preco_automatico', 'false') not in ('true', 'false')
        or coalesce((e.valor ->> 'preco_centavos')::bigint, 0) not between 0 and 99999999999
        or coalesce((e.valor ->> 'custo_direto_extra_centavos')::bigint, 0) not between 0 and 99999999999
   ) then
@@ -501,7 +538,7 @@ begin
     select 1 from jsonb_array_elements(despesas) as e (valor)
     where nullif(e.valor ->> 'id', '') is null
        or btrim(coalesce(e.valor ->> 'descricao', '')) = ''
-       or coalesce((e.valor ->> 'estimativa_centavos')::bigint, 0) not between 0 and 99999999999
+       or (e.valor ->> 'estimativa_centavos')::bigint not between 0 and 99999999999
        or coalesce(e.valor ->> 'tratamento', '') not in ('incluida', 'cliente_direto', 'reembolsavel')
   ) then
     raise exception 'despesa_invalida' using errcode = '22023';
@@ -512,8 +549,20 @@ begin
     where nullif(e.valor ->> 'id', '') is null
        or btrim(coalesce(e.valor ->> 'descricao', '')) = ''
        or coalesce((e.valor ->> 'percentual_pb')::integer, -1) not between 0 and 10000
+       or coalesce((e.valor ->> 'dias')::integer, 0) not between 0 and 365
   ) then
     raise exception 'parcela_invalida' using errcode = '22023';
+  end if;
+
+  -- Rascunho acompanha a base de custos atual; o preço automático usa a base já copiada.
+  perform private.aplicar_base_ao_orcamento(p_id);
+  select * into alvo from public.orcamento as o where o.id = p_id;
+
+  if alvo.base_registrada_em is null and exists (
+    select 1 from jsonb_array_elements(itens) as e (valor)
+    where coalesce((e.valor ->> 'preco_automatico')::boolean, false)
+  ) then
+    raise exception 'preco_automatico_sem_base' using errcode = '22023';
   end if;
 
   -- Itens: sai o que não veio, entra ou muda o que veio. Id de outro orçamento não é aceito.
@@ -523,17 +572,29 @@ begin
       select 1 from jsonb_array_elements(itens) as e (valor) where (e.valor ->> 'id')::uuid = t.id);
 
   insert into public.orcamento_item as t (
-    id, consultoria_id, orcamento_id, ordem, descricao, horas, preco_centavos, custo_direto_extra_centavos)
-  select (e.valor ->> 'id')::uuid, alvo.consultoria_id, p_id, e.ordem::integer,
-         btrim(e.valor ->> 'descricao'),
-         coalesce((e.valor ->> 'horas')::numeric, 0),
-         coalesce((e.valor ->> 'preco_centavos')::bigint, 0),
-         coalesce((e.valor ->> 'custo_direto_extra_centavos')::bigint, 0)
-  from jsonb_array_elements(itens) with ordinality as e (valor, ordem)
+    id, consultoria_id, orcamento_id, ordem, descricao, minutos, preco_automatico, preco_centavos,
+    custo_direto_extra_centavos)
+  select l.id, alvo.consultoria_id, p_id, l.ordem, l.descricao, l.minutos, l.automatico,
+         case when l.automatico then private.preco_automatico_do_item(
+                l.minutos, l.extra, alvo.base_hora_tecnica_centavos, alvo.base_custo_fixo_hora_centavos,
+                alvo.base_margem_desejada_pb + alvo.base_tributos_pb + alvo.base_taxas_pb)
+              else l.preco end,
+         l.extra
+  from (
+    select (e.valor ->> 'id')::uuid as id,
+           e.ordem::integer as ordem,
+           btrim(e.valor ->> 'descricao') as descricao,
+           coalesce((e.valor ->> 'minutos')::integer, 0) as minutos,
+           coalesce((e.valor ->> 'preco_automatico')::boolean, false) as automatico,
+           coalesce((e.valor ->> 'preco_centavos')::bigint, 0) as preco,
+           coalesce((e.valor ->> 'custo_direto_extra_centavos')::bigint, 0) as extra
+    from jsonb_array_elements(itens) with ordinality as e (valor, ordem)
+  ) as l
   on conflict (id) do update
   set ordem = excluded.ordem,
       descricao = excluded.descricao,
-      horas = excluded.horas,
+      minutos = excluded.minutos,
+      preco_automatico = excluded.preco_automatico,
       preco_centavos = excluded.preco_centavos,
       custo_direto_extra_centavos = excluded.custo_direto_extra_centavos
   where t.orcamento_id = excluded.orcamento_id;
@@ -552,7 +613,7 @@ begin
     id, consultoria_id, orcamento_id, ordem, descricao, estimativa_centavos, tratamento)
   select (e.valor ->> 'id')::uuid, alvo.consultoria_id, p_id, e.ordem::integer,
          btrim(e.valor ->> 'descricao'),
-         coalesce((e.valor ->> 'estimativa_centavos')::bigint, 0),
+         (e.valor ->> 'estimativa_centavos')::bigint,
          (e.valor ->> 'tratamento')::public.tratamento_despesa
   from jsonb_array_elements(despesas) with ordinality as e (valor, ordem)
   on conflict (id) do update
@@ -573,14 +634,16 @@ begin
       select 1 from jsonb_array_elements(parcelas) as e (valor) where (e.valor ->> 'id')::uuid = t.id);
 
   insert into public.orcamento_parcela as t (
-    id, consultoria_id, orcamento_id, ordem, descricao, percentual_pb)
+    id, consultoria_id, orcamento_id, ordem, descricao, dias, percentual_pb)
   select (e.valor ->> 'id')::uuid, alvo.consultoria_id, p_id, e.ordem::integer,
          btrim(e.valor ->> 'descricao'),
+         coalesce((e.valor ->> 'dias')::integer, 0),
          (e.valor ->> 'percentual_pb')::integer
   from jsonb_array_elements(parcelas) with ordinality as e (valor, ordem)
   on conflict (id) do update
   set ordem = excluded.ordem,
       descricao = excluded.descricao,
+      dias = excluded.dias,
       percentual_pb = excluded.percentual_pb
   where t.orcamento_id = excluded.orcamento_id;
 
@@ -599,9 +662,6 @@ begin
       atualizado_em = now(),
       row_version = o.row_version + 1
   where o.id = p_id;
-
-  -- Rascunho acompanha a base de custos atual.
-  perform private.aplicar_base_ao_orcamento(p_id);
 
   return alvo.row_version + 1;
 end;
@@ -697,8 +757,8 @@ as $$
     'row_version', o.row_version,
     'itens', coalesce((
       select jsonb_agg(jsonb_build_object(
-        'id', i.id, 'descricao', i.descricao, 'horas', i.horas,
-        'preco_centavos', i.preco_centavos,
+        'id', i.id, 'descricao', i.descricao, 'minutos', i.minutos,
+        'preco_automatico', i.preco_automatico, 'preco_centavos', i.preco_centavos,
         'custo_direto_extra_centavos', i.custo_direto_extra_centavos) order by i.ordem, i.id)
       from public.orcamento_item as i
       where i.consultoria_id = o.consultoria_id and i.orcamento_id = o.id), '[]'::jsonb),
@@ -710,7 +770,8 @@ as $$
       where d.consultoria_id = o.consultoria_id and d.orcamento_id = o.id), '[]'::jsonb),
     'parcelas', coalesce((
       select jsonb_agg(jsonb_build_object(
-        'id', p.id, 'descricao', p.descricao, 'percentual_pb', p.percentual_pb) order by p.ordem, p.id)
+        'id', p.id, 'descricao', p.descricao, 'dias', p.dias, 'percentual_pb', p.percentual_pb)
+        order by p.ordem, p.id)
       from public.orcamento_parcela as p
       where p.consultoria_id = o.consultoria_id and p.orcamento_id = o.id), '[]'::jsonb)
   )

@@ -10,6 +10,8 @@ export const PONTOS_BASE_TOTAL = 10_000
 export const MAXIMO_PARCELAS = 60
 export const PRECO_MAXIMO_CENTAVOS = 99_999_999_999
 export const HORAS_MAXIMAS_DO_ITEM = 10_000
+/** Duração do item é guardada em minutos inteiros: "1h20" não vira dízima. */
+export const MINUTOS_MAXIMOS_DO_ITEM = HORAS_MAXIMAS_DO_ITEM * 60
 
 export class ErroDeOrcamento extends Error {
   constructor(
@@ -35,6 +37,11 @@ function exigirPontosBase(valor: number): void {
   if (!Number.isSafeInteger(valor) || valor < 0 || valor > PONTOS_BASE_TOTAL) {
     throw new ErroDeOrcamento('percentuais_invalidos')
   }
+}
+
+/** `numerador ÷ divisor` arredondado ao inteiro mais próximo (meio sobe), sem ponto flutuante. */
+function dividirArredondando(numerador: bigint, divisor: bigint): number {
+  return Number((numerador * 2n + divisor) / (divisor * 2n))
 }
 
 /** Parte inteira de `valor × pontosBase ÷ 10.000`, arredondada ao centavo mais próximo. */
@@ -76,20 +83,30 @@ export interface CustoDoItem {
   totalCentavos: number | null
 }
 
-/** Custo interno de um item: cada custo entra uma única vez (direto ou rateado). */
+/**
+ * Custo interno de um item: cada custo entra uma única vez (direto ou rateado). A conta é por minuto,
+ * igual à do banco: round(minutos × valor da hora ÷ 60).
+ */
 export function custoDoItem(
-  item: { horas: number; custoDiretoExtraCentavos: number },
+  item: { minutos: number; custoDiretoExtraCentavos: number },
   base: BaseDeCustos,
 ): CustoDoItem {
-  if (!Number.isFinite(item.horas) || item.horas < 0 || item.horas > HORAS_MAXIMAS_DO_ITEM) {
+  if (
+    !Number.isSafeInteger(item.minutos) ||
+    item.minutos < 0 ||
+    item.minutos > MINUTOS_MAXIMOS_DO_ITEM
+  ) {
     throw new ErroDeOrcamento('valor_invalido')
   }
   exigirCentavos(item.custoDiretoExtraCentavos)
   exigirCentavos(base.horaTecnicaCentavos)
+  const minutos = BigInt(item.minutos)
   const diretoCentavos =
-    Math.round(item.horas * base.horaTecnicaCentavos) + item.custoDiretoExtraCentavos
+    dividirArredondando(minutos * BigInt(base.horaTecnicaCentavos), 60n) +
+    item.custoDiretoExtraCentavos
   const porHora = custoFixoPorHora(base)
-  const rateioCentavos = porHora === null ? null : Math.round(item.horas * porHora)
+  const rateioCentavos =
+    porHora === null ? null : dividirArredondando(minutos * BigInt(porHora), 60n)
   return {
     diretoCentavos,
     rateioCentavos,
@@ -133,6 +150,18 @@ export function precoSugerido(
   )
   exigirCentavos(preco)
   return preco
+}
+
+/**
+ * Preço automático de um item: o custo dele (horas, rateio e outros custos) dividido por
+ * (1 − margem desejada − tributos − taxas). As taxas fixas por cobrança e assinatura ficam no total
+ * do orçamento, não no item. O banco grava o mesmo valor (private.preco_automatico_do_item).
+ */
+export function precoAutomaticoDoItem(
+  custoCentavos: number,
+  percentuais: PercentuaisDoPreco,
+): number {
+  return precoSugerido(custoCentavos, 0, percentuais)
 }
 
 export interface ResultadoDoPreco {
@@ -260,6 +289,41 @@ export function formatarPontosBase(pontosBase: number): string {
   const negativo = decimos < 0
   const absoluto = Math.abs(decimos)
   return `${negativo ? '−' : ''}${String(Math.floor(absoluto / 10))},${String(absoluto % 10)}%`
+}
+
+/**
+ * Duração digitada → minutos. Aceita horas decimais ("2", "1,5", "1.5h"), horas e minutos
+ * ("1h30", "1h 30", "1h30min", "1:30") e só minutos ("90min"). Vazio é zero. `null` para o que não
+ * for duração, minutos acima de 59 ("1h90") ou mais que o limite do item.
+ */
+export function lerDuracao(texto: string): number | null {
+  const limpo = texto.trim().toLowerCase().replace(/\s+/g, '')
+  if (limpo === '') return 0
+  let minutos: number
+  const decimal = /^(\d{1,6})(?:[.,](\d{1,2}))?h?$/.exec(limpo)
+  const horaEMinuto = /^(\d{1,6})(?:h(\d{1,2})|:(\d{2}))(?:min|m)?$/.exec(limpo)
+  const soMinutos = /^(\d{1,7})(?:min|m)$/.exec(limpo)
+  if (decimal) {
+    const centesimos = Number((decimal[2] ?? '').padEnd(2, '0'))
+    minutos = Number(decimal[1]) * 60 + Math.round((centesimos * 60) / 100)
+  } else if (horaEMinuto) {
+    const parteMinutos = Number(horaEMinuto[2] ?? horaEMinuto[3])
+    if (parteMinutos > 59) return null
+    minutos = Number(horaEMinuto[1]) * 60 + parteMinutos
+  } else if (soMinutos) {
+    minutos = Number(soMinutos[1])
+  } else {
+    return null
+  }
+  return minutos <= MINUTOS_MAXIMOS_DO_ITEM ? minutos : null
+}
+
+/** 90 → "1h30"; 120 → "2h"; 45 → "45min"; 65 → "1h05"; 0 → "0h". */
+export function formatarDuracao(minutos: number): string {
+  const horas = Math.floor(minutos / 60)
+  const resto = minutos % 60
+  if (horas === 0 && resto > 0) return `${String(resto)}min`
+  return resto === 0 ? `${String(horas)}h` : `${String(horas)}h${String(resto).padStart(2, '0')}`
 }
 
 /** "8.900,00", "8900" ou "R$ 8.900,5" → centavos. `null` se não for um valor em reais. */
