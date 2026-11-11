@@ -316,9 +316,27 @@ export async function salvarOrcamento(
 // Base de custos
 // ---------------------------------------------------------------------------
 
+/** Pessoa ou perfil da composição da hora técnica (P9 e P10). Dado restrito: só a Gestão. */
+export interface PessoaDaBase {
+  id: string
+  descricao: string
+  /** Sócio com pró-labore: só identifica a remuneração dos sócios. */
+  socio: boolean
+  /** Remuneração ou pró-labore + encargos + benefícios do mês. */
+  custoMensalCentavos: number
+  horasDisponiveisMes: number
+  aproveitamentoPb: number
+  parteTecnicaPb: number
+}
+
 export interface BaseDeCustosDaConsultoria {
+  /** Com equipe, é derivada pelo banco; o valor enviado é ignorado. */
   horaTecnicaCentavos: number
+  /** Custos fixos digitados (com equipe: sem a remuneração de quem está nela). */
   custosFixosMensaisCentavos: number
+  /** Derivado: parte administrativa da remuneração da equipe, que entra no rateio. */
+  custosFixosEquipeCentavos: number
+  /** Com equipe, são derivadas pelo banco; o valor enviado é ignorado. */
   horasFaturaveisMes: number
   margemDesejadaPb: number
   margemMinimaPb: number
@@ -326,6 +344,8 @@ export interface BaseDeCustosDaConsultoria {
   taxasPb: number
   taxaPorCobrancaCentavos: number
   taxaPorAssinaturaCentavos: number
+  /** Vazio: hora técnica e horas faturáveis digitadas. */
+  equipe: PessoaDaBase[]
 }
 
 /** Nulo quando ainda não foi configurada. */
@@ -341,6 +361,7 @@ export async function obterBaseDeCustos(
   return {
     horaTecnicaCentavos: numero(b.hora_tecnica_centavos),
     custosFixosMensaisCentavos: numero(b.custos_fixos_mensais_centavos),
+    custosFixosEquipeCentavos: numero(b.custos_fixos_equipe_centavos),
     horasFaturaveisMes: numero(b.horas_faturaveis_mes),
     margemDesejadaPb: numero(b.margem_desejada_pb),
     margemMinimaPb: numero(b.margem_minima_pb),
@@ -348,6 +369,15 @@ export async function obterBaseDeCustos(
     taxasPb: numero(b.taxas_pb),
     taxaPorCobrancaCentavos: numero(b.taxa_por_cobranca_centavos),
     taxaPorAssinaturaCentavos: numero(b.taxa_por_assinatura_centavos),
+    equipe: lista(b.equipe).map((p) => ({
+      id: texto(p.id),
+      descricao: texto(p.descricao),
+      socio: p.socio === true,
+      custoMensalCentavos: numero(p.custo_mensal_centavos),
+      horasDisponiveisMes: numero(p.horas_disponiveis_mes),
+      aproveitamentoPb: numero(p.aproveitamento_pb),
+      parteTecnicaPb: numero(p.parte_tecnica_pb),
+    })),
   }
 }
 
@@ -366,6 +396,15 @@ export async function salvarBaseDeCustos(
     p_taxas_pb: base.taxasPb,
     p_taxa_por_cobranca_centavos: base.taxaPorCobrancaCentavos,
     p_taxa_por_assinatura_centavos: base.taxaPorAssinaturaCentavos,
+    p_equipe: base.equipe.map((p) => ({
+      id: p.id,
+      descricao: p.descricao,
+      socio: p.socio,
+      custo_mensal_centavos: p.custoMensalCentavos,
+      horas_disponiveis_mes: p.horasDisponiveisMes,
+      aproveitamento_pb: p.aproveitamentoPb,
+      parte_tecnica_pb: p.parteTecnicaPb,
+    })),
   })
   if (error) throw error
 }

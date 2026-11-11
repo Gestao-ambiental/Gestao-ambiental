@@ -5,6 +5,7 @@ import {
   MAXIMO_PARCELAS,
   acrescimoEquivalente,
   aplicarPontosBase,
+  composicaoDaEquipe,
   custoDoItem,
   custoFixoPorHora,
   diferencaDasParcelas,
@@ -84,6 +85,99 @@ describe('base de custos', () => {
       ErroDeOrcamento,
     )
     expect(() => custoDoItem({ minutos: 600_001, custoDiretoExtraCentavos: 0 }, base)).toThrow(
+      ErroDeOrcamento,
+    )
+  })
+})
+
+describe('composição pela equipe (P9 e P10)', () => {
+  // Exemplo gerencial do Codex: R$ 6.000 por mês e 80 horas recuperáveis dão R$ 75 por hora.
+  it('hora técnica = custo técnico ÷ horas faturáveis, não ÷ horas pagas', () => {
+    const c = composicaoDaEquipe([
+      {
+        custoMensalCentavos: 600_000,
+        horasDisponiveisMes: 160,
+        aproveitamentoPb: 5_000,
+        parteTecnicaPb: 10_000,
+        socio: false,
+      },
+    ])
+    expect(c.horasFaturaveisMes).toBe(80)
+    expect(c.horaTecnicaCentavos).toBe(7_500)
+    expect(c.custoAdministrativoCentavos).toBe(0)
+  })
+
+  it('pró-labore do sócio entra uma vez: parte técnica na hora, o resto no rateio', () => {
+    const c = composicaoDaEquipe([
+      {
+        custoMensalCentavos: 1_000_000,
+        horasDisponiveisMes: 160,
+        aproveitamentoPb: 4_000,
+        parteTecnicaPb: 6_000,
+        socio: true,
+      },
+      {
+        custoMensalCentavos: 500_000,
+        horasDisponiveisMes: 168,
+        aproveitamentoPb: 7_500,
+        parteTecnicaPb: 10_000,
+        socio: false,
+      },
+      {
+        custoMensalCentavos: 300_000,
+        horasDisponiveisMes: 168,
+        aproveitamentoPb: 0,
+        parteTecnicaPb: 0,
+        socio: false,
+      },
+    ])
+    expect(c.custoTecnicoCentavos).toBe(1_100_000)
+    expect(c.custoAdministrativoCentavos).toBe(700_000)
+    expect(c.custoTecnicoCentavos + c.custoAdministrativoCentavos).toBe(1_800_000)
+    expect(c.remuneracaoDosSociosCentavos).toBe(1_000_000)
+    // 160 × 40% + 168 × 75% = 64 + 126 = 190 h; 11.000 ÷ 190 = 57,894… → R$ 57,89.
+    expect(c.horasFaturaveisMes).toBe(190)
+    expect(c.horaTecnicaCentavos).toBe(5_789)
+  })
+
+  it('arredonda as horas faturáveis em duas casas', () => {
+    const c = composicaoDaEquipe([
+      {
+        custoMensalCentavos: 100_000,
+        horasDisponiveisMes: 157,
+        aproveitamentoPb: 3_333,
+        parteTecnicaPb: 10_000,
+        socio: false,
+      },
+    ])
+    expect(c.horasFaturaveisMes).toBe(52.33)
+    expect(c.horaTecnicaCentavos).toBe(1_911)
+  })
+
+  it('sem horas faturáveis não há hora técnica', () => {
+    const c = composicaoDaEquipe([
+      {
+        custoMensalCentavos: 100_000,
+        horasDisponiveisMes: 160,
+        aproveitamentoPb: 0,
+        parteTecnicaPb: 10_000,
+        socio: false,
+      },
+    ])
+    expect(c.horaTecnicaCentavos).toBeNull()
+  })
+
+  it('recusa horas fora do mês ou fracionadas', () => {
+    const linha = {
+      custoMensalCentavos: 100_000,
+      aproveitamentoPb: 5_000,
+      parteTecnicaPb: 10_000,
+      socio: false,
+    }
+    expect(() => composicaoDaEquipe([{ ...linha, horasDisponiveisMes: 745 }])).toThrow(
+      ErroDeOrcamento,
+    )
+    expect(() => composicaoDaEquipe([{ ...linha, horasDisponiveisMes: 1.5 }])).toThrow(
       ErroDeOrcamento,
     )
   })

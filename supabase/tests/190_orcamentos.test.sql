@@ -1,9 +1,10 @@
 -- Orçamentos, fatia 1 (ORC-02, ORC-03, ORC-04): só a Gestão lê e escreve; numeração por
 -- consultoria e ano; rascunho salvo inteiro com controle otimista; base de custos copiada;
--- preço automático calculado no banco; despesa a cotar; isolamento entre consultorias; FK composta.
+-- preço automático calculado no banco; despesa a cotar; composição da hora pela equipe (P9/P10);
+-- isolamento entre consultorias; FK composta.
 begin;
 
-select plan(38);
+select plan(48);
 
 select testes.criar_dados_sinteticos();
 
@@ -286,6 +287,92 @@ select ok(
 );
 
 -- ---------------------------------------------------------------------------
+-- Composição pela equipe (P9 e P10): hora técnica e horas faturáveis derivadas no banco
+-- ---------------------------------------------------------------------------
+select lives_ok(
+  $sql$select public.salvar_base_de_custos('c0000000-0000-4000-8000-00000000000a',
+      1, 960000, 1, 3000, 2500, 600, 0, 199, 400, $json$[
+      {"id": "40000000-0000-4000-8000-000000000001", "descricao": "Sócio técnico", "socio": true,
+       "custo_mensal_centavos": 1000000, "horas_disponiveis_mes": 160, "aproveitamento_pb": 4000, "parte_tecnica_pb": 6000},
+      {"id": "40000000-0000-4000-8000-000000000002", "descricao": "Analista", "socio": false,
+       "custo_mensal_centavos": 500000, "horas_disponiveis_mes": 168, "aproveitamento_pb": 7500, "parte_tecnica_pb": 10000},
+      {"id": "40000000-0000-4000-8000-000000000003", "descricao": "Administrativo", "socio": false,
+       "custo_mensal_centavos": 300000, "horas_disponiveis_mes": 168, "aproveitamento_pb": 0, "parte_tecnica_pb": 0}
+    ]$json$::jsonb)$sql$,
+  'Gestão salva a base composta pela equipe (hora e horas enviadas são ignoradas)'
+);
+
+select results_eq(
+  $$select b.hora_tecnica_centavos, b.horas_faturaveis_mes, b.custos_fixos_equipe_centavos,
+           (select count(*) from public.orcamento_base_equipe as e where e.consultoria_id = b.consultoria_id)
+    from public.orcamento_base_custos as b where b.consultoria_id = 'c0000000-0000-4000-8000-00000000000a'$$,
+  $$values (5789::bigint, 190.00::numeric, 700000::bigint, 3::bigint)$$,
+  'técnico 11.000 ÷ 190 h faturáveis = 57,89/h; pró-labore administrativo e apoio (7.000) vão para o rateio'
+);
+
+select throws_ok(
+  $sql$select public.salvar_base_de_custos('c0000000-0000-4000-8000-00000000000a',
+      1, 960000, 1, 3000, 2500, 600, 0, 199, 400, '[{"id": "40000000-0000-4000-8000-000000000009",
+      "descricao": "Sem horas", "custo_mensal_centavos": 100000, "horas_disponiveis_mes": 160,
+      "aproveitamento_pb": 0, "parte_tecnica_pb": 10000}]'::jsonb)$sql$,
+  '22023', 'equipe_sem_horas_faturaveis',
+  'equipe sem nenhuma hora faturável é recusada'
+);
+
+select throws_ok(
+  $sql$select public.salvar_base_de_custos('c0000000-0000-4000-8000-00000000000a',
+      1, 960000, 1, 3000, 2500, 600, 0, 199, 400, '[{"id": "40000000-0000-4000-8000-000000000009",
+      "descricao": "Aproveitamento impossível", "custo_mensal_centavos": 100000, "horas_disponiveis_mes": 160,
+      "aproveitamento_pb": 10001, "parte_tecnica_pb": 10000}]'::jsonb)$sql$,
+  '22023', 'equipe_invalida',
+  'aproveitamento acima de 100% é recusado'
+);
+
+select lives_ok(
+  $$select public.salvar_base_de_custos('c0000000-0000-4000-8000-00000000000a',
+      9500, 960000, 320, 3000, 2500, 600, 0, 199, 400, '[]'::jsonb)$$,
+  'lista vazia volta aos valores digitados'
+);
+
+select results_eq(
+  $$select b.hora_tecnica_centavos, b.horas_faturaveis_mes, b.custos_fixos_equipe_centavos,
+           (select count(*) from public.orcamento_base_equipe as e where e.consultoria_id = b.consultoria_id)
+    from public.orcamento_base_custos as b where b.consultoria_id = 'c0000000-0000-4000-8000-00000000000a'$$,
+  $$values (9500::bigint, 320.00::numeric, 0::bigint, 0::bigint)$$,
+  'sem composição, vale o digitado e a remuneração administrativa zera'
+);
+
+select lives_ok(
+  $sql$select public.salvar_base_de_custos('c0000000-0000-4000-8000-00000000000a',
+      1, 960000, 1, 3000, 2500, 600, 0, 199, 400, $json$[
+      {"id": "40000000-0000-4000-8000-000000000001", "descricao": "Sócio técnico", "socio": true,
+       "custo_mensal_centavos": 1000000, "horas_disponiveis_mes": 160, "aproveitamento_pb": 4000, "parte_tecnica_pb": 6000},
+      {"id": "40000000-0000-4000-8000-000000000002", "descricao": "Analista", "socio": false,
+       "custo_mensal_centavos": 500000, "horas_disponiveis_mes": 168, "aproveitamento_pb": 7500, "parte_tecnica_pb": 10000},
+      {"id": "40000000-0000-4000-8000-000000000003", "descricao": "Administrativo", "socio": false,
+       "custo_mensal_centavos": 300000, "horas_disponiveis_mes": 168, "aproveitamento_pb": 0, "parte_tecnica_pb": 0}
+    ]$json$::jsonb)$sql$,
+  'volta a compor pela equipe'
+);
+
+select is(
+  public.salvar_orcamento('f0000000-0000-4000-8000-000000000001', 3, $json${
+    "objeto": "Licenciamento (LO)",
+    "itens": [{"id": "10000000-0000-4000-8000-000000000004", "descricao": "Revisão técnica", "minutos": 60,
+               "preco_automatico": true}]}$json$::jsonb),
+  4,
+  'o rascunho salvo de novo passa a usar a base composta'
+);
+
+select results_eq(
+  $$select o.base_hora_tecnica_centavos, o.base_custo_fixo_hora_centavos, i.preco_centavos
+    from public.orcamento as o join public.orcamento_item as i on i.orcamento_id = o.id
+    where o.id = 'f0000000-0000-4000-8000-000000000001'$$,
+  $$values (5789::bigint, 8737::bigint, 22697::bigint)$$,
+  'rateio = (9.600 + 7.000) ÷ 190 = 87,37/h; 1h custa 57,89 + 87,37 = 145,26 ÷ 0,64 = 226,97'
+);
+
+-- ---------------------------------------------------------------------------
 -- Equipe e outra consultoria não leem nada
 -- ---------------------------------------------------------------------------
 select testes.autenticar_como('ana@filtroville.test');
@@ -293,9 +380,15 @@ select testes.autenticar_como('ana@filtroville.test');
 select results_eq(
   $$select (select count(*) from public.orcamento), (select count(*) from public.orcamento_item),
            (select count(*) from public.orcamento_base_custos),
+           (select count(*) from public.orcamento_base_equipe),
            (select count(*) from public.listar_orcamentos('c0000000-0000-4000-8000-00000000000a'))$$,
-  $$values (0::bigint, 0::bigint, 0::bigint, 0::bigint)$$,
-  'Equipe (Ana) recebe zero linhas de orçamento e de custos'
+  $$values (0::bigint, 0::bigint, 0::bigint, 0::bigint, 0::bigint)$$,
+  'Equipe (Ana) recebe zero linhas de orçamento, de custos e da remuneração da equipe'
+);
+
+select is(
+  public.obter_base_de_custos('c0000000-0000-4000-8000-00000000000a'), null::jsonb,
+  'Equipe não abre a base de custos nem a composição'
 );
 
 select is(
@@ -308,8 +401,9 @@ select testes.autenticar_como('gustavo@verdesul.test');
 select results_eq(
   $$select (select count(*) from public.orcamento), (select count(*) from public.orcamento_item),
            (select count(*) from public.orcamento_base_custos),
+           (select count(*) from public.orcamento_base_equipe),
            (select count(*) from public.listar_orcamentos('c0000000-0000-4000-8000-00000000000a'))$$,
-  $$values (0::bigint, 0::bigint, 0::bigint, 0::bigint)$$,
+  $$values (0::bigint, 0::bigint, 0::bigint, 0::bigint, 0::bigint)$$,
   'Gestão de outra consultoria (Gustavo) recebe zero linhas, sem erro'
 );
 

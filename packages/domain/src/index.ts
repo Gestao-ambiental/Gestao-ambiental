@@ -103,13 +103,16 @@ export type { EstadoDoRascunho } from './progresso-cadastro'
 
 export {
   ErroDeOrcamento,
+  HORAS_DISPONIVEIS_MAXIMAS_MES,
   HORAS_MAXIMAS_DO_ITEM,
+  MAXIMO_LINHAS_DA_EQUIPE,
   MAXIMO_PARCELAS,
   MINUTOS_MAXIMOS_DO_ITEM,
   PONTOS_BASE_TOTAL,
   PRECO_MAXIMO_CENTAVOS,
   acrescimoEquivalente,
   aplicarPontosBase,
+  composicaoDaEquipe,
   custoDoItem,
   custoFixoPorHora,
   diferencaDasParcelas,
@@ -128,7 +131,9 @@ export {
 } from './orcamento'
 export type {
   BaseDeCustos,
+  ComposicaoDaEquipe,
   CustoDoItem,
+  LinhaDaEquipe,
   PercentuaisDoPreco,
   ResultadoDoPreco,
   SituacaoDaMargem,

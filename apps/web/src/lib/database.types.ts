@@ -860,7 +860,7 @@ isOneToOne: false
 { Args: { "p_id": string,"p_revisao": Database["public"]['Enums']["revisao_condicionante"] }; Returns: undefined
                            },
 "salvar_base_de_custos":
-{ Args: { "p_consultoria_id": string,"p_custos_fixos_mensais_centavos": number,"p_hora_tecnica_centavos": number,"p_horas_faturaveis_mes": number,"p_margem_desejada_pb": number,"p_margem_minima_pb": number,"p_taxa_por_assinatura_centavos": number,"p_taxa_por_cobranca_centavos": number,"p_taxas_pb": number,"p_tributos_pb": number }; Returns: undefined
+{ Args: { "p_consultoria_id": string,"p_custos_fixos_mensais_centavos": number,"p_hora_tecnica_centavos": number,"p_horas_faturaveis_mes": number,"p_margem_desejada_pb": number,"p_margem_minima_pb": number,"p_equipe"?: Json,"p_taxa_por_assinatura_centavos": number,"p_taxa_por_cobranca_centavos": number,"p_taxas_pb": number,"p_tributos_pb": number }; Returns: undefined
                            },
 "salvar_condicionante":
 { Args: { "p_codigo": string,"p_id": string,"p_instrumento_id": string,"p_natureza": Database["public"]['Enums']["natureza_condicionante"],"p_pai_id": string,"p_texto_literal": string,"p_titulo": string }; Returns: string

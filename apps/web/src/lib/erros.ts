@@ -96,6 +96,10 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   lista_invalida: 'Não foi possível salvar o orçamento. Tente de novo.',
   parcelas_demais: 'Use até 60 parcelas.',
   item_invalido: 'Confira os itens: serviço, horas e valores.',
+  equipe_invalida:
+    'Confira a equipe: nome, custo mensal, horas de 0 a 744 e percentuais de 0 a 100.',
+  equipe_sem_horas_faturaveis:
+    'A equipe precisa de horas faturáveis: informe o aproveitamento de quem faz trabalho técnico.',
   preco_automatico_sem_base:
     'Para usar o preço automático, configure antes os custos e taxas da consultoria.',
   despesa_invalida: 'Confira as despesas: descrição, valor e como é paga.',

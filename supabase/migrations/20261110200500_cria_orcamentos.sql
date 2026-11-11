@@ -22,6 +22,7 @@ create table public.orcamento_base_custos (
   consultoria_id uuid not null references public.consultoria (id) on delete restrict,
   hora_tecnica_centavos bigint not null,
   custos_fixos_mensais_centavos bigint not null,
+  custos_fixos_equipe_centavos bigint not null default 0,
   horas_faturaveis_mes numeric(7, 2) not null,
   margem_desejada_pb integer not null,
   margem_minima_pb integer not null,
@@ -38,6 +39,7 @@ create table public.orcamento_base_custos (
   constraint orcamento_base_custos_valores check (
     hora_tecnica_centavos between 0 and 99999999999
     and custos_fixos_mensais_centavos between 0 and 99999999999
+    and custos_fixos_equipe_centavos between 0 and 99999999999
     and taxa_por_cobranca_centavos between 0 and 99999999999
     and taxa_por_assinatura_centavos between 0 and 99999999999
     and horas_faturaveis_mes > 0
@@ -62,6 +64,48 @@ comment on column public.orcamento_base_custos.margem_minima_pb is
   'Vale para a margem total do orçamento. Item abaixo dela é só aviso (decisão de 10/11/2026).';
 comment on column public.orcamento_base_custos.tributos_pb is
   'Alíquota efetiva sobre o faturamento, informada pela contabilidade. O sistema não calcula.';
+comment on column public.orcamento_base_custos.custos_fixos_mensais_centavos is
+  'Custos fixos digitados. Com a composição pela equipe, sem a remuneração de quem está na equipe.';
+comment on column public.orcamento_base_custos.custos_fixos_equipe_centavos is
+  'Derivado: parte administrativa da remuneração da equipe (inclui pró-labore). Entra no rateio. Zero sem composição.';
+
+-- ---------------------------------------------------------------------------
+-- orcamento_base_equipe: composição opcional da hora técnica e das horas faturáveis (P9 e P10,
+-- aprovadas em 11/11/2026). Pessoa ou perfil, com custo mensal (remuneração ou pró-labore +
+-- encargos + benefícios), horas disponíveis, aproveitamento faturável e parte técnica do custo.
+-- Com linhas, a base deriva hora técnica, horas faturáveis e custos_fixos_equipe_centavos; cada
+-- custo entra uma única vez. Remuneração é dado restrito: só a Gestão lê, escrita só por RPC.
+-- ---------------------------------------------------------------------------
+create table public.orcamento_base_equipe (
+  id uuid primary key default gen_random_uuid(),
+  consultoria_id uuid not null,
+  ordem integer not null,
+  descricao text not null,
+  socio boolean not null default false,
+  custo_mensal_centavos bigint not null,
+  horas_disponiveis_mes integer not null,
+  aproveitamento_pb integer not null,
+  parte_tecnica_pb integer not null,
+  constraint orcamento_base_equipe_consultoria_id_id_key unique (consultoria_id, id),
+  constraint orcamento_base_equipe_descricao_preenchida check (length(btrim(descricao)) > 0),
+  constraint orcamento_base_equipe_valores check (
+    custo_mensal_centavos between 0 and 99999999999
+    and horas_disponiveis_mes between 0 and 744
+    and aproveitamento_pb between 0 and 10000
+    and parte_tecnica_pb between 0 and 10000
+  ),
+  constraint orcamento_base_equipe_base_fk foreign key (consultoria_id)
+    references public.orcamento_base_custos (consultoria_id) on delete restrict
+);
+
+comment on column public.orcamento_base_equipe.socio is
+  'Sócio com pró-labore: identifica a remuneração dos sócios. Não muda a conta.';
+comment on column public.orcamento_base_equipe.aproveitamento_pb is
+  'Parte das horas disponíveis que vira serviço vendido. Horas pagas não são horas faturáveis.';
+comment on column public.orcamento_base_equipe.parte_tecnica_pb is
+  'Parte do custo que é trabalho técnico (vai para a hora técnica); o resto vai para o rateio.';
+
+create index orcamento_base_equipe_consultoria_idx on public.orcamento_base_equipe (consultoria_id, ordem);
 
 -- ---------------------------------------------------------------------------
 -- orcamento: cabeçalho. Numeração ORC-AAAA-NNN por consultoria e ano (ORC-04).
@@ -202,6 +246,8 @@ create index orcamento_parcela_orcamento_idx on public.orcamento_parcela (consul
 -- ---------------------------------------------------------------------------
 alter table public.orcamento_base_custos enable row level security;
 alter table public.orcamento_base_custos force row level security;
+alter table public.orcamento_base_equipe enable row level security;
+alter table public.orcamento_base_equipe force row level security;
 alter table public.orcamento enable row level security;
 alter table public.orcamento force row level security;
 alter table public.orcamento_item enable row level security;
@@ -212,11 +258,13 @@ alter table public.orcamento_parcela enable row level security;
 alter table public.orcamento_parcela force row level security;
 
 revoke all on table public.orcamento_base_custos from anon, authenticated;
+revoke all on table public.orcamento_base_equipe from anon, authenticated;
 revoke all on table public.orcamento from anon, authenticated;
 revoke all on table public.orcamento_item from anon, authenticated;
 revoke all on table public.orcamento_despesa from anon, authenticated;
 revoke all on table public.orcamento_parcela from anon, authenticated;
 grant select on table public.orcamento_base_custos to authenticated;
+grant select on table public.orcamento_base_equipe to authenticated;
 grant select on table public.orcamento to authenticated;
 grant select on table public.orcamento_item to authenticated;
 grant select on table public.orcamento_despesa to authenticated;
@@ -224,6 +272,10 @@ grant select on table public.orcamento_parcela to authenticated;
 
 create policy orcamento_base_custos_select_gestao
   on public.orcamento_base_custos for select to authenticated
+  using ((select private.is_gestao(consultoria_id)));
+
+create policy orcamento_base_equipe_select_gestao
+  on public.orcamento_base_equipe for select to authenticated
   using ((select private.is_gestao(consultoria_id)));
 
 create policy orcamento_select_gestao
@@ -245,6 +297,9 @@ create policy orcamento_parcela_select_gestao
 -- Auditoria (entidades de decisão comercial).
 create trigger orcamento_base_custos_auditar
   after insert or update or delete on public.orcamento_base_custos
+  for each row execute function private.auditar();
+create trigger orcamento_base_equipe_auditar
+  after insert or update or delete on public.orcamento_base_equipe
   for each row execute function private.auditar();
 create trigger orcamento_auditar
   after insert or update or delete on public.orcamento
@@ -272,7 +327,8 @@ as $$
 begin
   update public.orcamento as o
   set base_hora_tecnica_centavos = b.hora_tecnica_centavos,
-      base_custo_fixo_hora_centavos = round(b.custos_fixos_mensais_centavos / b.horas_faturaveis_mes)::bigint,
+      base_custo_fixo_hora_centavos = round(
+        (b.custos_fixos_mensais_centavos + b.custos_fixos_equipe_centavos) / b.horas_faturaveis_mes)::bigint,
       base_margem_desejada_pb = b.margem_desejada_pb,
       base_margem_minima_pb = b.margem_minima_pb,
       base_tributos_pb = b.tributos_pb,
@@ -288,7 +344,8 @@ begin
          o.base_margem_minima_pb, o.base_tributos_pb, o.base_taxas_pb,
          o.base_taxa_por_cobranca_centavos, o.base_taxa_por_assinatura_centavos)
         is distinct from
-        (b.hora_tecnica_centavos, round(b.custos_fixos_mensais_centavos / b.horas_faturaveis_mes)::bigint,
+        (b.hora_tecnica_centavos,
+         round((b.custos_fixos_mensais_centavos + b.custos_fixos_equipe_centavos) / b.horas_faturaveis_mes)::bigint,
          b.margem_desejada_pb, b.margem_minima_pb, b.tributos_pb, b.taxas_pb,
          b.taxa_por_cobranca_centavos, b.taxa_por_assinatura_centavos);
 end;
@@ -335,6 +392,13 @@ revoke all on function private.textos_do_json(jsonb) from public, anon, authenti
 
 -- ---------------------------------------------------------------------------
 -- RPC: salvar a base de custos da consultoria (Gestão). Cria ou substitui a linha única.
+-- p_equipe (opcional): [{ id, descricao, socio, custo_mensal_centavos, horas_disponiveis_mes,
+--   aproveitamento_pb, parte_tecnica_pb }]. Com linhas, a hora técnica e as horas faturáveis
+-- enviadas são ignoradas e derivadas aqui (igual a composicaoDaEquipe em packages/domain):
+--   técnico = round(custo × parte ÷ 10.000); administrativo = custo − técnico;
+--   horas faturáveis = round(Σ horas × aproveitamento ÷ 100) ÷ 100;
+--   hora técnica = round(Σ técnico ÷ horas faturáveis); a soma administrativa vai para o rateio.
+-- Lista vazia volta aos valores digitados e apaga a composição.
 -- ---------------------------------------------------------------------------
 create function public.salvar_base_de_custos(
   p_consultoria_id uuid,
@@ -346,7 +410,8 @@ create function public.salvar_base_de_custos(
   p_tributos_pb integer,
   p_taxas_pb integer,
   p_taxa_por_cobranca_centavos bigint,
-  p_taxa_por_assinatura_centavos bigint
+  p_taxa_por_assinatura_centavos bigint,
+  p_equipe jsonb default '[]'::jsonb
 )
 returns void
 language plpgsql
@@ -355,16 +420,58 @@ set search_path = ''
 as $$
 declare
   autor uuid := private.membro_atual(p_consultoria_id);
+  equipe jsonb := coalesce(p_equipe, '[]'::jsonb);
+  hora bigint := p_hora_tecnica_centavos;
+  horas numeric := p_horas_faturaveis_mes;
+  fixos_equipe bigint := 0;
+  tecnico bigint;
+  centesimos numeric;
 begin
   if autor is null or not private.is_gestao(p_consultoria_id) then
     raise exception 'sem_permissao' using errcode = '42501';
   end if;
 
-  if p_hora_tecnica_centavos is null or p_hora_tecnica_centavos not between 0 and 99999999999
+  if jsonb_typeof(equipe) <> 'array' or jsonb_array_length(equipe) > 100 then
+    raise exception 'equipe_invalida' using errcode = '22023';
+  end if;
+
+  if jsonb_array_length(equipe) > 0 then
+    if exists (
+      select 1 from jsonb_array_elements(equipe) as e (valor)
+      where nullif(e.valor ->> 'id', '') is null
+         or btrim(coalesce(e.valor ->> 'descricao', '')) = ''
+         or coalesce(e.valor ->> 'socio', 'false') not in ('true', 'false')
+         or coalesce((e.valor ->> 'custo_mensal_centavos')::bigint, -1) not between 0 and 99999999999
+         or coalesce((e.valor ->> 'horas_disponiveis_mes')::integer, -1) not between 0 and 744
+         or coalesce((e.valor ->> 'aproveitamento_pb')::integer, -1) not between 0 and 10000
+         or coalesce((e.valor ->> 'parte_tecnica_pb')::integer, -1) not between 0 and 10000
+    ) then
+      raise exception 'equipe_invalida' using errcode = '22023';
+    end if;
+
+    select coalesce(sum(round((e.valor ->> 'custo_mensal_centavos')::bigint
+                               * (e.valor ->> 'parte_tecnica_pb')::integer / 10000.0)), 0)::bigint,
+           coalesce(sum((e.valor ->> 'custo_mensal_centavos')::bigint
+                        - round((e.valor ->> 'custo_mensal_centavos')::bigint
+                                * (e.valor ->> 'parte_tecnica_pb')::integer / 10000.0)), 0)::bigint,
+           round(coalesce(sum((e.valor ->> 'horas_disponiveis_mes')::bigint
+                              * (e.valor ->> 'aproveitamento_pb')::integer), 0) / 100.0)
+      into tecnico, fixos_equipe, centesimos
+    from jsonb_array_elements(equipe) as e (valor);
+
+    if centesimos <= 0 then
+      raise exception 'equipe_sem_horas_faturaveis' using errcode = '22023';
+    end if;
+    horas := centesimos / 100;
+    hora := round(tecnico * 100 / centesimos)::bigint;
+  end if;
+
+  if hora is null or hora not between 0 and 99999999999
      or p_custos_fixos_mensais_centavos is null or p_custos_fixos_mensais_centavos not between 0 and 99999999999
+     or fixos_equipe not between 0 and 99999999999
      or p_taxa_por_cobranca_centavos is null or p_taxa_por_cobranca_centavos not between 0 and 99999999999
      or p_taxa_por_assinatura_centavos is null or p_taxa_por_assinatura_centavos not between 0 and 99999999999
-     or p_horas_faturaveis_mes is null or p_horas_faturaveis_mes <= 0 or p_horas_faturaveis_mes > 99999 then
+     or horas is null or horas <= 0 or horas > 99999 then
     raise exception 'base_invalida' using errcode = '22023';
   end if;
 
@@ -377,16 +484,17 @@ begin
   end if;
 
   insert into public.orcamento_base_custos as b (
-    consultoria_id, hora_tecnica_centavos, custos_fixos_mensais_centavos, horas_faturaveis_mes,
-    margem_desejada_pb, margem_minima_pb, tributos_pb, taxas_pb,
+    consultoria_id, hora_tecnica_centavos, custos_fixos_mensais_centavos, custos_fixos_equipe_centavos,
+    horas_faturaveis_mes, margem_desejada_pb, margem_minima_pb, tributos_pb, taxas_pb,
     taxa_por_cobranca_centavos, taxa_por_assinatura_centavos, atualizado_por)
   values (
-    p_consultoria_id, p_hora_tecnica_centavos, p_custos_fixos_mensais_centavos, p_horas_faturaveis_mes,
-    p_margem_desejada_pb, p_margem_minima_pb, p_tributos_pb, p_taxas_pb,
+    p_consultoria_id, hora, p_custos_fixos_mensais_centavos, fixos_equipe,
+    horas, p_margem_desejada_pb, p_margem_minima_pb, p_tributos_pb, p_taxas_pb,
     p_taxa_por_cobranca_centavos, p_taxa_por_assinatura_centavos, autor)
   on conflict (consultoria_id) do update
   set hora_tecnica_centavos = excluded.hora_tecnica_centavos,
       custos_fixos_mensais_centavos = excluded.custos_fixos_mensais_centavos,
+      custos_fixos_equipe_centavos = excluded.custos_fixos_equipe_centavos,
       horas_faturaveis_mes = excluded.horas_faturaveis_mes,
       margem_desejada_pb = excluded.margem_desejada_pb,
       margem_minima_pb = excluded.margem_minima_pb,
@@ -397,6 +505,37 @@ begin
       atualizado_por = excluded.atualizado_por,
       atualizado_em = now(),
       row_version = b.row_version + 1;
+
+  -- Composição: sai o que não veio, entra ou muda o que veio. Id de outra consultoria não é aceito.
+  delete from public.orcamento_base_equipe as t
+  where t.consultoria_id = p_consultoria_id
+    and not exists (
+      select 1 from jsonb_array_elements(equipe) as e (valor) where (e.valor ->> 'id')::uuid = t.id);
+
+  insert into public.orcamento_base_equipe as t (
+    id, consultoria_id, ordem, descricao, socio, custo_mensal_centavos, horas_disponiveis_mes,
+    aproveitamento_pb, parte_tecnica_pb)
+  select (e.valor ->> 'id')::uuid, p_consultoria_id, e.ordem::integer, btrim(e.valor ->> 'descricao'),
+         coalesce((e.valor ->> 'socio')::boolean, false),
+         (e.valor ->> 'custo_mensal_centavos')::bigint,
+         (e.valor ->> 'horas_disponiveis_mes')::integer,
+         (e.valor ->> 'aproveitamento_pb')::integer,
+         (e.valor ->> 'parte_tecnica_pb')::integer
+  from jsonb_array_elements(equipe) with ordinality as e (valor, ordem)
+  on conflict (id) do update
+  set ordem = excluded.ordem,
+      descricao = excluded.descricao,
+      socio = excluded.socio,
+      custo_mensal_centavos = excluded.custo_mensal_centavos,
+      horas_disponiveis_mes = excluded.horas_disponiveis_mes,
+      aproveitamento_pb = excluded.aproveitamento_pb,
+      parte_tecnica_pb = excluded.parte_tecnica_pb
+  where t.consultoria_id = excluded.consultoria_id;
+
+  if (select count(*) from public.orcamento_base_equipe as t where t.consultoria_id = p_consultoria_id)
+     <> jsonb_array_length(equipe) then
+    raise exception 'equipe_invalida' using errcode = '22023';
+  end if;
 end;
 $$;
 
@@ -791,6 +930,7 @@ as $$
   select jsonb_build_object(
     'hora_tecnica_centavos', b.hora_tecnica_centavos,
     'custos_fixos_mensais_centavos', b.custos_fixos_mensais_centavos,
+    'custos_fixos_equipe_centavos', b.custos_fixos_equipe_centavos,
     'horas_faturaveis_mes', b.horas_faturaveis_mes,
     'margem_desejada_pb', b.margem_desejada_pb,
     'margem_minima_pb', b.margem_minima_pb,
@@ -798,7 +938,16 @@ as $$
     'taxas_pb', b.taxas_pb,
     'taxa_por_cobranca_centavos', b.taxa_por_cobranca_centavos,
     'taxa_por_assinatura_centavos', b.taxa_por_assinatura_centavos,
-    'atualizado_em', b.atualizado_em)
+    'atualizado_em', b.atualizado_em,
+    'equipe', coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'id', e.id, 'descricao', e.descricao, 'socio', e.socio,
+        'custo_mensal_centavos', e.custo_mensal_centavos,
+        'horas_disponiveis_mes', e.horas_disponiveis_mes,
+        'aproveitamento_pb', e.aproveitamento_pb,
+        'parte_tecnica_pb', e.parte_tecnica_pb) order by e.ordem, e.id)
+      from public.orcamento_base_equipe as e
+      where e.consultoria_id = b.consultoria_id), '[]'::jsonb))
   from public.orcamento_base_custos as b
   where b.consultoria_id = p_consultoria_id
 $$;
@@ -806,14 +955,14 @@ $$;
 -- ---------------------------------------------------------------------------
 -- Permissões das RPCs: só usuário logado.
 -- ---------------------------------------------------------------------------
-revoke all on function public.salvar_base_de_custos(uuid, bigint, bigint, numeric, integer, integer, integer, integer, bigint, bigint) from public, anon;
+revoke all on function public.salvar_base_de_custos(uuid, bigint, bigint, numeric, integer, integer, integer, integer, bigint, bigint, jsonb) from public, anon;
 revoke all on function public.criar_orcamento(uuid, uuid, uuid, text) from public, anon;
 revoke all on function public.salvar_orcamento(uuid, integer, jsonb) from public, anon;
 revoke all on function public.listar_orcamentos(uuid, text, integer, integer) from public, anon;
 revoke all on function public.obter_orcamento(uuid) from public, anon;
 revoke all on function public.obter_base_de_custos(uuid) from public, anon;
 
-grant execute on function public.salvar_base_de_custos(uuid, bigint, bigint, numeric, integer, integer, integer, integer, bigint, bigint) to authenticated;
+grant execute on function public.salvar_base_de_custos(uuid, bigint, bigint, numeric, integer, integer, integer, integer, bigint, bigint, jsonb) to authenticated;
 grant execute on function public.criar_orcamento(uuid, uuid, uuid, text) to authenticated;
 grant execute on function public.salvar_orcamento(uuid, integer, jsonb) to authenticated;
 grant execute on function public.listar_orcamentos(uuid, text, integer, integer) to authenticated;

@@ -384,6 +384,69 @@ describe('orçamentos (onda 5)', () => {
     })
   })
 
+  it('calcula hora técnica e horas pela equipe, com o pró-labore entrando uma vez', async () => {
+    const usuario = userEvent.setup()
+    renderizarApp('/configuracoes/custos')
+    await screen.findByText(/Ainda não configurado/)
+    await usuario.type(screen.getByLabelText('Custos fixos por mês (R$)'), '9.600,00')
+    await usuario.type(screen.getByLabelText('Tributos sobre o faturamento (%)'), '6')
+    await usuario.click(screen.getByRole('button', { name: 'Calcular pela equipe' }))
+    expect(screen.getByLabelText('Outros custos fixos por mês (R$)')).toHaveValue('9.600,00')
+    expect(screen.queryByLabelText('Hora técnica (R$)')).not.toBeInTheDocument()
+
+    await usuario.type(screen.getByLabelText('Pessoa ou perfil 1'), 'Sócio técnico')
+    await usuario.click(screen.getByLabelText('Sócio, com pró-labore, na linha 1'))
+    await usuario.type(screen.getByLabelText('Custo mensal da linha 1'), '10.000,00')
+    await usuario.type(screen.getByLabelText('Horas no mês da linha 1'), '160')
+    await usuario.type(screen.getByLabelText('Aproveitamento da linha 1'), '40')
+    const parte = screen.getByLabelText('Parte técnica da linha 1')
+    await usuario.clear(parte)
+    await usuario.type(parte, '60')
+
+    await usuario.click(screen.getByRole('button', { name: 'Adicionar pessoa ou perfil' }))
+    await usuario.type(screen.getByLabelText('Pessoa ou perfil 2'), 'Analista')
+    await usuario.type(screen.getByLabelText('Custo mensal da linha 2'), '5.000,00')
+    await usuario.type(screen.getByLabelText('Horas no mês da linha 2'), '168')
+    await usuario.type(screen.getByLabelText('Aproveitamento da linha 2'), '75')
+
+    // Técnico 6.000 + 5.000 = 11.000 ÷ (64 + 126 = 190 h) = 57,89; os 4.000 restantes do sócio
+    // vão para o rateio: (9.600 + 4.000) ÷ 190 = 71,58 por hora.
+    const resultado = screen.getByLabelText('Resultado da equipe')
+    expect(within(resultado).getByText('R$ 57,89')).toBeInTheDocument()
+    expect(within(resultado).getByText('190 h')).toBeInTheDocument()
+    expect(within(resultado).getByText('R$ 4.000,00')).toBeInTheDocument()
+    expect(within(resultado).getByText('R$ 10.000,00')).toBeInTheDocument()
+    expect(screen.getByText('R$ 71,58 por hora')).toBeInTheDocument()
+
+    await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
+    const chamada = falso.cliente.rpc.mock.calls.find(([nome]) => nome === 'salvar_base_de_custos')
+    expect(chamada?.[1]).toMatchObject({
+      p_hora_tecnica_centavos: 5_789,
+      p_horas_faturaveis_mes: 190,
+      p_custos_fixos_mensais_centavos: 960_000,
+      p_equipe: [
+        {
+          descricao: 'Sócio técnico',
+          socio: true,
+          custo_mensal_centavos: 1_000_000,
+          horas_disponiveis_mes: 160,
+          aproveitamento_pb: 4_000,
+          parte_tecnica_pb: 6_000,
+        },
+        { descricao: 'Analista', socio: false, aproveitamento_pb: 7_500, parte_tecnica_pb: 10_000 },
+      ],
+    })
+  })
+
+  it('a tela de custos não tem violações de acessibilidade com a equipe aberta', async () => {
+    const usuario = userEvent.setup()
+    const { container } = renderizarApp('/configuracoes/custos')
+    await screen.findByText(/Ainda não configurado/)
+    await usuario.click(screen.getByRole('button', { name: 'Calcular pela equipe' }))
+    const resultado = await axe.run(container, { rules: { 'color-contrast': { enabled: false } } })
+    expect(resultado.violations.map((v) => v.id)).toEqual([])
+  })
+
   it('o editor não tem violações de acessibilidade detectáveis', async () => {
     const { container } = renderizarApp('/orcamentos/o1')
     await screen.findByRole('heading', { name: 'Indústria Horizonte' })
