@@ -2,6 +2,7 @@
 // são os que a pessoa digitou; o banco confere limites e permissões.
 
 import {
+  aplicarPontosBase,
   custoDoItem,
   distribuirPorMaiorResto,
   diferencaDasParcelas,
@@ -122,7 +123,8 @@ export function calcularOrcamento(
   const precoPraticadoCentavos = linhas.reduce((soma, linha) => soma + linha.precoCentavos, 0)
 
   let precoSugeridoCentavos: number | null = null
-  if (base && custoTotalCentavos !== null) {
+  // Sem itens não há o que precificar: só as taxas fixas não viram "preço sugerido".
+  if (base && custoTotalCentavos !== null && linhas.length > 0) {
     try {
       precoSugeridoCentavos = precoSugerido(custoTotalCentavos, fixosPorCobrancaCentavos, {
         margemPontosBase: base.margemDesejadaPb,
@@ -143,11 +145,15 @@ export function calcularOrcamento(
           percentuais,
         ).margemPontosBase
 
-  const somaDosPesos = percentuaisDasParcelas.reduce((soma, peso) => soma + peso, 0)
+  // Fechando 100%, os centavos vão por maior resto (soma igual ao preço). Sem fechar, cada parcela
+  // mostra o próprio percentual do preço, para a diferença ficar visível em vez de redistribuída.
+  const diferencaParcelasPontosBase = diferencaDasParcelas(percentuaisDasParcelas)
   const parcelasCentavos =
-    percentuaisDasParcelas.length > 0 && somaDosPesos > 0
-      ? distribuirPorMaiorResto(precoPraticadoCentavos, percentuaisDasParcelas)
-      : []
+    percentuaisDasParcelas.length === 0
+      ? []
+      : diferencaParcelasPontosBase === 0
+        ? distribuirPorMaiorResto(precoPraticadoCentavos, percentuaisDasParcelas)
+        : percentuaisDasParcelas.map((pontos) => aplicarPontosBase(precoPraticadoCentavos, pontos))
 
   return {
     itens,
@@ -158,6 +164,6 @@ export function calcularOrcamento(
     margemPontosBase,
     situacaoDaMargem: base ? situacaoDaMargem(margemPontosBase, minima) : 'pendente',
     parcelasCentavos,
-    diferencaParcelasPontosBase: diferencaDasParcelas(percentuaisDasParcelas),
+    diferencaParcelasPontosBase,
   }
 }

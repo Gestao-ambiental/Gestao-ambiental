@@ -162,6 +162,20 @@ describe('cálculo da tela de orçamento', () => {
     expect(calculo.situacaoDaMargem).toBe('pendente')
   })
 
+  it('sem itens não há preço sugerido, mesmo com taxas fixas', () => {
+    const calculo = calcularOrcamento([], [], {
+      horaTecnicaCentavos: 9_500,
+      custoFixoHoraCentavos: 3_000,
+      margemDesejadaPb: 3_000,
+      margemMinimaPb: 2_500,
+      tributosPb: 600,
+      taxasPb: 0,
+      taxaPorCobrancaCentavos: 199,
+      taxaPorAssinaturaCentavos: 400,
+    })
+    expect(calculo.precoSugeridoCentavos).toBeNull()
+  })
+
   it('lê horas e percentuais digitados', () => {
     expect(lerHoras('8,5')).toBe(8.5)
     expect(lerHoras('')).toBe(0)
@@ -213,6 +227,8 @@ describe('orçamentos (onda 5)', () => {
     await usuario.clear(percentual)
     await usuario.type(percentual, '25')
     expect(screen.getByText('Faltam 5,0% para fechar 100%.')).toBeInTheDocument()
+    // Sem fechar 100%, cada parcela mostra o próprio percentual do preço (25% de R$ 8.900,00).
+    expect(screen.getByText('2.225,00')).toBeInTheDocument()
 
     await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
     const chamada = falso.cliente.rpc.mock.calls.find(([nome]) => nome === 'salvar_orcamento')

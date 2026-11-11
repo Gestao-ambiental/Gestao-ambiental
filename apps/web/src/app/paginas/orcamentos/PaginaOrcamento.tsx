@@ -380,6 +380,13 @@ function Editor({ orcamento }: { orcamento: Orcamento }) {
                 </tr>
               </thead>
               <tbody>
+                {r.itens.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className={`${classeCelula} text-(--text-subtle)`}>
+                      Nenhum item ainda. Adicione os serviços deste orçamento.
+                    </td>
+                  </tr>
+                ) : null}
                 {r.itens.map((item, indice) => {
                   const c = calculo.itens[indice]
                   const n = String(indice + 1)
