@@ -85,6 +85,21 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
     'Este rascunho já tem condicionantes: a IA só preenche rascunho sem itens. Siga pelo manual.',
   extracao_em_andamento: 'Já há uma extração em andamento para este rascunho. Aguarde.',
   cargo_longo_demais: 'O cargo pode ter até 80 caracteres.',
+  // Orçamentos (onda 5)
+  orcamento_existente: 'Não foi possível criar o orçamento. Tente de novo.',
+  objeto_obrigatorio: 'Diga o que está sendo orçado.',
+  empreendimento_invalido: 'Escolha um empreendimento desta consultoria.',
+  orcamento_nao_editavel:
+    'Proposta enviada não é editada no lugar. Mudanças viram uma nova revisão.',
+  validade_invalida: 'Validade: um número de 1 a 365 dias.',
+  textos_demais: 'Use até 50 premissas e 50 exclusões.',
+  lista_invalida: 'Não foi possível salvar o orçamento. Tente de novo.',
+  parcelas_demais: 'Use até 60 parcelas.',
+  item_invalido: 'Confira os itens: serviço, horas e valores.',
+  despesa_invalida: 'Confira as despesas: descrição, valor e como é paga.',
+  parcela_invalida: 'Confira as parcelas: quando vence e percentual de 0 a 100.',
+  base_invalida: 'Confira os valores: horas faturáveis precisam ser maiores que zero.',
+  percentuais_invalidos: 'Margem, tributos e taxas somados precisam ficar abaixo de 100%.',
 }
 
 const MENSAGENS_DO_AUTH: Record<string, string> = {

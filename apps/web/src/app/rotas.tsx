@@ -23,6 +23,9 @@ import { PaginaAcompanhamentos } from './paginas/acompanhamentos/PaginaAcompanha
 import { PaginaPlanoRenovacao } from './paginas/acompanhamentos/PaginaPlanoRenovacao'
 import { PaginaCalendario } from './paginas/calendario/PaginaCalendario'
 import { PaginaOcorrencia } from './paginas/ocorrencia/PaginaOcorrencia'
+import { PaginaCustosETaxas } from './paginas/orcamentos/PaginaCustosETaxas'
+import { PaginaOrcamento } from './paginas/orcamentos/PaginaOrcamento'
+import { PaginaOrcamentos } from './paginas/orcamentos/PaginaOrcamentos'
 import { PaginaNaoEncontrada } from './paginas/paginas'
 import { PaginaPerfil } from './paginas/perfil/PaginaPerfil'
 import { PaginaVisaoEquipe } from './paginas/visao/PaginaVisaoEquipe'
@@ -76,7 +79,10 @@ export const rotas: RouteObject[] = [
               { path: 'ocorrencias/:id', element: <PaginaOcorrencia /> },
               { path: 'acompanhamentos', element: <PaginaAcompanhamentos /> },
               { path: 'renovacoes/:instrumentoId', element: <PaginaPlanoRenovacao /> },
+              { path: 'orcamentos', element: <PaginaOrcamentos /> },
+              { path: 'orcamentos/:id', element: <PaginaOrcamento /> },
               { path: 'configuracoes/equipe', element: <PaginaEquipe /> },
+              { path: 'configuracoes/custos', element: <PaginaCustosETaxas /> },
               { path: 'perfil', element: <PaginaPerfil /> },
               { path: '*', element: <PaginaNaoEncontrada /> },
             ],
