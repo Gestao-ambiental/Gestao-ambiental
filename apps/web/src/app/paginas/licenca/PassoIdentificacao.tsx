@@ -79,7 +79,7 @@ const MARCOS: {
 ]
 
 const classeSelect =
-  'h-(--size-control) w-full rounded-(--radius) border border-(--border-input) bg-(--surface-input) px-(--space-100) corpo text-(--text) transicao-estado outline-none focus:border-(--border-focus) focus:shadow-[0_0_0_1px_var(--border-focus)] aria-invalid:border-(--border-danger)'
+  'h-(--size-control) w-full rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) px-(--space-100) corpo text-(--text) transicao-estado outline-none focus:border-b-(--border-input-active) focus:shadow-[inset_0_-1px_0_0_var(--border-input-active)] aria-invalid:border-(--border-danger)'
 
 /** Rótulo de select com a marca da IA à direita, como no CampoTexto. */
 function RotuloComMarca({
@@ -540,7 +540,7 @@ function Identificacao({
                       />
                       <span
                         aria-hidden="true"
-                        className="inline-flex size-4 shrink-0 items-center justify-center rounded-(--radius-circle) border border-(--border-input) bg-(--surface-input) transicao-estado group-hover:border-(--border-strong) group-hover:bg-(--surface-hover) peer-checked:border-(--brand) peer-checked:bg-(--brand) peer-focus-visible:shadow-[0_0_0_2px_var(--border-focus)] after:size-1.5 after:rounded-(--radius-circle) after:bg-(--text-inverse) after:opacity-0 peer-checked:after:opacity-100"
+                        className="inline-flex size-4 shrink-0 items-center justify-center rounded-(--radius-circle) border border-(--border-input-accessible) bg-(--surface-input) transicao-estado group-hover:border-(--border-strong) group-hover:bg-(--surface-hover) peer-checked:border-(--brand) peer-checked:bg-(--brand) peer-focus-visible:shadow-[0_0_0_2px_var(--border-focus)] after:size-1.5 after:rounded-(--radius-circle) after:bg-(--text-inverse) after:opacity-0 peer-checked:after:opacity-100"
                       />
                       {m.rotulo} · {formatarDataCivil(dados[m.campo])}
                     </label>

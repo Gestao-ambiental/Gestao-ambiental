@@ -43,7 +43,7 @@ const SITUACAO: Record<SituacaoExibida, { texto: string; tom: TomSelo }> = {
 }
 
 const classeSelect =
-  'h-(--size-control) w-full rounded-(--radius) border border-(--border-input) bg-(--surface-input) px-(--space-100) corpo text-(--text)'
+  'h-(--size-control) w-full rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) px-(--space-100) corpo text-(--text)'
 
 function Voltar() {
   return (

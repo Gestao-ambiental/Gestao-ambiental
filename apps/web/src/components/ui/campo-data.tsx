@@ -348,10 +348,10 @@ function EntradaData({
       onBlur={aoSair}
       className={cn(
         'h-(--size-control) w-full rounded-(--radius) border bg-(--surface-input) pr-10 pl-(--space-100) corpo text-(--text) tabular-nums transicao-estado outline-none placeholder:text-(--text-subtlest)',
-        'border-(--border-input) hover:bg-(--surface-hover) focus:border-(--border-focus) focus:bg-(--surface-input-focus) focus:shadow-[0_0_0_1px_var(--border-focus)]',
+        'border-(--border-input) border-b-(--border-input-accessible) hover:bg-(--surface-hover) focus:border-b-(--border-input-active) focus:bg-(--surface-input-focus) focus:shadow-[inset_0_-1px_0_0_var(--border-input-active)]',
         'disabled:cursor-not-allowed disabled:bg-(--surface-disabled) disabled:text-(--text-disabled) disabled:hover:bg-(--surface-disabled)',
         aberto &&
-          'border-(--border-focus) bg-(--surface-input-focus) shadow-[0_0_0_1px_var(--border-focus)]',
+          'border-b-(--border-input-active) bg-(--surface-input-focus) shadow-[inset_0_-1px_0_0_var(--border-input-active)]',
         invalido &&
           'border-(--border-danger) focus:border-(--border-danger) focus:shadow-[0_0_0_1px_var(--border-danger)]',
       )}

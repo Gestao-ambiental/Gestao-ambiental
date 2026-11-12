@@ -101,7 +101,7 @@ function LinhaDoTempo({
           />
         ) : null}
         <span
-          className="absolute top-0 size-3 -translate-x-1/2 rounded-[2px] bg-(--af-amber-500)"
+          className="absolute top-0 size-3 -translate-x-1/2 rounded-[2px] bg-(--progress-warning)"
           style={{ left: `${String(pLimite)}%` }}
         />
         <span className="absolute top-0 right-0 size-3 rounded-[2px] bg-(--danger)" />
@@ -175,7 +175,7 @@ function Antecedencia({
           onChange={(evento) => {
             aoMudarRascunho(evento.target.value.replace(/\D/g, '').slice(0, 4))
           }}
-          className="h-(--size-control) w-28 rounded-(--radius) border border-(--border-input) bg-(--surface-input) px-(--space-100) corpo text-(--text) outline-none transicao-estado focus:border-(--border-focus) disabled:bg-(--surface-disabled) disabled:text-(--text-disabled)"
+          className="h-(--size-control) w-28 rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) px-(--space-100) corpo text-(--text) outline-none transicao-estado focus:border-b-(--border-input-active) focus:shadow-[inset_0_-1px_0_0_var(--border-input-active)] disabled:bg-(--surface-disabled) disabled:text-(--text-disabled)"
         />
         <span id="antecedencia-nota" className="text-xs text-(--text-subtle)">
           {valido
@@ -372,7 +372,7 @@ export function PaginaPlanoRenovacao() {
 
       <section
         aria-label="Prazos da renovação"
-        className="flex flex-col gap-(--space-150) rounded-(--radius) border bg-(--surface) p-(--space-150)"
+        className="flex flex-col gap-(--space-150) rounded-(--radius-large) border bg-(--surface) shadow-cartao p-(--space-150)"
       >
         <LinhaDoTempo
           inicio={inicioPreparacao}
@@ -404,7 +404,7 @@ export function PaginaPlanoRenovacao() {
 
       <section
         aria-labelledby="titulo-etapas-renovacao"
-        className="flex flex-col overflow-hidden rounded-(--radius) border bg-(--surface)"
+        className="flex flex-col overflow-hidden rounded-(--radius-large) border bg-(--surface) shadow-cartao"
       >
         <header className="flex flex-wrap items-center justify-between gap-(--space-100) border-b px-(--space-150) py-(--space-150)">
           <h2 id="titulo-etapas-renovacao" className="titulo-secao">

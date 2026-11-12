@@ -43,7 +43,7 @@ const SEM_RESPONSAVEL = '__sem'
 const ATUALIZAR_A_CADA = 60_000
 
 const classeSelect =
-  'h-(--size-control) max-w-[220px] rounded-(--radius) border border-(--border-input) bg-(--surface-input) px-(--space-100) corpo text-(--text) outline-none focus:border-(--border-focus)'
+  'h-(--size-control) max-w-[220px] rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) px-(--space-100) corpo text-(--text) outline-none focus:border-b-(--border-input-active) focus:shadow-[inset_0_-1px_0_0_var(--border-input-active)]'
 const classeCelula = 'h-10 border-b px-(--space-100) align-middle first:pl-(--space-150)'
 
 const COLUNAS: { chave: Ordem; rotulo: string }[] = [
@@ -154,8 +154,8 @@ function Contador({
       aria-pressed={ativo}
       onClick={aoClicar}
       className={cn(
-        'flex min-w-[150px] flex-1 cursor-pointer items-baseline gap-(--space-100) rounded-(--radius) border bg-(--surface) px-(--space-150) py-(--space-150) text-left transicao-estado hover:bg-(--surface-hover)',
-        ativo && 'border-(--border-focus) bg-(--surface-selected)',
+        'flex min-w-[150px] flex-1 cursor-pointer items-baseline gap-(--space-100) rounded-(--radius-large) border bg-(--surface) shadow-cartao px-(--space-150) py-(--space-150) text-left transicao-estado hover:bg-(--surface-hover)',
+        ativo && 'border-(--brand-stroke) bg-(--surface-selected)',
       )}
     >
       <span
@@ -322,7 +322,7 @@ export function PaginaVisaoEquipe() {
     )
   } else {
     tabela = (
-      <div className="flex flex-col overflow-hidden rounded-(--radius) border bg-(--surface)">
+      <div className="flex flex-col overflow-hidden rounded-(--radius-large) border bg-(--surface) shadow-cartao">
         <div className="hidden max-h-[calc(100dvh-340px)] min-h-[240px] overflow-auto md:block">
           <table className="w-full border-collapse corpo">
             <thead className="sticky top-0 z-10 bg-(--surface)">

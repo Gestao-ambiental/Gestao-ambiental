@@ -7,7 +7,7 @@ import { Icone } from './icone'
 // Controles nativos (teclado e leitor de tela de graça) desenhados como no design system: o
 // visual padrão do navegador com a cor da marca escura parecia marcado mesmo desmarcado.
 const baseControle =
-  'peer size-4 shrink-0 cursor-pointer appearance-none border border-(--border-input) bg-(--surface-input) transicao-estado ' +
+  'peer size-4 shrink-0 cursor-pointer appearance-none border border-(--border-input-accessible) bg-(--surface-input) transicao-estado ' +
   'hover:border-(--border-strong) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--border-focus) ' +
   'disabled:cursor-not-allowed disabled:bg-(--surface-disabled)'
 
@@ -61,7 +61,7 @@ export function OpcaoRadio({ rotulo, descricao, id, className, ...rest }: PropsR
       htmlFor={campoId}
       className={cn(
         'flex cursor-pointer flex-col gap-0.5 rounded-(--radius) border px-(--space-150) py-(--space-100) transicao-estado',
-        'border-(--border) has-checked:border-(--border-focus) has-checked:bg-(--surface-selected) hover:bg-(--surface-hover)',
+        'border-(--border) has-checked:border-(--brand-stroke) has-checked:bg-(--surface-selected) hover:bg-(--surface-hover)',
         className,
       )}
     >

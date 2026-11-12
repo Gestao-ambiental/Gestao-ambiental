@@ -1,6 +1,5 @@
-// Menu suspenso: comportamento e acessibilidade do Radix (via shadcn/ui), visual do design system
-// (docs/design-system/referencia-componentes/overlay/DropdownMenu.jsx): superfície de overlay,
-// borda de 1px, raio 3px, sombra de overlay, linhas de 32px, selecionado em verde lavado com check.
+// Menu suspenso: comportamento e acessibilidade do Radix (via shadcn/ui).
+// Menu do Fluent 2 (ADR-0015): popover de raio 8px com sombra 16, itens de 32px com raio 4px.
 import { DropdownMenu as Primitivo } from 'radix-ui'
 import type { ComponentProps } from 'react'
 
@@ -9,7 +8,7 @@ import { cn } from '@/lib/utils'
 import { Icone } from './icone'
 
 const linha =
-  'relative flex h-(--size-control) cursor-pointer select-none items-center gap-(--space-100) whitespace-nowrap px-(--space-150) corpo text-(--text) outline-none transicao-estado ' +
+  'relative flex h-(--size-control) cursor-pointer select-none items-center gap-(--space-100) whitespace-nowrap rounded-(--radius) px-(--space-100) corpo text-(--text) outline-none transicao-estado ' +
   'focus:bg-(--surface-hover) data-[disabled]:cursor-not-allowed data-[disabled]:text-(--text-disabled) data-[disabled]:focus:bg-transparent'
 
 export function DropdownMenu(props: ComponentProps<typeof Primitivo.Root>) {
@@ -30,7 +29,7 @@ export function DropdownMenuContent({
       <Primitivo.Content
         sideOffset={sideOffset}
         className={cn(
-          'z-50 min-w-[220px] overflow-hidden rounded-(--radius) border bg-(--surface-overlay) py-(--space-050) text-(--text) shadow-sobreposicao',
+          'z-50 min-w-[220px] overflow-hidden rounded-(--radius-large) border border-transparent bg-(--surface-overlay) p-(--space-050) text-(--text) shadow-sobreposicao',
           'data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-top-1 duration-(--duration-medium)',
           className,
         )}

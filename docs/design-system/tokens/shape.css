@@ -1,18 +1,19 @@
-/* 3px radius on everything. Separation is a 1px line; shadow is reserved for
-   elements that float above the page (dropdown, modal, popper). */
+/* Forma e elevação do Fluent 2 (ADR-0015), com valores de fluent.css.
+   Raio 4px em controles, 8px em cartões e diálogos. Cartões ficam em camadas com sombra baixa;
+   linhas de tabela e divisões internas continuam como linha de 1px. */
 :root{
-  --radius:3px;
-  --radius-sm:3px;
-  --radius-pill:999px;      /* avatar, notification count — not lozenges */
+  --radius:var(--borderRadiusMedium);         /* 4px: botão, campo, selo retangular, menu */
+  --radius-sm:var(--borderRadiusSmall);       /* 2px: marcas pequenas dentro de controles */
+  --radius-large:var(--borderRadiusXLarge);   /* 8px: cartão, diálogo, gaveta, popover */
+  --radius-pill:var(--borderRadiusCircular);  /* selo (badge), avatar, contador */
   --radius-circle:50%;
-  --border-width:1px;
-  --border-width-focus:2px;
+  --border-width:var(--strokeWidthThin);
+  --border-width-focus:var(--strokeWidthThick);
 
-  --shadow-overlay:0 4px 8px rgba(15,26,18,0.15),0 0 1px rgba(15,26,18,0.31);
-  --shadow-raised:0 1px 1px rgba(15,26,18,0.12),0 0 1px rgba(15,26,18,0.20);
-  --focus-ring:0 0 0 2px var(--border-focus);
-}
-[data-theme="dark"]{
-  --shadow-overlay:0 4px 8px rgba(3,4,4,0.50),0 0 1px rgba(3,4,4,0.60);
-  --shadow-raised:0 1px 1px rgba(3,4,4,0.50),0 0 1px rgba(3,4,4,0.60);
+  --shadow-card:var(--shadow4);       /* cartão sobre a página */
+  --shadow-raised:var(--shadow8);     /* cartão em destaque ou arrastado */
+  --shadow-overlay:var(--shadow16);   /* menu, popover, calendário */
+  --shadow-dialog:var(--shadow64);    /* diálogo e gaveta */
+  /* Foco do Fluent: anel externo de 2px (Focus2) com 1px interno (Focus1), visível sobre qualquer fundo */
+  --focus-ring:0 0 0 1px var(--border-focus-inner),0 0 0 3px var(--border-focus);
 }

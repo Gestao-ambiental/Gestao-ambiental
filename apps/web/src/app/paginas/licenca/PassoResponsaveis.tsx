@@ -329,7 +329,7 @@ function Responsaveis({
             descricao="Volte ao passo 3 para cadastrar."
           />
         ) : (
-          <div className="overflow-x-auto rounded-(--radius) border bg-(--surface)">
+          <div className="overflow-x-auto rounded-(--radius-large) border bg-(--surface) shadow-cartao">
             <table className="w-full border-collapse corpo">
               <thead>
                 <tr>

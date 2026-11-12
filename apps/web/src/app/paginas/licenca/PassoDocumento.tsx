@@ -34,7 +34,7 @@ const PROBLEMAS: Record<ProblemaDoPdf, string> = {
 }
 
 const classeSelect =
-  'h-(--size-control) w-full rounded-(--radius) border border-(--border-input) bg-(--surface-input) px-(--space-100) corpo text-(--text) outline-none focus:border-(--border-focus)'
+  'h-(--size-control) w-full rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) px-(--space-100) corpo text-(--text) outline-none focus:border-b-(--border-input-active) focus:shadow-[inset_0_-1px_0_0_var(--border-input-active)]'
 
 function tamanhoLegivel(bytes: number): string {
   return bytes >= 1024 * 1024
@@ -92,7 +92,7 @@ function EnvioPdf({
         className={cn(
           'flex flex-col items-center gap-(--space-100) rounded-(--radius) border border-dashed p-(--space-300) text-center transicao-estado',
           arrastando
-            ? 'border-(--border-focus) bg-(--surface-selected)'
+            ? 'border-(--brand-stroke) bg-(--surface-selected)'
             : 'border-(--border-strong) bg-(--surface)',
         )}
       >

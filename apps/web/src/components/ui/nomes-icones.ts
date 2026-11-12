@@ -1,4 +1,4 @@
-// Gerado a partir de apps/web/src/assets/icons (cópia de docs/design-system/icons). Lucide, licença ISC.
+// Nomes dos SVGs em apps/web/src/assets/icons: Fluent System Icons (MIT), com os nomes antigos (ADR-0015).
 // Ao acrescentar um SVG lá, acrescente o nome aqui; o teste de Icone confere os dois lados.
 export const NOMES_ICONES = [
   'archive',

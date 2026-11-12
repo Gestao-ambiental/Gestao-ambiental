@@ -36,8 +36,8 @@ interface Props {
 }
 
 /**
- * Mensagem dentro da coluna de conteúdo (nunca flutua): tinta lavada da paleta de selos, sem
- * borda, raio 3px. Referência: docs/design-system/referencia-componentes/overlay/SectionMessage.jsx.
+ * Mensagem dentro da coluna de conteúdo (nunca flutua): MessageBar do Fluent 2 (ADR-0015):
+ * fundo do status, contorno sutil, raio de 4px e ícone do status à esquerda.
  */
 export function MensagemSecao({
   tom = 'informacao',
@@ -52,7 +52,7 @@ export function MensagemSecao({
     <div
       role={role}
       className={cn(
-        'flex gap-(--space-100) rounded-(--radius) p-(--space-150)',
+        'flex gap-(--space-100) rounded-(--radius) border border-(--border-subtle) px-(--space-150) py-(--space-100)',
         classes,
         className,
       )}

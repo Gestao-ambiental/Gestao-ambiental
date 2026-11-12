@@ -54,7 +54,7 @@ export function CampoTexto({
           aria-describedby={apoio ? apoioId : undefined}
           className={cn(
             'h-(--size-control) w-full rounded-(--radius) border bg-(--surface-input) px-(--space-100) corpo text-(--text) transicao-estado outline-none',
-            'border-(--border-input) focus:border-(--border-focus) focus:bg-(--surface-input-focus) focus:shadow-[0_0_0_1px_var(--border-focus)]',
+            'border-(--border-input) border-b-(--border-input-accessible) focus:border-b-(--border-input-active) focus:bg-(--surface-input-focus) focus:shadow-[inset_0_-1px_0_0_var(--border-input-active)]',
             'disabled:cursor-not-allowed disabled:bg-(--surface-disabled) disabled:text-(--text-disabled)',
             'read-only:bg-(--surface-disabled) read-only:text-(--text-subtle)',
             erro &&

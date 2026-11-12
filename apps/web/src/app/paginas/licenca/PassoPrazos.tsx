@@ -228,7 +228,7 @@ function PainelPrazo({
               onChange={(evento) => {
                 setFonte(evento.target.value)
               }}
-              className="w-full rounded-(--radius) border border-(--border-input) bg-(--surface-input) px-(--space-100) py-(--space-100) corpo outline-none focus:border-(--border-focus)"
+              className="w-full rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) px-(--space-100) py-(--space-100) corpo outline-none focus:border-b-(--border-input-active) focus:shadow-[inset_0_-1px_0_0_var(--border-input-active)]"
             />
             <span className="text-xs text-(--text-subtle)">
               Trecho do documento ou norma que define o prazo. Sem base no documento, o prazo fica
@@ -250,7 +250,7 @@ function PainelPrazo({
                   className={cn(
                     'h-(--size-control) cursor-pointer rounded-(--radius) border px-(--space-100) corpo transicao-estado',
                     recorrencia === r
-                      ? 'border-(--border-focus) bg-(--surface-selected) text-(--text-link)'
+                      ? 'border-(--brand-stroke) bg-(--surface-selected) text-(--text-link)'
                       : 'hover:bg-(--surface-hover)',
                   )}
                 >
@@ -267,7 +267,7 @@ function PainelPrazo({
                     onChange={(evento) => {
                       setUnidade(evento.target.value as UnidadeCiclo)
                     }}
-                    className="h-(--size-control) rounded-(--radius) border border-(--border-input) bg-(--surface-input) px-(--space-100) corpo"
+                    className="h-(--size-control) rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) px-(--space-100) corpo"
                   >
                     <option value="mes">Mês</option>
                     <option value="dia">Dia</option>
@@ -537,7 +537,7 @@ function Prazos({
               descricao="Só obrigação vira prazo. Condições contínuas e informações gerais não geram entregas."
             />
           ) : (
-            <div className="overflow-x-auto rounded-(--radius) border bg-(--surface)">
+            <div className="overflow-x-auto rounded-(--radius-large) border bg-(--surface) shadow-cartao">
               <table className="w-full border-collapse corpo">
                 <thead>
                   <tr>

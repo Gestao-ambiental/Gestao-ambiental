@@ -15,7 +15,7 @@ export function Carregando({ rotulo = 'Carregando', linhas = 5, className }: Pro
     <div
       role="status"
       aria-live="polite"
-      className={cn('rounded-(--radius) border bg-(--surface)', className)}
+      className={cn('rounded-(--radius-large) border bg-(--surface) shadow-cartao', className)}
     >
       <span className="sr-only">{rotulo}</span>
       <EsqueletoLinhas linhas={linhas} />
