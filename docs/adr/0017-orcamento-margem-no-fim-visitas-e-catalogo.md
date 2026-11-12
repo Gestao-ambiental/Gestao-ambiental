@@ -93,6 +93,23 @@
   - migration `20261112110000_preco_pela_tabela_e_piso.sql`, com `private.itens_do_preco` e `private.precificar_orcamento`;
   - no domínio, `precificarOrcamento` e `custoHoraPorProfissao`;
   - testes em `supabase/tests/210_preco_pela_tabela.test.sql` (17 testes).
+
+## Atualização de 12/11/2026 (2): equipe por membro, responsável e mês de cada serviço
+
+Decisões do Eduardo: a consultoria paga o piso (ou o pró-labore) pela jornada, mas quanto dessas horas vira serviço, e se é técnico ou administrativo, é decidido em cada orçamento. Quando o contrato for assinado e pago, a tarefa já tem que nascer para a pessoa certa.
+
+- **Equipe da base = membros com login.** Cada linha escolhe um membro ativo (uma vez só), com custo do mês e horas no mês (jornada).
+  - Saíram o aproveitamento e a parte técnica em %. A hora de custo de cada pessoa é custo ÷ horas.
+  - A hora técnica média (Σ custos ÷ Σ horas) vale para o serviço sem responsável. As contas do mês são rateadas pelas mesmas horas.
+  - Quem ainda não tem conta precisa ser convidado antes de entrar na equipe.
+- **Piso por hora** só aparece, abaixo da equipe, quando alguém está pelo piso. Vazio com alguém pelo piso, a base não salva. "Como calcular" explica a conta dos 8,5 salários mínimos, sem fixar o valor do salário mínimo.
+- **Responsável por serviço (um por serviço).** O custo do serviço usa a hora do responsável. Sem responsável, a da profissão da hora de venda; sem ninguém dessa profissão, a média. Responsável de outra consultoria ou desligado é recusado (`responsavel_invalido`).
+- **Técnica ou administrativa muda só o preço**: vira uma linha da tabela de hora de venda (ex.: "Administrativo · Protocolo"). O custo é sempre a hora da pessoa.
+- **Mês previsto e carga.** Cada serviço tem o mês previsto (primeiro dia do mês, `DATE`). Ao escolher o responsável e o mês, a tela mostra as horas dele naquele mês (orçamentos aprovados + este) contra a jornada, e avisa por texto quando passa.
+  - `public.carga_da_equipe` (só Gestão) devolve a jornada e as horas comprometidas por membro e mês, do mês atual no fuso da consultoria em diante.
+  - Enquanto não houver o passo de aprovação no produto (ORC-04), só orçamentos marcados como aprovados contam.
+- **Depois da aprovação** (ADR-0016), cada serviço vira uma etapa da demanda com o responsável escolhido no orçamento, e a gestão pode trocar.
+- **Onde vive:** mesma migration `20261112110000_preco_pela_tabela_e_piso.sql` (nunca aplicada fora desta máquina); domínio em `carga-da-equipe.ts`, `custoHoraPorMembro` e `horaDeCustoDaPessoa`; testes em `supabase/tests/220_responsavel_e_carga.test.sql`.
 - **Ainda não feito:**
   - serviços de preço fechado (RAP, EAS, PRAD, PGRS; e a tabela do CAU, que é por área e complexidade, não por hora);
   - deslocamento por faixa;

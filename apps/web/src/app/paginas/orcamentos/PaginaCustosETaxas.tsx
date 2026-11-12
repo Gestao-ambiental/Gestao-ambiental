@@ -7,6 +7,7 @@ import {
   formatarCentavos,
   formatarPontosBase,
   formatarReais,
+  horaDeCustoDaPessoa,
   type ComposicaoDaEquipe,
 } from '@gestao-ambiental/domain'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -28,6 +29,7 @@ import {
   type HoraDeVenda,
   type PessoaDaBase,
 } from '@/lib/api/orcamentos'
+import { listarMembrosAtivos, type MembroAtivo } from '@/lib/api/perfil'
 import { mensagemDoErro } from '@/lib/erros'
 
 import {
@@ -100,15 +102,15 @@ const CONTAS_SUGERIDAS = [
   'Material de escritório',
 ]
 
-/** Pessoa ou perfil da equipe, com os números como texto enquanto a pessoa digita. */
+/** Pessoa da equipe (um membro com login), com os números como texto enquanto a pessoa digita. */
 interface LinhaPessoa {
   id: string
-  descricao: string
+  /** Membro da consultoria: recebe os serviços dos orçamentos. */
+  membroId: string
   socio: boolean
   custo: string
+  /** Horas de trabalho no mês (jornada). */
   horas: string
-  aproveitamento: string
-  parteTecnica: string
   /** Remuneração pelo piso: horas no mês × piso por hora. */
   peloPiso: boolean
   profissao: string
@@ -208,12 +210,10 @@ function lerContas(linhas: readonly LinhaConta[]): ContaDoMes[] | string {
 function linhasDe(base: BaseDeCustosDaConsultoria | null): LinhaPessoa[] {
   return (base?.equipe ?? []).map((p) => ({
     id: p.id,
-    descricao: p.descricao,
+    membroId: p.membroId,
     socio: p.socio,
     custo: formatarCentavos(p.custoMensalCentavos),
     horas: String(p.horasDisponiveisMes),
-    aproveitamento: textoDoPercentual(p.aproveitamentoPb),
-    parteTecnica: textoDoPercentual(p.parteTecnicaPb),
     peloPiso: p.peloPiso,
     profissao: p.profissao ?? '',
   }))
@@ -222,18 +222,16 @@ function linhasDe(base: BaseDeCustosDaConsultoria | null): LinhaPessoa[] {
 function novaPessoa(): LinhaPessoa {
   return {
     id: crypto.randomUUID(),
-    descricao: '',
+    membroId: '',
     socio: false,
     custo: '',
     horas: '',
-    aproveitamento: '',
-    parteTecnica: '100',
     peloPiso: false,
     profissao: '',
   }
 }
 
-/** Horas disponíveis no mês: inteiro de 0 a 744; vazio é zero. */
+/** Horas de trabalho no mês: inteiro de 0 a 744; vazio é zero. */
 function lerHorasDoMes(texto: string): number | null {
   const limpo = texto.trim()
   if (limpo === '') return 0
@@ -247,6 +245,12 @@ function custoPeloPiso(horas: number, pisoHoraCentavos: number): number {
   return Math.round(horas * pisoHoraCentavos)
 }
 
+/** Custo do mês da linha: pelo piso, horas × piso; senão, o digitado. `null` se inválido. */
+function custoDaLinha(l: LinhaPessoa, pisoHoraCentavos: number): number | null {
+  const horas = lerHorasDoMes(l.horas)
+  return l.peloPiso ? custoPeloPiso(horas ?? 0, pisoHoraCentavos) : lerReaisOuZero(l.custo)
+}
+
 /** Lê a equipe digitada. Devolve a primeira mensagem de erro, se houver. */
 function lerEquipe(
   linhas: readonly LinhaPessoa[],
@@ -256,39 +260,28 @@ function lerEquipe(
   for (const [indice, l] of linhas.entries()) {
     const n = String(indice + 1)
     const horas = lerHorasDoMes(l.horas)
-    const custo = l.peloPiso ? custoPeloPiso(horas ?? 0, pisoHoraCentavos) : lerReaisOuZero(l.custo)
-    const aproveitamento = lerPercentual(l.aproveitamento || '0')
-    const parteTecnica = lerPercentual(l.parteTecnica || '0')
-    if (!l.descricao.trim()) return `Equipe, linha ${n}: informe a pessoa ou o perfil.`
+    const custo = custoDaLinha(l, pisoHoraCentavos)
+    if (!l.membroId) return `Equipe, linha ${n}: escolha a pessoa.`
+    if (equipe.some((p) => p.membroId === l.membroId))
+      return `Equipe, linha ${n}: a pessoa já está em outra linha.`
     if (custo === null) return `Equipe, linha ${n}: custo mensal inválido.`
     if (horas === null) return `Equipe, linha ${n}: horas no mês de 0 a 744.`
-    if (aproveitamento === null || parteTecnica === null)
-      return `Equipe, linha ${n}: percentuais vão de 0 a 100.`
     equipe.push({
       id: l.id,
-      descricao: l.descricao.trim(),
+      membroId: l.membroId,
+      descricao: '',
       socio: l.socio,
       peloPiso: l.peloPiso,
       profissao: l.profissao.trim() || null,
       custoMensalCentavos: custo,
       horasDisponiveisMes: horas,
-      aproveitamentoPb: aproveitamento,
-      parteTecnicaPb: parteTecnica,
     })
   }
   return equipe
 }
 
 function composicaoDe(equipe: readonly PessoaDaBase[]): ComposicaoDaEquipe {
-  return composicaoDaEquipe(
-    equipe.map((p) => ({
-      custoMensalCentavos: p.custoMensalCentavos,
-      horasDisponiveisMes: p.horasDisponiveisMes,
-      aproveitamentoPb: p.aproveitamentoPb,
-      parteTecnicaPb: p.parteTecnicaPb,
-      socio: p.socio,
-    })),
-  )
+  return composicaoDaEquipe(equipe)
 }
 
 function lerCampos(
@@ -325,12 +318,14 @@ function lerCampos(
   let equipe: PessoaDaBase[] = []
   let composicao: ComposicaoDaEquipe | null = null
   if (linhas.length > 0) {
+    if (pisoHora === 0 && linhas.some((l) => l.peloPiso))
+      return 'Informe o piso por hora: há pessoas marcadas pelo piso.'
     const lida = lerEquipe(linhas, pisoHora)
     if (typeof lida === 'string') return lida
     equipe = lida
     composicao = composicaoDe(equipe)
     if (composicao.horaTecnicaCentavos === null)
-      return 'A equipe precisa de horas faturáveis: informe o aproveitamento de quem faz trabalho técnico.'
+      return 'A equipe precisa de horas no mês: informe as horas de cada pessoa.'
     horaTecnica = composicao.horaTecnicaCentavos
     horas = composicao.horasFaturaveisMes
   } else {
@@ -348,7 +343,7 @@ function lerCampos(
     base: {
       horaTecnicaCentavos: horaTecnica,
       custosFixosMensaisCentavos: custosFixos,
-      custosFixosEquipeCentavos: composicao?.custoAdministrativoCentavos ?? 0,
+      custosFixosEquipeCentavos: 0,
       horasFaturaveisMes: horas,
       margemDesejadaPb: margemDesejada,
       margemMinimaPb: margemMinima,
@@ -372,8 +367,9 @@ function lerCampos(
  * capacidade (rateio por hora), margens, tributos e taxas. Só a Gestão. Rascunhos passam a usar
  * a base nova ao serem salvos; propostas enviadas guardam a que usaram.
  *
- * A hora técnica e as horas faturáveis podem ser digitadas ou calculadas pela equipe (P9 e P10,
- * aprovadas em 11/11/2026): cada custo entra uma vez, a parte técnica na hora e o resto no rateio.
+ * A hora técnica e as horas faturáveis podem ser digitadas ou calculadas pela equipe: cada linha é
+ * um membro com login, com custo do mês e horas no mês (12/11/2026). A hora de custo de cada um é
+ * custo ÷ horas; quanto vira serviço é decidido no orçamento, no responsável de cada serviço.
  */
 export function PaginaCustosETaxas() {
   const { atual } = useConsultoria()
@@ -413,6 +409,10 @@ function Formulario({
   base: BaseDeCustosDaConsultoria | null
 }) {
   const queryClient = useQueryClient()
+  const membros = useQuery({
+    queryKey: ['membros-ativos', consultoriaId],
+    queryFn: () => listarMembrosAtivos(consultoriaId),
+  })
   const [c, setC] = useState<Campos>(() => camposDe(base))
   const [equipe, setEquipe] = useState<LinhaPessoa[]>(() => linhasDe(base))
   const [contas, setContas] = useState<LinhaConta[]>(() => contasDe(base))
@@ -478,9 +478,9 @@ function Formulario({
         ...a,
         horaTecnica: formatarCentavos(hora),
         horas: textoDasHoras(horas),
-        custosFixos: formatarCentavos(fixos + previa.custoAdministrativoCentavos),
+        custosFixos: formatarCentavos(fixos),
       }))
-      // O total passa a ser digitado: com a administração somada, as contas não fecham mais.
+      // O total passa a ser digitado.
       setContas([])
     }
     setEquipe([])
@@ -538,24 +538,13 @@ function Formulario({
       <div className="overflow-hidden rounded-(--radius-large) border bg-(--surface) shadow-cartao">
         <Grupo titulo="Custos e capacidade">
           {pelaEquipe ? (
-            <Linha
-              id="base-piso"
-              rotulo="Piso por hora (R$)"
-              apoio="Para quem recebe pelo piso: remuneração do mês = horas no mês × piso por hora. Referência: piso de engenheiro (Lei 4.950-A/66), 6 salários mínimos para 6h/dia; confirme o valor por hora com o contador"
-            >
-              <input
-                id="base-piso"
-                inputMode="decimal"
-                className={`${classeCampo} text-right tabular-nums`}
-                {...campo('pisoHora')}
-              />
-            </Linha>
-          ) : null}
-          {pelaEquipe ? (
             <Equipe
               linhas={equipe}
+              membros={membros.data ?? []}
+              membrosCarregando={membros.isPending}
               custoPorProfissao={custoPorProfissao}
               pisoHoraCentavos={pisoLido}
+              campoPiso={campo('pisoHora')}
               previa={previa}
               aoMudar={mudarPessoa}
               aoAdicionar={() => {
@@ -915,8 +904,11 @@ function Formulario({
 
 function Equipe({
   linhas,
+  membros,
+  membrosCarregando,
   custoPorProfissao,
   pisoHoraCentavos,
+  campoPiso,
   previa,
   aoMudar,
   aoAdicionar,
@@ -924,22 +916,28 @@ function Equipe({
   aoVoltar,
 }: {
   linhas: LinhaPessoa[]
+  membros: readonly MembroAtivo[]
+  membrosCarregando: boolean
   custoPorProfissao: readonly CustoDaProfissao[]
   pisoHoraCentavos: number
+  campoPiso: { value: string; onChange: (e: { target: { value: string } }) => void }
   previa: ComposicaoDaEquipe | null
   aoMudar: (id: string, alterar: (p: LinhaPessoa) => LinhaPessoa) => void
   aoAdicionar: () => void
   aoRemover: (id: string) => void
   aoVoltar: () => void
 }) {
+  const algumPeloPiso = linhas.some((p) => p.peloPiso)
+  const pisoDigitado = lerReaisOuZero(campoPiso.value)
+  const pisoFaltando = algumPeloPiso && (pisoDigitado === null || pisoDigitado === 0)
   return (
     <div className="flex flex-col gap-(--space-150)">
       <p className="max-w-3xl text-xs text-(--text-subtle)">
-        Uma linha por pessoa ou perfil, com remuneração ou pró-labore, encargos e benefícios do mês,
-        como informado pela contabilidade. Cada pessoa entra uma vez só: a parte técnica do custo
-        forma a hora técnica e o resto (gestão, comercial, administrativo) vai para o rateio. Horas
-        pagas incluem períodos que não viram serviço vendido; o aproveitamento é a parte das horas
-        disponíveis que você espera recuperar nos serviços.
+        Uma linha por pessoa da equipe, com o custo do mês (salário, piso ou pró-labore, com
+        encargos) e as horas de trabalho no mês. A hora de custo de cada um é custo ÷ horas. Quanto
+        dessas horas vira serviço é decidido em cada orçamento, ao escolher o responsável de cada
+        serviço. Só membros com login entram: quem ainda não tem conta precisa ser convidado em
+        Equipe.
       </p>
       {/* relative: textos sr-only (absolutos) ficam presos à área que rola, não à página. */}
       <div className="relative overflow-x-auto">
@@ -947,7 +945,7 @@ function Equipe({
           <thead>
             <tr>
               <th scope="col" className={classeCabecalho}>
-                Pessoa ou perfil
+                Pessoa
               </th>
               <th scope="col" className={`${classeCabecalho} w-48`}>
                 Profissão
@@ -965,13 +963,7 @@ function Equipe({
                 Horas no mês
               </th>
               <th scope="col" className={`${classeCabecalho} w-28 text-right`}>
-                Aproveitamento (%)
-              </th>
-              <th scope="col" className={`${classeCabecalho} w-28 text-right`}>
-                Parte técnica (%)
-              </th>
-              <th scope="col" className={`${classeCabecalho} w-24 text-right`}>
-                Faturáveis
+                Hora de custo
               </th>
               <th scope="col" className={`${classeCabecalho} w-12`}>
                 <span className="sr-only">Remover</span>
@@ -982,25 +974,41 @@ function Equipe({
             {linhas.map((p, indice) => {
               const n = String(indice + 1)
               const horas = lerHorasDoMes(p.horas)
-              const aproveitamento = lerPercentual(p.aproveitamento || '0')
-              const parte = lerPercentual(p.parteTecnica || '0')
-              const faturaveis =
-                horas === null || aproveitamento === null
+              const custo = custoDaLinha(p, pisoHoraCentavos)
+              const hora =
+                custo === null || horas === null
                   ? null
-                  : Math.round((horas * aproveitamento) / 100) / 100
+                  : horaDeCustoDaPessoa({
+                      custoMensalCentavos: custo,
+                      horasDisponiveisMes: horas,
+                      socio: p.socio,
+                    })
+              // Cada membro uma vez: os já escolhidos em outras linhas saem da lista.
+              const escolhidos = new Set(linhas.filter((x) => x.id !== p.id).map((x) => x.membroId))
+              const opcoes = membros.filter((m) => !escolhidos.has(m.id))
+              const membroSumiu = p.membroId !== '' && !membros.some((m) => m.id === p.membroId)
               return (
                 <tr key={p.id}>
                   <td className={classeCelula}>
-                    <input
-                      aria-label={`Pessoa ou perfil ${n}`}
-                      placeholder="Ex.: Analista ambiental"
+                    <select
+                      aria-label={`Pessoa da linha ${n}`}
                       className={classeCampo}
-                      value={p.descricao}
+                      value={p.membroId}
+                      aria-invalid={p.membroId === '' || membroSumiu || undefined}
+                      aria-busy={membrosCarregando || undefined}
                       onChange={(e) => {
                         const valor = e.target.value
-                        aoMudar(p.id, (x) => ({ ...x, descricao: valor }))
+                        aoMudar(p.id, (x) => ({ ...x, membroId: valor }))
                       }}
-                    />
+                    >
+                      <option value="">{membrosCarregando ? 'Carregando…' : 'Escolha'}</option>
+                      {membroSumiu ? <option value={p.membroId}>Membro desligado</option> : null}
+                      {opcoes.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.nome}
+                        </option>
+                      ))}
+                    </select>
                   </td>
                   <td className={classeCelula}>
                     <input
@@ -1038,14 +1046,14 @@ function Equipe({
                   <td className={classeCelula}>
                     {p.peloPiso ? (
                       <span className="block text-right tabular-nums">
-                        {formatarCentavos(custoPeloPiso(horas ?? 0, pisoHoraCentavos))}
+                        {formatarCentavos(custo ?? 0)}
                         <span className="sr-only"> por mês, pelo piso, na linha {n}</span>
                       </span>
                     ) : (
                       <input
                         aria-label={`Custo mensal da linha ${n}`}
                         inputMode="decimal"
-                        aria-invalid={lerReaisOuZero(p.custo) === null || undefined}
+                        aria-invalid={custo === null || undefined}
                         className={`${classeCampo} text-right tabular-nums`}
                         value={p.custo}
                         onChange={(e) => {
@@ -1059,7 +1067,7 @@ function Equipe({
                     <input
                       aria-label={`Horas no mês da linha ${n}`}
                       inputMode="numeric"
-                      placeholder="168"
+                      placeholder="173"
                       aria-invalid={horas === null || undefined}
                       className={`${classeCampo} text-right tabular-nums`}
                       value={p.horas}
@@ -1069,34 +1077,9 @@ function Equipe({
                       }}
                     />
                   </td>
-                  <td className={classeCelula}>
-                    <input
-                      aria-label={`Aproveitamento da linha ${n}`}
-                      inputMode="decimal"
-                      aria-invalid={aproveitamento === null || undefined}
-                      className={`${classeCampo} text-right tabular-nums`}
-                      value={p.aproveitamento}
-                      onChange={(e) => {
-                        const valor = e.target.value
-                        aoMudar(p.id, (x) => ({ ...x, aproveitamento: valor }))
-                      }}
-                    />
-                  </td>
-                  <td className={classeCelula}>
-                    <input
-                      aria-label={`Parte técnica da linha ${n}`}
-                      inputMode="decimal"
-                      aria-invalid={parte === null || undefined}
-                      className={`${classeCampo} text-right tabular-nums`}
-                      value={p.parteTecnica}
-                      onChange={(e) => {
-                        const valor = e.target.value
-                        aoMudar(p.id, (x) => ({ ...x, parteTecnica: valor }))
-                      }}
-                    />
-                  </td>
                   <td className={`${classeCelula} text-right tabular-nums text-(--text-subtle)`}>
-                    {faturaveis === null ? '—' : `${textoDasHoras(faturaveis)} h`}
+                    {hora === null ? '—' : formatarCentavos(hora)}
+                    <span className="sr-only"> por hora, na linha {n}</span>
                   </td>
                   <td className={classeCelula}>
                     <BotaoIcone
@@ -1113,9 +1096,43 @@ function Equipe({
           </tbody>
         </table>
       </div>
+      {algumPeloPiso ? (
+        <div className="flex flex-col gap-(--space-075)">
+          <Linha
+            id="base-piso"
+            rotulo="Piso por hora (R$)"
+            apoio="Pelo piso: custo do mês = horas no mês × piso por hora. Confirme o valor com o contador."
+          >
+            <input
+              id="base-piso"
+              inputMode="decimal"
+              aria-invalid={pisoFaltando || undefined}
+              aria-describedby={pisoFaltando ? 'base-piso-falta' : undefined}
+              className={`${classeCampo} text-right tabular-nums`}
+              {...campoPiso}
+            />
+          </Linha>
+          {pisoFaltando ? (
+            <p id="base-piso-falta" className="text-xs text-(--text-danger)">
+              Informe o piso por hora: sem ele, o custo de quem está pelo piso fica zero.
+            </p>
+          ) : null}
+          <details className="max-w-3xl text-xs text-(--text-subtle)">
+            <summary className="w-fit cursor-pointer text-(--text-link) hover:underline">
+              Como calcular o piso por hora
+            </summary>
+            <p className="mt-(--space-075)">
+              Referência: piso de engenheiro (Lei 4.950-A/66), 6 salários mínimos para 6 h por dia.
+              Para 8 h por dia, as 2 horas a mais têm 25% de acréscimo, o que dá 8,5 salários
+              mínimos por mês. Por hora: piso do mês ÷ horas do mês (40 h por semana são cerca de
+              173,33 h). Atualize quando o salário mínimo mudar e confirme a conta com o contador.
+            </p>
+          </details>
+        </div>
+      ) : null}
       <div className="flex flex-wrap items-center justify-between gap-(--space-100)">
         <Botao aparencia="link" iconeAntes="plus" onClick={aoAdicionar}>
-          Adicionar pessoa ou perfil
+          Adicionar pessoa
         </Botao>
         <Botao aparencia="link" onClick={aoVoltar}>
           Digitar hora técnica e horas
@@ -1125,19 +1142,15 @@ function Equipe({
         aria-label="Resultado da equipe"
         className="grid max-w-xl grid-cols-[1fr_auto] gap-x-(--space-200) gap-y-(--space-075) corpo"
       >
-        <dt className="text-(--text-subtle)">Hora técnica (custo técnico ÷ horas faturáveis)</dt>
+        <dt className="text-(--text-subtle)">Hora técnica média (custo ÷ horas da equipe)</dt>
         <dd className="text-right tabular-nums">
           {previa?.horaTecnicaCentavos == null
             ? 'pendente'
             : formatarReais(previa.horaTecnicaCentavos)}
         </dd>
-        <dt className="text-(--text-subtle)">Horas faturáveis por mês</dt>
+        <dt className="text-(--text-subtle)">Horas da equipe por mês</dt>
         <dd className="text-right tabular-nums">
           {previa ? `${textoDasHoras(previa.horasFaturaveisMes)} h` : 'pendente'}
-        </dd>
-        <dt className="text-(--text-subtle)">Parte administrativa, somada ao rateio</dt>
-        <dd className="text-right tabular-nums">
-          {previa ? formatarReais(previa.custoAdministrativoCentavos) : 'pendente'}
         </dd>
         <dt className="text-(--text-subtle)">Remuneração dos sócios (pró-labore)</dt>
         <dd className="text-right tabular-nums">
@@ -1151,8 +1164,9 @@ function Equipe({
         ))}
       </dl>
       <p className="max-w-3xl text-xs text-(--text-subtle)">
-        Cada serviço usa a hora técnica da profissão da hora de venda escolhida. Profissão sem
-        ninguém na equipe usa a média da equipe.
+        No orçamento, o custo de cada serviço usa a hora do responsável. Sem responsável, vale a
+        hora da profissão da hora de venda escolhida; sem ninguém dessa profissão, a média da
+        equipe.
       </p>
     </div>
   )

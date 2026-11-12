@@ -690,6 +690,9 @@ isOneToOne: false
 "cancelar_convite":
 { Args: { "p_convite_id": string }; Returns: undefined
                            },
+"carga_da_equipe":
+{ Args: { "p_consultoria_id": string }; Returns: Json
+                           },
 "concluir_etapa":
 { Args: { "p_etapa_id": string }; Returns: undefined
                            },

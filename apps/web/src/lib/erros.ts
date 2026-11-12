@@ -97,9 +97,8 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   parcelas_demais: 'Use até 60 parcelas.',
   item_invalido: 'Confira os itens: serviço, horas e valores.',
   equipe_invalida:
-    'Confira a equipe: nome, custo mensal, horas de 0 a 744 e percentuais de 0 a 100.',
-  equipe_sem_horas_faturaveis:
-    'A equipe precisa de horas faturáveis: informe o aproveitamento de quem faz trabalho técnico.',
+    'Confira a equipe: cada pessoa uma vez, membro ativo da consultoria, custo mensal e horas de 0 a 744.',
+  equipe_sem_horas_faturaveis: 'A equipe precisa de horas no mês: informe as horas de cada pessoa.',
   preco_automatico_sem_base:
     'Para usar o preço automático, configure antes os custos e taxas da consultoria.',
   despesa_invalida: 'Confira as despesas: descrição, valor e como é paga.',

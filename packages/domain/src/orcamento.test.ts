@@ -7,6 +7,7 @@ import {
   aplicarPontosBase,
   composicaoDaEquipe,
   custoDoItem,
+  horaDeCustoDaPessoa,
   custoFixoPorHora,
   diferencaDasParcelas,
   distribuirPorMaiorResto,
@@ -90,90 +91,43 @@ describe('base de custos', () => {
   })
 })
 
-describe('composição pela equipe (P9 e P10)', () => {
-  // Exemplo gerencial do Codex: R$ 6.000 por mês e 80 horas recuperáveis dão R$ 75 por hora.
-  it('hora técnica = custo técnico ÷ horas faturáveis, não ÷ horas pagas', () => {
-    const c = composicaoDaEquipe([
-      {
-        custoMensalCentavos: 600_000,
-        horasDisponiveisMes: 160,
-        aproveitamentoPb: 5_000,
-        parteTecnicaPb: 10_000,
-        socio: false,
-      },
-    ])
-    expect(c.horasFaturaveisMes).toBe(80)
-    expect(c.horaTecnicaCentavos).toBe(7_500)
-    expect(c.custoAdministrativoCentavos).toBe(0)
-  })
-
-  it('pró-labore do sócio entra uma vez: parte técnica na hora, o resto no rateio', () => {
-    const c = composicaoDaEquipe([
-      {
-        custoMensalCentavos: 1_000_000,
-        horasDisponiveisMes: 160,
-        aproveitamentoPb: 4_000,
-        parteTecnicaPb: 6_000,
+describe('composição pela equipe', () => {
+  it('hora de custo da pessoa = custo do mês ÷ horas no mês', () => {
+    // Piso: 173 h × 79,49 = 13.751,77 ÷ 173 h = 79,49.
+    expect(
+      horaDeCustoDaPessoa({
+        custoMensalCentavos: 1_375_177,
+        horasDisponiveisMes: 173,
         socio: true,
-      },
-      {
-        custoMensalCentavos: 500_000,
-        horasDisponiveisMes: 168,
-        aproveitamentoPb: 7_500,
-        parteTecnicaPb: 10_000,
-        socio: false,
-      },
-      {
-        custoMensalCentavos: 300_000,
-        horasDisponiveisMes: 168,
-        aproveitamentoPb: 0,
-        parteTecnicaPb: 0,
-        socio: false,
-      },
+      }),
+    ).toBe(7_949)
+    expect(
+      horaDeCustoDaPessoa({ custoMensalCentavos: 500_000, horasDisponiveisMes: 0, socio: false }),
+    ).toBeNull()
+  })
+
+  it('hora técnica média = Σ custos ÷ Σ horas, com o pró-labore entrando uma vez', () => {
+    const c = composicaoDaEquipe([
+      { custoMensalCentavos: 1_000_000, horasDisponiveisMes: 160, socio: true },
+      { custoMensalCentavos: 500_000, horasDisponiveisMes: 168, socio: false },
+      { custoMensalCentavos: 300_000, horasDisponiveisMes: 168, socio: false },
     ])
-    expect(c.custoTecnicoCentavos).toBe(1_100_000)
-    expect(c.custoAdministrativoCentavos).toBe(700_000)
-    expect(c.custoTecnicoCentavos + c.custoAdministrativoCentavos).toBe(1_800_000)
+    expect(c.custoTecnicoCentavos).toBe(1_800_000)
     expect(c.remuneracaoDosSociosCentavos).toBe(1_000_000)
-    // 160 × 40% + 168 × 75% = 64 + 126 = 190 h; 11.000 ÷ 190 = 57,894… → R$ 57,89.
-    expect(c.horasFaturaveisMes).toBe(190)
-    expect(c.horaTecnicaCentavos).toBe(5_789)
+    // 18.000 ÷ 496 h = 36,290… → R$ 36,29.
+    expect(c.horasFaturaveisMes).toBe(496)
+    expect(c.horaTecnicaCentavos).toBe(3_629)
   })
 
-  it('arredonda as horas faturáveis em duas casas', () => {
+  it('sem horas não há hora técnica', () => {
     const c = composicaoDaEquipe([
-      {
-        custoMensalCentavos: 100_000,
-        horasDisponiveisMes: 157,
-        aproveitamentoPb: 3_333,
-        parteTecnicaPb: 10_000,
-        socio: false,
-      },
-    ])
-    expect(c.horasFaturaveisMes).toBe(52.33)
-    expect(c.horaTecnicaCentavos).toBe(1_911)
-  })
-
-  it('sem horas faturáveis não há hora técnica', () => {
-    const c = composicaoDaEquipe([
-      {
-        custoMensalCentavos: 100_000,
-        horasDisponiveisMes: 160,
-        aproveitamentoPb: 0,
-        parteTecnicaPb: 10_000,
-        socio: false,
-      },
+      { custoMensalCentavos: 100_000, horasDisponiveisMes: 0, socio: false },
     ])
     expect(c.horaTecnicaCentavos).toBeNull()
   })
 
   it('recusa horas fora do mês ou fracionadas', () => {
-    const linha = {
-      custoMensalCentavos: 100_000,
-      aproveitamentoPb: 5_000,
-      parteTecnicaPb: 10_000,
-      socio: false,
-    }
+    const linha = { custoMensalCentavos: 100_000, socio: false }
     expect(() => composicaoDaEquipe([{ ...linha, horasDisponiveisMes: 745 }])).toThrow(
       ErroDeOrcamento,
     )

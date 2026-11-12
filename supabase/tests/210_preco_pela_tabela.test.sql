@@ -29,11 +29,10 @@ select throws_ok(
 select lives_ok(
   $sql$select public.salvar_base_de_custos('c0000000-0000-4000-8000-00000000000a',
       1, 25000, 1, 3000, 0, 0, 0, 0, 0, $json$[
-      {"id": "40000000-0000-4000-8000-0000000000d1", "descricao": "Sócio", "socio": true, "pelo_piso": true,
-       "profissao": "Eng. ambiental", "horas_disponiveis_mes": 173, "aproveitamento_pb": 10000, "parte_tecnica_pb": 10000},
-      {"id": "40000000-0000-4000-8000-0000000000d2", "descricao": "Sócia", "socio": true,
-       "profissao": "Biólogo", "custo_mensal_centavos": 500000, "horas_disponiveis_mes": 87,
-       "aproveitamento_pb": 10000, "parte_tecnica_pb": 10000}
+      {"id": "40000000-0000-4000-8000-0000000000d1", "membro_id": "d0000000-0000-4000-8000-0000000000a1",
+       "socio": true, "pelo_piso": true, "profissao": "Eng. ambiental", "horas_disponiveis_mes": 173},
+      {"id": "40000000-0000-4000-8000-0000000000d2", "membro_id": "d0000000-0000-4000-8000-0000000000a2",
+       "socio": true, "profissao": "Biólogo", "custo_mensal_centavos": 500000, "horas_disponiveis_mes": 87}
     ]$json$::jsonb, '[]'::jsonb, 25000, 0, $json$[
       {"id": "h-eng-jr", "profissao": "Eng. ambiental", "atividade": "Júnior", "valor_centavos": 21419,
        "fonte": "ACEAMB 2015 corrigida (ago/2026)"},

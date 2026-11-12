@@ -1,6 +1,10 @@
 import {
+  cargaDoMes,
   formatarCentavos,
   formatarDuracao,
+  hojeNoFuso,
+  mesesDeExecucao,
+  rotuloDoMes,
   formatarPontosBase,
   formatarReais,
   lerDuracao,
@@ -26,6 +30,7 @@ import { Selo } from '@/components/ui/selo'
 import {
   ROTULO_DO_TRATAMENTO,
   cadastrarEmpreendimentoDoProspecto,
+  obterCargaDaEquipe,
   obterOrcamento,
   salvarOrcamento,
   type DadosDoRascunho,
@@ -34,6 +39,7 @@ import {
   type TratamentoDespesa,
 } from '@/lib/api/orcamentos'
 import { mensagemDoErro } from '@/lib/erros'
+import { listarMembrosAtivos } from '@/lib/api/perfil'
 import { mascararCnpj } from '@gestao-ambiental/domain'
 
 import {
@@ -87,6 +93,10 @@ interface LinhaItem {
   extra: string
   /** Linha da tabela de hora de venda: preço (forma "tabela") e profissão do custo. */
   horaVendaId: string
+  /** Membro responsável ('' = sem responsável): o custo usa a hora dele. */
+  responsavelId: string
+  /** Mês previsto (aaaa-mm-01; '' = sem mês). */
+  mesPrevisto: string
 }
 interface LinhaDespesa {
   id: string
@@ -143,6 +153,8 @@ function rascunhoDe(o: Orcamento): Rascunho {
       horas: i.minutos ? formatarDuracao(i.minutos) : '',
       extra: i.custoDiretoExtraCentavos ? formatarCentavos(i.custoDiretoExtraCentavos) : '',
       horaVendaId: i.horaVendaId ?? '',
+      responsavelId: i.responsavelId ?? '',
+      mesPrevisto: i.mesPrevisto ?? '',
     })),
     despesas: o.despesas.map((d) => ({
       id: d.id,
@@ -216,6 +228,8 @@ function paraSalvar(r: Rascunho, deProspecto: boolean): DadosDoRascunho | string
       minutos,
       custoDiretoExtraCentavos: extra,
       horaVendaId: i.horaVendaId || null,
+      responsavelId: i.responsavelId || null,
+      mesPrevisto: i.mesPrevisto || null,
     })
   }
   const despesas: DadosDoRascunho['despesas'] = []
@@ -381,6 +395,7 @@ function Editor({
       minutos: lerDuracao(i.horas) ?? 0,
       custoDiretoExtraCentavos: lerReaisOuZero(i.extra) ?? 0,
       horaVendaId: i.horaVendaId || null,
+      responsavelId: i.responsavelId || null,
     }))
     const incluidas = r.despesas
       .filter((d) => d.tratamento === 'incluida')
@@ -423,6 +438,31 @@ function Editor({
   const pelaTabela = r.formaPreco === 'tabela'
   const horaPadrao = horas[0]?.id ?? ''
 
+  // Responsável: só quem está na equipe de Custos e taxas (tem hora de custo). Nome vem dos
+  // membros ativos; a carga do mês vem dos orçamentos aprovados mais este.
+  const { atual } = useConsultoria()
+  const membros = useQuery({
+    queryKey: ['membros-ativos', atual.consultoriaId],
+    queryFn: () => listarMembrosAtivos(atual.consultoriaId),
+    enabled: editavel,
+  })
+  const carga = useQuery({
+    queryKey: ['carga-da-equipe', atual.consultoriaId],
+    queryFn: () => obterCargaDaEquipe(atual.consultoriaId),
+    enabled: editavel,
+  })
+  const horaDoMembro = new Map(
+    (base?.custoHoraPorMembro ?? []).map((c) => [c.membroId, c.horaCentavos]),
+  )
+  const responsaveis = (membros.data ?? []).filter((m) => horaDoMembro.has(m.id))
+  const nomeDoMembro = new Map((membros.data ?? []).map((m) => [m.id, m.nome]))
+  const meses = mesesDeExecucao(hojeNoFuso(new Date(), atual.fuso))
+  const servicosDoOrcamento = r.itens.map((i) => ({
+    responsavelId: i.responsavelId || null,
+    mesPrevisto: i.mesPrevisto || null,
+    minutos: lerDuracao(i.horas) ?? 0,
+  }))
+
   function mudarItem(id: string, alterar: (item: LinhaItem) => LinhaItem) {
     mudar((a) => ({ ...a, itens: a.itens.map((x) => (x.id === id ? alterar(x) : x)) }))
   }
@@ -439,6 +479,8 @@ function Editor({
             e.horasSugeridas === null ? '' : formatarDuracao(Math.round(e.horasSugeridas * 60)),
           extra: '',
           horaVendaId: horaPadrao,
+          responsavelId: '',
+          mesPrevisto: '',
         })),
       ],
       despesas: [
@@ -704,7 +746,7 @@ function Editor({
               ) : null}
               {/* relative: textos sr-only (absolutos) ficam presos à área que rola, não à página. */}
               <div className="relative overflow-x-auto">
-                <table className="w-full min-w-[640px] border-collapse corpo">
+                <table className="w-full min-w-[1040px] border-collapse corpo">
                   <thead>
                     <tr>
                       <th scope="col" className={classeCabecalho}>
@@ -718,6 +760,12 @@ function Editor({
                           {pelaTabela ? 'Hora de venda' : 'Profissão'}
                         </th>
                       ) : null}
+                      <th scope="col" className={`${classeCabecalho} w-52`}>
+                        Responsável
+                      </th>
+                      <th scope="col" className={`${classeCabecalho} w-32`}>
+                        Mês
+                      </th>
                       <th scope="col" className={`${classeCabecalho} w-36 text-right`}>
                         Outros custos (R$)
                       </th>
@@ -740,7 +788,7 @@ function Editor({
                     {r.itens.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={5 + (horas.length > 0 ? 1 : 0) + (pelaTabela ? 1 : 0)}
+                          colSpan={7 + (horas.length > 0 ? 1 : 0) + (pelaTabela ? 1 : 0)}
                           className={`${classeCelula} text-(--text-subtle)`}
                         >
                           Nenhum serviço ainda. Escolha um modelo ou adicione os itens.
@@ -816,6 +864,58 @@ function Editor({
                             </td>
                           ) : null}
                           <td className={classeCelula}>
+                            <CelulaResponsavel
+                              n={n}
+                              valor={item.responsavelId}
+                              opcoes={responsaveis.map((m) => ({
+                                id: m.id,
+                                rotulo: `${m.nome} · ${formatarCentavos(horaDoMembro.get(m.id) ?? 0)}/h`,
+                              }))}
+                              nomeDoValor={nomeDoMembro.get(item.responsavelId) ?? null}
+                              carregando={membros.isPending && editavel}
+                              desabilitado={!editavel}
+                              carga={
+                                editavel && item.responsavelId && item.mesPrevisto && carga.data
+                                  ? cargaDoMes(
+                                      item.responsavelId,
+                                      item.mesPrevisto,
+                                      carga.data.jornada,
+                                      carga.data.comprometido,
+                                      servicosDoOrcamento,
+                                    )
+                                  : null
+                              }
+                              mes={item.mesPrevisto}
+                              aoMudar={(valor) => {
+                                mudarItem(item.id, (x) => ({ ...x, responsavelId: valor }))
+                              }}
+                            />
+                          </td>
+                          <td className={classeCelula}>
+                            <select
+                              aria-label={`Mês previsto do item ${n}`}
+                              className={classeCampo}
+                              value={item.mesPrevisto}
+                              disabled={!editavel}
+                              onChange={(e) => {
+                                const valor = e.target.value
+                                mudarItem(item.id, (x) => ({ ...x, mesPrevisto: valor }))
+                              }}
+                            >
+                              <option value="">Sem mês</option>
+                              {item.mesPrevisto && !meses.includes(item.mesPrevisto as never) ? (
+                                <option value={item.mesPrevisto}>
+                                  {rotuloDoMes(item.mesPrevisto)}
+                                </option>
+                              ) : null}
+                              {meses.map((m) => (
+                                <option key={m} value={m}>
+                                  {rotuloDoMes(m)}
+                                </option>
+                              ))}
+                            </select>
+                          </td>
+                          <td className={classeCelula}>
                             <CampoNumero
                               rotulo={`Outros custos do item ${n}`}
                               reais
@@ -879,6 +979,8 @@ function Editor({
                             horas: '',
                             extra: '',
                             horaVendaId: horaPadrao,
+                            responsavelId: '',
+                            mesPrevisto: '',
                           },
                         ],
                       }))
@@ -890,7 +992,8 @@ function Editor({
                   <span />
                 )}
                 <p className="text-xs text-(--text-subtle)">
-                  Custo = horas × hora técnica + outros custos + contas da consultoria pelas horas.
+                  Custo = horas × hora do responsável (sem responsável, a da profissão ou a média) +
+                  outros custos + contas da consultoria pelas horas.
                 </p>
               </div>
             </Secao>
@@ -1848,6 +1951,72 @@ function NavegacaoDasEtapas({
         >
           Continuar para {proxima.toLowerCase()}
         </Botao>
+      ) : null}
+    </div>
+  )
+}
+
+/**
+ * Responsável do serviço, com a carga dele no mês escolhido: horas em orçamentos aprovados mais as
+ * deste, contra a jornada de Custos e taxas. Passar da jornada é avisado por texto, não só por cor.
+ */
+function CelulaResponsavel({
+  n,
+  valor,
+  opcoes,
+  nomeDoValor,
+  carregando,
+  desabilitado,
+  carga,
+  mes,
+  aoMudar,
+}: {
+  n: string
+  valor: string
+  opcoes: { id: string; rotulo: string }[]
+  nomeDoValor: string | null
+  carregando: boolean
+  desabilitado: boolean
+  carga: ReturnType<typeof cargaDoMes> | null
+  mes: string
+  aoMudar: (valor: string) => void
+}) {
+  const idCarga = `carga-do-item-${n}`
+  const naLista = opcoes.some((o) => o.id === valor)
+  return (
+    <div className="flex flex-col gap-(--space-025)">
+      <select
+        aria-label={`Responsável pelo item ${n}`}
+        aria-describedby={carga ? idCarga : undefined}
+        aria-busy={carregando || undefined}
+        className={classeCampo}
+        value={valor}
+        disabled={desabilitado}
+        onChange={(e) => {
+          aoMudar(e.target.value)
+        }}
+      >
+        <option value="">{carregando ? 'Carregando…' : 'Sem responsável'}</option>
+        {valor && !naLista ? (
+          <option value={valor}>{nomeDoValor ?? 'Fora da equipe de Custos e taxas'}</option>
+        ) : null}
+        {opcoes.map((o) => (
+          <option key={o.id} value={o.id}>
+            {o.rotulo}
+          </option>
+        ))}
+      </select>
+      {carga ? (
+        <span
+          id={idCarga}
+          className={`text-xs tabular-nums ${carga.acimaDaJornada ? 'text-(--text-danger)' : 'text-(--text-subtle)'}`}
+        >
+          {rotuloDoMes(mes)}: {formatarDuracao(carga.totalMinutos)}
+          {carga.jornadaMinutos === null
+            ? ' (sem jornada em Custos e taxas)'
+            : ` de ${formatarDuracao(carga.jornadaMinutos)}`}
+          {carga.acimaDaJornada ? ', acima da jornada' : ''}
+        </span>
       ) : null}
     </div>
   )

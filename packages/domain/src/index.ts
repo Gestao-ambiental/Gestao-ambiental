@@ -116,6 +116,7 @@ export {
   custoDoItem,
   custoFixoPorHora,
   diferencaDasParcelas,
+  horaDeCustoDaPessoa,
   distribuirPorMaiorResto,
   formatarCentavos,
   formatarDuracao,
@@ -140,10 +141,26 @@ export type {
 } from './orcamento'
 
 export {
+  MESES_DE_EXECUCAO,
+  cargaDoMes,
+  ehMesDeExecucao,
+  inicioDoMes,
+  mesesDeExecucao,
+  rotuloDoMes,
+} from './carga-da-equipe'
+export type {
+  CargaDoMes,
+  HorasComprometidas,
+  JornadaDoMembro,
+  ServicoComResponsavel,
+} from './carga-da-equipe'
+
+export {
   MAXIMO_CONTAS_DO_MES,
   MAXIMO_KM_POR_VISITA,
   MAXIMO_VISITAS,
   SEM_VISITAS,
+  custoHoraPorMembro,
   custoHoraPorProfissao,
   mesmaProfissao,
   precificarOrcamento,
@@ -156,6 +173,7 @@ export type {
   EntradaDoPreco,
   FormaDePreco,
   CustoDaProfissao,
+  CustoDoMembro,
   HoraDeVenda,
   PendenciaDoPreco,
   PrecoDoOrcamento,

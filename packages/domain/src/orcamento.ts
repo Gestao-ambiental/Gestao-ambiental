@@ -82,71 +82,70 @@ export function custoFixoPorHora(base: BaseDeCustos): number | null {
 export const MAXIMO_LINHAS_DA_EQUIPE = 100
 export const HORAS_DISPONIVEIS_MAXIMAS_MES = 744
 
+/**
+ * Uma pessoa da equipe (decisão do Eduardo, 12/11/2026): custo do mês (salário, piso ou pró-labore,
+ * com encargos) e horas de trabalho no mês (a jornada). Quanto dessas horas vira serviço, e se é
+ * técnico ou administrativo, é decidido em cada orçamento, no responsável de cada serviço.
+ */
 export interface LinhaDaEquipe {
-  /** Remuneração (salário ou pró-labore) + encargos + benefícios do mês, informados pela contabilidade. */
+  /** Remuneração (salário, piso ou pró-labore) + encargos + benefícios do mês. */
   custoMensalCentavos: number
-  /** Horas disponíveis no mês: jornada menos ausências. Inteiras. */
+  /** Horas de trabalho no mês (ex.: 173 h para 40 h por semana). Inteiras. */
   horasDisponiveisMes: number
-  /** Parte das horas disponíveis que vira serviço vendido (horas faturáveis). */
-  aproveitamentoPb: number
-  /** Parte do custo que é trabalho técnico. O resto (gestão, comercial, administrativo) vai para o rateio. */
-  parteTecnicaPb: number
   /** Sócio com pró-labore: só para identificar a remuneração dos sócios. */
   socio: boolean
 }
 
 export interface ComposicaoDaEquipe {
-  /** Soma da parte técnica dos custos: numerador da hora técnica. */
+  /** Soma do custo do mês de todos: numerador da hora técnica média. */
   custoTecnicoCentavos: number
-  /** Soma da parte administrativa: entra nos custos fixos rateados. */
-  custoAdministrativoCentavos: number
   /** Soma dos custos das linhas marcadas como sócio. */
   remuneracaoDosSociosCentavos: number
-  /** Σ horas disponíveis × aproveitamento, com duas casas. */
+  /** Σ horas no mês: as horas que a equipe tem para vender. */
   horasFaturaveisMes: number
-  /** Custo técnico ÷ horas faturáveis. `null` sem horas faturáveis. */
+  /** Custo ÷ horas: hora técnica média, usada quando o serviço não tem responsável. */
   horaTecnicaCentavos: number | null
 }
 
+function exigirLinhaDaEquipe(linha: LinhaDaEquipe): void {
+  exigirCentavos(linha.custoMensalCentavos)
+  if (
+    !Number.isSafeInteger(linha.horasDisponiveisMes) ||
+    linha.horasDisponiveisMes < 0 ||
+    linha.horasDisponiveisMes > HORAS_DISPONIVEIS_MAXIMAS_MES
+  ) {
+    throw new ErroDeOrcamento('valor_invalido')
+  }
+}
+
+/** Hora de custo de uma pessoa: custo do mês ÷ horas no mês. `null` sem horas. */
+export function horaDeCustoDaPessoa(linha: LinhaDaEquipe): number | null {
+  exigirLinhaDaEquipe(linha)
+  if (linha.horasDisponiveisMes === 0) return null
+  return dividirArredondando(BigInt(linha.custoMensalCentavos), BigInt(linha.horasDisponiveisMes))
+}
+
 /**
- * Hora técnica e horas faturáveis a partir da equipe. Cada custo entra uma única vez: a parte técnica
- * forma a hora técnica e a administrativa vai para o rateio, que divide pelas mesmas horas
- * faturáveis. O banco faz a mesma conta (salvar_base_de_custos).
+ * Hora técnica média e horas da equipe. O banco faz a mesma conta (salvar_base_de_custos). As contas
+ * do mês são rateadas por essas mesmas horas.
  */
 export function composicaoDaEquipe(linhas: readonly LinhaDaEquipe[]): ComposicaoDaEquipe {
   if (linhas.length > MAXIMO_LINHAS_DA_EQUIPE) throw new ErroDeOrcamento('valor_invalido')
   let custoTecnicoCentavos = 0
-  let custoAdministrativoCentavos = 0
   let remuneracaoDosSociosCentavos = 0
-  let horasVezesPontos = 0
+  let horas = 0
   for (const linha of linhas) {
-    exigirCentavos(linha.custoMensalCentavos)
-    exigirPontosBase(linha.aproveitamentoPb)
-    exigirPontosBase(linha.parteTecnicaPb)
-    if (
-      !Number.isSafeInteger(linha.horasDisponiveisMes) ||
-      linha.horasDisponiveisMes < 0 ||
-      linha.horasDisponiveisMes > HORAS_DISPONIVEIS_MAXIMAS_MES
-    ) {
-      throw new ErroDeOrcamento('valor_invalido')
-    }
-    const tecnico = aplicarPontosBase(linha.custoMensalCentavos, linha.parteTecnicaPb)
-    custoTecnicoCentavos += tecnico
-    custoAdministrativoCentavos += linha.custoMensalCentavos - tecnico
+    exigirLinhaDaEquipe(linha)
+    custoTecnicoCentavos += linha.custoMensalCentavos
     if (linha.socio) remuneracaoDosSociosCentavos += linha.custoMensalCentavos
-    horasVezesPontos += linha.horasDisponiveisMes * linha.aproveitamentoPb
+    horas += linha.horasDisponiveisMes
   }
-  // Horas faturáveis em centésimos de hora: Σ(h × pb) ÷ 100, arredondado.
-  const centesimos = dividirArredondando(BigInt(horasVezesPontos), 100n)
   return {
     custoTecnicoCentavos,
-    custoAdministrativoCentavos,
     remuneracaoDosSociosCentavos,
-    horasFaturaveisMes: centesimos / 100,
+    horasFaturaveisMes: horas,
     horaTecnicaCentavos:
-      centesimos === 0
-        ? null
-        : dividirArredondando(BigInt(custoTecnicoCentavos) * 100n, BigInt(centesimos)),
+      horas === 0 ? null : dividirArredondando(BigInt(custoTecnicoCentavos), BigInt(horas)),
   }
 }
 

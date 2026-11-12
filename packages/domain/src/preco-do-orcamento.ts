@@ -3,7 +3,9 @@
 // taxas) e é repartido entre os itens pelo custo de cada um, com centavos por maior resto. As
 // visitas técnicas têm preço fixo, sem margem (decisão de 12/11/2026), e viram uma linha própria.
 // Forma "tabela" (12/11/2026): preço do item = horas × hora de venda do nível + outros custos, e a
-// margem vira resultado. O banco grava os mesmos valores (private.precificar_orcamento).
+// margem vira resultado. O custo de cada item usa a hora de custo do responsável do serviço; sem
+// responsável, a da profissão da hora de venda; sem ninguém dessa profissão, a média da equipe. O
+// banco grava os mesmos valores (private.precificar_orcamento).
 
 import {
   aplicarPontosBase,
@@ -13,6 +15,7 @@ import {
   PONTOS_BASE_TOTAL,
   PRECO_MAXIMO_CENTAVOS,
   composicaoDaEquipe,
+  horaDeCustoDaPessoa,
   type CustoDoItem,
   type LinhaDaEquipe,
 } from './orcamento'
@@ -40,6 +43,13 @@ export interface BaseDoPreco {
   horasVenda?: readonly HoraDeVenda[]
   /** Hora técnica (custo) por profissão; sem a profissão, vale `horaTecnicaCentavos`. */
   custoHoraPorProfissao?: readonly CustoDaProfissao[]
+  /** Hora de custo de cada membro da equipe: custo do mês ÷ horas no mês. */
+  custoHoraPorMembro?: readonly CustoDoMembro[]
+}
+
+export interface CustoDoMembro {
+  membroId: string
+  horaCentavos: number
 }
 
 /** Uma linha da tabela de hora de venda: Eng. ambiental · Júnior; Biólogo · Sênior… */
@@ -152,6 +162,8 @@ export interface EntradaDoPreco {
     custoDiretoExtraCentavos: number
     /** Linha da tabela de hora de venda: preço (forma "tabela") e profissão do custo. */
     horaVendaId?: string | null
+    /** Membro responsável pelo serviço: o custo usa a hora dele. */
+    responsavelId?: string | null
   }[]
   visitas: VisitasDoOrcamento
   /** Estimativas das despesas incluídas no preço; `null` = a cotar. */
@@ -199,11 +211,14 @@ export function precificarOrcamento(entrada: EntradaDoPreco): PrecoDoOrcamento {
 
   if (!base) return pendente(itens.length === 0 ? 'sem_itens' : 'sem_base')
 
-  // O custo de cada item usa a hora técnica da profissão da hora escolhida; sem ninguém dessa
-  // profissão na equipe, a média da equipe (igual a private.itens_do_preco).
+  // O custo de cada item usa a hora do responsável; sem responsável (ou fora da equipe), a da
+  // profissão da hora escolhida; sem ninguém dessa profissão, a média (igual a private.itens_do_preco).
   const horas = new Map((base.horasVenda ?? []).map((h) => [h.id, h]))
-  const horaTecnicaDoItem = (horaVendaId: string | null | undefined): number => {
-    const hora = horaVendaId ? horas.get(horaVendaId) : undefined
+  const membros = new Map((base.custoHoraPorMembro ?? []).map((c) => [c.membroId, c.horaCentavos]))
+  const horaTecnicaDoItem = (item: (typeof itens)[number]): number => {
+    const doMembro = item.responsavelId ? membros.get(item.responsavelId) : undefined
+    if (doMembro !== undefined) return doMembro
+    const hora = item.horaVendaId ? horas.get(item.horaVendaId) : undefined
     const custo = hora
       ? base.custoHoraPorProfissao?.find((c) => mesmaProfissao(c.profissao, hora.profissao))
       : undefined
@@ -211,7 +226,7 @@ export function precificarOrcamento(entrada: EntradaDoPreco): PrecoDoOrcamento {
   }
   const custosDosItens = itens.map((item) =>
     custoDoItem(item, {
-      horaTecnicaCentavos: horaTecnicaDoItem(item.horaVendaId),
+      horaTecnicaCentavos: horaTecnicaDoItem(item),
       custosFixosMensaisCentavos: base.custoFixoHoraCentavos,
       horasFaturaveisMes: 1,
     }),
@@ -369,9 +384,22 @@ export function rateioPorConta(
 }
 
 /**
- * Hora técnica (custo) por profissão: parte técnica do custo de quem é da profissão ÷ horas
- * faturáveis dessas pessoas. Quem não tem profissão fica de fora (entra só na média da equipe).
- * O banco grava o mesmo resultado (salvar_base_de_custos → custo_hora_profissao).
+ * Hora de custo de cada membro: custo do mês ÷ horas no mês. Quem não tem horas fica de fora. O banco
+ * grava o mesmo resultado (salvar_base_de_custos → custo_hora_membro).
+ */
+export function custoHoraPorMembro(
+  linhas: readonly (LinhaDaEquipe & { membroId: string })[],
+): CustoDoMembro[] {
+  return linhas.flatMap((linha) => {
+    const hora = horaDeCustoDaPessoa(linha)
+    return hora === null ? [] : [{ membroId: linha.membroId, horaCentavos: hora }]
+  })
+}
+
+/**
+ * Hora técnica (custo) por profissão: custo de quem é da profissão ÷ horas no mês dessas pessoas.
+ * Quem não tem profissão fica de fora (entra só na média da equipe). O banco grava o mesmo
+ * resultado (salvar_base_de_custos → custo_hora_profissao).
  */
 export function custoHoraPorProfissao(
   linhas: readonly (LinhaDaEquipe & { profissao?: string | null })[],

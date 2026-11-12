@@ -316,7 +316,7 @@ grant execute on function public.registrar_pagamento to service_role;
 
 1. Aplica a regra D3.
 2. Se ela for satisfeita, insere `demanda_servico` com `on conflict (consultoria_id, orcamento_id) do nothing`.
-3. Insere uma `demanda_servico_etapa` por `orcamento_item`, na ordem do orçamento, com as horas estimadas do item, sem responsável e sem prazo. A gestão atribui.
+3. Insere uma `demanda_servico_etapa` por `orcamento_item`, na ordem do orçamento, com as horas estimadas do item e sem prazo. O responsável vem do item (`orcamento_item.responsavel_id`, escolhido no orçamento, decisão de 12/11/2026, ver ADR-0017); a gestão pode trocar. Item sem responsável nasce sem responsável.
 
 Pendência técnica: hoje `private.auditar()` registra como ator o membro do JWT. Com a service role não há JWT, então a auditoria precisa de um ator "sistema", com o provedor e o id do evento.
 

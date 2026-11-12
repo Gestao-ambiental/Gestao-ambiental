@@ -93,6 +93,12 @@ function horasDe(valor: Json | undefined): HoraDeVenda[] {
     fonte: textoOuNulo(h.fonte),
   }))
 }
+function custosDeMembrosDe(valor: Json | undefined): CustoDoMembro[] {
+  return lista(valor).map((c) => ({
+    membroId: texto(c.membro_id),
+    horaCentavos: numero(c.hora_centavos),
+  }))
+}
 function custosDe(valor: Json | undefined): CustoDaProfissao[] {
   return lista(valor).map((c) => ({
     profissao: texto(c.profissao),
@@ -194,6 +200,10 @@ export interface ItemDoOrcamento {
   custoDiretoExtraCentavos: number
   /** Linha da tabela de hora de venda: preço pela tabela e profissão do custo. */
   horaVendaId: string | null
+  /** Membro responsável pelo serviço: o custo usa a hora dele, e ele recebe a etapa depois. */
+  responsavelId: string | null
+  /** Mês previsto de execução (aaaa-mm-01). */
+  mesPrevisto: string | null
 }
 
 /** O que a tela envia de cada item: o preço sai do banco, nunca da tela. */
@@ -249,6 +259,14 @@ export interface BaseDoOrcamento {
   /** Tabela de hora de venda e hora técnica por profissão, copiadas da base. */
   horasVenda: HoraDeVenda[]
   custoHoraPorProfissao: CustoDaProfissao[]
+  /** Hora de custo de cada membro da equipe (custo do mês ÷ horas no mês). */
+  custoHoraPorMembro: CustoDoMembro[]
+}
+
+/** Hora de custo de um membro, derivada da equipe. */
+export interface CustoDoMembro {
+  membroId: string
+  horaCentavos: number
 }
 
 export interface Orcamento {
@@ -330,6 +348,7 @@ export async function obterOrcamento(id: string): Promise<Orcamento | null> {
           contas: contasDe(b.custos_fixos_detalhe),
           horasVenda: horasDe(b.horas_venda),
           custoHoraPorProfissao: custosDe(b.custo_hora_profissao),
+          custoHoraPorMembro: custosDeMembrosDe(b.custo_hora_membro),
         }
       : null,
     atualizadoEm: texto(o.atualizado_em),
@@ -341,6 +360,8 @@ export async function obterOrcamento(id: string): Promise<Orcamento | null> {
       precoCentavos: numero(i.preco_centavos),
       custoDiretoExtraCentavos: numero(i.custo_direto_extra_centavos),
       horaVendaId: textoOuNulo(i.hora_venda_id),
+      responsavelId: textoOuNulo(i.responsavel_id),
+      mesPrevisto: textoOuNulo(i.mes_previsto),
     })),
     despesas: lista(o.despesas).map((d) => ({
       id: texto(d.id),
@@ -450,6 +471,8 @@ export async function salvarOrcamento(
         minutos: i.minutos,
         custo_direto_extra_centavos: i.custoDiretoExtraCentavos,
         hora_venda_id: i.horaVendaId,
+        responsavel_id: i.responsavelId,
+        mes_previsto: i.mesPrevisto,
       })),
       despesas: dados.despesas.map((d) => ({
         id: d.id,
@@ -483,11 +506,12 @@ export interface PessoaDaBase {
   peloPiso: boolean
   /** Profissão (Eng. ambiental, Biólogo…): agrupa o custo da hora por profissão. */
   profissao: string | null
-  /** Remuneração ou pró-labore + encargos + benefícios do mês. */
+  /** Membro da consultoria (com login): recebe os serviços dos orçamentos. */
+  membroId: string
+  /** Remuneração, piso ou pró-labore + encargos + benefícios do mês. */
   custoMensalCentavos: number
+  /** Horas de trabalho no mês (jornada). Hora de custo = custo ÷ horas. */
   horasDisponiveisMes: number
-  aproveitamentoPb: number
-  parteTecnicaPb: number
 }
 
 export interface BaseDeCustosDaConsultoria {
@@ -543,13 +567,12 @@ export async function obterBaseDeCustos(
     equipe: lista(b.equipe).map((p) => ({
       id: texto(p.id),
       descricao: texto(p.descricao),
+      membroId: texto(p.membro_id),
       socio: p.socio === true,
       peloPiso: p.pelo_piso === true,
       profissao: textoOuNulo(p.profissao),
       custoMensalCentavos: numero(p.custo_mensal_centavos),
       horasDisponiveisMes: numero(p.horas_disponiveis_mes),
-      aproveitamentoPb: numero(p.aproveitamento_pb),
-      parteTecnicaPb: numero(p.parte_tecnica_pb),
     })),
     contas: contasDe(b.custos_fixos_detalhe),
     valorVisitaCentavos: numero(b.valor_visita_centavos),
@@ -577,14 +600,12 @@ export async function salvarBaseDeCustos(
     p_taxa_por_assinatura_centavos: base.taxaPorAssinaturaCentavos,
     p_equipe: base.equipe.map((p) => ({
       id: p.id,
-      descricao: p.descricao,
+      membro_id: p.membroId,
       socio: p.socio,
       pelo_piso: p.peloPiso,
       profissao: p.profissao,
       custo_mensal_centavos: p.custoMensalCentavos,
       horas_disponiveis_mes: p.horasDisponiveisMes,
-      aproveitamento_pb: p.aproveitamentoPb,
-      parte_tecnica_pb: p.parteTecnicaPb,
     })),
     p_custos_fixos: base.contas.map((c) => ({
       descricao: c.descricao,
@@ -602,4 +623,29 @@ export async function salvarBaseDeCustos(
     p_piso_hora_centavos: base.pisoHoraCentavos,
   })
   if (error) throw error
+}
+
+/** Jornada da equipe e horas já comprometidas em orçamentos aprovados, por membro e mês. */
+export interface CargaDaEquipe {
+  jornada: { membroId: string; horasMes: number }[]
+  comprometido: { membroId: string; mes: string; minutos: number }[]
+}
+
+export async function obterCargaDaEquipe(consultoriaId: string): Promise<CargaDaEquipe> {
+  const { data, error } = await obterSupabase().rpc('carga_da_equipe', {
+    p_consultoria_id: consultoriaId,
+  })
+  if (error) throw error
+  const c = objeto(data)
+  return {
+    jornada: lista(c?.jornada).map((j) => ({
+      membroId: texto(j.membro_id),
+      horasMes: numero(j.horas_mes),
+    })),
+    comprometido: lista(c?.comprometido).map((x) => ({
+      membroId: texto(x.membro_id),
+      mes: texto(x.mes),
+      minutos: numero(x.minutos),
+    })),
+  }
 }

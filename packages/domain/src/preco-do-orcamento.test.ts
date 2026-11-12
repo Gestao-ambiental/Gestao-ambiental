@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   SEM_VISITAS,
+  custoHoraPorMembro,
   custoHoraPorProfissao,
   valorDasVisitas,
   precificarOrcamento,
@@ -281,6 +282,23 @@ describe('precificarOrcamento pela tabela (hora de venda) e custo por profissão
     expect(p.precosDosItens).toEqual([100_563, 58_430, 9_135])
   })
 
+  it('com responsável, o custo usa a hora dele; fora da equipe, volta para a profissão', () => {
+    const p = precificarOrcamento({
+      formaDePreco: 'margem',
+      itens: [
+        { minutos: 60, custoDiretoExtraCentavos: 0, horaVendaId: 'h-civil', responsavelId: 'm-1' },
+        { minutos: 60, custoDiretoExtraCentavos: 0, horaVendaId: 'h-bio-sr', responsavelId: 'm-x' },
+      ],
+      visitas: SEM_VISITAS,
+      despesasIncluidasCentavos: [],
+      quantidadeDeParcelas: 0,
+      margemPb: 2_000,
+      base: { ...comTabela, custoHoraPorMembro: [{ membroId: 'm-1', horaCentavos: 6_000 }] },
+    })
+    // 1h × (60,00 + 0,96) = 60,96; responsável fora da equipe: Biólogo, 1h × (57,47 + 0,96) = 58,43
+    expect(p.custosDosItens.map((c) => c.totalCentavos)).toEqual([6_096, 5_843])
+  })
+
   it('a margem vira resultado: 10h de engenheiro a R$ 214,19 com custo de R$ 80,45 por hora', () => {
     const p = precificarOrcamento({
       formaDePreco: 'tabela',
@@ -312,13 +330,41 @@ describe('precificarOrcamento pela tabela (hora de venda) e custo por profissão
   })
 })
 
+describe('custoHoraPorMembro', () => {
+  it('hora de cada membro = custo ÷ horas; quem não tem horas fica de fora', () => {
+    expect(
+      custoHoraPorMembro([
+        {
+          membroId: 'm-eduardo',
+          custoMensalCentavos: 1_375_177,
+          horasDisponiveisMes: 173,
+          socio: true,
+        },
+        {
+          membroId: 'm-helena',
+          custoMensalCentavos: 500_000,
+          horasDisponiveisMes: 87,
+          socio: true,
+        },
+        {
+          membroId: 'm-sem-horas',
+          custoMensalCentavos: 100_000,
+          horasDisponiveisMes: 0,
+          socio: false,
+        },
+      ]),
+    ).toEqual([
+      { membroId: 'm-eduardo', horaCentavos: 7_949 },
+      { membroId: 'm-helena', horaCentavos: 5_747 },
+    ])
+  })
+})
+
 describe('custoHoraPorProfissao', () => {
   it('agrupa por profissão, sem caixa nem espaços, e deixa de fora quem não tem profissão', () => {
     const linha = (custo: number, horas: number, profissao: string | null) => ({
       custoMensalCentavos: custo,
       horasDisponiveisMes: horas,
-      aproveitamentoPb: 10_000,
-      parteTecnicaPb: 10_000,
       socio: true,
       profissao,
     })

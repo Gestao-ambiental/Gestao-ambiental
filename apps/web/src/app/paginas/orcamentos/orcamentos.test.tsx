@@ -1,3 +1,4 @@
+import { hojeNoFuso, inicioDoMes, rotuloDoMes } from '@gestao-ambiental/domain'
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import axe from 'axe-core'
@@ -18,6 +19,12 @@ import {
 vi.mock('@/lib/supabase', () => import('@/test/supabase-falso'))
 
 const eduardo = sessaoDe('eduardo@filtroville.test', 'Eduardo Karnopp')
+
+/** Membros ativos (tabela membro), para a equipe de Custos e taxas e o responsável do serviço. */
+const membros = [
+  { id: 'm-eduardo', nome: 'Eduardo Karnopp', papel: 'gestao', cargo: null, foto: null },
+  { id: 'm-helena', nome: 'Helena Costa', papel: 'equipe', cargo: null, foto: null },
+]
 
 // Exemplo da auditoria de 10/11/2026: hora R$ 95, custo fixo R$ 30/h (9.600 ÷ 320), margem 30%,
 // mínima 25%, tributos 6%, Pix R$ 1,99 por parcela e R$ 4,00 por documento assinado. Visita
@@ -42,6 +49,7 @@ const base = {
   ],
   horas_venda: [],
   custo_hora_profissao: [],
+  custo_hora_membro: [],
   registrada_em: '2026-11-06T19:00:00Z',
 }
 
@@ -163,6 +171,7 @@ const baseDoCalculo = {
   ],
   horasVenda: [],
   custoHoraPorProfissao: [],
+  custoHoraPorMembro: [],
 }
 
 const semVisitas = { quantidade: 0, kmPorVisita: 0, outrosPorVisitaCentavos: 0 }
@@ -404,6 +413,8 @@ describe('orçamentos (onda 5)', () => {
       minutos: 90,
       custo_direto_extra_centavos: 0,
       hora_venda_id: null,
+      responsavel_id: null,
+      mes_previsto: null,
     })
   })
 
@@ -730,7 +741,62 @@ describe('orçamentos (onda 5)', () => {
     expect(dados.itens.map((i) => i.hora_venda_id)).toEqual(['h-jr', 'h-jr', 'h-sr'])
   })
 
+  it('cada serviço tem responsável e mês: o custo usa a hora dele e a carga aparece', async () => {
+    const mes = inicioDoMes(hojeNoFuso(new Date(), 'America/Sao_Paulo'))
+    falso.reiniciar({
+      ...cenario('gestao', {
+        rpc: {
+          obter_orcamento: {
+            data: orcamento({
+              base: {
+                ...base,
+                custo_hora_membro: [{ membro_id: 'm-helena', hora_centavos: 5_747 }],
+              },
+            }),
+          },
+          carga_da_equipe: {
+            data: {
+              jornada: [{ membro_id: 'm-helena', horas_mes: 87 }],
+              comprometido: [{ membro_id: 'm-helena', mes, minutos: 80 * 60 }],
+            },
+          },
+        },
+      }),
+      tabelas: { membro: membros },
+    })
+    const usuario = userEvent.setup()
+    renderizarApp('/orcamentos/o1')
+    await screen.findByRole('heading', { name: 'Indústria Horizonte' })
+    const responsavel = screen.getByLabelText('Responsável pelo item 1')
+    // Só quem está na equipe de Custos e taxas, com a hora de custo.
+    await within(responsavel).findByRole('option', { name: 'Helena Costa · 57,47/h' })
+    expect(within(responsavel).queryByRole('option', { name: /Eduardo/ })).toBeNull()
+    // Sem responsável: 8h × (95,00 + 30,00) + 240 = 1.240,00
+    expect(screen.getByText('1.240,00')).toBeInTheDocument()
+
+    await usuario.selectOptions(responsavel, 'm-helena')
+    // Com a Helena: 8h × (57,47 + 30,00) + 240 = 939,76
+    expect(screen.getByText('939,76')).toBeInTheDocument()
+
+    await usuario.selectOptions(screen.getByLabelText('Mês previsto do item 1'), mes)
+    // 80 h aprovadas + 8 h deste orçamento passam das 87 h da jornada: avisa por texto.
+    expect(
+      screen.getByText(`${rotuloDoMes(mes)}: 88h de 87h, acima da jornada`),
+    ).toBeInTheDocument()
+
+    await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
+    const chamada = falso.cliente.rpc.mock.calls.find(([nome]) => nome === 'salvar_orcamento')
+    const itens = (
+      chamada?.[1] as {
+        p_dados: { itens: { responsavel_id: string | null; mes_previsto: string | null }[] }
+      }
+    ).p_dados.itens
+    expect(itens[0]).toMatchObject({ responsavel_id: 'm-helena', mes_previsto: mes })
+    expect(itens[1]).toMatchObject({ responsavel_id: null, mes_previsto: null })
+  })
+
   it('cadastra a tabela de horas (ACEAMB e outras profissões), o piso e a equipe com profissão', async () => {
+    falso.reiniciar({ ...cenario(), tabelas: { membro: membros } })
     const usuario = userEvent.setup()
     renderizarApp('/configuracoes/custos')
     await screen.findByText(/Ainda não configurado/)
@@ -752,26 +818,38 @@ describe('orçamentos (onda 5)', () => {
 
     await usuario.type(screen.getByLabelText('Custos fixos por mês (R$)'), '250,00')
     await usuario.click(screen.getByRole('button', { name: 'Calcular pela equipe' }))
-    await usuario.type(screen.getByLabelText('Piso por hora (R$)'), '79,49')
-    await usuario.type(screen.getByLabelText('Pessoa ou perfil 1'), 'Sócio')
+    // O piso só aparece quando alguém está pelo piso; os percentuais saíram.
+    expect(screen.queryByLabelText('Piso por hora (R$)')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/Aproveitamento/)).not.toBeInTheDocument()
+    await usuario.selectOptions(await screen.findByLabelText('Pessoa da linha 1'), 'm-eduardo')
     await usuario.type(
       screen.getByLabelText('Profissão da linha 1'),
       'Eng. ambiental e sanitarista',
     )
     await usuario.click(screen.getByLabelText('Remuneração pelo piso na linha 1'))
+    expect(
+      screen.getByText(/sem ele, o custo de quem está pelo piso fica zero/),
+    ).toBeInTheDocument()
+    await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Informe o piso por hora: há pessoas marcadas pelo piso.',
+    )
+    await usuario.type(screen.getByLabelText('Piso por hora (R$)'), '79,49')
     await usuario.type(screen.getByLabelText('Horas no mês da linha 1'), '173')
-    await usuario.type(screen.getByLabelText('Aproveitamento da linha 1'), '100')
     // 173 h × 79,49 = 13.751,77
     expect(screen.getByText('13.751,77')).toBeInTheDocument()
     expect(screen.queryByLabelText('Custo mensal da linha 1')).not.toBeInTheDocument()
 
-    await usuario.click(screen.getByRole('button', { name: 'Adicionar pessoa ou perfil' }))
-    await usuario.type(screen.getByLabelText('Pessoa ou perfil 2'), 'Sócia')
+    await usuario.click(screen.getByRole('button', { name: 'Adicionar pessoa' }))
+    const pessoa2 = screen.getByLabelText('Pessoa da linha 2')
+    // Quem já está numa linha não aparece de novo.
+    expect(within(pessoa2).queryByRole('option', { name: 'Eduardo Karnopp' })).toBeNull()
+    await usuario.selectOptions(pessoa2, 'm-helena')
     await usuario.type(screen.getByLabelText('Profissão da linha 2'), 'Biólogo')
     await usuario.type(screen.getByLabelText('Custo mensal da linha 2'), '5.000,00')
     await usuario.type(screen.getByLabelText('Horas no mês da linha 2'), '87')
-    await usuario.type(screen.getByLabelText('Aproveitamento da linha 2'), '100')
-    // Hora técnica por profissão: 13.751,77 ÷ 173 h = 79,49; 5.000 ÷ 87 h = 57,47
+    // Hora de custo: 5.000 ÷ 87 h = 57,47
+    expect(screen.getByText('57,47')).toBeInTheDocument()
     const resultado = screen.getByLabelText('Resultado da equipe')
     expect(within(resultado).getByText('Hora técnica de Biólogo')).toBeInTheDocument()
     expect(within(resultado).getByText('R$ 57,47')).toBeInTheDocument()
@@ -794,16 +872,18 @@ describe('orçamentos (onda 5)', () => {
       ],
       p_equipe: [
         {
-          descricao: 'Sócio',
+          membro_id: 'm-eduardo',
           pelo_piso: true,
           profissao: 'Eng. ambiental e sanitarista',
           custo_mensal_centavos: 1_375_177,
+          horas_disponiveis_mes: 173,
         },
         {
-          descricao: 'Sócia',
+          membro_id: 'm-helena',
           pelo_piso: false,
           profissao: 'Biólogo',
           custo_mensal_centavos: 500_000,
+          horas_disponiveis_mes: 87,
         },
       ],
     })
@@ -861,6 +941,7 @@ describe('orçamentos (onda 5)', () => {
   })
 
   it('calcula hora técnica e horas pela equipe, com o pró-labore entrando uma vez', async () => {
+    falso.reiniciar({ ...cenario(), tabelas: { membro: membros } })
     const usuario = userEvent.setup()
     renderizarApp('/configuracoes/custos')
     await screen.findByText(/Ainda não configurado/)
@@ -870,46 +951,46 @@ describe('orçamentos (onda 5)', () => {
     expect(screen.getByLabelText('Outros custos fixos por mês (R$)')).toHaveValue('9.600,00')
     expect(screen.queryByLabelText('Hora técnica (R$)')).not.toBeInTheDocument()
 
-    await usuario.type(screen.getByLabelText('Pessoa ou perfil 1'), 'Sócio técnico')
+    await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
+    expect(screen.getByRole('alert')).toHaveTextContent('Equipe, linha 1: escolha a pessoa.')
+    await usuario.selectOptions(await screen.findByLabelText('Pessoa da linha 1'), 'm-eduardo')
     await usuario.click(screen.getByLabelText('Sócio, com pró-labore, na linha 1'))
     await usuario.type(screen.getByLabelText('Custo mensal da linha 1'), '10.000,00')
     await usuario.type(screen.getByLabelText('Horas no mês da linha 1'), '160')
-    await usuario.type(screen.getByLabelText('Aproveitamento da linha 1'), '40')
-    const parte = screen.getByLabelText('Parte técnica da linha 1')
-    await usuario.clear(parte)
-    await usuario.type(parte, '60')
+    // Hora de custo: 10.000 ÷ 160 h = 62,50
+    expect(screen.getByText('62,50')).toBeInTheDocument()
 
-    await usuario.click(screen.getByRole('button', { name: 'Adicionar pessoa ou perfil' }))
-    await usuario.type(screen.getByLabelText('Pessoa ou perfil 2'), 'Analista')
+    await usuario.click(screen.getByRole('button', { name: 'Adicionar pessoa' }))
+    await usuario.selectOptions(screen.getByLabelText('Pessoa da linha 2'), 'm-helena')
     await usuario.type(screen.getByLabelText('Custo mensal da linha 2'), '5.000,00')
     await usuario.type(screen.getByLabelText('Horas no mês da linha 2'), '168')
-    await usuario.type(screen.getByLabelText('Aproveitamento da linha 2'), '75')
 
-    // Técnico 6.000 + 5.000 = 11.000 ÷ (64 + 126 = 190 h) = 57,89; os 4.000 restantes do sócio
-    // vão para o rateio: (9.600 + 4.000) ÷ 190 = 71,58 por hora.
+    // Média 15.000 ÷ 328 h = 45,73; o pró-labore entra uma vez; rateio 9.600 ÷ 328 = 29,27 por hora.
     const resultado = screen.getByLabelText('Resultado da equipe')
-    expect(within(resultado).getByText('R$ 57,89')).toBeInTheDocument()
-    expect(within(resultado).getByText('190 h')).toBeInTheDocument()
-    expect(within(resultado).getByText('R$ 4.000,00')).toBeInTheDocument()
+    expect(within(resultado).getByText('R$ 45,73')).toBeInTheDocument()
+    expect(within(resultado).getByText('328 h')).toBeInTheDocument()
     expect(within(resultado).getByText('R$ 10.000,00')).toBeInTheDocument()
-    expect(screen.getByText('R$ 71,58 por hora')).toBeInTheDocument()
+    expect(screen.getByText('R$ 29,27 por hora')).toBeInTheDocument()
 
     await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
     const chamada = falso.cliente.rpc.mock.calls.find(([nome]) => nome === 'salvar_base_de_custos')
     expect(chamada?.[1]).toMatchObject({
-      p_hora_tecnica_centavos: 5_789,
-      p_horas_faturaveis_mes: 190,
+      p_hora_tecnica_centavos: 4_573,
+      p_horas_faturaveis_mes: 328,
       p_custos_fixos_mensais_centavos: 960_000,
       p_equipe: [
         {
-          descricao: 'Sócio técnico',
+          membro_id: 'm-eduardo',
           socio: true,
           custo_mensal_centavos: 1_000_000,
           horas_disponiveis_mes: 160,
-          aproveitamento_pb: 4_000,
-          parte_tecnica_pb: 6_000,
         },
-        { descricao: 'Analista', socio: false, aproveitamento_pb: 7_500, parte_tecnica_pb: 10_000 },
+        {
+          membro_id: 'm-helena',
+          socio: false,
+          custo_mensal_centavos: 500_000,
+          horas_disponiveis_mes: 168,
+        },
       ],
     })
   })

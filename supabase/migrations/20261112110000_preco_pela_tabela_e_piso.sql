@@ -10,6 +10,13 @@
 --    ninguém daquela profissão, a média da equipe.
 -- 3. Piso por hora na base; quem está "pelo piso" recebe horas no mês × piso por hora. O divisor
 --    legal do piso não é inventado aqui: o piso por hora é informado pela consultoria.
+-- 4. Equipe ligada aos membros (12/11/2026): cada linha é um membro com login, com custo do mês e
+--    horas no mês. Saem o aproveitamento e a parte técnica em %: a hora de custo da pessoa é custo ÷
+--    horas, e quanto dessas horas vira serviço é decidido no orçamento.
+-- 5. Responsável e mês de cada serviço: o custo do item usa a hora de custo do responsável (sem
+--    responsável, a da profissão; sem ninguém dela, a média). carga_da_equipe soma as horas de cada
+--    membro por mês em orçamentos aprovados, para a tela mostrar a carga contra a jornada. Depois da
+--    aprovação, o responsável vira o da etapa da demanda de serviço (ADR-0016).
 -- Regra pura em packages/domain (precificarOrcamento, custoHoraPorProfissao).
 
 alter table public.orcamento_base_custos
@@ -19,19 +26,40 @@ alter table public.orcamento_base_custos
   add constraint orcamento_base_custos_horas_venda check (
     jsonb_typeof(horas_venda) = 'array' and jsonb_array_length(horas_venda) <= 100),
   add constraint orcamento_base_custos_custo_profissao check (jsonb_typeof(custo_hora_profissao) = 'array'),
-  add constraint orcamento_base_custos_piso check (piso_hora_centavos between 0 and 99999999999);
+  add constraint orcamento_base_custos_piso check (piso_hora_centavos between 0 and 99999999999),
+  add column custo_hora_membro jsonb not null default '[]'::jsonb,
+  add constraint orcamento_base_custos_custo_membro check (jsonb_typeof(custo_hora_membro) = 'array');
 
 comment on column public.orcamento_base_custos.horas_venda is
   'Tabela de hora de venda: [{id, profissao, atividade, valor_centavos, fonte}]. Usada nos orçamentos pela tabela.';
 comment on column public.orcamento_base_custos.custo_hora_profissao is
   'Derivado ao salvar: [{profissao, hora_tecnica_centavos}] = parte técnica de quem é da profissão ÷ horas faturáveis dessas pessoas.';
+comment on column public.orcamento_base_custos.custo_hora_membro is
+  'Derivado ao salvar: [{membro_id, hora_centavos}] = custo do mês ÷ horas no mês de cada membro da equipe.';
 comment on column public.orcamento_base_custos.piso_hora_centavos is
   'Piso por hora informado pela consultoria (ex.: piso de engenheiro). Quem está "pelo piso" recebe horas × este valor.';
 
 alter table public.orcamento_base_equipe
   add column pelo_piso boolean not null default false,
   add column profissao text,
-  add constraint orcamento_base_equipe_profissao check (profissao is null or length(btrim(profissao)) between 1 and 80);
+  add column membro_id uuid,
+  add constraint orcamento_base_equipe_profissao check (profissao is null or length(btrim(profissao)) between 1 and 80),
+  add constraint orcamento_base_equipe_membro_fk foreign key (consultoria_id, membro_id)
+    references public.membro (consultoria_id, id) on delete restrict,
+  add constraint orcamento_base_equipe_membro_unico unique (consultoria_id, membro_id);
+
+-- A hora de custo é custo do mês ÷ horas no mês; o que vira serviço é decidido no orçamento.
+alter table public.orcamento_base_equipe
+  drop constraint orcamento_base_equipe_valores,
+  drop column aproveitamento_pb,
+  drop column parte_tecnica_pb,
+  add constraint orcamento_base_equipe_valores check (
+    custo_mensal_centavos between 0 and 99999999999 and horas_disponiveis_mes between 0 and 744);
+
+comment on column public.orcamento_base_equipe.membro_id is
+  'Membro da consultoria (com login). salvar_base_de_custos exige; linhas antigas sem membro saem ao salvar.';
+comment on column public.orcamento_base_equipe.horas_disponiveis_mes is
+  'Horas de trabalho no mês (jornada). Hora de custo = custo_mensal_centavos ÷ estas horas.';
 
 comment on column public.orcamento_base_equipe.pelo_piso is
   'Verdadeiro: custo_mensal_centavos = horas_disponiveis_mes × piso por hora, calculado ao salvar a base.';
@@ -42,6 +70,7 @@ alter table public.orcamento
   add column forma_preco text not null default 'margem',
   add column base_horas_venda jsonb,
   add column base_custo_hora_profissao jsonb,
+  add column base_custo_hora_membro jsonb,
   add constraint orcamento_forma_preco check (forma_preco in ('margem', 'tabela'));
 
 comment on column public.orcamento.forma_preco is
@@ -53,6 +82,21 @@ alter table public.orcamento_item
 
 comment on column public.orcamento_item.hora_venda_id is
   'Linha da tabela de hora de venda (id na base copiada): define o preço pela tabela e a profissão do custo.';
+
+alter table public.orcamento_item
+  add column responsavel_id uuid,
+  add column mes_previsto date,
+  add constraint orcamento_item_responsavel_fk foreign key (consultoria_id, responsavel_id)
+    references public.membro (consultoria_id, id) on delete restrict,
+  add constraint orcamento_item_mes_previsto check (mes_previsto is null or extract(day from mes_previsto) = 1);
+
+comment on column public.orcamento_item.responsavel_id is
+  'Membro responsável pelo serviço: o custo usa a hora dele, e depois da aprovação ele recebe a etapa.';
+comment on column public.orcamento_item.mes_previsto is
+  'Mês previsto de execução (primeiro dia do mês). Data civil: base da carga da equipe.';
+
+create index orcamento_item_carga_idx on public.orcamento_item (consultoria_id, responsavel_id, mes_previsto)
+  where responsavel_id is not null and mes_previsto is not null;
 
 create or replace function private.aplicar_base_ao_orcamento(p_orcamento_id uuid)
 returns void
@@ -77,6 +121,7 @@ begin
       base_custos_fixos_detalhe = b.custos_fixos_detalhe,
       base_horas_venda = b.horas_venda,
       base_custo_hora_profissao = b.custo_hora_profissao,
+      base_custo_hora_membro = b.custo_hora_membro,
       base_registrada_em = now()
   from public.orcamento_base_custos as b
   where o.id = p_orcamento_id
@@ -87,14 +132,15 @@ begin
          o.base_taxa_por_cobranca_centavos, o.base_taxa_por_assinatura_centavos,
          o.base_valor_visita_centavos, o.base_custo_km_centavos, o.base_custos_fixos_mensais_centavos,
          o.base_custos_fixos_equipe_centavos, o.base_custos_fixos_detalhe, o.base_horas_venda,
-         o.base_custo_hora_profissao)
+         o.base_custo_hora_profissao, o.base_custo_hora_membro)
         is distinct from
         (b.hora_tecnica_centavos,
          round((b.custos_fixos_mensais_centavos + b.custos_fixos_equipe_centavos) / b.horas_faturaveis_mes)::bigint,
          b.margem_desejada_pb, b.margem_minima_pb, b.tributos_pb, b.taxas_pb,
          b.taxa_por_cobranca_centavos, b.taxa_por_assinatura_centavos,
          b.valor_visita_centavos, b.custo_km_centavos, b.custos_fixos_mensais_centavos,
-         b.custos_fixos_equipe_centavos, b.custos_fixos_detalhe, b.horas_venda, b.custo_hora_profissao);
+         b.custos_fixos_equipe_centavos, b.custos_fixos_detalhe, b.horas_venda, b.custo_hora_profissao,
+         b.custo_hora_membro);
 end;
 $$;
 
@@ -124,9 +170,9 @@ as $$
             where h.valor ->> 'id' = i.hora_venda_id)))
 $$;
 
--- Itens com o custo e o preço pela hora de cada um. O custo usa a hora técnica da profissão da
--- hora de venda escolhida (se a equipe tem alguém dessa profissão); sem isso, a média da equipe.
--- Igual a precificarOrcamento (packages/domain).
+-- Itens com o custo e o preço pela hora de cada um. O custo usa a hora de custo do responsável; sem
+-- responsável (ou fora da equipe), a da profissão da hora de venda escolhida; sem ninguém dessa
+-- profissão, a média da equipe. Igual a precificarOrcamento (packages/domain).
 create function private.itens_do_preco(o public.orcamento)
 returns table (id uuid, posicao bigint, custo numeric, pela_hora numeric)
 language sql
@@ -135,7 +181,7 @@ set search_path = ''
 as $$
   select i.id,
          i.ordem::bigint,
-         round(i.minutos::numeric * coalesce(cp.hora, o.base_hora_tecnica_centavos) / 60)
+         round(i.minutos::numeric * coalesce(cm.hora, cp.hora, o.base_hora_tecnica_centavos) / 60)
            + i.custo_direto_extra_centavos
            + round(i.minutos::numeric * o.base_custo_fixo_hora_centavos / 60),
          case when hv.valor is null then null
@@ -153,6 +199,12 @@ as $$
     where lower(btrim(c.valor ->> 'profissao')) = hv.profissao
     limit 1
   ) as cp on true
+  left join lateral (
+    select (m.valor ->> 'hora_centavos')::bigint as hora
+    from jsonb_array_elements(coalesce(o.base_custo_hora_membro, '[]'::jsonb)) as m (valor)
+    where m.valor ->> 'membro_id' = i.responsavel_id::text
+    limit 1
+  ) as cm on true
   where i.consultoria_id = o.consultoria_id and i.orcamento_id = o.id
 $$;
 
@@ -297,13 +349,14 @@ declare
   horas_venda jsonb := coalesce(p_horas_venda, '[]'::jsonb);
   horas_limpas jsonb := '[]'::jsonb;
   custo_por_profissao jsonb := '[]'::jsonb;
+  custo_por_membro jsonb := '[]'::jsonb;
   detalhe jsonb := '[]'::jsonb;
   fixos bigint := p_custos_fixos_mensais_centavos;
   hora bigint := p_hora_tecnica_centavos;
   horas numeric := p_horas_faturaveis_mes;
   fixos_equipe bigint := 0;
   tecnico bigint;
-  centesimos numeric;
+  horas_da_equipe numeric;
 begin
   if autor is null or not private.is_gestao(p_consultoria_id) then
     raise exception 'sem_permissao' using errcode = '42501';
@@ -320,7 +373,19 @@ begin
     select 1 from jsonb_array_elements(equipe) as e (valor)
     where coalesce(e.valor ->> 'pelo_piso', 'false') not in ('true', 'false')
        or length(coalesce(e.valor ->> 'profissao', '')) > 80
+       or coalesce(e.valor ->> 'membro_id', '') !~ '^[0-9a-fA-F-]{36}$'
   ) then
+    raise exception 'equipe_invalida' using errcode = '22023';
+  end if;
+  -- Cada linha é um membro ativo desta consultoria, uma vez só.
+  if exists (
+       select 1 from jsonb_array_elements(equipe) as e (valor)
+       where not exists (
+         select 1 from public.membro as m
+         where m.consultoria_id = p_consultoria_id and m.id = (e.valor ->> 'membro_id')::uuid
+           and m.situacao = 'ativo'))
+     or (select count(distinct e.valor ->> 'membro_id') from jsonb_array_elements(equipe) as e (valor))
+        <> jsonb_array_length(equipe) then
     raise exception 'equipe_invalida' using errcode = '22023';
   end if;
   -- Quem recebe pelo piso: remuneração do mês = horas no mês × piso por hora.
@@ -360,20 +425,28 @@ begin
     into horas_limpas
   from jsonb_array_elements(horas_venda) with ordinality as h (valor, ordem);
 
-  -- Hora técnica por profissão (derivada): parte técnica de quem é da profissão ÷ horas faturáveis
-  -- dessas pessoas. Igual a custoHoraPorProfissao (packages/domain).
+  -- Hora técnica por profissão (derivada): custo de quem é da profissão ÷ horas no mês dessas
+  -- pessoas. Igual a custoHoraPorProfissao (packages/domain).
   select coalesce(jsonb_agg(jsonb_build_object('profissao', g.profissao,
-           'hora_tecnica_centavos', round(g.tecnico * 100 / g.centesimos)::bigint) order by g.profissao), '[]'::jsonb)
+           'hora_tecnica_centavos', round(g.custo / g.horas)::bigint) order by g.profissao), '[]'::jsonb)
     into custo_por_profissao
   from (
     select min(btrim(e.valor ->> 'profissao')) as profissao,
-           sum(round((e.valor ->> 'custo_mensal_centavos')::bigint * (e.valor ->> 'parte_tecnica_pb')::integer / 10000.0)) as tecnico,
-           round(sum((e.valor ->> 'horas_disponiveis_mes')::bigint * (e.valor ->> 'aproveitamento_pb')::integer) / 100.0) as centesimos
+           sum((e.valor ->> 'custo_mensal_centavos')::numeric) as custo,
+           sum((e.valor ->> 'horas_disponiveis_mes')::numeric) as horas
     from jsonb_array_elements(equipe) as e (valor)
     where btrim(coalesce(e.valor ->> 'profissao', '')) <> ''
     group by lower(btrim(e.valor ->> 'profissao'))
   ) as g
-  where g.centesimos > 0;
+  where g.horas > 0;
+
+  -- Hora de custo de cada membro: custo do mês ÷ horas no mês. Igual a custoHoraPorMembro.
+  select coalesce(jsonb_agg(jsonb_build_object('membro_id', (e.valor ->> 'membro_id')::uuid,
+           'hora_centavos', round((e.valor ->> 'custo_mensal_centavos')::numeric
+                                  / (e.valor ->> 'horas_disponiveis_mes')::numeric)::bigint) order by e.ordem), '[]'::jsonb)
+    into custo_por_membro
+  from jsonb_array_elements(equipe) with ordinality as e (valor, ordem)
+  where coalesce((e.valor ->> 'horas_disponiveis_mes')::integer, 0) > 0;
 
   if jsonb_typeof(contas) <> 'array' or jsonb_array_length(contas) > 50 then
     raise exception 'contas_invalidas' using errcode = '22023';
@@ -399,31 +472,24 @@ begin
     if exists (
       select 1 from jsonb_array_elements(equipe) as e (valor)
       where nullif(e.valor ->> 'id', '') is null
-         or btrim(coalesce(e.valor ->> 'descricao', '')) = ''
          or coalesce(e.valor ->> 'socio', 'false') not in ('true', 'false')
          or coalesce((e.valor ->> 'custo_mensal_centavos')::bigint, -1) not between 0 and 99999999999
          or coalesce((e.valor ->> 'horas_disponiveis_mes')::integer, -1) not between 0 and 744
-         or coalesce((e.valor ->> 'aproveitamento_pb')::integer, -1) not between 0 and 10000
-         or coalesce((e.valor ->> 'parte_tecnica_pb')::integer, -1) not between 0 and 10000
     ) then
       raise exception 'equipe_invalida' using errcode = '22023';
     end if;
 
-    select coalesce(sum(round((e.valor ->> 'custo_mensal_centavos')::bigint
-                               * (e.valor ->> 'parte_tecnica_pb')::integer / 10000.0)), 0)::bigint,
-           coalesce(sum((e.valor ->> 'custo_mensal_centavos')::bigint
-                        - round((e.valor ->> 'custo_mensal_centavos')::bigint
-                                * (e.valor ->> 'parte_tecnica_pb')::integer / 10000.0)), 0)::bigint,
-           round(coalesce(sum((e.valor ->> 'horas_disponiveis_mes')::bigint
-                              * (e.valor ->> 'aproveitamento_pb')::integer), 0) / 100.0)
-      into tecnico, fixos_equipe, centesimos
+    -- Hora técnica média: Σ custos ÷ Σ horas. As contas do mês são rateadas pelas mesmas horas.
+    select coalesce(sum((e.valor ->> 'custo_mensal_centavos')::bigint), 0)::bigint,
+           coalesce(sum((e.valor ->> 'horas_disponiveis_mes')::integer), 0)
+      into tecnico, horas_da_equipe
     from jsonb_array_elements(equipe) as e (valor);
 
-    if centesimos <= 0 then
+    if horas_da_equipe <= 0 then
       raise exception 'equipe_sem_horas_faturaveis' using errcode = '22023';
     end if;
-    horas := centesimos / 100;
-    hora := round(tecnico * 100 / centesimos)::bigint;
+    horas := horas_da_equipe;
+    hora := round(tecnico::numeric / horas_da_equipe)::bigint;
   end if;
 
   if hora is null or hora not between 0 and 99999999999
@@ -450,13 +516,13 @@ begin
     horas_faturaveis_mes, margem_desejada_pb, margem_minima_pb, tributos_pb, taxas_pb,
     taxa_por_cobranca_centavos, taxa_por_assinatura_centavos, custos_fixos_detalhe,
     valor_visita_centavos, custo_km_centavos, horas_venda, custo_hora_profissao, piso_hora_centavos,
-    atualizado_por)
+    custo_hora_membro, atualizado_por)
   values (
     p_consultoria_id, hora, fixos, fixos_equipe,
     horas, p_margem_desejada_pb, p_margem_minima_pb, p_tributos_pb, p_taxas_pb,
     p_taxa_por_cobranca_centavos, p_taxa_por_assinatura_centavos, detalhe,
     p_valor_visita_centavos, p_custo_km_centavos, horas_limpas, custo_por_profissao, p_piso_hora_centavos,
-    autor)
+    custo_por_membro, autor)
   on conflict (consultoria_id) do update
   set hora_tecnica_centavos = excluded.hora_tecnica_centavos,
       custos_fixos_mensais_centavos = excluded.custos_fixos_mensais_centavos,
@@ -474,6 +540,7 @@ begin
       horas_venda = excluded.horas_venda,
       custo_hora_profissao = excluded.custo_hora_profissao,
       piso_hora_centavos = excluded.piso_hora_centavos,
+      custo_hora_membro = excluded.custo_hora_membro,
       atualizado_por = excluded.atualizado_por,
       atualizado_em = now(),
       row_version = b.row_version + 1;
@@ -484,28 +551,27 @@ begin
     and not exists (
       select 1 from jsonb_array_elements(equipe) as e (valor) where (e.valor ->> 'id')::uuid = t.id);
 
+  -- A descrição é o nome do membro no momento em que a base foi salva.
   insert into public.orcamento_base_equipe as t (
-    id, consultoria_id, ordem, descricao, socio, pelo_piso, profissao, custo_mensal_centavos,
-    horas_disponiveis_mes, aproveitamento_pb, parte_tecnica_pb)
-  select (e.valor ->> 'id')::uuid, p_consultoria_id, e.ordem::integer, btrim(e.valor ->> 'descricao'),
+    id, consultoria_id, ordem, membro_id, descricao, socio, pelo_piso, profissao, custo_mensal_centavos,
+    horas_disponiveis_mes)
+  select (e.valor ->> 'id')::uuid, p_consultoria_id, e.ordem::integer, m.id, m.nome,
          coalesce((e.valor ->> 'socio')::boolean, false),
          coalesce((e.valor ->> 'pelo_piso')::boolean, false),
          nullif(btrim(coalesce(e.valor ->> 'profissao', '')), ''),
          (e.valor ->> 'custo_mensal_centavos')::bigint,
-         (e.valor ->> 'horas_disponiveis_mes')::integer,
-         (e.valor ->> 'aproveitamento_pb')::integer,
-         (e.valor ->> 'parte_tecnica_pb')::integer
+         (e.valor ->> 'horas_disponiveis_mes')::integer
   from jsonb_array_elements(equipe) with ordinality as e (valor, ordem)
+  join public.membro as m on m.consultoria_id = p_consultoria_id and m.id = (e.valor ->> 'membro_id')::uuid
   on conflict (id) do update
   set ordem = excluded.ordem,
+      membro_id = excluded.membro_id,
       descricao = excluded.descricao,
       socio = excluded.socio,
       pelo_piso = excluded.pelo_piso,
       profissao = excluded.profissao,
       custo_mensal_centavos = excluded.custo_mensal_centavos,
-      horas_disponiveis_mes = excluded.horas_disponiveis_mes,
-      aproveitamento_pb = excluded.aproveitamento_pb,
-      parte_tecnica_pb = excluded.parte_tecnica_pb
+      horas_disponiveis_mes = excluded.horas_disponiveis_mes
   where t.consultoria_id = excluded.consultoria_id;
 
   if (select count(*) from public.orcamento_base_equipe as t where t.consultoria_id = p_consultoria_id)
@@ -541,15 +607,14 @@ as $$
     'horas_venda', b.horas_venda,
     'custo_hora_profissao', b.custo_hora_profissao,
     'piso_hora_centavos', b.piso_hora_centavos,
+    'custo_hora_membro', b.custo_hora_membro,
     'atualizado_em', b.atualizado_em,
     'equipe', coalesce((
       select jsonb_agg(jsonb_build_object(
-        'id', e.id, 'descricao', e.descricao, 'socio', e.socio, 'pelo_piso', e.pelo_piso,
-        'profissao', e.profissao,
+        'id', e.id, 'membro_id', e.membro_id, 'descricao', e.descricao, 'socio', e.socio,
+        'pelo_piso', e.pelo_piso, 'profissao', e.profissao,
         'custo_mensal_centavos', e.custo_mensal_centavos,
-        'horas_disponiveis_mes', e.horas_disponiveis_mes,
-        'aproveitamento_pb', e.aproveitamento_pb,
-        'parte_tecnica_pb', e.parte_tecnica_pb) order by e.ordem, e.id)
+        'horas_disponiveis_mes', e.horas_disponiveis_mes) order by e.ordem, e.id)
       from public.orcamento_base_equipe as e
       where e.consultoria_id = b.consultoria_id), '[]'::jsonb))
   from public.orcamento_base_custos as b
@@ -711,8 +776,21 @@ begin
        or coalesce((e.valor ->> 'minutos')::integer, 0) not between 0 and 600000
        or coalesce((e.valor ->> 'custo_direto_extra_centavos')::bigint, 0) not between 0 and 99999999999
        or length(coalesce(e.valor ->> 'hora_venda_id', '')) > 64
+       or coalesce(e.valor ->> 'responsavel_id', '00000000-0000-0000-0000-000000000000') !~ '^[0-9a-fA-F-]{36}$'
+       or coalesce(e.valor ->> 'mes_previsto', '2000-01-01') !~ '^\d{4}-\d{2}-01$'
   ) then
     raise exception 'item_invalido' using errcode = '22023';
+  end if;
+  -- Responsável: membro ativo desta consultoria (a FK composta também barra outra consultoria).
+  if exists (
+    select 1 from jsonb_array_elements(itens) as e (valor)
+    where e.valor ->> 'responsavel_id' is not null
+      and not exists (
+        select 1 from public.membro as m
+        where m.consultoria_id = alvo.consultoria_id and m.id = (e.valor ->> 'responsavel_id')::uuid
+          and m.situacao = 'ativo')
+  ) then
+    raise exception 'responsavel_invalido' using errcode = '22023';
   end if;
 
   if exists (
@@ -753,20 +831,24 @@ begin
 
   insert into public.orcamento_item as t (
     id, consultoria_id, orcamento_id, ordem, descricao, minutos, preco_automatico, preco_centavos,
-    custo_direto_extra_centavos, hora_venda_id)
+    custo_direto_extra_centavos, hora_venda_id, responsavel_id, mes_previsto)
   select (e.valor ->> 'id')::uuid, alvo.consultoria_id, p_id, e.ordem::integer,
          btrim(e.valor ->> 'descricao'),
          coalesce((e.valor ->> 'minutos')::integer, 0),
          true, 0,
          coalesce((e.valor ->> 'custo_direto_extra_centavos')::bigint, 0),
-         nullif(btrim(coalesce(e.valor ->> 'hora_venda_id', '')), '')
+         nullif(btrim(coalesce(e.valor ->> 'hora_venda_id', '')), ''),
+         (e.valor ->> 'responsavel_id')::uuid,
+         (e.valor ->> 'mes_previsto')::date
   from jsonb_array_elements(itens) with ordinality as e (valor, ordem)
   on conflict (id) do update
   set ordem = excluded.ordem,
       descricao = excluded.descricao,
       minutos = excluded.minutos,
       custo_direto_extra_centavos = excluded.custo_direto_extra_centavos,
-      hora_venda_id = excluded.hora_venda_id
+      hora_venda_id = excluded.hora_venda_id,
+      responsavel_id = excluded.responsavel_id,
+      mes_previsto = excluded.mes_previsto
   where t.orcamento_id = excluded.orcamento_id;
 
   if (select count(*) from public.orcamento_item as t where t.orcamento_id = p_id)
@@ -901,6 +983,7 @@ as $$
       'custos_fixos_detalhe', coalesce(o.base_custos_fixos_detalhe, '[]'::jsonb),
       'horas_venda', coalesce(o.base_horas_venda, '[]'::jsonb),
       'custo_hora_profissao', coalesce(o.base_custo_hora_profissao, '[]'::jsonb),
+      'custo_hora_membro', coalesce(o.base_custo_hora_membro, '[]'::jsonb),
       'registrada_em', o.base_registrada_em) end,
     'atualizado_em', o.atualizado_em,
     'row_version', o.row_version,
@@ -909,7 +992,8 @@ as $$
         'id', i.id, 'descricao', i.descricao, 'minutos', i.minutos,
         'preco_automatico', i.preco_automatico, 'preco_centavos', i.preco_centavos,
         'custo_direto_extra_centavos', i.custo_direto_extra_centavos,
-        'hora_venda_id', i.hora_venda_id) order by i.ordem, i.id)
+        'hora_venda_id', i.hora_venda_id, 'responsavel_id', i.responsavel_id,
+        'mes_previsto', i.mes_previsto) order by i.ordem, i.id)
       from public.orcamento_item as i
       where i.consultoria_id = o.consultoria_id and i.orcamento_id = o.id), '[]'::jsonb),
     'despesas', coalesce((
@@ -929,3 +1013,49 @@ as $$
   left join public.empreendimento as e on e.consultoria_id = o.consultoria_id and e.id = o.empreendimento_id
   where o.id = p_id
 $$;
+
+-- ---------------------------------------------------------------------------
+-- Carga da equipe: jornada de cada membro (Custos e taxas) e horas por mês em orçamentos
+-- aprovados, do mês atual (no fuso da consultoria) em diante. Só a Gestão. A tela soma as horas do
+-- orçamento aberto (cargaDoMes, packages/domain).
+-- ---------------------------------------------------------------------------
+create function public.carga_da_equipe(p_consultoria_id uuid)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  inicio date;
+begin
+  if not private.is_gestao(p_consultoria_id) then
+    raise exception 'sem_permissao' using errcode = '42501';
+  end if;
+  select date_trunc('month', (now() at time zone c.fuso))::date into inicio
+  from public.consultoria as c where c.id = p_consultoria_id;
+
+  return jsonb_build_object(
+    'jornada', coalesce((
+      select jsonb_agg(jsonb_build_object('membro_id', e.membro_id, 'horas_mes', e.horas_disponiveis_mes)
+                       order by e.ordem)
+      from public.orcamento_base_equipe as e
+      where e.consultoria_id = p_consultoria_id and e.membro_id is not null), '[]'::jsonb),
+    'comprometido', coalesce((
+      select jsonb_agg(jsonb_build_object('membro_id', x.responsavel_id, 'mes', x.mes, 'minutos', x.minutos)
+                       order by x.mes, x.responsavel_id)
+      from (
+        select i.responsavel_id, i.mes_previsto as mes, sum(i.minutos) as minutos
+        from public.orcamento_item as i
+        join public.orcamento as o on o.consultoria_id = i.consultoria_id and o.id = i.orcamento_id
+        where i.consultoria_id = p_consultoria_id
+          and o.situacao = 'aprovada'
+          and i.responsavel_id is not null
+          and i.mes_previsto >= inicio
+        group by i.responsavel_id, i.mes_previsto
+      ) as x), '[]'::jsonb));
+end;
+$$;
+
+revoke all on function public.carga_da_equipe(uuid) from public, anon;
+grant execute on function public.carga_da_equipe(uuid) to authenticated;

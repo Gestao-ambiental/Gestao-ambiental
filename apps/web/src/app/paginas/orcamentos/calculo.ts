@@ -69,6 +69,8 @@ export interface LinhaParaCalculo {
   custoDiretoExtraCentavos: number
   /** Linha da tabela de hora de venda (preço pela tabela e profissão do custo). */
   horaVendaId?: string | null
+  /** Membro responsável: o custo usa a hora dele. */
+  responsavelId?: string | null
 }
 
 export interface CalculoDoOrcamento extends PrecoDoOrcamento {

@@ -5,7 +5,7 @@
 -- (P9/P10); isolamento entre consultorias; FK composta.
 begin;
 
-select plan(60);
+select plan(63);
 
 select testes.criar_dados_sinteticos();
 
@@ -293,12 +293,12 @@ select ok(
 select lives_ok(
   $sql$select public.salvar_base_de_custos('c0000000-0000-4000-8000-00000000000a',
       1, 960000, 1, 3000, 2500, 600, 0, 199, 400, $json$[
-      {"id": "40000000-0000-4000-8000-000000000001", "descricao": "Sócio técnico", "socio": true,
-       "custo_mensal_centavos": 1000000, "horas_disponiveis_mes": 160, "aproveitamento_pb": 4000, "parte_tecnica_pb": 6000},
-      {"id": "40000000-0000-4000-8000-000000000002", "descricao": "Analista", "socio": false,
-       "custo_mensal_centavos": 500000, "horas_disponiveis_mes": 168, "aproveitamento_pb": 7500, "parte_tecnica_pb": 10000},
-      {"id": "40000000-0000-4000-8000-000000000003", "descricao": "Administrativo", "socio": false,
-       "custo_mensal_centavos": 300000, "horas_disponiveis_mes": 168, "aproveitamento_pb": 0, "parte_tecnica_pb": 0}
+      {"id": "40000000-0000-4000-8000-000000000001", "membro_id": "d0000000-0000-4000-8000-0000000000a1", "socio": true,
+       "custo_mensal_centavos": 1000000, "horas_disponiveis_mes": 160},
+      {"id": "40000000-0000-4000-8000-000000000002", "membro_id": "d0000000-0000-4000-8000-0000000000a2", "socio": false,
+       "custo_mensal_centavos": 500000, "horas_disponiveis_mes": 168},
+      {"id": "40000000-0000-4000-8000-000000000003", "membro_id": "d0000000-0000-4000-8000-0000000000a3", "socio": false,
+       "custo_mensal_centavos": 300000, "horas_disponiveis_mes": 168}
     ]$json$::jsonb)$sql$,
   'Gestão salva a base composta pela equipe (hora e horas enviadas são ignoradas)'
 );
@@ -307,26 +307,54 @@ select results_eq(
   $$select b.hora_tecnica_centavos, b.horas_faturaveis_mes, b.custos_fixos_equipe_centavos,
            (select count(*) from public.orcamento_base_equipe as e where e.consultoria_id = b.consultoria_id)
     from public.orcamento_base_custos as b where b.consultoria_id = 'c0000000-0000-4000-8000-00000000000a'$$,
-  $$values (5789::bigint, 190.00::numeric, 700000::bigint, 3::bigint)$$,
-  'técnico 11.000 ÷ 190 h faturáveis = 57,89/h; pró-labore administrativo e apoio (7.000) vão para o rateio'
+  $$values (3629::bigint, 496.00::numeric, 0::bigint, 3::bigint)$$,
+  'hora técnica média = 18.000 ÷ 496 h = 36,29/h; nada da equipe vai para o rateio'
+);
+
+select results_eq(
+  $$select array_agg(e.descricao order by e.ordem), b.custo_hora_membro -> 0 ->> 'hora_centavos'
+    from public.orcamento_base_equipe as e
+    join public.orcamento_base_custos as b on b.consultoria_id = e.consultoria_id
+    where e.consultoria_id = 'c0000000-0000-4000-8000-00000000000a' group by b.custo_hora_membro$$,
+  $$values (array['Eduardo Karnopp', 'Ana Ribeiro', 'Bruno Tavares'], '6250')$$,
+  'cada linha é um membro (com o nome dele) e a hora de custo é custo ÷ horas: 10.000 ÷ 160 h = 62,50'
 );
 
 select throws_ok(
   $sql$select public.salvar_base_de_custos('c0000000-0000-4000-8000-00000000000a',
       1, 960000, 1, 3000, 2500, 600, 0, 199, 400, '[{"id": "40000000-0000-4000-8000-000000000009",
-      "descricao": "Sem horas", "custo_mensal_centavos": 100000, "horas_disponiveis_mes": 160,
-      "aproveitamento_pb": 0, "parte_tecnica_pb": 10000}]'::jsonb)$sql$,
+      "membro_id": "d0000000-0000-4000-8000-0000000000a4", "custo_mensal_centavos": 100000,
+      "horas_disponiveis_mes": 0}]'::jsonb)$sql$,
   '22023', 'equipe_sem_horas_faturaveis',
-  'equipe sem nenhuma hora faturável é recusada'
+  'equipe sem nenhuma hora no mês é recusada'
 );
 
 select throws_ok(
   $sql$select public.salvar_base_de_custos('c0000000-0000-4000-8000-00000000000a',
       1, 960000, 1, 3000, 2500, 600, 0, 199, 400, '[{"id": "40000000-0000-4000-8000-000000000009",
-      "descricao": "Aproveitamento impossível", "custo_mensal_centavos": 100000, "horas_disponiveis_mes": 160,
-      "aproveitamento_pb": 10001, "parte_tecnica_pb": 10000}]'::jsonb)$sql$,
+      "membro_id": "d0000000-0000-4000-8000-0000000000b2", "custo_mensal_centavos": 100000,
+      "horas_disponiveis_mes": 160}]'::jsonb)$sql$,
   '22023', 'equipe_invalida',
-  'aproveitamento acima de 100% é recusado'
+  'membro de outra consultoria não entra na equipe'
+);
+
+select throws_ok(
+  $sql$select public.salvar_base_de_custos('c0000000-0000-4000-8000-00000000000a',
+      1, 960000, 1, 3000, 2500, 600, 0, 199, 400, '[
+      {"id": "40000000-0000-4000-8000-000000000009", "membro_id": "d0000000-0000-4000-8000-0000000000a4",
+       "custo_mensal_centavos": 100000, "horas_disponiveis_mes": 160},
+      {"id": "40000000-0000-4000-8000-00000000000a", "membro_id": "d0000000-0000-4000-8000-0000000000a4",
+       "custo_mensal_centavos": 100000, "horas_disponiveis_mes": 160}]'::jsonb)$sql$,
+  '22023', 'equipe_invalida',
+  'o mesmo membro duas vezes é recusado'
+);
+
+select throws_ok(
+  $sql$select public.salvar_base_de_custos('c0000000-0000-4000-8000-00000000000a',
+      1, 960000, 1, 3000, 2500, 600, 0, 199, 400, '[{"id": "40000000-0000-4000-8000-000000000009",
+      "descricao": "Perfil sem login", "custo_mensal_centavos": 100000, "horas_disponiveis_mes": 160}]'::jsonb)$sql$,
+  '22023', 'equipe_invalida',
+  'linha sem membro (perfil sem login) é recusada'
 );
 
 select lives_ok(
@@ -346,12 +374,12 @@ select results_eq(
 select lives_ok(
   $sql$select public.salvar_base_de_custos('c0000000-0000-4000-8000-00000000000a',
       1, 960000, 1, 3000, 2500, 600, 0, 199, 400, $json$[
-      {"id": "40000000-0000-4000-8000-000000000001", "descricao": "Sócio técnico", "socio": true,
-       "custo_mensal_centavos": 1000000, "horas_disponiveis_mes": 160, "aproveitamento_pb": 4000, "parte_tecnica_pb": 6000},
-      {"id": "40000000-0000-4000-8000-000000000002", "descricao": "Analista", "socio": false,
-       "custo_mensal_centavos": 500000, "horas_disponiveis_mes": 168, "aproveitamento_pb": 7500, "parte_tecnica_pb": 10000},
-      {"id": "40000000-0000-4000-8000-000000000003", "descricao": "Administrativo", "socio": false,
-       "custo_mensal_centavos": 300000, "horas_disponiveis_mes": 168, "aproveitamento_pb": 0, "parte_tecnica_pb": 0}
+      {"id": "40000000-0000-4000-8000-000000000001", "membro_id": "d0000000-0000-4000-8000-0000000000a1", "socio": true,
+       "custo_mensal_centavos": 1000000, "horas_disponiveis_mes": 160},
+      {"id": "40000000-0000-4000-8000-000000000002", "membro_id": "d0000000-0000-4000-8000-0000000000a2", "socio": false,
+       "custo_mensal_centavos": 500000, "horas_disponiveis_mes": 168},
+      {"id": "40000000-0000-4000-8000-000000000003", "membro_id": "d0000000-0000-4000-8000-0000000000a3", "socio": false,
+       "custo_mensal_centavos": 300000, "horas_disponiveis_mes": 168}
     ]$json$::jsonb)$sql$,
   'volta a compor pela equipe'
 );
@@ -369,8 +397,8 @@ select results_eq(
   $$select o.base_hora_tecnica_centavos, o.base_custo_fixo_hora_centavos, i.preco_centavos
     from public.orcamento as o join public.orcamento_item as i on i.orcamento_id = o.id
     where o.id = 'f0000000-0000-4000-8000-000000000001'$$,
-  $$values (5789::bigint, 8737::bigint, 23322::bigint)$$,
-  'rateio = (9.600 + 7.000) ÷ 190 = 87,37/h; 1h custa 57,89 + 87,37 = 145,26; com a assinatura (4,00), ÷ 0,64 = 233,22'
+  $$values (3629::bigint, 1935::bigint, 9319::bigint)$$,
+  'rateio = 9.600 ÷ 496 h = 19,35/h; 1h custa 36,29 + 19,35 = 55,64; com a assinatura (4,00), ÷ 0,64 = 93,19'
 );
 
 -- ---------------------------------------------------------------------------
