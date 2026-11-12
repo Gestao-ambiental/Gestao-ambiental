@@ -1,10 +1,11 @@
 -- Orçamentos, fatia 1 (ORC-02, ORC-03, ORC-04): só a Gestão lê e escreve; numeração por
 -- consultoria e ano; rascunho salvo inteiro com controle otimista; base de custos copiada;
--- preço automático calculado no banco; despesa a cotar; composição da hora pela equipe (P9/P10);
--- isolamento entre consultorias; FK composta.
+-- preço calculado no banco com margem única no fim e repartido pelo custo (fatia 2); despesa a
+-- cotar deixa o preço pendente; contas do mês e visitas técnicas; composição da hora pela equipe
+-- (P9/P10); isolamento entre consultorias; FK composta.
 begin;
 
-select plan(48);
+select plan(60);
 
 select testes.criar_dados_sinteticos();
 
@@ -210,8 +211,8 @@ select results_eq(
   $$select preco_automatico, preco_centavos from public.orcamento_item
     where id in ('10000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000004')
     order by ordem$$,
-  $$values (false, 170000::bigint), (true, 19531::bigint)$$,
-  'preço manual vale o digitado; o automático é calculado no banco: 1h custa 95 + 30 = 125 ÷ (1 − 30% − 6%) = 195,31'
+  $$values (true, 194047::bigint), (true, 19561::bigint)$$,
+  'preço digitado é ignorado: total = (1.250 + 1.240 + 125 + 4 de assinatura) ÷ (1 − 30% − 6%) = 4.092,19, repartido pelo custo'
 );
 
 select results_eq(
@@ -231,9 +232,9 @@ select throws_ok(
 
 select throws_ok(
   $$select public.salvar_orcamento('f0000000-0000-4000-8000-000000000002', 1, '{"objeto": "Laudo de ruído",
-      "itens": [{"id": "10000000-0000-4000-8000-000000000009", "descricao": "Medição", "preco_centavos": -1}]}'::jsonb)$$,
+      "itens": [{"id": "10000000-0000-4000-8000-000000000009", "descricao": "Medição", "custo_direto_extra_centavos": -1}]}'::jsonb)$$,
   '22023', 'item_invalido',
-  'preço negativo é recusado'
+  'outro custo negativo é recusado'
 );
 
 select throws_ok(
@@ -268,9 +269,9 @@ select results_eq(
   $$select sequencia, empreendimento_nome, total_centavos, total
     from public.listar_orcamentos('c0000000-0000-4000-8000-00000000000a', 'horizonte')
     order by sequencia$$,
-  $$values (1, 'Indústria Horizonte', 399531::bigint, 2::bigint),
-           (2, 'Indústria Horizonte', 0::bigint, 2::bigint)$$,
-  'a lista traz o total dos itens e o total de linhas'
+  $$values (1, 'Indústria Horizonte', 409219::bigint, 2::bigint),
+           (2, 'Indústria Horizonte', null::bigint, 2::bigint)$$,
+  'a lista traz o total dos itens e o total de linhas; sem base, o total é nulo (nunca zero)'
 );
 
 select results_eq(
@@ -368,8 +369,106 @@ select results_eq(
   $$select o.base_hora_tecnica_centavos, o.base_custo_fixo_hora_centavos, i.preco_centavos
     from public.orcamento as o join public.orcamento_item as i on i.orcamento_id = o.id
     where o.id = 'f0000000-0000-4000-8000-000000000001'$$,
-  $$values (5789::bigint, 8737::bigint, 22697::bigint)$$,
-  'rateio = (9.600 + 7.000) ÷ 190 = 87,37/h; 1h custa 57,89 + 87,37 = 145,26 ÷ 0,64 = 226,97'
+  $$values (5789::bigint, 8737::bigint, 23322::bigint)$$,
+  'rateio = (9.600 + 7.000) ÷ 190 = 87,37/h; 1h custa 57,89 + 87,37 = 145,26; com a assinatura (4,00), ÷ 0,64 = 233,22'
+);
+
+-- ---------------------------------------------------------------------------
+-- Fatia 2: contas do mês, visitas técnicas e margem escolhida no fim
+-- ---------------------------------------------------------------------------
+select lives_ok(
+  $sql$select public.salvar_base_de_custos('c0000000-0000-4000-8000-00000000000a',
+      9500, 1, 320, 3000, 2500, 600, 0, 199, 400, '[]'::jsonb, $json$[
+      {"descricao": " Aluguel e condomínio ", "valor_centavos": 800000},
+      {"descricao": "Energia elétrica", "valor_centavos": 100000},
+      {"descricao": "Internet", "valor_centavos": 60000}
+    ]$json$::jsonb, 15000, 120)$sql$,
+  'Gestão salva as contas do mês, o valor da visita e o custo por km'
+);
+
+select results_eq(
+  $$select custos_fixos_mensais_centavos, custos_fixos_detalhe -> 0 ->> 'descricao',
+           jsonb_array_length(custos_fixos_detalhe), valor_visita_centavos, custo_km_centavos
+    from public.orcamento_base_custos where consultoria_id = 'c0000000-0000-4000-8000-00000000000a'$$,
+  $$values (960000::bigint, 'Aluguel e condomínio', 3, 15000::bigint, 120::bigint)$$,
+  'o custo fixo do mês é a soma das contas (o total enviado é ignorado) e as descrições ficam aparadas'
+);
+
+select throws_ok(
+  $sql$select public.salvar_base_de_custos('c0000000-0000-4000-8000-00000000000a',
+      9500, 1, 320, 3000, 2500, 600, 0, 199, 400, '[]'::jsonb,
+      '[{"descricao": "  ", "valor_centavos": 100}]'::jsonb, 15000, 120)$sql$,
+  '22023', 'contas_invalidas',
+  'conta do mês sem descrição é recusada'
+);
+
+select is(
+  public.salvar_orcamento('f0000000-0000-4000-8000-000000000001', 4, $json${
+    "objeto": "Licenciamento (LO)", "margem_pb": 2000,
+    "visitas": {"quantidade": 2, "km_por_visita": 50, "outros_por_visita_centavos": 1000},
+    "itens": [{"id": "10000000-0000-4000-8000-000000000004", "descricao": "Revisão técnica", "minutos": 60}],
+    "parcelas": [{"id": "30000000-0000-4000-8000-000000000004", "descricao": "Assinatura do contrato",
+                  "percentual_pb": 10000}]}$json$::jsonb),
+  5,
+  'salva a margem do orçamento e as visitas técnicas'
+);
+
+select results_eq(
+  $$select i.preco_centavos, o.preco_visitas_centavos, o.margem_pb
+    from public.orcamento as o join public.orcamento_item as i on i.orcamento_id = o.id
+    where o.id = 'f0000000-0000-4000-8000-000000000001'$$,
+  $$values (17071::bigint, 60090::bigint, 2000)$$,
+  'preço = (125 + 2 × (150 + 50 km × 1,20 + 10) + 5,99 de taxas) ÷ (1 − 20% − 6%) = 771,61; item 170,71 e visitas 600,90'
+);
+
+select results_eq(
+  $$select total_centavos from public.listar_orcamentos('c0000000-0000-4000-8000-00000000000a', 'horizonte')
+    where sequencia = 1$$,
+  $$values (77161::bigint)$$,
+  'o total da lista soma os itens e a linha de visitas'
+);
+
+select results_eq(
+  $$select (j ->> 'margem_pb')::integer, (j -> 'visitas' ->> 'quantidade')::integer,
+           (j ->> 'preco_visitas_centavos')::bigint, (j -> 'base' ->> 'valor_visita_centavos')::bigint,
+           jsonb_array_length(j -> 'base' -> 'custos_fixos_detalhe')
+    from public.obter_orcamento('f0000000-0000-4000-8000-000000000001') as j$$,
+  $$values (2000, 2, 60090::bigint, 15000::bigint, 3)$$,
+  'o detalhe traz a margem, as visitas e a base com as contas do mês'
+);
+
+select throws_ok(
+  $$select public.salvar_orcamento('f0000000-0000-4000-8000-000000000001', 5,
+      '{"objeto": "Licenciamento (LO)", "margem_pb": 9400}'::jsonb)$$,
+  '22023', 'percentuais_invalidos',
+  'margem que, com tributos e taxas, chega a 100% é recusada'
+);
+
+select throws_ok(
+  $$select public.salvar_orcamento('f0000000-0000-4000-8000-000000000001', 5,
+      '{"objeto": "Licenciamento (LO)", "visitas": {"quantidade": -1}}'::jsonb)$$,
+  '22023', 'visitas_invalidas',
+  'quantidade de visitas negativa é recusada'
+);
+
+select is(
+  public.salvar_orcamento('f0000000-0000-4000-8000-000000000001', 5, $json${
+    "objeto": "Licenciamento (LO)",
+    "itens": [{"id": "10000000-0000-4000-8000-000000000004", "descricao": "Revisão técnica", "minutos": 60}],
+    "despesas": [{"id": "20000000-0000-4000-8000-000000000003", "descricao": "Análises laboratoriais",
+                  "estimativa_centavos": null, "tratamento": "incluida"}]}$json$::jsonb),
+  6,
+  'despesa incluída ainda a cotar não impede salvar'
+);
+
+select results_eq(
+  $$select i.preco_centavos, o.preco_visitas_centavos,
+           (select l.total_centavos from public.listar_orcamentos('c0000000-0000-4000-8000-00000000000a', 'horizonte') as l
+            where l.sequencia = 1)
+    from public.orcamento as o join public.orcamento_item as i on i.orcamento_id = o.id
+    where o.id = 'f0000000-0000-4000-8000-000000000001'$$,
+  $$values (0::bigint, 0::bigint, null::bigint)$$,
+  'com despesa incluída a cotar o preço fica pendente: itens a zero e total nulo na lista'
 );
 
 -- ---------------------------------------------------------------------------
@@ -426,12 +525,19 @@ select lives_ok(
   'a numeração de B é independente da de A'
 );
 
-select throws_ok(
-  $$select public.salvar_orcamento('f0000000-0000-4000-8000-0000000000b1', 1, '{"objeto": "Outorga",
-      "itens": [{"id": "10000000-0000-4000-8000-0000000000b1", "descricao": "Requerimento", "minutos": 120,
-                 "preco_automatico": true}]}'::jsonb)$$,
-  '22023', 'preco_automatico_sem_base',
-  'sem custos e taxas configurados não há preço automático (nunca vira zero)'
+select is(
+  public.salvar_orcamento('f0000000-0000-4000-8000-0000000000b1', 1, '{"objeto": "Outorga",
+      "itens": [{"id": "10000000-0000-4000-8000-0000000000b1", "descricao": "Requerimento", "minutos": 120}]}'::jsonb),
+  2,
+  'sem custos e taxas configurados o rascunho salva, com o preço pendente'
+);
+
+select results_eq(
+  $$select l.total_centavos, (select i.preco_centavos from public.orcamento_item as i
+                              where i.id = '10000000-0000-4000-8000-0000000000b1')
+    from public.listar_orcamentos('c0000000-0000-4000-8000-00000000000b') as l$$,
+  $$values (null::bigint, 0::bigint)$$,
+  'preço pendente aparece como nulo na lista, nunca como zero'
 );
 
 -- FK composta: item de B não aponta para orçamento de A, nem como dono da tabela

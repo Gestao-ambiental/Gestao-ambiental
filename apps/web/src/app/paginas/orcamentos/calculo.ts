@@ -1,20 +1,19 @@
 // Liga o rascunho da tela às regras de preço do domínio. Só apresentação: o banco confere limites e
-// permissões e grava o preço automático com a mesma regra (private.preco_automatico_do_item).
+// permissões e grava o preço com a mesma regra (private.precificar_orcamento).
 
 import {
   aplicarPontosBase,
-  custoDoItem,
   distribuirPorMaiorResto,
   diferencaDasParcelas,
   lerReais,
-  precoAutomaticoDoItem,
-  precoSugerido,
-  resultadoDoPreco,
+  precificarOrcamento,
+  rateioPorConta,
   situacaoDaMargem,
+  type PrecoDoOrcamento,
   type SituacaoDaMargem,
 } from '@gestao-ambiental/domain'
 
-import type { BaseDoOrcamento } from '@/lib/api/orcamentos'
+import type { BaseDoOrcamento, VisitasDoOrcamento } from '@/lib/api/orcamentos'
 
 /** "8", "8,5" ou "8.5" → 8.5. `null` se não for um número de 0 a 10.000. */
 export function lerHoras(texto: string): number | null {
@@ -67,156 +66,76 @@ export function lerEstimativa(texto: string): number | null | undefined {
 
 export interface LinhaParaCalculo {
   minutos: number
-  /** Verdadeiro: o preço sai do custo do item e da margem desejada. */
-  precoAutomatico: boolean
-  /** Preço digitado; só vale quando o preço é manual. */
-  precoManualCentavos: number
   custoDiretoExtraCentavos: number
 }
 
-export interface CalculoDoItem {
-  /** Custo interno (direto + rateio). `null` com rateio pendente. */
-  custoCentavos: number | null
-  /** Preço do item. `null` quando é automático e não há base de custos. */
-  precoCentavos: number | null
-  margemPontosBase: number | null
-  situacao: SituacaoDaMargem
-}
-
-export interface CalculoDoOrcamento {
-  itens: CalculoDoItem[]
-  /** Custo dos itens + despesas incluídas no preço. `null` com rateio ou despesa a cotar pendentes. */
-  custoTotalCentavos: number | null
-  /** Há despesa incluída no preço ainda a cotar. */
-  despesaIncluidaACotar: boolean
-  fixosPorCobrancaCentavos: number
-  precoPraticadoCentavos: number
-  /** `null` com custo pendente ou percentuais impossíveis. */
-  precoSugeridoCentavos: number | null
-  margemPontosBase: number | null
+export interface CalculoDoOrcamento extends PrecoDoOrcamento {
+  /** A margem escolhida comparada à mínima da base (a margem mínima vale para o total). */
   situacaoDaMargem: SituacaoDaMargem
-  /** Parcelas em centavos, por maior resto. Vazio se as parcelas não têm peso. */
+  /** Quanto o rateio deste orçamento cobre de cada conta do mês (prévia das contas). */
+  contas: { descricao: string; valorCentavos: number }[]
+  /** Parcelas em centavos, por maior resto. Vazio sem parcelas ou sem preço. */
   parcelasCentavos: number[]
   /** Quanto falta (positivo) ou sobra (negativo) para as parcelas fecharem 100%. */
   diferencaParcelasPontosBase: number
 }
 
 /**
- * O custo fixo por hora já vem calculado na base do orçamento: a conta do domínio recebe esse
- * valor como custo do mês de uma hora, o que dá o mesmo resultado.
+ * Preço do orçamento pela regra do domínio (precificarOrcamento), com uma margem só, escolhida
+ * no fim. O banco grava o mesmo resultado ao salvar (private.precificar_orcamento).
  *
  * `despesasIncluidasCentavos`: estimativas das despesas incluídas no preço (`null` = a cotar).
  */
 export function calcularOrcamento(
   linhas: readonly LinhaParaCalculo[],
+  visitas: VisitasDoOrcamento,
   despesasIncluidasCentavos: readonly (number | null)[],
   percentuaisDasParcelas: readonly number[],
+  margemPb: number,
   base: BaseDoOrcamento | null,
 ): CalculoDoOrcamento {
-  const baseDeCustos = base
-    ? {
-        horaTecnicaCentavos: base.horaTecnicaCentavos,
-        custosFixosMensaisCentavos: base.custoFixoHoraCentavos,
-        horasFaturaveisMes: 1,
-      }
-    : null
-  const percentuais = {
-    tributosPontosBase: base?.tributosPb ?? 0,
-    taxasPontosBase: base?.taxasPb ?? 0,
-  }
-  const minima = base?.margemMinimaPb ?? 0
-
-  const itens = linhas.map((linha): CalculoDoItem => {
-    const custo = baseDeCustos
-      ? custoDoItem(
-          { minutos: linha.minutos, custoDiretoExtraCentavos: linha.custoDiretoExtraCentavos },
-          baseDeCustos,
-        ).totalCentavos
-      : null
-    let preco: number | null = linha.precoManualCentavos
-    if (linha.precoAutomatico) {
-      preco = null
-      if (base && custo !== null) {
-        try {
-          preco = precoAutomaticoDoItem(custo, {
-            margemPontosBase: base.margemDesejadaPb,
-            ...percentuais,
-          })
-        } catch {
-          preco = null
-        }
-      }
-    }
-    if (custo === null || preco === null) {
-      return {
-        custoCentavos: custo,
-        precoCentavos: preco,
-        margemPontosBase: null,
-        situacao: 'pendente',
-      }
-    }
-    const margem = resultadoDoPreco(preco, custo, 0, percentuais).margemPontosBase
-    return {
-      custoCentavos: custo,
-      precoCentavos: preco,
-      margemPontosBase: margem,
-      situacao: situacaoDaMargem(margem, minima),
-    }
+  const preco = precificarOrcamento({
+    itens: linhas,
+    visitas,
+    despesasIncluidasCentavos,
+    quantidadeDeParcelas: percentuaisDasParcelas.length,
+    margemPb,
+    base,
   })
+  // Sem contas detalhadas, a prévia mostra o total do mês numa linha só.
+  const contas = base
+    ? rateioPorConta(
+        preco.custosDosItens.reduce((soma, c) => soma + (c.rateioCentavos ?? 0), 0),
+        base.contas.length > 0
+          ? base.contas
+          : [
+              {
+                descricao: 'Contas do mês (total)',
+                valorCentavos: base.custosFixosMensaisCentavos,
+              },
+            ],
+        base.custosFixosEquipeCentavos,
+      )
+    : []
 
-  const despesaIncluidaACotar = despesasIncluidasCentavos.some((valor) => valor === null)
-  const custoTotalCentavos =
-    itens.every((item) => item.custoCentavos !== null) && !despesaIncluidaACotar
-      ? itens.reduce((soma, item) => soma + (item.custoCentavos ?? 0), 0) +
-        despesasIncluidasCentavos.reduce<number>((soma, valor) => soma + (valor ?? 0), 0)
-      : null
-  const fixosPorCobrancaCentavos = base
-    ? percentuaisDasParcelas.length * base.taxaPorCobrancaCentavos + base.taxaPorAssinaturaCentavos
-    : 0
-  const precoPraticadoCentavos = itens.reduce((soma, item) => soma + (item.precoCentavos ?? 0), 0)
-
-  let precoSugeridoCentavos: number | null = null
-  // Sem itens não há o que precificar: só as taxas fixas não viram "preço sugerido".
-  if (base && custoTotalCentavos !== null && linhas.length > 0) {
-    try {
-      precoSugeridoCentavos = precoSugerido(custoTotalCentavos, fixosPorCobrancaCentavos, {
-        margemPontosBase: base.margemDesejadaPb,
-        ...percentuais,
-      })
-    } catch {
-      precoSugeridoCentavos = null
-    }
-  }
-
-  const margemPontosBase =
-    custoTotalCentavos === null
-      ? null
-      : resultadoDoPreco(
-          precoPraticadoCentavos,
-          custoTotalCentavos,
-          fixosPorCobrancaCentavos,
-          percentuais,
-        ).margemPontosBase
-
+  const diferencaParcelasPontosBase = diferencaDasParcelas(percentuaisDasParcelas)
+  const total = preco.precoTotalCentavos
   // Fechando 100%, os centavos vão por maior resto (soma igual ao preço). Sem fechar, cada parcela
   // mostra o próprio percentual do preço, para a diferença ficar visível em vez de redistribuída.
-  const diferencaParcelasPontosBase = diferencaDasParcelas(percentuaisDasParcelas)
   const parcelasCentavos =
-    percentuaisDasParcelas.length === 0
+    total === null || percentuaisDasParcelas.length === 0
       ? []
       : diferencaParcelasPontosBase === 0
-        ? distribuirPorMaiorResto(precoPraticadoCentavos, percentuaisDasParcelas)
-        : percentuaisDasParcelas.map((pontos) => aplicarPontosBase(precoPraticadoCentavos, pontos))
+        ? distribuirPorMaiorResto(total, percentuaisDasParcelas)
+        : percentuaisDasParcelas.map((pontos) => aplicarPontosBase(total, pontos))
 
   return {
-    itens,
-    custoTotalCentavos,
-    despesaIncluidaACotar,
-    fixosPorCobrancaCentavos,
-    precoPraticadoCentavos,
-    precoSugeridoCentavos,
-    margemPontosBase,
-    situacaoDaMargem: base ? situacaoDaMargem(margemPontosBase, minima) : 'pendente',
+    ...preco,
+    situacaoDaMargem:
+      base && preco.pendencia === null
+        ? situacaoDaMargem(margemPb, base.margemMinimaPb)
+        : 'pendente',
+    contas,
     parcelasCentavos,
     diferencaParcelasPontosBase,
   }

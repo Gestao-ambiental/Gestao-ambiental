@@ -9,7 +9,7 @@ export function numeroComRevisao(ano: number, sequencia: number, revisao: number
 }
 
 export const classeCampo =
-  'h-(--size-control) w-full rounded-(--radius) border border-(--border-input) bg-(--surface-input) px-(--space-100) corpo text-(--text) outline-none transicao-estado focus:border-(--border-focus) focus:bg-(--surface-input-focus) disabled:bg-(--surface-disabled) disabled:text-(--text-disabled) aria-invalid:border-(--border-danger)'
+  'h-(--size-control) w-full rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) px-(--space-100) corpo text-(--text) outline-none transicao-estado focus:border-b-(--border-input-active) focus:shadow-[inset_0_-1px_0_0_var(--border-input-active)] focus:bg-(--surface-input-focus) disabled:bg-(--surface-disabled) disabled:text-(--text-disabled) aria-invalid:border-(--border-danger)'
 
 export const classeCabecalho =
   'h-10 border-b px-(--space-100) text-left rotulo whitespace-nowrap first:pl-(--space-150) last:pr-(--space-150)'

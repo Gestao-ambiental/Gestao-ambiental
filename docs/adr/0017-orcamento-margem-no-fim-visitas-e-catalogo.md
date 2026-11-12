@@ -1,0 +1,45 @@
+# ADR-0017: Orçamento com margem no fim, contas do mês, visitas e catálogo de Joinville
+
+- **Situação:** aceito pelo Eduardo em 11/11/2026. Implementado na branch local `local/orcamentos-fluent`.
+- **Requisitos:** ORC-01 (catálogo), ORC-02 (proposta) e ORC-03 (cronograma).
+- **Origem:** comparação com a prévia de orçamentos feita no ChatGPT/Codex, que tinha o catálogo, as contas do mês e o deslocamento.
+
+## Decisões
+
+1. **Margem única, escolhida no fim.**
+   - Os itens mostram só horas, outros custos e custo.
+   - Na seção "Preço e margem", a pessoa escolhe a margem do orçamento. Ela vem preenchida com a margem desejada da base.
+   - Preço total = (custos + visitas + despesas incluídas + taxas fixas) ÷ (1 − margem − tributos − taxas).
+   - O preço é repartido entre os serviços pelo custo de cada um, com centavos por maior resto.
+   - Itens não têm mais preço manual nem margem por item.
+2. **Contas do mês detalhadas** em Custos e taxas (aluguel, energia, água, internet…).
+   - A soma vira o custo fixo mensal.
+   - Os nomes sugeridos vêm sem valor: o sistema não inventa número.
+   - Cada orçamento mostra quanto cobre de cada conta, pelas horas estimadas.
+3. **Visita técnica: valor fixo e por km.**
+   - A base guarda o valor de uma visita e o custo por km.
+   - O orçamento guarda a quantidade de visitas, os km por visita (ida e volta) e outros gastos por visita.
+   - Custo = visitas × (valor + km × custo do km + outros).
+   - As visitas são uma linha própria da proposta.
+4. **Catálogo fixo no sistema**, em `apps/web/src/app/paginas/orcamentos/catalogo-servicos.ts`.
+   - 56 modelos: os 52 da prévia, mais 4 serviços da carta de Joinville que faltavam (canil/gatil, transportador de efluentes, transportador de RCC e MTR).
+   - Foram retiradas as referências a propostas de clientes.
+   - Ao aplicar um modelo, as etapas viram itens e as despesas entram a cotar. Etapas condicionais começam desmarcadas.
+   - Horas e preço de tabela por consultoria ficam para depois.
+
+## Onde vive cada regra
+
+- **Domínio:** `packages/domain/src/preco-do-orcamento.ts` (`precificarOrcamento`, `custoDasVisitas`, `rateioPorConta`), com teste. O preço é calculado em inteiros, para dar o mesmo centavo que o banco.
+- **Banco:** migration `20261111230000_orcamento_margem_no_fim_contas_e_visitas.sql`.
+  - `private.precificar_orcamento` grava o preço de cada item e o das visitas ao salvar o rascunho.
+  - `salvar_base_de_custos` aceita as contas, a visita e o km.
+  - A lista devolve total nulo enquanto o preço estiver pendente.
+- **Testes:**
+  - `supabase/tests/190_orcamentos.test.sql`: 60 testes, incluindo um caso que confere o mesmo centavo do domínio.
+  - Testes de tela em `orcamentos.test.tsx`.
+
+## Consequências
+
+- Rascunhos antigos com preço manual por item passam a ter o preço calculado ao serem salvos de novo. Propostas enviadas não mudam.
+- Despesa incluída a cotar, falta de base ou falta de itens deixam o preço pendente: zero nos itens e total nulo na lista, nunca um zero enganoso.
+- As 4 composições novas do catálogo são sugestões de escopo e precisam de revisão técnica, como as demais.

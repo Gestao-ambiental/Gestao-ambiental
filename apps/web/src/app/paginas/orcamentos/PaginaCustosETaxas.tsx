@@ -21,6 +21,7 @@ import {
   obterBaseDeCustos,
   salvarBaseDeCustos,
   type BaseDeCustosDaConsultoria,
+  type ContaDoMes,
   type PessoaDaBase,
 } from '@/lib/api/orcamentos'
 import { mensagemDoErro } from '@/lib/erros'
@@ -44,7 +45,28 @@ interface Campos {
   taxas: string
   taxaPorCobranca: string
   taxaPorAssinatura: string
+  valorVisita: string
+  custoKm: string
 }
+
+/** Conta do mês (energia, água, internet…), com o valor como texto enquanto a pessoa digita. */
+interface LinhaConta {
+  id: string
+  descricao: string
+  valor: string
+}
+
+/** Nomes sugeridos para começar a lista. Os valores ficam em branco: nunca inventamos valor. */
+const CONTAS_SUGERIDAS = [
+  'Aluguel e condomínio',
+  'Energia elétrica',
+  'Água e esgoto',
+  'Internet e telefone',
+  'Contabilidade',
+  'Sistemas e softwares',
+  'Seguros',
+  'Material de escritório',
+]
 
 /** Pessoa ou perfil da equipe, com os números como texto enquanto a pessoa digita. */
 interface LinhaPessoa {
@@ -69,6 +91,8 @@ function camposDe(base: BaseDeCustosDaConsultoria | null): Campos {
       taxas: '0',
       taxaPorCobranca: '',
       taxaPorAssinatura: '',
+      valorVisita: '',
+      custoKm: '',
     }
   }
   return {
@@ -81,7 +105,30 @@ function camposDe(base: BaseDeCustosDaConsultoria | null): Campos {
     taxas: textoDoPercentual(base.taxasPb),
     taxaPorCobranca: formatarCentavos(base.taxaPorCobrancaCentavos),
     taxaPorAssinatura: formatarCentavos(base.taxaPorAssinaturaCentavos),
+    valorVisita: base.valorVisitaCentavos ? formatarCentavos(base.valorVisitaCentavos) : '',
+    custoKm: base.custoKmCentavos ? formatarCentavos(base.custoKmCentavos) : '',
   }
+}
+
+function contasDe(base: BaseDeCustosDaConsultoria | null): LinhaConta[] {
+  return (base?.contas ?? []).map((c) => ({
+    id: crypto.randomUUID(),
+    descricao: c.descricao,
+    valor: formatarCentavos(c.valorCentavos),
+  }))
+}
+
+/** Lê as contas do mês. Valor em branco conta como zero. Devolve a primeira mensagem de erro. */
+function lerContas(linhas: readonly LinhaConta[]): ContaDoMes[] | string {
+  const contas: ContaDoMes[] = []
+  for (const [indice, l] of linhas.entries()) {
+    const n = String(indice + 1)
+    const valor = lerReaisOuZero(l.valor)
+    if (!l.descricao.trim()) return `Contas do mês, linha ${n}: informe a conta.`
+    if (valor === null) return `Contas do mês, linha ${n}: valor inválido.`
+    contas.push({ descricao: l.descricao.trim(), valorCentavos: valor })
+  }
+  return contas
 }
 
 function linhasDe(base: BaseDeCustosDaConsultoria | null): LinhaPessoa[] {
@@ -159,10 +206,20 @@ function composicaoDe(equipe: readonly PessoaDaBase[]): ComposicaoDaEquipe {
 function lerCampos(
   c: Campos,
   linhas: readonly LinhaPessoa[],
+  linhasDeContas: readonly LinhaConta[],
 ): { base: BaseDeCustosDaConsultoria; composicao: ComposicaoDaEquipe | null } | string {
-  const custosFixos = lerReaisOuZero(c.custosFixos)
+  const contas = lerContas(linhasDeContas)
+  if (typeof contas === 'string') return contas
+  // Com contas, o custo fixo do mês é a soma delas; sem contas, vale o total digitado.
+  const custosFixos =
+    contas.length > 0
+      ? contas.reduce((soma, conta) => soma + conta.valorCentavos, 0)
+      : lerReaisOuZero(c.custosFixos)
   const taxaPorCobranca = lerReaisOuZero(c.taxaPorCobranca)
   const taxaPorAssinatura = lerReaisOuZero(c.taxaPorAssinatura)
+  const valorVisita = lerReaisOuZero(c.valorVisita)
+  const custoKm = lerReaisOuZero(c.custoKm)
+  if (valorVisita === null || custoKm === null) return 'Confira o valor da visita e o custo por km.'
   const margemDesejada = lerPercentual(c.margemDesejada)
   const margemMinima = lerPercentual(c.margemMinima)
   const tributos = lerPercentual(c.tributos || '0')
@@ -207,6 +264,9 @@ function lerCampos(
       taxaPorCobrancaCentavos: taxaPorCobranca,
       taxaPorAssinaturaCentavos: taxaPorAssinatura,
       equipe,
+      contas,
+      valorVisitaCentavos: valorVisita,
+      custoKmCentavos: custoKm,
     },
   }
 }
@@ -259,12 +319,14 @@ function Formulario({
   const queryClient = useQueryClient()
   const [c, setC] = useState<Campos>(() => camposDe(base))
   const [equipe, setEquipe] = useState<LinhaPessoa[]>(() => linhasDe(base))
+  const [contas, setContas] = useState<LinhaConta[]>(() => contasDe(base))
   const [salvando, setSalvando] = useState(false)
   const [falha, setFalha] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
 
   const pelaEquipe = equipe.length > 0
-  const lido = lerCampos(c, equipe)
+  const lido = lerCampos(c, equipe, contas)
+  const totalDasContas = contas.reduce((soma, l) => soma + (lerReaisOuZero(l.valor) ?? 0), 0)
   // Prévia da composição mesmo com algum campo ainda incompleto (linhas inválidas ficam de fora).
   const previa = pelaEquipe
     ? (() => {
@@ -304,13 +366,15 @@ function Formulario({
     if (previa?.horaTecnicaCentavos != null) {
       const hora = previa.horaTecnicaCentavos
       const horas = previa.horasFaturaveisMes
-      const fixos = lerReaisOuZero(c.custosFixos) ?? 0
+      const fixos = contas.length > 0 ? totalDasContas : (lerReaisOuZero(c.custosFixos) ?? 0)
       setC((a) => ({
         ...a,
         horaTecnica: formatarCentavos(hora),
         horas: textoDasHoras(horas),
         custosFixos: formatarCentavos(fixos + previa.custoAdministrativoCentavos),
       }))
+      // O total passa a ser digitado: com a administração somada, as contas não fecham mais.
+      setContas([])
     }
     setEquipe([])
     setAviso(null)
@@ -364,7 +428,7 @@ function Formulario({
         </MensagemSecao>
       ) : null}
 
-      <div className="overflow-hidden rounded-(--radius) border bg-(--surface)">
+      <div className="overflow-hidden rounded-(--radius-large) border bg-(--surface) shadow-cartao">
         <Grupo titulo="Custos e capacidade">
           {pelaEquipe ? (
             <Equipe
@@ -419,22 +483,49 @@ function Formulario({
               </div>
             </>
           )}
-          <Linha
-            id="base-fixos"
-            rotulo={pelaEquipe ? 'Outros custos fixos por mês (R$)' : 'Custos fixos por mês (R$)'}
-            apoio={
-              pelaEquipe
-                ? 'Aluguel, energia, internet, sistemas, contabilidade. Sem a remuneração de quem está na equipe'
-                : 'Aluguel, energia, internet, sistemas, contabilidade e o pró-labore que não está na hora técnica'
-            }
+          <ContasDoMes
+            linhas={contas}
+            pelaEquipe={pelaEquipe}
+            total={totalDasContas}
+            aoMudar={(id, alterar) => {
+              setContas((a) => a.map((l) => (l.id === id ? alterar(l) : l)))
+              setAviso(null)
+            }}
+            aoAdicionar={(descricao) => {
+              setContas((a) => [...a, { id: crypto.randomUUID(), descricao, valor: '' }])
+              setAviso(null)
+            }}
+            aoSugerir={() => {
+              setContas((a) => [
+                ...a,
+                ...CONTAS_SUGERIDAS.filter((nome) => !a.some((l) => l.descricao === nome)).map(
+                  (descricao) => ({ id: crypto.randomUUID(), descricao, valor: '' }),
+                ),
+              ])
+              setAviso(null)
+            }}
+            aoRemover={(id) => {
+              setContas((a) => a.filter((l) => l.id !== id))
+              setAviso(null)
+            }}
           >
-            <input
+            <Linha
               id="base-fixos"
-              inputMode="decimal"
-              className={`${classeCampo} text-right tabular-nums`}
-              {...campo('custosFixos')}
-            />
-          </Linha>
+              rotulo={pelaEquipe ? 'Outros custos fixos por mês (R$)' : 'Custos fixos por mês (R$)'}
+              apoio={
+                pelaEquipe
+                  ? 'Total das contas do mês, sem a remuneração de quem está na equipe. Ou detalhe conta por conta'
+                  : 'Total das contas do mês e do pró-labore que não está na hora técnica. Ou detalhe conta por conta'
+              }
+            >
+              <input
+                id="base-fixos"
+                inputMode="decimal"
+                className={`${classeCampo} text-right tabular-nums`}
+                {...campo('custosFixos')}
+              />
+            </Linha>
+          </ContasDoMes>
           <p className="corpo text-(--text-subtle)">
             Rateio por hora estimada:{' '}
             <span className="corpo-medio text-(--text)">
@@ -443,14 +534,41 @@ function Formulario({
           </p>
         </Grupo>
 
+        <Grupo titulo="Visita técnica e deslocamento">
+          <Linha
+            id="base-visita"
+            rotulo="Valor de uma visita técnica (R$)"
+            apoio="Custo de ir até o cliente e fazer a vistoria. Entra no orçamento por visita, quando houver"
+          >
+            <input
+              id="base-visita"
+              inputMode="decimal"
+              className={`${classeCampo} text-right tabular-nums`}
+              {...campo('valorVisita')}
+            />
+          </Linha>
+          <Linha
+            id="base-km"
+            rotulo="Custo por km rodado (R$)"
+            apoio="Combustível e desgaste do veículo. Usado quando a visita é longe: km de ida e volta × este valor"
+          >
+            <input
+              id="base-km"
+              inputMode="decimal"
+              className={`${classeCampo} text-right tabular-nums`}
+              {...campo('custoKm')}
+            />
+          </Linha>
+        </Grupo>
+
         <Grupo titulo="Margens">
           <Linha
             id="base-margem"
             rotulo="Margem desejada (%)"
             apoio={
               margem === null || margem >= 10_000
-                ? 'Sobre o preço de venda'
-                : `Sobre o preço de venda · equivale a ${formatarPontosBase(acrescimoEquivalente(margem))} sobre o custo`
+                ? 'Sobre o preço de venda. Vem preenchida no fim de cada orçamento, que pode mudar'
+                : `Sobre o preço de venda · equivale a ${formatarPontosBase(acrescimoEquivalente(margem))} sobre o custo. Cada orçamento pode mudar no fim`
             }
           >
             <input
@@ -755,5 +873,134 @@ function Linha({
       {children}
       {apoio ? <span className="text-xs text-(--text-subtle)">{apoio}</span> : <span />}
     </div>
+  )
+}
+
+function ContasDoMes({
+  linhas,
+  pelaEquipe,
+  total,
+  aoMudar,
+  aoAdicionar,
+  aoSugerir,
+  aoRemover,
+  children,
+}: {
+  linhas: readonly LinhaConta[]
+  pelaEquipe: boolean
+  total: number
+  aoMudar: (id: string, alterar: (l: LinhaConta) => LinhaConta) => void
+  aoAdicionar: (descricao: string) => void
+  aoSugerir: () => void
+  aoRemover: (id: string) => void
+  /** Campo do total, mostrado enquanto não há contas detalhadas. */
+  children: React.ReactNode
+}) {
+  if (linhas.length === 0) {
+    return (
+      <>
+        {children}
+        <div className="flex flex-wrap gap-(--space-100)">
+          <Botao aparencia="link" iconeAntes="list" onClick={aoSugerir}>
+            Detalhar contas do mês
+          </Botao>
+        </div>
+      </>
+    )
+  }
+  return (
+    <section aria-label="Contas do mês" className="flex flex-col gap-(--space-100)">
+      <div className="flex flex-col gap-(--space-025)">
+        <h3 className="corpo-medio text-(--text)">Contas do mês</h3>
+        <p className="text-xs text-(--text-subtle)">
+          {pelaEquipe
+            ? 'Sem a remuneração de quem está na equipe: ela já entra pela composição.'
+            : 'Inclua o pró-labore que não está na hora técnica.'}{' '}
+          Conta sem valor conta como zero. Cada orçamento mostra quanto cobre de cada conta.
+        </p>
+      </div>
+      <div className="relative overflow-x-auto">
+        <table className="w-full min-w-[420px] border-collapse corpo">
+          <thead>
+            <tr>
+              <th scope="col" className={classeCabecalho}>
+                Conta
+              </th>
+              <th scope="col" className={`${classeCabecalho} w-40 text-right`}>
+                Valor por mês (R$)
+              </th>
+              <th scope="col" className={`${classeCabecalho} w-12`}>
+                <span className="sr-only">Remover</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {linhas.map((l, indice) => {
+              const n = String(indice + 1)
+              return (
+                <tr key={l.id}>
+                  <td className={classeCelula}>
+                    <input
+                      aria-label={`Conta ${n}`}
+                      className={classeCampo}
+                      value={l.descricao}
+                      onChange={(e) => {
+                        const valor = e.target.value
+                        aoMudar(l.id, (x) => ({ ...x, descricao: valor }))
+                      }}
+                    />
+                  </td>
+                  <td className={classeCelula}>
+                    <input
+                      aria-label={`Valor por mês da conta ${n}`}
+                      inputMode="decimal"
+                      placeholder="0,00"
+                      aria-invalid={lerReaisOuZero(l.valor) === null || undefined}
+                      className={`${classeCampo} text-right tabular-nums`}
+                      value={l.valor}
+                      onChange={(e) => {
+                        const valor = e.target.value
+                        aoMudar(l.id, (x) => ({ ...x, valor }))
+                      }}
+                    />
+                  </td>
+                  <td className={classeCelula}>
+                    <BotaoIcone
+                      icone="trash-2"
+                      rotulo={`Remover conta ${n}`}
+                      onClick={() => {
+                        aoRemover(l.id)
+                      }}
+                    />
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+          <tfoot>
+            <tr>
+              <th scope="row" className={`${classeCelula} text-left corpo-medio`}>
+                Total do mês
+              </th>
+              <td className={`${classeCelula} text-right corpo-medio tabular-nums`}>
+                {formatarCentavos(total)}
+              </td>
+              <td className={classeCelula} />
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <div>
+        <Botao
+          aparencia="link"
+          iconeAntes="plus"
+          onClick={() => {
+            aoAdicionar('')
+          }}
+        >
+          Adicionar conta
+        </Botao>
+      </div>
+    </section>
   )
 }

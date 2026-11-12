@@ -138,3 +138,21 @@ export type {
   ResultadoDoPreco,
   SituacaoDaMargem,
 } from './orcamento'
+
+export {
+  MAXIMO_CONTAS_DO_MES,
+  MAXIMO_KM_POR_VISITA,
+  MAXIMO_VISITAS,
+  SEM_VISITAS,
+  custoDasVisitas,
+  precificarOrcamento,
+  rateioPorConta,
+} from './preco-do-orcamento'
+export type {
+  BaseDoPreco,
+  DivisaoDoValor,
+  EntradaDoPreco,
+  PendenciaDoPreco,
+  PrecoDoOrcamento,
+  VisitasDoOrcamento,
+} from './preco-do-orcamento'

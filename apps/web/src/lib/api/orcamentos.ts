@@ -60,6 +60,12 @@ function textos(valor: Json | undefined): string[] {
 function tratamento(valor: Json | undefined): TratamentoDespesa {
   return valor === 'incluida' || valor === 'reembolsavel' ? valor : 'cliente_direto'
 }
+function contasDe(valor: Json | undefined): ContaDoMes[] {
+  return lista(valor).map((c) => ({
+    descricao: texto(c.descricao),
+    valorCentavos: numero(c.valor_centavos),
+  }))
+}
 function situacao(valor: Json | undefined): SituacaoOrcamento {
   return valor === 'enviada' ||
     valor === 'negociacao' ||
@@ -81,7 +87,8 @@ export interface OrcamentoNaLista {
   situacao: SituacaoOrcamento
   empreendimentoNome: string
   objeto: string
-  totalCentavos: number
+  /** Nulo enquanto o preço está pendente (sem base, sem itens ou despesa incluída a cotar). */
+  totalCentavos: number | null
   atualizadoEm: string
 }
 
@@ -106,6 +113,7 @@ export async function listarOrcamentos(
       situacao: linha.situacao,
       empreendimentoNome: linha.empreendimento_nome,
       objeto: linha.objeto,
+      // Nulo com preço pendente (o tipo gerado não sabe: a coluna vem de um case).
       totalCentavos: linha.total_centavos,
       atualizadoEm: linha.atualizado_em,
     })),
@@ -122,10 +130,26 @@ export interface ItemDoOrcamento {
   descricao: string
   /** Duração estimada em minutos inteiros. */
   minutos: number
-  /** Verdadeiro: o banco calcula o preço pelo custo e pela margem desejada a cada salvamento. */
-  precoAutomatico: boolean
+  /** Parte do item no preço total, calculada pelo banco a cada salvamento (zero se pendente). */
   precoCentavos: number
   custoDiretoExtraCentavos: number
+}
+
+/** O que a tela envia de cada item: o preço sai do banco, nunca da tela. */
+export type ItemParaSalvar = Omit<ItemDoOrcamento, 'precoCentavos'>
+
+/** Conta do mês da consultoria (energia, água, internet…). */
+export interface ContaDoMes {
+  descricao: string
+  valorCentavos: number
+}
+
+export interface VisitasDoOrcamento {
+  quantidade: number
+  /** Km de ida e volta de cada visita. */
+  kmPorVisita: number
+  /** Pedágio, estacionamento, alimentação… por visita. */
+  outrosPorVisitaCentavos: number
 }
 
 export interface DespesaDoOrcamento {
@@ -155,6 +179,12 @@ export interface BaseDoOrcamento {
   taxasPb: number
   taxaPorCobrancaCentavos: number
   taxaPorAssinaturaCentavos: number
+  valorVisitaCentavos: number
+  custoKmCentavos: number
+  /** Contas do mês e parte administrativa da equipe: servem à prévia do rateio por conta. */
+  custosFixosMensaisCentavos: number
+  custosFixosEquipeCentavos: number
+  contas: ContaDoMes[]
 }
 
 export interface Orcamento {
@@ -171,6 +201,11 @@ export interface Orcamento {
   validadeDias: number
   premissas: string[]
   exclusoes: string[]
+  /** Margem escolhida no fim do orçamento; nula = margem desejada da base. */
+  margemPb: number | null
+  visitas: VisitasDoOrcamento
+  /** Parte das visitas no preço total, calculada pelo banco. */
+  precoVisitasCentavos: number
   base: BaseDoOrcamento | null
   atualizadoEm: string
   rowVersion: number
@@ -186,6 +221,7 @@ export async function obterOrcamento(id: string): Promise<Orcamento | null> {
   const o = objeto(data)
   if (!o) return null
   const b = objeto(o.base)
+  const v = objeto(o.visitas)
   return {
     id: texto(o.id),
     ano: numero(o.ano),
@@ -200,6 +236,13 @@ export async function obterOrcamento(id: string): Promise<Orcamento | null> {
     validadeDias: numero(o.validade_dias),
     premissas: textos(o.premissas),
     exclusoes: textos(o.exclusoes),
+    margemPb: numeroOuNulo(o.margem_pb),
+    visitas: {
+      quantidade: numero(v?.quantidade),
+      kmPorVisita: numero(v?.km_por_visita),
+      outrosPorVisitaCentavos: numero(v?.outros_por_visita_centavos),
+    },
+    precoVisitasCentavos: numero(o.preco_visitas_centavos),
     base: b
       ? {
           horaTecnicaCentavos: numero(b.hora_tecnica_centavos),
@@ -210,6 +253,11 @@ export async function obterOrcamento(id: string): Promise<Orcamento | null> {
           taxasPb: numero(b.taxas_pb),
           taxaPorCobrancaCentavos: numero(b.taxa_por_cobranca_centavos),
           taxaPorAssinaturaCentavos: numero(b.taxa_por_assinatura_centavos),
+          valorVisitaCentavos: numero(b.valor_visita_centavos),
+          custoKmCentavos: numero(b.custo_km_centavos),
+          custosFixosMensaisCentavos: numero(b.custos_fixos_mensais_centavos),
+          custosFixosEquipeCentavos: numero(b.custos_fixos_equipe_centavos),
+          contas: contasDe(b.custos_fixos_detalhe),
         }
       : null,
     atualizadoEm: texto(o.atualizado_em),
@@ -218,7 +266,6 @@ export async function obterOrcamento(id: string): Promise<Orcamento | null> {
       id: texto(i.id),
       descricao: texto(i.descricao),
       minutos: numero(i.minutos),
-      precoAutomatico: i.preco_automatico === true,
       precoCentavos: numero(i.preco_centavos),
       custoDiretoExtraCentavos: numero(i.custo_direto_extra_centavos),
     })),
@@ -265,7 +312,10 @@ export interface DadosDoRascunho {
   validadeDias: number
   premissas: string[]
   exclusoes: string[]
-  itens: ItemDoOrcamento[]
+  /** Nula: usa a margem desejada da base. */
+  margemPb: number | null
+  visitas: VisitasDoOrcamento
+  itens: ItemParaSalvar[]
   despesas: DespesaDoOrcamento[]
   parcelas: ParcelaDoOrcamento[]
 }
@@ -286,12 +336,16 @@ export async function salvarOrcamento(
       validade_dias: dados.validadeDias,
       premissas: dados.premissas,
       exclusoes: dados.exclusoes,
+      margem_pb: dados.margemPb,
+      visitas: {
+        quantidade: dados.visitas.quantidade,
+        km_por_visita: dados.visitas.kmPorVisita,
+        outros_por_visita_centavos: dados.visitas.outrosPorVisitaCentavos,
+      },
       itens: dados.itens.map((i) => ({
         id: i.id,
         descricao: i.descricao,
         minutos: i.minutos,
-        preco_automatico: i.precoAutomatico,
-        preco_centavos: i.precoCentavos,
         custo_direto_extra_centavos: i.custoDiretoExtraCentavos,
       })),
       despesas: dados.despesas.map((d) => ({
@@ -346,6 +400,10 @@ export interface BaseDeCustosDaConsultoria {
   taxaPorAssinaturaCentavos: number
   /** Vazio: hora técnica e horas faturáveis digitadas. */
   equipe: PessoaDaBase[]
+  /** Contas do mês. Com contas, o custo fixo mensal é a soma delas (o banco confere). */
+  contas: ContaDoMes[]
+  valorVisitaCentavos: number
+  custoKmCentavos: number
 }
 
 /** Nulo quando ainda não foi configurada. */
@@ -378,6 +436,9 @@ export async function obterBaseDeCustos(
       aproveitamentoPb: numero(p.aproveitamento_pb),
       parteTecnicaPb: numero(p.parte_tecnica_pb),
     })),
+    contas: contasDe(b.custos_fixos_detalhe),
+    valorVisitaCentavos: numero(b.valor_visita_centavos),
+    custoKmCentavos: numero(b.custo_km_centavos),
   }
 }
 
@@ -405,6 +466,12 @@ export async function salvarBaseDeCustos(
       aproveitamento_pb: p.aproveitamentoPb,
       parte_tecnica_pb: p.parteTecnicaPb,
     })),
+    p_custos_fixos: base.contas.map((c) => ({
+      descricao: c.descricao,
+      valor_centavos: c.valorCentavos,
+    })),
+    p_valor_visita_centavos: base.valorVisitaCentavos,
+    p_custo_km_centavos: base.custoKmCentavos,
   })
   if (error) throw error
 }
