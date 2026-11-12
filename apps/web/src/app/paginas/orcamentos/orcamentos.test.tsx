@@ -40,7 +40,8 @@ const base = {
     { descricao: 'Energia elétrica', valor_centavos: 100_000 },
     { descricao: 'Internet e telefone', valor_centavos: 60_000 },
   ],
-  niveis_hora: [],
+  horas_venda: [],
+  custo_hora_profissao: [],
   registrada_em: '2026-11-06T19:00:00Z',
 }
 
@@ -160,7 +161,8 @@ const baseDoCalculo = {
     { descricao: 'Energia elétrica', valorCentavos: 100_000 },
     { descricao: 'Internet e telefone', valorCentavos: 60_000 },
   ],
-  niveisHora: [],
+  horasVenda: [],
+  custoHoraPorProfissao: [],
 }
 
 const semVisitas = { quantidade: 0, kmPorVisita: 0, outrosPorVisitaCentavos: 0 }
@@ -401,7 +403,7 @@ describe('orçamentos (onda 5)', () => {
       descricao: 'Revisão técnica',
       minutos: 90,
       custo_direto_extra_centavos: 0,
-      nivel: null,
+      hora_venda_id: null,
     })
   })
 
@@ -642,14 +644,33 @@ describe('orçamentos (onda 5)', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('pela tabela: preço = horas × hora de venda do nível, e a margem é o que sobra', async () => {
+  it('pela tabela: preço = horas × hora de venda escolhida, e a margem é o que sobra', async () => {
     const pelaTabela = orcamento({
       forma_preco: 'tabela',
       base: {
         ...base,
-        niveis_hora: [
-          { nome: 'Júnior', valor_centavos: 21_419 },
-          { nome: 'Sênior', valor_centavos: 35_698 },
+        horas_venda: [
+          {
+            id: 'h-jr',
+            profissao: 'Eng. ambiental',
+            atividade: 'Júnior',
+            valor_centavos: 21_419,
+            fonte: null,
+          },
+          {
+            id: 'h-sr',
+            profissao: 'Eng. ambiental',
+            atividade: 'Sênior',
+            valor_centavos: 35_698,
+            fonte: null,
+          },
+          {
+            id: 'h-bio',
+            profissao: 'Biólogo',
+            atividade: 'Sênior',
+            valor_centavos: 30_000,
+            fonte: null,
+          },
         ],
       },
       itens: [
@@ -659,7 +680,7 @@ describe('orçamentos (onda 5)', () => {
           minutos: 480,
           preco_centavos: 0,
           custo_direto_extra_centavos: 24_000,
-          nivel: 'Júnior',
+          hora_venda_id: 'h-jr',
         },
         {
           id: 'i2',
@@ -667,7 +688,7 @@ describe('orçamentos (onda 5)', () => {
           minutos: 1_440,
           preco_centavos: 0,
           custo_direto_extra_centavos: 26_000,
-          nivel: 'Júnior',
+          hora_venda_id: 'h-jr',
         },
         {
           id: 'i3',
@@ -675,7 +696,7 @@ describe('orçamentos (onda 5)', () => {
           minutos: 600,
           preco_centavos: 0,
           custo_direto_extra_centavos: 0,
-          nivel: 'Júnior',
+          hora_venda_id: 'h-jr',
         },
       ],
     })
@@ -683,12 +704,15 @@ describe('orçamentos (onda 5)', () => {
     const usuario = userEvent.setup()
     renderizarApp('/orcamentos/o1')
     await screen.findByRole('heading', { name: 'Indústria Horizonte' })
-    expect(screen.getByLabelText('Nível do item 1')).toHaveValue('Júnior')
+    const hora1 = screen.getByLabelText('Hora de venda do item 1')
+    expect(hora1).toHaveValue('h-jr')
+    // A lista é agrupada por profissão.
+    expect(within(hora1).getByRole('group', { name: 'Biólogo' })).toBeInTheDocument()
     // 8h × 214,19 + 240 = 1.953,52; 24h × 214,19 + 260 = 5.400,56; 10h × 214,19 = 2.141,90
     expect(screen.getByText('1.953,52')).toBeInTheDocument()
     expect(screen.getAllByText('R$ 9.495,98').length).toBeGreaterThan(0)
 
-    await usuario.selectOptions(screen.getByLabelText('Nível do item 3'), 'Sênior')
+    await usuario.selectOptions(screen.getByLabelText('Hora de venda do item 3'), 'h-sr')
     // 10h × 356,98 = 3.569,80
     expect(screen.getByText('3.569,80')).toBeInTheDocument()
 
@@ -699,27 +723,41 @@ describe('orçamentos (onda 5)', () => {
 
     await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
     const chamada = falso.cliente.rpc.mock.calls.find(([nome]) => nome === 'salvar_orcamento')
-    const dados = (chamada?.[1] as { p_dados: { forma_preco: string; itens: { nivel: string }[] } })
-      .p_dados
+    const dados = (
+      chamada?.[1] as { p_dados: { forma_preco: string; itens: { hora_venda_id: string }[] } }
+    ).p_dados
     expect(dados.forma_preco).toBe('tabela')
-    expect(dados.itens.map((i) => i.nivel)).toEqual(['Júnior', 'Júnior', 'Sênior'])
+    expect(dados.itens.map((i) => i.hora_venda_id)).toEqual(['h-jr', 'h-jr', 'h-sr'])
   })
 
-  it('cadastra a hora de venda da ACEAMB e o piso por hora, com a equipe pelo piso', async () => {
+  it('cadastra a tabela de horas (ACEAMB e outras profissões), o piso e a equipe com profissão', async () => {
     const usuario = userEvent.setup()
     renderizarApp('/configuracoes/custos')
     await screen.findByText(/Ainda não configurado/)
     await usuario.click(
       screen.getByRole('button', { name: 'Usar tabela ACEAMB corrigida (ago/2026)' }),
     )
-    expect(screen.getByLabelText('Nível 1')).toHaveValue('Júnior')
-    expect(screen.getByLabelText('Hora de venda do nível 1')).toHaveValue('214,19')
-    expect(screen.getByLabelText('Hora de venda do nível 3')).toHaveValue('446,22')
+    expect(screen.getByLabelText('Profissão da hora 1')).toHaveValue('Eng. ambiental e sanitarista')
+    expect(screen.getByLabelText('Atividade ou nível da hora 1')).toHaveValue('Júnior')
+    expect(screen.getByLabelText('Hora de venda da linha 1')).toHaveValue('214,19')
+    expect(screen.getByLabelText('Atividade ou nível da hora 4')).toHaveValue(
+      'Avaliação e perícia ambiental',
+    )
+    expect(screen.getByLabelText('Hora de venda da linha 4')).toHaveValue('356,98')
+    // Outra profissão, com o valor que a consultoria informar.
+    await usuario.click(screen.getByRole('button', { name: 'Adicionar hora' }))
+    await usuario.type(screen.getByLabelText('Profissão da hora 5'), 'Biólogo')
+    await usuario.type(screen.getByLabelText('Atividade ou nível da hora 5'), 'Sênior')
+    await usuario.type(screen.getByLabelText('Hora de venda da linha 5'), '300,00')
 
     await usuario.type(screen.getByLabelText('Custos fixos por mês (R$)'), '250,00')
     await usuario.click(screen.getByRole('button', { name: 'Calcular pela equipe' }))
     await usuario.type(screen.getByLabelText('Piso por hora (R$)'), '79,49')
     await usuario.type(screen.getByLabelText('Pessoa ou perfil 1'), 'Sócio')
+    await usuario.type(
+      screen.getByLabelText('Profissão da linha 1'),
+      'Eng. ambiental e sanitarista',
+    )
     await usuario.click(screen.getByLabelText('Remuneração pelo piso na linha 1'))
     await usuario.type(screen.getByLabelText('Horas no mês da linha 1'), '173')
     await usuario.type(screen.getByLabelText('Aproveitamento da linha 1'), '100')
@@ -727,16 +765,47 @@ describe('orçamentos (onda 5)', () => {
     expect(screen.getByText('13.751,77')).toBeInTheDocument()
     expect(screen.queryByLabelText('Custo mensal da linha 1')).not.toBeInTheDocument()
 
+    await usuario.click(screen.getByRole('button', { name: 'Adicionar pessoa ou perfil' }))
+    await usuario.type(screen.getByLabelText('Pessoa ou perfil 2'), 'Sócia')
+    await usuario.type(screen.getByLabelText('Profissão da linha 2'), 'Biólogo')
+    await usuario.type(screen.getByLabelText('Custo mensal da linha 2'), '5.000,00')
+    await usuario.type(screen.getByLabelText('Horas no mês da linha 2'), '87')
+    await usuario.type(screen.getByLabelText('Aproveitamento da linha 2'), '100')
+    // Hora técnica por profissão: 13.751,77 ÷ 173 h = 79,49; 5.000 ÷ 87 h = 57,47
+    const resultado = screen.getByLabelText('Resultado da equipe')
+    expect(within(resultado).getByText('Hora técnica de Biólogo')).toBeInTheDocument()
+    expect(within(resultado).getByText('R$ 57,47')).toBeInTheDocument()
+    expect(within(resultado).getByText('R$ 79,49')).toBeInTheDocument()
+
     await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
     const chamada = falso.cliente.rpc.mock.calls.find(([nome]) => nome === 'salvar_base_de_custos')
     expect(chamada?.[1]).toMatchObject({
       p_piso_hora_centavos: 7_949,
-      p_niveis_hora: [
-        { nome: 'Júnior', valor_centavos: 21_419 },
-        { nome: 'Sênior', valor_centavos: 35_698 },
-        { nome: 'Máster', valor_centavos: 44_622 },
+      p_horas_venda: [
+        { profissao: 'Eng. ambiental e sanitarista', atividade: 'Júnior', valor_centavos: 21_419 },
+        { profissao: 'Eng. ambiental e sanitarista', atividade: 'Sênior', valor_centavos: 35_698 },
+        { profissao: 'Eng. ambiental e sanitarista', atividade: 'Máster', valor_centavos: 44_622 },
+        {
+          profissao: 'Eng. ambiental e sanitarista',
+          atividade: 'Avaliação e perícia ambiental',
+          valor_centavos: 35_698,
+        },
+        { profissao: 'Biólogo', atividade: 'Sênior', valor_centavos: 30_000, fonte: null },
       ],
-      p_equipe: [{ descricao: 'Sócio', pelo_piso: true, custo_mensal_centavos: 1_375_177 }],
+      p_equipe: [
+        {
+          descricao: 'Sócio',
+          pelo_piso: true,
+          profissao: 'Eng. ambiental e sanitarista',
+          custo_mensal_centavos: 1_375_177,
+        },
+        {
+          descricao: 'Sócia',
+          pelo_piso: false,
+          profissao: 'Biólogo',
+          custo_mensal_centavos: 500_000,
+        },
+      ],
     })
   })
 

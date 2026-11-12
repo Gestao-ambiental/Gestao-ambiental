@@ -73,22 +73,28 @@
   - `packages/domain/src/preco-do-orcamento.ts` (`valorDasVisitas`, `precificarOrcamento`);
   - migration `20261112100000_visita_com_preco_fixo.sql` (`private.precificar_orcamento`).
 
-## Atualização de 12/11/2026: preço pela tabela de hora de venda e piso por hora
+## Atualização de 12/11/2026: preço pela tabela de hora de venda, custo por profissão e piso
 
-- **Hora de venda por nível:** Custos e taxas cadastra a hora de venda por nível. Um botão preenche com a tabela ACEAMB de 2015 corrigida pelo IPCA até agosto de 2026: Júnior R$ 214,19, Sênior R$ 356,98 e Máster R$ 446,22.
-- **Duas formas de preço no orçamento:**
-  - **pela tabela**: preço do item = horas × hora de venda do nível + outros custos, e a margem vira resultado;
+- **Tabela de hora de venda por profissão e atividade ou nível:** cada linha é algo como Eng. ambiental · Júnior, Eng. ambiental · Avaliação e perícia ambiental ou Biólogo · Sênior, com a fonte do valor.
+  - Um botão preenche com a tabela ACEAMB de 2015 corrigida pelo IPCA até ago/2026: Júnior R$ 214,19, Sênior R$ 356,98, Máster R$ 446,22 e Perícia R$ 356,98.
+  - Outras profissões (biólogo, eng. civil, arquiteto) entram com os valores que a consultoria informar. Não há valor inventado.
+- **Duas formas de preço:**
+  - **pela tabela**: cada serviço escolhe uma linha, e o preço = horas × hora de venda + outros custos; a margem vira resultado;
   - **pela margem**: como antes.
-- **Forma padrão:** com níveis cadastrados, o orçamento novo nasce pela tabela.
-- **Pendência:** item sem nível válido deixa o preço pendente.
+- **Forma padrão:** com tabela cadastrada, o orçamento novo nasce pela tabela.
+- **Pendência:** item sem hora válida deixa o preço pendente.
+- **Custo por profissão:** cada pessoa da equipe tem profissão, e a base guarda a hora técnica de cada profissão (parte técnica ÷ horas faturáveis de quem é dela).
+  - O custo de cada serviço usa a profissão da hora escolhida.
+  - Sem ninguém daquela profissão na equipe, vale a média da equipe.
+  - Isso vale nas duas formas de preço: pela margem, a linha escolhida define só a profissão do custo.
 - **Piso por hora:** é informado pela consultoria, sem inventar o divisor legal do piso de engenheiro (Lei 4.950-A/66).
-  - Quem está "pelo piso" recebe horas no mês × piso por hora.
-  - A remuneração acompanha a carga de cada mês.
+  - Quem está "pelo piso" recebe horas no mês × piso por hora, e a remuneração acompanha a carga de cada mês.
 - **Onde vive:**
-  - migration `20261112110000_preco_pela_tabela_e_piso.sql`;
-  - `precificarOrcamento` com `formaDePreco`;
-  - testes em `supabase/tests/210_preco_pela_tabela.test.sql` (16 testes).
+  - migration `20261112110000_preco_pela_tabela_e_piso.sql`, com `private.itens_do_preco` e `private.precificar_orcamento`;
+  - no domínio, `precificarOrcamento` e `custoHoraPorProfissao`;
+  - testes em `supabase/tests/210_preco_pela_tabela.test.sql` (17 testes).
 - **Ainda não feito:**
-  - os serviços de preço fechado da tabela (RAP, EAS, PRAD, PGRS);
-  - o deslocamento por faixa (0–50 km, 50–150 km, diária);
-  - o CTF por porte.
+  - serviços de preço fechado (RAP, EAS, PRAD, PGRS; e a tabela do CAU, que é por área e complexidade, não por hora);
+  - deslocamento por faixa;
+  - CTF por porte;
+  - sugestão de hora pelo modelo do catálogo ou pelo responsável do serviço.

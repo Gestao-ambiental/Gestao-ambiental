@@ -2,13 +2,15 @@ import {
   acrescimoEquivalente,
   composicaoDaEquipe,
   custoFixoPorHora,
+  custoHoraPorProfissao,
+  mesmaProfissao,
   formatarCentavos,
   formatarPontosBase,
   formatarReais,
   type ComposicaoDaEquipe,
 } from '@gestao-ambiental/domain'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Pagina } from '@/app/paginas/Pagina'
@@ -22,7 +24,8 @@ import {
   salvarBaseDeCustos,
   type BaseDeCustosDaConsultoria,
   type ContaDoMes,
-  type NivelDeHora,
+  type CustoDaProfissao,
+  type HoraDeVenda,
   type PessoaDaBase,
 } from '@/lib/api/orcamentos'
 import { mensagemDoErro } from '@/lib/erros'
@@ -51,21 +54,31 @@ interface Campos {
   pisoHora: string
 }
 
-/** Nível da hora de venda (Júnior, Sênior…), com o valor como texto enquanto a pessoa digita. */
-interface LinhaNivel {
+/** Linha da tabela de hora de venda, com o valor como texto enquanto a pessoa digita. */
+interface LinhaHora {
   id: string
-  nome: string
+  profissao: string
+  atividade: string
   valor: string
+  fonte: string
 }
 
 /**
- * Tabela ACEAMB (2015) corrigida pelo IPCA até ago/2026 (fator 1,784883), item 1.16, enviada pelo
- * Eduardo em 12/11/2026. Só preenche os campos quando a pessoa pede; dá para editar depois.
+ * Tabela ACEAMB (2015) corrigida pelo IPCA até ago/2026 (fator 1,784883), itens 1.16 (hora técnica)
+ * e 1.11 (avaliação e perícia ambiental), enviada pelo Eduardo em 12/11/2026. Só preenche quando a
+ * pessoa pede; dá para editar depois. Outras profissões (biólogo, eng. civil, arquiteto) entram com
+ * os valores das tabelas que a consultoria informar: nada é inventado aqui.
  */
-const NIVEIS_ACEAMB_2026 = [
-  { nome: 'Júnior', valor: '214,19' },
-  { nome: 'Sênior', valor: '356,98' },
-  { nome: 'Máster', valor: '446,22' },
+const FONTE_ACEAMB = 'ACEAMB 2015 corrigida pelo IPCA (ago/2026)'
+const HORAS_ACEAMB_2026 = [
+  { profissao: 'Eng. ambiental e sanitarista', atividade: 'Júnior', valor: '214,19' },
+  { profissao: 'Eng. ambiental e sanitarista', atividade: 'Sênior', valor: '356,98' },
+  { profissao: 'Eng. ambiental e sanitarista', atividade: 'Máster', valor: '446,22' },
+  {
+    profissao: 'Eng. ambiental e sanitarista',
+    atividade: 'Avaliação e perícia ambiental',
+    valor: '356,98',
+  },
 ]
 
 /** Conta do mês (energia, água, internet…), com o valor como texto enquanto a pessoa digita. */
@@ -98,6 +111,7 @@ interface LinhaPessoa {
   parteTecnica: string
   /** Remuneração pelo piso: horas no mês × piso por hora. */
   peloPiso: boolean
+  profissao: string
 }
 
 function camposDe(base: BaseDeCustosDaConsultoria | null): Campos {
@@ -133,27 +147,41 @@ function camposDe(base: BaseDeCustosDaConsultoria | null): Campos {
   }
 }
 
-function niveisDe(base: BaseDeCustosDaConsultoria | null): LinhaNivel[] {
-  return (base?.niveisHora ?? []).map((n) => ({
-    id: crypto.randomUUID(),
-    nome: n.nome,
-    valor: formatarCentavos(n.valorCentavos),
+function horasDe(base: BaseDeCustosDaConsultoria | null): LinhaHora[] {
+  return (base?.horasVenda ?? []).map((h) => ({
+    id: h.id,
+    profissao: h.profissao,
+    atividade: h.atividade,
+    valor: formatarCentavos(h.valorCentavos),
+    fonte: h.fonte ?? '',
   }))
 }
 
-/** Lê os níveis da hora de venda: nome obrigatório e único, valor em reais. */
-function lerNiveis(linhas: readonly LinhaNivel[]): NivelDeHora[] | string {
-  const niveis: NivelDeHora[] = []
+/** Lê a tabela de hora de venda: profissão e atividade obrigatórias, sem repetir a dupla. */
+function lerHorasDeVenda(linhas: readonly LinhaHora[]): HoraDeVenda[] | string {
+  const horas: HoraDeVenda[] = []
   for (const [indice, l] of linhas.entries()) {
     const n = String(indice + 1)
     const valor = lerReaisOuZero(l.valor)
-    if (!l.nome.trim()) return `Hora de venda, linha ${n}: informe o nível.`
+    if (!l.profissao.trim()) return `Hora de venda, linha ${n}: informe a profissão.`
+    if (!l.atividade.trim()) return `Hora de venda, linha ${n}: informe a atividade ou o nível.`
     if (valor === null) return `Hora de venda, linha ${n}: valor inválido.`
-    if (niveis.some((x) => x.nome.toLowerCase() === l.nome.trim().toLowerCase()))
-      return `Hora de venda: o nível "${l.nome.trim()}" aparece duas vezes.`
-    niveis.push({ nome: l.nome.trim(), valorCentavos: valor })
+    const repetida = horas.some(
+      (h) =>
+        mesmaProfissao(h.profissao, l.profissao) &&
+        h.atividade.toLowerCase() === l.atividade.trim().toLowerCase(),
+    )
+    if (repetida)
+      return `Hora de venda: "${l.profissao.trim()} · ${l.atividade.trim()}" aparece duas vezes.`
+    horas.push({
+      id: l.id,
+      profissao: l.profissao.trim(),
+      atividade: l.atividade.trim(),
+      valorCentavos: valor,
+      fonte: l.fonte.trim() || null,
+    })
   }
-  return niveis
+  return horas
 }
 
 function contasDe(base: BaseDeCustosDaConsultoria | null): LinhaConta[] {
@@ -187,6 +215,7 @@ function linhasDe(base: BaseDeCustosDaConsultoria | null): LinhaPessoa[] {
     aproveitamento: textoDoPercentual(p.aproveitamentoPb),
     parteTecnica: textoDoPercentual(p.parteTecnicaPb),
     peloPiso: p.peloPiso,
+    profissao: p.profissao ?? '',
   }))
 }
 
@@ -200,6 +229,7 @@ function novaPessoa(): LinhaPessoa {
     aproveitamento: '',
     parteTecnica: '100',
     peloPiso: false,
+    profissao: '',
   }
 }
 
@@ -239,6 +269,7 @@ function lerEquipe(
       descricao: l.descricao.trim(),
       socio: l.socio,
       peloPiso: l.peloPiso,
+      profissao: l.profissao.trim() || null,
       custoMensalCentavos: custo,
       horasDisponiveisMes: horas,
       aproveitamentoPb: aproveitamento,
@@ -264,12 +295,12 @@ function lerCampos(
   c: Campos,
   linhas: readonly LinhaPessoa[],
   linhasDeContas: readonly LinhaConta[],
-  linhasDeNiveis: readonly LinhaNivel[],
+  linhasDeHoras: readonly LinhaHora[],
 ): { base: BaseDeCustosDaConsultoria; composicao: ComposicaoDaEquipe | null } | string {
   const contas = lerContas(linhasDeContas)
   if (typeof contas === 'string') return contas
-  const niveisHora = lerNiveis(linhasDeNiveis)
-  if (typeof niveisHora === 'string') return niveisHora
+  const horasVenda = lerHorasDeVenda(linhasDeHoras)
+  if (typeof horasVenda === 'string') return horasVenda
   const pisoHora = lerReaisOuZero(c.pisoHora)
   if (pisoHora === null) return 'Confira o piso por hora.'
   // Com contas, o custo fixo do mês é a soma delas; sem contas, vale o total digitado.
@@ -329,7 +360,8 @@ function lerCampos(
       contas,
       valorVisitaCentavos: valorVisita,
       custoKmCentavos: custoKm,
-      niveisHora,
+      horasVenda,
+      custoHoraPorProfissao: custoHoraPorProfissao(equipe),
       pisoHoraCentavos: pisoHora,
     },
   }
@@ -384,13 +416,22 @@ function Formulario({
   const [c, setC] = useState<Campos>(() => camposDe(base))
   const [equipe, setEquipe] = useState<LinhaPessoa[]>(() => linhasDe(base))
   const [contas, setContas] = useState<LinhaConta[]>(() => contasDe(base))
-  const [niveis, setNiveis] = useState<LinhaNivel[]>(() => niveisDe(base))
+  const [horas, setHoras] = useState<LinhaHora[]>(() => horasDe(base))
   const [salvando, setSalvando] = useState(false)
   const [falha, setFalha] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
 
   const pelaEquipe = equipe.length > 0
-  const lido = lerCampos(c, equipe, contas, niveis)
+  const lido = lerCampos(c, equipe, contas, horas)
+  // Profissões já usadas, para sugerir o mesmo nome na tabela e na equipe.
+  const profissoes = [
+    ...new Set(
+      [...horas.map((h) => h.profissao.trim()), ...equipe.map((p) => p.profissao.trim())].filter(
+        Boolean,
+      ),
+    ),
+  ]
+  const custoPorProfissao = typeof lido === 'string' ? [] : lido.base.custoHoraPorProfissao
   const pisoLido = lerReaisOuZero(c.pisoHora) ?? 0
   const totalDasContas = contas.reduce((soma, l) => soma + (lerReaisOuZero(l.valor) ?? 0), 0)
   // Prévia da composição mesmo com algum campo ainda incompleto (linhas inválidas ficam de fora).
@@ -513,6 +554,7 @@ function Formulario({
           {pelaEquipe ? (
             <Equipe
               linhas={equipe}
+              custoPorProfissao={custoPorProfissao}
               pisoHoraCentavos={pisoLido}
               previa={previa}
               aoMudar={mudarPessoa}
@@ -644,20 +686,31 @@ function Formulario({
 
         <Grupo titulo="Hora de venda (tabela)">
           <p className="max-w-3xl text-xs text-(--text-subtle)">
-            Quanto vocês cobram do cliente por hora, por nível. Com hora de venda cadastrada, os
-            orçamentos novos saem pela tabela: preço = horas × hora de venda, e a margem vira
-            resultado.
+            Quanto vocês cobram do cliente por hora, por profissão e atividade ou nível (ex.: Eng.
+            ambiental · Júnior; Eng. ambiental · Perícia; Biólogo · Sênior). Cada serviço do
+            orçamento escolhe uma linha: ela define o preço pela tabela e a profissão do custo.
           </p>
-          {niveis.length > 0 ? (
+          <datalist id="profissoes-da-consultoria">
+            {profissoes.map((nome) => (
+              <option key={nome} value={nome} />
+            ))}
+          </datalist>
+          {horas.length > 0 ? (
             <div className="relative overflow-x-auto">
-              <table className="w-full min-w-[420px] border-collapse corpo">
+              <table className="w-full min-w-[760px] border-collapse corpo">
                 <thead>
                   <tr>
                     <th scope="col" className={classeCabecalho}>
-                      Nível
+                      Profissão
                     </th>
-                    <th scope="col" className={`${classeCabecalho} w-40 text-right`}>
+                    <th scope="col" className={classeCabecalho}>
+                      Atividade ou nível
+                    </th>
+                    <th scope="col" className={`${classeCabecalho} w-36 text-right`}>
                       Hora de venda (R$)
+                    </th>
+                    <th scope="col" className={classeCabecalho}>
+                      Fonte
                     </th>
                     <th scope="col" className={`${classeCabecalho} w-12`}>
                       <span className="sr-only">Remover</span>
@@ -665,44 +718,68 @@ function Formulario({
                   </tr>
                 </thead>
                 <tbody>
-                  {niveis.map((l, indice) => {
+                  {horas.map((l, indice) => {
                     const n = String(indice + 1)
+                    const mudarHora = (alterar: (x: LinhaHora) => LinhaHora) => {
+                      setHoras((a) => a.map((x) => (x.id === l.id ? alterar(x) : x)))
+                      setAviso(null)
+                    }
                     return (
                       <tr key={l.id}>
                         <td className={classeCelula}>
                           <input
-                            aria-label={`Nível ${n}`}
+                            aria-label={`Profissão da hora ${n}`}
+                            list="profissoes-da-consultoria"
                             className={classeCampo}
-                            value={l.nome}
+                            value={l.profissao}
                             onChange={(e) => {
                               const valor = e.target.value
-                              setNiveis((a) =>
-                                a.map((x) => (x.id === l.id ? { ...x, nome: valor } : x)),
-                              )
-                              setAviso(null)
+                              mudarHora((x) => ({ ...x, profissao: valor }))
                             }}
                           />
                         </td>
                         <td className={classeCelula}>
                           <input
-                            aria-label={`Hora de venda do nível ${n}`}
+                            aria-label={`Atividade ou nível da hora ${n}`}
+                            className={classeCampo}
+                            value={l.atividade}
+                            onChange={(e) => {
+                              const valor = e.target.value
+                              mudarHora((x) => ({ ...x, atividade: valor }))
+                            }}
+                          />
+                        </td>
+                        <td className={classeCelula}>
+                          <input
+                            aria-label={`Hora de venda da linha ${n}`}
                             inputMode="decimal"
                             aria-invalid={lerReaisOuZero(l.valor) === null || undefined}
                             className={`${classeCampo} text-right tabular-nums`}
                             value={l.valor}
                             onChange={(e) => {
                               const valor = e.target.value
-                              setNiveis((a) => a.map((x) => (x.id === l.id ? { ...x, valor } : x)))
-                              setAviso(null)
+                              mudarHora((x) => ({ ...x, valor }))
+                            }}
+                          />
+                        </td>
+                        <td className={classeCelula}>
+                          <input
+                            aria-label={`Fonte da hora ${n}`}
+                            placeholder="Opcional"
+                            className={classeCampo}
+                            value={l.fonte}
+                            onChange={(e) => {
+                              const valor = e.target.value
+                              mudarHora((x) => ({ ...x, fonte: valor }))
                             }}
                           />
                         </td>
                         <td className={classeCelula}>
                           <BotaoIcone
                             icone="trash-2"
-                            rotulo={`Remover nível ${n}`}
+                            rotulo={`Remover hora ${n}`}
                             onClick={() => {
-                              setNiveis((a) => a.filter((x) => x.id !== l.id))
+                              setHoras((a) => a.filter((x) => x.id !== l.id))
                               setAviso(null)
                             }}
                           />
@@ -719,18 +796,28 @@ function Formulario({
               aparencia="link"
               iconeAntes="plus"
               onClick={() => {
-                setNiveis((a) => [...a, { id: crypto.randomUUID(), nome: '', valor: '' }])
+                setHoras((a) => [
+                  ...a,
+                  { id: crypto.randomUUID(), profissao: '', atividade: '', valor: '', fonte: '' },
+                ])
                 setAviso(null)
               }}
             >
-              Adicionar nível
+              Adicionar hora
             </Botao>
-            {niveis.length === 0 ? (
+            {horas.every((h) => h.fonte !== FONTE_ACEAMB) ? (
               <Botao
                 aparencia="link"
                 iconeAntes="list"
                 onClick={() => {
-                  setNiveis(NIVEIS_ACEAMB_2026.map((n) => ({ id: crypto.randomUUID(), ...n })))
+                  setHoras((a) => [
+                    ...a,
+                    ...HORAS_ACEAMB_2026.map((h) => ({
+                      id: crypto.randomUUID(),
+                      ...h,
+                      fonte: FONTE_ACEAMB,
+                    })),
+                  ])
                   setAviso(null)
                 }}
               >
@@ -828,6 +915,7 @@ function Formulario({
 
 function Equipe({
   linhas,
+  custoPorProfissao,
   pisoHoraCentavos,
   previa,
   aoMudar,
@@ -836,6 +924,7 @@ function Equipe({
   aoVoltar,
 }: {
   linhas: LinhaPessoa[]
+  custoPorProfissao: readonly CustoDaProfissao[]
   pisoHoraCentavos: number
   previa: ComposicaoDaEquipe | null
   aoMudar: (id: string, alterar: (p: LinhaPessoa) => LinhaPessoa) => void
@@ -859,6 +948,9 @@ function Equipe({
             <tr>
               <th scope="col" className={classeCabecalho}>
                 Pessoa ou perfil
+              </th>
+              <th scope="col" className={`${classeCabecalho} w-48`}>
+                Profissão
               </th>
               <th scope="col" className={`${classeCabecalho} w-16 text-center`}>
                 Sócio
@@ -907,6 +999,19 @@ function Equipe({
                       onChange={(e) => {
                         const valor = e.target.value
                         aoMudar(p.id, (x) => ({ ...x, descricao: valor }))
+                      }}
+                    />
+                  </td>
+                  <td className={classeCelula}>
+                    <input
+                      aria-label={`Profissão da linha ${n}`}
+                      list="profissoes-da-consultoria"
+                      placeholder="Ex.: Biólogo"
+                      className={classeCampo}
+                      value={p.profissao}
+                      onChange={(e) => {
+                        const valor = e.target.value
+                        aoMudar(p.id, (x) => ({ ...x, profissao: valor }))
                       }}
                     />
                   </td>
@@ -1038,7 +1143,17 @@ function Equipe({
         <dd className="text-right tabular-nums">
           {previa ? formatarReais(previa.remuneracaoDosSociosCentavos) : 'pendente'}
         </dd>
+        {custoPorProfissao.map((c) => (
+          <Fragment key={c.profissao}>
+            <dt className="text-(--text-subtle)">Hora técnica de {c.profissao}</dt>
+            <dd className="text-right tabular-nums">{formatarReais(c.horaTecnicaCentavos)}</dd>
+          </Fragment>
+        ))}
       </dl>
+      <p className="max-w-3xl text-xs text-(--text-subtle)">
+        Cada serviço usa a hora técnica da profissão da hora de venda escolhida. Profissão sem
+        ninguém na equipe usa a média da equipe.
+      </p>
     </div>
   )
 }

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   SEM_VISITAS,
+  custoHoraPorProfissao,
   valorDasVisitas,
   precificarOrcamento,
   rateioPorConta,
@@ -216,49 +217,79 @@ describe('precificarOrcamento', () => {
   })
 })
 
-describe('precificarOrcamento pela tabela (hora de venda)', () => {
-  const comNiveis = {
+describe('precificarOrcamento pela tabela (hora de venda) e custo por profissão', () => {
+  // O mesmo cenário de supabase/tests/210_preco_pela_tabela.test.sql.
+  const comTabela = {
     ...base,
     custoFixoHoraCentavos: 96,
-    horaTecnicaCentavos: 7_949,
+    horaTecnicaCentavos: 7_212, // média da equipe
     tributosPb: 0,
     taxaPorCobrancaCentavos: 0,
     taxaPorAssinaturaCentavos: 0,
     valorVisitaCentavos: 25_000,
-    niveisHora: [
-      { nome: 'Júnior', valorCentavos: 21_419 },
-      { nome: 'Sênior', valorCentavos: 35_698 },
+    horasVenda: [
+      { id: 'h-eng-jr', profissao: 'Eng. ambiental', atividade: 'Júnior', valorCentavos: 21_419 },
+      {
+        id: 'h-eng-pericia',
+        profissao: 'Eng. ambiental',
+        atividade: 'Perícia ambiental',
+        valorCentavos: 35_698,
+      },
+      { id: 'h-bio-sr', profissao: 'Biólogo', atividade: 'Sênior', valorCentavos: 30_000 },
+      { id: 'h-civil', profissao: 'Eng. civil', atividade: 'Júnior', valorCentavos: 25_000 },
+    ],
+    custoHoraPorProfissao: [
+      { profissao: 'Biólogo', horaTecnicaCentavos: 5_747 },
+      { profissao: 'Eng. ambiental', horaTecnicaCentavos: 7_949 },
     ],
   }
 
-  it('dá o mesmo centavo que o banco (caso de supabase/tests/210_preco_pela_tabela.test.sql)', () => {
+  it('pela tabela dá o mesmo centavo que o banco', () => {
     const p = precificarOrcamento({
       formaDePreco: 'tabela',
       itens: [
-        { minutos: 600, custoDiretoExtraCentavos: 0, nivel: 'Júnior' },
-        { minutos: 60, custoDiretoExtraCentavos: 10_000, nivel: 'Júnior' },
+        { minutos: 600, custoDiretoExtraCentavos: 0, horaVendaId: 'h-eng-jr' },
+        { minutos: 480, custoDiretoExtraCentavos: 0, horaVendaId: 'h-bio-sr' },
+        { minutos: 120, custoDiretoExtraCentavos: 0, horaVendaId: 'h-eng-pericia' },
       ],
       visitas: { quantidade: 1, kmPorVisita: 0, outrosPorVisitaCentavos: 0 },
       despesasIncluidasCentavos: [5_000],
-      quantidadeDeParcelas: 1,
+      quantidadeDeParcelas: 0,
       margemPb: 0,
-      base: comNiveis,
+      base: comTabela,
     })
     expect(p.pendencia).toBeNull()
-    expect(p.precosDosItens).toEqual([218_550, 32_059])
-    expect(p.precoVisitasCentavos).toBe(25_000)
-    expect(p.precoTotalCentavos).toBe(275_609)
+    expect(p.precosDosItens).toEqual([216_228, 242_283, 72_075])
+    expect(p.precoTotalCentavos).toBe(555_586)
   })
 
-  it('a margem vira resultado: 10h a R$ 214,19 com custo de R$ 80,45 por hora', () => {
+  it('pela margem, cada item usa a hora técnica da profissão; sem ninguém dela, a média', () => {
+    const p = precificarOrcamento({
+      formaDePreco: 'margem',
+      itens: [
+        { minutos: 600, custoDiretoExtraCentavos: 0, horaVendaId: 'h-eng-jr' },
+        { minutos: 480, custoDiretoExtraCentavos: 0, horaVendaId: 'h-bio-sr' },
+        { minutos: 60, custoDiretoExtraCentavos: 0, horaVendaId: 'h-civil' },
+      ],
+      visitas: SEM_VISITAS,
+      despesasIncluidasCentavos: [],
+      quantidadeDeParcelas: 0,
+      margemPb: 2_000,
+      base: comTabela,
+    })
+    expect(p.custosDosItens.map((c) => c.totalCentavos)).toEqual([80_450, 46_744, 7_308])
+    expect(p.precosDosItens).toEqual([100_563, 58_430, 9_135])
+  })
+
+  it('a margem vira resultado: 10h de engenheiro a R$ 214,19 com custo de R$ 80,45 por hora', () => {
     const p = precificarOrcamento({
       formaDePreco: 'tabela',
-      itens: [{ minutos: 600, custoDiretoExtraCentavos: 0, nivel: 'Júnior' }],
+      itens: [{ minutos: 600, custoDiretoExtraCentavos: 0, horaVendaId: 'h-eng-jr' }],
       visitas: SEM_VISITAS,
       despesasIncluidasCentavos: [],
       quantidadeDeParcelas: 0,
       margemPb: 0,
-      base: comNiveis,
+      base: comTabela,
     })
     // Preço 2.141,90; custo 10 × (79,49 + 0,96) = 804,50; lucro 1.337,40 = 62,44%
     expect(p.precoTotalCentavos).toBe(214_190)
@@ -266,18 +297,41 @@ describe('precificarOrcamento pela tabela (hora de venda)', () => {
     expect(p.margemResultantePb).toBe(6_244)
   })
 
-  it('item sem nível cadastrado deixa o preço pendente', () => {
+  it('item sem hora de venda válida deixa o preço pendente', () => {
     const p = precificarOrcamento({
       formaDePreco: 'tabela',
-      itens: [{ minutos: 60, custoDiretoExtraCentavos: 0, nivel: 'Doutor' }],
+      itens: [{ minutos: 60, custoDiretoExtraCentavos: 0, horaVendaId: 'nao-existe' }],
       visitas: SEM_VISITAS,
       despesasIncluidasCentavos: [],
       quantidadeDeParcelas: 0,
       margemPb: 0,
-      base: comNiveis,
+      base: comTabela,
     })
-    expect(p.pendencia).toBe('nivel_sem_valor')
+    expect(p.pendencia).toBe('hora_sem_valor')
     expect(p.precoTotalCentavos).toBeNull()
+  })
+})
+
+describe('custoHoraPorProfissao', () => {
+  it('agrupa por profissão, sem caixa nem espaços, e deixa de fora quem não tem profissão', () => {
+    const linha = (custo: number, horas: number, profissao: string | null) => ({
+      custoMensalCentavos: custo,
+      horasDisponiveisMes: horas,
+      aproveitamentoPb: 10_000,
+      parteTecnicaPb: 10_000,
+      socio: true,
+      profissao,
+    })
+    expect(
+      custoHoraPorProfissao([
+        linha(1_375_177, 173, 'Eng. ambiental'),
+        linha(500_000, 87, ' biólogo '),
+        linha(300_000, 100, null),
+      ]),
+    ).toEqual([
+      { profissao: 'Eng. ambiental', horaTecnicaCentavos: 7_949 },
+      { profissao: 'biólogo', horaTecnicaCentavos: 5_747 },
+    ])
   })
 })
 

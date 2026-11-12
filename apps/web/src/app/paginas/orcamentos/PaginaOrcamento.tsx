@@ -71,8 +71,8 @@ const MENSAGEM_DA_PENDENCIA: Record<PendenciaDoPreco, string> = {
   percentuais_impossiveis:
     'Margem, tributos e taxas somam 100% ou mais: não há preço possível. Reduza a margem.',
   valor_invalido: 'O preço passou do limite. Confira as horas e os valores.',
-  nivel_sem_valor:
-    'Há serviço sem nível de hora de venda, ou com um nível que não existe em Custos e taxas: escolha o nível.',
+  hora_sem_valor:
+    'Há serviço sem hora de venda, ou com uma hora que não existe mais em Custos e taxas: escolha a hora.',
 }
 
 // ---------------------------------------------------------------------------
@@ -85,8 +85,8 @@ interface LinhaItem {
   /** Duração digitada: "1h30", "1:30", "1,5" ou "90min". */
   horas: string
   extra: string
-  /** Nível da hora de venda (forma "tabela"). */
-  nivel: string
+  /** Linha da tabela de hora de venda: preço (forma "tabela") e profissão do custo. */
+  horaVendaId: string
 }
 interface LinhaDespesa {
   id: string
@@ -142,7 +142,7 @@ function rascunhoDe(o: Orcamento): Rascunho {
       descricao: i.descricao,
       horas: i.minutos ? formatarDuracao(i.minutos) : '',
       extra: i.custoDiretoExtraCentavos ? formatarCentavos(i.custoDiretoExtraCentavos) : '',
-      nivel: i.nivel ?? '',
+      horaVendaId: i.horaVendaId ?? '',
     })),
     despesas: o.despesas.map((d) => ({
       id: d.id,
@@ -215,7 +215,7 @@ function paraSalvar(r: Rascunho, deProspecto: boolean): DadosDoRascunho | string
       descricao: i.descricao,
       minutos,
       custoDiretoExtraCentavos: extra,
-      nivel: i.nivel || null,
+      horaVendaId: i.horaVendaId || null,
     })
   }
   const despesas: DadosDoRascunho['despesas'] = []
@@ -380,7 +380,7 @@ function Editor({
     const linhas = r.itens.map((i) => ({
       minutos: lerDuracao(i.horas) ?? 0,
       custoDiretoExtraCentavos: lerReaisOuZero(i.extra) ?? 0,
-      nivel: i.nivel || null,
+      horaVendaId: i.horaVendaId || null,
     }))
     const incluidas = r.despesas
       .filter((d) => d.tratamento === 'incluida')
@@ -414,9 +414,14 @@ function Editor({
     base,
   ])
 
-  const niveis = base?.niveisHora ?? []
+  const horas = base?.horasVenda ?? []
+  // Tabela agrupada por profissão, para a lista de cada serviço.
+  const horasPorProfissao = [...new Set(horas.map((h) => h.profissao))].map((profissao) => ({
+    profissao,
+    horas: horas.filter((h) => h.profissao === profissao),
+  }))
   const pelaTabela = r.formaPreco === 'tabela'
-  const nivelPadrao = niveis[0]?.nome ?? ''
+  const horaPadrao = horas[0]?.id ?? ''
 
   function mudarItem(id: string, alterar: (item: LinhaItem) => LinhaItem) {
     mudar((a) => ({ ...a, itens: a.itens.map((x) => (x.id === id ? alterar(x) : x)) }))
@@ -433,7 +438,7 @@ function Editor({
           horas:
             e.horasSugeridas === null ? '' : formatarDuracao(Math.round(e.horasSugeridas * 60)),
           extra: '',
-          nivel: nivelPadrao,
+          horaVendaId: horaPadrao,
         })),
       ],
       despesas: [
@@ -708,9 +713,9 @@ function Editor({
                       <th scope="col" className={`${classeCabecalho} w-24 text-right`}>
                         Horas
                       </th>
-                      {pelaTabela ? (
-                        <th scope="col" className={`${classeCabecalho} w-36`}>
-                          Nível
+                      {horas.length > 0 ? (
+                        <th scope="col" className={`${classeCabecalho} w-56`}>
+                          {pelaTabela ? 'Hora de venda' : 'Profissão'}
                         </th>
                       ) : null}
                       <th scope="col" className={`${classeCabecalho} w-36 text-right`}>
@@ -735,7 +740,7 @@ function Editor({
                     {r.itens.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={pelaTabela ? 7 : 5}
+                          colSpan={5 + (horas.length > 0 ? 1 : 0) + (pelaTabela ? 1 : 0)}
                           className={`${classeCelula} text-(--text-subtle)`}
                         >
                           Nenhum serviço ainda. Escolha um modelo ou adicione os itens.
@@ -773,30 +778,39 @@ function Editor({
                               }}
                             />
                           </td>
-                          {pelaTabela ? (
+                          {horas.length > 0 ? (
                             <td className={classeCelula}>
                               <select
-                                aria-label={`Nível do item ${n}`}
+                                aria-label={`Hora de venda do item ${n}`}
                                 className={classeCampo}
-                                value={item.nivel}
+                                value={item.horaVendaId}
                                 disabled={!editavel}
                                 aria-invalid={
-                                  !niveis.some((nv) => nv.nome === item.nivel) || undefined
+                                  (pelaTabela && !horas.some((h) => h.id === item.horaVendaId)) ||
+                                  undefined
                                 }
                                 onChange={(e) => {
                                   const valor = e.target.value
-                                  mudarItem(item.id, (x) => ({ ...x, nivel: valor }))
+                                  mudarItem(item.id, (x) => ({ ...x, horaVendaId: valor }))
                                 }}
                               >
-                                {niveis.some((nv) => nv.nome === item.nivel) ? null : (
-                                  <option value={item.nivel}>
-                                    {item.nivel ? `${item.nivel} (não existe)` : 'Escolha'}
+                                {horas.some((h) => h.id === item.horaVendaId) ? null : (
+                                  <option value={item.horaVendaId}>
+                                    {item.horaVendaId
+                                      ? 'Hora que não existe mais'
+                                      : pelaTabela
+                                        ? 'Escolha a hora'
+                                        : 'Média da equipe'}
                                   </option>
                                 )}
-                                {niveis.map((nv) => (
-                                  <option key={nv.nome} value={nv.nome}>
-                                    {nv.nome} · {formatarCentavos(nv.valorCentavos)}/h
-                                  </option>
+                                {horasPorProfissao.map((grupo) => (
+                                  <optgroup key={grupo.profissao} label={grupo.profissao}>
+                                    {grupo.horas.map((h) => (
+                                      <option key={h.id} value={h.id}>
+                                        {h.atividade} · {formatarCentavos(h.valorCentavos)}/h
+                                      </option>
+                                    ))}
+                                  </optgroup>
                                 ))}
                               </select>
                             </td>
@@ -864,7 +878,7 @@ function Editor({
                             descricao: '',
                             horas: '',
                             extra: '',
-                            nivel: nivelPadrao,
+                            horaVendaId: horaPadrao,
                           },
                         ],
                       }))
@@ -1124,7 +1138,9 @@ function Editor({
                         mudar((a) => ({
                           ...a,
                           formaPreco: 'tabela',
-                          itens: a.itens.map((x) => (x.nivel ? x : { ...x, nivel: nivelPadrao })),
+                          itens: a.itens.map((x) =>
+                            x.horaVendaId ? x : { ...x, horaVendaId: horaPadrao },
+                          ),
                         }))
                       }}
                     />
@@ -1140,7 +1156,7 @@ function Editor({
                     />
                   </div>
                 </fieldset>
-                {pelaTabela && niveis.length === 0 ? (
+                {pelaTabela && horas.length === 0 ? (
                   <MensagemSecao tom="atencao">
                     Nenhuma hora de venda cadastrada.{' '}
                     <Link to="/configuracoes/custos">Cadastrar em Custos e taxas</Link>

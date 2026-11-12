@@ -12,7 +12,9 @@ import {
   ErroDeOrcamento,
   PONTOS_BASE_TOTAL,
   PRECO_MAXIMO_CENTAVOS,
+  composicaoDaEquipe,
   type CustoDoItem,
+  type LinhaDaEquipe,
 } from './orcamento'
 
 /** Limites das visitas, conferidos também no banco. */
@@ -34,13 +36,28 @@ export interface BaseDoPreco {
   valorVisitaCentavos: number
   /** Valor cobrado por km rodado (ida e volta), quando a visita é longe. Não recebe margem. */
   custoKmCentavos: number
-  /** Hora de venda por nível (ex.: Júnior, Sênior, Máster), para a forma "tabela". */
-  niveisHora?: readonly NivelDeHora[]
+  /** Tabela de hora de venda (profissão e atividade ou nível), para a forma "tabela". */
+  horasVenda?: readonly HoraDeVenda[]
+  /** Hora técnica (custo) por profissão; sem a profissão, vale `horaTecnicaCentavos`. */
+  custoHoraPorProfissao?: readonly CustoDaProfissao[]
 }
 
-export interface NivelDeHora {
-  nome: string
+/** Uma linha da tabela de hora de venda: Eng. ambiental · Júnior; Biólogo · Sênior… */
+export interface HoraDeVenda {
+  id: string
+  profissao: string
+  atividade: string
   valorCentavos: number
+}
+
+export interface CustoDaProfissao {
+  profissao: string
+  horaTecnicaCentavos: number
+}
+
+/** Profissões comparadas sem caixa nem espaços nas pontas ("Biólogo" = " biólogo "). */
+export function mesmaProfissao(a: string, b: string): boolean {
+  return a.trim().toLowerCase() === b.trim().toLowerCase()
 }
 
 /** "tabela": horas × hora de venda; "margem": custo ÷ (1 − margem − tributos − taxas). */
@@ -89,7 +106,7 @@ export type PendenciaDoPreco =
   | 'despesa_a_cotar'
   | 'percentuais_impossiveis'
   | 'valor_invalido'
-  | 'nivel_sem_valor'
+  | 'hora_sem_valor'
 
 export interface DivisaoDoValor {
   /** Horas × hora técnica. */
@@ -130,7 +147,12 @@ export interface PrecoDoOrcamento {
 }
 
 export interface EntradaDoPreco {
-  itens: readonly { minutos: number; custoDiretoExtraCentavos: number; nivel?: string | null }[]
+  itens: readonly {
+    minutos: number
+    custoDiretoExtraCentavos: number
+    /** Linha da tabela de hora de venda: preço (forma "tabela") e profissão do custo. */
+    horaVendaId?: string | null
+  }[]
   visitas: VisitasDoOrcamento
   /** Estimativas das despesas incluídas no preço; `null` = a cotar. */
   despesasIncluidasCentavos: readonly (number | null)[]
@@ -177,12 +199,23 @@ export function precificarOrcamento(entrada: EntradaDoPreco): PrecoDoOrcamento {
 
   if (!base) return pendente(itens.length === 0 ? 'sem_itens' : 'sem_base')
 
-  const baseDeCustos = {
-    horaTecnicaCentavos: base.horaTecnicaCentavos,
-    custosFixosMensaisCentavos: base.custoFixoHoraCentavos,
-    horasFaturaveisMes: 1,
+  // O custo de cada item usa a hora técnica da profissão da hora escolhida; sem ninguém dessa
+  // profissão na equipe, a média da equipe (igual a private.itens_do_preco).
+  const horas = new Map((base.horasVenda ?? []).map((h) => [h.id, h]))
+  const horaTecnicaDoItem = (horaVendaId: string | null | undefined): number => {
+    const hora = horaVendaId ? horas.get(horaVendaId) : undefined
+    const custo = hora
+      ? base.custoHoraPorProfissao?.find((c) => mesmaProfissao(c.profissao, hora.profissao))
+      : undefined
+    return custo?.horaTecnicaCentavos ?? base.horaTecnicaCentavos
   }
-  const custosDosItens = itens.map((item) => custoDoItem(item, baseDeCustos))
+  const custosDosItens = itens.map((item) =>
+    custoDoItem(item, {
+      horaTecnicaCentavos: horaTecnicaDoItem(item.horaVendaId),
+      custosFixosMensaisCentavos: base.custoFixoHoraCentavos,
+      horasFaturaveisMes: 1,
+    }),
+  )
   const valorVisitasCentavos = valorDasVisitas(entrada.visitas, base)
   const fixosPorCobrancaCentavos =
     entrada.quantidadeDeParcelas * base.taxaPorCobrancaCentavos + base.taxaPorAssinaturaCentavos
@@ -257,13 +290,12 @@ export function precificarOrcamento(entrada: EntradaDoPreco): PrecoDoOrcamento {
   }
 
   if (formaDePreco === 'tabela') {
-    // Pela tabela: horas × hora de venda do nível + outros custos; despesas incluídas se repartem
-    // pelos itens na proporção desse preço; a margem é o que sobra.
-    const niveis = new Map((base.niveisHora ?? []).map((n) => [n.nome, n.valorCentavos]))
+    // Pela tabela: horas × hora de venda + outros custos; despesas incluídas se repartem pelos
+    // itens na proporção desse preço; a margem é o que sobra.
     const pelaHora: number[] = []
     for (const item of itens) {
-      const valor = item.nivel ? niveis.get(item.nivel) : undefined
-      if (valor === undefined) return pendente('nivel_sem_valor', parcial)
+      const valor = item.horaVendaId ? horas.get(item.horaVendaId)?.valorCentavos : undefined
+      if (valor === undefined) return pendente('hora_sem_valor', parcial)
       pelaHora.push(
         dividir(BigInt(item.minutos) * BigInt(valor), 60n) + item.custoDiretoExtraCentavos,
       )
@@ -334,4 +366,29 @@ export function rateioPorConta(
     descricao: linha.descricao,
     valorCentavos: valores[indice] ?? 0,
   }))
+}
+
+/**
+ * Hora técnica (custo) por profissão: parte técnica do custo de quem é da profissão ÷ horas
+ * faturáveis dessas pessoas. Quem não tem profissão fica de fora (entra só na média da equipe).
+ * O banco grava o mesmo resultado (salvar_base_de_custos → custo_hora_profissao).
+ */
+export function custoHoraPorProfissao(
+  linhas: readonly (LinhaDaEquipe & { profissao?: string | null })[],
+): CustoDaProfissao[] {
+  const grupos = new Map<string, { profissao: string; linhas: LinhaDaEquipe[] }>()
+  for (const linha of linhas) {
+    const profissao = linha.profissao?.trim()
+    if (!profissao) continue
+    const chave = profissao.toLowerCase()
+    const grupo = grupos.get(chave) ?? { profissao, linhas: [] }
+    grupo.linhas.push(linha)
+    grupos.set(chave, grupo)
+  }
+  return [...grupos.values()]
+    .flatMap((g) => {
+      const hora = composicaoDaEquipe(g.linhas).horaTecnicaCentavos
+      return hora === null ? [] : [{ profissao: g.profissao, horaTecnicaCentavos: hora }]
+    })
+    .sort((a, b) => (a.profissao < b.profissao ? -1 : a.profissao > b.profissao ? 1 : 0))
 }

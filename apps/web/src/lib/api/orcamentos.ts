@@ -11,10 +11,20 @@ export type TratamentoDespesa = 'incluida' | 'cliente_direto' | 'reembolsavel'
 /** "tabela": horas × hora de venda do nível; "margem": custo ÷ (1 − margem − tributos − taxas). */
 export type FormaDePreco = 'margem' | 'tabela'
 
-/** Hora de venda de um nível (ex.: Júnior R$ 214,19). */
-export interface NivelDeHora {
-  nome: string
+/** Linha da tabela de hora de venda: profissão e atividade ou nível (ex.: Biólogo · Sênior). */
+export interface HoraDeVenda {
+  id: string
+  profissao: string
+  atividade: string
   valorCentavos: number
+  /** De onde veio o valor (ex.: "ACEAMB 2015 corrigida"). */
+  fonte: string | null
+}
+
+/** Hora técnica (custo) de uma profissão, derivada da equipe. */
+export interface CustoDaProfissao {
+  profissao: string
+  horaTecnicaCentavos: number
 }
 
 export const ROTULO_DO_TRATAMENTO: Record<TratamentoDespesa, string> = {
@@ -74,8 +84,20 @@ function contasDe(valor: Json | undefined): ContaDoMes[] {
     valorCentavos: numero(c.valor_centavos),
   }))
 }
-function niveisDe(valor: Json | undefined): NivelDeHora[] {
-  return lista(valor).map((n) => ({ nome: texto(n.nome), valorCentavos: numero(n.valor_centavos) }))
+function horasDe(valor: Json | undefined): HoraDeVenda[] {
+  return lista(valor).map((h) => ({
+    id: texto(h.id),
+    profissao: texto(h.profissao),
+    atividade: texto(h.atividade),
+    valorCentavos: numero(h.valor_centavos),
+    fonte: textoOuNulo(h.fonte),
+  }))
+}
+function custosDe(valor: Json | undefined): CustoDaProfissao[] {
+  return lista(valor).map((c) => ({
+    profissao: texto(c.profissao),
+    horaTecnicaCentavos: numero(c.hora_tecnica_centavos),
+  }))
 }
 function prospectoDe(valor: Json | undefined): Prospecto | null {
   const p = objeto(valor)
@@ -170,8 +192,8 @@ export interface ItemDoOrcamento {
   /** Parte do item no preço total, calculada pelo banco a cada salvamento (zero se pendente). */
   precoCentavos: number
   custoDiretoExtraCentavos: number
-  /** Nível da hora de venda, quando o orçamento é pela tabela. */
-  nivel: string | null
+  /** Linha da tabela de hora de venda: preço pela tabela e profissão do custo. */
+  horaVendaId: string | null
 }
 
 /** O que a tela envia de cada item: o preço sai do banco, nunca da tela. */
@@ -224,8 +246,9 @@ export interface BaseDoOrcamento {
   custosFixosMensaisCentavos: number
   custosFixosEquipeCentavos: number
   contas: ContaDoMes[]
-  /** Hora de venda por nível, copiada da base. */
-  niveisHora: NivelDeHora[]
+  /** Tabela de hora de venda e hora técnica por profissão, copiadas da base. */
+  horasVenda: HoraDeVenda[]
+  custoHoraPorProfissao: CustoDaProfissao[]
 }
 
 export interface Orcamento {
@@ -305,7 +328,8 @@ export async function obterOrcamento(id: string): Promise<Orcamento | null> {
           custosFixosMensaisCentavos: numero(b.custos_fixos_mensais_centavos),
           custosFixosEquipeCentavos: numero(b.custos_fixos_equipe_centavos),
           contas: contasDe(b.custos_fixos_detalhe),
-          niveisHora: niveisDe(b.niveis_hora),
+          horasVenda: horasDe(b.horas_venda),
+          custoHoraPorProfissao: custosDe(b.custo_hora_profissao),
         }
       : null,
     atualizadoEm: texto(o.atualizado_em),
@@ -316,7 +340,7 @@ export async function obterOrcamento(id: string): Promise<Orcamento | null> {
       minutos: numero(i.minutos),
       precoCentavos: numero(i.preco_centavos),
       custoDiretoExtraCentavos: numero(i.custo_direto_extra_centavos),
-      nivel: textoOuNulo(i.nivel),
+      horaVendaId: textoOuNulo(i.hora_venda_id),
     })),
     despesas: lista(o.despesas).map((d) => ({
       id: texto(d.id),
@@ -425,7 +449,7 @@ export async function salvarOrcamento(
         descricao: i.descricao,
         minutos: i.minutos,
         custo_direto_extra_centavos: i.custoDiretoExtraCentavos,
-        nivel: i.nivel,
+        hora_venda_id: i.horaVendaId,
       })),
       despesas: dados.despesas.map((d) => ({
         id: d.id,
@@ -457,6 +481,8 @@ export interface PessoaDaBase {
   socio: boolean
   /** Remuneração pelo piso: horas no mês × piso por hora (o banco calcula). */
   peloPiso: boolean
+  /** Profissão (Eng. ambiental, Biólogo…): agrupa o custo da hora por profissão. */
+  profissao: string | null
   /** Remuneração ou pró-labore + encargos + benefícios do mês. */
   custoMensalCentavos: number
   horasDisponiveisMes: number
@@ -485,8 +511,10 @@ export interface BaseDeCustosDaConsultoria {
   contas: ContaDoMes[]
   valorVisitaCentavos: number
   custoKmCentavos: number
-  /** Hora de venda por nível, para orçamentos pela tabela. */
-  niveisHora: NivelDeHora[]
+  /** Tabela de hora de venda, para orçamentos pela tabela. */
+  horasVenda: HoraDeVenda[]
+  /** Derivado pelo banco ao salvar; a tela só mostra. */
+  custoHoraPorProfissao: CustoDaProfissao[]
   /** Piso por hora informado pela consultoria; vale para quem está "pelo piso". */
   pisoHoraCentavos: number
 }
@@ -517,6 +545,7 @@ export async function obterBaseDeCustos(
       descricao: texto(p.descricao),
       socio: p.socio === true,
       peloPiso: p.pelo_piso === true,
+      profissao: textoOuNulo(p.profissao),
       custoMensalCentavos: numero(p.custo_mensal_centavos),
       horasDisponiveisMes: numero(p.horas_disponiveis_mes),
       aproveitamentoPb: numero(p.aproveitamento_pb),
@@ -525,7 +554,8 @@ export async function obterBaseDeCustos(
     contas: contasDe(b.custos_fixos_detalhe),
     valorVisitaCentavos: numero(b.valor_visita_centavos),
     custoKmCentavos: numero(b.custo_km_centavos),
-    niveisHora: niveisDe(b.niveis_hora),
+    horasVenda: horasDe(b.horas_venda),
+    custoHoraPorProfissao: custosDe(b.custo_hora_profissao),
     pisoHoraCentavos: numero(b.piso_hora_centavos),
   }
 }
@@ -550,6 +580,7 @@ export async function salvarBaseDeCustos(
       descricao: p.descricao,
       socio: p.socio,
       pelo_piso: p.peloPiso,
+      profissao: p.profissao,
       custo_mensal_centavos: p.custoMensalCentavos,
       horas_disponiveis_mes: p.horasDisponiveisMes,
       aproveitamento_pb: p.aproveitamentoPb,
@@ -561,7 +592,13 @@ export async function salvarBaseDeCustos(
     })),
     p_valor_visita_centavos: base.valorVisitaCentavos,
     p_custo_km_centavos: base.custoKmCentavos,
-    p_niveis_hora: base.niveisHora.map((n) => ({ nome: n.nome, valor_centavos: n.valorCentavos })),
+    p_horas_venda: base.horasVenda.map((h) => ({
+      id: h.id,
+      profissao: h.profissao,
+      atividade: h.atividade,
+      valor_centavos: h.valorCentavos,
+      fonte: h.fonte,
+    })),
     p_piso_hora_centavos: base.pisoHoraCentavos,
   })
   if (error) throw error

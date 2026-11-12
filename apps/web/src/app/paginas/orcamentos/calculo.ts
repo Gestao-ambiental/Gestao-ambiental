@@ -67,8 +67,8 @@ export function lerEstimativa(texto: string): number | null | undefined {
 export interface LinhaParaCalculo {
   minutos: number
   custoDiretoExtraCentavos: number
-  /** Nível da hora de venda (forma "tabela"). */
-  nivel?: string | null
+  /** Linha da tabela de hora de venda (preço pela tabela e profissão do custo). */
+  horaVendaId?: string | null
 }
 
 export interface CalculoDoOrcamento extends PrecoDoOrcamento {
