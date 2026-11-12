@@ -72,3 +72,23 @@
 - **Onde vive:**
   - `packages/domain/src/preco-do-orcamento.ts` (`valorDasVisitas`, `precificarOrcamento`);
   - migration `20261112100000_visita_com_preco_fixo.sql` (`private.precificar_orcamento`).
+
+## Atualização de 12/11/2026: preço pela tabela de hora de venda e piso por hora
+
+- **Hora de venda por nível:** Custos e taxas cadastra a hora de venda por nível. Um botão preenche com a tabela ACEAMB de 2015 corrigida pelo IPCA até agosto de 2026: Júnior R$ 214,19, Sênior R$ 356,98 e Máster R$ 446,22.
+- **Duas formas de preço no orçamento:**
+  - **pela tabela**: preço do item = horas × hora de venda do nível + outros custos, e a margem vira resultado;
+  - **pela margem**: como antes.
+- **Forma padrão:** com níveis cadastrados, o orçamento novo nasce pela tabela.
+- **Pendência:** item sem nível válido deixa o preço pendente.
+- **Piso por hora:** é informado pela consultoria, sem inventar o divisor legal do piso de engenheiro (Lei 4.950-A/66).
+  - Quem está "pelo piso" recebe horas no mês × piso por hora.
+  - A remuneração acompanha a carga de cada mês.
+- **Onde vive:**
+  - migration `20261112110000_preco_pela_tabela_e_piso.sql`;
+  - `precificarOrcamento` com `formaDePreco`;
+  - testes em `supabase/tests/210_preco_pela_tabela.test.sql` (16 testes).
+- **Ainda não feito:**
+  - os serviços de preço fechado da tabela (RAP, EAS, PRAD, PGRS);
+  - o deslocamento por faixa (0–50 km, 50–150 km, diária);
+  - o CTF por porte.

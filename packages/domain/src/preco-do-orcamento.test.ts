@@ -216,6 +216,71 @@ describe('precificarOrcamento', () => {
   })
 })
 
+describe('precificarOrcamento pela tabela (hora de venda)', () => {
+  const comNiveis = {
+    ...base,
+    custoFixoHoraCentavos: 96,
+    horaTecnicaCentavos: 7_949,
+    tributosPb: 0,
+    taxaPorCobrancaCentavos: 0,
+    taxaPorAssinaturaCentavos: 0,
+    valorVisitaCentavos: 25_000,
+    niveisHora: [
+      { nome: 'Júnior', valorCentavos: 21_419 },
+      { nome: 'Sênior', valorCentavos: 35_698 },
+    ],
+  }
+
+  it('dá o mesmo centavo que o banco (caso de supabase/tests/210_preco_pela_tabela.test.sql)', () => {
+    const p = precificarOrcamento({
+      formaDePreco: 'tabela',
+      itens: [
+        { minutos: 600, custoDiretoExtraCentavos: 0, nivel: 'Júnior' },
+        { minutos: 60, custoDiretoExtraCentavos: 10_000, nivel: 'Júnior' },
+      ],
+      visitas: { quantidade: 1, kmPorVisita: 0, outrosPorVisitaCentavos: 0 },
+      despesasIncluidasCentavos: [5_000],
+      quantidadeDeParcelas: 1,
+      margemPb: 0,
+      base: comNiveis,
+    })
+    expect(p.pendencia).toBeNull()
+    expect(p.precosDosItens).toEqual([218_550, 32_059])
+    expect(p.precoVisitasCentavos).toBe(25_000)
+    expect(p.precoTotalCentavos).toBe(275_609)
+  })
+
+  it('a margem vira resultado: 10h a R$ 214,19 com custo de R$ 80,45 por hora', () => {
+    const p = precificarOrcamento({
+      formaDePreco: 'tabela',
+      itens: [{ minutos: 600, custoDiretoExtraCentavos: 0, nivel: 'Júnior' }],
+      visitas: SEM_VISITAS,
+      despesasIncluidasCentavos: [],
+      quantidadeDeParcelas: 0,
+      margemPb: 0,
+      base: comNiveis,
+    })
+    // Preço 2.141,90; custo 10 × (79,49 + 0,96) = 804,50; lucro 1.337,40 = 62,44%
+    expect(p.precoTotalCentavos).toBe(214_190)
+    expect(p.divisao?.lucroCentavos).toBe(133_740)
+    expect(p.margemResultantePb).toBe(6_244)
+  })
+
+  it('item sem nível cadastrado deixa o preço pendente', () => {
+    const p = precificarOrcamento({
+      formaDePreco: 'tabela',
+      itens: [{ minutos: 60, custoDiretoExtraCentavos: 0, nivel: 'Doutor' }],
+      visitas: SEM_VISITAS,
+      despesasIncluidasCentavos: [],
+      quantidadeDeParcelas: 0,
+      margemPb: 0,
+      base: comNiveis,
+    })
+    expect(p.pendencia).toBe('nivel_sem_valor')
+    expect(p.precoTotalCentavos).toBeNull()
+  })
+})
+
 describe('rateioPorConta', () => {
   it('reparte o rateio pelo valor de cada conta, com a equipe por último', () => {
     const linhas = rateioPorConta(

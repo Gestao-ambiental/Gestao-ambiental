@@ -22,6 +22,7 @@ import {
   salvarBaseDeCustos,
   type BaseDeCustosDaConsultoria,
   type ContaDoMes,
+  type NivelDeHora,
   type PessoaDaBase,
 } from '@/lib/api/orcamentos'
 import { mensagemDoErro } from '@/lib/erros'
@@ -47,7 +48,25 @@ interface Campos {
   taxaPorAssinatura: string
   valorVisita: string
   custoKm: string
+  pisoHora: string
 }
+
+/** Nível da hora de venda (Júnior, Sênior…), com o valor como texto enquanto a pessoa digita. */
+interface LinhaNivel {
+  id: string
+  nome: string
+  valor: string
+}
+
+/**
+ * Tabela ACEAMB (2015) corrigida pelo IPCA até ago/2026 (fator 1,784883), item 1.16, enviada pelo
+ * Eduardo em 12/11/2026. Só preenche os campos quando a pessoa pede; dá para editar depois.
+ */
+const NIVEIS_ACEAMB_2026 = [
+  { nome: 'Júnior', valor: '214,19' },
+  { nome: 'Sênior', valor: '356,98' },
+  { nome: 'Máster', valor: '446,22' },
+]
 
 /** Conta do mês (energia, água, internet…), com o valor como texto enquanto a pessoa digita. */
 interface LinhaConta {
@@ -77,6 +96,8 @@ interface LinhaPessoa {
   horas: string
   aproveitamento: string
   parteTecnica: string
+  /** Remuneração pelo piso: horas no mês × piso por hora. */
+  peloPiso: boolean
 }
 
 function camposDe(base: BaseDeCustosDaConsultoria | null): Campos {
@@ -93,6 +114,7 @@ function camposDe(base: BaseDeCustosDaConsultoria | null): Campos {
       taxaPorAssinatura: '',
       valorVisita: '',
       custoKm: '',
+      pisoHora: '',
     }
   }
   return {
@@ -107,7 +129,31 @@ function camposDe(base: BaseDeCustosDaConsultoria | null): Campos {
     taxaPorAssinatura: formatarCentavos(base.taxaPorAssinaturaCentavos),
     valorVisita: base.valorVisitaCentavos ? formatarCentavos(base.valorVisitaCentavos) : '',
     custoKm: base.custoKmCentavos ? formatarCentavos(base.custoKmCentavos) : '',
+    pisoHora: base.pisoHoraCentavos ? formatarCentavos(base.pisoHoraCentavos) : '',
   }
+}
+
+function niveisDe(base: BaseDeCustosDaConsultoria | null): LinhaNivel[] {
+  return (base?.niveisHora ?? []).map((n) => ({
+    id: crypto.randomUUID(),
+    nome: n.nome,
+    valor: formatarCentavos(n.valorCentavos),
+  }))
+}
+
+/** Lê os níveis da hora de venda: nome obrigatório e único, valor em reais. */
+function lerNiveis(linhas: readonly LinhaNivel[]): NivelDeHora[] | string {
+  const niveis: NivelDeHora[] = []
+  for (const [indice, l] of linhas.entries()) {
+    const n = String(indice + 1)
+    const valor = lerReaisOuZero(l.valor)
+    if (!l.nome.trim()) return `Hora de venda, linha ${n}: informe o nível.`
+    if (valor === null) return `Hora de venda, linha ${n}: valor inválido.`
+    if (niveis.some((x) => x.nome.toLowerCase() === l.nome.trim().toLowerCase()))
+      return `Hora de venda: o nível "${l.nome.trim()}" aparece duas vezes.`
+    niveis.push({ nome: l.nome.trim(), valorCentavos: valor })
+  }
+  return niveis
 }
 
 function contasDe(base: BaseDeCustosDaConsultoria | null): LinhaConta[] {
@@ -140,6 +186,7 @@ function linhasDe(base: BaseDeCustosDaConsultoria | null): LinhaPessoa[] {
     horas: String(p.horasDisponiveisMes),
     aproveitamento: textoDoPercentual(p.aproveitamentoPb),
     parteTecnica: textoDoPercentual(p.parteTecnicaPb),
+    peloPiso: p.peloPiso,
   }))
 }
 
@@ -152,6 +199,7 @@ function novaPessoa(): LinhaPessoa {
     horas: '',
     aproveitamento: '',
     parteTecnica: '100',
+    peloPiso: false,
   }
 }
 
@@ -164,13 +212,21 @@ function lerHorasDoMes(texto: string): number | null {
   return horas <= 744 ? horas : null
 }
 
+/** Pelo piso: horas no mês × piso por hora (o banco faz a mesma conta ao salvar). */
+function custoPeloPiso(horas: number, pisoHoraCentavos: number): number {
+  return Math.round(horas * pisoHoraCentavos)
+}
+
 /** Lê a equipe digitada. Devolve a primeira mensagem de erro, se houver. */
-function lerEquipe(linhas: readonly LinhaPessoa[]): PessoaDaBase[] | string {
+function lerEquipe(
+  linhas: readonly LinhaPessoa[],
+  pisoHoraCentavos: number,
+): PessoaDaBase[] | string {
   const equipe: PessoaDaBase[] = []
   for (const [indice, l] of linhas.entries()) {
     const n = String(indice + 1)
-    const custo = lerReaisOuZero(l.custo)
     const horas = lerHorasDoMes(l.horas)
+    const custo = l.peloPiso ? custoPeloPiso(horas ?? 0, pisoHoraCentavos) : lerReaisOuZero(l.custo)
     const aproveitamento = lerPercentual(l.aproveitamento || '0')
     const parteTecnica = lerPercentual(l.parteTecnica || '0')
     if (!l.descricao.trim()) return `Equipe, linha ${n}: informe a pessoa ou o perfil.`
@@ -182,6 +238,7 @@ function lerEquipe(linhas: readonly LinhaPessoa[]): PessoaDaBase[] | string {
       id: l.id,
       descricao: l.descricao.trim(),
       socio: l.socio,
+      peloPiso: l.peloPiso,
       custoMensalCentavos: custo,
       horasDisponiveisMes: horas,
       aproveitamentoPb: aproveitamento,
@@ -207,9 +264,14 @@ function lerCampos(
   c: Campos,
   linhas: readonly LinhaPessoa[],
   linhasDeContas: readonly LinhaConta[],
+  linhasDeNiveis: readonly LinhaNivel[],
 ): { base: BaseDeCustosDaConsultoria; composicao: ComposicaoDaEquipe | null } | string {
   const contas = lerContas(linhasDeContas)
   if (typeof contas === 'string') return contas
+  const niveisHora = lerNiveis(linhasDeNiveis)
+  if (typeof niveisHora === 'string') return niveisHora
+  const pisoHora = lerReaisOuZero(c.pisoHora)
+  if (pisoHora === null) return 'Confira o piso por hora.'
   // Com contas, o custo fixo do mês é a soma delas; sem contas, vale o total digitado.
   const custosFixos =
     contas.length > 0
@@ -232,7 +294,7 @@ function lerCampos(
   let equipe: PessoaDaBase[] = []
   let composicao: ComposicaoDaEquipe | null = null
   if (linhas.length > 0) {
-    const lida = lerEquipe(linhas)
+    const lida = lerEquipe(linhas, pisoHora)
     if (typeof lida === 'string') return lida
     equipe = lida
     composicao = composicaoDe(equipe)
@@ -267,6 +329,8 @@ function lerCampos(
       contas,
       valorVisitaCentavos: valorVisita,
       custoKmCentavos: custoKm,
+      niveisHora,
+      pisoHoraCentavos: pisoHora,
     },
   }
 }
@@ -320,17 +384,19 @@ function Formulario({
   const [c, setC] = useState<Campos>(() => camposDe(base))
   const [equipe, setEquipe] = useState<LinhaPessoa[]>(() => linhasDe(base))
   const [contas, setContas] = useState<LinhaConta[]>(() => contasDe(base))
+  const [niveis, setNiveis] = useState<LinhaNivel[]>(() => niveisDe(base))
   const [salvando, setSalvando] = useState(false)
   const [falha, setFalha] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
 
   const pelaEquipe = equipe.length > 0
-  const lido = lerCampos(c, equipe, contas)
+  const lido = lerCampos(c, equipe, contas, niveis)
+  const pisoLido = lerReaisOuZero(c.pisoHora) ?? 0
   const totalDasContas = contas.reduce((soma, l) => soma + (lerReaisOuZero(l.valor) ?? 0), 0)
   // Prévia da composição mesmo com algum campo ainda incompleto (linhas inválidas ficam de fora).
   const previa = pelaEquipe
     ? (() => {
-        const lida = lerEquipe(equipe)
+        const lida = lerEquipe(equipe, pisoLido)
         return typeof lida === 'string' ? null : composicaoDe(lida)
       })()
     : null
@@ -431,8 +497,23 @@ function Formulario({
       <div className="overflow-hidden rounded-(--radius-large) border bg-(--surface) shadow-cartao">
         <Grupo titulo="Custos e capacidade">
           {pelaEquipe ? (
+            <Linha
+              id="base-piso"
+              rotulo="Piso por hora (R$)"
+              apoio="Para quem recebe pelo piso: remuneração do mês = horas no mês × piso por hora. Referência: piso de engenheiro (Lei 4.950-A/66), 6 salários mínimos para 6h/dia; confirme o valor por hora com o contador"
+            >
+              <input
+                id="base-piso"
+                inputMode="decimal"
+                className={`${classeCampo} text-right tabular-nums`}
+                {...campo('pisoHora')}
+              />
+            </Linha>
+          ) : null}
+          {pelaEquipe ? (
             <Equipe
               linhas={equipe}
+              pisoHoraCentavos={pisoLido}
               previa={previa}
               aoMudar={mudarPessoa}
               aoAdicionar={() => {
@@ -561,6 +642,104 @@ function Formulario({
           </Linha>
         </Grupo>
 
+        <Grupo titulo="Hora de venda (tabela)">
+          <p className="max-w-3xl text-xs text-(--text-subtle)">
+            Quanto vocês cobram do cliente por hora, por nível. Com hora de venda cadastrada, os
+            orçamentos novos saem pela tabela: preço = horas × hora de venda, e a margem vira
+            resultado.
+          </p>
+          {niveis.length > 0 ? (
+            <div className="relative overflow-x-auto">
+              <table className="w-full min-w-[420px] border-collapse corpo">
+                <thead>
+                  <tr>
+                    <th scope="col" className={classeCabecalho}>
+                      Nível
+                    </th>
+                    <th scope="col" className={`${classeCabecalho} w-40 text-right`}>
+                      Hora de venda (R$)
+                    </th>
+                    <th scope="col" className={`${classeCabecalho} w-12`}>
+                      <span className="sr-only">Remover</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {niveis.map((l, indice) => {
+                    const n = String(indice + 1)
+                    return (
+                      <tr key={l.id}>
+                        <td className={classeCelula}>
+                          <input
+                            aria-label={`Nível ${n}`}
+                            className={classeCampo}
+                            value={l.nome}
+                            onChange={(e) => {
+                              const valor = e.target.value
+                              setNiveis((a) =>
+                                a.map((x) => (x.id === l.id ? { ...x, nome: valor } : x)),
+                              )
+                              setAviso(null)
+                            }}
+                          />
+                        </td>
+                        <td className={classeCelula}>
+                          <input
+                            aria-label={`Hora de venda do nível ${n}`}
+                            inputMode="decimal"
+                            aria-invalid={lerReaisOuZero(l.valor) === null || undefined}
+                            className={`${classeCampo} text-right tabular-nums`}
+                            value={l.valor}
+                            onChange={(e) => {
+                              const valor = e.target.value
+                              setNiveis((a) => a.map((x) => (x.id === l.id ? { ...x, valor } : x)))
+                              setAviso(null)
+                            }}
+                          />
+                        </td>
+                        <td className={classeCelula}>
+                          <BotaoIcone
+                            icone="trash-2"
+                            rotulo={`Remover nível ${n}`}
+                            onClick={() => {
+                              setNiveis((a) => a.filter((x) => x.id !== l.id))
+                              setAviso(null)
+                            }}
+                          />
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+          <div className="flex flex-wrap gap-(--space-150)">
+            <Botao
+              aparencia="link"
+              iconeAntes="plus"
+              onClick={() => {
+                setNiveis((a) => [...a, { id: crypto.randomUUID(), nome: '', valor: '' }])
+                setAviso(null)
+              }}
+            >
+              Adicionar nível
+            </Botao>
+            {niveis.length === 0 ? (
+              <Botao
+                aparencia="link"
+                iconeAntes="list"
+                onClick={() => {
+                  setNiveis(NIVEIS_ACEAMB_2026.map((n) => ({ id: crypto.randomUUID(), ...n })))
+                  setAviso(null)
+                }}
+              >
+                Usar tabela ACEAMB corrigida (ago/2026)
+              </Botao>
+            ) : null}
+          </div>
+        </Grupo>
+
         <Grupo titulo="Margens">
           <Linha
             id="base-margem"
@@ -649,6 +828,7 @@ function Formulario({
 
 function Equipe({
   linhas,
+  pisoHoraCentavos,
   previa,
   aoMudar,
   aoAdicionar,
@@ -656,6 +836,7 @@ function Equipe({
   aoVoltar,
 }: {
   linhas: LinhaPessoa[]
+  pisoHoraCentavos: number
   previa: ComposicaoDaEquipe | null
   aoMudar: (id: string, alterar: (p: LinhaPessoa) => LinhaPessoa) => void
   aoAdicionar: () => void
@@ -681,6 +862,9 @@ function Equipe({
               </th>
               <th scope="col" className={`${classeCabecalho} w-16 text-center`}>
                 Sócio
+              </th>
+              <th scope="col" className={`${classeCabecalho} w-20 text-center`}>
+                Pelo piso
               </th>
               <th scope="col" className={`${classeCabecalho} w-36 text-right`}>
                 Custo mensal (R$)
@@ -736,18 +920,35 @@ function Equipe({
                       }}
                     />
                   </td>
-                  <td className={classeCelula}>
-                    <input
-                      aria-label={`Custo mensal da linha ${n}`}
-                      inputMode="decimal"
-                      aria-invalid={lerReaisOuZero(p.custo) === null || undefined}
-                      className={`${classeCampo} text-right tabular-nums`}
-                      value={p.custo}
+                  <td className={`${classeCelula} text-center`}>
+                    <CaixaSelecao
+                      rotulo={<span className="sr-only">Remuneração pelo piso na linha {n}</span>}
+                      checked={p.peloPiso}
                       onChange={(e) => {
-                        const valor = e.target.value
-                        aoMudar(p.id, (x) => ({ ...x, custo: valor }))
+                        const marcado = e.target.checked
+                        aoMudar(p.id, (x) => ({ ...x, peloPiso: marcado }))
                       }}
                     />
+                  </td>
+                  <td className={classeCelula}>
+                    {p.peloPiso ? (
+                      <span className="block text-right tabular-nums">
+                        {formatarCentavos(custoPeloPiso(horas ?? 0, pisoHoraCentavos))}
+                        <span className="sr-only"> por mês, pelo piso, na linha {n}</span>
+                      </span>
+                    ) : (
+                      <input
+                        aria-label={`Custo mensal da linha ${n}`}
+                        inputMode="decimal"
+                        aria-invalid={lerReaisOuZero(p.custo) === null || undefined}
+                        className={`${classeCampo} text-right tabular-nums`}
+                        value={p.custo}
+                        onChange={(e) => {
+                          const valor = e.target.value
+                          aoMudar(p.id, (x) => ({ ...x, custo: valor }))
+                        }}
+                      />
+                    )}
                   </td>
                   <td className={classeCelula}>
                     <input

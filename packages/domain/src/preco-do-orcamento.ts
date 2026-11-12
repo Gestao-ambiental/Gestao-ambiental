@@ -2,7 +2,8 @@
 // Os itens mostram horas e custo; o preço dos serviços sai de custo ÷ (1 − margem − tributos −
 // taxas) e é repartido entre os itens pelo custo de cada um, com centavos por maior resto. As
 // visitas técnicas têm preço fixo, sem margem (decisão de 12/11/2026), e viram uma linha própria.
-// O banco grava os mesmos valores (private.precificar_orcamento).
+// Forma "tabela" (12/11/2026): preço do item = horas × hora de venda do nível + outros custos, e a
+// margem vira resultado. O banco grava os mesmos valores (private.precificar_orcamento).
 
 import {
   aplicarPontosBase,
@@ -33,7 +34,17 @@ export interface BaseDoPreco {
   valorVisitaCentavos: number
   /** Valor cobrado por km rodado (ida e volta), quando a visita é longe. Não recebe margem. */
   custoKmCentavos: number
+  /** Hora de venda por nível (ex.: Júnior, Sênior, Máster), para a forma "tabela". */
+  niveisHora?: readonly NivelDeHora[]
 }
+
+export interface NivelDeHora {
+  nome: string
+  valorCentavos: number
+}
+
+/** "tabela": horas × hora de venda; "margem": custo ÷ (1 − margem − tributos − taxas). */
+export type FormaDePreco = 'margem' | 'tabela'
 
 export interface VisitasDoOrcamento {
   quantidade: number
@@ -73,7 +84,12 @@ export function valorDasVisitas(
 }
 
 export type PendenciaDoPreco =
-  'sem_itens' | 'sem_base' | 'despesa_a_cotar' | 'percentuais_impossiveis' | 'valor_invalido'
+  | 'sem_itens'
+  | 'sem_base'
+  | 'despesa_a_cotar'
+  | 'percentuais_impossiveis'
+  | 'valor_invalido'
+  | 'nivel_sem_valor'
 
 export interface DivisaoDoValor {
   /** Horas × hora técnica. */
@@ -106,19 +122,29 @@ export interface PrecoDoOrcamento {
   /** Preço da linha "Visitas técnicas"; zero sem visitas ou com pendência. */
   precoVisitasCentavos: number
   margemPb: number
+  formaDePreco: FormaDePreco
+  /** Lucro ÷ preço dos serviços: a margem que de fato sobra. `null` com pendência. */
+  margemResultantePb: number | null
   pendencia: PendenciaDoPreco | null
   divisao: DivisaoDoValor | null
 }
 
 export interface EntradaDoPreco {
-  itens: readonly { minutos: number; custoDiretoExtraCentavos: number }[]
+  itens: readonly { minutos: number; custoDiretoExtraCentavos: number; nivel?: string | null }[]
   visitas: VisitasDoOrcamento
   /** Estimativas das despesas incluídas no preço; `null` = a cotar. */
   despesasIncluidasCentavos: readonly (number | null)[]
   quantidadeDeParcelas: number
-  /** Margem sobre o preço de venda, escolhida no fim do orçamento. */
+  /** Margem sobre o preço de venda, escolhida no fim do orçamento (só na forma "margem"). */
   margemPb: number
+  /** Padrão: "margem". */
+  formaDePreco?: FormaDePreco
   base: BaseDoPreco | null
+}
+
+/** round(a ÷ b), metade para cima, em inteiros: igual ao round() em numeric do banco. */
+function dividir(numerador: bigint, divisor: bigint): number {
+  return Number((numerador * 2n + divisor) / (divisor * 2n))
 }
 
 /**
@@ -128,6 +154,7 @@ export interface EntradaDoPreco {
  */
 export function precificarOrcamento(entrada: EntradaDoPreco): PrecoDoOrcamento {
   const { itens, base, margemPb } = entrada
+  const formaDePreco = entrada.formaDePreco ?? 'margem'
   const zeros = itens.map(() => 0)
   const pendente = (
     pendencia: PendenciaDoPreco,
@@ -141,6 +168,8 @@ export function precificarOrcamento(entrada: EntradaDoPreco): PrecoDoOrcamento {
     precosDosItens: zeros,
     precoVisitasCentavos: 0,
     margemPb,
+    formaDePreco,
+    margemResultantePb: null,
     pendencia,
     divisao: null,
     ...parcial,
@@ -172,30 +201,9 @@ export function precificarOrcamento(entrada: EntradaDoPreco): PrecoDoOrcamento {
 
   if (itens.length === 0) return pendente('sem_itens', parcial)
   if (aCotar) return pendente('despesa_a_cotar', parcial)
-  if (margemPb + base.tributosPb + base.taxasPb >= PONTOS_BASE_TOTAL) {
-    return pendente('percentuais_impossiveis', parcial)
-  }
 
   const custoTotalCentavos = custoItens + despesasIncluidasCentavos
-  // Conta em inteiros, arredondando a metade para cima: o banco faz round() em numeric e chega
-  // ao mesmo centavo (ponto flutuante poderia errar um centavo no caso ",5").
-  const divisor = BigInt(PONTOS_BASE_TOTAL - margemPb - base.tributosPb - base.taxasPb)
-  const numerador =
-    BigInt(custoTotalCentavos + fixosPorCobrancaCentavos) * BigInt(PONTOS_BASE_TOTAL)
-  const precoServicosCentavos = Number((numerador * 2n + divisor) / (divisor * 2n))
-  const precoTotalCentavos = precoServicosCentavos + valorVisitasCentavos
-  if (!Number.isSafeInteger(precoTotalCentavos) || precoTotalCentavos > PRECO_MAXIMO_CENTAVOS) {
-    return pendente('valor_invalido', parcial)
-  }
-
-  const pesos = custosDosItens.map((c) => c.totalCentavos ?? 0)
-  const somaDosPesos = pesos.reduce((soma, peso) => soma + peso, 0)
-  const partes = distribuirPorMaiorResto(
-    precoServicosCentavos,
-    somaDosPesos > 0 ? pesos : pesos.map(() => 1),
-  )
   const precoVisitasCentavos = valorVisitasCentavos
-
   const trabalhoTecnicoCentavos = custosDosItens.reduce(
     (soma, c, indice) => soma + c.diretoCentavos - (itens[indice]?.custoDiretoExtraCentavos ?? 0),
     0,
@@ -208,33 +216,95 @@ export function precificarOrcamento(entrada: EntradaDoPreco): PrecoDoOrcamento {
     (soma, c) => soma + (c.rateioCentavos ?? 0),
     0,
   )
-  const tributosCentavos = aplicarPontosBase(precoTotalCentavos, base.tributosPb)
-  const taxasCentavos =
-    aplicarPontosBase(precoTotalCentavos, base.taxasPb) + fixosPorCobrancaCentavos
-  return {
-    ...parcial,
-    custoTotalCentavos,
-    precoTotalCentavos,
-    precosDosItens: partes,
-    precoVisitasCentavos,
-    margemPb,
-    pendencia: null,
-    divisao: {
-      trabalhoTecnicoCentavos,
-      outrosCustosDiretosCentavos,
-      contasDaConsultoriaCentavos,
-      visitasCentavos: valorVisitasCentavos,
-      despesasIncluidasCentavos,
-      tributosCentavos,
-      taxasCentavos,
-      lucroCentavos:
-        precoTotalCentavos -
-        custoTotalCentavos -
-        valorVisitasCentavos -
-        tributosCentavos -
+  const fechar = (precosDosItens: number[], precoServicosCentavos: number): PrecoDoOrcamento => {
+    const precoTotalCentavos = precoServicosCentavos + precoVisitasCentavos
+    const tributosCentavos = aplicarPontosBase(precoTotalCentavos, base.tributosPb)
+    const taxasCentavos =
+      aplicarPontosBase(precoTotalCentavos, base.taxasPb) + fixosPorCobrancaCentavos
+    const lucroCentavos =
+      precoTotalCentavos -
+      custoTotalCentavos -
+      valorVisitasCentavos -
+      tributosCentavos -
+      taxasCentavos
+    return {
+      ...parcial,
+      custoTotalCentavos,
+      precoTotalCentavos,
+      precosDosItens,
+      precoVisitasCentavos,
+      margemPb,
+      formaDePreco,
+      margemResultantePb:
+        precoServicosCentavos > 0
+          ? dividir(
+              BigInt(lucroCentavos) * BigInt(PONTOS_BASE_TOTAL),
+              BigInt(precoServicosCentavos),
+            )
+          : null,
+      pendencia: null,
+      divisao: {
+        trabalhoTecnicoCentavos,
+        outrosCustosDiretosCentavos,
+        contasDaConsultoriaCentavos,
+        visitasCentavos: valorVisitasCentavos,
+        despesasIncluidasCentavos,
+        tributosCentavos,
         taxasCentavos,
-    },
+        lucroCentavos,
+      },
+    }
   }
+
+  if (formaDePreco === 'tabela') {
+    // Pela tabela: horas × hora de venda do nível + outros custos; despesas incluídas se repartem
+    // pelos itens na proporção desse preço; a margem é o que sobra.
+    const niveis = new Map((base.niveisHora ?? []).map((n) => [n.nome, n.valorCentavos]))
+    const pelaHora: number[] = []
+    for (const item of itens) {
+      const valor = item.nivel ? niveis.get(item.nivel) : undefined
+      if (valor === undefined) return pendente('nivel_sem_valor', parcial)
+      pelaHora.push(
+        dividir(BigInt(item.minutos) * BigInt(valor), 60n) + item.custoDiretoExtraCentavos,
+      )
+    }
+    const somaPelaHora = pelaHora.reduce((soma, v) => soma + v, 0)
+    const repartidas = distribuirPorMaiorResto(
+      despesasIncluidasCentavos,
+      somaPelaHora > 0 ? pelaHora : pelaHora.map(() => 1),
+    )
+    const precos = pelaHora.map((v, indice) => v + (repartidas[indice] ?? 0))
+    const precoServicos = precos.reduce((soma, v) => soma + v, 0)
+    if (precoServicos + precoVisitasCentavos > PRECO_MAXIMO_CENTAVOS) {
+      return pendente('valor_invalido', parcial)
+    }
+    return fechar(precos, precoServicos)
+  }
+
+  if (margemPb + base.tributosPb + base.taxasPb >= PONTOS_BASE_TOTAL) {
+    return pendente('percentuais_impossiveis', parcial)
+  }
+
+  // Conta em inteiros, arredondando a metade para cima: o banco faz round() em numeric e chega
+  // ao mesmo centavo (ponto flutuante poderia errar um centavo no caso ",5").
+  const divisor = BigInt(PONTOS_BASE_TOTAL - margemPb - base.tributosPb - base.taxasPb)
+  const numerador =
+    BigInt(custoTotalCentavos + fixosPorCobrancaCentavos) * BigInt(PONTOS_BASE_TOTAL)
+  const precoServicosCentavos = dividir(numerador, divisor)
+  if (
+    !Number.isSafeInteger(precoServicosCentavos) ||
+    precoServicosCentavos + valorVisitasCentavos > PRECO_MAXIMO_CENTAVOS
+  ) {
+    return pendente('valor_invalido', parcial)
+  }
+
+  const pesos = custosDosItens.map((c) => c.totalCentavos ?? 0)
+  const somaDosPesos = pesos.reduce((soma, peso) => soma + peso, 0)
+  const partes = distribuirPorMaiorResto(
+    precoServicosCentavos,
+    somaDosPesos > 0 ? pesos : pesos.map(() => 1),
+  )
+  return fechar(partes, precoServicosCentavos)
 }
 
 /**

@@ -40,6 +40,7 @@ const base = {
     { descricao: 'Energia elétrica', valor_centavos: 100_000 },
     { descricao: 'Internet e telefone', valor_centavos: 60_000 },
   ],
+  niveis_hora: [],
   registrada_em: '2026-11-06T19:00:00Z',
 }
 
@@ -61,6 +62,7 @@ function orcamento(extra: Record<string, unknown> = {}) {
     exclusoes: [],
     moeda: 'BRL',
     margem_pb: null,
+    forma_preco: 'margem',
     visitas: { quantidade: 0, km_por_visita: 0, outros_por_visita_centavos: 0 },
     preco_visitas_centavos: 0,
     base,
@@ -158,6 +160,7 @@ const baseDoCalculo = {
     { descricao: 'Energia elétrica', valorCentavos: 100_000 },
     { descricao: 'Internet e telefone', valorCentavos: 60_000 },
   ],
+  niveisHora: [],
 }
 
 const semVisitas = { quantidade: 0, kmPorVisita: 0, outrosPorVisitaCentavos: 0 }
@@ -398,6 +401,7 @@ describe('orçamentos (onda 5)', () => {
       descricao: 'Revisão técnica',
       minutos: 90,
       custo_direto_extra_centavos: 0,
+      nivel: null,
     })
   })
 
@@ -636,6 +640,104 @@ describe('orçamentos (onda 5)', () => {
     expect(
       screen.queryByRole('button', { name: 'Cadastrar como empreendimento' }),
     ).not.toBeInTheDocument()
+  })
+
+  it('pela tabela: preço = horas × hora de venda do nível, e a margem é o que sobra', async () => {
+    const pelaTabela = orcamento({
+      forma_preco: 'tabela',
+      base: {
+        ...base,
+        niveis_hora: [
+          { nome: 'Júnior', valor_centavos: 21_419 },
+          { nome: 'Sênior', valor_centavos: 35_698 },
+        ],
+      },
+      itens: [
+        {
+          id: 'i1',
+          descricao: 'Vistoria',
+          minutos: 480,
+          preco_centavos: 0,
+          custo_direto_extra_centavos: 24_000,
+          nivel: 'Júnior',
+        },
+        {
+          id: 'i2',
+          descricao: 'Relatório',
+          minutos: 1_440,
+          preco_centavos: 0,
+          custo_direto_extra_centavos: 26_000,
+          nivel: 'Júnior',
+        },
+        {
+          id: 'i3',
+          descricao: 'Protocolo',
+          minutos: 600,
+          preco_centavos: 0,
+          custo_direto_extra_centavos: 0,
+          nivel: 'Júnior',
+        },
+      ],
+    })
+    falso.reiniciar(cenario('gestao', { rpc: { obter_orcamento: { data: pelaTabela } } }))
+    const usuario = userEvent.setup()
+    renderizarApp('/orcamentos/o1')
+    await screen.findByRole('heading', { name: 'Indústria Horizonte' })
+    expect(screen.getByLabelText('Nível do item 1')).toHaveValue('Júnior')
+    // 8h × 214,19 + 240 = 1.953,52; 24h × 214,19 + 260 = 5.400,56; 10h × 214,19 = 2.141,90
+    expect(screen.getByText('1.953,52')).toBeInTheDocument()
+    expect(screen.getAllByText('R$ 9.495,98').length).toBeGreaterThan(0)
+
+    await usuario.selectOptions(screen.getByLabelText('Nível do item 3'), 'Sênior')
+    // 10h × 356,98 = 3.569,80
+    expect(screen.getByText('3.569,80')).toBeInTheDocument()
+
+    await usuario.click(screen.getByRole('button', { name: 'Continuar para preço e margem' }))
+    expect(screen.getByRole('radio', { name: /Pela tabela/ })).toBeChecked()
+    expect(screen.queryByLabelText('Margem de lucro (%)')).not.toBeInTheDocument()
+    expect(screen.getByText(/Margem que sobra/)).toBeInTheDocument()
+
+    await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
+    const chamada = falso.cliente.rpc.mock.calls.find(([nome]) => nome === 'salvar_orcamento')
+    const dados = (chamada?.[1] as { p_dados: { forma_preco: string; itens: { nivel: string }[] } })
+      .p_dados
+    expect(dados.forma_preco).toBe('tabela')
+    expect(dados.itens.map((i) => i.nivel)).toEqual(['Júnior', 'Júnior', 'Sênior'])
+  })
+
+  it('cadastra a hora de venda da ACEAMB e o piso por hora, com a equipe pelo piso', async () => {
+    const usuario = userEvent.setup()
+    renderizarApp('/configuracoes/custos')
+    await screen.findByText(/Ainda não configurado/)
+    await usuario.click(
+      screen.getByRole('button', { name: 'Usar tabela ACEAMB corrigida (ago/2026)' }),
+    )
+    expect(screen.getByLabelText('Nível 1')).toHaveValue('Júnior')
+    expect(screen.getByLabelText('Hora de venda do nível 1')).toHaveValue('214,19')
+    expect(screen.getByLabelText('Hora de venda do nível 3')).toHaveValue('446,22')
+
+    await usuario.type(screen.getByLabelText('Custos fixos por mês (R$)'), '250,00')
+    await usuario.click(screen.getByRole('button', { name: 'Calcular pela equipe' }))
+    await usuario.type(screen.getByLabelText('Piso por hora (R$)'), '79,49')
+    await usuario.type(screen.getByLabelText('Pessoa ou perfil 1'), 'Sócio')
+    await usuario.click(screen.getByLabelText('Remuneração pelo piso na linha 1'))
+    await usuario.type(screen.getByLabelText('Horas no mês da linha 1'), '173')
+    await usuario.type(screen.getByLabelText('Aproveitamento da linha 1'), '100')
+    // 173 h × 79,49 = 13.751,77
+    expect(screen.getByText('13.751,77')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Custo mensal da linha 1')).not.toBeInTheDocument()
+
+    await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
+    const chamada = falso.cliente.rpc.mock.calls.find(([nome]) => nome === 'salvar_base_de_custos')
+    expect(chamada?.[1]).toMatchObject({
+      p_piso_hora_centavos: 7_949,
+      p_niveis_hora: [
+        { nome: 'Júnior', valor_centavos: 21_419 },
+        { nome: 'Sênior', valor_centavos: 35_698 },
+        { nome: 'Máster', valor_centavos: 44_622 },
+      ],
+      p_equipe: [{ descricao: 'Sócio', pelo_piso: true, custo_mensal_centavos: 1_375_177 }],
+    })
   })
 
   it('custos e taxas mostram o rateio por hora e salvam', async () => {

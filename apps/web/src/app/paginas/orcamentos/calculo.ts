@@ -13,7 +13,7 @@ import {
   type SituacaoDaMargem,
 } from '@gestao-ambiental/domain'
 
-import type { BaseDoOrcamento, VisitasDoOrcamento } from '@/lib/api/orcamentos'
+import type { BaseDoOrcamento, FormaDePreco, VisitasDoOrcamento } from '@/lib/api/orcamentos'
 
 /** "8", "8,5" ou "8.5" → 8.5. `null` se não for um número de 0 a 10.000. */
 export function lerHoras(texto: string): number | null {
@@ -67,6 +67,8 @@ export function lerEstimativa(texto: string): number | null | undefined {
 export interface LinhaParaCalculo {
   minutos: number
   custoDiretoExtraCentavos: number
+  /** Nível da hora de venda (forma "tabela"). */
+  nivel?: string | null
 }
 
 export interface CalculoDoOrcamento extends PrecoDoOrcamento {
@@ -93,8 +95,10 @@ export function calcularOrcamento(
   percentuaisDasParcelas: readonly number[],
   margemPb: number,
   base: BaseDoOrcamento | null,
+  formaDePreco: FormaDePreco = 'margem',
 ): CalculoDoOrcamento {
   const preco = precificarOrcamento({
+    formaDePreco,
     itens: linhas,
     visitas,
     despesasIncluidasCentavos,
@@ -131,9 +135,13 @@ export function calcularOrcamento(
 
   return {
     ...preco,
+    // Pela tabela, compara a margem que sobra; pela margem, a escolhida.
     situacaoDaMargem:
       base && preco.pendencia === null
-        ? situacaoDaMargem(margemPb, base.margemMinimaPb)
+        ? situacaoDaMargem(
+            formaDePreco === 'tabela' ? (preco.margemResultantePb ?? 0) : margemPb,
+            base.margemMinimaPb,
+          )
         : 'pendente',
     contas,
     parcelasCentavos,

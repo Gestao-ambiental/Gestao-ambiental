@@ -152,6 +152,8 @@ export type {
   BaseDoPreco,
   DivisaoDoValor,
   EntradaDoPreco,
+  FormaDePreco,
+  NivelDeHora,
   PendenciaDoPreco,
   PrecoDoOrcamento,
   VisitasDoOrcamento,
