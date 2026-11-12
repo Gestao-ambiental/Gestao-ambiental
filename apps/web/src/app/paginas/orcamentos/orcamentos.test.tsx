@@ -507,6 +507,134 @@ describe('orçamentos (onda 5)', () => {
     expect(screen.getByRole('button', { name: '25%' })).toBeDisabled()
   })
 
+  it('cria orçamento para prospecto, sem empreendimento cadastrado', async () => {
+    falso.reiniciar(
+      cenario('gestao', {
+        rpc: { listar_empreendimentos: { data: [] }, criar_orcamento: { data: 'o2' } },
+      }),
+    )
+    const usuario = userEvent.setup()
+    renderizarApp('/orcamentos')
+    await usuario.click(await screen.findByRole('button', { name: 'Novo orçamento' }))
+    await usuario.click(screen.getByRole('radio', { name: 'Prospecto, ainda não cadastrado' }))
+    await usuario.type(screen.getByLabelText(/Nome da empresa ou do cliente/), 'Padaria Pão Quente')
+    await usuario.type(screen.getByLabelText(/^CNPJ/), '11222333')
+    await usuario.type(screen.getByLabelText(/O que será orçado/), 'AUA da padaria')
+    await usuario.click(screen.getByRole('button', { name: 'Criar rascunho' }))
+    expect(screen.getByText('CNPJ incompleto: são 14 caracteres')).toBeInTheDocument()
+    expect(falso.cliente.rpc.mock.calls.some(([nome]) => nome === 'criar_orcamento')).toBe(false)
+
+    await usuario.type(screen.getByLabelText(/^CNPJ/), '000181')
+    expect(screen.getByLabelText(/^CNPJ/)).toHaveValue('11.222.333/0001-81')
+    await usuario.type(screen.getByLabelText(/^E-mail/), 'compras@padaria.test')
+    await usuario.click(screen.getByRole('button', { name: 'Criar rascunho' }))
+    const chamada = falso.cliente.rpc.mock.calls.find(([nome]) => nome === 'criar_orcamento')
+    expect(chamada?.[1]).toMatchObject({
+      p_empreendimento_id: null,
+      p_objeto: 'AUA da padaria',
+      p_prospecto: {
+        nome: 'Padaria Pão Quente',
+        cnpj: '11222333000181',
+        contato: null,
+        email: 'compras@padaria.test',
+        telefone: null,
+      },
+    })
+  })
+
+  it('a lista marca o orçamento de prospecto', async () => {
+    falso.reiniciar(
+      cenario('gestao', {
+        rpc: {
+          listar_orcamentos: {
+            data: [
+              {
+                id: 'o2',
+                ano: 2026,
+                sequencia: 42,
+                revisao: 1,
+                situacao: 'rascunho',
+                empreendimento_id: null,
+                empreendimento_nome: 'Padaria Pão Quente',
+                objeto: 'AUA da padaria',
+                total_centavos: null,
+                atualizado_em: '2026-11-12T10:00:00Z',
+                total: 1,
+              },
+            ],
+          },
+        },
+      }),
+    )
+    renderizarApp('/orcamentos')
+    const tabela = await screen.findByRole('table')
+    const linha = within(tabela).getByRole('row', { name: /Padaria Pão Quente/ })
+    expect(within(linha).getByText('Prospecto')).toBeInTheDocument()
+    expect(within(linha).getByText('pendente')).toBeInTheDocument()
+  })
+
+  it('orçamento de prospecto edita os dados e cadastra como empreendimento', async () => {
+    const deProspecto = orcamento({
+      empreendimento_id: null,
+      empreendimento_nome: 'Padaria Pão Quente',
+      prospecto: {
+        nome: 'Padaria Pão Quente',
+        cnpj: '11222333000181',
+        contato: 'Marina Couto',
+        email: null,
+        telefone: null,
+      },
+    })
+    falso.reiniciar(
+      cenario('gestao', {
+        rpc: {
+          obter_orcamento: { data: deProspecto },
+          cadastrar_empreendimento_do_prospecto: { data: 'e9' },
+        },
+      }),
+    )
+    const usuario = userEvent.setup()
+    renderizarApp('/orcamentos/o1')
+    expect(await screen.findByRole('heading', { name: 'Padaria Pão Quente' })).toBeInTheDocument()
+    const secao = screen.getByRole('region', { name: 'Prospecto' })
+    expect(within(secao).getByLabelText(/^CNPJ/)).toHaveValue('11.222.333/0001-81')
+    const cadastrar = within(secao).getByRole('button', { name: 'Cadastrar como empreendimento' })
+
+    // Com alteração não salva, cadastrar espera o salvamento.
+    await usuario.type(within(secao).getByLabelText(/^Telefone/), '(47) 3000-0000')
+    expect(cadastrar).toBeDisabled()
+    await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
+    const salvo = falso.cliente.rpc.mock.calls.find(([nome]) => nome === 'salvar_orcamento')
+    expect(salvo?.[1]).toMatchObject({
+      p_dados: {
+        prospecto: {
+          nome: 'Padaria Pão Quente',
+          cnpj: '11222333000181',
+          contato: 'Marina Couto',
+          telefone: '(47) 3000-0000',
+        },
+      },
+    })
+
+    await usuario.click(
+      await screen.findByRole('button', { name: 'Cadastrar como empreendimento' }),
+    )
+    const chamada = falso.cliente.rpc.mock.calls.find(
+      ([nome]) => nome === 'cadastrar_empreendimento_do_prospecto',
+    )
+    expect(chamada?.[1]).toMatchObject({ p_orcamento_id: 'o1' })
+    expect(await screen.findByText(/agora é um empreendimento cadastrado/)).toBeInTheDocument()
+  })
+
+  it('orçamento de empreendimento não mostra o bloco de prospecto', async () => {
+    renderizarApp('/orcamentos/o1')
+    await screen.findByRole('heading', { name: 'Indústria Horizonte' })
+    expect(screen.queryByRole('region', { name: 'Prospecto' })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Cadastrar como empreendimento' }),
+    ).not.toBeInTheDocument()
+  })
+
   it('custos e taxas mostram o rateio por hora e salvam', async () => {
     const usuario = userEvent.setup()
     renderizarApp('/configuracoes/custos')

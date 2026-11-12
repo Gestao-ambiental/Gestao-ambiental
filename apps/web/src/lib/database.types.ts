@@ -684,6 +684,9 @@ isOneToOne: false
 "atribuir_ocorrencia":
 { Args: { "p_membro_id": string,"p_ocorrencia_id": string,"p_row_version": number }; Returns: number
                            },
+"cadastrar_empreendimento_do_prospecto":
+{ Args: { "p_empreendimento_id": string,"p_orcamento_id": string }; Returns: string
+                           },
 "cancelar_convite":
 { Args: { "p_convite_id": string }; Returns: undefined
                            },
@@ -733,7 +736,7 @@ isOneToOne: false
 { Args: { "p_id": string,"p_unidade_id": string }; Returns: string
                            },
 "criar_orcamento":
-{ Args: { "p_consultoria_id": string,"p_empreendimento_id": string,"p_id": string,"p_objeto": string }; Returns: string
+{ Args: { "p_consultoria_id": string,"p_empreendimento_id": string | null,"p_id": string,"p_objeto": string,"p_prospecto"?: Json }; Returns: string
                            },
 "criar_tipo_instrumento":
 { Args: { "p_consultoria_id": string,"p_nome": string,"p_sigla": string }; Returns: string

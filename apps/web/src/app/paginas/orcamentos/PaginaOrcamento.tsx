@@ -20,8 +20,11 @@ import { Botao } from '@/components/ui/botao'
 import { BotaoIcone } from '@/components/ui/botao-icone'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { Trilha } from '@/components/ui/trilha'
+import { CampoTexto } from '@/components/ui/campo-texto'
+import { Selo } from '@/components/ui/selo'
 import {
   ROTULO_DO_TRATAMENTO,
+  cadastrarEmpreendimentoDoProspecto,
   obterOrcamento,
   salvarOrcamento,
   type DadosDoRascunho,
@@ -29,6 +32,7 @@ import {
   type TratamentoDespesa,
 } from '@/lib/api/orcamentos'
 import { mensagemDoErro } from '@/lib/erros'
+import { mascararCnpj } from '@gestao-ambiental/domain'
 
 import {
   calcularOrcamento,
@@ -40,6 +44,7 @@ import {
 } from './calculo'
 import { classeCabecalho, classeCampo, classeCelula, numeroComRevisao } from './comum'
 import { DialogoModelo, type SelecaoDoModelo } from './DialogoModelo'
+import { camposDoProspecto, lerProspecto, type CamposDoProspecto } from './prospecto'
 import { SeloSituacaoOrcamento } from './SeloSituacaoOrcamento'
 
 /** Texto longo quebra linha e o campo cresce com ele (Chromium e Safari; nos demais, rola). */
@@ -104,6 +109,8 @@ interface Rascunho {
   itens: LinhaItem[]
   despesas: LinhaDespesa[]
   parcelas: LinhaParcela[]
+  /** Só vale enquanto o orçamento é de prospecto. */
+  prospecto: CamposDoProspecto
 }
 
 function rascunhoDe(o: Orcamento): Rascunho {
@@ -115,6 +122,7 @@ function rascunhoDe(o: Orcamento): Rascunho {
     validade: String(o.validadeDias),
     premissas: o.premissas.join('\n'),
     exclusoes: o.exclusoes.join('\n'),
+    prospecto: camposDoProspecto(o.prospecto),
     margem: margem === null ? '' : textoDoPercentual(margem),
     visitas: o.visitas.quantidade ? String(o.visitas.quantidade) : '',
     km: o.visitas.kmPorVisita ? String(o.visitas.kmPorVisita) : '',
@@ -167,8 +175,14 @@ function lerVisitas(r: Rascunho) {
 }
 
 /** Converte o rascunho para o formato da RPC. Devolve a primeira mensagem de erro, se houver. */
-function paraSalvar(r: Rascunho): DadosDoRascunho | string {
+function paraSalvar(r: Rascunho, deProspecto: boolean): DadosDoRascunho | string {
   if (!r.objeto.trim()) return 'Diga o que está sendo orçado.'
+  let prospecto: DadosDoRascunho['prospecto']
+  if (deProspecto) {
+    const lido = lerProspecto(r.prospecto)
+    if ('erros' in lido) return `Prospecto: ${Object.values(lido.erros)[0] ?? 'confira os dados'}.`
+    prospecto = lido.prospecto
+  }
   const validade = Number(r.validade)
   if (!Number.isInteger(validade) || validade < 1 || validade > 365)
     return 'Validade: um número de 1 a 365 dias.'
@@ -218,6 +232,7 @@ function paraSalvar(r: Rascunho): DadosDoRascunho | string {
     premissas: linhasDeTexto(r.premissas),
     exclusoes: linhasDeTexto(r.exclusoes),
     margemPb,
+    ...(prospecto ? { prospecto } : {}),
     visitas: {
       quantidade: v.quantidade,
       kmPorVisita: v.kmPorVisita,
@@ -242,6 +257,8 @@ function paraSalvar(r: Rascunho): DadosDoRascunho | string {
 export function PaginaOrcamento() {
   const { atual } = useConsultoria()
   const { id = '' } = useParams()
+  // O editor remonta quando chega versão nova; o aviso de sucesso mora aqui para não sumir.
+  const [aviso, setAviso] = useState<string | null>(null)
 
   const consulta = useQuery({
     queryKey: ['orcamento', id],
@@ -283,11 +300,21 @@ export function PaginaOrcamento() {
     <Editor
       key={`${consulta.data.id}:${String(consulta.data.rowVersion)}`}
       orcamento={consulta.data}
+      aviso={aviso}
+      aoAvisar={setAviso}
     />
   )
 }
 
-function Editor({ orcamento }: { orcamento: Orcamento }) {
+function Editor({
+  orcamento,
+  aviso,
+  aoAvisar,
+}: {
+  orcamento: Orcamento
+  aviso: string | null
+  aoAvisar: (aviso: string | null) => void
+}) {
   const queryClient = useQueryClient()
   const editavel = orcamento.situacao === 'rascunho'
   const base = orcamento.base
@@ -400,8 +427,40 @@ function Editor({ orcamento }: { orcamento: Orcamento }) {
     )
   }
 
+  const deProspecto = orcamento.empreendimentoId === null
+  const [cadastrando, setCadastrando] = useState(false)
+
+  async function cadastrarProspecto() {
+    setFalha(null)
+    setCadastrando(true)
+    try {
+      await cadastrarEmpreendimentoDoProspecto(orcamento.id, crypto.randomUUID())
+      aoAvisar(
+        `${orcamento.prospecto?.nome ?? 'O prospecto'} agora é um empreendimento cadastrado, e este orçamento está ligado a ele.`,
+      )
+      await queryClient.invalidateQueries({ queryKey: ['orcamento', orcamento.id] })
+      await queryClient.invalidateQueries({ queryKey: ['orcamentos'] })
+      await queryClient.invalidateQueries({ queryKey: ['empreendimentos'] })
+    } catch (erro) {
+      setFalha(mensagemDoErro(erro))
+    } finally {
+      setCadastrando(false)
+    }
+  }
+
+  function campoDoProspecto(nome: keyof CamposDoProspecto) {
+    return {
+      value: r.prospecto[nome],
+      disabled: !editavel,
+      onChange: (evento: { target: { value: string } }) => {
+        const valor = nome === 'cnpj' ? mascararCnpj(evento.target.value) : evento.target.value
+        mudar((a) => ({ ...a, prospecto: { ...a.prospecto, [nome]: valor } }))
+      },
+    }
+  }
+
   async function salvar() {
-    const dados = paraSalvar(r)
+    const dados = paraSalvar(r, deProspecto)
     if (typeof dados === 'string') {
       setFalha(dados)
       return
@@ -438,6 +497,7 @@ function Editor({ orcamento }: { orcamento: Orcamento }) {
               {numeroComRevisao(orcamento.ano, orcamento.sequencia, orcamento.revisao)}
             </span>
             <SeloSituacaoOrcamento situacao={orcamento.situacao} />
+            {deProspecto ? <Selo tom="revisao">Prospecto</Selo> : null}
             {alterado ? <span>Alterações não salvas</span> : null}
           </p>
         </div>
@@ -456,6 +516,14 @@ function Editor({ orcamento }: { orcamento: Orcamento }) {
       {falha ? (
         <MensagemSecao role="alert" tom="perigo">
           {falha}
+        </MensagemSecao>
+      ) : null}
+      {aviso ? (
+        <MensagemSecao role="status" tom="sucesso">
+          {aviso}{' '}
+          {orcamento.empreendimentoId ? (
+            <Link to={`/empreendimentos/${orcamento.empreendimentoId}`}>Abrir empreendimento</Link>
+          ) : null}
         </MensagemSecao>
       ) : null}
       {!editavel ? (
@@ -530,6 +598,55 @@ function Editor({ orcamento }: { orcamento: Orcamento }) {
 
         {etapa === 0 ? (
           <>
+            {deProspecto ? (
+              <Secao
+                titulo="Prospecto"
+                acoes={
+                  <Botao
+                    tamanho="compacto"
+                    iconeAntes="folder-plus"
+                    disabled={alterado || cadastrando}
+                    aria-busy={cadastrando || undefined}
+                    onClick={() => void cadastrarProspecto()}
+                  >
+                    {cadastrando ? 'Cadastrando…' : 'Cadastrar como empreendimento'}
+                  </Botao>
+                }
+              >
+                <div className="flex flex-col gap-(--space-150) px-(--space-150) pb-(--space-150)">
+                  <p className="text-xs text-(--text-subtle)">
+                    {alterado
+                      ? 'Salve as alterações antes de cadastrar o prospecto.'
+                      : 'Quem pediu o orçamento ainda não está cadastrado. Ao cadastrar, um CNPJ que já existe é ligado ao empreendimento existente, sem duplicar.'}
+                  </p>
+                  <div className="grid gap-(--space-150) sm:grid-cols-2 lg:grid-cols-3">
+                    <CampoTexto
+                      rotulo="Nome da empresa ou do cliente"
+                      required
+                      {...campoDoProspecto('nome')}
+                    />
+                    <CampoTexto rotulo="CNPJ" ajuda="Opcional" {...campoDoProspecto('cnpj')} />
+                    <CampoTexto
+                      rotulo="Contato"
+                      ajuda="Opcional"
+                      {...campoDoProspecto('contato')}
+                    />
+                    <CampoTexto
+                      rotulo="E-mail"
+                      type="email"
+                      ajuda="Opcional"
+                      {...campoDoProspecto('email')}
+                    />
+                    <CampoTexto
+                      rotulo="Telefone"
+                      type="tel"
+                      ajuda="Opcional"
+                      {...campoDoProspecto('telefone')}
+                    />
+                  </div>
+                </div>
+              </Secao>
+            ) : null}
             {/* Serviços */}
             <Secao
               titulo="Serviços"

@@ -1,19 +1,30 @@
+import { mascararCnpj } from '@gestao-ambiental/domain'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 
 import { Botao } from '@/components/ui/botao'
+import { OpcaoRadio } from '@/components/ui/caixa-selecao'
 import { CampoTexto } from '@/components/ui/campo-texto'
 import { Dialogo } from '@/components/ui/dialogo'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { listarEmpreendimentos } from '@/lib/api/empreendimentos'
-import { criarOrcamento } from '@/lib/api/orcamentos'
+import { criarOrcamento, type ParaQuem } from '@/lib/api/orcamentos'
 import { mensagemDoErro } from '@/lib/erros'
 
 import { classeCampo } from './comum'
+import {
+  lerProspecto,
+  PROSPECTO_VAZIO,
+  type CamposDoProspecto,
+  type ErrosDoProspecto,
+} from './prospecto'
+
+type Destino = 'empreendimento' | 'prospecto'
 
 /**
- * "Novo orçamento": escolhe o empreendimento e diz o objeto. O resto se preenche no rascunho.
- * O id nasce aqui: repetir depois de um erro de rede não cria outro orçamento.
+ * "Novo orçamento": para um empreendimento cadastrado ou para um prospecto (quem pediu preço e
+ * ainda não está cadastrado), e o objeto. O resto se preenche no rascunho. O id nasce aqui:
+ * repetir depois de um erro de rede não cria outro orçamento.
  */
 export function DialogoNovoOrcamento({
   aberto,
@@ -27,9 +38,13 @@ export function DialogoNovoOrcamento({
   aoCriar: (id: string) => void
 }) {
   const [id, setId] = useState(() => crypto.randomUUID())
+  const [destino, setDestino] = useState<Destino>('empreendimento')
   const [empreendimentoId, setEmpreendimentoId] = useState('')
+  const [prospecto, setProspecto] = useState<CamposDoProspecto>(PROSPECTO_VAZIO)
   const [objeto, setObjeto] = useState('')
-  const [erros, setErros] = useState<{ empreendimento?: string; objeto?: string }>({})
+  const [erros, setErros] = useState<
+    { empreendimento?: string; objeto?: string } & { prospecto?: ErrosDoProspecto }
+  >({})
   const [falha, setFalha] = useState<string | null>(null)
   const [salvando, setSalvando] = useState(false)
 
@@ -41,24 +56,44 @@ export function DialogoNovoOrcamento({
 
   function fechar() {
     setId(crypto.randomUUID())
+    setDestino('empreendimento')
     setEmpreendimentoId('')
+    setProspecto(PROSPECTO_VAZIO)
     setObjeto('')
     setErros({})
     setFalha(null)
     aoMudar(false)
   }
 
+  function campoDoProspecto(nome: keyof CamposDoProspecto) {
+    return {
+      value: prospecto[nome],
+      disabled: salvando,
+      erro: erros.prospecto?.[nome],
+      onChange: (evento: { target: { value: string } }) => {
+        const valor = nome === 'cnpj' ? mascararCnpj(evento.target.value) : evento.target.value
+        setProspecto((a) => ({ ...a, [nome]: valor }))
+      },
+    }
+  }
+
   async function criar() {
-    const novosErros = {
-      ...(empreendimentoId ? {} : { empreendimento: 'Escolha o empreendimento' }),
-      ...(objeto.trim() ? {} : { objeto: 'Diga o que será orçado' }),
+    let paraQuem: ParaQuem | null = null
+    const novosErros: typeof erros = objeto.trim() ? {} : { objeto: 'Diga o que será orçado' }
+    if (destino === 'empreendimento') {
+      if (empreendimentoId) paraQuem = { empreendimentoId }
+      else novosErros.empreendimento = 'Escolha o empreendimento'
+    } else {
+      const lido = lerProspecto(prospecto)
+      if ('erros' in lido) novosErros.prospecto = lido.erros
+      else paraQuem = { prospecto: lido.prospecto }
     }
     setErros(novosErros)
-    if (Object.keys(novosErros).length > 0) return
+    if (!paraQuem || Object.keys(novosErros).length > 0) return
     setFalha(null)
     setSalvando(true)
     try {
-      await criarOrcamento(id, consultoriaId, empreendimentoId, objeto)
+      await criarOrcamento(id, consultoriaId, paraQuem, objeto)
       aoCriar(id)
       fechar()
     } catch (erro) {
@@ -78,6 +113,7 @@ export function DialogoNovoOrcamento({
         else aoMudar(true)
       }}
       titulo="Novo orçamento"
+      largura={560}
       acoes={
         <>
           <Botao disabled={salvando} onClick={fechar}>
@@ -109,43 +145,98 @@ export function DialogoNovoOrcamento({
             {falha}
           </MensagemSecao>
         ) : null}
-        <div className="flex flex-col gap-(--space-050)">
-          <label htmlFor="novo-orcamento-empreendimento" className="rotulo">
-            Empreendimento
-          </label>
-          <select
-            id="novo-orcamento-empreendimento"
-            className={classeCampo}
-            value={empreendimentoId}
-            disabled={salvando || empreendimentos.isPending}
-            aria-invalid={erros.empreendimento ? true : undefined}
-            aria-describedby={
-              erros.empreendimento ? 'novo-orcamento-empreendimento-erro' : undefined
-            }
-            onChange={(evento) => {
-              setEmpreendimentoId(evento.target.value)
+
+        <fieldset className="flex flex-col gap-(--space-100)">
+          <legend className="mb-(--space-050) rotulo">Para quem é o orçamento</legend>
+          <OpcaoRadio
+            name="destino-orcamento"
+            rotulo="Empreendimento cadastrado"
+            checked={destino === 'empreendimento'}
+            disabled={salvando}
+            onChange={() => {
+              setDestino('empreendimento')
             }}
-          >
-            <option value="">
-              {empreendimentos.isPending ? 'Carregando…' : 'Escolha o empreendimento'}
-            </option>
-            {opcoes.map((e) => (
-              <option key={e.id} value={e.id}>
-                {e.nome}
+          />
+          <OpcaoRadio
+            name="destino-orcamento"
+            rotulo="Prospecto, ainda não cadastrado"
+            descricao="Quem pediu preço. Vira empreendimento quando você cadastrar, pelo próprio orçamento."
+            checked={destino === 'prospecto'}
+            disabled={salvando}
+            onChange={() => {
+              setDestino('prospecto')
+            }}
+          />
+        </fieldset>
+
+        {destino === 'empreendimento' ? (
+          <div className="flex flex-col gap-(--space-050)">
+            <label htmlFor="novo-orcamento-empreendimento" className="rotulo">
+              Empreendimento
+            </label>
+            <select
+              id="novo-orcamento-empreendimento"
+              className={classeCampo}
+              value={empreendimentoId}
+              disabled={salvando || empreendimentos.isPending}
+              aria-invalid={erros.empreendimento ? true : undefined}
+              aria-describedby={
+                erros.empreendimento ? 'novo-orcamento-empreendimento-erro' : undefined
+              }
+              onChange={(evento) => {
+                setEmpreendimentoId(evento.target.value)
+              }}
+            >
+              <option value="">
+                {empreendimentos.isPending ? 'Carregando…' : 'Escolha o empreendimento'}
               </option>
-            ))}
-          </select>
-          {erros.empreendimento ? (
-            <p id="novo-orcamento-empreendimento-erro" className="text-xs text-(--text-danger)">
-              {erros.empreendimento}
-            </p>
-          ) : null}
-          {empreendimentos.isSuccess && opcoes.length === 0 ? (
-            <p className="text-xs text-(--text-subtle)">
-              Cadastre o empreendimento antes, em Empreendimentos.
-            </p>
-          ) : null}
-        </div>
+              {opcoes.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.nome}
+                </option>
+              ))}
+            </select>
+            {erros.empreendimento ? (
+              <p id="novo-orcamento-empreendimento-erro" className="text-xs text-(--text-danger)">
+                {erros.empreendimento}
+              </p>
+            ) : null}
+            {empreendimentos.isSuccess && opcoes.length === 0 ? (
+              <p className="text-xs text-(--text-subtle)">
+                Nenhum empreendimento cadastrado. Orce como prospecto e cadastre depois.
+              </p>
+            ) : null}
+          </div>
+        ) : (
+          <div className="grid gap-(--space-150) sm:grid-cols-2">
+            <CampoTexto
+              rotulo="Nome da empresa ou do cliente"
+              required
+              className="sm:col-span-2"
+              {...campoDoProspecto('nome')}
+            />
+            <CampoTexto
+              rotulo="CNPJ"
+              ajuda="Opcional. Evita cadastro repetido."
+              inputMode="text"
+              {...campoDoProspecto('cnpj')}
+            />
+            <CampoTexto rotulo="Contato" ajuda="Opcional" {...campoDoProspecto('contato')} />
+            <CampoTexto
+              rotulo="E-mail"
+              type="email"
+              ajuda="Opcional"
+              {...campoDoProspecto('email')}
+            />
+            <CampoTexto
+              rotulo="Telefone"
+              type="tel"
+              ajuda="Opcional"
+              {...campoDoProspecto('telefone')}
+            />
+          </div>
+        )}
+
         <CampoTexto
           rotulo="O que será orçado"
           placeholder="Ex.: Licenciamento (LO)"

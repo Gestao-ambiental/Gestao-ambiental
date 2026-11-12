@@ -43,3 +43,19 @@
 - Rascunhos antigos com preço manual por item passam a ter o preço calculado ao serem salvos de novo. Propostas enviadas não mudam.
 - Despesa incluída a cotar, falta de base ou falta de itens deixam o preço pendente: zero nos itens e total nulo na lista, nunca um zero enganoso.
 - As 4 composições novas do catálogo são sugestões de escopo e precisam de revisão técnica, como as demais.
+
+## Atualização de 12/11/2026: orçamento para prospecto
+
+- **O que muda:** o orçamento pode nascer para um **prospecto**, alguém que pediu preço e ainda não está cadastrado (ORC-02, "cliente/prospecto"). A lista de empreendimentos não recebe quem só pediu preço.
+- **Dados:** nome obrigatório; CNPJ, contato, e-mail e telefone opcionais. Nunca CPF.
+- **Cadastro:** "Cadastrar como empreendimento", no próprio orçamento, cria o empreendimento e liga o orçamento a ele.
+  - Se o CNPJ já está cadastrado na consultoria, liga ao empreendimento existente em vez de duplicar.
+  - Repetir não cria outro empreendimento.
+  - Os dados do prospecto ficam como histórico.
+- **Pendente:** a conversão automática na aprovação (FIN-06) espera a etapa de aprovação do orçamento.
+- **Onde vive:**
+  - migration `20261112090000_orcamento_para_prospecto.sql`, com `private.gravar_prospecto` e `public.cadastrar_empreendimento_do_prospecto`;
+  - testes em `supabase/tests/200_orcamento_prospecto.test.sql` (22 testes).
+- **Decisões tomadas sem confirmação do Eduardo:**
+  - o CNPJ é opcional;
+  - o nome do empreendimento criado é o nome do prospecto, sem preencher o cliente contratante.

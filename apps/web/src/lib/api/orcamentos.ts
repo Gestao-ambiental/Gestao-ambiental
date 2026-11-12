@@ -66,6 +66,17 @@ function contasDe(valor: Json | undefined): ContaDoMes[] {
     valorCentavos: numero(c.valor_centavos),
   }))
 }
+function prospectoDe(valor: Json | undefined): Prospecto | null {
+  const p = objeto(valor)
+  if (!p) return null
+  return {
+    nome: texto(p.nome),
+    cnpj: textoOuNulo(p.cnpj),
+    contato: textoOuNulo(p.contato),
+    email: textoOuNulo(p.email),
+    telefone: textoOuNulo(p.telefone),
+  }
+}
 function situacao(valor: Json | undefined): SituacaoOrcamento {
   return valor === 'enviada' ||
     valor === 'negociacao' ||
@@ -79,13 +90,26 @@ function situacao(valor: Json | undefined): SituacaoOrcamento {
 // Lista
 // ---------------------------------------------------------------------------
 
+/** Quem pediu o orçamento sem estar cadastrado (ORC-02). Nunca CPF. */
+export interface Prospecto {
+  nome: string
+  /** 14 caracteres, sem máscara; nulo quando não informado. */
+  cnpj: string | null
+  contato: string | null
+  email: string | null
+  telefone: string | null
+}
+
 export interface OrcamentoNaLista {
   id: string
   ano: number
   sequencia: number
   revisao: number
   situacao: SituacaoOrcamento
+  /** Nome do empreendimento ou, se for de prospecto, do prospecto. */
   empreendimentoNome: string
+  /** Orçamento de prospecto, ainda sem empreendimento cadastrado. */
+  deProspecto: boolean
   objeto: string
   /** Nulo enquanto o preço está pendente (sem base, sem itens ou despesa incluída a cotar). */
   totalCentavos: number | null
@@ -112,6 +136,8 @@ export async function listarOrcamentos(
       revisao: linha.revisao,
       situacao: linha.situacao,
       empreendimentoNome: linha.empreendimento_nome,
+      // O tipo gerado não sabe: com prospecto, a coluna vem nula (left join).
+      deProspecto: (linha.empreendimento_id as string | null) === null,
       objeto: linha.objeto,
       // Nulo com preço pendente (o tipo gerado não sabe: a coluna vem de um case).
       totalCentavos: linha.total_centavos,
@@ -193,8 +219,11 @@ export interface Orcamento {
   sequencia: number
   revisao: number
   situacao: SituacaoOrcamento
-  empreendimentoId: string
+  /** Nulo enquanto o orçamento é de prospecto. */
+  empreendimentoId: string | null
   empreendimentoNome: string
+  /** Dados de quem pediu sem estar cadastrado; ficam como histórico depois do cadastro. */
+  prospecto: Prospecto | null
   objeto: string
   destinatario: string
   prazos: string
@@ -228,8 +257,9 @@ export async function obterOrcamento(id: string): Promise<Orcamento | null> {
     sequencia: numero(o.sequencia),
     revisao: numero(o.revisao),
     situacao: situacao(o.situacao),
-    empreendimentoId: texto(o.empreendimento_id),
+    empreendimentoId: textoOuNulo(o.empreendimento_id),
     empreendimentoNome: texto(o.empreendimento_nome),
+    prospecto: prospectoDe(o.prospecto),
     objeto: texto(o.objeto),
     destinatario: textoOuNulo(o.destinatario) ?? '',
     prazos: textoOuNulo(o.prazos) ?? '',
@@ -288,18 +318,42 @@ export async function obterOrcamento(id: string): Promise<Orcamento | null> {
 // Escrita
 // ---------------------------------------------------------------------------
 
+/** Para quem é o orçamento: um empreendimento cadastrado ou um prospecto. */
+export type ParaQuem = { empreendimentoId: string } | { prospecto: Prospecto }
+
+function prospectoParaRpc(p: Prospecto) {
+  return { nome: p.nome, cnpj: p.cnpj, contato: p.contato, email: p.email, telefone: p.telefone }
+}
+
 /** Cria o rascunho com o id gerado na tela: repetir não duplica. */
 export async function criarOrcamento(
   id: string,
   consultoriaId: string,
-  empreendimentoId: string,
+  paraQuem: ParaQuem,
   objetoDoOrcamento: string,
 ): Promise<string> {
   const { data, error } = await obterSupabase().rpc('criar_orcamento', {
     p_id: id,
     p_consultoria_id: consultoriaId,
-    p_empreendimento_id: empreendimentoId,
+    p_empreendimento_id: 'empreendimentoId' in paraQuem ? paraQuem.empreendimentoId : null,
     p_objeto: objetoDoOrcamento,
+    ...('prospecto' in paraQuem ? { p_prospecto: prospectoParaRpc(paraQuem.prospecto) } : {}),
+  })
+  if (error) throw error
+  return data
+}
+
+/**
+ * Cadastra o prospecto como empreendimento e liga o orçamento a ele. Com CNPJ já cadastrado, o
+ * banco liga ao existente. O id nasce na tela: repetir não duplica. Devolve o empreendimento.
+ */
+export async function cadastrarEmpreendimentoDoProspecto(
+  orcamentoId: string,
+  novoEmpreendimentoId: string,
+): Promise<string> {
+  const { data, error } = await obterSupabase().rpc('cadastrar_empreendimento_do_prospecto', {
+    p_orcamento_id: orcamentoId,
+    p_empreendimento_id: novoEmpreendimentoId,
   })
   if (error) throw error
   return data
@@ -315,6 +369,8 @@ export interface DadosDoRascunho {
   /** Nula: usa a margem desejada da base. */
   margemPb: number | null
   visitas: VisitasDoOrcamento
+  /** Só para orçamento de prospecto ainda sem empreendimento. */
+  prospecto?: Prospecto
   itens: ItemParaSalvar[]
   despesas: DespesaDoOrcamento[]
   parcelas: ParcelaDoOrcamento[]
@@ -337,6 +393,7 @@ export async function salvarOrcamento(
       premissas: dados.premissas,
       exclusoes: dados.exclusoes,
       margem_pb: dados.margemPb,
+      ...(dados.prospecto ? { prospecto: prospectoParaRpc(dados.prospecto) } : {}),
       visitas: {
         quantidade: dados.visitas.quantidade,
         km_por_visita: dados.visitas.kmPorVisita,

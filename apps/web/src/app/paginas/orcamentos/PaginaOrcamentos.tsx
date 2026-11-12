@@ -8,6 +8,7 @@ import { Pagina } from '@/app/paginas/Pagina'
 import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
 import { Icone } from '@/components/ui/icone'
+import { Selo } from '@/components/ui/selo'
 import { TAMANHO_PAGINA_ORCAMENTOS, listarOrcamentos } from '@/lib/api/orcamentos'
 import { formatarInstanteComoData } from '@/lib/datas'
 
@@ -138,6 +139,11 @@ function ListaDaGestao() {
                     >
                       {item.empreendimentoNome}
                     </Link>
+                    {item.deProspecto ? (
+                      <Selo tom="revisao" className="ml-(--space-100) align-middle">
+                        Prospecto
+                      </Selo>
+                    ) : null}
                     <span className="block text-xs text-(--text-subtle)">{item.objeto}</span>
                   </td>
                   <td className={`${classeCelula} whitespace-nowrap tabular-nums`}>
@@ -176,7 +182,10 @@ function ListaDaGestao() {
                   <SeloSituacaoOrcamento situacao={item.situacao} />
                   <Icone nome="chevron-right" className="text-(--icon)" />
                 </span>
-                <span className="truncate corpo-medio">{item.empreendimentoNome}</span>
+                <span className="flex min-w-0 items-center gap-(--space-100)">
+                  <span className="truncate corpo-medio">{item.empreendimentoNome}</span>
+                  {item.deProspecto ? <Selo tom="revisao">Prospecto</Selo> : null}
+                </span>
                 <span className="text-xs text-(--text-subtle)">
                   {item.objeto} ·{' '}
                   {item.totalCentavos === null
