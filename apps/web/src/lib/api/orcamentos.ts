@@ -153,18 +153,24 @@ export interface OrcamentoNaLista {
   /** Nulo enquanto o preço está pendente (sem base, sem itens ou despesa incluída a cotar). */
   totalCentavos: number | null
   atualizadoEm: string
+  /** Na lixeira desde; nulo na lista. */
+  excluidoEm: string | null
+  rowVersion: number
 }
 
+/** `lixeira`: lista os orçamentos excluídos em vez dos ativos. */
 export async function listarOrcamentos(
   consultoriaId: string,
   busca: string,
   pagina: number,
+  lixeira = false,
 ): Promise<{ itens: OrcamentoNaLista[]; total: number }> {
   const { data, error } = await obterSupabase().rpc('listar_orcamentos', {
     p_consultoria_id: consultoriaId,
     p_busca: busca,
     p_limite: TAMANHO_PAGINA_ORCAMENTOS,
     p_deslocamento: pagina * TAMANHO_PAGINA_ORCAMENTOS,
+    p_lixeira: lixeira,
   })
   if (error) throw error
   return {
@@ -181,6 +187,9 @@ export async function listarOrcamentos(
       // Nulo com preço pendente (o tipo gerado não sabe: a coluna vem de um case).
       totalCentavos: linha.total_centavos,
       atualizadoEm: linha.atualizado_em,
+      // Nulo fora da lixeira (o tipo gerado não sabe).
+      excluidoEm: (linha.excluido_em as string | null) ?? null,
+      rowVersion: linha.row_version,
     })),
     total: data[0]?.total ?? 0,
   }
@@ -294,6 +303,8 @@ export interface Orcamento {
   precoVisitasCentavos: number
   base: BaseDoOrcamento | null
   atualizadoEm: string
+  /** Na lixeira desde; nulo fora dela. Na lixeira, nada muda até restaurar. */
+  excluidoEm: string | null
   rowVersion: number
   itens: ItemDoOrcamento[]
   despesas: DespesaDoOrcamento[]
@@ -352,6 +363,7 @@ export async function obterOrcamento(id: string): Promise<Orcamento | null> {
         }
       : null,
     atualizadoEm: texto(o.atualizado_em),
+    excluidoEm: textoOuNulo(o.excluido_em),
     rowVersion: numero(o.row_version),
     itens: lista(o.itens).map((i) => ({
       id: texto(i.id),
@@ -648,4 +660,24 @@ export async function obterCargaDaEquipe(consultoriaId: string): Promise<CargaDa
       minutos: numero(x.minutos),
     })),
   }
+}
+
+/** Manda para a lixeira (exclusão lógica). Aprovado não pode. Devolve a versão nova. */
+export async function excluirOrcamento(id: string, rowVersion: number): Promise<number> {
+  const { data, error } = await obterSupabase().rpc('excluir_orcamento', {
+    p_id: id,
+    p_row_version: rowVersion,
+  })
+  if (error) throw error
+  return data
+}
+
+/** Tira da lixeira e devolve à lista. Devolve a versão nova. */
+export async function restaurarOrcamento(id: string, rowVersion: number): Promise<number> {
+  const { data, error } = await obterSupabase().rpc('restaurar_orcamento', {
+    p_id: id,
+    p_row_version: rowVersion,
+  })
+  if (error) throw error
+  return data
 }

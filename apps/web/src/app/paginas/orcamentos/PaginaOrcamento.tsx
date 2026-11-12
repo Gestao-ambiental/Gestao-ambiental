@@ -15,7 +15,7 @@ import {
 } from '@gestao-ambiental/domain'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { Link, useParams, useSearchParams } from 'react-router'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Pagina } from '@/app/paginas/Pagina'
@@ -32,6 +32,7 @@ import {
   cadastrarEmpreendimentoDoProspecto,
   obterCargaDaEquipe,
   obterOrcamento,
+  restaurarOrcamento,
   salvarOrcamento,
   type DadosDoRascunho,
   type FormaDePreco,
@@ -346,7 +347,10 @@ function Editor({
   aoAvisar: (aviso: string | null) => void
 }) {
   const queryClient = useQueryClient()
-  const editavel = orcamento.situacao === 'rascunho'
+  // Na lixeira, nada muda até restaurar (o banco também recusa).
+  const naLixeira = orcamento.excluidoEm !== null
+  const editavel = orcamento.situacao === 'rascunho' && !naLixeira
+  const navegar = useNavigate()
   const base = orcamento.base
   const [r, setR] = useState<Rascunho>(() => rascunhoDe(orcamento))
   const [alterado, setAlterado] = useState(false)
@@ -550,6 +554,39 @@ function Editor({
     }
   }
 
+  const [restaurando, setRestaurando] = useState(false)
+  async function restaurar() {
+    setFalha(null)
+    setRestaurando(true)
+    try {
+      await restaurarOrcamento(orcamento.id, orcamento.rowVersion)
+      aoAvisar('Orçamento restaurado: voltou para a lista e pode ser editado.')
+      await queryClient.invalidateQueries({ queryKey: ['orcamento', orcamento.id] })
+      await queryClient.invalidateQueries({ queryKey: ['orcamentos'] })
+    } catch (erro) {
+      setFalha(mensagemDoErro(erro))
+    } finally {
+      setRestaurando(false)
+    }
+  }
+
+  /** A proposta mostra o que está salvo: com mudanças pendentes, pede para salvar antes. */
+  function verProposta(aparencia: 'padrao' | 'primario') {
+    return (
+      <Botao
+        aparencia={aparencia}
+        iconeAntes="eye"
+        disabled={alterado}
+        title={alterado ? 'Salve antes: a proposta mostra o que está salvo.' : undefined}
+        onClick={() => {
+          void navegar(`/orcamentos/${orcamento.id}/proposta`)
+        }}
+      >
+        Ver proposta pronta
+      </Botao>
+    )
+  }
+
   const precoTotal = calculo.precoTotalCentavos
   const quantidadeDeVisitas = visitasLidas.quantidade ?? 0
   const temVisitas = calculo.valorVisitasCentavos > 0
@@ -572,17 +609,36 @@ function Editor({
             {alterado ? <span>Alterações não salvas</span> : null}
           </p>
         </div>
-        {editavel ? (
-          <Botao
-            aparencia="primario"
-            disabled={salvando || !alterado}
-            aria-busy={salvando || undefined}
-            onClick={() => void salvar()}
-          >
-            {salvando ? 'Salvando…' : 'Salvar'}
-          </Botao>
-        ) : null}
+        <div className="flex flex-wrap items-center gap-(--space-100)">
+          {verProposta('padrao')}
+          {editavel ? (
+            <Botao
+              aparencia="primario"
+              disabled={salvando || !alterado}
+              aria-busy={salvando || undefined}
+              onClick={() => void salvar()}
+            >
+              {salvando ? 'Salvando…' : 'Salvar'}
+            </Botao>
+          ) : null}
+        </div>
       </div>
+
+      {naLixeira ? (
+        <MensagemSecao tom="atencao">
+          <span className="flex flex-wrap items-center justify-between gap-(--space-100)">
+            <span>Este orçamento está na lixeira. Nada muda até ele ser restaurado.</span>
+            <Botao
+              tamanho="compacto"
+              disabled={restaurando}
+              aria-busy={restaurando || undefined}
+              onClick={() => void restaurar()}
+            >
+              {restaurando ? 'Restaurando…' : 'Restaurar'}
+            </Botao>
+          </span>
+        </MensagemSecao>
+      ) : null}
 
       {falha ? (
         <MensagemSecao role="alert" tom="perigo">
@@ -1589,6 +1645,19 @@ function Editor({
                 ) : null}
               </div>
             </Secao>
+
+            {/* Fim do orçamento: a proposta como o cliente recebe (ORC-05). */}
+            <section
+              aria-label="Proposta pronta"
+              className="flex flex-wrap items-center justify-between gap-(--space-150) border-b px-(--space-150) py-(--space-150)"
+            >
+              <p className="max-w-xl text-(--text-subtle)">
+                {alterado
+                  ? 'Salve as mudanças para ver a proposta pronta: ela mostra o que está salvo.'
+                  : 'Veja a proposta como o cliente recebe, sem custo nem margem, e imprima ou salve em PDF.'}
+              </p>
+              {verProposta('primario')}
+            </section>
 
             {/* Detalhes recolhidos */}
             <Recolhido

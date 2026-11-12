@@ -690,6 +690,9 @@ isOneToOne: false
 "cancelar_convite":
 { Args: { "p_convite_id": string }; Returns: undefined
                            },
+"excluir_orcamento":
+{ Args: { "p_id": string,"p_row_version": number }; Returns: number
+                           },
 "carga_da_equipe":
 { Args: { "p_consultoria_id": string }; Returns: Json
                            },
@@ -806,8 +809,8 @@ isOneToOne: false
             }[]
                            },
 "listar_orcamentos":
-{ Args: { "p_busca"?: string,"p_consultoria_id": string,"p_deslocamento"?: number,"p_limite"?: number }; Returns: {
-              "ano": number,"atualizado_em": string,"empreendimento_id": string,"empreendimento_nome": string,"id": string,"objeto": string,"revisao": number,"sequencia": number,"situacao": Database["public"]['Enums']["situacao_orcamento"],"total": number,"total_centavos": number
+{ Args: { "p_busca"?: string,"p_consultoria_id": string,"p_deslocamento"?: number,"p_limite"?: number,"p_lixeira"?: boolean }; Returns: {
+              "ano": number,"atualizado_em": string,"empreendimento_id": string,"empreendimento_nome": string,"excluido_em": string,"id": string,"objeto": string,"revisao": number,"row_version": number,"sequencia": number,"situacao": Database["public"]['Enums']["situacao_orcamento"],"total": number,"total_centavos": number
             }[]
                            },
 "listar_prazos":
@@ -864,6 +867,9 @@ isOneToOne: false
                            },
 "revisar_condicionante":
 { Args: { "p_id": string,"p_revisao": Database["public"]['Enums']["revisao_condicionante"] }; Returns: undefined
+                           },
+"restaurar_orcamento":
+{ Args: { "p_id": string,"p_row_version": number }; Returns: number
                            },
 "salvar_base_de_custos":
 { Args: { "p_consultoria_id": string,"p_custo_km_centavos"?: number,"p_custos_fixos"?: Json,"p_custos_fixos_mensais_centavos": number,"p_hora_tecnica_centavos": number,"p_horas_faturaveis_mes": number,"p_margem_desejada_pb": number,"p_margem_minima_pb": number,"p_equipe"?: Json,"p_horas_venda"?: Json,"p_piso_hora_centavos"?: number,"p_taxa_por_assinatura_centavos": number,"p_taxa_por_cobranca_centavos": number,"p_taxas_pb": number,"p_tributos_pb": number,"p_valor_visita_centavos"?: number }; Returns: undefined

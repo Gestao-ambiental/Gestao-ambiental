@@ -25,6 +25,7 @@ import { PaginaCalendario } from './paginas/calendario/PaginaCalendario'
 import { PaginaOcorrencia } from './paginas/ocorrencia/PaginaOcorrencia'
 import { PaginaCustosETaxas } from './paginas/orcamentos/PaginaCustosETaxas'
 import { PaginaOrcamento } from './paginas/orcamentos/PaginaOrcamento'
+import { PaginaProposta } from './paginas/orcamentos/PaginaProposta'
 import { PaginaOrcamentos } from './paginas/orcamentos/PaginaOrcamentos'
 import { PaginaNaoEncontrada } from './paginas/paginas'
 import { PaginaPerfil } from './paginas/perfil/PaginaPerfil'
@@ -69,6 +70,8 @@ export const rotas: RouteObject[] = [
           { path: 'licencas/:id/condicionantes', element: <PassoCondicionantes /> },
           { path: 'licencas/:id/prazos', element: <PassoPrazos /> },
           { path: 'licencas/:id/responsaveis', element: <PassoResponsaveis /> },
+          // Proposta pronta (ORC-05): tela cheia, para imprimir ou salvar PDF sem o menu.
+          { path: 'orcamentos/:id/proposta', element: <PaginaProposta /> },
           {
             element: <AppShell />,
             children: [

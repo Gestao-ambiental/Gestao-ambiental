@@ -91,6 +91,9 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   empreendimento_invalido: 'Escolha um empreendimento desta consultoria.',
   orcamento_nao_editavel:
     'Proposta enviada não é editada no lugar. Mudanças viram uma nova revisão.',
+  orcamento_na_lixeira: 'Este orçamento está na lixeira. Restaure para editar.',
+  orcamento_aprovado_nao_exclui:
+    'Orçamento aprovado não vai para a lixeira: ele vira contrato, cobrança e tarefas.',
   validade_invalida: 'Validade: um número de 1 a 365 dias.',
   textos_demais: 'Use até 50 premissas e 50 exclusões.',
   lista_invalida: 'Não foi possível salvar o orçamento. Tente de novo.',

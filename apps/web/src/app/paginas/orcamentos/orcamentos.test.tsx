@@ -290,6 +290,120 @@ describe('orçamentos (onda 5)', () => {
     expect(screen.getByText('1 orçamento')).toBeInTheDocument()
   })
 
+  it('exclui com confirmação (menos aprovado) e restaura pela lixeira', async () => {
+    const linha = (id: string, sequencia: number, situacao: string, objeto: string) => ({
+      id,
+      ano: 2026,
+      sequencia,
+      revisao: 1,
+      situacao,
+      empreendimento_id: 'e1',
+      empreendimento_nome: 'Indústria Horizonte',
+      objeto,
+      total_centavos: 890_000,
+      atualizado_em: '2026-11-06T19:42:00Z',
+      excluido_em: null,
+      row_version: 3,
+      total: 2,
+    })
+    falso.reiniciar(
+      cenario('gestao', {
+        rpc: {
+          listar_orcamentos: (args: { p_lixeira?: boolean }) =>
+            args.p_lixeira
+              ? {
+                  data: [
+                    {
+                      ...linha('o1', 41, 'rascunho', 'Licenciamento (LO)'),
+                      excluido_em: '2026-11-12T15:00:00Z',
+                      row_version: 4,
+                      total: 1,
+                    },
+                  ],
+                }
+              : {
+                  data: [
+                    linha('o1', 41, 'rascunho', 'Licenciamento (LO)'),
+                    linha('o2', 40, 'aprovada', 'Laudo de ruído'),
+                  ],
+                },
+          excluir_orcamento: { data: 4 },
+          restaurar_orcamento: { data: 5 },
+        },
+      }),
+    )
+    const usuario = userEvent.setup()
+    const { container } = renderizarApp('/orcamentos')
+    const tabela = await screen.findByRole('table')
+    const acessibilidade = await axe.run(container, {
+      rules: { 'color-contrast': { enabled: false } },
+    })
+    expect(acessibilidade.violations.map((v) => v.id)).toEqual([])
+    // Aprovado não vai para a lixeira: não tem o botão.
+    expect(
+      within(tabela).queryByRole('button', { name: 'Excluir orçamento ORC-2026-040' }),
+    ).toBeNull()
+    await usuario.click(
+      within(tabela).getByRole('button', { name: 'Excluir orçamento ORC-2026-041' }),
+    )
+    const dialogo = screen.getByRole('dialog', { name: 'Excluir orçamento?' })
+    expect(dialogo).toHaveTextContent('vai para a lixeira. Dá para restaurar depois.')
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Excluir' }))
+    expect(falso.cliente.rpc).toHaveBeenCalledWith('excluir_orcamento', {
+      p_id: 'o1',
+      p_row_version: 3,
+    })
+    expect(await screen.findByText('ORC-2026-041 foi para a lixeira.')).toBeInTheDocument()
+
+    await usuario.click(screen.getByRole('button', { name: 'Lixeira' }))
+    expect(
+      await screen.findByRole('heading', { name: 'Lixeira de orçamentos' }),
+    ).toBeInTheDocument()
+    expect(falso.cliente.rpc).toHaveBeenCalledWith(
+      'listar_orcamentos',
+      expect.objectContaining({ p_lixeira: true }),
+    )
+    // Tabela (desktop) e cartões (celular) estão no DOM: usa o primeiro.
+    const [restaurar] = await screen.findAllByRole('button', { name: 'Restaurar ORC-2026-041' })
+    if (!restaurar) throw new Error('sem botão Restaurar')
+    await usuario.click(restaurar)
+    expect(falso.cliente.rpc).toHaveBeenCalledWith('restaurar_orcamento', {
+      p_id: 'o1',
+      p_row_version: 4,
+    })
+    expect(
+      await screen.findByText('ORC-2026-041 voltou para a lista de orçamentos.'),
+    ).toBeInTheDocument()
+  })
+
+  it('a proposta pronta mostra preço, parcelas e o que é do cliente, sem custo nem margem', async () => {
+    const imprimir = vi.spyOn(window, 'print').mockImplementation(() => undefined)
+    const usuario = userEvent.setup()
+    const { container } = renderizarApp('/orcamentos/o1/proposta')
+    const proposta = await screen.findByRole('article', { name: 'Proposta ORC-2026-041' })
+    const acessibilidade = await axe.run(container, {
+      rules: { 'color-contrast': { enabled: false } },
+    })
+    expect(acessibilidade.violations.map((v) => v.id)).toEqual([])
+    expect(within(proposta).getByText('Indústria Horizonte')).toBeInTheDocument()
+    expect(within(proposta).getByText('A/C Marina Couto')).toBeInTheDocument()
+    expect(within(proposta).getByText('RCA/PCA e PGRS')).toBeInTheDocument()
+    expect(within(proposta).getByText('5.100,00')).toBeInTheDocument()
+    expect(within(proposta).getByText('R$ 8.900,00')).toBeInTheDocument()
+    // Parcelas por maior resto: 40% de 8.900,00 = 3.560,00
+    expect(within(proposta).getByText('40,0% · R$ 3.560,00')).toBeInTheDocument()
+    // Honorário ≠ taxa do órgão: a taxa fica por conta do cliente.
+    expect(within(proposta).getByText('Taxa do órgão ambiental')).toBeInTheDocument()
+    expect(within(proposta).getByText('Uma visita técnica')).toBeInTheDocument()
+    // Nada interno: sem custo, margem, horas nem responsável.
+    expect(within(proposta).queryByText(/custo|margem|responsável/i)).toBeNull()
+    expect(within(proposta).queryByText('8h')).toBeNull()
+
+    await usuario.click(screen.getByRole('button', { name: 'Imprimir ou salvar PDF' }))
+    expect(imprimir).toHaveBeenCalled()
+    imprimir.mockRestore()
+  })
+
   it('o editor vai por etapas: serviços, preço e margem, parcelas', async () => {
     const usuario = userEvent.setup()
     renderizarApp('/orcamentos/o1')

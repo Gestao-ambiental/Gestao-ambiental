@@ -110,6 +110,13 @@ Decisões do Eduardo: a consultoria paga o piso (ou o pró-labore) pela jornada,
   - Enquanto não houver o passo de aprovação no produto (ORC-04), só orçamentos marcados como aprovados contam.
 - **Depois da aprovação** (ADR-0016), cada serviço vira uma etapa da demanda com o responsável escolhido no orçamento, e a gestão pode trocar.
 - **Onde vive:** mesma migration `20261112110000_preco_pela_tabela_e_piso.sql` (nunca aplicada fora desta máquina); domínio em `carga-da-equipe.ts`, `custoHoraPorMembro` e `horaDeCustoDaPessoa`; testes em `supabase/tests/220_responsavel_e_carga.test.sql`.
+
+## Atualização de 12/11/2026 (3): lixeira e proposta pronta
+
+- **Lixeira (decisões do Eduardo).** Excluir manda o orçamento para a lixeira (exclusão lógica, com quem excluiu e quando); dá para restaurar. Qualquer situação pode ir, menos aprovado. Na lixeira, o orçamento não muda até ser restaurado (trigger no banco). O número não é reaproveitado. Excluir nunca apaga cobranças nem tarefas (regras de negócio, §7.2).
+  - Banco: migration `20261112170000_lixeira_de_orcamentos.sql`, com `excluir_orcamento`, `restaurar_orcamento` e `listar_orcamentos(..., p_lixeira)`; testes em `supabase/tests/230_lixeira_de_orcamentos.test.sql`.
+  - Tela: botão de excluir em cada linha (com confirmação), botão "Lixeira" na lista e "Restaurar" na lixeira e no próprio orçamento.
+- **Proposta pronta (ORC-05).** `/orcamentos/:id/proposta`, fora do menu lateral: serviços com valor, visitas, total, parcelas, o que fica por conta do cliente (taxa do órgão e reembolsos), prazos, premissas e exclusões. Sem custo, margem, horas, responsáveis nem notas internas. "Imprimir ou salvar PDF" usa a impressão do navegador. Abre no fim das parcelas, no cabeçalho do orçamento e na lista.
 - **Ainda não feito:**
   - serviços de preço fechado (RAP, EAS, PRAD, PGRS; e a tabela do CAU, que é por área e complexidade, não por hora);
   - deslocamento por faixa;
