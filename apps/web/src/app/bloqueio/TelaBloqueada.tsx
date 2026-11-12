@@ -85,7 +85,7 @@ export function TelaBloqueada({
           }}
           className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-(--surface-sunken) px-(--space-200) pt-[12vh] pb-(--space-400) outline-none"
         >
-          <div className="flex w-full max-w-[400px] flex-col gap-(--space-200) rounded-(--radius) border bg-(--surface) p-(--space-300) shadow-sobreposicao">
+          <div className="flex w-full max-w-[400px] flex-col gap-(--space-200) rounded-(--radius-large) border bg-(--surface) p-(--space-300) shadow-sobreposicao">
             <p className="titulo-secao text-(--text-brand)">Grama</p>
             <div className="flex items-center gap-(--space-150)">
               <Avatar nome={usuario.nome} />

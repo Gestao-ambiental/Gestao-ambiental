@@ -37,8 +37,8 @@ export function ComoCadastrar({
         <label
           className={
             semIa
-              ? 'flex cursor-not-allowed flex-col gap-(--space-050) rounded-(--radius) border bg-(--surface) p-(--space-200) opacity-70'
-              : 'flex cursor-pointer flex-col gap-(--space-050) rounded-(--radius) border bg-(--surface) p-(--space-200) transicao-estado has-checked:border-(--border-focus) has-checked:bg-(--surface-selected) hover:bg-(--surface-hover)'
+              ? 'flex cursor-not-allowed flex-col gap-(--space-050) rounded-(--radius-large) border bg-(--surface) shadow-cartao p-(--space-200) opacity-70'
+              : 'flex cursor-pointer flex-col gap-(--space-050) rounded-(--radius-large) border bg-(--surface) shadow-cartao p-(--space-200) transicao-estado has-checked:border-(--brand-stroke) has-checked:bg-(--surface-selected) hover:bg-(--surface-hover)'
           }
         >
           <span className="inline-flex items-center gap-(--space-100) corpo-medio">
@@ -66,7 +66,7 @@ export function ComoCadastrar({
               'A IA propõe identificação e condicionantes a partir do PDF. Nada vale sem a sua revisão. PDF com texto até 10 MB.'}
           </span>
         </label>
-        <label className="flex cursor-pointer flex-col gap-(--space-050) rounded-(--radius) border bg-(--surface) p-(--space-200) transicao-estado has-checked:border-(--border-focus) has-checked:bg-(--surface-selected) hover:bg-(--surface-hover)">
+        <label className="flex cursor-pointer flex-col gap-(--space-050) rounded-(--radius-large) border bg-(--surface) shadow-cartao p-(--space-200) transicao-estado has-checked:border-(--brand-stroke) has-checked:bg-(--surface-selected) hover:bg-(--surface-hover)">
           <span className="inline-flex items-center gap-(--space-100) corpo-medio">
             <input
               type="radio"
@@ -175,7 +175,7 @@ export function PainelExtracao({
     return (
       <section
         aria-labelledby="titulo-extraindo"
-        className="flex flex-col gap-(--space-150) rounded-(--radius) border bg-(--surface) p-(--space-200)"
+        className="flex flex-col gap-(--space-150) rounded-(--radius-large) border bg-(--surface) shadow-cartao p-(--space-200)"
       >
         <div className="flex items-center justify-between gap-(--space-100)">
           <h2 id="titulo-extraindo" className="titulo-secao">

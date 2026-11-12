@@ -15,8 +15,8 @@ interface PropsMenu {
 }
 
 /**
- * Rail de 240px: superfície branca, separado por borda, nunca por sombra.
- * Referência: docs/design-system/referencia-componentes/navigation/SideNav.jsx.
+ * Rail de 240px no padrão NavDrawer do Fluent 2 (ADR-0015): superfície separada da página por
+ * borda; o item ativo leva a barra de marca à esquerda, texto semibold e aria-current.
  */
 export function MenuLateral({ rotulo, cabecalho, rodape, children, className }: PropsMenu) {
   return (
@@ -74,10 +74,10 @@ export function MenuLateralItem({ para, icone, children, exato, contagem, aoNave
         onClick={aoNavegar}
         className={({ isActive }) =>
           cn(
-            'group flex h-(--size-control) items-center gap-(--space-100) whitespace-nowrap rounded-(--radius) px-(--space-100) no-underline transicao-estado hover:no-underline',
+            'group relative flex h-(--size-control) items-center gap-(--space-100) whitespace-nowrap rounded-(--radius) px-(--space-150) no-underline transicao-estado hover:no-underline',
             isActive
-              ? 'bg-(--surface-selected) corpo-medio text-(--text-link) hover:bg-(--surface-selected-hover) hover:text-(--text-link)'
-              : 'corpo text-(--text) hover:bg-(--surface-hover) hover:text-(--text)',
+              ? 'bg-(--neutral-subtle-pressed) corpo-medio text-(--text) hover:bg-(--neutral-subtle-pressed) hover:text-(--text) before:absolute before:top-1/2 before:left-0 before:h-4 before:w-[3px] before:-translate-y-1/2 before:rounded-(--radius-pill) before:bg-(--brand-stroke)'
+              : 'corpo text-(--text) hover:bg-(--neutral-subtle-hover) hover:text-(--text)',
           )
         }
       >

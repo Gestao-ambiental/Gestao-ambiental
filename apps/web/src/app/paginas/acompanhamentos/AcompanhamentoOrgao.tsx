@@ -16,7 +16,7 @@ import { mensagemDoErro } from '@/lib/erros'
 const OUTRO = 'outro'
 
 const classeCampo =
-  'h-(--size-control) rounded-(--radius) border border-(--border-input) bg-(--surface-input) px-(--space-100) corpo text-(--text) outline-none focus:border-(--border-focus)'
+  'h-(--size-control) rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) px-(--space-100) corpo text-(--text) outline-none focus:border-b-(--border-input-active) focus:shadow-[inset_0_-1px_0_0_var(--border-input-active)]'
 
 /**
  * "Acompanhar o órgão a cada…" (Protótipo 17, artboard 05; decisão de 19/10/2026): intervalo por

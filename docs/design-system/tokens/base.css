@@ -1,11 +1,11 @@
-/* Minimal document defaults. Components style themselves; this only sets the page. */
+/* Padrões mínimos do documento (Fluent 2, ADR-0015). Componentes se estilizam; isto só define a página. */
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--surface-sunken);color:var(--text);font:var(--text-body);-webkit-font-smoothing:antialiased}
 *,*::before,*::after{box-sizing:border-box}
 a{color:var(--text-link);text-decoration:none}
 a:hover{color:var(--text-link);text-decoration:underline}
 a:active{color:var(--text-link-pressed)}
-a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--border-focus);outline-offset:1px;border-radius:var(--radius)}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--border-focus);outline-offset:1px;box-shadow:0 0 0 1px var(--border-focus-inner)}
 code,kbd,pre{font-family:var(--font-mono);font-size:12px}
 ::selection{background:var(--surface-selected)}
 @keyframes af-skeleton{0%{background-position:100% 0}100%{background-position:-100% 0}}

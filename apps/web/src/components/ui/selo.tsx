@@ -19,30 +19,31 @@ export type TomSelo =
   | 'perigoForte'
 
 const TONS: Record<TomSelo, string> = {
-  padrao: 'bg-(--lozenge-default-bg) text-(--lozenge-default-text)',
-  andamento: 'bg-(--lozenge-inprogress-bg) text-(--lozenge-inprogress-text)',
-  revisao: 'bg-(--lozenge-review-bg) text-(--lozenge-review-text)',
-  sucesso: 'bg-(--lozenge-success-bg) text-(--lozenge-success-text)',
-  atencao: 'bg-(--lozenge-warning-bg) text-(--lozenge-warning-text)',
-  perigo: 'bg-(--lozenge-danger-bg) text-(--lozenge-danger-text)',
+  padrao: 'border-(--border) bg-(--lozenge-default-bg) text-(--lozenge-default-text)',
+  andamento: 'border-transparent bg-(--lozenge-inprogress-bg) text-(--lozenge-inprogress-text)',
+  revisao: 'border-transparent bg-(--lozenge-review-bg) text-(--lozenge-review-text)',
+  sucesso:
+    'border-(--lozenge-success-border) bg-(--lozenge-success-bg) text-(--lozenge-success-text)',
+  atencao:
+    'border-(--lozenge-warning-border) bg-(--lozenge-warning-bg) text-(--lozenge-warning-text)',
+  perigo: 'border-(--lozenge-danger-border) bg-(--lozenge-danger-bg) text-(--lozenge-danger-text)',
   // Faixas de atraso (EQ-03): mais escuro quanto maior o atraso; o número de dias vai escrito.
-  perigoMedio:
-    'bg-(--lozenge-danger-bg) text-(--lozenge-danger-text) ring-1 ring-inset ring-(--border-danger)',
-  perigoForte: 'bg-(--danger) text-(--text-inverse)',
+  perigoMedio: 'border-(--border-danger) bg-(--lozenge-danger-bg) text-(--lozenge-danger-text)',
+  perigoForte: 'border-transparent bg-(--danger) text-(--text-inverse)',
 }
 
 type Props = ComponentProps<'span'> & { tom?: TomSelo }
 
 /**
- * Selo de situação: o único lugar onde estado tem cor. Fundo lavado, texto escuro, 11px em
- * maiúsculas; sempre com palavra (a cor nunca é o único sinal).
- * Referência: docs/design-system/referencia-componentes/core/Lozenge.jsx.
+ * Selo de situação: o único lugar onde estado tem cor. Badge "tint" do Fluent 2 (ADR-0015): pílula
+ * de 20px, fundo e contorno do status, texto de 12px em semibold; sempre com palavra (a cor nunca
+ * é o único sinal).
  */
 export function Selo({ tom = 'padrao', className, ...rest }: Props) {
   return (
     <span
       className={cn(
-        'inline-flex h-4 max-w-[200px] items-center overflow-hidden rounded-(--radius) px-(--space-075) text-ellipsis whitespace-nowrap rotulo-maiusculo',
+        'inline-flex h-5 max-w-[200px] items-center overflow-hidden rounded-(--radius-pill) border px-(--space-075) text-xs font-semibold text-ellipsis whitespace-nowrap',
         TONS[tom],
         className,
       )}
