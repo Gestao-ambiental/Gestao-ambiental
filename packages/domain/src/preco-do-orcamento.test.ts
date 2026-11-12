@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   SEM_VISITAS,
-  custoDasVisitas,
+  valorDasVisitas,
   precificarOrcamento,
   rateioPorConta,
   type BaseDoPreco,
@@ -26,19 +26,19 @@ const doisItens = [
   { minutos: 60, custoDiretoExtraCentavos: 5_000 }, // 1h: 100 + 50 extra + 50 de rateio = 200
 ]
 
-describe('custoDasVisitas', () => {
+describe('valorDasVisitas', () => {
   it('soma valor fixo, km e outros gastos por visita', () => {
     // 2 × (150 + 80 km × 1,20 + 20) = 2 × 266 = 532
     expect(
-      custoDasVisitas({ quantidade: 2, kmPorVisita: 80, outrosPorVisitaCentavos: 2_000 }, base),
+      valorDasVisitas({ quantidade: 2, kmPorVisita: 80, outrosPorVisitaCentavos: 2_000 }, base),
     ).toBe(53_200)
   })
   it('zero visitas custa zero', () => {
-    expect(custoDasVisitas(SEM_VISITAS, base)).toBe(0)
+    expect(valorDasVisitas(SEM_VISITAS, base)).toBe(0)
   })
   it('recusa quantidade negativa ou fracionária', () => {
-    expect(() => custoDasVisitas({ ...SEM_VISITAS, quantidade: -1 }, base)).toThrow()
-    expect(() => custoDasVisitas({ ...SEM_VISITAS, quantidade: 1.5 }, base)).toThrow()
+    expect(() => valorDasVisitas({ ...SEM_VISITAS, quantidade: -1 }, base)).toThrow()
+    expect(() => valorDasVisitas({ ...SEM_VISITAS, quantidade: 1.5 }, base)).toThrow()
   })
 })
 
@@ -93,7 +93,7 @@ describe('precificarOrcamento', () => {
     expect(Math.round((d.lucroCentavos * 10_000) / p.precoTotalCentavos)).toBe(3_000)
   })
 
-  it('visitas viram a última linha, com preço proporcional ao custo delas', () => {
+  it('visitas têm preço fixo, sem margem, numa linha própria', () => {
     const p = precificarOrcamento({
       itens: doisItens,
       visitas: { quantidade: 1, kmPorVisita: 0, outrosPorVisitaCentavos: 0 },
@@ -102,11 +102,13 @@ describe('precificarOrcamento', () => {
       margemPb: 3_000,
       base,
     })
-    // custo 500 + 150 = 650; fixos 2 + 4 = 6 → 656 ÷ 0,64 = 1025,00
-    expect(p.custoVisitasCentavos).toBe(15_000)
-    expect(p.precoTotalCentavos).toBe(102_500)
-    // 300 : 200 : 150 → 473,08 · 315,38 · 236,54
-    expect([...p.precosDosItens, p.precoVisitasCentavos]).toEqual([47_308, 31_538, 23_654])
+    // Serviços: (500 + 6 de taxas fixas) ÷ 0,64 = 790,625 → 790,63; visita: 150 fixo
+    expect(p.valorVisitasCentavos).toBe(15_000)
+    expect(p.precoVisitasCentavos).toBe(15_000)
+    expect(p.precoTotalCentavos).toBe(94_063)
+    // Só os serviços se repartem: 300 : 200 → 474,38 e 316,25
+    expect(p.precosDosItens).toEqual([47_438, 31_625])
+    expect(p.custoTotalCentavos).toBe(50_000)
   })
 
   it('despesa incluída entra no custo e se espalha pelas linhas', () => {
@@ -191,9 +193,10 @@ describe('precificarOrcamento', () => {
         custoKmCentavos: 120,
       },
     })
-    expect(p.precoTotalCentavos).toBe(77_161)
-    expect(p.precosDosItens).toEqual([17_071])
-    expect(p.precoVisitasCentavos).toBe(60_090)
+    // Serviços: (125 + 5,99) ÷ 0,74 = 177,01; visitas: 2 × (150 + 50 × 1,20 + 10) = 440
+    expect(p.precoTotalCentavos).toBe(61_701)
+    expect(p.precosDosItens).toEqual([17_701])
+    expect(p.precoVisitasCentavos).toBe(44_000)
   })
 
   it('itens sem custo repartem por igual', () => {

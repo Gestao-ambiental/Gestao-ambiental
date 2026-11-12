@@ -538,7 +538,7 @@ function Formulario({
           <Linha
             id="base-visita"
             rotulo="Valor de uma visita técnica (R$)"
-            apoio="Custo de ir até o cliente e fazer a vistoria. Entra no orçamento por visita, quando houver"
+            apoio="Quanto vocês cobram por visita. Entra no orçamento por visita, com preço fixo, sem margem"
           >
             <input
               id="base-visita"
@@ -549,8 +549,8 @@ function Formulario({
           </Linha>
           <Linha
             id="base-km"
-            rotulo="Custo por km rodado (R$)"
-            apoio="Combustível e desgaste do veículo. Usado quando a visita é longe: km de ida e volta × este valor"
+            rotulo="Valor por km rodado (R$)"
+            apoio="Cobrado quando a visita é longe: km de ida e volta × este valor. Deixe em branco se não cobram"
           >
             <input
               id="base-km"

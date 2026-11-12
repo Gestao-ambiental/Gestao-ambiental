@@ -481,7 +481,7 @@ function Editor({
 
   const precoTotal = calculo.precoTotalCentavos
   const quantidadeDeVisitas = visitasLidas.quantidade ?? 0
-  const temVisitas = calculo.custoVisitasCentavos > 0
+  const temVisitas = calculo.valorVisitasCentavos > 0
   const d = calculo.divisao
 
   return (
@@ -857,22 +857,20 @@ function Editor({
                 </div>
                 {base ? (
                   <p className="text-xs text-(--text-subtle)">
-                    Cada visita: {formatarReais(base.valorVisitaCentavos)} de valor fixo
+                    Cada visita: {formatarReais(base.valorVisitaCentavos)}
                     {base.custoKmCentavos > 0
                       ? ` + km × ${formatarReais(base.custoKmCentavos)}`
                       : ''}{' '}
-                    + outros gastos.{' '}
+                    + outros gastos. Preço fixo, sem margem.{' '}
                     {quantidadeDeVisitas > 0 ? (
                       <span className="corpo-medio text-(--text)">
-                        Custo das visitas: {formatarReais(calculo.custoVisitasCentavos)}
+                        Valor das visitas: {formatarReais(calculo.valorVisitasCentavos)}
                       </span>
                     ) : (
-                      'Sem visitas, nada entra no custo.'
+                      'Sem visitas, nada entra no preço.'
                     )}{' '}
                     {base.valorVisitaCentavos === 0 && base.custoKmCentavos === 0 ? (
-                      <Link to="/configuracoes/custos">
-                        Cadastrar o valor da visita e o custo por km
-                      </Link>
+                      <Link to="/configuracoes/custos">Cadastrar o valor da visita e do km</Link>
                     ) : null}
                   </p>
                 ) : null}
@@ -1099,7 +1097,7 @@ function Editor({
                           {d.contasDaConsultoriaCentavos}
                         </Valor>
                         {d.visitasCentavos > 0 ? (
-                          <Valor rotulo="Visitas técnicas e deslocamento">
+                          <Valor rotulo="Visitas técnicas (preço fixo, sem margem)">
                             {d.visitasCentavos}
                           </Valor>
                         ) : null}
@@ -1639,7 +1637,7 @@ function ComoOPrecoECalculado({
           {formatarCentavos(base.horaTecnicaCentavos)} ·{' '}
           {formatarCentavos(base.custoFixoHoraCentavos)}
         </dd>
-        <dt className="text-(--text-subtle)">Visita técnica · custo por km</dt>
+        <dt className="text-(--text-subtle)">Visita técnica · valor por km</dt>
         <dd className="text-right tabular-nums">
           {formatarCentavos(base.valorVisitaCentavos)} · {formatarCentavos(base.custoKmCentavos)}
         </dd>
@@ -1651,9 +1649,9 @@ function ComoOPrecoECalculado({
         </dd>
       </dl>
       <p className="mt-(--space-150) max-w-xl text-xs text-(--text-subtle)">
-        Preço = (custo dos serviços + visitas + despesas incluídas + taxas fixas) ÷ (1 − margem −
-        tributos − taxas). O preço é repartido entre os serviços pelo custo de cada um, e as visitas
-        têm linha própria.
+        Preço dos serviços = (custo dos serviços + despesas incluídas + taxas fixas) ÷ (1 − margem −
+        tributos − taxas), repartido entre os serviços pelo custo de cada um. As visitas têm preço
+        fixo, sem margem, e linha própria.
       </p>
     </>
   )

@@ -144,9 +144,9 @@ export {
   MAXIMO_KM_POR_VISITA,
   MAXIMO_VISITAS,
   SEM_VISITAS,
-  custoDasVisitas,
   precificarOrcamento,
   rateioPorConta,
+  valorDasVisitas,
 } from './preco-do-orcamento'
 export type {
   BaseDoPreco,

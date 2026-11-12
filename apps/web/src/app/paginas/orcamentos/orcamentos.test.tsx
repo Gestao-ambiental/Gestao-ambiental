@@ -193,7 +193,7 @@ describe('cálculo da tela de orçamento (margem única no fim)', () => {
     expect(c.situacaoDaMargem).toBe('abaixo_da_minima')
   })
 
-  it('visitas entram no custo e viram uma linha própria', () => {
+  it('visitas têm preço fixo, sem margem, numa linha própria', () => {
     const c = calcularOrcamento(
       [{ minutos: 60, custoDiretoExtraCentavos: 0 }],
       { quantidade: 2, kmPorVisita: 50, outrosPorVisitaCentavos: 1_000 },
@@ -202,11 +202,12 @@ describe('cálculo da tela de orçamento (margem única no fim)', () => {
       2_000,
       baseDoCalculo,
     )
-    // 2 × (150 + 50 × 1,20 + 10) = 440; (125 + 440 + 5,99) ÷ 0,74 = 771,61 (o mesmo do pgTAP)
-    expect(c.custoVisitasCentavos).toBe(44_000)
-    expect(c.precoTotalCentavos).toBe(77_161)
-    expect(c.precosDosItens).toEqual([17_071])
-    expect(c.precoVisitasCentavos).toBe(60_090)
+    // Serviços: (125 + 5,99) ÷ 0,74 = 177,01; visitas: 2 × (150 + 50 × 1,20 + 10) = 440, sem
+    // margem (o mesmo do pgTAP).
+    expect(c.valorVisitasCentavos).toBe(44_000)
+    expect(c.precoTotalCentavos).toBe(61_701)
+    expect(c.precosDosItens).toEqual([17_701])
+    expect(c.precoVisitasCentavos).toBe(44_000)
   })
 
   it('mostra quanto o orçamento cobre de cada conta do mês', () => {
@@ -400,13 +401,15 @@ describe('orçamentos (onda 5)', () => {
     })
   })
 
-  it('visitas técnicas entram no custo e viram uma linha da proposta', async () => {
+  it('visitas técnicas têm preço fixo e viram uma linha da proposta', async () => {
     const usuario = userEvent.setup()
     renderizarApp('/orcamentos/o1')
     await usuario.type(await screen.findByLabelText('Quantidade de visitas'), '2')
     await usuario.type(screen.getByLabelText('Km por visita, ida e volta'), '50')
     // 2 × (150 + 50 km × 1,20) = 420
-    expect(screen.getByText('Custo das visitas: R$ 420,00')).toBeInTheDocument()
+    expect(screen.getByText('Valor das visitas: R$ 420,00')).toBeInTheDocument()
+    // Sem margem: o preço sobe exatamente R$ 420 (8.999,95 → 9.419,95).
+    expect(screen.getAllByText('R$ 9.419,95').length).toBeGreaterThan(0)
     await usuario.click(screen.getByRole('button', { name: 'Continuar para preço e margem' }))
     expect(screen.getByText('Visitas técnicas (2) e deslocamento')).toBeInTheDocument()
 
@@ -672,7 +675,7 @@ describe('orçamentos (onda 5)', () => {
     expect(screen.getByText('9.600,00')).toBeInTheDocument()
     expect(screen.getByText('R$ 30,00 por hora')).toBeInTheDocument()
     await usuario.type(screen.getByLabelText('Valor de uma visita técnica (R$)'), '150,00')
-    await usuario.type(screen.getByLabelText('Custo por km rodado (R$)'), '1,20')
+    await usuario.type(screen.getByLabelText('Valor por km rodado (R$)'), '1,20')
 
     await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
     const chamada = falso.cliente.rpc.mock.calls.find(([nome]) => nome === 'salvar_base_de_custos')

@@ -59,3 +59,16 @@
 - **Decisões tomadas sem confirmação do Eduardo:**
   - o CNPJ é opcional;
   - o nome do empreendimento criado é o nome do prospecto, sem preencher o cliente contratante.
+
+## Atualização de 12/11/2026: visita técnica com preço fixo
+
+- **O que muda:** a visita técnica deixa de receber a margem. O valor da visita e o valor por km cadastrados em Custos e taxas são **preço**, não custo.
+- **Por quê:** na simulação da Envora (hora a R$ 150 e visita a R$ 250), a margem alta, perto de 79%, transformava R$ 250 de visita em R$ 1.182 na proposta.
+- **Fórmulas:**
+  - preço dos serviços = (custo dos itens + despesas incluídas + taxas fixas) ÷ (1 − margem − tributos − taxas), repartido entre os itens pelo custo de cada um;
+  - preço das visitas = visitas × (valor da visita + km × valor do km + outros gastos), sem margem;
+  - preço total = serviços + visitas.
+- **Lucro na divisão do valor:** é a margem dos serviços, menos os tributos e as taxas percentuais que incidem sobre as visitas.
+- **Onde vive:**
+  - `packages/domain/src/preco-do-orcamento.ts` (`valorDasVisitas`, `precificarOrcamento`);
+  - migration `20261112100000_visita_com_preco_fixo.sql` (`private.precificar_orcamento`).

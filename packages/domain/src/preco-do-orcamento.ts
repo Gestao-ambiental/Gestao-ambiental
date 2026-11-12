@@ -1,7 +1,8 @@
 // Preço do orçamento com margem única, escolhida no fim (decisão do Eduardo, 11/11/2026).
-// Os itens mostram horas e custo; o preço total sai de custo ÷ (1 − margem − tributos − taxas) e é
-// repartido entre os itens pelo custo de cada um, com centavos por maior resto. As visitas técnicas
-// viram uma linha própria. O banco grava os mesmos valores (private.precificar_orcamento).
+// Os itens mostram horas e custo; o preço dos serviços sai de custo ÷ (1 − margem − tributos −
+// taxas) e é repartido entre os itens pelo custo de cada um, com centavos por maior resto. As
+// visitas técnicas têm preço fixo, sem margem (decisão de 12/11/2026), e viram uma linha própria.
+// O banco grava os mesmos valores (private.precificar_orcamento).
 
 import {
   aplicarPontosBase,
@@ -28,9 +29,9 @@ export interface BaseDoPreco {
   taxasPb: number
   taxaPorCobrancaCentavos: number
   taxaPorAssinaturaCentavos: number
-  /** Custo de uma visita técnica (tempo e logística), cadastrado em Custos e taxas. */
+  /** Preço cobrado por visita técnica, cadastrado em Custos e taxas. Não recebe margem. */
   valorVisitaCentavos: number
-  /** Custo por km rodado (combustível, manutenção). */
+  /** Valor cobrado por km rodado (ida e volta), quando a visita é longe. Não recebe margem. */
   custoKmCentavos: number
 }
 
@@ -54,8 +55,8 @@ function exigirInteiro(valor: number, maximo: number): void {
   }
 }
 
-/** quantidade × (valor da visita + km × custo do km + outros gastos). */
-export function custoDasVisitas(
+/** Preço fixo das visitas: quantidade × (valor da visita + km × valor do km + outros gastos). */
+export function valorDasVisitas(
   visitas: VisitasDoOrcamento,
   base: Pick<BaseDoPreco, 'valorVisitaCentavos' | 'custoKmCentavos'>,
 ): number {
@@ -81,18 +82,21 @@ export interface DivisaoDoValor {
   outrosCustosDiretosCentavos: number
   /** Rateio das contas do mês e da parte administrativa da equipe. */
   contasDaConsultoriaCentavos: number
+  /** Preço fixo das visitas, sem margem. */
   visitasCentavos: number
   despesasIncluidasCentavos: number
   tributosCentavos: number
   /** Taxas percentuais de cobrança + taxas fixas por cobrança e assinatura. */
   taxasCentavos: number
+  /** O que sobra: a margem dos serviços, menos tributos e taxas sobre as visitas. */
   lucroCentavos: number
 }
 
 export interface PrecoDoOrcamento {
   custosDosItens: CustoDoItem[]
-  custoVisitasCentavos: number
-  /** Soma dos custos; `null` sem base ou com despesa incluída a cotar. */
+  /** Preço fixo das visitas (sem margem). */
+  valorVisitasCentavos: number
+  /** Custo dos serviços (itens e despesas incluídas); `null` sem base ou com despesa a cotar. */
   custoTotalCentavos: number | null
   fixosPorCobrancaCentavos: number
   /** `null` enquanto houver pendência. */
@@ -118,9 +122,9 @@ export interface EntradaDoPreco {
 }
 
 /**
- * Preço do orçamento inteiro. Pesos da repartição: o custo de cada item e, se houver, o das visitas
- * (última linha). Custos todos zero repartem por igual. Despesas incluídas entram no custo total e,
- * portanto, se espalham pelas linhas na proporção do custo.
+ * Preço do orçamento inteiro = preço dos serviços (com margem) + preço fixo das visitas. A margem
+ * vale só para os serviços. Pesos da repartição: o custo de cada item; custos todos zero repartem
+ * por igual. Despesas incluídas entram no custo dos serviços e se espalham pelos itens.
  */
 export function precificarOrcamento(entrada: EntradaDoPreco): PrecoDoOrcamento {
   const { itens, base, margemPb } = entrada
@@ -130,7 +134,7 @@ export function precificarOrcamento(entrada: EntradaDoPreco): PrecoDoOrcamento {
     parcial: Partial<PrecoDoOrcamento> = {},
   ): PrecoDoOrcamento => ({
     custosDosItens: [],
-    custoVisitasCentavos: 0,
+    valorVisitasCentavos: 0,
     custoTotalCentavos: null,
     fixosPorCobrancaCentavos: 0,
     precoTotalCentavos: null,
@@ -150,7 +154,7 @@ export function precificarOrcamento(entrada: EntradaDoPreco): PrecoDoOrcamento {
     horasFaturaveisMes: 1,
   }
   const custosDosItens = itens.map((item) => custoDoItem(item, baseDeCustos))
-  const custoVisitasCentavos = custoDasVisitas(entrada.visitas, base)
+  const valorVisitasCentavos = valorDasVisitas(entrada.visitas, base)
   const fixosPorCobrancaCentavos =
     entrada.quantidadeDeParcelas * base.taxaPorCobrancaCentavos + base.taxaPorAssinaturaCentavos
   const aCotar = entrada.despesasIncluidasCentavos.some((valor) => valor === null)
@@ -161,11 +165,9 @@ export function precificarOrcamento(entrada: EntradaDoPreco): PrecoDoOrcamento {
   const custoItens = custosDosItens.reduce((soma, c) => soma + (c.totalCentavos ?? 0), 0)
   const parcial = {
     custosDosItens,
-    custoVisitasCentavos,
+    valorVisitasCentavos,
     fixosPorCobrancaCentavos,
-    custoTotalCentavos: aCotar
-      ? null
-      : custoItens + custoVisitasCentavos + despesasIncluidasCentavos,
+    custoTotalCentavos: aCotar ? null : custoItens + despesasIncluidasCentavos,
   }
 
   if (itens.length === 0) return pendente('sem_itens', parcial)
@@ -174,26 +176,25 @@ export function precificarOrcamento(entrada: EntradaDoPreco): PrecoDoOrcamento {
     return pendente('percentuais_impossiveis', parcial)
   }
 
-  const custoTotalCentavos = custoItens + custoVisitasCentavos + despesasIncluidasCentavos
+  const custoTotalCentavos = custoItens + despesasIncluidasCentavos
   // Conta em inteiros, arredondando a metade para cima: o banco faz round() em numeric e chega
   // ao mesmo centavo (ponto flutuante poderia errar um centavo no caso ",5").
   const divisor = BigInt(PONTOS_BASE_TOTAL - margemPb - base.tributosPb - base.taxasPb)
   const numerador =
     BigInt(custoTotalCentavos + fixosPorCobrancaCentavos) * BigInt(PONTOS_BASE_TOTAL)
-  const precoTotalCentavos = Number((numerador * 2n + divisor) / (divisor * 2n))
+  const precoServicosCentavos = Number((numerador * 2n + divisor) / (divisor * 2n))
+  const precoTotalCentavos = precoServicosCentavos + valorVisitasCentavos
   if (!Number.isSafeInteger(precoTotalCentavos) || precoTotalCentavos > PRECO_MAXIMO_CENTAVOS) {
     return pendente('valor_invalido', parcial)
   }
 
-  const comVisitas = custoVisitasCentavos > 0
   const pesos = custosDosItens.map((c) => c.totalCentavos ?? 0)
-  if (comVisitas) pesos.push(custoVisitasCentavos)
   const somaDosPesos = pesos.reduce((soma, peso) => soma + peso, 0)
   const partes = distribuirPorMaiorResto(
-    precoTotalCentavos,
+    precoServicosCentavos,
     somaDosPesos > 0 ? pesos : pesos.map(() => 1),
   )
-  const precoVisitasCentavos = comVisitas ? (partes.pop() ?? 0) : 0
+  const precoVisitasCentavos = valorVisitasCentavos
 
   const trabalhoTecnicoCentavos = custosDosItens.reduce(
     (soma, c, indice) => soma + c.diretoCentavos - (itens[indice]?.custoDiretoExtraCentavos ?? 0),
@@ -222,11 +223,16 @@ export function precificarOrcamento(entrada: EntradaDoPreco): PrecoDoOrcamento {
       trabalhoTecnicoCentavos,
       outrosCustosDiretosCentavos,
       contasDaConsultoriaCentavos,
-      visitasCentavos: custoVisitasCentavos,
+      visitasCentavos: valorVisitasCentavos,
       despesasIncluidasCentavos,
       tributosCentavos,
       taxasCentavos,
-      lucroCentavos: precoTotalCentavos - custoTotalCentavos - tributosCentavos - taxasCentavos,
+      lucroCentavos:
+        precoTotalCentavos -
+        custoTotalCentavos -
+        valorVisitasCentavos -
+        tributosCentavos -
+        taxasCentavos,
     },
   }
 }

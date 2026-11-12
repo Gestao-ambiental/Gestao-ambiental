@@ -417,14 +417,14 @@ select results_eq(
   $$select i.preco_centavos, o.preco_visitas_centavos, o.margem_pb
     from public.orcamento as o join public.orcamento_item as i on i.orcamento_id = o.id
     where o.id = 'f0000000-0000-4000-8000-000000000001'$$,
-  $$values (17071::bigint, 60090::bigint, 2000)$$,
-  'preço = (125 + 2 × (150 + 50 km × 1,20 + 10) + 5,99 de taxas) ÷ (1 − 20% − 6%) = 771,61; item 170,71 e visitas 600,90'
+  $$values (17701::bigint, 44000::bigint, 2000)$$,
+  'serviços = (125 + 5,99 de taxas) ÷ (1 − 20% − 6%) = 177,01; visitas com preço fixo, sem margem: 2 × (150 + 50 km × 1,20 + 10) = 440'
 );
 
 select results_eq(
   $$select total_centavos from public.listar_orcamentos('c0000000-0000-4000-8000-00000000000a', 'horizonte')
     where sequencia = 1$$,
-  $$values (77161::bigint)$$,
+  $$values (61701::bigint)$$,
   'o total da lista soma os itens e a linha de visitas'
 );
 
@@ -433,7 +433,7 @@ select results_eq(
            (j ->> 'preco_visitas_centavos')::bigint, (j -> 'base' ->> 'valor_visita_centavos')::bigint,
            jsonb_array_length(j -> 'base' -> 'custos_fixos_detalhe')
     from public.obter_orcamento('f0000000-0000-4000-8000-000000000001') as j$$,
-  $$values (2000, 2, 60090::bigint, 15000::bigint, 3)$$,
+  $$values (2000, 2, 44000::bigint, 15000::bigint, 3)$$,
   'o detalhe traz a margem, as visitas e a base com as contas do mês'
 );
 
