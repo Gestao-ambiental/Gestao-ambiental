@@ -10,8 +10,8 @@ import {
   type PendenciaDoPreco,
 } from '@gestao-ambiental/domain'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useMemo, useState, type ReactNode } from 'react'
-import { Link, useParams } from 'react-router'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Link, useParams, useSearchParams } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Pagina } from '@/app/paginas/Pagina'
@@ -19,6 +19,7 @@ import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/
 import { Botao } from '@/components/ui/botao'
 import { BotaoIcone } from '@/components/ui/botao-icone'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
+import { Trilha } from '@/components/ui/trilha'
 import {
   ROTULO_DO_TRATAMENTO,
   obterOrcamento,
@@ -43,6 +44,17 @@ import { SeloSituacaoOrcamento } from './SeloSituacaoOrcamento'
 
 /** Texto longo quebra linha e o campo cresce com ele (Chromium e Safari; nos demais, rola). */
 const classeTextoQueCresce = `${classeCampo} h-auto min-h-(--size-control) resize-none py-(--space-075) [field-sizing:content]`
+
+/** Etapas do orçamento, na ordem em que ele se forma (pedido do Eduardo, 11/11/2026). */
+const ETAPAS = [
+  { id: 'servicos', titulo: 'Serviços' },
+  { id: 'preco', titulo: 'Preço e margem' },
+  { id: 'parcelas', titulo: 'Parcelas' },
+] as const
+type IdDaEtapa = (typeof ETAPAS)[number]['id']
+
+/** Atalhos de margem, de 5 em 5 (as mais usadas); o campo aceita qualquer outra. */
+const MARGENS_RAPIDAS = [10, 15, 20, 25, 30] as const
 
 const MENSAGEM_DA_PENDENCIA: Record<PendenciaDoPreco, string> = {
   sem_itens: 'Adicione os serviços para calcular o preço.',
@@ -284,6 +296,34 @@ function Editor({ orcamento }: { orcamento: Orcamento }) {
   const [salvando, setSalvando] = useState(false)
   const [falha, setFalha] = useState<string | null>(null)
   const [catalogoAberto, setCatalogoAberto] = useState(false)
+  // A etapa fica na URL (?etapa=preco): recarregar ou voltar no navegador não perde o lugar.
+  const [parametros, setParametros] = useSearchParams()
+  const indiceDaUrl = ETAPAS.findIndex((e) => e.id === parametros.get('etapa'))
+  const etapa = indiceDaUrl < 0 ? 0 : indiceDaUrl
+  const areaDaEtapa = useRef<HTMLDivElement>(null)
+  const trocouDeEtapa = useRef(false)
+
+  function irPara(indice: number) {
+    const id: IdDaEtapa = ETAPAS[indice]?.id ?? 'servicos'
+    trocouDeEtapa.current = true
+    setParametros(
+      (atuais) => {
+        const novos = new URLSearchParams(atuais)
+        if (id === 'servicos') novos.delete('etapa')
+        else novos.set('etapa', id)
+        return novos
+      },
+      { replace: false },
+    )
+  }
+
+  // Ao trocar de etapa, o foco (e a rolagem do navegador) vai para o conteúdo novo, sem ficar
+  // perdido no botão que sumiu.
+  useEffect(() => {
+    if (!trocouDeEtapa.current) return
+    trocouDeEtapa.current = false
+    areaDaEtapa.current?.focus()
+  }, [etapa])
   const [aplicado, setAplicado] = useState<string | null>(null)
 
   function mudar(alterar: (anterior: Rascunho) => Rascunho) {
@@ -424,8 +464,32 @@ function Editor({ orcamento }: { orcamento: Orcamento }) {
         </MensagemSecao>
       ) : null}
 
-      <div className="overflow-hidden rounded-(--radius-large) border bg-(--surface) shadow-cartao">
-        {/* Números principais: custo e preço. A margem se escolhe no fim. */}
+      <Trilha
+        rotulo="Etapas do orçamento"
+        atual={etapa}
+        aoEscolher={irPara}
+        passos={ETAPAS.map((e) => ({
+          id: e.id,
+          titulo: e.titulo,
+          detalhe:
+            e.id === 'servicos'
+              ? `${String(r.itens.length)} ${r.itens.length === 1 ? 'serviço' : 'serviços'}`
+              : e.id === 'preco'
+                ? precoTotal === null
+                  ? 'preço pendente'
+                  : formatarReais(precoTotal)
+                : `${String(r.parcelas.length)} ${r.parcelas.length === 1 ? 'parcela' : 'parcelas'}`,
+        }))}
+      />
+
+      <div
+        ref={areaDaEtapa}
+        role="group"
+        tabIndex={-1}
+        aria-label={`Etapa ${String(etapa + 1)} de ${String(ETAPAS.length)}: ${ETAPAS[etapa]?.titulo ?? ''}`}
+        className="scroll-mt-(--space-200) overflow-hidden rounded-(--radius-large) border bg-(--surface) shadow-cartao outline-none"
+      >
+        {/* Números principais: custo e preço. A margem se escolhe na etapa 2. */}
         <div className="grid gap-(--space-200) border-b p-(--space-200) sm:grid-cols-2">
           <Numero rotulo="Custo do orçamento">
             {calculo.custoTotalCentavos === null ? (
@@ -464,754 +528,777 @@ function Editor({ orcamento }: { orcamento: Orcamento }) {
           </div>
         ) : null}
 
-        {/* Serviços */}
-        <Secao
-          titulo="Serviços"
-          acoes={
-            editavel ? (
-              <Botao
-                tamanho="compacto"
-                iconeAntes="list"
-                onClick={() => {
-                  setCatalogoAberto(true)
-                }}
-              >
-                Escolher modelo
-              </Botao>
-            ) : null
-          }
-        >
-          {aplicado ? (
-            <div className="px-(--space-150) pb-(--space-100)">
-              <MensagemSecao role="status" tom="sucesso">
-                {aplicado}
-              </MensagemSecao>
-            </div>
-          ) : null}
-          {/* relative: textos sr-only (absolutos) ficam presos à área que rola, não à página. */}
-          <div className="relative overflow-x-auto">
-            <table className="w-full min-w-[640px] border-collapse corpo">
-              <thead>
-                <tr>
-                  <th scope="col" className={classeCabecalho}>
-                    Serviço
-                  </th>
-                  <th scope="col" className={`${classeCabecalho} w-24 text-right`}>
-                    Horas
-                  </th>
-                  <th scope="col" className={`${classeCabecalho} w-36 text-right`}>
-                    Outros custos (R$)
-                  </th>
-                  <th scope="col" className={`${classeCabecalho} w-32 text-right`}>
-                    Custo (R$)
-                  </th>
-                  {editavel ? (
-                    <th scope="col" className={`${classeCabecalho} w-12`}>
-                      <span className="sr-only">Remover</span>
-                    </th>
-                  ) : null}
-                </tr>
-              </thead>
-              <tbody>
-                {r.itens.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className={`${classeCelula} text-(--text-subtle)`}>
-                      Nenhum serviço ainda. Escolha um modelo ou adicione os itens.
-                    </td>
-                  </tr>
-                ) : null}
-                {r.itens.map((item, indice) => {
-                  const custo = calculo.custosDosItens[indice]?.totalCentavos ?? null
-                  const n = String(indice + 1)
-                  return (
-                    <tr key={item.id}>
-                      <td className={classeCelula}>
-                        <textarea
-                          aria-label={`Serviço do item ${n}`}
-                          rows={1}
-                          className={classeTextoQueCresce}
-                          value={item.descricao}
-                          disabled={!editavel}
-                          onChange={(e) => {
-                            const valor = e.target.value
-                            mudarItem(item.id, (x) => ({ ...x, descricao: valor }))
-                          }}
-                        />
-                      </td>
-                      <td className={classeCelula}>
-                        <CampoNumero
-                          rotulo={`Horas do item ${n}`}
-                          duracao
-                          valor={item.horas}
-                          placeholder="1h30"
-                          invalido={lerDuracao(item.horas) === null}
-                          desabilitado={!editavel}
-                          aoMudar={(valor) => {
-                            mudarItem(item.id, (x) => ({ ...x, horas: valor }))
-                          }}
-                        />
-                      </td>
-                      <td className={classeCelula}>
-                        <CampoNumero
-                          rotulo={`Outros custos do item ${n}`}
-                          reais
-                          valor={item.extra}
-                          invalido={lerReaisOuZero(item.extra) === null}
-                          desabilitado={!editavel}
-                          aoMudar={(valor) => {
-                            mudarItem(item.id, (x) => ({ ...x, extra: valor }))
-                          }}
-                        />
-                      </td>
-                      <td className={`${classeCelula} text-right tabular-nums`}>
-                        {custo === null ? (
-                          <span className="text-(--text-subtle)">—</span>
-                        ) : (
-                          formatarCentavos(custo)
-                        )}
-                      </td>
-                      {editavel ? (
-                        <td className={classeCelula}>
-                          <BotaoIcone
-                            icone="trash-2"
-                            rotulo={`Remover item ${n}`}
-                            onClick={() => {
-                              mudar((a) => ({
-                                ...a,
-                                itens: a.itens.filter((x) => x.id !== item.id),
-                              }))
-                            }}
-                          />
-                        </td>
-                      ) : null}
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-          <div className="flex flex-wrap items-center justify-between gap-(--space-100) px-(--space-150) py-(--space-100)">
-            {editavel ? (
-              <Botao
-                aparencia="link"
-                iconeAntes="plus"
-                onClick={() => {
-                  mudar((a) => ({
-                    ...a,
-                    itens: [
-                      ...a.itens,
-                      { id: crypto.randomUUID(), descricao: '', horas: '', extra: '' },
-                    ],
-                  }))
-                }}
-              >
-                Adicionar item
-              </Botao>
-            ) : (
-              <span />
-            )}
-            <p className="text-xs text-(--text-subtle)">
-              Custo = horas × hora técnica + outros custos + contas da consultoria pelas horas.
-            </p>
-          </div>
-        </Secao>
-
-        {/* Visitas técnicas */}
-        <Secao titulo="Visitas técnicas">
-          <div className="flex flex-col gap-(--space-150) px-(--space-150) pb-(--space-150)">
-            <div className="grid gap-(--space-150) sm:grid-cols-3">
-              <CampoRotulado id="visitas-quantidade" rotulo="Quantidade de visitas">
-                <input
-                  id="visitas-quantidade"
-                  inputMode="numeric"
-                  placeholder="0"
-                  aria-invalid={visitasLidas.quantidade === null || undefined}
-                  className={`${classeCampo} text-right tabular-nums`}
-                  value={r.visitas}
-                  disabled={!editavel}
-                  onChange={(e) => {
-                    const valor = e.target.value
-                    mudar((a) => ({ ...a, visitas: valor }))
-                  }}
-                />
-              </CampoRotulado>
-              <CampoRotulado
-                id="visitas-km"
-                rotulo="Km por visita, ida e volta"
-                apoio="Deixe em branco se a visita é perto"
-              >
-                <input
-                  id="visitas-km"
-                  inputMode="numeric"
-                  placeholder="0"
-                  aria-invalid={visitasLidas.kmPorVisita === null || undefined}
-                  className={`${classeCampo} text-right tabular-nums`}
-                  value={r.km}
-                  disabled={!editavel}
-                  onChange={(e) => {
-                    const valor = e.target.value
-                    mudar((a) => ({ ...a, km: valor }))
-                  }}
-                />
-              </CampoRotulado>
-              <CampoRotulado
-                id="visitas-outros"
-                rotulo="Outros gastos por visita (R$)"
-                apoio="Pedágio, estacionamento, alimentação"
-              >
-                <CampoNumero
-                  id="visitas-outros"
-                  reais
-                  valor={r.outrosPorVisita}
-                  placeholder="0,00"
-                  invalido={visitasLidas.outrosPorVisitaCentavos === null}
-                  desabilitado={!editavel}
-                  aoMudar={(valor) => {
-                    mudar((a) => ({ ...a, outrosPorVisita: valor }))
-                  }}
-                />
-              </CampoRotulado>
-            </div>
-            {base ? (
-              <p className="text-xs text-(--text-subtle)">
-                Cada visita: {formatarReais(base.valorVisitaCentavos)} de valor fixo
-                {base.custoKmCentavos > 0 ? ` + km × ${formatarReais(base.custoKmCentavos)}` : ''} +
-                outros gastos.{' '}
-                {quantidadeDeVisitas > 0 ? (
-                  <span className="corpo-medio text-(--text)">
-                    Custo das visitas: {formatarReais(calculo.custoVisitasCentavos)}
-                  </span>
-                ) : (
-                  'Sem visitas, nada entra no custo.'
-                )}{' '}
-                {base.valorVisitaCentavos === 0 && base.custoKmCentavos === 0 ? (
-                  <Link to="/configuracoes/custos">
-                    Cadastrar o valor da visita e o custo por km
-                  </Link>
-                ) : null}
-              </p>
-            ) : null}
-          </div>
-        </Secao>
-
-        {/* Despesas de terceiros */}
-        <Secao titulo="Despesas de terceiros">
-          {/* relative: textos sr-only (absolutos) ficam presos à área que rola, não à página. */}
-          <div className="relative overflow-x-auto">
-            <table className="w-full min-w-[600px] border-collapse corpo">
-              <thead>
-                <tr>
-                  <th scope="col" className={classeCabecalho}>
-                    Despesa
-                  </th>
-                  <th scope="col" className={`${classeCabecalho} w-64`}>
-                    Como é paga
-                  </th>
-                  <th scope="col" className={`${classeCabecalho} w-36 text-right`}>
-                    Estimativa (R$)
-                  </th>
-                  {editavel ? (
-                    <th scope="col" className={`${classeCabecalho} w-12`}>
-                      <span className="sr-only">Remover</span>
-                    </th>
-                  ) : null}
-                </tr>
-              </thead>
-              <tbody>
-                {r.despesas.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className={`${classeCelula} text-(--text-subtle)`}>
-                      Nenhuma despesa de terceiros.
-                    </td>
-                  </tr>
-                ) : null}
-                {r.despesas.map((despesa, indice) => {
-                  const n = String(indice + 1)
-                  return (
-                    <tr key={despesa.id}>
-                      <td className={classeCelula}>
-                        <textarea
-                          aria-label={`Despesa ${n}`}
-                          rows={1}
-                          className={classeTextoQueCresce}
-                          value={despesa.descricao}
-                          disabled={!editavel}
-                          onChange={(e) => {
-                            const valor = e.target.value
-                            mudar((a) => ({
-                              ...a,
-                              despesas: a.despesas.map((x) =>
-                                x.id === despesa.id ? { ...x, descricao: valor } : x,
-                              ),
-                            }))
-                          }}
-                        />
-                      </td>
-                      <td className={classeCelula}>
-                        <select
-                          aria-label={`Como é paga a despesa ${n}`}
-                          className={classeCampo}
-                          value={despesa.tratamento}
-                          disabled={!editavel}
-                          onChange={(e) => {
-                            const valor = e.target.value as TratamentoDespesa
-                            mudar((a) => ({
-                              ...a,
-                              despesas: a.despesas.map((x) =>
-                                x.id === despesa.id ? { ...x, tratamento: valor } : x,
-                              ),
-                            }))
-                          }}
-                        >
-                          {(Object.keys(ROTULO_DO_TRATAMENTO) as TratamentoDespesa[]).map((t) => (
-                            <option key={t} value={t}>
-                              {ROTULO_DO_TRATAMENTO[t]}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className={classeCelula}>
-                        <CampoNumero
-                          rotulo={`Estimativa da despesa ${n}`}
-                          reais
-                          valor={despesa.estimativa}
-                          placeholder="A cotar"
-                          invalido={lerEstimativa(despesa.estimativa) === undefined}
-                          desabilitado={!editavel}
-                          aoMudar={(valor) => {
-                            mudar((a) => ({
-                              ...a,
-                              despesas: a.despesas.map((x) =>
-                                x.id === despesa.id ? { ...x, estimativa: valor } : x,
-                              ),
-                            }))
-                          }}
-                        />
-                      </td>
-                      {editavel ? (
-                        <td className={classeCelula}>
-                          <BotaoIcone
-                            icone="trash-2"
-                            rotulo={`Remover despesa ${n}`}
-                            onClick={() => {
-                              mudar((a) => ({
-                                ...a,
-                                despesas: a.despesas.filter((x) => x.id !== despesa.id),
-                              }))
-                            }}
-                          />
-                        </td>
-                      ) : null}
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-          {editavel ? (
-            <div className="flex flex-wrap items-center justify-between gap-(--space-100) px-(--space-150) py-(--space-100)">
-              <Botao
-                aparencia="link"
-                iconeAntes="plus"
-                onClick={() => {
-                  mudar((a) => ({
-                    ...a,
-                    despesas: [
-                      ...a.despesas,
-                      {
-                        id: crypto.randomUUID(),
-                        descricao: '',
-                        estimativa: '',
-                        tratamento: 'cliente_direto',
-                      },
-                    ],
-                  }))
-                }}
-              >
-                Adicionar despesa
-              </Botao>
-              <p className="text-xs text-(--text-subtle)">
-                Sem valor ainda? Deixe a estimativa em branco: ela fica a cotar.
-              </p>
-            </div>
-          ) : null}
-        </Secao>
-
-        {/* Preço e margem: a margem entra só aqui, no fim */}
-        <Secao titulo="Preço e margem">
-          <div className="flex flex-col gap-(--space-200) px-(--space-150) pb-(--space-200)">
-            <CampoRotulado
-              id="orcamento-margem"
-              rotulo="Margem de lucro (%)"
-              apoio={
-                base
-                  ? `Sobre o preço de venda · desejada ${formatarPontosBase(base.margemDesejadaPb)} · mínima ${formatarPontosBase(base.margemMinimaPb)}`
-                  : 'Sobre o preço de venda'
+        {etapa === 0 ? (
+          <>
+            {/* Serviços */}
+            <Secao
+              titulo="Serviços"
+              acoes={
+                editavel ? (
+                  <Botao
+                    tamanho="compacto"
+                    iconeAntes="list"
+                    onClick={() => {
+                      setCatalogoAberto(true)
+                    }}
+                  >
+                    Escolher modelo
+                  </Botao>
+                ) : null
               }
             >
-              <input
-                id="orcamento-margem"
-                inputMode="decimal"
-                aria-invalid={(r.margem.trim() !== '' && margemLida === null) || undefined}
-                className={`${classeCampo} max-w-32 text-right tabular-nums`}
-                value={r.margem}
-                disabled={!editavel}
-                onChange={(e) => {
-                  const valor = e.target.value
-                  mudar((a) => ({ ...a, margem: valor }))
-                }}
-              />
-            </CampoRotulado>
-            {calculo.situacaoDaMargem === 'abaixo_da_minima' ? (
-              <MensagemSecao role="status" tom="perigo">
-                A margem está abaixo da mínima da consultoria (
-                {base ? formatarPontosBase(base.margemMinimaPb) : ''}).
-              </MensagemSecao>
-            ) : null}
-
-            {d && precoTotal !== null ? (
-              <div className="grid gap-(--space-300) lg:grid-cols-2">
-                <section aria-label="Divisão do valor">
-                  <h3 className="mb-(--space-100) corpo-medio">Divisão do valor</h3>
-                  <dl className="grid grid-cols-[1fr_auto] gap-x-(--space-200) gap-y-(--space-075) corpo">
-                    <Valor rotulo="Trabalho técnico (horas × hora técnica)">
-                      {d.trabalhoTecnicoCentavos}
-                    </Valor>
-                    {d.outrosCustosDiretosCentavos > 0 ? (
-                      <Valor rotulo="Outros custos dos serviços">
-                        {d.outrosCustosDiretosCentavos}
-                      </Valor>
-                    ) : null}
-                    <Valor rotulo="Contas da consultoria (rateio pelas horas)">
-                      {d.contasDaConsultoriaCentavos}
-                    </Valor>
-                    {d.visitasCentavos > 0 ? (
-                      <Valor rotulo="Visitas técnicas e deslocamento">{d.visitasCentavos}</Valor>
-                    ) : null}
-                    {d.despesasIncluidasCentavos > 0 ? (
-                      <Valor rotulo="Despesas incluídas no preço">
-                        {d.despesasIncluidasCentavos}
-                      </Valor>
-                    ) : null}
-                    <Valor rotulo="Tributos sobre o faturamento">{d.tributosCentavos}</Valor>
-                    <Valor rotulo="Taxas de cobrança e assinatura">{d.taxasCentavos}</Valor>
-                    <Valor rotulo={`Lucro (${formatarPontosBase(calculo.margemPb)})`} destaque>
-                      {d.lucroCentavos}
-                    </Valor>
-                    <dt className="border-t pt-(--space-075) corpo-medio">Preço</dt>
-                    <dd className="border-t pt-(--space-075) text-right corpo-medio tabular-nums">
-                      {formatarReais(precoTotal)}
-                    </dd>
-                  </dl>
-                </section>
-
-                <section aria-label="Contas da consultoria neste orçamento">
-                  <h3 className="mb-(--space-025) corpo-medio">
-                    Contas da consultoria neste orçamento
-                  </h3>
-                  <p className="mb-(--space-100) text-xs text-(--text-subtle)">
-                    Quanto este orçamento cobre de cada conta do mês, pelas horas estimadas.
-                  </p>
-                  {calculo.contas.length === 0 ? (
-                    <p className="text-(--text-subtle)">
-                      Nenhuma conta do mês cadastrada.{' '}
-                      <Link to="/configuracoes/custos">Detalhar contas em Custos e taxas</Link>
-                    </p>
-                  ) : (
-                    <dl className="grid grid-cols-[1fr_auto] gap-x-(--space-200) gap-y-(--space-075) corpo">
-                      {calculo.contas.map((conta) => (
-                        <Valor key={conta.descricao} rotulo={conta.descricao}>
-                          {conta.valorCentavos}
-                        </Valor>
-                      ))}
-                    </dl>
-                  )}
-                </section>
-
-                <section aria-label="Preço na proposta" className="lg:col-span-2">
-                  <h3 className="mb-(--space-025) corpo-medio">Preço na proposta</h3>
-                  <p className="mb-(--space-100) text-xs text-(--text-subtle)">
-                    O preço é repartido entre os serviços pelo custo de cada um. Custo e margem não
-                    aparecem para o cliente.
-                  </p>
-                  <dl className="grid max-w-2xl grid-cols-[1fr_auto] gap-x-(--space-200) gap-y-(--space-075) corpo">
-                    {r.itens.map((item, indice) => (
-                      <Valor key={item.id} rotulo={item.descricao || `Item ${String(indice + 1)}`}>
-                        {calculo.precosDosItens[indice] ?? 0}
-                      </Valor>
-                    ))}
-                    {temVisitas ? (
-                      <Valor
-                        rotulo={`Visitas técnicas (${String(quantidadeDeVisitas)}) e deslocamento`}
-                      >
-                        {calculo.precoVisitasCentavos}
-                      </Valor>
-                    ) : null}
-                  </dl>
-                </section>
-              </div>
-            ) : (
-              <p className="text-(--text-subtle)">
-                {calculo.pendencia ? MENSAGEM_DA_PENDENCIA[calculo.pendencia] : null}
-              </p>
-            )}
-          </div>
-        </Secao>
-
-        {/* Parcelas */}
-        <Secao titulo="Parcelas">
-          {/* relative: textos sr-only (absolutos) ficam presos à área que rola, não à página. */}
-          <div className="relative overflow-x-auto">
-            <table className="w-full min-w-[600px] border-collapse corpo">
-              <thead>
-                <tr>
-                  <th scope="col" className={classeCabecalho}>
-                    Marco
-                  </th>
-                  <th scope="col" className={`${classeCabecalho} w-28 text-right`}>
-                    Dias após
-                  </th>
-                  <th scope="col" className={`${classeCabecalho} w-24 text-right`}>
-                    %
-                  </th>
-                  <th scope="col" className={`${classeCabecalho} w-36 text-right`}>
-                    Valor (R$)
-                  </th>
-                  {editavel ? (
-                    <th scope="col" className={`${classeCabecalho} w-12`}>
-                      <span className="sr-only">Remover</span>
-                    </th>
-                  ) : null}
-                </tr>
-              </thead>
-              <tbody>
-                {r.parcelas.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className={`${classeCelula} text-(--text-subtle)`}>
-                      Nenhuma parcela. Adicione ao menos uma antes de enviar.
-                    </td>
-                  </tr>
-                ) : null}
-                {r.parcelas.map((p, indice) => {
-                  const n = String(indice + 1)
-                  const valor = calculo.parcelasCentavos[indice]
-                  return (
-                    <tr key={p.id}>
-                      <td className={classeCelula}>
-                        <input
-                          aria-label={`Marco da parcela ${n}`}
-                          placeholder="Ex.: Assinatura do contrato"
-                          className={classeCampo}
-                          value={p.descricao}
-                          disabled={!editavel}
-                          onChange={(e) => {
-                            const texto = e.target.value
-                            mudar((a) => ({
-                              ...a,
-                              parcelas: a.parcelas.map((x) =>
-                                x.id === p.id ? { ...x, descricao: texto } : x,
-                              ),
-                            }))
-                          }}
-                        />
-                      </td>
-                      <td className={classeCelula}>
-                        <CampoNumero
-                          rotulo={`Dias após o marco da parcela ${n}`}
-                          valor={p.dias}
-                          placeholder="0"
-                          invalido={lerDias(p.dias) === null}
-                          desabilitado={!editavel}
-                          aoMudar={(texto) => {
-                            mudar((a) => ({
-                              ...a,
-                              parcelas: a.parcelas.map((x) =>
-                                x.id === p.id ? { ...x, dias: texto } : x,
-                              ),
-                            }))
-                          }}
-                        />
-                      </td>
-                      <td className={classeCelula}>
-                        <CampoNumero
-                          rotulo={`Percentual da parcela ${n}`}
-                          valor={p.percentual}
-                          invalido={lerPercentual(p.percentual) === null}
-                          desabilitado={!editavel}
-                          aoMudar={(texto) => {
-                            mudar((a) => ({
-                              ...a,
-                              parcelas: a.parcelas.map((x) =>
-                                x.id === p.id ? { ...x, percentual: texto } : x,
-                              ),
-                            }))
-                          }}
-                        />
-                      </td>
-                      <td className={`${classeCelula} text-right tabular-nums`}>
-                        {valor === undefined ? '—' : formatarCentavos(valor)}
-                      </td>
+              {aplicado ? (
+                <div className="px-(--space-150) pb-(--space-100)">
+                  <MensagemSecao role="status" tom="sucesso">
+                    {aplicado}
+                  </MensagemSecao>
+                </div>
+              ) : null}
+              {/* relative: textos sr-only (absolutos) ficam presos à área que rola, não à página. */}
+              <div className="relative overflow-x-auto">
+                <table className="w-full min-w-[640px] border-collapse corpo">
+                  <thead>
+                    <tr>
+                      <th scope="col" className={classeCabecalho}>
+                        Serviço
+                      </th>
+                      <th scope="col" className={`${classeCabecalho} w-24 text-right`}>
+                        Horas
+                      </th>
+                      <th scope="col" className={`${classeCabecalho} w-36 text-right`}>
+                        Outros custos (R$)
+                      </th>
+                      <th scope="col" className={`${classeCabecalho} w-32 text-right`}>
+                        Custo (R$)
+                      </th>
                       {editavel ? (
-                        <td className={classeCelula}>
-                          <BotaoIcone
-                            icone="trash-2"
-                            rotulo={`Remover parcela ${n}`}
-                            onClick={() => {
-                              mudar((a) => ({
-                                ...a,
-                                parcelas: a.parcelas.filter((x) => x.id !== p.id),
-                              }))
-                            }}
-                          />
-                        </td>
+                        <th scope="col" className={`${classeCabecalho} w-12`}>
+                          <span className="sr-only">Remover</span>
+                        </th>
                       ) : null}
                     </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-          <div className="flex flex-wrap items-center justify-between gap-(--space-100) px-(--space-150) py-(--space-100)">
-            {editavel ? (
-              <Botao
-                aparencia="link"
-                iconeAntes="plus"
-                onClick={() => {
-                  mudar((a) => ({
-                    ...a,
-                    parcelas: [
-                      ...a.parcelas,
-                      { id: crypto.randomUUID(), descricao: '', dias: '', percentual: '' },
-                    ],
-                  }))
-                }}
-              >
-                Adicionar parcela
-              </Botao>
-            ) : (
-              <span />
-            )}
-            {r.parcelas.length > 0 && calculo.diferencaParcelasPontosBase !== 0 ? (
-              <p role="status" className="text-xs text-(--text-danger)">
-                {calculo.diferencaParcelasPontosBase > 0
-                  ? `Faltam ${formatarPontosBase(calculo.diferencaParcelasPontosBase)} para fechar 100%.`
-                  : `Passa de 100% em ${formatarPontosBase(-calculo.diferencaParcelasPontosBase)}.`}
-              </p>
-            ) : r.parcelas.length > 0 ? (
-              <p className="text-xs text-(--text-subtle)">Somam 100% do preço.</p>
-            ) : null}
-          </div>
-        </Secao>
+                  </thead>
+                  <tbody>
+                    {r.itens.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className={`${classeCelula} text-(--text-subtle)`}>
+                          Nenhum serviço ainda. Escolha um modelo ou adicione os itens.
+                        </td>
+                      </tr>
+                    ) : null}
+                    {r.itens.map((item, indice) => {
+                      const custo = calculo.custosDosItens[indice]?.totalCentavos ?? null
+                      const n = String(indice + 1)
+                      return (
+                        <tr key={item.id}>
+                          <td className={classeCelula}>
+                            <textarea
+                              aria-label={`Serviço do item ${n}`}
+                              rows={1}
+                              className={classeTextoQueCresce}
+                              value={item.descricao}
+                              disabled={!editavel}
+                              onChange={(e) => {
+                                const valor = e.target.value
+                                mudarItem(item.id, (x) => ({ ...x, descricao: valor }))
+                              }}
+                            />
+                          </td>
+                          <td className={classeCelula}>
+                            <CampoNumero
+                              rotulo={`Horas do item ${n}`}
+                              duracao
+                              valor={item.horas}
+                              placeholder="1h30"
+                              invalido={lerDuracao(item.horas) === null}
+                              desabilitado={!editavel}
+                              aoMudar={(valor) => {
+                                mudarItem(item.id, (x) => ({ ...x, horas: valor }))
+                              }}
+                            />
+                          </td>
+                          <td className={classeCelula}>
+                            <CampoNumero
+                              rotulo={`Outros custos do item ${n}`}
+                              reais
+                              valor={item.extra}
+                              invalido={lerReaisOuZero(item.extra) === null}
+                              desabilitado={!editavel}
+                              aoMudar={(valor) => {
+                                mudarItem(item.id, (x) => ({ ...x, extra: valor }))
+                              }}
+                            />
+                          </td>
+                          <td className={`${classeCelula} text-right tabular-nums`}>
+                            {custo === null ? (
+                              <span className="text-(--text-subtle)">—</span>
+                            ) : (
+                              formatarCentavos(custo)
+                            )}
+                          </td>
+                          {editavel ? (
+                            <td className={classeCelula}>
+                              <BotaoIcone
+                                icone="trash-2"
+                                rotulo={`Remover item ${n}`}
+                                onClick={() => {
+                                  mudar((a) => ({
+                                    ...a,
+                                    itens: a.itens.filter((x) => x.id !== item.id),
+                                  }))
+                                }}
+                              />
+                            </td>
+                          ) : null}
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-(--space-100) px-(--space-150) py-(--space-100)">
+                {editavel ? (
+                  <Botao
+                    aparencia="link"
+                    iconeAntes="plus"
+                    onClick={() => {
+                      mudar((a) => ({
+                        ...a,
+                        itens: [
+                          ...a.itens,
+                          { id: crypto.randomUUID(), descricao: '', horas: '', extra: '' },
+                        ],
+                      }))
+                    }}
+                  >
+                    Adicionar item
+                  </Botao>
+                ) : (
+                  <span />
+                )}
+                <p className="text-xs text-(--text-subtle)">
+                  Custo = horas × hora técnica + outros custos + contas da consultoria pelas horas.
+                </p>
+              </div>
+            </Secao>
 
-        {/* Detalhes recolhidos */}
-        <Recolhido titulo="Objeto, destinatário, prazos e validade" resumo={`${r.validade} dias`}>
-          <div className="grid gap-(--space-200) sm:grid-cols-2">
-            <CampoArea
-              id="orcamento-objeto"
-              rotulo="O que está sendo orçado"
-              linhas={1}
-              valor={r.objeto}
-              desabilitado={!editavel}
-              aoMudar={(valor) => {
-                mudar((a) => ({ ...a, objeto: valor }))
-              }}
-            />
-            <CampoArea
-              id="orcamento-destinatario"
-              rotulo="Destinatário da proposta"
-              linhas={1}
-              valor={r.destinatario}
-              desabilitado={!editavel}
-              aoMudar={(valor) => {
-                mudar((a) => ({ ...a, destinatario: valor }))
-              }}
-            />
-            <CampoArea
-              id="orcamento-prazos"
-              rotulo="Prazos"
-              linhas={3}
-              valor={r.prazos}
-              desabilitado={!editavel}
-              aoMudar={(valor) => {
-                mudar((a) => ({ ...a, prazos: valor }))
-              }}
-            />
-            <div className="flex flex-col gap-(--space-050)">
-              <label htmlFor="orcamento-validade" className="rotulo">
-                Validade da proposta (dias)
-              </label>
-              <input
-                id="orcamento-validade"
-                inputMode="numeric"
-                className={`${classeCampo} max-w-32 text-right tabular-nums`}
-                value={r.validade}
-                disabled={!editavel}
-                onChange={(e) => {
-                  const valor = e.target.value
-                  mudar((a) => ({ ...a, validade: valor }))
+            {/* Visitas técnicas */}
+            <Secao titulo="Visitas técnicas">
+              <div className="flex flex-col gap-(--space-150) px-(--space-150) pb-(--space-150)">
+                <div className="grid gap-(--space-150) sm:grid-cols-3">
+                  <CampoRotulado id="visitas-quantidade" rotulo="Quantidade de visitas">
+                    <input
+                      id="visitas-quantidade"
+                      inputMode="numeric"
+                      placeholder="0"
+                      aria-invalid={visitasLidas.quantidade === null || undefined}
+                      className={`${classeCampo} text-right tabular-nums`}
+                      value={r.visitas}
+                      disabled={!editavel}
+                      onChange={(e) => {
+                        const valor = e.target.value
+                        mudar((a) => ({ ...a, visitas: valor }))
+                      }}
+                    />
+                  </CampoRotulado>
+                  <CampoRotulado
+                    id="visitas-km"
+                    rotulo="Km por visita, ida e volta"
+                    apoio="Deixe em branco se a visita é perto"
+                  >
+                    <input
+                      id="visitas-km"
+                      inputMode="numeric"
+                      placeholder="0"
+                      aria-invalid={visitasLidas.kmPorVisita === null || undefined}
+                      className={`${classeCampo} text-right tabular-nums`}
+                      value={r.km}
+                      disabled={!editavel}
+                      onChange={(e) => {
+                        const valor = e.target.value
+                        mudar((a) => ({ ...a, km: valor }))
+                      }}
+                    />
+                  </CampoRotulado>
+                  <CampoRotulado
+                    id="visitas-outros"
+                    rotulo="Outros gastos por visita (R$)"
+                    apoio="Pedágio, estacionamento, alimentação"
+                  >
+                    <CampoNumero
+                      id="visitas-outros"
+                      reais
+                      valor={r.outrosPorVisita}
+                      placeholder="0,00"
+                      invalido={visitasLidas.outrosPorVisitaCentavos === null}
+                      desabilitado={!editavel}
+                      aoMudar={(valor) => {
+                        mudar((a) => ({ ...a, outrosPorVisita: valor }))
+                      }}
+                    />
+                  </CampoRotulado>
+                </div>
+                {base ? (
+                  <p className="text-xs text-(--text-subtle)">
+                    Cada visita: {formatarReais(base.valorVisitaCentavos)} de valor fixo
+                    {base.custoKmCentavos > 0
+                      ? ` + km × ${formatarReais(base.custoKmCentavos)}`
+                      : ''}{' '}
+                    + outros gastos.{' '}
+                    {quantidadeDeVisitas > 0 ? (
+                      <span className="corpo-medio text-(--text)">
+                        Custo das visitas: {formatarReais(calculo.custoVisitasCentavos)}
+                      </span>
+                    ) : (
+                      'Sem visitas, nada entra no custo.'
+                    )}{' '}
+                    {base.valorVisitaCentavos === 0 && base.custoKmCentavos === 0 ? (
+                      <Link to="/configuracoes/custos">
+                        Cadastrar o valor da visita e o custo por km
+                      </Link>
+                    ) : null}
+                  </p>
+                ) : null}
+              </div>
+            </Secao>
+
+            {/* Despesas de terceiros */}
+            <Secao titulo="Despesas de terceiros">
+              {/* relative: textos sr-only (absolutos) ficam presos à área que rola, não à página. */}
+              <div className="relative overflow-x-auto">
+                <table className="w-full min-w-[600px] border-collapse corpo">
+                  <thead>
+                    <tr>
+                      <th scope="col" className={classeCabecalho}>
+                        Despesa
+                      </th>
+                      <th scope="col" className={`${classeCabecalho} w-64`}>
+                        Como é paga
+                      </th>
+                      <th scope="col" className={`${classeCabecalho} w-36 text-right`}>
+                        Estimativa (R$)
+                      </th>
+                      {editavel ? (
+                        <th scope="col" className={`${classeCabecalho} w-12`}>
+                          <span className="sr-only">Remover</span>
+                        </th>
+                      ) : null}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {r.despesas.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className={`${classeCelula} text-(--text-subtle)`}>
+                          Nenhuma despesa de terceiros.
+                        </td>
+                      </tr>
+                    ) : null}
+                    {r.despesas.map((despesa, indice) => {
+                      const n = String(indice + 1)
+                      return (
+                        <tr key={despesa.id}>
+                          <td className={classeCelula}>
+                            <textarea
+                              aria-label={`Despesa ${n}`}
+                              rows={1}
+                              className={classeTextoQueCresce}
+                              value={despesa.descricao}
+                              disabled={!editavel}
+                              onChange={(e) => {
+                                const valor = e.target.value
+                                mudar((a) => ({
+                                  ...a,
+                                  despesas: a.despesas.map((x) =>
+                                    x.id === despesa.id ? { ...x, descricao: valor } : x,
+                                  ),
+                                }))
+                              }}
+                            />
+                          </td>
+                          <td className={classeCelula}>
+                            <select
+                              aria-label={`Como é paga a despesa ${n}`}
+                              className={classeCampo}
+                              value={despesa.tratamento}
+                              disabled={!editavel}
+                              onChange={(e) => {
+                                const valor = e.target.value as TratamentoDespesa
+                                mudar((a) => ({
+                                  ...a,
+                                  despesas: a.despesas.map((x) =>
+                                    x.id === despesa.id ? { ...x, tratamento: valor } : x,
+                                  ),
+                                }))
+                              }}
+                            >
+                              {(Object.keys(ROTULO_DO_TRATAMENTO) as TratamentoDespesa[]).map(
+                                (t) => (
+                                  <option key={t} value={t}>
+                                    {ROTULO_DO_TRATAMENTO[t]}
+                                  </option>
+                                ),
+                              )}
+                            </select>
+                          </td>
+                          <td className={classeCelula}>
+                            <CampoNumero
+                              rotulo={`Estimativa da despesa ${n}`}
+                              reais
+                              valor={despesa.estimativa}
+                              placeholder="A cotar"
+                              invalido={lerEstimativa(despesa.estimativa) === undefined}
+                              desabilitado={!editavel}
+                              aoMudar={(valor) => {
+                                mudar((a) => ({
+                                  ...a,
+                                  despesas: a.despesas.map((x) =>
+                                    x.id === despesa.id ? { ...x, estimativa: valor } : x,
+                                  ),
+                                }))
+                              }}
+                            />
+                          </td>
+                          {editavel ? (
+                            <td className={classeCelula}>
+                              <BotaoIcone
+                                icone="trash-2"
+                                rotulo={`Remover despesa ${n}`}
+                                onClick={() => {
+                                  mudar((a) => ({
+                                    ...a,
+                                    despesas: a.despesas.filter((x) => x.id !== despesa.id),
+                                  }))
+                                }}
+                              />
+                            </td>
+                          ) : null}
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {editavel ? (
+                <div className="flex flex-wrap items-center justify-between gap-(--space-100) px-(--space-150) py-(--space-100)">
+                  <Botao
+                    aparencia="link"
+                    iconeAntes="plus"
+                    onClick={() => {
+                      mudar((a) => ({
+                        ...a,
+                        despesas: [
+                          ...a.despesas,
+                          {
+                            id: crypto.randomUUID(),
+                            descricao: '',
+                            estimativa: '',
+                            tratamento: 'cliente_direto',
+                          },
+                        ],
+                      }))
+                    }}
+                  >
+                    Adicionar despesa
+                  </Botao>
+                  <p className="text-xs text-(--text-subtle)">
+                    Sem valor ainda? Deixe a estimativa em branco: ela fica a cotar.
+                  </p>
+                </div>
+              ) : null}
+            </Secao>
+          </>
+        ) : null}
+
+        {etapa === 1 ? (
+          <>
+            {/* Preço e margem: a margem entra só aqui, depois dos serviços */}
+            <Secao titulo="Preço e margem">
+              <div className="flex flex-col gap-(--space-200) px-(--space-150) pb-(--space-200)">
+                <CampoRotulado
+                  id="orcamento-margem"
+                  rotulo="Margem de lucro (%)"
+                  apoio={
+                    base
+                      ? `Sobre o preço de venda · desejada ${formatarPontosBase(base.margemDesejadaPb)} · mínima ${formatarPontosBase(base.margemMinimaPb)}`
+                      : 'Sobre o preço de venda'
+                  }
+                >
+                  <div className="flex flex-wrap items-center gap-(--space-100)">
+                    <input
+                      id="orcamento-margem"
+                      inputMode="decimal"
+                      aria-invalid={(r.margem.trim() !== '' && margemLida === null) || undefined}
+                      className={`${classeCampo} max-w-24 text-right tabular-nums`}
+                      value={r.margem}
+                      disabled={!editavel}
+                      onChange={(e) => {
+                        const valor = e.target.value
+                        mudar((a) => ({ ...a, margem: valor }))
+                      }}
+                    />
+                    <div
+                      role="group"
+                      aria-label="Margens mais usadas"
+                      className="flex flex-wrap gap-(--space-050)"
+                    >
+                      {MARGENS_RAPIDAS.map((m) => (
+                        <Botao
+                          key={m}
+                          tamanho="compacto"
+                          selecionado={margemLida === m * 100}
+                          aria-pressed={margemLida === m * 100}
+                          disabled={!editavel}
+                          onClick={() => {
+                            mudar((a) => ({ ...a, margem: String(m) }))
+                          }}
+                        >
+                          {m}%
+                        </Botao>
+                      ))}
+                    </div>
+                  </div>
+                </CampoRotulado>
+                {calculo.situacaoDaMargem === 'abaixo_da_minima' ? (
+                  <MensagemSecao role="status" tom="perigo">
+                    A margem está abaixo da mínima da consultoria (
+                    {base ? formatarPontosBase(base.margemMinimaPb) : ''}).
+                  </MensagemSecao>
+                ) : null}
+
+                {d && precoTotal !== null ? (
+                  <div className="grid gap-(--space-300) lg:grid-cols-2">
+                    <section aria-label="Divisão do valor">
+                      <h3 className="mb-(--space-100) corpo-medio">Divisão do valor</h3>
+                      <dl className="grid grid-cols-[1fr_auto] gap-x-(--space-200) gap-y-(--space-075) corpo">
+                        <Valor rotulo="Trabalho técnico (horas × hora técnica)">
+                          {d.trabalhoTecnicoCentavos}
+                        </Valor>
+                        {d.outrosCustosDiretosCentavos > 0 ? (
+                          <Valor rotulo="Outros custos dos serviços">
+                            {d.outrosCustosDiretosCentavos}
+                          </Valor>
+                        ) : null}
+                        <Valor rotulo="Contas da consultoria (rateio pelas horas)">
+                          {d.contasDaConsultoriaCentavos}
+                        </Valor>
+                        {d.visitasCentavos > 0 ? (
+                          <Valor rotulo="Visitas técnicas e deslocamento">
+                            {d.visitasCentavos}
+                          </Valor>
+                        ) : null}
+                        {d.despesasIncluidasCentavos > 0 ? (
+                          <Valor rotulo="Despesas incluídas no preço">
+                            {d.despesasIncluidasCentavos}
+                          </Valor>
+                        ) : null}
+                        <Valor rotulo="Tributos sobre o faturamento">{d.tributosCentavos}</Valor>
+                        <Valor rotulo="Taxas de cobrança e assinatura">{d.taxasCentavos}</Valor>
+                        <Valor rotulo={`Lucro (${formatarPontosBase(calculo.margemPb)})`} destaque>
+                          {d.lucroCentavos}
+                        </Valor>
+                        <dt className="border-t pt-(--space-075) corpo-medio">Preço</dt>
+                        <dd className="border-t pt-(--space-075) text-right corpo-medio tabular-nums">
+                          {formatarReais(precoTotal)}
+                        </dd>
+                      </dl>
+                    </section>
+
+                    <section aria-label="Contas da consultoria neste orçamento">
+                      <h3 className="mb-(--space-025) corpo-medio">
+                        Contas da consultoria neste orçamento
+                      </h3>
+                      <p className="mb-(--space-100) text-xs text-(--text-subtle)">
+                        Quanto este orçamento cobre de cada conta do mês, pelas horas estimadas.
+                      </p>
+                      {calculo.contas.length === 0 ? (
+                        <p className="text-(--text-subtle)">
+                          Nenhuma conta do mês cadastrada.{' '}
+                          <Link to="/configuracoes/custos">Detalhar contas em Custos e taxas</Link>
+                        </p>
+                      ) : (
+                        <dl className="grid grid-cols-[1fr_auto] gap-x-(--space-200) gap-y-(--space-075) corpo">
+                          {calculo.contas.map((conta) => (
+                            <Valor key={conta.descricao} rotulo={conta.descricao}>
+                              {conta.valorCentavos}
+                            </Valor>
+                          ))}
+                        </dl>
+                      )}
+                    </section>
+
+                    <section aria-label="Preço na proposta" className="lg:col-span-2">
+                      <h3 className="mb-(--space-025) corpo-medio">Preço na proposta</h3>
+                      <p className="mb-(--space-100) text-xs text-(--text-subtle)">
+                        O preço é repartido entre os serviços pelo custo de cada um. Custo e margem
+                        não aparecem para o cliente.
+                      </p>
+                      <dl className="grid max-w-2xl grid-cols-[1fr_auto] gap-x-(--space-200) gap-y-(--space-075) corpo">
+                        {r.itens.map((item, indice) => (
+                          <Valor
+                            key={item.id}
+                            rotulo={item.descricao || `Item ${String(indice + 1)}`}
+                          >
+                            {calculo.precosDosItens[indice] ?? 0}
+                          </Valor>
+                        ))}
+                        {temVisitas ? (
+                          <Valor
+                            rotulo={`Visitas técnicas (${String(quantidadeDeVisitas)}) e deslocamento`}
+                          >
+                            {calculo.precoVisitasCentavos}
+                          </Valor>
+                        ) : null}
+                      </dl>
+                    </section>
+                  </div>
+                ) : (
+                  <p className="text-(--text-subtle)">
+                    {calculo.pendencia ? MENSAGEM_DA_PENDENCIA[calculo.pendencia] : null}
+                  </p>
+                )}
+              </div>
+            </Secao>
+
+            {base ? (
+              <Recolhido
+                titulo="Como o preço é calculado"
+                resumo="custos + taxas fixas ÷ (1 − margem − tributos − taxas)"
+              >
+                <ComoOPrecoECalculado base={base} fixos={calculo.fixosPorCobrancaCentavos} />
+              </Recolhido>
+            ) : null}
+          </>
+        ) : null}
+
+        {etapa === 2 ? (
+          <>
+            {/* Parcelas */}
+            <Secao titulo="Parcelas">
+              {/* relative: textos sr-only (absolutos) ficam presos à área que rola, não à página. */}
+              <div className="relative overflow-x-auto">
+                <table className="w-full min-w-[600px] border-collapse corpo">
+                  <thead>
+                    <tr>
+                      <th scope="col" className={classeCabecalho}>
+                        Marco
+                      </th>
+                      <th scope="col" className={`${classeCabecalho} w-28 text-right`}>
+                        Dias após
+                      </th>
+                      <th scope="col" className={`${classeCabecalho} w-24 text-right`}>
+                        %
+                      </th>
+                      <th scope="col" className={`${classeCabecalho} w-36 text-right`}>
+                        Valor (R$)
+                      </th>
+                      {editavel ? (
+                        <th scope="col" className={`${classeCabecalho} w-12`}>
+                          <span className="sr-only">Remover</span>
+                        </th>
+                      ) : null}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {r.parcelas.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className={`${classeCelula} text-(--text-subtle)`}>
+                          Nenhuma parcela. Adicione ao menos uma antes de enviar.
+                        </td>
+                      </tr>
+                    ) : null}
+                    {r.parcelas.map((p, indice) => {
+                      const n = String(indice + 1)
+                      const valor = calculo.parcelasCentavos[indice]
+                      return (
+                        <tr key={p.id}>
+                          <td className={classeCelula}>
+                            <input
+                              aria-label={`Marco da parcela ${n}`}
+                              placeholder="Ex.: Assinatura do contrato"
+                              className={classeCampo}
+                              value={p.descricao}
+                              disabled={!editavel}
+                              onChange={(e) => {
+                                const texto = e.target.value
+                                mudar((a) => ({
+                                  ...a,
+                                  parcelas: a.parcelas.map((x) =>
+                                    x.id === p.id ? { ...x, descricao: texto } : x,
+                                  ),
+                                }))
+                              }}
+                            />
+                          </td>
+                          <td className={classeCelula}>
+                            <CampoNumero
+                              rotulo={`Dias após o marco da parcela ${n}`}
+                              valor={p.dias}
+                              placeholder="0"
+                              invalido={lerDias(p.dias) === null}
+                              desabilitado={!editavel}
+                              aoMudar={(texto) => {
+                                mudar((a) => ({
+                                  ...a,
+                                  parcelas: a.parcelas.map((x) =>
+                                    x.id === p.id ? { ...x, dias: texto } : x,
+                                  ),
+                                }))
+                              }}
+                            />
+                          </td>
+                          <td className={classeCelula}>
+                            <CampoNumero
+                              rotulo={`Percentual da parcela ${n}`}
+                              valor={p.percentual}
+                              invalido={lerPercentual(p.percentual) === null}
+                              desabilitado={!editavel}
+                              aoMudar={(texto) => {
+                                mudar((a) => ({
+                                  ...a,
+                                  parcelas: a.parcelas.map((x) =>
+                                    x.id === p.id ? { ...x, percentual: texto } : x,
+                                  ),
+                                }))
+                              }}
+                            />
+                          </td>
+                          <td className={`${classeCelula} text-right tabular-nums`}>
+                            {valor === undefined ? '—' : formatarCentavos(valor)}
+                          </td>
+                          {editavel ? (
+                            <td className={classeCelula}>
+                              <BotaoIcone
+                                icone="trash-2"
+                                rotulo={`Remover parcela ${n}`}
+                                onClick={() => {
+                                  mudar((a) => ({
+                                    ...a,
+                                    parcelas: a.parcelas.filter((x) => x.id !== p.id),
+                                  }))
+                                }}
+                              />
+                            </td>
+                          ) : null}
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-(--space-100) px-(--space-150) py-(--space-100)">
+                {editavel ? (
+                  <Botao
+                    aparencia="link"
+                    iconeAntes="plus"
+                    onClick={() => {
+                      mudar((a) => ({
+                        ...a,
+                        parcelas: [
+                          ...a.parcelas,
+                          { id: crypto.randomUUID(), descricao: '', dias: '', percentual: '' },
+                        ],
+                      }))
+                    }}
+                  >
+                    Adicionar parcela
+                  </Botao>
+                ) : (
+                  <span />
+                )}
+                {r.parcelas.length > 0 && calculo.diferencaParcelasPontosBase !== 0 ? (
+                  <p role="status" className="text-xs text-(--text-danger)">
+                    {calculo.diferencaParcelasPontosBase > 0
+                      ? `Faltam ${formatarPontosBase(calculo.diferencaParcelasPontosBase)} para fechar 100%.`
+                      : `Passa de 100% em ${formatarPontosBase(-calculo.diferencaParcelasPontosBase)}.`}
+                  </p>
+                ) : r.parcelas.length > 0 ? (
+                  <p className="text-xs text-(--text-subtle)">Somam 100% do preço.</p>
+                ) : null}
+              </div>
+            </Secao>
+
+            {/* Detalhes recolhidos */}
+            <Recolhido
+              titulo="Objeto, destinatário, prazos e validade"
+              resumo={`${r.validade} dias`}
+            >
+              <div className="grid gap-(--space-200) sm:grid-cols-2">
+                <CampoArea
+                  id="orcamento-objeto"
+                  rotulo="O que está sendo orçado"
+                  linhas={1}
+                  valor={r.objeto}
+                  desabilitado={!editavel}
+                  aoMudar={(valor) => {
+                    mudar((a) => ({ ...a, objeto: valor }))
+                  }}
+                />
+                <CampoArea
+                  id="orcamento-destinatario"
+                  rotulo="Destinatário da proposta"
+                  linhas={1}
+                  valor={r.destinatario}
+                  desabilitado={!editavel}
+                  aoMudar={(valor) => {
+                    mudar((a) => ({ ...a, destinatario: valor }))
+                  }}
+                />
+                <CampoArea
+                  id="orcamento-prazos"
+                  rotulo="Prazos"
+                  linhas={3}
+                  valor={r.prazos}
+                  desabilitado={!editavel}
+                  aoMudar={(valor) => {
+                    mudar((a) => ({ ...a, prazos: valor }))
+                  }}
+                />
+                <div className="flex flex-col gap-(--space-050)">
+                  <label htmlFor="orcamento-validade" className="rotulo">
+                    Validade da proposta (dias)
+                  </label>
+                  <input
+                    id="orcamento-validade"
+                    inputMode="numeric"
+                    className={`${classeCampo} max-w-32 text-right tabular-nums`}
+                    value={r.validade}
+                    disabled={!editavel}
+                    onChange={(e) => {
+                      const valor = e.target.value
+                      mudar((a) => ({ ...a, validade: valor }))
+                    }}
+                  />
+                </div>
+              </div>
+            </Recolhido>
+            <Recolhido titulo="Premissas" resumo={String(linhasDeTexto(r.premissas).length)}>
+              <CampoArea
+                id="orcamento-premissas"
+                rotulo="Uma premissa por linha"
+                linhas={5}
+                valor={r.premissas}
+                desabilitado={!editavel}
+                aoMudar={(valor) => {
+                  mudar((a) => ({ ...a, premissas: valor }))
                 }}
               />
-            </div>
-          </div>
-        </Recolhido>
-        <Recolhido titulo="Premissas" resumo={String(linhasDeTexto(r.premissas).length)}>
-          <CampoArea
-            id="orcamento-premissas"
-            rotulo="Uma premissa por linha"
-            linhas={5}
-            valor={r.premissas}
-            desabilitado={!editavel}
-            aoMudar={(valor) => {
-              mudar((a) => ({ ...a, premissas: valor }))
-            }}
-          />
-        </Recolhido>
-        <Recolhido titulo="Exclusões" resumo={String(linhasDeTexto(r.exclusoes).length)}>
-          <CampoArea
-            id="orcamento-exclusoes"
-            rotulo="Uma exclusão por linha"
-            linhas={5}
-            valor={r.exclusoes}
-            desabilitado={!editavel}
-            aoMudar={(valor) => {
-              mudar((a) => ({ ...a, exclusoes: valor }))
-            }}
-          />
-        </Recolhido>
-        {base ? (
-          <Recolhido
-            titulo="Como o preço é calculado"
-            resumo="custos + taxas fixas ÷ (1 − margem − tributos − taxas)"
-          >
-            <dl className="grid max-w-xl grid-cols-[1fr_auto] gap-x-(--space-200) gap-y-(--space-075) corpo">
-              <dt className="text-(--text-subtle)">
-                Hora técnica · contas da consultoria por hora
-              </dt>
-              <dd className="text-right tabular-nums">
-                {formatarCentavos(base.horaTecnicaCentavos)} ·{' '}
-                {formatarCentavos(base.custoFixoHoraCentavos)}
-              </dd>
-              <dt className="text-(--text-subtle)">Visita técnica · custo por km</dt>
-              <dd className="text-right tabular-nums">
-                {formatarCentavos(base.valorVisitaCentavos)} ·{' '}
-                {formatarCentavos(base.custoKmCentavos)}
-              </dd>
-              <dt className="text-(--text-subtle)">Taxas fixas por cobrança e assinatura</dt>
-              <dd className="text-right tabular-nums">
-                {formatarCentavos(calculo.fixosPorCobrancaCentavos)}
-              </dd>
-              <dt className="text-(--text-subtle)">Tributos · taxas percentuais</dt>
-              <dd className="text-right tabular-nums">
-                {formatarPontosBase(base.tributosPb)} · {formatarPontosBase(base.taxasPb)}
-              </dd>
-            </dl>
-            <p className="mt-(--space-150) max-w-xl text-xs text-(--text-subtle)">
-              Preço = (custo dos serviços + visitas + despesas incluídas + taxas fixas) ÷ (1 −
-              margem − tributos − taxas). O preço é repartido entre os serviços pelo custo de cada
-              um, e as visitas têm linha própria.
-            </p>
-          </Recolhido>
+            </Recolhido>
+            <Recolhido titulo="Exclusões" resumo={String(linhasDeTexto(r.exclusoes).length)}>
+              <CampoArea
+                id="orcamento-exclusoes"
+                rotulo="Uma exclusão por linha"
+                linhas={5}
+                valor={r.exclusoes}
+                desabilitado={!editavel}
+                aoMudar={(valor) => {
+                  mudar((a) => ({ ...a, exclusoes: valor }))
+                }}
+              />
+            </Recolhido>
+          </>
         ) : null}
+
+        <NavegacaoDasEtapas etapa={etapa} aoIr={irPara} titulos={ETAPAS.map((e) => e.titulo)} />
       </div>
 
       <DialogoModelo
@@ -1416,6 +1503,82 @@ function CampoArea({
           aoMudar(e.target.value)
         }}
       />
+    </div>
+  )
+}
+
+function ComoOPrecoECalculado({
+  base,
+  fixos,
+}: {
+  base: NonNullable<Orcamento['base']>
+  fixos: number
+}) {
+  return (
+    <>
+      <dl className="grid max-w-xl grid-cols-[1fr_auto] gap-x-(--space-200) gap-y-(--space-075) corpo">
+        <dt className="text-(--text-subtle)">Hora técnica · contas da consultoria por hora</dt>
+        <dd className="text-right tabular-nums">
+          {formatarCentavos(base.horaTecnicaCentavos)} ·{' '}
+          {formatarCentavos(base.custoFixoHoraCentavos)}
+        </dd>
+        <dt className="text-(--text-subtle)">Visita técnica · custo por km</dt>
+        <dd className="text-right tabular-nums">
+          {formatarCentavos(base.valorVisitaCentavos)} · {formatarCentavos(base.custoKmCentavos)}
+        </dd>
+        <dt className="text-(--text-subtle)">Taxas fixas por cobrança e assinatura</dt>
+        <dd className="text-right tabular-nums">{formatarCentavos(fixos)}</dd>
+        <dt className="text-(--text-subtle)">Tributos · taxas percentuais</dt>
+        <dd className="text-right tabular-nums">
+          {formatarPontosBase(base.tributosPb)} · {formatarPontosBase(base.taxasPb)}
+        </dd>
+      </dl>
+      <p className="mt-(--space-150) max-w-xl text-xs text-(--text-subtle)">
+        Preço = (custo dos serviços + visitas + despesas incluídas + taxas fixas) ÷ (1 − margem −
+        tributos − taxas). O preço é repartido entre os serviços pelo custo de cada um, e as visitas
+        têm linha própria.
+      </p>
+    </>
+  )
+}
+
+/** Voltar e continuar no pé de cada etapa. */
+function NavegacaoDasEtapas({
+  etapa,
+  aoIr,
+  titulos,
+}: {
+  etapa: number
+  aoIr: (indice: number) => void
+  titulos: readonly string[]
+}) {
+  const anterior = titulos[etapa - 1]
+  const proxima = titulos[etapa + 1]
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-(--space-100) border-t p-(--space-150)">
+      {anterior ? (
+        <Botao
+          iconeAntes="arrow-left"
+          onClick={() => {
+            aoIr(etapa - 1)
+          }}
+        >
+          {anterior}
+        </Botao>
+      ) : (
+        <span />
+      )}
+      {proxima ? (
+        <Botao
+          aparencia="primario"
+          iconeDepois="arrow-right"
+          onClick={() => {
+            aoIr(etapa + 1)
+          }}
+        >
+          Continuar para {proxima.toLowerCase()}
+        </Botao>
+      ) : null}
     </div>
   )
 }

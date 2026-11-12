@@ -275,24 +275,73 @@ describe('orçamentos (onda 5)', () => {
     expect(screen.getByText('1 orçamento')).toBeInTheDocument()
   })
 
-  it('o editor mostra custo, preço, margem no fim e parcelas', async () => {
+  it('o editor vai por etapas: serviços, preço e margem, parcelas', async () => {
+    const usuario = userEvent.setup()
     renderizarApp('/orcamentos/o1')
     expect(await screen.findByRole('heading', { name: 'Indústria Horizonte' })).toBeInTheDocument()
+    const trilha = screen.getByRole('navigation', { name: 'Etapas do orçamento' })
+    expect(within(trilha).getByRole('button', { name: /Serviços/ })).toHaveAttribute(
+      'aria-current',
+      'step',
+    )
+    // Etapa 1: custo de cada serviço, sem margem.
     expect(screen.getByText('R$ 5.750,00')).toBeInTheDocument()
-    expect(screen.getAllByText('R$ 8.999,95').length).toBeGreaterThan(0)
-    expect(screen.getByLabelText('Margem de lucro (%)')).toHaveValue('30')
     // Custo do item 1: 8h × 95 + 240 + 8h × 30 = 1.240,00
     expect(screen.getByText('1.240,00')).toBeInTheDocument()
-    expect(screen.getByText('3.599,98')).toBeInTheDocument()
-    expect(screen.getByText('Somam 100% do preço.')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Margem de lucro (%)')).not.toBeInTheDocument()
+
+    // Etapa 2: margem e preço; o foco vai para o conteúdo da etapa.
+    await usuario.click(screen.getByRole('button', { name: 'Continuar para preço e margem' }))
+    expect(screen.getByRole('group', { name: /Etapa 2 de 3/ })).toHaveFocus()
+    expect(screen.getByLabelText('Margem de lucro (%)')).toHaveValue('30')
+    expect(screen.getAllByText('R$ 8.999,95').length).toBeGreaterThan(0)
     const contas = screen.getByRole('region', { name: 'Contas da consultoria neste orçamento' })
     expect(within(contas).getByText('Energia elétrica')).toBeInTheDocument()
     expect(within(contas).getByText('131,25')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Percentual da parcela 1')).not.toBeInTheDocument()
+
+    // Etapa 3: parcelas sobre o preço.
+    await usuario.click(screen.getByRole('button', { name: 'Continuar para parcelas' }))
+    expect(screen.getByText('3.599,98')).toBeInTheDocument()
+    expect(screen.getByText('Somam 100% do preço.')).toBeInTheDocument()
+    expect(
+      within(trilha).getByRole('button', { name: 'Serviços, concluída, 3 serviços' }),
+    ).toBeInTheDocument()
+    await usuario.click(within(trilha).getByRole('button', { name: /Preço e margem/ }))
+    expect(screen.getByLabelText('Margem de lucro (%)')).toBeInTheDocument()
+  })
+
+  it('a margem tem atalhos de 5 em 5 e aceita outro valor', async () => {
+    const usuario = userEvent.setup()
+    renderizarApp('/orcamentos/o1?etapa=preco')
+    const margem = await screen.findByLabelText('Margem de lucro (%)')
+    const atalhos = screen.getByRole('group', { name: 'Margens mais usadas' })
+    expect(
+      within(atalhos)
+        .getAllByRole('button')
+        .map((b) => b.textContent),
+    ).toEqual(['10%', '15%', '20%', '25%', '30%'])
+    expect(within(atalhos).getByRole('button', { name: '30%' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    await usuario.click(within(atalhos).getByRole('button', { name: '25%' }))
+    expect(margem).toHaveValue('25')
+    expect(within(atalhos).getByRole('button', { name: '25%' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    await usuario.clear(margem)
+    await usuario.type(margem, '27,5')
+    expect(within(atalhos).getByRole('button', { name: '25%' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
   })
 
   it('avisa quando as parcelas não fecham 100% e salva com a versão atual', async () => {
     const usuario = userEvent.setup()
-    renderizarApp('/orcamentos/o1')
+    renderizarApp('/orcamentos/o1?etapa=parcelas')
     const percentual = await screen.findByLabelText('Percentual da parcela 3')
     await usuario.clear(percentual)
     await usuario.type(percentual, '25')
@@ -331,6 +380,7 @@ describe('orçamentos (onda 5)', () => {
     // 1h30 custa 142,50 + 45,00 de rateio = 187,50.
     expect(screen.getByText('187,50')).toBeInTheDocument()
 
+    await usuario.click(screen.getByRole('button', { name: 'Continuar para preço e margem' }))
     const margem = screen.getByLabelText('Margem de lucro (%)')
     await usuario.clear(margem)
     await usuario.type(margem, '20')
@@ -357,6 +407,7 @@ describe('orçamentos (onda 5)', () => {
     await usuario.type(screen.getByLabelText('Km por visita, ida e volta'), '50')
     // 2 × (150 + 50 km × 1,20) = 420
     expect(screen.getByText('Custo das visitas: R$ 420,00')).toBeInTheDocument()
+    await usuario.click(screen.getByRole('button', { name: 'Continuar para preço e margem' }))
     expect(screen.getByText('Visitas técnicas (2) e deslocamento')).toBeInTheDocument()
 
     await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
@@ -447,7 +498,13 @@ describe('orçamentos (onda 5)', () => {
     expect(screen.queryByRole('button', { name: 'Salvar' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Escolher modelo' })).not.toBeInTheDocument()
     expect(screen.getByLabelText('Horas do item 1')).toBeDisabled()
+    await userEvent.setup().click(
+      within(screen.getByRole('navigation', { name: 'Etapas do orçamento' })).getByRole('button', {
+        name: /Preço e margem/,
+      }),
+    )
     expect(screen.getByLabelText('Margem de lucro (%)')).toBeDisabled()
+    expect(screen.getByRole('button', { name: '25%' })).toBeDisabled()
   })
 
   it('custos e taxas mostram o rateio por hora e salvam', async () => {
@@ -564,10 +621,16 @@ describe('orçamentos (onda 5)', () => {
     expect(resultado.violations.map((v) => v.id)).toEqual([])
   })
 
-  it('o editor não tem violações de acessibilidade detectáveis', async () => {
+  it('o editor não tem violações de acessibilidade detectáveis em nenhuma etapa', async () => {
+    const usuario = userEvent.setup()
     const { container } = renderizarApp('/orcamentos/o1')
     await screen.findByRole('heading', { name: 'Indústria Horizonte' })
-    const resultado = await axe.run(container, { rules: { 'color-contrast': { enabled: false } } })
-    expect(resultado.violations.map((v) => v.id)).toEqual([])
+    for (const proxima of ['Continuar para preço e margem', 'Continuar para parcelas', null]) {
+      const resultado = await axe.run(container, {
+        rules: { 'color-contrast': { enabled: false } },
+      })
+      expect(resultado.violations.map((v) => v.id)).toEqual([])
+      if (proxima) await usuario.click(screen.getByRole('button', { name: proxima }))
+    }
   })
 })
