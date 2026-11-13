@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import axe from 'axe-core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -57,6 +57,63 @@ describe('meu perfil: foto, profissão e cargo', () => {
       p_membro_id: 'm-ana',
       p_profissao: 'eng_ambiental',
       p_cargo: 'estagiario',
+      p_outras_profissoes: [],
+    })
+  })
+
+  it('sem a profissão principal, não deixa adicionar outra formação', async () => {
+    renderizarApp('/perfil')
+    const adicionar = await screen.findByRole('combobox', { name: 'Adicionar outra formação' })
+    expect(adicionar).toBeDisabled()
+    expect(adicionar).toHaveDisplayValue('Escolha a profissão primeiro')
+    // As ajudas cinza dos campos saíram.
+    expect(screen.queryByText('No que a pessoa é formada.')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Para o que foi contratada/)).not.toBeInTheDocument()
+  })
+
+  it('adiciona e tira outras formações concluídas e salva com a principal (ADR-0021)', async () => {
+    falso.reiniciar(
+      cenario({
+        profissao: 'eng_ambiental',
+        cargo: 'analista_pleno',
+        outras_profissoes: ['biologo'],
+      }),
+    )
+    const usuario = userEvent.setup()
+    renderizarApp('/perfil')
+
+    const grupo = await screen.findByRole('group', { name: 'Outras formações concluídas' })
+    const itens = () =>
+      within(grupo)
+        .queryAllByRole('listitem')
+        .map((item) => item.textContent)
+    expect(itens()).toEqual(['Biólogo'])
+    const salvar = screen.getByRole('button', { name: 'Salvar profissão e cargo' })
+    expect(salvar).toBeDisabled()
+
+    const adicionar = within(grupo).getByRole('combobox', { name: 'Adicionar outra formação' })
+    expect(adicionar).toBeEnabled()
+    // A principal e as já escolhidas não aparecem de novo.
+    expect(
+      within(adicionar).queryByRole('option', { name: 'Engenheiro ambiental' }),
+    ).not.toBeInTheDocument()
+    expect(within(adicionar).queryByRole('option', { name: 'Biólogo' })).not.toBeInTheDocument()
+    await usuario.selectOptions(adicionar, 'Geólogo')
+    expect(itens()).toEqual(['Biólogo', 'Geólogo'])
+    expect(adicionar).toHaveDisplayValue('Adicionar outra formação')
+    expect(salvar).toBeEnabled()
+
+    await usuario.click(within(grupo).getByRole('button', { name: 'Tirar Biólogo' }))
+    expect(itens()).toEqual(['Geólogo'])
+    // A que saiu volta a poder ser adicionada.
+    expect(within(adicionar).getByRole('option', { name: 'Biólogo' })).toBeInTheDocument()
+
+    await usuario.click(salvar)
+    expect(falso.cliente.rpc).toHaveBeenCalledWith('definir_profissao_e_cargo', {
+      p_membro_id: 'm-ana',
+      p_profissao: 'eng_ambiental',
+      p_cargo: 'analista_pleno',
+      p_outras_profissoes: ['geologo'],
     })
   })
 

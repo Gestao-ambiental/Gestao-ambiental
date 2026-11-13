@@ -126,6 +126,8 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   operacao_invalida: 'Não foi possível salvar este passo. Recarregue e tente de novo.',
   contas_invalidas: 'Confira as contas do mês: nome e valor de cada uma.',
   profissao_invalida: 'Escolha a profissão na lista.',
+  profissao_principal_obrigatoria: 'Escolha a formação principal antes das outras.',
+  formacoes_demais: 'Informe no máximo 10 outras formações.',
   cargo_invalido: 'Escolha o cargo na lista.',
   horas_de_venda_invalidas:
     'Confira a tabela de preços: profissão, serviço, unidade, preço e faixas de cada linha.',

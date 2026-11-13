@@ -68,6 +68,7 @@ function Perfil({ perfil }: { perfil: MembroAtivo }) {
   const entrada = useRef<HTMLInputElement>(null)
   const [problema, setProblema] = useState<string | null>(null)
   const [profissao, setProfissao] = useState<CodigoProfissao | ''>(perfil.profissao ?? '')
+  const [outras, setOutras] = useState<CodigoProfissao[]>(perfil.outrasProfissoes)
   const [cargo, setCargo] = useState<CodigoCargo | ''>(perfil.cargoCodigo ?? '')
   const [salvo, setSalvo] = useState(false)
   const email = sessao ? usuarioDaSessao(sessao).email : ''
@@ -86,7 +87,7 @@ function Perfil({ perfil }: { perfil: MembroAtivo }) {
   })
   const tirar = useMutation({ mutationFn: () => removerFoto(perfil.id), onSuccess: atualizar })
   const salvar = useMutation({
-    mutationFn: () => definirProfissaoECargo(perfil.id, profissao || null, cargo || null),
+    mutationFn: () => definirProfissaoECargo(perfil.id, profissao || null, cargo || null, outras),
     onSuccess: async () => {
       setSalvo(true)
       await atualizar()
@@ -96,7 +97,10 @@ function Perfil({ perfil }: { perfil: MembroAtivo }) {
   const erroDaFoto =
     problema ?? ((foto.error ?? tirar.error) ? mensagemDoErro(foto.error ?? tirar.error) : null)
   const ocupado = foto.isPending || tirar.isPending
-  const mudou = profissao !== (perfil.profissao ?? '') || cargo !== (perfil.cargoCodigo ?? '')
+  const mudou =
+    profissao !== (perfil.profissao ?? '') ||
+    cargo !== (perfil.cargoCodigo ?? '') ||
+    outras.join() !== perfil.outrasProfissoes.join()
 
   return (
     <div className="flex max-w-[560px] flex-col gap-(--space-300)">
@@ -175,11 +179,16 @@ function Perfil({ perfil }: { perfil: MembroAtivo }) {
         >
           <CamposProfissaoECargo
             profissao={profissao}
+            outras={outras}
             cargo={cargo}
             cargoAntigo={perfil.cargoAntigo}
             desabilitado={salvar.isPending}
             aoMudarProfissao={(codigo) => {
               setProfissao(codigo)
+              setSalvo(false)
+            }}
+            aoMudarOutras={(codigos) => {
+              setOutras(codigos)
               setSalvo(false)
             }}
             aoMudarCargo={(codigo) => {

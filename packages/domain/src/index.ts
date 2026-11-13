@@ -124,6 +124,7 @@ export {
   formatarReais,
   lerDuracao,
   lerReais,
+  formatarReaisDigitados,
   numeroDoOrcamento,
   precoAutomaticoDoItem,
   precoSugerido,
@@ -229,11 +230,22 @@ export type {
 
 export {
   CARGOS,
+  MAXIMO_DE_OUTRAS_PROFISSOES,
   PROFISSOES,
   cargoDoCodigo,
   gruposDaLista,
+  outrasProfissoes,
   profissaoDoCodigo,
   rotuloDaProfissao,
   rotuloDoCargo,
+  sugerirCargo,
+  sugerirProfissaoPeloCargoAntigo,
+  sugerirProfissao,
 } from './profissao-e-cargo'
-export type { CodigoCargo, CodigoProfissao, ItemDaLista } from './profissao-e-cargo'
+export type {
+  CertezaDaSugestao,
+  CodigoCargo,
+  CodigoProfissao,
+  ItemDaLista,
+  SugestaoDaLista,
+} from './profissao-e-cargo'

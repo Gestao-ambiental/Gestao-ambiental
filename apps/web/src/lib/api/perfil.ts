@@ -5,6 +5,7 @@
 
 import {
   cargoDoCodigo,
+  outrasProfissoes,
   profissaoDoCodigo,
   rotuloDoCargo,
   type CodigoCargo,
@@ -34,7 +35,10 @@ export interface MembroAtivo {
   cargoCodigo: CodigoCargo | null
   /** Cargo digitado antes da lista fixa (ADR-0021), até o de-para. */
   cargoAntigo: string | null
+  /** Profissão principal: a que aparece no orçamento e na Equipe. */
   profissao: CodigoProfissao | null
+  /** Outras formações concluídas, além da principal (ADR-0021 §6). */
+  outrasProfissoes: CodigoProfissao[]
   /** URL assinada da foto; null mostra as iniciais. */
   fotoUrl: string | null
 }
@@ -46,10 +50,11 @@ interface LinhaMembro {
   cargo?: string | null
   cargo_antigo?: string | null
   profissao?: string | null
+  outras_profissoes?: string[] | null
   foto?: { excluido_em: string | null; versao: { caminho: string } | null } | null
 }
 
-const COLUNAS_MEMBRO = `id, nome, papel, cargo, cargo_antigo, profissao,
+const COLUNAS_MEMBRO = `id, nome, papel, cargo, cargo_antigo, profissao, outras_profissoes,
   foto:documento!membro_foto_fk(excluido_em, versao:documento_versao!documento_versao_vigente_fk(caminho))`
 
 function caminhoDaFoto(linha: LinhaMembro): string | null {
@@ -115,27 +120,35 @@ export function profissaoECargo(linha: {
   cargo?: string | null
   cargo_antigo?: string | null
   profissao?: string | null
-}): Pick<MembroAtivo, 'cargo' | 'cargoCodigo' | 'cargoAntigo' | 'profissao'> {
+  outras_profissoes?: readonly string[] | null
+}): Pick<MembroAtivo, 'cargo' | 'cargoCodigo' | 'cargoAntigo' | 'profissao' | 'outrasProfissoes'> {
   const cargoCodigo = cargoDoCodigo(linha.cargo)
   const cargoAntigo = linha.cargo_antigo ?? null
+  const profissao = profissaoDoCodigo(linha.profissao)
   return {
     cargo: cargoCodigo ? rotuloDoCargo(cargoCodigo) : cargoAntigo,
     cargoCodigo,
     cargoAntigo,
-    profissao: profissaoDoCodigo(linha.profissao),
+    profissao,
+    outrasProfissoes: outrasProfissoes(profissao, linha.outras_profissoes ?? []),
   }
 }
 
-/** A própria pessoa ou a Gestão. Nulo limpa. */
+/**
+ * A própria pessoa ou a Gestão. Nulo na principal ou no cargo limpa; sem `outras`, as outras
+ * formações ficam como estão.
+ */
 export async function definirProfissaoECargo(
   membroId: string,
   profissao: CodigoProfissao | null,
   cargo: CodigoCargo | null,
+  outras?: readonly CodigoProfissao[],
 ): Promise<void> {
   const { error } = await obterSupabase().rpc('definir_profissao_e_cargo', {
     p_membro_id: membroId,
     p_profissao: profissao,
     p_cargo: cargo,
+    ...(outras ? { p_outras_profissoes: [...outras] } : {}),
   })
   if (error) throw error
 }

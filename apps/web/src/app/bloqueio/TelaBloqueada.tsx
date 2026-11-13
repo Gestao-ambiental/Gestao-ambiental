@@ -8,6 +8,7 @@ import { Avatar } from '@/components/ui/avatar'
 import { Botao } from '@/components/ui/botao'
 import { CampoTexto } from '@/components/ui/campo-texto'
 import { Icone } from '@/components/ui/icone'
+import { MarcaGrama } from '@/components/ui/marca-grama'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import {
   codigoDoErro,
@@ -86,7 +87,7 @@ export function TelaBloqueada({
           className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-(--surface-sunken) px-(--space-200) pt-[12vh] pb-(--space-400) outline-none"
         >
           <div className="flex w-full max-w-[400px] flex-col gap-(--space-200) rounded-(--radius-large) border bg-(--surface) p-(--space-300) shadow-sobreposicao">
-            <p className="titulo-secao text-(--text-brand)">Grama</p>
+            <MarcaGrama className="self-start" />
             <div className="flex items-center gap-(--space-150)">
               <Avatar nome={usuario.nome} />
               <span className="flex min-w-0 flex-col">

@@ -3,6 +3,7 @@
 import {
   ESCALA_DA_QUANTIDADE,
   formatarReais,
+  formatarReaisDigitados,
   numeroDoOrcamento,
   type FaixaDePreco,
   type UnidadeDeCobranca,
@@ -96,3 +97,28 @@ export const classeCabecalho =
   'h-10 border-b px-(--space-100) text-left rotulo whitespace-nowrap first:pl-(--space-150) last:pr-(--space-150)'
 export const classeCelula =
   'h-11 border-b px-(--space-100) align-middle first:pl-(--space-150) last:pr-(--space-150)'
+
+/**
+ * Valor de um campo de reais depois da tecla: com o ponto de milhar (40000 → 40.000). O cursor
+ * fica depois do mesmo número que estava antes, mesmo com os pontos entrando ou saindo.
+ */
+export function reaisDigitados(evento: { target: HTMLInputElement }): string {
+  const campo = evento.target
+  const bruto = campo.value
+  const formatado = formatarReaisDigitados(bruto)
+  if (formatado === bruto) return bruto
+  const cursor = campo.selectionStart ?? bruto.length
+  const antes = bruto.slice(0, cursor).replace(/[^\d,]/g, '').length
+  let posicao = 0
+  for (let vistos = 0; posicao < formatado.length && vistos < antes; posicao++) {
+    if (/[\d,]/.test(formatado.charAt(posicao))) vistos++
+  }
+  // Só ajusta se o campo ainda mostra este valor: com outra tecla no mesmo quadro, a posição
+  // calculada aqui já não vale, e mexer no cursor embaralharia os dígitos.
+  requestAnimationFrame(() => {
+    if (document.activeElement === campo && campo.value === formatado) {
+      campo.setSelectionRange(posicao, posicao)
+    }
+  })
+  return formatado
+}

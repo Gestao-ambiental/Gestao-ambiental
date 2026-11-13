@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  formatarReaisDigitados,
   ErroDeOrcamento,
   MAXIMO_PARCELAS,
   acrescimoEquivalente,
@@ -336,6 +337,21 @@ describe('apresentação', () => {
     expect(formatarPontosBase(2_928)).toBe('29,3%')
     expect(formatarPontosBase(600)).toBe('6,0%')
     expect(formatarPontosBase(-5_000)).toBe('−50,0%')
+  })
+
+  it('põe o ponto de milhar enquanto a pessoa digita reais', () => {
+    expect(formatarReaisDigitados('40000')).toBe('40.000')
+    expect(formatarReaisDigitados('4000')).toBe('4.000')
+    expect(formatarReaisDigitados('400')).toBe('400')
+    expect(formatarReaisDigitados('40.0000')).toBe('400.000')
+    expect(formatarReaisDigitados('1234567,891')).toBe('1.234.567,89')
+    expect(formatarReaisDigitados('R$ 8.900,5')).toBe('8.900,5')
+    expect(formatarReaisDigitados('0040')).toBe('40')
+    expect(formatarReaisDigitados(',5')).toBe('0,5')
+    expect(formatarReaisDigitados('12,3,4')).toBe('12,34')
+    expect(formatarReaisDigitados('abc')).toBe('')
+    expect(formatarReaisDigitados('')).toBe('')
+    expect(lerReais(formatarReaisDigitados('40000'))).toBe(4_000_000)
   })
 
   it('lê reais digitados', () => {

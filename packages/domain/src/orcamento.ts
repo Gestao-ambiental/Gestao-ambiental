@@ -401,6 +401,28 @@ export function formatarDuracao(minutos: number): string {
   return resto === 0 ? `${String(horas)}h` : `${String(horas)}h${String(resto).padStart(2, '0')}`
 }
 
+/**
+ * Texto de um campo de reais enquanto a pessoa digita: põe o ponto de milhar e deixa só números e
+ * uma vírgula, com até dois centavos. "40000" → "40.000"; "1234567,891" → "1.234.567,89";
+ * "0040" → "40"; ",5" → "0,5". O ponto digitado é tratado como separador de milhar (descartado).
+ */
+export function formatarReaisDigitados(texto: string): string {
+  const limpo = texto.replace(/[^\d,]/g, '')
+  if (limpo === '') return ''
+  const virgula = limpo.indexOf(',')
+  const inteiro = (virgula < 0 ? limpo : limpo.slice(0, virgula)).replace(/^0+(?=\d)/, '')
+  const comMilhar = (inteiro === '' && virgula >= 0 ? '0' : inteiro).replace(
+    /\B(?=(\d{3})+(?!\d))/g,
+    '.',
+  )
+  if (virgula < 0) return comMilhar
+  const centavos = limpo
+    .slice(virgula + 1)
+    .replace(/,/g, '')
+    .slice(0, 2)
+  return `${comMilhar},${centavos}`
+}
+
 /** "8.900,00", "8900" ou "R$ 8.900,5" → centavos. `null` se não for um valor em reais. */
 export function lerReais(texto: string): number | null {
   const limpo = texto.replace(/[R$\s.]/g, '').replace(',', '.')

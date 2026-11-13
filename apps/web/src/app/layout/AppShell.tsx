@@ -3,6 +3,7 @@ import { Link, Outlet } from 'react-router'
 
 import { BarraSuperior } from '@/components/ui/barra-superior'
 import { BotaoIcone } from '@/components/ui/botao-icone'
+import { MarcaGrama } from '@/components/ui/marca-grama'
 import { MenuLateral } from '@/components/ui/menu-lateral'
 import {
   Sheet,
@@ -19,7 +20,7 @@ import { MenuConta } from './MenuConta'
 import { NavegacaoPrincipal } from './NavegacaoPrincipal'
 
 /**
- * Shell fixo do design system: topbar de 56px com o nome do produto em texto, rail de 240px com a
+ * Shell fixo do design system: topbar de 56px com a logo do produto, rail de 240px com a
  * consultoria no topo e só a área principal rolando; conteúdo até 1440px. No celular o rail vira
  * gaveta aberta por um botão com nome acessível.
  */
@@ -44,7 +45,9 @@ export function AppShell() {
               </SheetTrigger>
               <SheetContent aria-describedby="descricao-gaveta">
                 <SheetHeader>
-                  <SheetTitle className="text-(--text-brand)">Grama</SheetTitle>
+                  <SheetTitle>
+                    <MarcaGrama />
+                  </SheetTitle>
                   <SheetDescription id="descricao-gaveta" className="sr-only">
                     Menu principal e consultoria
                   </SheetDescription>
@@ -65,9 +68,9 @@ export function AppShell() {
             <Link
               to="/"
               aria-label="Grama, ir para a Visão da equipe"
-              className="titulo-secao text-(--text-brand) no-underline hover:text-(--text-brand) hover:no-underline"
+              className="inline-flex rounded-(--radius) no-underline hover:no-underline"
             >
-              Grama
+              <MarcaGrama />
             </Link>
           </>
         }

@@ -50,7 +50,7 @@ import {
   type LinhaHora,
   type LinhaPessoa,
 } from './campos-da-base'
-import { classeCampo } from './comum'
+import { classeCampo, reaisDigitados } from './comum'
 import { ContasDoMes, Equipe, Grupo, Linha, TabelaDePrecos } from './PecasDaBase'
 
 interface Campos {
@@ -66,6 +66,16 @@ interface Campos {
   valorVisita: string
   custoKm: string
 }
+
+/** Campos em reais: mostram o ponto de milhar enquanto a pessoa digita. */
+const CAMPOS_EM_REAIS: ReadonlySet<keyof Campos> = new Set([
+  'horaTecnica',
+  'custosFixos',
+  'taxaPorCobranca',
+  'taxaPorAssinatura',
+  'valorVisita',
+  'custoKm',
+])
 
 function camposDe(base: BaseDeCustosDaConsultoria | null): Campos {
   if (!base) {
@@ -306,8 +316,8 @@ function Formulario({
   function campo(nome: keyof Campos) {
     return {
       value: c[nome],
-      onChange: (e: { target: { value: string } }) => {
-        const valor = e.target.value
+      onChange: (e: { target: HTMLInputElement }) => {
+        const valor = CAMPOS_EM_REAIS.has(nome) ? reaisDigitados(e) : e.target.value
         setC((a) => ({ ...a, [nome]: valor }))
         if (nome === 'margemDesejada' || nome === 'margemMinima') setMargensConfirmadas(true)
         setAviso(null)
@@ -464,7 +474,6 @@ function Formulario({
           )}
           <ContasDoMes
             linhas={contas}
-            pelaEquipe={pelaEquipe}
             total={totalDasContas}
             aoMudar={(id, alterar) => {
               setContas((a) => a.map((l) => (l.id === id ? alterar(l) : l)))

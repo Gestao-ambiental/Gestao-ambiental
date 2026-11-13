@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 
 import { Botao } from '@/components/ui/botao'
 import { Icone } from '@/components/ui/icone'
+import { MarcaGrama } from '@/components/ui/marca-grama'
 import { cn } from '@/lib/utils'
 
 import { PASSOS, type ChavePasso } from './passos'
@@ -58,7 +59,7 @@ export function MolduraCadastro({
         Pular para o conteúdo
       </a>
       <header className="flex min-h-14 shrink-0 flex-wrap items-center gap-(--space-150) border-b bg-(--surface) px-(--space-200) py-(--space-100) md:px-(--space-300)">
-        <span className="titulo-secao text-(--text-brand)">Grama</span>
+        <MarcaGrama compactaNoCelular />
         <span aria-hidden="true" className="h-6 border-l" />
         <div className="flex min-w-0 flex-1 flex-col">
           <h1 className="truncate corpo-medio text-(--text)">{titulo}</h1>

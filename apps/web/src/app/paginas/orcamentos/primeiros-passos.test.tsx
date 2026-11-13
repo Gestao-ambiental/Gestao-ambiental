@@ -6,6 +6,7 @@ import userEvent from '@testing-library/user-event'
 import axe from 'axe-core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { digitarReais } from '@/test/digitar'
 import { renderizarApp, vinculoFalso } from '@/test/renderizar'
 import { falso, sessaoDe, type Cenario } from '@/test/supabase-falso'
 
@@ -252,7 +253,7 @@ describe('primeiros passos do orçamento (ADR-0020)', () => {
     ).toBeInTheDocument()
     await escolherPessoa(usuario, 1, 'm-eduardo')
     await usuario.selectOptions(screen.getByLabelText('Como recebe na linha 1'), 'pro_labore')
-    await usuario.type(screen.getByLabelText('Custo mensal da linha 1'), '10.000,00')
+    await digitarReais(usuario, screen.getByLabelText('Custo mensal da linha 1'), '10.000,00')
     await usuario.type(screen.getByLabelText('Horas no mês da linha 1'), '160')
     expect(screen.getByText('62,50')).toBeInTheDocument()
     await usuario.click(screen.getByRole('button', { name: 'Salvar e continuar' }))
@@ -366,6 +367,79 @@ describe('primeiros passos do orçamento (ADR-0020)', () => {
     ])
   })
 
+  it('no passo 1, a profissão da linha grava na hora no cadastro da pessoa, com o cargo dela', async () => {
+    // Cópia dos membros: o servidor falso grava a profissão como o banco, e a releitura mostra.
+    const cadastro: Linha[] = membros.map((m) =>
+      m.id === 'm-helena' ? { ...m, cargo: 'analista_pleno', profissao: null } : { ...m },
+    )
+    const base = servidor()
+    falso.reiniciar({
+      ...base,
+      tabelas: { membro: cadastro },
+      rpc: {
+        ...base.rpc,
+        definir_profissao_e_cargo: (a) => {
+          const pessoa = cadastro.find((m) => m.id === a.p_membro_id)
+          if (pessoa) pessoa.profissao = a.p_profissao
+          return { data: null }
+        },
+      },
+    })
+    const usuario = userEvent.setup()
+    renderizarApp('/orcamentos/primeiros-passos')
+    await screen.findByRole('heading', { name: 'Passo 1 de 6: Sua equipe' })
+    // Sem pessoa escolhida, não há o que gravar: nem caixa nem link para a Equipe.
+    expect(screen.queryByLabelText('Profissão da linha 1')).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /Definir em Equipe/ })).not.toBeInTheDocument()
+    // O texto cinza de introdução saiu.
+    expect(screen.queryByText(/Seis passos curtos/)).not.toBeInTheDocument()
+
+    await escolherPessoa(usuario, 1, 'm-helena')
+    const profissao = screen.getByRole('combobox', { name: 'Profissão da linha 1' })
+    expect(profissao).toHaveDisplayValue('Não informada')
+    await usuario.selectOptions(profissao, 'Biólogo')
+    expect(falso.cliente.rpc).toHaveBeenCalledWith('definir_profissao_e_cargo', {
+      p_membro_id: 'm-helena',
+      p_profissao: 'biologo',
+      p_cargo: 'analista_pleno',
+    })
+    // Relê os membros ativos e mostra o que ficou gravado; o rascunho não é salvo por isso.
+    await waitFor(() => {
+      expect(screen.getByRole('combobox', { name: 'Profissão da linha 1' })).toHaveDisplayValue(
+        'Biólogo',
+      )
+    })
+    expect(chamadas('salvar_passo_configuracao_orcamento')).toHaveLength(0)
+
+    // Limpar a principal limpa também as outras formações.
+    await usuario.selectOptions(
+      screen.getByRole('combobox', { name: 'Profissão da linha 1' }),
+      'Não informada',
+    )
+    expect(falso.cliente.rpc).toHaveBeenLastCalledWith('definir_profissao_e_cargo', {
+      p_membro_id: 'm-helena',
+      p_profissao: null,
+      p_cargo: 'analista_pleno',
+      p_outras_profissoes: [],
+    })
+  })
+
+  it('o custo mensal da linha mostra o ponto de milhar enquanto digita', async () => {
+    const usuario = userEvent.setup()
+    renderizarApp('/orcamentos/primeiros-passos')
+    const custo = await screen.findByLabelText('Custo mensal da linha 1')
+    await usuario.type(custo, '40000')
+    expect(custo).toHaveValue('40.000')
+    // Com centavos, digitando tecla a tecla como uma pessoa.
+    await usuario.clear(custo)
+    await digitarReais(usuario, custo, '1234567,891')
+    expect(custo).toHaveValue('1.234.567,89')
+    // Teclas mais rápidas que um quadro de tela (macro, colar tecla a tecla): não embaralha.
+    await usuario.clear(custo)
+    await usuario.type(custo, '9600,00')
+    expect(custo).toHaveValue('9.600,00')
+  })
+
   it('retoma onde parou, com o que outra pessoa salvou, e custo desconhecido continua nulo', async () => {
     falso.reiniciar(
       servidor({
@@ -445,7 +519,7 @@ describe('primeiros passos do orçamento (ADR-0020)', () => {
     const usuario = userEvent.setup()
     renderizarApp('/orcamentos/primeiros-passos')
     await escolherPessoa(usuario, 1, 'm-eduardo')
-    await usuario.type(screen.getByLabelText('Custo mensal da linha 1'), '10.000,00')
+    await digitarReais(usuario, screen.getByLabelText('Custo mensal da linha 1'), '10.000,00')
     await usuario.click(screen.getByRole('button', { name: 'Salvar e continuar' }))
     const alerta = await screen.findByRole('alert')
     expect(alerta).toHaveTextContent('Outra pessoa da gestão salvou esta configuração')

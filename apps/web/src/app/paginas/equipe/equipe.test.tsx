@@ -229,7 +229,52 @@ describe('profissão e cargo na Equipe (ADR-0021)', () => {
       p_membro_id: 'ana',
       p_profissao: 'biologo',
       p_cargo: 'analista_pleno',
+      p_outras_profissoes: [],
     })
     expect(await screen.findByText('Profissão e cargo de Ana Ribeiro salvos.')).toBeInTheDocument()
+  })
+
+  it('mostra as outras formações depois da principal e a Gestão tira e adiciona no diálogo', async () => {
+    falso.reiniciar({
+      sessao: eduardo,
+      rpc: {
+        meus_vinculos: { data: [vinculoFalso('Filtroville', 'gestao')] },
+        definir_profissao_e_cargo: { data: null },
+      },
+      tabelas: {
+        membro: [
+          membro('m-Filtroville', 'Eduardo Karnopp', 'gestao'),
+          {
+            ...membro('ana', 'Ana Ribeiro', 'equipe'),
+            profissao: 'biologo',
+            outras_profissoes: ['geologo', 'quimico'],
+            cargo: 'analista_pleno',
+          },
+        ],
+        convite: [],
+      },
+    })
+    const usuario = userEvent.setup()
+    renderizarApp('/configuracoes/equipe')
+    const membros = await screen.findByRole('region', { name: 'Membros' })
+    const tabela = await within(membros).findByRole('table')
+    expect(within(tabela).getByText('Biólogo · Geólogo · Químico')).toBeInTheDocument()
+
+    await usuario.click(within(tabela).getByRole('button', { name: 'Ações de Ana Ribeiro' }))
+    await usuario.click(await screen.findByRole('menuitem', { name: 'Profissão e cargo' }))
+    const dialogo = await screen.findByRole('dialog', { name: 'Profissão e cargo de Ana Ribeiro' })
+    const grupo = within(dialogo).getByRole('group', { name: 'Outras formações concluídas' })
+    await usuario.click(within(grupo).getByRole('button', { name: 'Tirar Geólogo' }))
+    await usuario.selectOptions(
+      within(grupo).getByRole('combobox', { name: 'Adicionar outra formação' }),
+      'Ecólogo',
+    )
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Salvar' }))
+    expect(falso.cliente.rpc).toHaveBeenCalledWith('definir_profissao_e_cargo', {
+      p_membro_id: 'ana',
+      p_profissao: 'biologo',
+      p_cargo: 'analista_pleno',
+      p_outras_profissoes: ['quimico', 'ecologo'],
+    })
   })
 })

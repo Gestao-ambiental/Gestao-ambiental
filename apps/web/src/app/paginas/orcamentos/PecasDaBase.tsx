@@ -12,18 +12,21 @@ import {
   resumoDaPessoa,
   UNIDADES_COM_FAIXAS,
   UNIDADES_DE_COBRANCA,
+  type CodigoProfissao,
   type ComposicaoDaEquipe,
   type FormaDeRecebimento,
   type UnidadeDeCobranca,
 } from '@gestao-ambiental/domain'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Fragment, type ReactNode } from 'react'
-import { Link } from 'react-router'
 
+import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { SelecaoDaLista } from '@/components/selecao-da-lista'
 import { Botao } from '@/components/ui/botao'
 import { BotaoIcone } from '@/components/ui/botao-icone'
 import type { CustoDaProfissao } from '@/lib/api/orcamentos'
-import type { MembroAtivo } from '@/lib/api/perfil'
+import { definirProfissaoECargo, type MembroAtivo } from '@/lib/api/perfil'
+import { mensagemDoErro } from '@/lib/erros'
 
 import { lerEstimativa, lerReaisOuZero, textoDasHoras } from './calculo'
 import {
@@ -48,11 +51,64 @@ import {
   classeCampo,
   classeCelula,
   lerQuantidade,
+  reaisDigitados,
 } from './comum'
 
 // ---------------------------------------------------------------------------
 // Composição pela equipe
 // ---------------------------------------------------------------------------
+
+/**
+ * Profissão principal da pessoa, escolhida na linha da equipe. Grava no cadastro (membro) na hora,
+ * como na Equipe: não faz parte do rascunho. Cargo e outras formações ficam como estão.
+ */
+function ProfissaoDaPessoa({
+  membro,
+  profissaoAntiga,
+  rotulo,
+}: {
+  membro: MembroAtivo
+  profissaoAntiga: string | null
+  rotulo: string
+}) {
+  const { atual } = useConsultoria()
+  const queryClient = useQueryClient()
+  const salvar = useMutation({
+    mutationFn: (codigo: CodigoProfissao | '') =>
+      definirProfissaoECargo(
+        membro.id,
+        codigo || null,
+        membro.cargoCodigo,
+        codigo ? undefined : [],
+      ),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ['membros-ativos', atual.consultoriaId] }),
+  })
+  const idErro = `erro-profissao-${membro.id}`
+  return (
+    <div className="flex flex-col gap-(--space-050)">
+      <SelecaoDaLista
+        aria-label={rotulo}
+        lista={PROFISSOES}
+        valor={membro.profissao ?? ''}
+        valorAntigo={membro.profissao ? null : profissaoAntiga}
+        vazio="Não informada"
+        disabled={salvar.isPending}
+        aria-busy={salvar.isPending || undefined}
+        aria-describedby={salvar.isError ? idErro : undefined}
+        className={classeCampo}
+        aoMudar={(codigo) => {
+          salvar.mutate(codigo)
+        }}
+      />
+      {salvar.isError ? (
+        <span id={idErro} role="alert" className="text-xs text-(--text-danger)">
+          {mensagemDoErro(salvar.error)}
+        </span>
+      ) : null}
+    </div>
+  )
+}
 
 export function Equipe({
   linhas,
@@ -77,14 +133,6 @@ export function Equipe({
 }) {
   return (
     <div className="flex flex-col gap-(--space-150)">
-      <p className="max-w-3xl text-xs text-(--text-subtle)">
-        Uma linha por pessoa da equipe, dizendo como ela recebe: salário (CLT), pró-labore, bolsa de
-        estágio, por diária ou por projeto. Informe os custos da sua empresa; confirme encargos com
-        a contabilidade. A hora de custo de cada um sai dessas informações. Horas no mês são a
-        jornada real: por exemplo, 40 h por semana ≈ 173 h por mês. Use o mês que deseja estimar e
-        atualize quando souber. Para o sócio, as horas que ele de fato trabalha na consultoria. Só
-        membros com login entram: quem ainda não tem conta precisa ser convidado em Equipe.
-      </p>
       {/* relative: textos sr-only (absolutos) ficam presos à área que rola, não à página. */}
       <div className="relative overflow-x-auto">
         <table className="w-full min-w-[980px] border-collapse corpo">
@@ -122,8 +170,7 @@ export function Equipe({
               const escolhidos = new Set(linhas.filter((x) => x.id !== p.id).map((x) => x.membroId))
               const opcoes = membros.filter((m) => !escolhidos.has(m.id))
               const membroSumiu = p.membroId !== '' && !membros.some((m) => m.id === p.membroId)
-              const doMembro = membros.find((m) => m.id === p.membroId)?.profissao ?? null
-              const profissaoDaPessoa = doMembro ? rotuloDaProfissao(doMembro) : null
+              const membroDaLinha = membros.find((m) => m.id === p.membroId) ?? null
               const numero = (
                 rotulo: string,
                 chave:
@@ -158,7 +205,7 @@ export function Equipe({
                       className={`${classeCampo} text-right tabular-nums`}
                       value={valor}
                       onChange={(e) => {
-                        const novo = e.target.value
+                        const novo = opcoesDoCampo.reais ? reaisDigitados(e) : e.target.value
                         aoMudar(p.id, (x) => ({ ...x, [chave]: novo }))
                       }}
                     />
@@ -185,11 +232,6 @@ export function Equipe({
                   </div>
                 )
               }
-              const semCapacidade = resumo?.capacidadeHorasMes === null
-              const avisoCapacidade = (oQueFalta: string) =>
-                semCapacidade
-                  ? `${oQueFalta} não informados; capacidade não calculada. Fica fora da média e do rateio; a hora de custo continua válida.`
-                  : null
               let custo: ReactNode
               let horas: ReactNode
               if (p.forma === 'diaria') {
@@ -200,7 +242,6 @@ export function Equipe({
                     {numero('Dias no mês', 'dias', {
                       placeholder: 'Opcional',
                       legenda: 'dias/mês',
-                      aviso: avisoCapacidade('Dias no mês'),
                     })}
                   </div>
                 )
@@ -212,7 +253,6 @@ export function Equipe({
                     {numero('Horas no mês', 'horas', {
                       placeholder: 'Opcional',
                       legenda: 'h/mês',
-                      aviso: avisoCapacidade('Horas no mês'),
                     })}
                   </div>
                 )
@@ -221,7 +261,6 @@ export function Equipe({
                 horas = numero('Horas no mês', 'horas', {
                   placeholder: '173',
                   legenda: 'h/mês',
-                  aviso: avisoCapacidade('Horas no mês'),
                 })
               }
               return (
@@ -248,19 +287,18 @@ export function Equipe({
                     </select>
                   </td>
                   <td className={classeCelula}>
-                    {/* Profissão vem do cadastro da pessoa (Equipe), sem digitar (ADR-0021). */}
-                    <span className="flex min-h-(--size-control) flex-col justify-center">
-                      <span aria-label={`Profissão da linha ${n}`}>
-                        {profissaoDaPessoa ??
-                          (p.profissao.trim() ? `${p.profissao.trim()} (antigo)` : 'Não informada')}
+                    {/* Profissão principal do cadastro da pessoa, gravada na hora (ADR-0021). */}
+                    {membroDaLinha ? (
+                      <ProfissaoDaPessoa
+                        membro={membroDaLinha}
+                        profissaoAntiga={p.profissao.trim() || null}
+                        rotulo={`Profissão da linha ${n}`}
+                      />
+                    ) : (
+                      <span className="flex min-h-(--size-control) items-center">
+                        {p.profissao.trim() ? `${p.profissao.trim()} (antigo)` : '—'}
                       </span>
-                      {profissaoDaPessoa ? null : (
-                        <Link to="/configuracoes/equipe" className="text-xs">
-                          Definir em Equipe{' '}
-                          <span className="sr-only">a profissão da linha {n}</span>
-                        </Link>
-                      )}
-                    </span>
+                    )}
                   </td>
                   <td className={classeCelula}>
                     <select
@@ -355,11 +393,6 @@ export function Equipe({
           />
         ))}
       </dl>
-      <p className="max-w-3xl text-xs text-(--text-subtle)">
-        A média e o rateio das contas usam quem tem custo e horas do mês conhecidos; quem recebe por
-        projeto, ou por diária sem os dias no mês, fica de fora deles, mas tem a própria hora de
-        custo. No orçamento, o custo de cada serviço usa a hora do responsável.
-      </p>
     </div>
   )
 }
@@ -420,22 +453,14 @@ export function Linha({
 
 export function ContasDoMes({
   linhas,
-  pelaEquipe,
   total,
   aoMudar,
   aoAdicionar,
   aoSugerir,
   aoRemover,
-  contaSemValor = 'zero',
   children,
 }: {
   linhas: readonly LinhaConta[]
-  pelaEquipe: boolean
-  /**
-   * Custos e taxas: conta em branco conta como zero (regra de sempre). Primeiros passos: fica
-   * pendente até a pessoa digitar (ADR-0020).
-   */
-  contaSemValor?: 'zero' | 'pendente'
   total: number
   aoMudar: (id: string, alterar: (l: LinhaConta) => LinhaConta) => void
   aoAdicionar: (descricao: string) => void
@@ -460,17 +485,6 @@ export function ContasDoMes({
     <section aria-label="Contas do mês" className="flex flex-col gap-(--space-100)">
       <div className="flex flex-col gap-(--space-025)">
         <h3 className="corpo-medio text-(--text)">Contas do mês</h3>
-        <p className="text-xs text-(--text-subtle)">
-          {pelaEquipe
-            ? 'Sem a remuneração de quem está na equipe: ela já entra pela composição.'
-            : 'Inclua o pró-labore que não está na hora técnica.'}{' '}
-          Use o valor do último mês (fatura ou extrato); a que não souber, deixe em branco e
-          complete depois.{' '}
-          {contaSemValor === 'zero'
-            ? 'Conta sem valor conta como zero.'
-            : 'Conta sem valor fica pendente: digite 0 se não tem esse gasto.'}{' '}
-          Cada orçamento mostra quanto cobre de cada conta.
-        </p>
       </div>
       <div className="relative overflow-x-auto">
         <table className="w-full min-w-[420px] border-collapse corpo">
@@ -512,7 +526,7 @@ export function ContasDoMes({
                       className={`${classeCampo} text-right tabular-nums`}
                       value={l.valor}
                       onChange={(e) => {
-                        const valor = e.target.value
+                        const valor = reaisDigitados(e)
                         aoMudar(l.id, (x) => ({ ...x, valor }))
                       }}
                     />
@@ -578,13 +592,6 @@ export function TabelaDePrecos({
 }) {
   return (
     <>
-      <p className="max-w-3xl text-xs text-(--text-subtle)">
-        Quanto vocês cobram do cliente, do jeito que cobram: por hora, por m², por hectare, por
-        diária ou campanha de campo, ou um pacote com preço fechado (ex.: Engenheiro ambiental ·
-        Júnior por hora; Arquiteto e urbanista · Projeto por m²; Biólogo · Campo por diária). Cada
-        serviço do orçamento escolhe uma linha. O tempo por unidade é opcional: ele sugere as horas
-        do serviço, que estimam o custo e a carga da equipe.
-      </p>
       {horas.length > 0 ? (
         <div className="relative overflow-x-auto">
           <table className="w-full min-w-[1100px] border-collapse corpo">
@@ -690,7 +697,7 @@ export function TabelaDePrecos({
                             className={`${classeCampo} text-right tabular-nums`}
                             value={l.valor}
                             onChange={(e) => {
-                              const valor = e.target.value
+                              const valor = reaisDigitados(e)
                               mudarHora((x) => ({ ...x, valor }))
                             }}
                           />
@@ -719,7 +726,7 @@ export function TabelaDePrecos({
                             className={`${classeCampo} text-right tabular-nums`}
                             value={l.minimo}
                             onChange={(e) => {
-                              const valor = e.target.value
+                              const valor = reaisDigitados(e)
                               mudarHora((x) => ({ ...x, minimo: valor }))
                             }}
                           />
@@ -825,7 +832,7 @@ export function TabelaDePrecos({
                                       className={`${classeCampo} w-28 text-right tabular-nums`}
                                       value={f.valor}
                                       onChange={(e) => {
-                                        const valor = e.target.value
+                                        const valor = reaisDigitados(e)
                                         mudarFaixas((a) =>
                                           a.map((x) => (x.id === f.id ? { ...x, valor } : x)),
                                         )

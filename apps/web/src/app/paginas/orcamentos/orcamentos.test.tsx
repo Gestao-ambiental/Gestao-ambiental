@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import axe from 'axe-core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { digitarReais } from '@/test/digitar'
 import { renderizarApp, vinculoFalso } from '@/test/renderizar'
 import { falso, sessaoDe, type Cenario } from '@/test/supabase-falso'
 
@@ -1486,12 +1487,12 @@ describe('orçamentos (onda 5)', () => {
     expect(screen.queryByLabelText(/Piso/)).not.toBeInTheDocument()
     expect(screen.queryByLabelText(/Aproveitamento/)).not.toBeInTheDocument()
     await usuario.selectOptions(await screen.findByLabelText('Pessoa da linha 1'), 'm-eduardo')
-    // A profissão vem do cadastro da pessoa em Equipe; não se digita aqui.
-    expect(screen.getByLabelText('Profissão da linha 1')).toHaveTextContent(
+    // A profissão vem do cadastro da pessoa, escolhida na lista; não se digita aqui.
+    expect(screen.getByLabelText('Profissão da linha 1')).toHaveDisplayValue(
       'Engenheiro ambiental e sanitarista',
     )
     await usuario.selectOptions(screen.getByLabelText('Como recebe na linha 1'), 'pro_labore')
-    await usuario.type(screen.getByLabelText('Custo mensal da linha 1'), '13.751,77')
+    await digitarReais(usuario, screen.getByLabelText('Custo mensal da linha 1'), '13.751,77')
     await usuario.type(screen.getByLabelText('Horas no mês da linha 1'), '173')
     // 13.751,77 ÷ 173 h = 79,49
     expect(screen.getByText('79,49')).toBeInTheDocument()
@@ -1503,7 +1504,7 @@ describe('orçamentos (onda 5)', () => {
     // Quem já está numa linha não aparece de novo.
     expect(within(pessoa2).queryByRole('option', { name: 'Eduardo Karnopp' })).toBeNull()
     await usuario.selectOptions(pessoa2, 'm-helena')
-    expect(screen.getByLabelText('Profissão da linha 2')).toHaveTextContent('Biólogo')
+    expect(screen.getByLabelText('Profissão da linha 2')).toHaveDisplayValue('Biólogo')
     await usuario.selectOptions(screen.getByLabelText('Como recebe na linha 2'), 'diaria')
     expect(screen.queryByLabelText('Custo mensal da linha 2')).not.toBeInTheDocument()
     await usuario.type(screen.getByLabelText('Custo por diária da linha 2'), '400,00')
@@ -1511,15 +1512,12 @@ describe('orçamentos (onda 5)', () => {
     // 400 ÷ 8 h = 50,00; sem os dias no mês, a capacidade fica desconhecida (nunca zero).
     expect(screen.getByText('50,00')).toBeInTheDocument()
     expect(screen.getByText('400,00 ÷ 8 h por diária = 50,00')).toBeInTheDocument()
-    // O aviso fica embaixo do próprio campo e é lido junto com ele.
-    expect(screen.getByLabelText('Dias no mês da linha 2')).toHaveAccessibleDescription(
-      /Dias no mês não informados; capacidade não calculada/,
-    )
+    // O aviso cinza de capacidade não calculada saiu; o resultado diz quem entra na média.
+    expect(screen.queryByText(/capacidade não calculada/)).not.toBeInTheDocument()
     const resultado = screen.getByLabelText('Resultado da equipe')
     // Só quem tem custo e horas do mês entra na média: por enquanto, só o Eduardo.
     expect(within(resultado).getByText('173 h')).toBeInTheDocument()
     await usuario.type(screen.getByLabelText('Dias no mês da linha 2'), '10')
-    expect(screen.queryByText(/capacidade não calculada/)).not.toBeInTheDocument()
     // (13.751,77 + 10 × 400) ÷ (173 + 80) h = 70,17
     expect(within(resultado).getByText('253 h')).toBeInTheDocument()
     expect(within(resultado).getByText('R$ 70,17')).toBeInTheDocument()
@@ -1700,7 +1698,7 @@ describe('orçamentos (onda 5)', () => {
     renderizarApp('/configuracoes/custos')
     expect(await screen.findByText('Falta configurar para calcular o preço')).toBeInTheDocument()
     await usuario.type(screen.getByLabelText('Custo da hora técnica (R$)'), '95,00')
-    await usuario.type(screen.getByLabelText('Custos fixos por mês (R$)'), '9.600,00')
+    await digitarReais(usuario, screen.getByLabelText('Custos fixos por mês (R$)'), '9.600,00')
     await usuario.type(screen.getByLabelText('Horas faturáveis por mês'), '320')
     await usuario.type(screen.getByLabelText('Tributos sobre o faturamento (%)'), '6')
     expect(screen.getByText('R$ 30,00 por hora')).toBeInTheDocument()
@@ -1727,8 +1725,8 @@ describe('orçamentos (onda 5)', () => {
     // Sugestões só com o nome: nenhum valor inventado.
     expect(screen.getByLabelText('Conta 2')).toHaveValue('Energia elétrica')
     expect(screen.getByLabelText('Valor por mês da conta 2')).toHaveValue('')
-    await usuario.type(screen.getByLabelText('Valor por mês da conta 1'), '8.000,00')
-    await usuario.type(screen.getByLabelText('Valor por mês da conta 2'), '1.000,00')
+    await digitarReais(usuario, screen.getByLabelText('Valor por mês da conta 1'), '8.000,00')
+    await digitarReais(usuario, screen.getByLabelText('Valor por mês da conta 2'), '1.000,00')
     await usuario.type(screen.getByLabelText('Valor por mês da conta 4'), '600,00')
     expect(screen.getByText('9.600,00')).toBeInTheDocument()
     expect(screen.getByText('R$ 30,00 por hora')).toBeInTheDocument()
@@ -1753,7 +1751,7 @@ describe('orçamentos (onda 5)', () => {
     const usuario = userEvent.setup()
     renderizarApp('/configuracoes/custos')
     await screen.findByText('Falta configurar para calcular o preço')
-    await usuario.type(screen.getByLabelText('Custos fixos por mês (R$)'), '9.600,00')
+    await digitarReais(usuario, screen.getByLabelText('Custos fixos por mês (R$)'), '9.600,00')
     await usuario.type(screen.getByLabelText('Tributos sobre o faturamento (%)'), '6')
     await usuario.click(screen.getByRole('button', { name: 'Calcular pela equipe' }))
     expect(screen.getByLabelText('Outros custos fixos por mês (R$)')).toHaveValue('9.600,00')
@@ -1763,14 +1761,14 @@ describe('orçamentos (onda 5)', () => {
     await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
     expect(screen.getByRole('alert')).toHaveTextContent('Equipe, linha 1: escolha a pessoa.')
     await usuario.selectOptions(await screen.findByLabelText('Pessoa da linha 1'), 'm-eduardo')
-    await usuario.type(screen.getByLabelText('Custo mensal da linha 1'), '10.000,00')
+    await digitarReais(usuario, screen.getByLabelText('Custo mensal da linha 1'), '10.000,00')
     await usuario.type(screen.getByLabelText('Horas no mês da linha 1'), '160')
     // Hora de custo: 10.000 ÷ 160 h = 62,50
     expect(screen.getByText('62,50')).toBeInTheDocument()
 
     await usuario.click(screen.getByRole('button', { name: 'Adicionar pessoa' }))
     await usuario.selectOptions(screen.getByLabelText('Pessoa da linha 2'), 'm-helena')
-    await usuario.type(screen.getByLabelText('Custo mensal da linha 2'), '5.000,00')
+    await digitarReais(usuario, screen.getByLabelText('Custo mensal da linha 2'), '5.000,00')
     await usuario.type(screen.getByLabelText('Horas no mês da linha 2'), '168')
 
     // Média 15.000 ÷ 328 h = 45,73; rateio 9.600 ÷ 328 = 29,27 por hora.

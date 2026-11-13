@@ -287,7 +287,9 @@ function EquipeDaGestao() {
     return (
       <span className="flex min-w-0 flex-col">
         <span className="truncate">
-          {membro.profissao ? rotuloDaProfissao(membro.profissao) : 'Profissão não informada'}
+          {membro.profissao
+            ? [membro.profissao, ...membro.outrasProfissoes].map(rotuloDaProfissao).join(' · ')
+            : 'Profissão não informada'}
         </span>
         <span className="truncate text-xs text-(--text-subtle)">
           {membro.cargoCodigo
@@ -626,9 +628,10 @@ function DialogoProfissaoECargo({
   aoSalvar: (membro: Membro) => void
 }) {
   const [profissao, setProfissao] = useState<CodigoProfissao | ''>(membro.profissao ?? '')
+  const [outras, setOutras] = useState<CodigoProfissao[]>(membro.outrasProfissoes)
   const [cargo, setCargo] = useState<CodigoCargo | ''>(membro.cargoCodigo ?? '')
   const salvar = useMutation({
-    mutationFn: () => definirProfissaoECargo(membro.id, profissao || null, cargo || null),
+    mutationFn: () => definirProfissaoECargo(membro.id, profissao || null, cargo || null, outras),
     onSuccess: () => {
       aoSalvar(membro)
     },
@@ -640,7 +643,6 @@ function DialogoProfissaoECargo({
         if (!aberto) aoFechar()
       }}
       titulo={`Profissão e cargo de ${membro.nome}`}
-      descricao="Escolha nas listas. A profissão vale para o sistema inteiro, inclusive para o custo por profissão no orçamento."
       acoes={
         <>
           <Botao onClick={aoFechar}>Cancelar</Botao>
@@ -660,10 +662,12 @@ function DialogoProfissaoECargo({
       <div className="flex flex-col gap-(--space-150)">
         <CamposProfissaoECargo
           profissao={profissao}
+          outras={outras}
           cargo={cargo}
           cargoAntigo={membro.cargoAntigo}
           desabilitado={salvar.isPending}
           aoMudarProfissao={setProfissao}
+          aoMudarOutras={setOutras}
           aoMudarCargo={setCargo}
         />
         {salvar.error ? (

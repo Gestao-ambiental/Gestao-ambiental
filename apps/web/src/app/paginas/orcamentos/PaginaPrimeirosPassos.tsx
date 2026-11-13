@@ -74,7 +74,7 @@ import {
   type LinhaHora,
   type LinhaPessoa,
 } from './campos-da-base'
-import { classeCampo } from './comum'
+import { classeCampo, reaisDigitados } from './comum'
 import { DadosDaProposta } from './PaginaDadosDaProposta'
 import { ContasDoMes, Equipe, Linha, TabelaDePrecos } from './PecasDaBase'
 
@@ -680,11 +680,6 @@ function Fluxo({
   } else if (etapa === 5) {
     conteudo = (
       <div className="flex flex-col gap-(--space-200)">
-        <p className="max-w-3xl text-(--text-subtle)">
-          Razão social, CNPJ, contato, logo e texto de apresentação aparecem no topo de toda
-          proposta. É opcional: se preferir, continue sem preencher e faça depois em Dados da
-          proposta. O que você salvar aqui já vale para as propostas.
-        </p>
         <DadosDaProposta
           consultoriaId={consultoriaId}
           nivelDosTitulos={3}
@@ -723,17 +718,12 @@ function Fluxo({
           Ver orçamentos mesmo assim
         </Botao>
       </div>
-      <p className="max-w-3xl text-(--text-subtle)">
-        Seis passos curtos para o Grama calcular o preço sugerido dos orçamentos. Cada passo é
-        salvo: dá para parar e continuar depois. Nada passa a valer até você confirmar no resumo.
-        {rascunho?.atualizadoPorNome && rascunho.atualizadoEm ? (
-          <>
-            {' '}
-            Última alteração por {rascunho.atualizadoPorNome} em{' '}
-            {formatarInstanteComHora(rascunho.atualizadoEm, fuso)}.
-          </>
-        ) : null}
-      </p>
+      {rascunho?.atualizadoPorNome && rascunho.atualizadoEm ? (
+        <p className="text-xs text-(--text-subtle)">
+          Última alteração por {rascunho.atualizadoPorNome} em{' '}
+          {formatarInstanteComHora(rascunho.atualizadoEm, fuso)}
+        </p>
+      ) : null}
 
       <ProgressoDosPassos
         atual={etapa}
@@ -794,9 +784,6 @@ function Fluxo({
                 </li>
               ))}
             </ul>
-            <p className="text-xs text-(--text-subtle)">
-              Dá para salvar e continuar mesmo assim: o resumo mostra o que falta.
-            </p>
           </div>
         ) : null}
 
@@ -970,10 +957,6 @@ function PassoDaEquipe({
     lida && typeof lida !== 'string' ? custoHoraPorProfissao(linhasMensaisDaEquipe(lida)) : []
   return (
     <div className="flex flex-col gap-(--space-150)">
-      <p className="max-w-3xl text-(--text-subtle)">
-        Quem trabalha na consultoria e como recebe. O Grama só divide o que você informa: nenhum
-        salário, encargo ou valor é estimado. Confirme encargos e benefícios com a contabilidade.
-      </p>
       {form.modo === 'equipe' ? (
         <Equipe
           linhas={form.linhas}
@@ -1018,17 +1001,8 @@ function PassoDaEquipe({
                 Calcular pela equipe
               </Botao>
             </div>
-            <p className="max-w-3xl text-xs text-(--text-subtle)">
-              Recomendado: a hora de custo de cada pessoa sai de como ela recebe, e cada serviço usa
-              a hora do responsável. Ou digite abaixo o custo médio da hora; as horas faturáveis vêm
-              no próximo passo.
-            </p>
           </div>
-          <Linha
-            id="pp-hora"
-            rotulo="Custo da hora técnica (R$)"
-            apoio="Salários, pró-labore técnico e encargos ÷ horas faturáveis, sem custos fixos"
-          >
+          <Linha id="pp-hora" rotulo="Custo da hora técnica (R$)">
             <input
               id="pp-hora"
               inputMode="decimal"
@@ -1036,7 +1010,7 @@ function PassoDaEquipe({
               className={`${classeCampo} text-right tabular-nums`}
               value={form.horaTecnica}
               onChange={(e) => {
-                const valor = e.target.value
+                const valor = reaisDigitados(e)
                 aoMudar((f) => ({ ...f, horaTecnica: valor }))
               }}
             />
@@ -1084,16 +1058,9 @@ function PassoDasContas({
   const total = form.contas.reduce((soma, l) => soma + (lerEstimativa(l.valor) ?? 0), 0)
   return (
     <div className="flex flex-col gap-(--space-150)">
-      <p className="max-w-3xl text-(--text-subtle)">
-        O que a consultoria gasta por mês além da equipe: aluguel, energia, internet, contabilidade,
-        sistemas. Use o valor do último mês (fatura ou extrato). Pode ser o total ou conta por
-        conta. Em branco fica pendente; 0 só se você digitar.
-      </p>
       <ContasDoMes
         linhas={form.contas}
-        pelaEquipe={modo === 'equipe'}
         total={total}
-        contaSemValor="pendente"
         aoMudar={(id, alterar) => {
           aoMudar((f) => ({ ...f, contas: f.contas.map((l) => (l.id === id ? alterar(l) : l)) }))
         }}
@@ -1118,15 +1085,7 @@ function PassoDasContas({
           aoMudar((f) => ({ ...f, contas: f.contas.filter((l) => l.id !== id) }))
         }}
       >
-        <Linha
-          id="pp-total"
-          rotulo="Total das contas por mês (R$)"
-          apoio={
-            modo === 'equipe'
-              ? 'Sem a remuneração de quem está na equipe. Ou detalhe conta por conta'
-              : 'Inclua o pró-labore que não está na hora técnica. Ou detalhe conta por conta'
-          }
-        >
+        <Linha id="pp-total" rotulo="Total das contas por mês (R$)">
           <input
             id="pp-total"
             inputMode="decimal"
@@ -1134,7 +1093,7 @@ function PassoDasContas({
             className={`${classeCampo} text-right tabular-nums`}
             value={form.total}
             onChange={(e) => {
-              const valor = e.target.value
+              const valor = reaisDigitados(e)
               aoMudar((f) => ({ ...f, total: valor }))
             }}
           />
@@ -1149,20 +1108,12 @@ function PassoDasContas({
               {horasEquipe && horasEquipe > 0 ? `${textoDasHoras(horasEquipe)} h` : 'pendente'}
             </span>
           </p>
-          <p className="max-w-3xl text-xs text-(--text-subtle)">
-            Vêm da equipe (passo 1): a soma das horas no mês de quem tem custo e horas informados,
-            como em Custos e taxas. Para mudar, ajuste as horas de cada pessoa.{' '}
-            <Botao aparencia="link" className="text-xs" onClick={aoIrParaEquipe}>
-              Voltar ao passo 1
-            </Botao>
-          </p>
+          <Botao aparencia="link" className="self-start text-xs" onClick={aoIrParaEquipe}>
+            Ajustar as horas no passo 1
+          </Botao>
         </div>
       ) : (
-        <Linha
-          id="pp-horas"
-          rotulo="Horas faturáveis por mês"
-          apoio="Só as que viram serviço vendido, não as horas pagas"
-        >
+        <Linha id="pp-horas" rotulo="Horas faturáveis por mês">
           <input
             id="pp-horas"
             inputMode="decimal"
@@ -1182,7 +1133,6 @@ function PassoDasContas({
         <span className="corpo-medio text-(--text)">
           {porHora === null ? 'pendente' : `${formatarReais(porHora)} por hora`}
         </span>
-        . Já entra no custo de cada serviço do orçamento, pelas horas dele.
       </p>
     </div>
   )
@@ -1201,10 +1151,6 @@ function PassoDosPrecos({
 }) {
   return (
     <div className="flex flex-col gap-(--space-150)">
-      <p className="max-w-3xl text-(--text-subtle)">
-        Os preços da sua consultoria: o Grama não sugere valores. Comece com uma linha e acrescente
-        as outras quando quiser.
-      </p>
       <TabelaDePrecos
         horas={form.horas}
         comAtalhoAceamb={false}
@@ -1216,15 +1162,7 @@ function PassoDosPrecos({
         <legend className="corpo-medio text-(--text)">
           Visita técnica e deslocamento (opcional)
         </legend>
-        <p className="max-w-3xl text-xs text-(--text-subtle)">
-          Em branco, fica sem valor cadastrado: o orçamento avisa para cadastrar antes de cobrar
-          visita. Dá para completar depois em Custos e taxas.
-        </p>
-        <Linha
-          id="pp-visita"
-          rotulo="Valor de uma visita técnica (R$)"
-          apoio="Quanto vocês cobram por visita. Entra no orçamento por visita, com preço fixo, sem margem"
-        >
+        <Linha id="pp-visita" rotulo="Valor de uma visita técnica (R$)">
           <input
             id="pp-visita"
             inputMode="decimal"
@@ -1232,16 +1170,12 @@ function PassoDosPrecos({
             className={`${classeCampo} text-right tabular-nums`}
             value={form.visita}
             onChange={(e) => {
-              const valor = e.target.value
+              const valor = reaisDigitados(e)
               aoMudar((f) => ({ ...f, visita: valor }))
             }}
           />
         </Linha>
-        <Linha
-          id="pp-km"
-          rotulo="Valor por km rodado (R$)"
-          apoio="Cobrado quando a visita é longe: km de ida e volta × este valor"
-        >
+        <Linha id="pp-km" rotulo="Valor por km rodado (R$)">
           <input
             id="pp-km"
             inputMode="decimal"
@@ -1249,7 +1183,7 @@ function PassoDosPrecos({
             className={`${classeCampo} text-right tabular-nums`}
             value={form.km}
             onChange={(e) => {
-              const valor = e.target.value
+              const valor = reaisDigitados(e)
               aoMudar((f) => ({ ...f, km: valor }))
             }}
           />
@@ -1299,48 +1233,29 @@ function PassoDosTributos({
     <div className="flex flex-col gap-(--space-200)">
       <div className="flex flex-col gap-(--space-150)">
         <h3 className="corpo-medio text-(--text)">Tributos</h3>
-        <Linha
-          id="pp-tributos"
-          rotulo="Tributos sobre o faturamento (%)"
-          apoio="Peça à contabilidade a alíquota efetiva; imposto pago ÷ faturamento é só uma aproximação, e ela varia por período e regime. Se não paga, digite 0"
-        >
+        <Linha id="pp-tributos" rotulo="Tributos sobre o faturamento (%)">
           <input id="pp-tributos" {...campo('tributos', false)} />
         </Linha>
       </div>
 
       <div className="flex flex-col gap-(--space-150)">
         <h3 className="corpo-medio text-(--text)">Taxas de cobrança e assinatura</h3>
-        <p className="max-w-3xl text-xs text-(--text-subtle)">
-          Em branco fica pendente. Se não paga alguma, digite 0.{' '}
-          <Botao
-            aparencia="link"
-            className="text-xs"
-            onClick={() => {
-              aoMudar((f) => ({ ...f, taxas: '0', cobranca: '0,00', assinatura: '0,00' }))
-            }}
-          >
-            Não pagamos nenhuma destas taxas
-          </Botao>
-        </p>
-        <Linha
-          id="pp-taxas"
-          rotulo="Taxa percentual de cobrança (%)"
-          apoio="Só a que é percentual do preço, como a do cartão"
+        <Botao
+          aparencia="link"
+          className="self-start text-xs"
+          onClick={() => {
+            aoMudar((f) => ({ ...f, taxas: '0', cobranca: '0,00', assinatura: '0,00' }))
+          }}
         >
+          Não pagamos nenhuma destas taxas
+        </Botao>
+        <Linha id="pp-taxas" rotulo="Taxa percentual de cobrança (%)">
           <input id="pp-taxas" {...campo('taxas', false)} />
         </Linha>
-        <Linha
-          id="pp-cobranca"
-          rotulo="Taxa fixa por cobrança (R$)"
-          apoio="Pix ou boleto, por parcela"
-        >
+        <Linha id="pp-cobranca" rotulo="Taxa fixa por cobrança (R$)">
           <input id="pp-cobranca" {...campo('cobranca', true)} />
         </Linha>
-        <Linha
-          id="pp-assinatura"
-          rotulo="Taxa por documento assinado (R$)"
-          apoio="O que a plataforma de assinatura digital cobra por proposta assinada"
-        >
+        <Linha id="pp-assinatura" rotulo="Taxa por documento assinado (R$)">
           <input id="pp-assinatura" {...campo('assinatura', true)} />
         </Linha>
       </div>
@@ -1349,10 +1264,6 @@ function PassoDosTributos({
         <h3 className="corpo-medio text-(--text)">Margens</h3>
         {baseNova ? (
           <div className="flex flex-col gap-(--space-050)">
-            <p className="text-xs text-(--text-subtle)">
-              As margens vêm preenchidas com 30% e 25% só para começar: não são recomendação. Ajuste
-              para os valores da sua consultoria ou confirme.
-            </p>
             <CaixaSelecao
               rotulo="Confirmo que estas margens são da minha consultoria"
               checked={form.confirmadas}
@@ -1363,10 +1274,6 @@ function PassoDosTributos({
             />
           </div>
         ) : null}
-        <p className="max-w-3xl text-xs text-(--text-subtle)">
-          Desejada: meta usada no cálculo pela margem. Mínima: referência de alerta, não bloqueia.
-          Que sobra: resultado estimado de cada orçamento depois de custos, tributos e taxas.
-        </p>
         {desejada != null && minima != null && desejada < minima ? (
           <MensagemSecao tom="atencao">
             A margem desejada ({formatarPontosBase(desejada)}) está abaixo da mínima (
@@ -1374,14 +1281,10 @@ function PassoDosTributos({
             aviso de margem baixa.
           </MensagemSecao>
         ) : null}
-        <Linha id="pp-desejada" rotulo="Margem desejada (%)" apoio="Sobre o preço de venda">
+        <Linha id="pp-desejada" rotulo="Margem desejada (%)">
           <input id="pp-desejada" {...campo('desejada', false)} />
         </Linha>
-        <Linha
-          id="pp-minima"
-          rotulo="Margem mínima (%)"
-          apoio="Vale para o total do orçamento; item abaixo é só aviso"
-        >
+        <Linha id="pp-minima" rotulo="Margem mínima (%)">
           <input id="pp-minima" {...campo('minima', false)} />
         </Linha>
       </div>
@@ -1422,10 +1325,6 @@ function PassoDoResumo({
   const pronto = rascunho !== null && pendencias.length === 0 && !baseMudou
   return (
     <div className="flex flex-col gap-(--space-200)">
-      <p className="max-w-3xl text-(--text-subtle)">
-        O que foi salvo nos passos. Conferido, a configuração passa a valer para o preço dos
-        orçamentos.
-      </p>
       <dl
         aria-label="Resumo da configuração"
         className="grid max-w-3xl gap-(--space-100) sm:grid-cols-2"
@@ -1509,9 +1408,6 @@ function PassoDoResumo({
               </li>
             ))}
           </ul>
-          <p className="max-w-3xl text-xs text-(--text-subtle)">
-            Enquanto isso, dá para montar orçamentos: eles só ficam sem preço calculado.
-          </p>
           <div>
             <Botao onClick={aoCriarSemPreco}>Criar orçamento sem preço calculado</Botao>
           </div>
@@ -1543,9 +1439,9 @@ function PassoDoResumo({
           </div>
         </div>
       ) : null}
-      <p className="text-xs text-(--text-subtle)">
-        Prefere a página completa? <Link to="/configuracoes/custos">Abrir Custos e taxas</Link>
-      </p>
+      <Link to="/configuracoes/custos" className="self-start text-xs">
+        Abrir Custos e taxas
+      </Link>
     </div>
   )
 }

@@ -182,6 +182,7 @@ export interface Membro {
   email: string
   /** Profissão e cargo das listas fixas do Grama (ADR-0021); cargo antigo até o de-para. */
   profissao: CodigoProfissao | null
+  outrasProfissoes: CodigoProfissao[]
   cargo: string | null
   cargoCodigo: CodigoCargo | null
   cargoAntigo: string | null
@@ -200,7 +201,7 @@ export async function listarMembros(
   const { data, error, count } = await obterSupabase()
     .from('membro')
     .select(
-      'id, nome, email, papel, situacao, criado_em, desligado_em, profissao, cargo, cargo_antigo',
+      'id, nome, email, papel, situacao, criado_em, desligado_em, profissao, outras_profissoes, cargo, cargo_antigo',
       {
         count: 'exact',
       },
