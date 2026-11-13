@@ -198,6 +198,17 @@ const tresItens = [
   { minutos: 600, custoDiretoExtraCentavos: 0, horaVendaId: 'venda' }, // 950 + 300 = 1.250
 ]
 
+/**
+ * Base nova (ADR-0019, P3): tributos digitados (vazio não vira zero) e margens pré-preenchidas
+ * confirmadas antes de salvar.
+ */
+async function confirmarBaseNova(usuario: ReturnType<typeof userEvent.setup>) {
+  const tributos = screen.getByLabelText('Tributos sobre o faturamento (%)')
+  if ((tributos as HTMLInputElement).value === '') await usuario.type(tributos, '0')
+  const confirmar = screen.getByLabelText('Confirmo que estas margens são da minha consultoria')
+  if (!(confirmar as HTMLInputElement).checked) await usuario.click(confirmar)
+}
+
 describe('cálculo da tela de orçamento (margem única no fim)', () => {
   it('reproduz o exemplo conferido: R$ 7.803,16 repartido pelo custo de cada serviço', () => {
     const c = calcularOrcamento(
@@ -1036,6 +1047,69 @@ describe('orçamentos (onda 5)', () => {
     expect(screen.getByText(/Cópia criada como rascunho/)).toBeInTheDocument()
   })
 
+  it('no notebook, outros custos e ART ficam recolhidos com um resumo do que há dentro', async () => {
+    const usuario = userEvent.setup()
+    renderizarApp('/orcamentos/o1')
+    expect(await screen.findByText('Detalhes: outros custos 240,00')).toBeInTheDocument()
+    expect(screen.queryByRole('columnheader', { name: 'Outros custos (R$)' })).toBeNull()
+    expect(screen.getByRole('columnheader', { name: 'Tabela de preços' })).toBeInTheDocument()
+    await usuario.selectOptions(screen.getByLabelText('ART ou RRT do item 1'), 'art')
+    expect(screen.getByText('Detalhes: outros custos 240,00 · com ART')).toBeInTheDocument()
+  })
+
+  it('no celular (375 px), os serviços viram cartões que abrem para editar', async () => {
+    // Simula a tela estreita: só a consulta do celular casa.
+    const original = Object.getOwnPropertyDescriptor(window, 'matchMedia')
+    const simulado = vi.fn((consulta: string) => ({
+      matches: consulta.includes('max-width: 639px'),
+      media: consulta,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }))
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      writable: true,
+      value: simulado,
+    })
+    try {
+      const usuario = userEvent.setup()
+      const { container } = renderizarApp('/orcamentos/o1')
+      const lista = await screen.findByRole('list', { name: 'Serviços' })
+      expect(within(lista).getAllByRole('listitem')).toHaveLength(3)
+      // Fechado: nome, unidade, estado e preço; os campos só aparecem ao abrir.
+      expect(within(lista).getByText('1. Visita técnica e diagnóstico')).toBeInTheDocument()
+      expect(screen.queryByLabelText('Horas do item 1')).not.toBeInTheDocument()
+      const editar = within(lista).getByRole('button', { name: 'Editar serviço 1' })
+      expect(editar).toHaveAttribute('aria-expanded', 'false')
+      await usuario.click(editar)
+      expect(within(lista).getByRole('button', { name: 'Fechar serviço 1' })).toHaveAttribute(
+        'aria-expanded',
+        'true',
+      )
+      const horas = screen.getByLabelText('Horas do item 1')
+      await usuario.clear(horas)
+      await usuario.type(horas, '10')
+      expect(horas).toHaveValue('10')
+      const acessibilidade = await axe.run(container, {
+        rules: { 'color-contrast': { enabled: false } },
+      })
+      expect(acessibilidade.violations.map((v) => v.id)).toEqual([])
+
+      await usuario.click(within(lista).getByRole('button', { name: 'Remover serviço 3' }))
+      expect(within(lista).getAllByRole('listitem')).toHaveLength(2)
+      // O serviço novo abre já com o foco no nome.
+      await usuario.click(screen.getByRole('button', { name: 'Adicionar item' }))
+      expect(screen.getByLabelText('Serviço do item 3')).toHaveFocus()
+    } finally {
+      if (original) Object.defineProperty(window, 'matchMedia', original)
+      else Reflect.deleteProperty(window, 'matchMedia')
+    }
+  })
+
   it('horas fora do formato são marcadas e explicadas ao salvar', async () => {
     const usuario = userEvent.setup()
     renderizarApp('/orcamentos/o1')
@@ -1372,7 +1446,7 @@ describe('orçamentos (onda 5)', () => {
     falso.reiniciar({ ...cenario(), tabelas: { membro: membros } })
     const usuario = userEvent.setup()
     renderizarApp('/configuracoes/custos')
-    await screen.findByText(/Ainda não configurado/)
+    await screen.findByText('Falta configurar para calcular o preço')
     await usuario.click(
       screen.getByRole('button', { name: 'Usar tabela ACEAMB corrigida (ago/2026)' }),
     )
@@ -1404,6 +1478,8 @@ describe('orçamentos (onda 5)', () => {
     await usuario.type(screen.getByLabelText('Horas no mês da linha 1'), '173')
     // 13.751,77 ÷ 173 h = 79,49
     expect(screen.getByText('79,49')).toBeInTheDocument()
+    // A conta fica à mão para conferir (Marcos).
+    expect(screen.getByText('13.751,77 ÷ 173 h no mês = 79,49')).toBeInTheDocument()
 
     await usuario.click(screen.getByRole('button', { name: 'Adicionar pessoa' }))
     const pessoa2 = screen.getByLabelText('Pessoa da linha 2')
@@ -1417,6 +1493,7 @@ describe('orçamentos (onda 5)', () => {
     await usuario.type(screen.getByLabelText('Horas por diária da linha 2'), '8')
     // 400 ÷ 8 h = 50,00; sem os dias no mês, a capacidade fica desconhecida (nunca zero).
     expect(screen.getByText('50,00')).toBeInTheDocument()
+    expect(screen.getByText('400,00 ÷ 8 h por diária = 50,00')).toBeInTheDocument()
     // O aviso fica embaixo do próprio campo e é lido junto com ele.
     expect(screen.getByLabelText('Dias no mês da linha 2')).toHaveAccessibleDescription(
       /Dias no mês não informados; capacidade não calculada/,
@@ -1433,6 +1510,7 @@ describe('orçamentos (onda 5)', () => {
     expect(within(resultado).getByText('R$ 50,00')).toBeInTheDocument()
     expect(within(resultado).getByText('R$ 79,49')).toBeInTheDocument()
 
+    await confirmarBaseNova(usuario)
     await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
     const chamada = falso.cliente.rpc.mock.calls.find(([nome]) => nome === 'salvar_base_de_custos')
     expect(chamada?.[1]).not.toHaveProperty('p_piso_hora_centavos')
@@ -1475,7 +1553,7 @@ describe('orçamentos (onda 5)', () => {
   it('cadastra preço por faixas de quantidade e preço mínimo', async () => {
     const usuario = userEvent.setup()
     renderizarApp('/configuracoes/custos')
-    await screen.findByText(/Ainda não configurado/)
+    await screen.findByText('Falta configurar para calcular o preço')
     await usuario.type(screen.getByLabelText('Custo da hora técnica (R$)'), '95,00')
     await usuario.type(screen.getByLabelText('Horas faturáveis por mês'), '320')
     await usuario.click(screen.getByRole('button', { name: 'Adicionar preço' }))
@@ -1500,6 +1578,7 @@ describe('orçamentos (onda 5)', () => {
     await usuario.click(screen.getByRole('button', { name: 'Adicionar faixa na linha 1' }))
     await usuario.type(screen.getByLabelText('Até quanto vale a faixa 2 da linha 1'), '300')
     await usuario.type(screen.getByLabelText('Valor por unidade da faixa 2 da linha 1'), '1,80')
+    await confirmarBaseNova(usuario)
     await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
     expect(screen.getByRole('alert')).toHaveTextContent('os limites das faixas precisam crescer')
     await usuario.clear(screen.getByLabelText('Até quanto vale a faixa 2 da linha 1'))
@@ -1529,7 +1608,7 @@ describe('orçamentos (onda 5)', () => {
   it('avisa quando a margem desejada fica abaixo da mínima, sem bloquear', async () => {
     const usuario = userEvent.setup()
     renderizarApp('/configuracoes/custos')
-    await screen.findByText(/Ainda não configurado/)
+    await screen.findByText('Falta configurar para calcular o preço')
     expect(screen.queryByText(/está abaixo da mínima/)).not.toBeInTheDocument()
     const desejada = screen.getByLabelText('Margem desejada (%)')
     await usuario.clear(desejada)
@@ -1539,15 +1618,58 @@ describe('orçamentos (onda 5)', () => {
     ).toBeInTheDocument()
   })
 
+  it('lista o que falta para calcular o preço; tributo vazio e margem sem confirmar não salvam', async () => {
+    const usuario = userEvent.setup()
+    renderizarApp('/configuracoes/custos')
+    const lista = await screen.findByRole('region', {
+      name: 'Falta configurar para calcular o preço',
+    })
+    expect(within(lista).getByText(/Faltam 6 itens/)).toBeInTheDocument()
+    expect(
+      within(lista).getByRole('link', { name: 'Tabela de preços (ao menos uma linha)' }),
+    ).toHaveAttribute('href', '#grupo-precos')
+
+    await usuario.type(screen.getByLabelText('Custo da hora técnica (R$)'), '95,00')
+    await usuario.type(screen.getByLabelText('Horas faturáveis por mês'), '320')
+    await usuario.type(screen.getByLabelText('Custos fixos por mês (R$)'), '0')
+    await usuario.click(screen.getByRole('button', { name: 'Adicionar preço' }))
+    await usuario.type(screen.getByLabelText('Profissão da hora 1'), 'Eng. ambiental')
+    await usuario.type(screen.getByLabelText('Atividade ou nível da hora 1'), 'Pleno')
+    await usuario.type(screen.getByLabelText('Preço da linha 1'), '200,00')
+    expect(within(lista).getByText(/Falta 2 itens|Faltam 2 itens/)).toBeInTheDocument()
+
+    // Vazio não vira zero: tributos precisam ser digitados, mesmo que 0.
+    await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Informe os tributos sobre o faturamento (se não paga, digite 0).',
+    )
+    await usuario.type(screen.getByLabelText('Tributos sobre o faturamento (%)'), '0')
+    // As margens vêm preenchidas só para começar: precisam de confirmação.
+    await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
+    expect(screen.getByRole('alert')).toHaveTextContent('Confirme as margens desejada e mínima')
+    await usuario.click(
+      screen.getByLabelText('Confirmo que estas margens são da minha consultoria'),
+    )
+    expect(screen.getByText(/Tudo pronto para calcular o preço/)).toBeInTheDocument()
+    await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
+    const chamada = falso.cliente.rpc.mock.calls.find(([nome]) => nome === 'salvar_base_de_custos')
+    expect(chamada?.[1]).toMatchObject({
+      p_tributos_pb: 0,
+      p_margem_desejada_pb: 3_000,
+      p_custos_fixos_mensais_centavos: 0,
+    })
+  })
+
   it('custos e taxas mostram o rateio por hora e salvam', async () => {
     const usuario = userEvent.setup()
     renderizarApp('/configuracoes/custos')
-    expect(await screen.findByText(/Ainda não configurado/)).toBeInTheDocument()
+    expect(await screen.findByText('Falta configurar para calcular o preço')).toBeInTheDocument()
     await usuario.type(screen.getByLabelText('Custo da hora técnica (R$)'), '95,00')
     await usuario.type(screen.getByLabelText('Custos fixos por mês (R$)'), '9.600,00')
     await usuario.type(screen.getByLabelText('Horas faturáveis por mês'), '320')
     await usuario.type(screen.getByLabelText('Tributos sobre o faturamento (%)'), '6')
     expect(screen.getByText('R$ 30,00 por hora')).toBeInTheDocument()
+    await confirmarBaseNova(usuario)
     await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
     const chamada = falso.cliente.rpc.mock.calls.find(([nome]) => nome === 'salvar_base_de_custos')
     expect(chamada?.[1]).toMatchObject({
@@ -1563,7 +1685,7 @@ describe('orçamentos (onda 5)', () => {
   it('detalha as contas do mês, com a soma no lugar do total, e salva a visita', async () => {
     const usuario = userEvent.setup()
     renderizarApp('/configuracoes/custos')
-    await screen.findByText(/Ainda não configurado/)
+    await screen.findByText('Falta configurar para calcular o preço')
     await usuario.type(screen.getByLabelText('Custo da hora técnica (R$)'), '95,00')
     await usuario.type(screen.getByLabelText('Horas faturáveis por mês'), '320')
     await usuario.click(screen.getByRole('button', { name: 'Detalhar contas do mês' }))
@@ -1578,6 +1700,7 @@ describe('orçamentos (onda 5)', () => {
     await usuario.type(screen.getByLabelText('Valor de uma visita técnica (R$)'), '150,00')
     await usuario.type(screen.getByLabelText('Valor por km rodado (R$)'), '1,20')
 
+    await confirmarBaseNova(usuario)
     await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
     const chamada = falso.cliente.rpc.mock.calls.find(([nome]) => nome === 'salvar_base_de_custos')
     expect(chamada?.[1]).toMatchObject({
@@ -1594,13 +1717,14 @@ describe('orçamentos (onda 5)', () => {
     falso.reiniciar({ ...cenario(), tabelas: { membro: membros } })
     const usuario = userEvent.setup()
     renderizarApp('/configuracoes/custos')
-    await screen.findByText(/Ainda não configurado/)
+    await screen.findByText('Falta configurar para calcular o preço')
     await usuario.type(screen.getByLabelText('Custos fixos por mês (R$)'), '9.600,00')
     await usuario.type(screen.getByLabelText('Tributos sobre o faturamento (%)'), '6')
     await usuario.click(screen.getByRole('button', { name: 'Calcular pela equipe' }))
     expect(screen.getByLabelText('Outros custos fixos por mês (R$)')).toHaveValue('9.600,00')
     expect(screen.queryByLabelText('Custo da hora técnica (R$)')).not.toBeInTheDocument()
 
+    await confirmarBaseNova(usuario)
     await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
     expect(screen.getByRole('alert')).toHaveTextContent('Equipe, linha 1: escolha a pessoa.')
     await usuario.selectOptions(await screen.findByLabelText('Pessoa da linha 1'), 'm-eduardo')
@@ -1648,7 +1772,7 @@ describe('orçamentos (onda 5)', () => {
   it('a tela de custos não tem violações de acessibilidade com a equipe aberta', async () => {
     const usuario = userEvent.setup()
     const { container } = renderizarApp('/configuracoes/custos')
-    await screen.findByText(/Ainda não configurado/)
+    await screen.findByText('Falta configurar para calcular o preço')
     await usuario.click(screen.getByRole('button', { name: 'Calcular pela equipe' }))
     const resultado = await axe.run(container, { rules: { 'color-contrast': { enabled: false } } })
     expect(resultado.violations.map((v) => v.id)).toEqual([])

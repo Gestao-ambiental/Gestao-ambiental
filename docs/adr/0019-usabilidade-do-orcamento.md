@@ -239,3 +239,38 @@ Só texto e leitura, sem regra nova e sem migration.
   - "Ver cálculo" da hora de custo;
   - resultado da equipe em cartões;
   - reabrir mais visível (ele segue na fila "Mudar situação").
+
+## 13. Implementado: fatia 2 (primeira configuração)
+
+Tudo em `PaginaCustosETaxas.tsx`, sem migration. A base continua sendo salva inteira pela RPC de sempre. O rascunho de orçamento já podia ser criado sem base, então o P1 virou mostrar o que falta.
+
+- **Lista "Falta configurar para calcular o preço"** no topo, no lugar de "Ainda não configurado":
+  - os itens são custo da equipe, horas faturáveis, contas do mês, tabela de preços, tributos e margens confirmadas;
+  - cada item diz "Feito" ou "Falta" em texto, com ícone, e tem link para o grupo;
+  - sem nada faltando, a lista some; na base nova, mostra "Tudo pronto para calcular o preço. Salve…".
+- **Nova ordem dos grupos:** Custos e capacidade, Tabela de preços, Tributos e taxas, Margens, Visita técnica e deslocamento.
+- **P2:** "Calcular pela equipe" virou botão, com o texto de recomendado, antes da entrada manual. A troca de volta continua levando os valores calculados para os campos.
+- **"Ver cálculo"** na hora de custo de cada pessoa. Por exemplo, "13.751,77 ÷ 173 h no mês = 79,49"; na diária, "÷ h por diária"; no projeto, "÷ h do projeto".
+- **Resultado da equipe em cartões**, com os mesmos rótulos.
+- **P3:**
+  - na base nova, as margens 30% e 25% vêm com o aviso "só para começar: não são recomendação" e a caixa "Confirmo que estas margens são da minha consultoria". Mudar o valor também conta como confirmação;
+  - salvar sem confirmar dá erro;
+  - tributos vazios não viram mais 0 em silêncio: salvar exige o valor digitado ("se não paga, digite 0").
+- **Ainda não:** a tela do orçamento sem base continua com o aviso de antes ("Configurar custos e taxas").
+
+## 14. Implementado: fatia 3 (cartões no celular)
+
+Só tela, em `PaginaOrcamento.tsx`, sem cálculo novo.
+
+- **Campos em comum:** `camposDoItem(item, indice)` monta os campos de cada serviço uma vez. A tabela (notebook) e os cartões (celular) usam os mesmos campos, o mesmo estado e as mesmas regras.
+- **Quando aparecem os cartões:** `useTelaEstreita()` usa `matchMedia('(max-width: 639px)')`. Sem `matchMedia`, como no jsdom dos testes, fica a tabela. Assim os mesmos rótulos nunca aparecem duas vezes.
+- **Cartão fechado:**
+  - número e nome do serviço;
+  - unidade ("8h de serviço", "12,5 ha", "Pacote" ou "sem preço escolhido");
+  - estado em texto ("Faltam horas", "Escolha o preço", "Falta quantidade", "Falta preço fechado" ou "Completo");
+  - preço;
+  - botões "Editar serviço N" (com `aria-expanded` e `aria-controls`) e "Remover serviço N".
+- **Cartão aberto,** nesta ordem: Serviço, Tabela de preços (com quantidade ou preço fechado), Horas estimadas, Responsável (com carga), Mês previsto, Outros custos, ART/RRT, Custo estimado e Preço.
+- **Serviço novo no celular:** o cartão abre e o foco vai para o nome.
+- **Nome da coluna:** "Hora de venda" virou "Tabela de preços".
+- **Notebook (13/11/2026):** outros custos e ART/RRT ficam recolhidos em "Detalhes do serviço", embaixo do nome, com um resumo do que há dentro (ex.: "Detalhes: outros custos 240,00 · com ART"). A coluna "Outros custos" saiu. Larguras estreitadas e "Serviço" com largura mínima: a 1366 px, o nome cabe e o mês aparece inteiro.

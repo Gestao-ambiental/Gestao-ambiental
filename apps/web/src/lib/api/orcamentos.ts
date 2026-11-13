@@ -109,7 +109,8 @@ function quantidadeDe(valor: Json | undefined): number | null {
   const lido = numeroOuNulo(valor)
   return lido === null ? null : Math.round(lido * ESCALA_DA_QUANTIDADE)
 }
-function horasDe(valor: Json | undefined): HoraDeVenda[] {
+/** Tabela de preços como o banco devolve (base de custos e rascunho dos primeiros passos). */
+export function horasDe(valor: Json | undefined): HoraDeVenda[] {
   return lista(valor).map((h) => ({
     id: texto(h.id),
     profissao: texto(h.profissao),
@@ -658,6 +659,8 @@ export interface BaseDeCustosDaConsultoria {
   horasVenda: HoraDeVenda[]
   /** Derivado pelo banco ao salvar; a tela só mostra. */
   custoHoraPorProfissao: CustoDaProfissao[]
+  /** Versão da base lida (os primeiros passos dizem de qual versão partiram). */
+  rowVersion?: number
 }
 
 /** Nulo quando ainda não foi configurada. */
@@ -705,6 +708,7 @@ export async function obterBaseDeCustos(
     custoKmCentavos: numero(b.custo_km_centavos),
     horasVenda: horasDe(b.horas_venda),
     custoHoraPorProfissao: custosDe(b.custo_hora_profissao),
+    rowVersion: numero(b.row_version),
   }
 }
 
@@ -743,22 +747,27 @@ export async function salvarBaseDeCustos(
     })),
     p_valor_visita_centavos: base.valorVisitaCentavos,
     p_custo_km_centavos: base.custoKmCentavos,
-    p_horas_venda: base.horasVenda.map((h) => ({
-      id: h.id,
-      profissao: h.profissao,
-      atividade: h.atividade,
-      valor_centavos: h.valorCentavos,
-      fonte: h.fonte,
-      unidade: h.unidade,
-      minutos_por_unidade: h.minutosPorUnidade,
-      minimo_centavos: h.minimoCentavos,
-      faixas: h.faixas.map((f) => ({
-        ate: f.ateDezMilesimos === null ? null : textoDaQuantidadeParaOBanco(f.ateDezMilesimos),
-        valor_centavos: f.valorCentavos,
-      })),
-    })),
+    p_horas_venda: horasDeVendaParaOBanco(base.horasVenda),
   })
   if (error) throw error
+}
+
+/** Tabela de preços como o banco espera (salvar_base_de_custos e o rascunho dos primeiros passos). */
+export function horasDeVendaParaOBanco(horas: readonly HoraDeVenda[]) {
+  return horas.map((h) => ({
+    id: h.id,
+    profissao: h.profissao,
+    atividade: h.atividade,
+    valor_centavos: h.valorCentavos,
+    fonte: h.fonte,
+    unidade: h.unidade,
+    minutos_por_unidade: h.minutosPorUnidade,
+    minimo_centavos: h.minimoCentavos,
+    faixas: h.faixas.map((f) => ({
+      ate: f.ateDezMilesimos === null ? null : textoDaQuantidadeParaOBanco(f.ateDezMilesimos),
+      valor_centavos: f.valorCentavos,
+    })),
+  }))
 }
 
 /** Jornada da equipe e horas já comprometidas em orçamentos aprovados, por membro e mês. */

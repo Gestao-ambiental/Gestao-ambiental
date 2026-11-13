@@ -199,3 +199,30 @@ export type {
   UnidadeDeCobranca,
   VisitasDoOrcamento,
 } from './preco-do-orcamento'
+
+export {
+  ETAPAS_DA_CONFIGURACAO,
+  PASSO_DA_PENDENCIA,
+  custosFixosDoRascunho,
+  etapaDaConfiguracao,
+  exibirConviteDeConfiguracao,
+  horasDaEquipe,
+  pendenciasDaConfiguracao,
+  resumoDaConfiguracao,
+  rotuloDoConviteDeConfiguracao,
+  valorFoiInformado,
+} from './primeiros-passos-orcamento'
+export type {
+  ContaDoRascunho,
+  DadosDaConfiguracao,
+  EstadoDoConvite,
+  EtapaDaConfiguracao,
+  ModoDoCusto,
+  PassoContas,
+  PassoEquipe,
+  PassoPrecos,
+  PassoTributos,
+  PendenciaDaConfiguracao,
+  PessoaDoRascunho,
+  ResumoDaConfiguracao,
+} from './primeiros-passos-orcamento'

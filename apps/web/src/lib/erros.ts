@@ -118,6 +118,15 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   parcela_invalida: 'Confira as parcelas: marco, dias de 0 a 365 e percentual de 0 a 100.',
   base_invalida: 'Confira os valores: horas faturáveis precisam ser maiores que zero.',
   percentuais_invalidos: 'Margem, tributos e taxas somados precisam ficar abaixo de 100%.',
+  // Primeiros passos do orçamento (ADR-0020)
+  dados_invalidos: 'Confira os campos deste passo e tente de novo.',
+  base_alterada:
+    'Custos e taxas foram salvos por outra pessoa depois que esta configuração começou. Para não sobrescrever, recomece a partir dos valores atuais.',
+  configuracao_incompleta: 'Ainda falta configurar algum passo. Veja a lista e complete antes.',
+  operacao_invalida: 'Não foi possível salvar este passo. Recarregue e tente de novo.',
+  contas_invalidas: 'Confira as contas do mês: nome e valor de cada uma.',
+  horas_de_venda_invalidas:
+    'Confira a tabela de preços: profissão, serviço, unidade, preço e faixas de cada linha.',
 }
 
 const MENSAGENS_DO_AUTH: Record<string, string> = {

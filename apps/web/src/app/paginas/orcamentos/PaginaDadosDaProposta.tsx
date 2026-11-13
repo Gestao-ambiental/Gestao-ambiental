@@ -32,13 +32,6 @@ const PROBLEMAS_DA_LOGO: Record<ProblemaDaFoto, string> = {
 
 export function PaginaDadosDaProposta() {
   const { atual } = useConsultoria()
-  const cid = atual.consultoriaId
-  const consulta = useQuery({
-    queryKey: ['identidade', cid],
-    queryFn: () => obterIdentidade(cid),
-    enabled: atual.papel === 'gestao',
-  })
-
   if (atual.papel !== 'gestao') {
     return (
       <Pagina titulo="Dados da proposta">
@@ -46,22 +39,56 @@ export function PaginaDadosDaProposta() {
       </Pagina>
     )
   }
+  return (
+    <Pagina titulo="Dados da proposta">
+      <div className="flex max-w-3xl flex-col gap-(--space-200)">
+        <p className="text-(--text-subtle)">
+          Aparecem no topo de toda proposta. Só a gestão edita. O texto de apresentação é o padrão;
+          cada orçamento pode ter o seu. <Link to="/orcamentos">Voltar aos orçamentos</Link>
+        </p>
+        <DadosDaProposta consultoriaId={atual.consultoriaId} />
+      </div>
+    </Pagina>
+  )
+}
+
+/**
+ * Logo e dados da consultoria, com a RPC e a versão próprias da identidade (já valem para as
+ * propostas ao salvar). Usado aqui e no passo 5 dos primeiros passos (ADR-0020).
+ */
+export function DadosDaProposta({
+  consultoriaId,
+  nivelDosTitulos = 2,
+  rotuloSalvar = 'Salvar',
+  aoAlterar,
+}: {
+  consultoriaId: string
+  nivelDosTitulos?: 2 | 3
+  rotuloSalvar?: string
+  /** Avisa quando há mudança não salva (para perguntar antes de sair). */
+  aoAlterar?: (alterado: boolean) => void
+}) {
+  const consulta = useQuery({
+    queryKey: ['identidade', consultoriaId],
+    queryFn: () => obterIdentidade(consultoriaId),
+  })
   if (consulta.isPending) return <Carregando rotulo="Carregando dados da proposta" linhas={5} />
   if (consulta.isError) {
     return (
-      <Pagina titulo="Dados da proposta">
-        <EstadoErro
-          titulo="Não foi possível carregar os dados da proposta."
-          aoTentarDeNovo={() => void consulta.refetch()}
-        />
-      </Pagina>
+      <EstadoErro
+        titulo="Não foi possível carregar os dados da proposta."
+        aoTentarDeNovo={() => void consulta.refetch()}
+      />
     )
   }
   return (
     <Formulario
       key={String(consulta.data.rowVersion)}
-      consultoriaId={cid}
+      consultoriaId={consultoriaId}
       identidade={consulta.data}
+      nivelDosTitulos={nivelDosTitulos}
+      rotuloSalvar={rotuloSalvar}
+      aoAlterar={aoAlterar}
     />
   )
 }
@@ -69,10 +96,17 @@ export function PaginaDadosDaProposta() {
 function Formulario({
   consultoriaId,
   identidade,
+  nivelDosTitulos,
+  rotuloSalvar,
+  aoAlterar,
 }: {
   consultoriaId: string
   identidade: IdentidadeDaConsultoria
+  nivelDosTitulos: 2 | 3
+  rotuloSalvar: string
+  aoAlterar: ((alterado: boolean) => void) | undefined
 }) {
+  const Titulo = nivelDosTitulos === 2 ? 'h2' : 'h3'
   const queryClient = useQueryClient()
   const entrada = useRef<HTMLInputElement>(null)
   const [d, setD] = useState<DadosDaIdentidade>(() => ({
@@ -97,6 +131,7 @@ function Formulario({
     onSuccess: async () => {
       setAviso('Dados da proposta salvos.')
       setAlterado(false)
+      aoAlterar?.(false)
       await atualizar()
     },
   })
@@ -117,129 +152,123 @@ function Formulario({
         const valor = e.target.value
         setD((a) => ({ ...a, [chave]: valor }))
         setAlterado(true)
+        aoAlterar?.(true)
         setAviso(null)
       },
     }
   }
 
   return (
-    <Pagina titulo="Dados da proposta">
-      <div className="flex max-w-3xl flex-col gap-(--space-200)">
-        <p className="text-(--text-subtle)">
-          Aparecem no topo de toda proposta. Só a gestão edita. O texto de apresentação é o padrão;
-          cada orçamento pode ter o seu. <Link to="/orcamentos">Voltar aos orçamentos</Link>
-        </p>
-
-        <section aria-label="Logo" className="flex flex-col gap-(--space-100)">
-          <h2 className="corpo-medio">Logo</h2>
-          <div className="flex flex-wrap items-center gap-(--space-150)">
-            {identidade.logoUrl ? (
-              <img
-                src={identidade.logoUrl}
-                alt="Logo atual da consultoria"
-                className="h-16 max-w-48 object-contain"
-              />
-            ) : (
-              <span className="text-xs text-(--text-subtle)">Sem logo.</span>
-            )}
-            <input
-              ref={entrada}
-              type="file"
-              accept="image/png,image/jpeg"
-              className="sr-only"
-              tabIndex={-1}
-              aria-hidden="true"
-              onChange={(evento) => {
-                const arquivo = evento.target.files?.[0]
-                evento.target.value = ''
-                if (!arquivo) return
-                const motivo = conferirFoto(arquivo)
-                setProblemaDaLogo(motivo ? PROBLEMAS_DA_LOGO[motivo] : null)
-                if (!motivo) logo.mutate(arquivo)
-              }}
+    <div className="flex flex-col gap-(--space-200)">
+      <section aria-label="Logo" className="flex flex-col gap-(--space-100)">
+        <Titulo className="corpo-medio">Logo</Titulo>
+        <div className="flex flex-wrap items-center gap-(--space-150)">
+          {identidade.logoUrl ? (
+            <img
+              src={identidade.logoUrl}
+              alt="Logo atual da consultoria"
+              className="h-16 max-w-48 object-contain"
             />
-            <Botao
-              iconeAntes="upload"
-              disabled={ocupado || identidade.rowVersion === 0}
-              title={
-                identidade.rowVersion === 0
-                  ? 'Salve os dados abaixo para habilitar o envio da logo.'
-                  : undefined
-              }
-              onClick={() => {
-                entrada.current?.click()
-              }}
-            >
-              {logo.isPending ? 'Enviando…' : identidade.logoUrl ? 'Trocar logo' : 'Enviar logo'}
-            </Botao>
-            {identidade.logoUrl ? (
-              <Botao
-                aparencia="sutil"
-                iconeAntes="trash-2"
-                disabled={ocupado}
-                onClick={() => {
-                  setProblemaDaLogo(null)
-                  tirar.mutate()
-                }}
-              >
-                {tirar.isPending ? 'Tirando…' : 'Tirar logo'}
-              </Botao>
-            ) : null}
-            <span className="rotulo">PNG ou JPEG, até 2 MB.</span>
-          </div>
-          {identidade.rowVersion === 0 ? (
-            <p className="text-xs text-(--text-subtle)">
-              Salve os dados abaixo para habilitar o envio da logo.
-            </p>
-          ) : null}
-          {erroDaLogo ? (
-            <MensagemSecao role="alert" tom="perigo">
-              {erroDaLogo}
-            </MensagemSecao>
-          ) : null}
-        </section>
-
-        <section aria-label="Dados da consultoria" className="flex flex-col gap-(--space-150)">
-          <h2 className="corpo-medio">Dados da consultoria</h2>
-          <div className="grid gap-(--space-150) sm:grid-cols-2">
-            <Campo rotulo="Razão social" {...campo('razaoSocial')} />
-            <Campo rotulo="CNPJ" inputMode="text" {...campo('cnpj')} />
-            <Campo rotulo="Telefone" inputMode="tel" {...campo('telefone')} />
-            <Campo rotulo="E-mail" inputMode="email" {...campo('email')} />
-            <Campo rotulo="Site" inputMode="url" {...campo('site')} />
-            <Campo rotulo="Endereço" {...campo('endereco')} />
-          </div>
-          <CampoTexto
-            rotulo="Texto de apresentação padrão"
-            apoio="Vai no início de toda proposta que não tiver texto próprio."
-            {...campo('textoApresentacao')}
+          ) : (
+            <span className="text-xs text-(--text-subtle)">Sem logo.</span>
+          )}
+          <input
+            ref={entrada}
+            type="file"
+            accept="image/png,image/jpeg"
+            className="sr-only"
+            tabIndex={-1}
+            aria-hidden="true"
+            onChange={(evento) => {
+              const arquivo = evento.target.files?.[0]
+              evento.target.value = ''
+              if (!arquivo) return
+              const motivo = conferirFoto(arquivo)
+              setProblemaDaLogo(motivo ? PROBLEMAS_DA_LOGO[motivo] : null)
+              if (!motivo) logo.mutate(arquivo)
+            }}
           />
-        </section>
-
-        {salvar.error ? (
-          <MensagemSecao role="alert" tom="perigo">
-            {mensagemDoErro(salvar.error)}
-          </MensagemSecao>
-        ) : null}
-        {aviso ? (
-          <MensagemSecao role="status" tom="sucesso">
-            {aviso}
-          </MensagemSecao>
-        ) : null}
-        <div>
           <Botao
-            aparencia="primario"
-            disabled={!alterado || ocupado}
-            aria-busy={salvar.isPending || undefined}
+            iconeAntes="upload"
+            disabled={ocupado || identidade.rowVersion === 0}
+            title={
+              identidade.rowVersion === 0
+                ? 'Salve os dados abaixo para habilitar o envio da logo.'
+                : undefined
+            }
             onClick={() => {
-              salvar.mutate()
+              entrada.current?.click()
             }}
           >
-            {salvar.isPending ? 'Salvando…' : 'Salvar'}
+            {logo.isPending ? 'Enviando…' : identidade.logoUrl ? 'Trocar logo' : 'Enviar logo'}
           </Botao>
+          {identidade.logoUrl ? (
+            <Botao
+              aparencia="sutil"
+              iconeAntes="trash-2"
+              disabled={ocupado}
+              onClick={() => {
+                setProblemaDaLogo(null)
+                tirar.mutate()
+              }}
+            >
+              {tirar.isPending ? 'Tirando…' : 'Tirar logo'}
+            </Botao>
+          ) : null}
+          <span className="rotulo">PNG ou JPEG, até 2 MB.</span>
         </div>
+        {identidade.rowVersion === 0 ? (
+          <p className="text-xs text-(--text-subtle)">
+            Salve os dados abaixo para habilitar o envio da logo.
+          </p>
+        ) : null}
+        {erroDaLogo ? (
+          <MensagemSecao role="alert" tom="perigo">
+            {erroDaLogo}
+          </MensagemSecao>
+        ) : null}
+      </section>
+
+      <section aria-label="Dados da consultoria" className="flex flex-col gap-(--space-150)">
+        <Titulo className="corpo-medio">Dados da consultoria</Titulo>
+        <div className="grid gap-(--space-150) sm:grid-cols-2">
+          <Campo rotulo="Razão social" {...campo('razaoSocial')} />
+          <Campo rotulo="CNPJ" inputMode="text" {...campo('cnpj')} />
+          <Campo rotulo="Telefone" inputMode="tel" {...campo('telefone')} />
+          <Campo rotulo="E-mail" inputMode="email" {...campo('email')} />
+          <Campo rotulo="Site" inputMode="url" {...campo('site')} />
+          <Campo rotulo="Endereço" {...campo('endereco')} />
+        </div>
+        <CampoTexto
+          rotulo="Texto de apresentação padrão"
+          apoio="Vai no início de toda proposta que não tiver texto próprio."
+          {...campo('textoApresentacao')}
+        />
+      </section>
+
+      {salvar.error ? (
+        <MensagemSecao role="alert" tom="perigo">
+          {mensagemDoErro(salvar.error)}
+        </MensagemSecao>
+      ) : null}
+      {aviso ? (
+        <MensagemSecao role="status" tom="sucesso">
+          {aviso}
+        </MensagemSecao>
+      ) : null}
+      <div>
+        <Botao
+          aparencia="primario"
+          disabled={!alterado || ocupado}
+          aria-busy={salvar.isPending || undefined}
+          onClick={() => {
+            salvar.mutate()
+          }}
+        >
+          {salvar.isPending ? 'Salvando…' : rotuloSalvar}
+        </Botao>
       </div>
-    </Pagina>
+    </div>
   )
 }
 
