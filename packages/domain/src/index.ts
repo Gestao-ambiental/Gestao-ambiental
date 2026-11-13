@@ -182,10 +182,22 @@ export {
   mesmaProfissao,
   precificarOrcamento,
   problemaDasFaixas,
+  profissaoObrigatoria,
   rateioPorConta,
   valorDasVisitas,
   valorPorFaixas,
 } from './preco-do-orcamento'
+
+export {
+  CONSUMO_MAXIMO_KM_POR_LITRO,
+  MODOS_DE_DESLOCAMENTO,
+  modoDeDeslocamento,
+  valorDoKm,
+} from './deslocamento'
+export type { CombustivelDoKm, ModoDeDeslocamento } from './deslocamento'
+
+export { datasDaProposta } from './validade-da-proposta'
+export type { DatasDaProposta, MudancaDaProposta } from './validade-da-proposta'
 export type {
   BaseDoPreco,
   DivisaoDoValor,
@@ -230,11 +242,18 @@ export type {
 
 export {
   CARGOS,
+  GENEROS,
   MAXIMO_DE_OUTRAS_PROFISSOES,
   PROFISSOES,
   cargoDoCodigo,
+  generoDoCodigo,
   gruposDaLista,
   outrasProfissoes,
+  profissoesParaOGenero,
+  rotuloDaProfissaoDaPessoa,
+  rotuloDaFormacaoDaPessoa,
+  rotuloDaProfissaoNoCusto,
+  rotuloDoCurso,
   profissaoDoCodigo,
   rotuloDaProfissao,
   rotuloDoCargo,
@@ -246,6 +265,7 @@ export type {
   CertezaDaSugestao,
   CodigoCargo,
   CodigoProfissao,
+  GeneroDaPessoa,
   ItemDaLista,
   SugestaoDaLista,
 } from './profissao-e-cargo'

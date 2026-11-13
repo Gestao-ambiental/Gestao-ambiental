@@ -1,96 +1,149 @@
 /* Tokens semânticos do Grama sobre o Fluent 2 (ADR-0015). Componentes consomem SOMENTE estes
-   nomes; os valores vêm de fluent.css, gerado do pacote oficial. Como fluent.css redefine cada
-   --color* em [data-theme="dark"] no próprio <html>, um semântico declarado uma vez já acompanha
-   o tema: só há bloco escuro quando o papel muda de token, não de valor. */
+   nomes. Desde 13/11/2026 as cores de marca, superfície, texto, borda e foco seguem o manual da
+   marca Grama (edição 1.0, pág. 7, 9 e 11): lima na ação principal e no reconhecimento, tinta no
+   conteúdo, claro no fundo, pedra e areia nas áreas de apoio. Estados (perigo, sucesso, atenção),
+   selos de revisão e identidade de empreendimento continuam vindo de fluent.css, gerado do pacote
+   oficial. Os pares de contraste foram conferidos por script (texto 4,5:1; traço, ícone e foco 3:1).
+
+   Lima nunca é texto nem traço fino sobre fundo claro (1,1:1 com o branco): no tema claro o papel
+   "marca como traço" (--brand-stroke, --icon-brand, --border-input-active) é oliva e o link é
+   oliva um pouco mais escura (4,5:1 até sobre pedra); no escuro, os dois são lima. Sobre lima o texto é sempre tinta (--text-inverse). */
 :root{
-  /* Superfícies em camadas: página (2) < cartão e controles (1) < sobreposição (1 + sombra) */
-  --surface:var(--colorNeutralBackground1);
-  --surface-sunken:var(--colorNeutralBackground2);
-  --surface-raised:var(--colorNeutralBackground1);
-  --surface-overlay:var(--colorNeutralBackground1);
-  --surface-hover:var(--colorNeutralBackground1Hover);
-  --surface-pressed:var(--colorNeutralBackground1Pressed);
-  --surface-selected:var(--colorBrandBackground2);
-  --surface-selected-hover:var(--colorBrandBackground2Hover);
-  --surface-nav:var(--colorNeutralBackground1);
-  --surface-input:var(--colorNeutralBackground1);
-  --surface-input-focus:var(--colorNeutralBackground1);
-  --surface-disabled:var(--colorNeutralBackgroundDisabled);
-  --surface-skeleton:var(--colorNeutralStencil1);
-  --surface-skeleton-shine:var(--colorNeutralStencil2);
-  --surface-inverse:var(--colorNeutralBackgroundInverted);
+  /* Paleta do manual (pág. 7). Nunca consuma estas variáveis num componente. */
+  --grama-lima:#E5FF73;
+  --grama-tinta:#20291F;
+  --grama-claro:#F8F9F4;
+  --grama-oliva:#637B16;
+  --grama-ceu:#DDEBF2;
+  --grama-pedra:#E8EDE3;
+  --grama-areia:#ECEDEB;
+  --grama-texto-secundario:#4D594F;
+  --grama-branco:#FFFFFF;
+  /* Derivadas da paleta (mesmo matiz), para estados e para o tema escuro. */
+  --grama-lima-hover:#D9F45C;
+  --grama-lima-pressed:#CBE84A;
+  --grama-lima-suave:#F4FDC8;        /* lima a ~35% sobre branco: seleção e fundo de marca */
+  --grama-lima-suave-hover:#ECFAAE;
+  --grama-oliva-texto:#5A7014;       /* oliva para texto: 4,5:1 também sobre pedra e seleção em hover */
+  --grama-oliva-escuro:#4B5D10;      /* oliva pressionado e texto de marca sobre lima suave */
+  --grama-pedra-escura:#D3DACB;
+  --grama-neutro-hover:#F1F3EC;
+  --grama-borda:#DCE1D6;
+  --grama-borda-forte:#C5CCBF;
+  --grama-borda-acessivel:#6F7A6B;   /* 4,4:1 sobre branco: contorno de controle (1.4.11) */
+  --grama-texto-terciario:#5E695F;
+  --grama-texto-desabilitado:#A6AEA2;
+  /* Tema escuro: tinta como fundo e tinta clareada nas superfícies. */
+  --grama-tinta-fundo:#20291F;
+  --grama-tinta-1:#2A3329;
+  --grama-tinta-2:#303A2F;
+  --grama-tinta-3:#353F34;
+  --grama-tinta-4:#3D483C;
+  --grama-tinta-borda:#434E41;
+  --grama-tinta-borda-forte:#5A6657;
+  --grama-tinta-borda-acessivel:#8E998A;
+  --grama-tinta-lima-suave:#465234;  /* lima a ~15% sobre tinta-1 */
+  --grama-tinta-lima-suave-hover:#536039;
+  --grama-tinta-ceu:#2C3F48;
+  --grama-tinta-texto-secundario:#BCC5B8;
+  --grama-tinta-texto-terciario:#A5AFA1;
+  --grama-tinta-texto-desabilitado:#6B7569;
+  --grama-tinta-icone:#CDD5C9;
+  --grama-tinta-avatar:#AAB4A6;
+
+  /* Superfícies em camadas: página (claro) < cartão e controles (branco) < sobreposição (branco + sombra) */
+  --surface:var(--grama-branco);
+  --surface-sunken:var(--grama-claro);
+  --surface-raised:var(--grama-branco);
+  --surface-overlay:var(--grama-branco);
+  --surface-hover:var(--grama-neutro-hover);
+  --surface-pressed:var(--grama-pedra);
+  --surface-selected:var(--grama-lima-suave);
+  --surface-selected-hover:var(--grama-lima-suave-hover);
+  --surface-nav:var(--grama-branco);
+  --surface-input:var(--grama-branco);
+  --surface-input-focus:var(--grama-branco);
+  --surface-disabled:var(--grama-areia);
+  --surface-skeleton:var(--grama-areia);
+  --surface-skeleton-shine:var(--grama-claro);
+  --surface-inverse:var(--grama-tinta);
   --scrim:var(--colorBackgroundOverlay);
 
-  --text:var(--colorNeutralForeground1);
-  --text-subtle:var(--colorNeutralForeground3);
-  --text-subtlest:var(--colorNeutralForeground4);
-  --text-disabled:var(--colorNeutralForegroundDisabled);
-  /* Texto sobre a marca e sobre perigo forte: branco nos dois temas (a marca escura vale no escuro). */
-  --text-inverse:var(--colorNeutralForegroundOnBrand);
-  --text-on-inverse:var(--colorNeutralForegroundInverted);
-  --text-link:var(--colorBrandForegroundLink);
-  --text-link-pressed:var(--colorBrandForegroundLinkPressed);
-  --text-link-inverse:var(--colorBrandForegroundInverted);
+  --text:var(--grama-tinta);
+  --text-subtle:var(--grama-texto-secundario);
+  --text-subtlest:var(--grama-texto-terciario);
+  --text-disabled:var(--grama-texto-desabilitado);
+  /* Texto sobre a marca (lima): tinta nos dois temas. Sobre perigo forte vale --text-on-danger. */
+  --text-inverse:var(--grama-tinta);
+  --text-on-danger:var(--colorNeutralForegroundOnBrand);
+  --text-on-inverse:var(--grama-claro);
+  --text-link:var(--grama-oliva-texto);
+  --text-link-pressed:var(--grama-oliva-escuro);
+  --text-link-inverse:var(--grama-lima);
   --text-danger:var(--colorStatusDangerForeground1);
   --text-success:var(--colorStatusSuccessForeground1);
   --text-warning:var(--colorStatusWarningForeground3);
-  --text-info:var(--colorNeutralForeground2);
-  --text-brand:var(--colorBrandForeground1);
+  --text-info:var(--grama-texto-secundario);
+  --text-brand:var(--grama-oliva-escuro);
 
-  /* Bordas: Stroke2 é decorativa; controles usam Stroke1 e a linha inferior acessível (1.4.11). */
-  --border:var(--colorNeutralStroke2);
-  --border-subtle:var(--colorNeutralStroke3);
-  --border-strong:var(--colorNeutralStroke1);
-  --border-focus:var(--colorStrokeFocus2);
-  --border-focus-inner:var(--colorStrokeFocus1);
+  /* Bordas: --border é decorativa; controles usam --border-input e a linha inferior acessível (1.4.11). */
+  --border:var(--grama-borda);
+  --border-subtle:var(--grama-pedra);
+  --border-strong:var(--grama-borda-forte);
+  /* Foco: anel tinta (14:1 sobre claro) com 1px branco por dentro. Lima não dá 3:1 sobre claro. */
+  --border-focus:var(--grama-tinta);
+  --border-focus-inner:var(--grama-branco);
   --border-danger:var(--colorStatusDangerBorder2);
-  --border-input:var(--colorNeutralStroke1);
-  --border-input-accessible:var(--colorNeutralStrokeAccessible);
-  --border-input-active:var(--colorCompoundBrandStroke);
+  --border-input:var(--grama-borda-forte);
+  --border-input-accessible:var(--grama-borda-acessivel);
+  --border-input-active:var(--grama-oliva);
 
-  --brand:var(--colorBrandBackground);
-  --brand-hover:var(--colorBrandBackgroundHover);
-  --brand-pressed:var(--colorBrandBackgroundPressed);
-  --brand-subtle:var(--colorBrandBackground2);
-  /* Marca como traço ou preenchimento pequeno (indicador do item ativo, caixa marcada) */
-  --brand-stroke:var(--colorCompoundBrandBackground);
+  /* Ação principal: lima com texto tinta (manual, pág. 7 e 9). */
+  --brand:var(--grama-lima);
+  --brand-hover:var(--grama-lima-hover);
+  --brand-pressed:var(--grama-lima-pressed);
+  --brand-subtle:var(--grama-lima-suave);
+  /* Marca como traço ou preenchimento pequeno (indicador do item ativo, caixa marcada, aba ativa) */
+  --brand-stroke:var(--grama-oliva);
 
   --neutral-subtle:var(--colorSubtleBackground);
-  --neutral-subtle-hover:var(--colorSubtleBackgroundHover);
-  --neutral-subtle-pressed:var(--colorSubtleBackgroundPressed);
-  --neutral-bold:var(--colorNeutralForeground3);
+  --neutral-subtle-hover:var(--grama-neutro-hover);
+  --neutral-subtle-pressed:var(--grama-pedra);
+  --neutral-bold:var(--grama-texto-secundario);
 
   --danger:var(--colorStatusDangerBackground3);
   --danger-hover:var(--colorStatusDangerBackground3Hover);
   --danger-pressed:var(--colorStatusDangerBackground3Pressed);
   --danger-subtle:var(--colorStatusDangerBackground1);
 
-  --icon:var(--colorNeutralForeground2);
-  --icon-subtle:var(--colorNeutralForeground3);
-  --icon-disabled:var(--colorNeutralForegroundDisabled);
-  --icon-inverse:var(--colorNeutralForegroundOnBrand);
-  --icon-brand:var(--colorBrandForeground1);
+  --icon:var(--grama-texto-secundario);
+  --icon-subtle:var(--grama-texto-terciario);
+  --icon-disabled:var(--grama-texto-desabilitado);
+  --icon-inverse:var(--grama-tinta);
+  --icon-brand:var(--grama-oliva);
   /* Ícone de estado sobre --surface-inverse (toast) */
   --icon-on-inverse-info:var(--colorNeutralForegroundInverted2);
   --icon-on-inverse-success:var(--colorStatusSuccessForegroundInverted);
   --icon-on-inverse-warning:var(--colorStatusWarningForegroundInverted);
   --icon-on-inverse-danger:var(--colorStatusDangerForegroundInverted);
 
-  --avatar-default:var(--colorNeutralForeground3);
+  /* Avatar sem foto: pedra com a sigla em tinta (--text-inverse). */
+  --avatar-default:var(--grama-pedra-escura);
   --presence-online:var(--colorPaletteLightGreenForeground3);
   --presence-away:var(--colorPaletteMarigoldBackground3);
-  --toggle-off:var(--colorNeutralStrokeAccessible);
-  --toggle-thumb:var(--colorNeutralBackground1);
+  --toggle-off:var(--grama-borda-acessivel);
+  --toggle-thumb:var(--grama-branco);
 
-  --progress-brand:var(--colorCompoundBrandBackground);
+  --progress-brand:var(--grama-oliva);
   --progress-success:var(--colorStatusSuccessBackground3);
   --progress-warning:var(--colorStatusWarningBackground3);
-  --progress-neutral:var(--colorNeutralBackground6);
+  --progress-neutral:var(--grama-pedra);
 
   /* Selos (Badge "tint" do Fluent): fundo de status, texto do mesmo matiz. A situação vai sempre
-     escrita; a cor só reforça. */
-  --lozenge-default-bg:var(--colorNeutralBackground6);       --lozenge-default-text:var(--colorNeutralForeground2);
-  --lozenge-inprogress-bg:var(--colorBrandBackground2);      --lozenge-inprogress-text:var(--colorBrandForeground2);
+     escrita; a cor só reforça. "Em andamento" usa o céu do manual, para não se confundir com o
+     sucesso (verde) nem com a ação principal (lima). */
+  --lozenge-default-bg:var(--grama-areia);                   --lozenge-default-text:var(--grama-texto-secundario);
+  --lozenge-inprogress-bg:var(--grama-ceu);                  --lozenge-inprogress-text:var(--grama-tinta);
   --lozenge-success-bg:var(--colorStatusSuccessBackground1); --lozenge-success-text:var(--colorStatusSuccessForeground1);
   --lozenge-warning-bg:var(--colorStatusWarningBackground1); --lozenge-warning-text:var(--colorStatusWarningForeground3);
   --lozenge-danger-bg:var(--colorStatusDangerBackground1);   --lozenge-danger-text:var(--colorStatusDangerForeground1);
@@ -108,11 +161,70 @@
   --client-5:var(--colorPalettePumpkinBackground2);   --client-5-text:var(--colorPalettePumpkinForeground2);
   --client-6:var(--colorPaletteGrapeBackground2);     --client-6-text:var(--colorPaletteGrapeForeground2);
 
-  --logo-ink:var(--colorBrandForeground1);
+  --logo-ink:var(--grama-tinta);
 }
 
-/* Papéis que trocam de token no escuro (conferidos para 4,5:1 por scripts de contraste). */
+/* Tema escuro: fundo tinta, superfícies tinta clareada, texto claro, lima na ação, no traço de
+   marca e no foco (lima sobre tinta passa de 13:1). Estados seguem o escuro de fluent.css. */
 [data-theme="dark"]{
+  --surface:var(--grama-tinta-1);
+  --surface-sunken:var(--grama-tinta-fundo);
+  --surface-raised:var(--grama-tinta-1);
+  --surface-overlay:var(--grama-tinta-2);
+  --surface-hover:var(--grama-tinta-3);
+  --surface-pressed:var(--grama-tinta-4);
+  --surface-selected:var(--grama-tinta-lima-suave);
+  --surface-selected-hover:var(--grama-tinta-lima-suave-hover);
+  --surface-nav:var(--grama-tinta-1);
+  --surface-input:var(--grama-tinta-1);
+  --surface-input-focus:var(--grama-tinta-1);
+  --surface-disabled:var(--grama-tinta-2);
+  --surface-skeleton:var(--grama-tinta-3);
+  --surface-skeleton-shine:var(--grama-tinta-4);
+  --surface-inverse:var(--grama-claro);
+
+  --text:var(--grama-claro);
+  --text-subtle:var(--grama-tinta-texto-secundario);
+  --text-subtlest:var(--grama-tinta-texto-terciario);
+  --text-disabled:var(--grama-tinta-texto-desabilitado);
+  --text-on-inverse:var(--grama-tinta);
+  --text-link:var(--grama-lima);
+  --text-link-pressed:var(--grama-lima-pressed);
+  --text-link-inverse:var(--grama-oliva-escuro);
   --text-danger:var(--colorStatusDangerForeground3);
-  --avatar-default:var(--colorNeutralBackground6);
+  --text-info:var(--grama-tinta-texto-secundario);
+  --text-brand:var(--grama-lima);
+
+  --border:var(--grama-tinta-borda);
+  --border-subtle:var(--grama-tinta-3);
+  --border-strong:var(--grama-tinta-borda-forte);
+  --border-focus:var(--grama-lima);
+  --border-focus-inner:var(--grama-tinta-fundo);
+  --border-input:var(--grama-tinta-borda-forte);
+  --border-input-accessible:var(--grama-tinta-borda-acessivel);
+  --border-input-active:var(--grama-lima);
+
+  --brand-subtle:var(--grama-tinta-lima-suave);
+  --brand-stroke:var(--grama-lima);
+
+  --neutral-subtle-hover:var(--grama-tinta-3);
+  --neutral-subtle-pressed:var(--grama-tinta-4);
+  --neutral-bold:var(--grama-tinta-texto-secundario);
+
+  --icon:var(--grama-tinta-icone);
+  --icon-subtle:var(--grama-tinta-texto-terciario);
+  --icon-disabled:var(--grama-tinta-texto-desabilitado);
+  --icon-brand:var(--grama-lima);
+
+  --avatar-default:var(--grama-tinta-avatar);
+  --toggle-off:var(--grama-tinta-borda-acessivel);
+  --toggle-thumb:var(--grama-tinta-1);
+
+  --progress-brand:var(--grama-lima);
+  --progress-neutral:var(--grama-tinta-4);
+
+  --lozenge-default-bg:var(--grama-tinta-4);  --lozenge-default-text:var(--grama-tinta-icone);
+  --lozenge-inprogress-bg:var(--grama-tinta-ceu); --lozenge-inprogress-text:var(--grama-ceu);
+
+  --logo-ink:var(--grama-claro);
 }

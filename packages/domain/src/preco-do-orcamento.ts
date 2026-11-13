@@ -14,6 +14,7 @@ import {
   type CustoDoItem,
   type LinhaDaEquipe,
 } from './orcamento'
+import type { ModoDeDeslocamento } from './deslocamento'
 
 /** Limites das visitas, conferidos também no banco. */
 export const MAXIMO_VISITAS = 100
@@ -34,6 +35,11 @@ export interface BaseDoPreco {
   valorVisitaCentavos: number
   /** Valor cobrado por km rodado (ida e volta), quando a visita é longe. Não recebe margem. */
   custoKmCentavos: number
+  /**
+   * Como a visita é cobrada: "visita" (só o valor fixo) ou "km" (só o km rodado). Nulo ou ausente =
+   * orçamento copiado antes da escolha existir: soma os dois, como na época.
+   */
+  deslocamentoModo?: ModoDeDeslocamento | null
   /** Tabela de hora de venda (profissão e atividade ou nível), para a forma "tabela". */
   horasVenda?: readonly HoraDeVenda[]
   /** Hora técnica (custo) por profissão; sem a profissão, vale `horaTecnicaCentavos`. */
@@ -78,6 +84,15 @@ export interface FaixaDePreco {
 }
 
 /** Unidades que aceitam faixas de quantidade (hora e pacote não). */
+/**
+ * Tabela de preços em dois blocos (decisão do Eduardo, 13/11/2026): "Hora de profissional" (unidade
+ * hora) e "Serviços" (as demais). Na hora a profissão é obrigatória; no serviço ela é o "Quem faz",
+ * opcional: sem ela, o custo usa a média da equipe.
+ */
+export function profissaoObrigatoria(unidade: UnidadeDeCobranca): boolean {
+  return unidade === 'hora'
+}
+
 export const UNIDADES_COM_FAIXAS: readonly UnidadeDeCobranca[] = ['m2', 'ha', 'diaria', 'campanha']
 export const MAXIMO_DE_FAIXAS = 10
 
@@ -193,19 +208,24 @@ function exigirInteiro(valor: number, maximo: number): void {
   }
 }
 
-/** Preço fixo das visitas: quantidade × (valor da visita + km × valor do km + outros gastos). */
+/**
+ * Preço fixo das visitas: quantidade × (valor da visita ou km × valor do km, conforme o modo, +
+ * outros gastos). No modo "visita" o km não entra; no modo "km" o valor da visita não entra. Sem
+ * modo (orçamento antigo), soma os dois. Igual à cópia da base em private.aplicar_base_ao_orcamento.
+ */
 export function valorDasVisitas(
   visitas: VisitasDoOrcamento,
-  base: Pick<BaseDoPreco, 'valorVisitaCentavos' | 'custoKmCentavos'>,
+  base: Pick<BaseDoPreco, 'valorVisitaCentavos' | 'custoKmCentavos' | 'deslocamentoModo'>,
 ): number {
   exigirInteiro(visitas.quantidade, MAXIMO_VISITAS)
   exigirInteiro(visitas.kmPorVisita, MAXIMO_KM_POR_VISITA)
   exigirInteiro(visitas.outrosPorVisitaCentavos, 99_999_999_999)
   exigirInteiro(base.valorVisitaCentavos, 99_999_999_999)
   exigirInteiro(base.custoKmCentavos, 99_999_999_999)
+  const modo = base.deslocamentoModo ?? null
   const porVisita =
-    base.valorVisitaCentavos +
-    visitas.kmPorVisita * base.custoKmCentavos +
+    (modo === 'km' ? 0 : base.valorVisitaCentavos) +
+    (modo === 'visita' ? 0 : visitas.kmPorVisita * base.custoKmCentavos) +
     visitas.outrosPorVisitaCentavos
   return visitas.quantidade * porVisita
 }

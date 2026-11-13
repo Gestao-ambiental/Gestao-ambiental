@@ -473,14 +473,14 @@ isOneToOne: false
                   ]
                 },"membro": {
                   Row: {
-                    "cargo": string | null,"cargo_antigo": string | null,"profissao": string | null,"outras_profissoes": string[],"consultoria_id": string,"criado_em": string,"desligado_em": string | null,"email": string,"foto_documento_id": string | null,"id": string,"nome": string,"papel": Database["public"]['Enums']["papel_membro"],"situacao": Database["public"]['Enums']["situacao_membro"],"usuario_id": string
+                    "cargo": string | null,"cargo_antigo": string | null,"profissao": string | null,"outras_profissoes": string[],"genero": string | null,"profissao_em_curso": boolean,"consultoria_id": string,"criado_em": string,"desligado_em": string | null,"email": string,"foto_documento_id": string | null,"id": string,"nome": string,"papel": Database["public"]['Enums']["papel_membro"],"situacao": Database["public"]['Enums']["situacao_membro"],"usuario_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "cargo"?: string | null,"cargo_antigo"?: string | null,"profissao"?: string | null,"outras_profissoes"?: string[],"consultoria_id": string,"criado_em"?: string,"desligado_em"?: string | null,"email": string,"foto_documento_id"?: string | null,"id"?: string,"nome": string,"papel": Database["public"]['Enums']["papel_membro"],"situacao"?: Database["public"]['Enums']["situacao_membro"],"usuario_id": string
+                    "cargo"?: string | null,"cargo_antigo"?: string | null,"profissao"?: string | null,"outras_profissoes"?: string[],"genero"?: string | null,"profissao_em_curso"?: boolean,"consultoria_id": string,"criado_em"?: string,"desligado_em"?: string | null,"email": string,"foto_documento_id"?: string | null,"id"?: string,"nome": string,"papel": Database["public"]['Enums']["papel_membro"],"situacao"?: Database["public"]['Enums']["situacao_membro"],"usuario_id": string
                   }
                   Update: {
-                    "cargo"?: string | null,"cargo_antigo"?: string | null,"profissao"?: string | null,"outras_profissoes"?: string[],"consultoria_id"?: string,"criado_em"?: string,"desligado_em"?: string | null,"email"?: string,"foto_documento_id"?: string | null,"id"?: string,"nome"?: string,"papel"?: Database["public"]['Enums']["papel_membro"],"situacao"?: Database["public"]['Enums']["situacao_membro"],"usuario_id"?: string
+                    "cargo"?: string | null,"cargo_antigo"?: string | null,"profissao"?: string | null,"outras_profissoes"?: string[],"genero"?: string | null,"profissao_em_curso"?: boolean,"consultoria_id"?: string,"criado_em"?: string,"desligado_em"?: string | null,"email"?: string,"foto_documento_id"?: string | null,"id"?: string,"nome"?: string,"papel"?: Database["public"]['Enums']["papel_membro"],"situacao"?: Database["public"]['Enums']["situacao_membro"],"usuario_id"?: string
                   }
                   Relationships: [
                     {
@@ -719,6 +719,14 @@ isOneToOne: false
               "consultoria_fuso": string,"consultoria_nome": string,"conta_com_senha": boolean,"convidado_por_nome": string,"email": string,"expira_em": string,"papel": Database["public"]['Enums']["papel_membro"],"situacao": string
             }[]
                            },
+"completar_cadastro":
+{ Args: { "p_em_curso"?: boolean,"p_genero": string,"p_profissao": string }; Returns: undefined
+                           },
+"contar_orcamentos_por_situacao":
+{ Args: { "p_busca"?: string,"p_consultoria_id": string,"p_lixeira"?: boolean }; Returns: {
+              "quantidade": number,"situacao": Database["public"]['Enums']["situacao_orcamento"]
+            }[]
+                           },
 "contar_prazos":
 { Args: { "p_aba"?: string,"p_consultoria_id": string,"p_empreendimento_id"?: string,"p_responsavel_id"?: string,"p_sem_responsavel"?: boolean,"p_tipo_id"?: string }; Returns: {
               "atrasadas": number,"hoje": number,"proximos_7": number,"sem_responsavel": number,"total": number
@@ -756,8 +764,11 @@ isOneToOne: false
 "definir_antecedencia_renovacao":
 { Args: { "p_antecedencia": number,"p_plano_id": string,"p_row_version": number }; Returns: number
                            },
+"definir_meu_genero":
+{ Args: { "p_genero": string }; Returns: undefined
+                           },
 "definir_profissao_e_cargo":
-{ Args: { "p_cargo": string | null,"p_membro_id": string,"p_outras_profissoes"?: string[],"p_profissao": string | null }; Returns: undefined
+{ Args: { "p_cargo": string | null,"p_membro_id": string,"p_outras_profissoes"?: string[],"p_profissao": string | null,"p_profissao_em_curso"?: boolean | null }; Returns: undefined
                            },
 "definir_responsavel":
 { Args: { "p_condicionante_id": string,"p_membro_id": string }; Returns: undefined
@@ -809,7 +820,7 @@ isOneToOne: false
             }[]
                            },
 "listar_orcamentos":
-{ Args: { "p_busca"?: string,"p_consultoria_id": string,"p_deslocamento"?: number,"p_limite"?: number,"p_lixeira"?: boolean }; Returns: {
+{ Args: { "p_busca"?: string,"p_consultoria_id": string,"p_deslocamento"?: number,"p_limite"?: number,"p_lixeira"?: boolean,"p_situacao"?: Database["public"]['Enums']["situacao_orcamento"] }; Returns: {
               "ano": number,"atualizado_em": string,"empreendimento_id": string,"empreendimento_nome": string,"excluido_em": string,"id": string,"objeto": string,"revisao": number,"row_version": number,"sequencia": number,"situacao": Database["public"]['Enums']["situacao_orcamento"],"total": number,"total_centavos": number
             }[]
                            },
@@ -852,6 +863,8 @@ isOneToOne: false
 "obter_orcamento":
 { Args: { "p_id": string }; Returns: Json
                            },
+"obter_contratante_da_proposta":
+{ Args: { "p_id": string }; Returns: Json },
 "obter_plano_renovacao":
 { Args: { "p_instrumento_id": string }; Returns: {
               "acompanhamento_dias": number,"antecedencia_dias": number,"comprovante_caminho": string,"comprovante_nome": string,"comprovante_tamanho": number,"consultoria_id": string,"dias_limite_protocolo": number,"empreendimento_id": string,"empreendimento_nome": string,"hoje": string,"id": string,"instrumento_id": string,"licenca": string,"orgao": string,"protocolado_em": string,"protocolo_numero": string,"registrado_em": string,"registrado_por_nome": string,"row_version": number,"unidade_nome": string,"validade": string
@@ -908,8 +921,13 @@ isOneToOne: false
 "restaurar_orcamento":
 { Args: { "p_id": string,"p_row_version": number }; Returns: number
                            },
+"resumo_dos_orcamentos":
+{ Args: { "p_consultoria_id": string }; Returns: {
+              "aguardando": number,"aguardando_centavos": number,"aguardando_sem_preco": number,"aprovados": number,"aprovados_centavos": number,"aprovados_sem_preco": number,"rascunhos": number
+            }[]
+                           },
 "salvar_base_de_custos":
-{ Args: { "p_consultoria_id": string,"p_custo_km_centavos"?: number,"p_custos_fixos"?: Json,"p_custos_fixos_mensais_centavos": number,"p_hora_tecnica_centavos": number,"p_horas_faturaveis_mes": number,"p_margem_desejada_pb": number,"p_margem_minima_pb": number,"p_equipe"?: Json,"p_horas_venda"?: Json,"p_piso_hora_centavos"?: number,"p_taxa_por_assinatura_centavos": number,"p_taxa_por_cobranca_centavos": number,"p_taxas_pb": number,"p_tributos_pb": number,"p_valor_visita_centavos"?: number }; Returns: undefined
+{ Args: { "p_consultoria_id": string,"p_custo_km_centavos"?: number,"p_custos_fixos"?: Json,"p_custos_fixos_mensais_centavos": number,"p_hora_tecnica_centavos": number,"p_horas_faturaveis_mes": number,"p_margem_desejada_pb": number,"p_margem_minima_pb": number,"p_equipe"?: Json,"p_horas_venda"?: Json,"p_piso_hora_centavos"?: number,"p_taxa_por_assinatura_centavos": number,"p_taxa_por_cobranca_centavos": number,"p_taxas_pb": number,"p_tributos_pb": number,"p_valor_visita_centavos"?: number,"p_deslocamento_modo"?: string | null,"p_consumo_km_por_litro"?: number | null,"p_preco_combustivel_centavos"?: number | null,"p_acrescimo_km_centavos"?: number | null }; Returns: undefined
                            },
 "salvar_condicionante":
 { Args: { "p_codigo": string,"p_id": string,"p_instrumento_id": string,"p_natureza": Database["public"]['Enums']["natureza_condicionante"],"p_pai_id": string,"p_texto_literal": string,"p_titulo": string }; Returns: string

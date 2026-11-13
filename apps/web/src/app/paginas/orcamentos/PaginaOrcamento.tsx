@@ -17,12 +17,13 @@ import {
 } from '@gestao-ambiental/domain'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
+import { Link, useBlocker, useNavigate, useParams, useSearchParams } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Pagina } from '@/app/paginas/Pagina'
 import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
+import { Dialogo } from '@/components/ui/dialogo'
 import { BotaoIcone } from '@/components/ui/botao-icone'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { Trilha } from '@/components/ui/trilha'
@@ -405,6 +406,22 @@ function Editor({
   const [r, setR] = useState<Rascunho>(() => rascunhoDe(orcamento))
   const [alterado, setAlterado] = useState(false)
   const [salvando, setSalvando] = useState(false)
+  // Sair do editor (outra página ou fechar a aba) com alteração não salva pede confirmação. Trocar
+  // de etapa fica na mesma página e não pergunta.
+  const bloqueio = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      alterado && currentLocation.pathname !== nextLocation.pathname,
+  )
+  useEffect(() => {
+    if (!alterado) return
+    const avisar = (evento: BeforeUnloadEvent) => {
+      evento.preventDefault()
+    }
+    window.addEventListener('beforeunload', avisar)
+    return () => {
+      window.removeEventListener('beforeunload', avisar)
+    }
+  }, [alterado])
   const [falha, setFalha] = useState<string | null>(null)
   const [catalogoAberto, setCatalogoAberto] = useState(false)
   const telaEstreita = useTelaEstreita()
@@ -497,11 +514,19 @@ function Editor({
   ])
 
   const horas = base?.horasVenda ?? []
-  // Tabela agrupada por profissão, para a lista de cada serviço.
-  const horasPorProfissao = [...new Set(horas.map((h) => h.profissao))].map((profissao) => ({
-    profissao,
-    horas: horas.filter((h) => h.profissao === profissao),
-  }))
+  // Tabela agrupada por profissão, para a lista de cada serviço. Serviço sem "Quem faz" fica no
+  // grupo "Serviços", no fim.
+  const horasPorProfissao = [
+    ...[...new Set(horas.map((h) => h.profissao.trim()).filter((p) => p !== ''))].map(
+      (profissao) => ({
+        profissao,
+        horas: horas.filter((h) => h.profissao.trim() === profissao),
+      }),
+    ),
+    ...(horas.some((h) => h.profissao.trim() === '')
+      ? [{ profissao: 'Serviços', horas: horas.filter((h) => h.profissao.trim() === '') }]
+      : []),
+  ]
   const pelaTabela = r.formaPreco === 'tabela'
   const horaPadrao = horas[0]?.id ?? ''
 
@@ -852,6 +877,9 @@ function Editor({
 
   const precoTotal = calculo.precoTotalCentavos
   const quantidadeDeVisitas = visitasLidas.quantidade ?? 0
+  // Modo da visita copiado da base: por visita, o km não entra (e o campo some); por km, o valor
+  // fixo da visita não entra. Sem modo (orçamento antigo), os dois, como na época.
+  const modoDasVisitas = base?.deslocamentoModo ?? null
   const temVisitas = calculo.valorVisitasCentavos > 0
   const d = calculo.divisao
 
@@ -1298,25 +1326,23 @@ function Editor({
                       }}
                     />
                   </CampoRotulado>
-                  <CampoRotulado
-                    id="visitas-km"
-                    rotulo="Km por visita, ida e volta"
-                    apoio="Deixe em branco se a visita é perto"
-                  >
-                    <input
-                      id="visitas-km"
-                      inputMode="numeric"
-                      placeholder="0"
-                      aria-invalid={visitasLidas.kmPorVisita === null || undefined}
-                      className={`${classeCampo} text-right tabular-nums`}
-                      value={r.km}
-                      disabled={!editavel}
-                      onChange={(e) => {
-                        const valor = e.target.value
-                        mudar((a) => ({ ...a, km: valor }))
-                      }}
-                    />
-                  </CampoRotulado>
+                  {modoDasVisitas === 'visita' ? null : (
+                    <CampoRotulado id="visitas-km" rotulo="Km por visita, ida e volta">
+                      <input
+                        id="visitas-km"
+                        inputMode="numeric"
+                        placeholder="0"
+                        aria-invalid={visitasLidas.kmPorVisita === null || undefined}
+                        className={`${classeCampo} text-right tabular-nums`}
+                        value={r.km}
+                        disabled={!editavel}
+                        onChange={(e) => {
+                          const valor = e.target.value
+                          mudar((a) => ({ ...a, km: valor }))
+                        }}
+                      />
+                    </CampoRotulado>
+                  )}
                   <CampoRotulado
                     id="visitas-outros"
                     rotulo="Outros gastos por visita (R$)"
@@ -1337,10 +1363,16 @@ function Editor({
                 </div>
                 {base ? (
                   <p className="text-xs text-(--text-subtle)">
-                    Cada visita: {formatarReais(base.valorVisitaCentavos)}
-                    {base.custoKmCentavos > 0
-                      ? ` + km × ${formatarReais(base.custoKmCentavos)}`
-                      : ''}{' '}
+                    Cada visita:{' '}
+                    {modoDasVisitas === 'km'
+                      ? `km × ${formatarReais(base.custoKmCentavos)}`
+                      : modoDasVisitas === 'visita'
+                        ? formatarReais(base.valorVisitaCentavos)
+                        : `${formatarReais(base.valorVisitaCentavos)}${
+                            base.custoKmCentavos > 0
+                              ? ` + km × ${formatarReais(base.custoKmCentavos)}`
+                              : ''
+                          }`}{' '}
                     + outros gastos. Preço fixo, sem margem.{' '}
                     {quantidadeDeVisitas > 0 ? (
                       <span className="corpo-medio text-(--text)">
@@ -1349,8 +1381,18 @@ function Editor({
                     ) : (
                       'Sem visitas, nada entra no preço.'
                     )}{' '}
-                    {base.valorVisitaCentavos === 0 && base.custoKmCentavos === 0 ? (
-                      <Link to="/configuracoes/custos">Cadastrar o valor da visita e do km</Link>
+                    {(modoDasVisitas === 'km' && base.custoKmCentavos === 0) ||
+                    (modoDasVisitas === 'visita' && base.valorVisitaCentavos === 0) ||
+                    (modoDasVisitas === null &&
+                      base.valorVisitaCentavos === 0 &&
+                      base.custoKmCentavos === 0) ? (
+                      <Link to="/configuracoes/custos">
+                        {modoDasVisitas === 'km'
+                          ? 'Cadastrar o valor do km'
+                          : modoDasVisitas === 'visita'
+                            ? 'Cadastrar o valor da visita'
+                            : 'Cadastrar o valor da visita e do km'}
+                      </Link>
                     ) : null}
                   </p>
                 ) : null}
@@ -2003,6 +2045,34 @@ function Editor({
         <NavegacaoDasEtapas etapa={etapa} aoIr={irPara} titulos={ETAPAS.map((e) => e.titulo)} />
       </div>
 
+      <Dialogo
+        aberto={bloqueio.state === 'blocked'}
+        aoMudar={(aberto) => {
+          if (!aberto && bloqueio.state === 'blocked') bloqueio.reset()
+        }}
+        titulo="Sair sem salvar?"
+        descricao="As alterações deste orçamento ainda não foram salvas e se perdem se você sair."
+        acoes={
+          <>
+            <Botao
+              onClick={() => {
+                if (bloqueio.state === 'blocked') bloqueio.reset()
+              }}
+            >
+              Continuar aqui
+            </Botao>
+            <Botao
+              aparencia="perigo"
+              onClick={() => {
+                if (bloqueio.state === 'blocked') bloqueio.proceed()
+              }}
+            >
+              Sair sem salvar
+            </Botao>
+          </>
+        }
+      />
+
       <DialogoModelo
         aberto={catalogoAberto}
         aoMudar={setCatalogoAberto}
@@ -2442,10 +2512,27 @@ function ComoOPrecoECalculado({
           {formatarCentavos(base.horaTecnicaCentavos)} ·{' '}
           {formatarCentavos(base.custoFixoHoraCentavos)}
         </dd>
-        <dt className="text-(--text-subtle)">Visita técnica · valor por km</dt>
-        <dd className="text-right tabular-nums">
-          {formatarCentavos(base.valorVisitaCentavos)} · {formatarCentavos(base.custoKmCentavos)}
-        </dd>
+        {base.deslocamentoModo === 'visita' ? (
+          <>
+            <dt className="text-(--text-subtle)">Visita técnica (por visita)</dt>
+            <dd className="text-right tabular-nums">
+              {formatarCentavos(base.valorVisitaCentavos)}
+            </dd>
+          </>
+        ) : base.deslocamentoModo === 'km' ? (
+          <>
+            <dt className="text-(--text-subtle)">Visita técnica (por km rodado)</dt>
+            <dd className="text-right tabular-nums">{formatarCentavos(base.custoKmCentavos)}</dd>
+          </>
+        ) : (
+          <>
+            <dt className="text-(--text-subtle)">Visita técnica · valor por km</dt>
+            <dd className="text-right tabular-nums">
+              {formatarCentavos(base.valorVisitaCentavos)} ·{' '}
+              {formatarCentavos(base.custoKmCentavos)}
+            </dd>
+          </>
+        )}
         <dt className="text-(--text-subtle)">Taxas fixas por cobrança e assinatura</dt>
         <dd className="text-right tabular-nums">{formatarCentavos(fixos)}</dd>
         <dt className="text-(--text-subtle)">Tributos · taxas percentuais</dt>

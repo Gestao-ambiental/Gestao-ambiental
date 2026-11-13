@@ -5,58 +5,79 @@ import {
   FORMAS_DE_RECEBIMENTO,
   formatarCentavos,
   formatarReais,
-  lerDuracao,
-  MAXIMO_DE_FAIXAS,
   PROFISSOES,
   rotuloDaProfissao,
   resumoDaPessoa,
-  UNIDADES_COM_FAIXAS,
-  UNIDADES_DE_COBRANCA,
   type CodigoProfissao,
   type ComposicaoDaEquipe,
   type FormaDeRecebimento,
-  type UnidadeDeCobranca,
 } from '@gestao-ambiental/domain'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Fragment, type ReactNode } from 'react'
+import { type ReactNode } from 'react'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { SelecaoDaLista } from '@/components/selecao-da-lista'
 import { Botao } from '@/components/ui/botao'
 import { BotaoIcone } from '@/components/ui/botao-icone'
+import { Icone } from '@/components/ui/icone'
 import type { CustoDaProfissao } from '@/lib/api/orcamentos'
 import { definirProfissaoECargo, type MembroAtivo } from '@/lib/api/perfil'
 import { mensagemDoErro } from '@/lib/erros'
 
-import { lerEstimativa, lerReaisOuZero, textoDasHoras } from './calculo'
+import { lerReaisOuZero, textoDasHoras } from './calculo'
 import {
   contaDaHoraDeCusto,
-  faixasIniciais,
-  FONTE_ACEAMB,
-  HORAS_ACEAMB_2026,
   lerInteiroOuNulo,
   lerReaisOuNulo,
   remuneracaoDaLinha,
   ROTULO_DA_FORMA,
-  usaFaixas,
   type LinhaConta,
-  type LinhaFaixa,
-  type LinhaHora,
   type LinhaPessoa,
 } from './campos-da-base'
-import {
-  ROTULO_DA_UNIDADE,
-  SUFIXO_DA_UNIDADE,
-  classeCabecalho,
-  classeCampo,
-  classeCelula,
-  lerQuantidade,
-  reaisDigitados,
-} from './comum'
+import { classeCabecalho, classeCampo, classeCelula, reaisDigitados } from './comum'
 
 // ---------------------------------------------------------------------------
 // Composição pela equipe
 // ---------------------------------------------------------------------------
+
+/**
+ * Caixa de seleção cujo texto escolhido quebra linha: o select nativo corta o valor ("Engenheiro
+ * ambient"). O select continua nativo, transparente e por cima, ocupando a mesma área (teclado,
+ * leitor de tela e a lista do sistema seguem iguais); o texto visível é só apresentação.
+ */
+function CaixaQueQuebra({ texto, children }: { texto: string; children: ReactNode }) {
+  return (
+    <div className={classeCaixaQueQuebra}>
+      <span
+        aria-hidden="true"
+        data-texto-da-selecao=""
+        className="col-start-1 row-start-1 flex min-h-[calc(var(--size-control)-2px)] items-center gap-(--space-050) px-(--space-100) py-(--space-050)"
+      >
+        <span className="min-w-0 flex-1 break-words">{texto}</span>
+        <Icone nome="chevron-down" className="text-(--text-subtle)" />
+      </span>
+      {children}
+    </div>
+  )
+}
+
+/** A moldura do campo (como em classeCampo) fica na caixa; o foco do select aparece nela. */
+const classeCaixaQueQuebra =
+  'grid w-full rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) corpo text-(--text) transicao-estado focus-within:border-b-(--border-input-active) focus-within:shadow-[inset_0_-1px_0_0_var(--border-input-active)] focus-within:bg-(--surface-input-focus) has-[:disabled]:bg-(--surface-disabled) has-[:disabled]:text-(--text-disabled) has-[[aria-invalid=true]]:border-(--border-danger)'
+
+/** O select de CaixaQueQuebra: transparente, na mesma célula da grade que o texto. */
+const classeSelecaoSobreposta =
+  'col-start-1 row-start-1 h-full w-full min-w-0 cursor-pointer appearance-none opacity-0 corpo disabled:cursor-not-allowed'
+
+/** Nome do campo de valor conforme a forma de recebimento ("Salário mensal da linha 1"). */
+const ROTULO_DO_VALOR: Record<FormaDeRecebimento | '', string> = {
+  '': 'Salário mensal',
+  clt: 'Salário mensal',
+  pro_labore: 'Pró-labore mensal',
+  estagio: 'Bolsa mensal',
+  diaria: 'Valor da diária',
+  projeto: 'Valor do projeto',
+}
 
 /**
  * Profissão principal da pessoa, escolhida na linha da equipe. Grava no cadastro (membro) na hora,
@@ -85,22 +106,31 @@ function ProfissaoDaPessoa({
       queryClient.invalidateQueries({ queryKey: ['membros-ativos', atual.consultoriaId] }),
   })
   const idErro = `erro-profissao-${membro.id}`
+  // O mesmo texto da opção escolhida em SelecaoDaLista.
+  const texto = membro.profissao
+    ? rotuloDaProfissao(membro.profissao)
+    : profissaoAntiga
+      ? `${profissaoAntiga} (antigo, escolha na lista)`
+      : 'Não informada'
   return (
     <div className="flex flex-col gap-(--space-050)">
-      <SelecaoDaLista
-        aria-label={rotulo}
-        lista={PROFISSOES}
-        valor={membro.profissao ?? ''}
-        valorAntigo={membro.profissao ? null : profissaoAntiga}
-        vazio="Não informada"
-        disabled={salvar.isPending}
-        aria-busy={salvar.isPending || undefined}
-        aria-describedby={salvar.isError ? idErro : undefined}
-        className={classeCampo}
-        aoMudar={(codigo) => {
-          salvar.mutate(codigo)
-        }}
-      />
+      <CaixaQueQuebra texto={texto}>
+        <SelecaoDaLista
+          aria-label={rotulo}
+          lista={PROFISSOES}
+          valor={membro.profissao ?? ''}
+          valorAntigo={membro.profissao ? null : profissaoAntiga}
+          vazio="Não informada"
+          vazioSoSemValor
+          disabled={salvar.isPending}
+          aria-busy={salvar.isPending || undefined}
+          aria-describedby={salvar.isError ? idErro : undefined}
+          className={classeSelecaoSobreposta}
+          aoMudar={(codigo) => {
+            salvar.mutate(codigo)
+          }}
+        />
+      </CaixaQueQuebra>
       {salvar.isError ? (
         <span id={idErro} role="alert" className="text-xs text-(--text-danger)">
           {mensagemDoErro(salvar.error)}
@@ -131,6 +161,8 @@ export function Equipe({
   aoRemover: (id: string) => void
   aoVoltar: () => void
 }) {
+  // Com a quebra de linha, a célula cresce: o respiro em cima e embaixo separa as linhas.
+  const celula = `${classeCelula} py-(--space-050)`
   return (
     <div className="flex flex-col gap-(--space-150)">
       {/* relative: textos sr-only (absolutos) ficam presos à área que rola, não à página. */}
@@ -138,22 +170,23 @@ export function Equipe({
         <table className="w-full min-w-[980px] border-collapse corpo">
           <thead>
             <tr>
-              <th scope="col" className={classeCabecalho}>
+              {/* Cabeçalho e campo começam no mesmo ponto, à esquerda, em todas as colunas. */}
+              <th scope="col" className={`${classeCabecalho} w-[16%]`}>
                 Pessoa
               </th>
-              <th scope="col" className={`${classeCabecalho} w-44`}>
+              <th scope="col" className={`${classeCabecalho} w-[22%]`}>
                 Profissão
               </th>
-              <th scope="col" className={`${classeCabecalho} w-44`}>
+              <th scope="col" className={`${classeCabecalho} w-[16%]`}>
                 Como recebe
               </th>
-              <th scope="col" className={`${classeCabecalho} w-40 text-right`}>
-                Custo (R$)
+              <th scope="col" className={`${classeCabecalho} w-[16%]`}>
+                Salário (R$)
               </th>
-              <th scope="col" className={`${classeCabecalho} w-36 text-right`}>
+              <th scope="col" className={`${classeCabecalho} w-[15%]`}>
                 Horas
               </th>
-              <th scope="col" className={`${classeCabecalho} w-28 text-right`}>
+              <th scope="col" className={`${classeCabecalho} w-[10%]`}>
                 Hora de custo
               </th>
               <th scope="col" className={`${classeCabecalho} w-12`}>
@@ -171,6 +204,10 @@ export function Equipe({
               const opcoes = membros.filter((m) => !escolhidos.has(m.id))
               const membroSumiu = p.membroId !== '' && !membros.some((m) => m.id === p.membroId)
               const membroDaLinha = membros.find((m) => m.id === p.membroId) ?? null
+              const vazioDaPessoa = membrosCarregando ? 'Carregando…' : 'Escolha'
+              const textoDaPessoa = membroSumiu
+                ? 'Membro desligado'
+                : (membroDaLinha?.nome ?? vazioDaPessoa)
               const numero = (
                 rotulo: string,
                 chave:
@@ -194,15 +231,17 @@ export function Equipe({
                   ? lerReaisOuNulo(valor) === undefined
                   : lerInteiroOuNulo(valor) === undefined
                 const idAviso = `aviso-${chave}-${p.id}`
+                // O campo começa na borda da célula, como o cabeçalho; a legenda fica à direita,
+                // com largura fixa para os campos da coluna terem o mesmo tamanho.
                 const campoDaPessoa = (
-                  <label className="flex items-center justify-end gap-(--space-050)">
+                  <label className="flex items-center gap-(--space-050)">
                     <input
                       aria-label={`${rotulo} da linha ${n}`}
                       aria-describedby={opcoesDoCampo.aviso ? idAviso : undefined}
                       inputMode={opcoesDoCampo.reais ? 'decimal' : 'numeric'}
                       placeholder={opcoesDoCampo.placeholder}
                       aria-invalid={invalido || undefined}
-                      className={`${classeCampo} text-right tabular-nums`}
+                      className={`${classeCampo} flex-1 text-right tabular-nums ${opcoesDoCampo.reais ? 'min-w-24' : 'min-w-20'}`}
                       value={valor}
                       onChange={(e) => {
                         const novo = opcoesDoCampo.reais ? reaisDigitados(e) : e.target.value
@@ -219,13 +258,10 @@ export function Equipe({
                 // Estrutura sempre igual: o campo não é recriado quando o aviso aparece ou some
                 // (senão a digitação se perde no meio). O aviso não é erro.
                 return (
-                  <div className="flex flex-col items-end gap-(--space-050)">
+                  <div className="flex flex-col gap-(--space-050)">
                     {campoDaPessoa}
                     {opcoesDoCampo.aviso ? (
-                      <span
-                        id={idAviso}
-                        className="max-w-56 text-right text-xs text-(--text-subtle)"
-                      >
+                      <span id={idAviso} className="max-w-56 text-xs text-(--text-subtle)">
                         {opcoesDoCampo.aviso}
                       </span>
                     ) : null}
@@ -235,7 +271,7 @@ export function Equipe({
               let custo: ReactNode
               let horas: ReactNode
               if (p.forma === 'diaria') {
-                custo = numero('Custo por diária', 'diaria', { reais: true, legenda: 'diária' })
+                custo = numero(ROTULO_DO_VALOR.diaria, 'diaria', { reais: true, legenda: 'diária' })
                 horas = (
                   <div className="flex flex-col gap-(--space-050)">
                     {numero('Horas por diária', 'horasDiaria', { legenda: 'h/diária' })}
@@ -246,7 +282,10 @@ export function Equipe({
                   </div>
                 )
               } else if (p.forma === 'projeto') {
-                custo = numero('Custo do projeto', 'projeto', { reais: true, legenda: 'projeto' })
+                custo = numero(ROTULO_DO_VALOR.projeto, 'projeto', {
+                  reais: true,
+                  legenda: 'projeto',
+                })
                 horas = (
                   <div className="flex flex-col gap-(--space-050)">
                     {numero('Horas do projeto', 'horasProjeto', { legenda: 'h/projeto' })}
@@ -257,7 +296,7 @@ export function Equipe({
                   </div>
                 )
               } else {
-                custo = numero('Custo mensal', 'custo', { reais: true, legenda: 'mês' })
+                custo = numero(ROTULO_DO_VALOR[p.forma], 'custo', { reais: true, legenda: 'mês' })
                 horas = numero('Horas no mês', 'horas', {
                   placeholder: '173',
                   legenda: 'h/mês',
@@ -265,28 +304,30 @@ export function Equipe({
               }
               return (
                 <tr key={p.id} className="align-top">
-                  <td className={classeCelula}>
-                    <select
-                      aria-label={`Pessoa da linha ${n}`}
-                      className={classeCampo}
-                      value={p.membroId}
-                      aria-invalid={p.membroId === '' || membroSumiu || undefined}
-                      aria-busy={membrosCarregando || undefined}
-                      onChange={(e) => {
-                        const valor = e.target.value
-                        aoMudar(p.id, (x) => ({ ...x, membroId: valor }))
-                      }}
-                    >
-                      <option value="">{membrosCarregando ? 'Carregando…' : 'Escolha'}</option>
-                      {membroSumiu ? <option value={p.membroId}>Membro desligado</option> : null}
-                      {opcoes.map((m) => (
-                        <option key={m.id} value={m.id}>
-                          {m.nome}
-                        </option>
-                      ))}
-                    </select>
+                  <td className={celula}>
+                    <CaixaQueQuebra texto={textoDaPessoa}>
+                      <select
+                        aria-label={`Pessoa da linha ${n}`}
+                        className={classeSelecaoSobreposta}
+                        value={p.membroId}
+                        aria-invalid={p.membroId === '' || membroSumiu || undefined}
+                        aria-busy={membrosCarregando || undefined}
+                        onChange={(e) => {
+                          const valor = e.target.value
+                          aoMudar(p.id, (x) => ({ ...x, membroId: valor }))
+                        }}
+                      >
+                        <option value="">{vazioDaPessoa}</option>
+                        {membroSumiu ? <option value={p.membroId}>Membro desligado</option> : null}
+                        {opcoes.map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.nome}
+                          </option>
+                        ))}
+                      </select>
+                    </CaixaQueQuebra>
                   </td>
-                  <td className={classeCelula}>
+                  <td className={celula}>
                     {/* Profissão principal do cadastro da pessoa, gravada na hora (ADR-0021). */}
                     {membroDaLinha ? (
                       <ProfissaoDaPessoa
@@ -300,25 +341,29 @@ export function Equipe({
                       </span>
                     )}
                   </td>
-                  <td className={classeCelula}>
-                    <select
-                      aria-label={`Como recebe na linha ${n}`}
-                      className={classeCampo}
-                      value={p.forma}
-                      aria-invalid={p.forma === '' || undefined}
-                      aria-describedby={p.forma === '' ? `forma-pendente-${n}` : undefined}
-                      onChange={(e) => {
-                        const valor = e.target.value as FormaDeRecebimento | ''
-                        aoMudar(p.id, (x) => ({ ...x, forma: valor }))
-                      }}
+                  <td className={celula}>
+                    <CaixaQueQuebra
+                      texto={p.forma === '' ? 'Ainda não informado' : ROTULO_DA_FORMA[p.forma]}
                     >
-                      {p.forma === '' ? <option value="">Ainda não informado</option> : null}
-                      {FORMAS_DE_RECEBIMENTO.map((f) => (
-                        <option key={f} value={f}>
-                          {ROTULO_DA_FORMA[f]}
-                        </option>
-                      ))}
-                    </select>
+                      <select
+                        aria-label={`Como recebe na linha ${n}`}
+                        className={classeSelecaoSobreposta}
+                        value={p.forma}
+                        aria-invalid={p.forma === '' || undefined}
+                        aria-describedby={p.forma === '' ? `forma-pendente-${n}` : undefined}
+                        onChange={(e) => {
+                          const valor = e.target.value as FormaDeRecebimento | ''
+                          aoMudar(p.id, (x) => ({ ...x, forma: valor }))
+                        }}
+                      >
+                        {p.forma === '' ? <option value="">Ainda não informado</option> : null}
+                        {FORMAS_DE_RECEBIMENTO.map((f) => (
+                          <option key={f} value={f}>
+                            {ROTULO_DA_FORMA[f]}
+                          </option>
+                        ))}
+                      </select>
+                    </CaixaQueQuebra>
                     {p.forma === '' ? (
                       <span
                         id={`forma-pendente-${n}`}
@@ -328,15 +373,15 @@ export function Equipe({
                       </span>
                     ) : null}
                   </td>
-                  <td className={classeCelula}>{custo}</td>
-                  <td className={classeCelula}>{horas}</td>
-                  <td className={`${classeCelula} text-right tabular-nums text-(--text-subtle)`}>
+                  <td className={celula}>{custo}</td>
+                  <td className={celula}>{horas}</td>
+                  <td className={`${celula} tabular-nums text-(--text-subtle)`}>
                     {resumo?.horaDeCustoCentavos == null
                       ? '—'
                       : formatarCentavos(resumo.horaDeCustoCentavos)}{' '}
                     <span className="sr-only">por hora, na linha {n}</span>
                     {resumo?.horaDeCustoCentavos != null && typeof lida !== 'string' ? (
-                      <details className="mt-(--space-025) text-left text-xs">
+                      <details className="mt-(--space-025) text-xs">
                         <summary className="cursor-pointer">
                           Ver cálculo <span className="sr-only">da hora de custo da linha {n}</span>
                         </summary>
@@ -346,7 +391,7 @@ export function Equipe({
                       </details>
                     ) : null}
                   </td>
-                  <td className={classeCelula}>
+                  <td className={celula}>
                     <BotaoIcone
                       icone="trash-2"
                       rotulo={`Remover linha ${n} da equipe`}
@@ -569,372 +614,5 @@ export function ContasDoMes({
         </Botao>
       </div>
     </section>
-  )
-}
-
-/**
- * Tabela de preços da consultoria (ADR-0018): uma linha por profissão e serviço, atividade ou nível,
- * na unidade em que cobram, com faixas e mínimo opcionais. Usada em Custos e taxas e nos primeiros
- * passos (ADR-0020).
- */
-export function TabelaDePrecos({
-  horas,
-  comAtalhoAceamb = true,
-  aoMudar,
-}: {
-  horas: readonly LinhaHora[]
-  /**
-   * Atalho histórico da tabela ACEAMB em Custos e taxas. Os primeiros passos não oferecem tabela
-   * de referência: cada consultoria digita os próprios preços (ADR-0020).
-   */
-  comAtalhoAceamb?: boolean
-  aoMudar: (alterar: (linhas: LinhaHora[]) => LinhaHora[]) => void
-}) {
-  return (
-    <>
-      {horas.length > 0 ? (
-        <div className="relative overflow-x-auto">
-          <table className="w-full min-w-[1100px] border-collapse corpo">
-            <thead>
-              <tr>
-                <th scope="col" className={classeCabecalho}>
-                  Profissão
-                </th>
-                <th scope="col" className={classeCabecalho}>
-                  Serviço, atividade ou nível
-                </th>
-                <th scope="col" className={`${classeCabecalho} w-44`}>
-                  Unidade
-                </th>
-                <th scope="col" className={`${classeCabecalho} w-32 text-right`}>
-                  Preço (R$)
-                </th>
-                <th scope="col" className={`${classeCabecalho} w-32 text-right`}>
-                  Preço mínimo (R$)
-                </th>
-                <th scope="col" className={`${classeCabecalho} w-28 text-right`}>
-                  Tempo por unidade
-                </th>
-                <th scope="col" className={classeCabecalho}>
-                  Fonte
-                </th>
-                <th scope="col" className={`${classeCabecalho} w-12`}>
-                  <span className="sr-only">Remover</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {horas.map((l, indice) => {
-                const n = String(indice + 1)
-                const mudarHora = (alterar: (x: LinhaHora) => LinhaHora) => {
-                  aoMudar((a) => a.map((x) => (x.id === l.id ? alterar(x) : x)))
-                }
-                const comFaixas = usaFaixas(l)
-                const sufixo = SUFIXO_DA_UNIDADE[l.unidade]
-                const mudarFaixas = (alterar: (f: LinhaFaixa[]) => LinhaFaixa[]) => {
-                  mudarHora((x) => ({ ...x, faixas: alterar(x.faixas) }))
-                }
-                return (
-                  <Fragment key={l.id}>
-                    <tr>
-                      <td className={classeCelula}>
-                        {/* Profissão da lista fixa do Grama; texto antigo aparece até trocar. */}
-                        <SelecaoDaLista
-                          aria-label={`Profissão da hora ${n}`}
-                          lista={PROFISSOES}
-                          valor={PROFISSOES.find((x) => x.rotulo === l.profissao)?.codigo ?? ''}
-                          valorAntigo={l.profissao.trim() || null}
-                          aria-invalid={l.profissao.trim() === '' || undefined}
-                          className={classeCampo}
-                          aoMudar={(codigo) => {
-                            const rotulo = codigo ? rotuloDaProfissao(codigo) : ''
-                            mudarHora((x) => ({ ...x, profissao: rotulo }))
-                          }}
-                        />
-                      </td>
-                      <td className={classeCelula}>
-                        <input
-                          aria-label={`Atividade ou nível da hora ${n}`}
-                          className={classeCampo}
-                          value={l.atividade}
-                          onChange={(e) => {
-                            const valor = e.target.value
-                            mudarHora((x) => ({ ...x, atividade: valor }))
-                          }}
-                        />
-                      </td>
-                      <td className={classeCelula}>
-                        <select
-                          aria-label={`Unidade da linha ${n}`}
-                          className={classeCampo}
-                          value={l.unidade}
-                          onChange={(e) => {
-                            const valor = e.target.value as UnidadeDeCobranca
-                            // Faixas só em m², ha, diária e campanha; mínimo nunca no pacote.
-                            mudarHora((x) => ({
-                              ...x,
-                              unidade: valor,
-                              faixas: UNIDADES_COM_FAIXAS.includes(valor) ? x.faixas : [],
-                              minimo: valor === 'pacote' ? '' : x.minimo,
-                            }))
-                          }}
-                        >
-                          {UNIDADES_DE_COBRANCA.map((u) => (
-                            <option key={u} value={u}>
-                              {ROTULO_DA_UNIDADE[u]}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className={classeCelula}>
-                        {comFaixas ? (
-                          <span className="block text-right text-(--text-subtle)">Por faixas</span>
-                        ) : (
-                          <input
-                            aria-label={`Preço da linha ${n}`}
-                            inputMode="decimal"
-                            aria-invalid={lerReaisOuZero(l.valor) === null || undefined}
-                            className={`${classeCampo} text-right tabular-nums`}
-                            value={l.valor}
-                            onChange={(e) => {
-                              const valor = reaisDigitados(e)
-                              mudarHora((x) => ({ ...x, valor }))
-                            }}
-                          />
-                        )}
-                        {UNIDADES_COM_FAIXAS.includes(l.unidade) && !comFaixas ? (
-                          <Botao
-                            aparencia="link"
-                            className="mt-(--space-050) text-xs"
-                            onClick={() => {
-                              mudarHora((x) => ({ ...x, faixas: faixasIniciais(x.valor) }))
-                            }}
-                          >
-                            Usar faixas <span className="sr-only">de quantidade na linha {n}</span>
-                          </Botao>
-                        ) : null}
-                      </td>
-                      <td className={classeCelula}>
-                        {l.unidade === 'pacote' ? (
-                          <span className="block text-right text-(--text-subtle)">—</span>
-                        ) : (
-                          <input
-                            aria-label={`Preço mínimo da linha ${n}`}
-                            inputMode="decimal"
-                            placeholder="Opcional"
-                            aria-invalid={lerEstimativa(l.minimo) === undefined || undefined}
-                            className={`${classeCampo} text-right tabular-nums`}
-                            value={l.minimo}
-                            onChange={(e) => {
-                              const valor = reaisDigitados(e)
-                              mudarHora((x) => ({ ...x, minimo: valor }))
-                            }}
-                          />
-                        )}
-                      </td>
-                      <td className={classeCelula}>
-                        {l.unidade === 'hora' ? (
-                          <span className="block text-right text-(--text-subtle)">—</span>
-                        ) : (
-                          <input
-                            aria-label={`Tempo por unidade da linha ${n}`}
-                            inputMode="decimal"
-                            placeholder="Opcional"
-                            aria-invalid={
-                              (l.tempo.trim() !== '' && lerDuracao(l.tempo) === null) || undefined
-                            }
-                            className={`${classeCampo} text-right tabular-nums`}
-                            value={l.tempo}
-                            onChange={(e) => {
-                              const valor = e.target.value
-                              mudarHora((x) => ({ ...x, tempo: valor }))
-                            }}
-                          />
-                        )}
-                      </td>
-                      <td className={classeCelula}>
-                        <input
-                          aria-label={`Fonte da hora ${n}`}
-                          placeholder="Opcional"
-                          className={classeCampo}
-                          value={l.fonte}
-                          onChange={(e) => {
-                            const valor = e.target.value
-                            mudarHora((x) => ({ ...x, fonte: valor }))
-                          }}
-                        />
-                      </td>
-                      <td className={classeCelula}>
-                        <BotaoIcone
-                          icone="trash-2"
-                          rotulo={`Remover preço ${n}`}
-                          onClick={() => {
-                            aoMudar((a) => a.filter((x) => x.id !== l.id))
-                          }}
-                        />
-                      </td>
-                    </tr>
-                    {comFaixas ? (
-                      <tr>
-                        <td colSpan={8} className={classeCelula}>
-                          {/* Fica à esquerda, visível, mesmo com a tabela rolada de lado (celular). */}
-                          <fieldset className="sticky left-0 flex max-w-[calc(100vw-5rem)] flex-col gap-(--space-075) border-l-2 border-(--border-input) pl-(--space-150) sm:max-w-none">
-                            <legend className="mb-(--space-050) text-xs text-(--text-subtle)">
-                              Faixas de quantidade da linha {n}: progressivas, cada trecho paga o
-                              valor da sua faixa.
-                            </legend>
-                            {l.faixas.map((f, i) => {
-                              const k = String(i + 1)
-                              const ultima = i === l.faixas.length - 1
-                              const ateAnterior = (l.faixas[i - 1]?.ate ?? '').trim()
-                              const anterior =
-                                i === 0 ? '0' : ateAnterior === '' ? '…' : ateAnterior
-                              const ateInvalido =
-                                !ultima && f.ate.trim() !== '' && !lerQuantidade(f.ate)
-                              return (
-                                <div
-                                  key={f.id}
-                                  className="flex flex-wrap items-center gap-(--space-100) text-xs"
-                                >
-                                  {ultima ? (
-                                    <span className="w-48">
-                                      Acima de {anterior} {sufixo.slice(1)}
-                                    </span>
-                                  ) : (
-                                    <label className="flex w-48 items-center gap-(--space-050)">
-                                      Até
-                                      <input
-                                        aria-label={`Até quanto vale a faixa ${k} da linha ${n}`}
-                                        inputMode="decimal"
-                                        aria-invalid={ateInvalido || undefined}
-                                        className={`${classeCampo} w-24 text-right tabular-nums`}
-                                        value={f.ate}
-                                        onChange={(e) => {
-                                          const valor = e.target.value
-                                          mudarFaixas((a) =>
-                                            a.map((x) =>
-                                              x.id === f.id ? { ...x, ate: valor } : x,
-                                            ),
-                                          )
-                                        }}
-                                      />
-                                      {sufixo.slice(1)}
-                                    </label>
-                                  )}
-                                  <label className="flex items-center gap-(--space-050)">
-                                    R$
-                                    <input
-                                      aria-label={`Valor por unidade da faixa ${k} da linha ${n}`}
-                                      inputMode="decimal"
-                                      aria-invalid={
-                                        lerEstimativa(f.valor) === undefined || undefined
-                                      }
-                                      className={`${classeCampo} w-28 text-right tabular-nums`}
-                                      value={f.valor}
-                                      onChange={(e) => {
-                                        const valor = reaisDigitados(e)
-                                        mudarFaixas((a) =>
-                                          a.map((x) => (x.id === f.id ? { ...x, valor } : x)),
-                                        )
-                                      }}
-                                    />
-                                    {sufixo}
-                                  </label>
-                                  {!ultima && l.faixas.length > 2 ? (
-                                    <BotaoIcone
-                                      icone="trash-2"
-                                      rotulo={`Remover faixa ${k} da linha ${n}`}
-                                      onClick={() => {
-                                        mudarFaixas((a) => a.filter((x) => x.id !== f.id))
-                                      }}
-                                    />
-                                  ) : null}
-                                </div>
-                              )
-                            })}
-                            <div className="flex flex-wrap gap-(--space-150)">
-                              {l.faixas.length < MAXIMO_DE_FAIXAS ? (
-                                <Botao
-                                  aparencia="link"
-                                  iconeAntes="plus"
-                                  onClick={() => {
-                                    // A nova entra antes da última, que continua aberta.
-                                    mudarFaixas((a) => [
-                                      ...a.slice(0, -1),
-                                      { id: crypto.randomUUID(), ate: '', valor: '' },
-                                      ...a.slice(-1),
-                                    ])
-                                  }}
-                                >
-                                  Adicionar faixa <span className="sr-only">na linha {n}</span>
-                                </Botao>
-                              ) : null}
-                              <Botao
-                                aparencia="link"
-                                onClick={() => {
-                                  mudarHora((x) => ({
-                                    ...x,
-                                    valor: x.faixas[0]?.valor ?? x.valor,
-                                    faixas: [],
-                                  }))
-                                }}
-                              >
-                                Usar preço único <span className="sr-only">na linha {n}</span>
-                              </Botao>
-                            </div>
-                          </fieldset>
-                        </td>
-                      </tr>
-                    ) : null}
-                  </Fragment>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      ) : null}
-      <div className="flex flex-wrap gap-(--space-150)">
-        <Botao
-          aparencia="link"
-          iconeAntes="plus"
-          onClick={() => {
-            aoMudar((a) => [
-              ...a,
-              {
-                id: crypto.randomUUID(),
-                profissao: '',
-                atividade: '',
-                unidade: 'hora',
-                valor: '',
-                tempo: '',
-                fonte: '',
-                minimo: '',
-                faixas: [],
-              },
-            ])
-          }}
-        >
-          Adicionar preço
-        </Botao>
-        {comAtalhoAceamb && horas.every((h) => h.fonte !== FONTE_ACEAMB) ? (
-          <Botao
-            aparencia="link"
-            iconeAntes="list"
-            onClick={() => {
-              aoMudar((a) => [
-                ...a,
-                ...HORAS_ACEAMB_2026.map((h) => ({
-                  id: crypto.randomUUID(),
-                  ...h,
-                  fonte: FONTE_ACEAMB,
-                })),
-              ])
-            }}
-          >
-            Usar tabela ACEAMB corrigida (ago/2026)
-          </Botao>
-        ) : null}
-      </div>
-    </>
   )
 }

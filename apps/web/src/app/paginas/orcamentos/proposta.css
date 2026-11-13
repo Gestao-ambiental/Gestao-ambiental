@@ -1,0 +1,107 @@
+/*
+ * Proposta impressa (Protótipo 21; modelo de proposta da Envora). Na tela, a folha segue os tokens
+ * do tema (claro e escuro). Na impressão a folha é sempre papel branco: os tokens são fixados aqui,
+ * para o PDF sair igual com o app no tema escuro. Rodapé e "Página X de Y" ficam nas caixas de
+ * margem do @page, montadas pela própria tela (PaginaProposta), porque levam o número e o nome.
+ */
+
+.proposta-folha {
+  /* Rótulo das tabelas na tela: lima do Grama com texto tinta (13,5:1 nos dois temas). */
+  --proposta-rotulo-fundo: var(--brand);
+  --proposta-rotulo-texto: var(--text-inverse);
+  --proposta-borda: var(--border-strong);
+  --proposta-destaque-fundo: var(--brand-subtle);
+}
+
+.proposta-tabela {
+  width: 100%;
+  border-collapse: collapse;
+}
+.proposta-tabela th,
+.proposta-tabela td {
+  border: 1px solid var(--proposta-borda);
+  padding: var(--space-075) var(--space-100);
+  text-align: left;
+  vertical-align: top;
+}
+.proposta-tabela thead th,
+.proposta-tabela th[scope='row'] {
+  background: var(--proposta-rotulo-fundo);
+  color: var(--proposta-rotulo-texto);
+  font-weight: 600;
+}
+.proposta-tabela th[scope='row'] {
+  width: 7rem;
+}
+@media (min-width: 640px), print {
+  .proposta-tabela th[scope='row'] {
+    width: 11rem;
+  }
+}
+.proposta-tabela tfoot th[scope='row'],
+.proposta-tabela tfoot td {
+  background: var(--proposta-destaque-fundo);
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* Marca d'água do rascunho: fixa, então se repete em cada página impressa. */
+.proposta-marca-dagua {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  overflow: hidden;
+}
+.proposta-marca-dagua span {
+  transform: rotate(-30deg);
+  font-size: 7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--text);
+  opacity: 0.07;
+  white-space: nowrap;
+}
+
+.proposta-sem-quebra {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+@media print {
+  .proposta-folha {
+    --text: #1a1a1a;
+    --text-subtle: #4d4d4d;
+    --surface: #fff;
+    --border: #bdbdbd;
+    --brand-subtle: #e8f3ef;
+    --proposta-rotulo-fundo: #0f6e56;
+    --proposta-rotulo-texto: #fff;
+    --proposta-borda: #bdbdbd;
+    --proposta-destaque-fundo: #e8f3ef;
+    color: var(--text);
+    background: #fff;
+    font-size: 10pt;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .proposta-marca-dagua span {
+    color: #000;
+    opacity: 0.08;
+  }
+  .proposta-tabela thead {
+    display: table-header-group;
+  }
+  .proposta-tabela tr,
+  .proposta-secao > h3 {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .proposta-secao > h3 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+}

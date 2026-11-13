@@ -2,7 +2,7 @@
 // livre: um valor antigo fora da lista aparece como opção própria até a pessoa escolher outro.
 
 import { gruposDaLista, type ItemDaLista } from '@gestao-ambiental/domain'
-import type { SelectHTMLAttributes } from 'react'
+import type { Ref, SelectHTMLAttributes } from 'react'
 
 export function SelecaoDaLista<C extends string>({
   lista,
@@ -10,6 +10,8 @@ export function SelecaoDaLista<C extends string>({
   aoMudar,
   vazio = 'Escolha',
   valorAntigo,
+  vazioSoSemValor = false,
+  ref,
   ...resto
 }: {
   lista: readonly ItemDaLista<C>[]
@@ -20,11 +22,16 @@ export function SelecaoDaLista<C extends string>({
   vazio?: string
   /** Texto antigo (digitado antes da lista), mostrado enquanto nada da lista foi escolhido. */
   valorAntigo?: string | null
+  /** Com um valor escolhido, a opção vazia some: dá para trocar, mas não para apagar. */
+  vazioSoSemValor?: boolean
+  /** Para o formulário pôr o foco no campo com erro. */
+  ref?: Ref<HTMLSelectElement>
 } & Omit<SelectHTMLAttributes<HTMLSelectElement>, 'value' | 'onChange'>) {
   const antigo = valor === '' && valorAntigo ? valorAntigo : null
   return (
     <select
       {...resto}
+      ref={ref}
       value={antigo ? '__antigo__' : valor}
       onChange={(e) => {
         const escolhido = e.target.value
@@ -33,7 +40,7 @@ export function SelecaoDaLista<C extends string>({
       }}
     >
       {antigo ? <option value="__antigo__">{antigo} (antigo, escolha na lista)</option> : null}
-      <option value="">{vazio}</option>
+      {vazioSoSemValor && valor !== '' ? null : <option value="">{vazio}</option>}
       {gruposDaLista(lista).map((g) => (
         <optgroup key={g.grupo} label={g.grupo}>
           {g.itens.map((i) => (

@@ -1,6 +1,7 @@
 import {
   impedimentoDoVinculo,
-  rotuloDaProfissao,
+  rotuloDaFormacaoDaPessoa,
+  rotuloDaProfissaoDaPessoa,
   situacaoDoConvite,
   type CodigoCargo,
   type CodigoProfissao,
@@ -282,13 +283,21 @@ function EquipeDaGestao() {
     )
   }
 
-  /** Profissão e cargo em texto; o que falta aparece como "não informado". */
+  /**
+   * Profissão (no gênero da pessoa; em curso, "Estudante de …") e cargo em texto; o que falta
+   * aparece como "não informado".
+   */
   function profissaoECargoDoMembro(membro: Membro) {
     return (
       <span className="flex min-w-0 flex-col">
         <span className="truncate">
           {membro.profissao
-            ? [membro.profissao, ...membro.outrasProfissoes].map(rotuloDaProfissao).join(' · ')
+            ? [
+                rotuloDaFormacaoDaPessoa(membro.profissao, membro.genero, membro.profissaoEmCurso),
+                ...membro.outrasProfissoes.map((codigo) =>
+                  rotuloDaProfissaoDaPessoa(codigo, membro.genero),
+                ),
+              ].join(' · ')
             : 'Profissão não informada'}
         </span>
         <span className="truncate text-xs text-(--text-subtle)">
@@ -628,10 +637,12 @@ function DialogoProfissaoECargo({
   aoSalvar: (membro: Membro) => void
 }) {
   const [profissao, setProfissao] = useState<CodigoProfissao | ''>(membro.profissao ?? '')
+  const [emCurso, setEmCurso] = useState(membro.profissaoEmCurso)
   const [outras, setOutras] = useState<CodigoProfissao[]>(membro.outrasProfissoes)
   const [cargo, setCargo] = useState<CodigoCargo | ''>(membro.cargoCodigo ?? '')
   const salvar = useMutation({
-    mutationFn: () => definirProfissaoECargo(membro.id, profissao || null, cargo || null, outras),
+    mutationFn: () =>
+      definirProfissaoECargo(membro.id, profissao || null, cargo || null, outras, emCurso),
     onSuccess: () => {
       aoSalvar(membro)
     },
@@ -665,8 +676,12 @@ function DialogoProfissaoECargo({
           outras={outras}
           cargo={cargo}
           cargoAntigo={membro.cargoAntigo}
+          genero={membro.genero}
+          emCurso={emCurso}
+          rotuloEmCurso="Ainda está cursando"
           desabilitado={salvar.isPending}
           aoMudarProfissao={setProfissao}
+          aoMudarEmCurso={setEmCurso}
           aoMudarOutras={setOutras}
           aoMudarCargo={setCargo}
         />

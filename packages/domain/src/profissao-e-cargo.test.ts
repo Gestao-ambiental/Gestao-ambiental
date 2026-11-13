@@ -4,8 +4,15 @@ import {
   CARGOS,
   PROFISSOES,
   cargoDoCodigo,
+  GENEROS,
+  generoDoCodigo,
   gruposDaLista,
   outrasProfissoes,
+  profissoesParaOGenero,
+  rotuloDaProfissaoDaPessoa,
+  rotuloDaFormacaoDaPessoa,
+  rotuloDaProfissaoNoCusto,
+  rotuloDoCurso,
   profissaoDoCodigo,
   rotuloDaProfissao,
   rotuloDoCargo,
@@ -75,6 +82,53 @@ describe('profissão e cargo (listas fixas do Grama)', () => {
       'Outras',
     ])
     expect(grupos.reduce((n, g) => n + g.itens.length, 0)).toBe(PROFISSOES.length)
+  })
+})
+
+describe('profissão escrita para a pessoa (gênero)', () => {
+  it('feminina, masculina ou com (a); sem gênero, a forma da lista', () => {
+    expect(rotuloDaProfissaoDaPessoa('eng_ambiental', 'feminino')).toBe('Engenheira ambiental')
+    expect(rotuloDaProfissaoDaPessoa('eng_ambiental', 'masculino')).toBe('Engenheiro ambiental')
+    expect(rotuloDaProfissaoDaPessoa('eng_ambiental', 'nao_informar')).toBe(
+      'Engenheiro(a) ambiental',
+    )
+    expect(rotuloDaProfissaoDaPessoa('tec_quimica', 'feminino')).toBe('Técnica em química')
+    expect(rotuloDaProfissaoDaPessoa('biologo', null)).toBe('Biólogo')
+  })
+
+  it('toda profissão tem as três formas, sem repetir dentro de cada gênero', () => {
+    for (const g of [...GENEROS.map((x) => x.codigo), null] as const) {
+      const lista = profissoesParaOGenero(g)
+      expect(lista).toHaveLength(PROFISSOES.length)
+      expect(new Set(lista.map((p) => p.rotulo)).size).toBe(PROFISSOES.length)
+    }
+  })
+
+  it('gênero desconhecido vira nulo', () => {
+    expect(generoDoCodigo('feminino')).toBe('feminino')
+    expect(generoDoCodigo('outro')).toBeNull()
+  })
+})
+
+describe('formação em curso (estudante)', () => {
+  it('em curso aparece como estudante do curso, igual para todo gênero', () => {
+    expect(rotuloDoCurso('eng_ambiental')).toBe('Estudante de engenharia ambiental')
+    expect(rotuloDaFormacaoDaPessoa('biologo', 'feminino', true)).toBe(
+      'Estudante de ciências biológicas',
+    )
+    expect(rotuloDaFormacaoDaPessoa('biologo', 'feminino', false)).toBe('Bióloga')
+  })
+
+  it('no custo por profissão, quem cursa fica num grupo à parte dos formados', () => {
+    expect(rotuloDaProfissaoNoCusto('eng_ambiental', false)).toBe('Engenheiro ambiental')
+    expect(rotuloDaProfissaoNoCusto('eng_ambiental', true)).toBe(
+      'Estudante de engenharia ambiental',
+    )
+  })
+
+  it('todo curso tem nome próprio, sem repetir', () => {
+    const nomes = PROFISSOES.map((p) => rotuloDoCurso(p.codigo))
+    expect(new Set(nomes).size).toBe(PROFISSOES.length)
   })
 })
 

@@ -253,7 +253,7 @@ describe('primeiros passos do orçamento (ADR-0020)', () => {
     ).toBeInTheDocument()
     await escolherPessoa(usuario, 1, 'm-eduardo')
     await usuario.selectOptions(screen.getByLabelText('Como recebe na linha 1'), 'pro_labore')
-    await digitarReais(usuario, screen.getByLabelText('Custo mensal da linha 1'), '10.000,00')
+    await digitarReais(usuario, screen.getByLabelText('Pró-labore mensal da linha 1'), '10.000,00')
     await usuario.type(screen.getByLabelText('Horas no mês da linha 1'), '160')
     expect(screen.getByText('62,50')).toBeInTheDocument()
     await usuario.click(screen.getByRole('button', { name: 'Salvar e continuar' }))
@@ -295,27 +295,44 @@ describe('primeiros passos do orçamento (ADR-0020)', () => {
 
     // Passo 3: preço em branco não vira zero; nenhuma tabela de referência é oferecida.
     expect(screen.queryByRole('button', { name: /ACEAMB/ })).not.toBeInTheDocument()
-    await usuario.click(screen.getByRole('button', { name: 'Adicionar preço' }))
+    await usuario.click(screen.getByRole('button', { name: 'Adicionar profissional' }))
     await usuario.selectOptions(
-      screen.getByLabelText('Profissão da hora 1'),
+      screen.getByLabelText('Profissão do profissional 1'),
       'Engenheiro ambiental',
     )
-    await usuario.type(screen.getByLabelText('Atividade ou nível da hora 1'), 'Licenciamento')
+    await usuario.type(screen.getByLabelText('Nível do profissional 1'), 'Licenciamento')
     await usuario.click(screen.getByRole('button', { name: 'Salvar e continuar' }))
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Tabela de preços, linha 1: informe o preço (digite 0 se não cobra).',
+      'Hora de profissional, linha 1: informe o preço (digite 0 se não cobra).',
     )
     expect(chamadas('salvar_passo_configuracao_orcamento')).toHaveLength(2)
-    await usuario.type(screen.getByLabelText('Preço da linha 1'), '200,00')
+    await usuario.type(screen.getByLabelText('Preço por hora do profissional 1'), '200,00')
+    // Serviço sem "Quem faz": o custo usa a média da equipe.
+    await usuario.click(screen.getByRole('button', { name: 'Adicionar serviço' }))
+    await usuario.type(screen.getByLabelText('Serviço 1'), 'PGRSS')
+    await usuario.selectOptions(screen.getByLabelText('Unidade do serviço 1'), 'pacote')
+    await usuario.type(screen.getByLabelText('Preço do serviço 1'), '1.500,00')
+    // Visita por km rodado: R$ 6,00 ÷ 12 km/l = R$ 0,50 por km.
+    expect(screen.getByLabelText('Valor de uma visita técnica (R$)')).toBeInTheDocument()
+    await usuario.click(screen.getByRole('radio', { name: 'Cobramos por km rodado' }))
+    expect(screen.queryByLabelText('Valor de uma visita técnica (R$)')).not.toBeInTheDocument()
+    await usuario.type(screen.getByLabelText('Consumo do carro (km/l)'), '12')
+    await usuario.type(screen.getByLabelText('Preço do combustível (R$/l)'), '6,00')
+    expect(screen.getByText('R$ 0,50 por km')).toBeInTheDocument()
     await usuario.click(screen.getByRole('button', { name: 'Salvar e continuar' }))
     await screen.findByRole('heading', { name: 'Passo 4 de 6: Tributos e margens' })
     expect(chamadas('salvar_passo_configuracao_orcamento')[2]).toMatchObject({
       p_etapa: 3,
       p_dados: {
+        deslocamento_modo: 'km',
         valor_visita_centavos: null,
-        custo_km_centavos: null,
+        custo_km_centavos: 50,
+        consumo_km_por_litro: 12,
+        preco_combustivel_centavos: 600,
+        acrescimo_km_centavos: null,
         horas_venda: [
           { profissao: 'Engenheiro ambiental', atividade: 'Licenciamento', valor_centavos: 20_000 },
+          { profissao: '', atividade: 'PGRSS', unidade: 'pacote', valor_centavos: 150_000 },
         ],
       },
     })
@@ -359,7 +376,7 @@ describe('primeiros passos do orçamento (ADR-0020)', () => {
     expect(within(resumo).getByText('R$ 62,50')).toBeInTheDocument()
     expect(within(resumo).getByText('160 h, pela equipe')).toBeInTheDocument()
     expect(within(resumo).getByText('R$ 0,00 por hora')).toBeInTheDocument()
-    expect(within(resumo).getByText('1 linha')).toBeInTheDocument()
+    expect(within(resumo).getByText('2 linhas')).toBeInTheDocument()
     await usuario.click(screen.getByRole('button', { name: 'Criar o primeiro orçamento' }))
     expect(await screen.findByRole('dialog', { name: 'Novo orçamento' })).toBeInTheDocument()
     expect(chamadas('publicar_configuracao_orcamento')).toEqual([
@@ -411,23 +428,41 @@ describe('primeiros passos do orçamento (ADR-0020)', () => {
     })
     expect(chamadas('salvar_passo_configuracao_orcamento')).toHaveLength(0)
 
-    // Limpar a principal limpa também as outras formações.
-    await usuario.selectOptions(
-      screen.getByRole('combobox', { name: 'Profissão da linha 1' }),
-      'Não informada',
-    )
-    expect(falso.cliente.rpc).toHaveBeenLastCalledWith('definir_profissao_e_cargo', {
-      p_membro_id: 'm-helena',
-      p_profissao: null,
-      p_cargo: 'analista_pleno',
-      p_outras_profissoes: [],
-    })
+    // Profissão preenchida não se apaga (só troca): a opção "Não informada" some.
+    expect(
+      within(screen.getByRole('combobox', { name: 'Profissão da linha 1' })).queryByRole('option', {
+        name: 'Não informada',
+      }),
+    ).not.toBeInTheDocument()
   })
 
-  it('o custo mensal da linha mostra o ponto de milhar enquanto digita', async () => {
+  it('no passo 1, pessoa, profissão e forma escolhidas aparecem por inteiro como texto', async () => {
+    const base = servidor()
+    falso.reiniciar({
+      ...base,
+      tabelas: {
+        membro: membros.map((m) =>
+          m.id === 'm-eduardo' ? { ...m, profissao: 'eng_ambiental_sanitarista' } : { ...m },
+        ),
+      },
+    })
     const usuario = userEvent.setup()
     renderizarApp('/orcamentos/primeiros-passos')
-    const custo = await screen.findByLabelText('Custo mensal da linha 1')
+    await escolherPessoa(usuario, 1, 'm-eduardo')
+    await usuario.selectOptions(screen.getByLabelText('Como recebe na linha 1'), 'pro_labore')
+    // O select nativo corta o texto escolhido; o texto ao lado dele quebra linha.
+    const linha = screen.getByLabelText('Profissão da linha 1').closest('tr')
+    if (!linha) throw new Error('linha da equipe não encontrada')
+    const textos = within(linha)
+      .getAllByText(/./, { selector: '[data-texto-da-selecao] > span' })
+      .map((t) => t.textContent)
+    expect(textos).toEqual(['Eduardo Karnopp', 'Engenheiro ambiental e sanitarista', 'Pró-labore'])
+  })
+
+  it('o salário mensal da linha mostra o ponto de milhar enquanto digita', async () => {
+    const usuario = userEvent.setup()
+    renderizarApp('/orcamentos/primeiros-passos')
+    const custo = await screen.findByLabelText('Salário mensal da linha 1')
     await usuario.type(custo, '40000')
     expect(custo).toHaveValue('40.000')
     // Com centavos, digitando tecla a tecla como uma pessoa.
@@ -459,8 +494,8 @@ describe('primeiros passos do orçamento (ADR-0020)', () => {
 
     await usuario.click(screen.getByRole('button', { name: /Passo 1: Sua equipe/ }))
     await screen.findByRole('heading', { name: 'Passo 1 de 6: Sua equipe' })
-    expect(await screen.findByLabelText('Custo mensal da linha 1')).toHaveValue('10.000,00')
-    expect(screen.getByLabelText('Custo mensal da linha 2')).toHaveValue('')
+    expect(await screen.findByLabelText('Pró-labore mensal da linha 1')).toHaveValue('10.000,00')
+    expect(screen.getByLabelText('Salário mensal da linha 2')).toHaveValue('')
     await usuario.click(screen.getByRole('button', { name: 'Salvar e continuar' }))
     await screen.findByRole('heading', { name: 'Passo 2 de 6: Contas do mês' })
     const salvo = chamadas('salvar_passo_configuracao_orcamento')[0]
@@ -509,9 +544,10 @@ describe('primeiros passos do orçamento (ADR-0020)', () => {
     })
     await usuario.click(screen.getByRole('button', { name: 'Salvar e continuar' }))
     await screen.findByRole('heading', { name: 'Passo 3 de 6: Como vocês cobram' })
-    // Visita cadastrada continua; km 0 ("não cadastrado") fica em branco, não vira valor.
+    // Visita cadastrada continua (base sem modo e só com visita: por visita); o km não aparece.
+    expect(screen.getByRole('radio', { name: 'Cobramos por visita' })).toBeChecked()
     expect(screen.getByLabelText('Valor de uma visita técnica (R$)')).toHaveValue('150,00')
-    expect(screen.getByLabelText('Valor por km rodado (R$)')).toHaveValue('')
+    expect(screen.queryByLabelText('Consumo do carro (km/l)')).not.toBeInTheDocument()
   })
 
   it('conflito de versão mantém o que foi digitado e oferece recarregar', async () => {
@@ -519,12 +555,12 @@ describe('primeiros passos do orçamento (ADR-0020)', () => {
     const usuario = userEvent.setup()
     renderizarApp('/orcamentos/primeiros-passos')
     await escolherPessoa(usuario, 1, 'm-eduardo')
-    await digitarReais(usuario, screen.getByLabelText('Custo mensal da linha 1'), '10.000,00')
+    await digitarReais(usuario, screen.getByLabelText('Salário mensal da linha 1'), '10.000,00')
     await usuario.click(screen.getByRole('button', { name: 'Salvar e continuar' }))
     const alerta = await screen.findByRole('alert')
     expect(alerta).toHaveTextContent('Outra pessoa da gestão salvou esta configuração')
     expect(within(alerta).getByRole('button', { name: 'Recarregar' })).toBeInTheDocument()
-    expect(screen.getByLabelText('Custo mensal da linha 1')).toHaveValue('10.000,00')
+    expect(screen.getByLabelText('Salário mensal da linha 1')).toHaveValue('10.000,00')
     expect(screen.getByRole('heading', { name: 'Passo 1 de 6: Sua equipe' })).toBeInTheDocument()
   })
 
@@ -629,12 +665,12 @@ describe('primeiros passos do orçamento (ADR-0020)', () => {
   it('sair com mudança não salva pergunta antes', async () => {
     const usuario = userEvent.setup()
     renderizarApp('/orcamentos/primeiros-passos')
-    await usuario.type(await screen.findByLabelText('Custo mensal da linha 1'), '1')
+    await usuario.type(await screen.findByLabelText('Salário mensal da linha 1'), '1')
     await usuario.click(screen.getByRole('button', { name: 'Ver orçamentos mesmo assim' }))
     const dialogo = await screen.findByRole('dialog', { name: 'Sair sem salvar?' })
     await usuario.click(within(dialogo).getByRole('button', { name: 'Continuar aqui' }))
     expect(screen.getByRole('heading', { name: 'Passo 1 de 6: Sua equipe' })).toBeInTheDocument()
-    expect(screen.getByLabelText('Custo mensal da linha 1')).toHaveValue('1')
+    expect(screen.getByLabelText('Salário mensal da linha 1')).toHaveValue('1')
   })
 
   it('não tem violações de acessibilidade detectáveis no passo 1, no 4 e no resumo', async () => {

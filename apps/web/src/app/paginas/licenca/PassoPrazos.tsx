@@ -317,7 +317,7 @@ function PainelPrazo({
                       name="contagem"
                       checked
                       readOnly
-                      className="size-4 accent-(--brand)"
+                      className="size-4 accent-(--brand-stroke)"
                     />
                     Dias corridos
                   </label>

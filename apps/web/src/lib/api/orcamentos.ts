@@ -4,8 +4,10 @@
 import {
   ESCALA_DA_QUANTIDADE,
   FORMAS_DE_RECEBIMENTO,
+  MODOS_DE_DESLOCAMENTO,
   UNIDADES_DE_COBRANCA,
   type FaixaDePreco,
+  type ModoDeDeslocamento,
   type RemuneracaoDaPessoa,
   type UnidadeDeCobranca,
 } from '@gestao-ambiental/domain'
@@ -20,10 +22,15 @@ export type TratamentoDespesa = 'incluida' | 'cliente_direto' | 'reembolsavel'
 /** "tabela": horas × hora de venda do nível; "margem": custo ÷ (1 − margem − tributos − taxas). */
 export type FormaDePreco = 'margem' | 'tabela'
 
-/** Linha da tabela de hora de venda: profissão e atividade ou nível (ex.: Biólogo · Sênior). */
+/**
+ * Linha da tabela de preços. Hora de profissional (unidade hora): profissão e nível (Biólogo ·
+ * Sênior). Serviço (demais unidades): serviço e "Quem faz" opcional (profissão vazia = ninguém).
+ */
 export interface HoraDeVenda {
   id: string
+  /** Na hora, obrigatória; no serviço, '' quando não há "Quem faz". */
   profissao: string
+  /** Nível (na hora) ou serviço (nas demais unidades). */
   atividade: string
   valorCentavos: number
   /** De onde veio o valor (ex.: "ACEAMB 2015 corrigida"). */
@@ -100,6 +107,9 @@ function contasDe(valor: Json | undefined): ContaDoMes[] {
     descricao: texto(c.descricao),
     valorCentavos: numero(c.valor_centavos),
   }))
+}
+function modoDe(valor: Json | undefined): ModoDeDeslocamento | null {
+  return MODOS_DE_DESLOCAMENTO.find((m) => m === valor) ?? null
 }
 function unidadeDe(valor: Json | undefined): UnidadeDeCobranca {
   return UNIDADES_DE_COBRANCA.find((u) => u === valor) ?? 'hora'
@@ -206,12 +216,16 @@ export interface OrcamentoNaLista {
   rowVersion: number
 }
 
-/** `lixeira`: lista os orçamentos excluídos em vez dos ativos. */
+/**
+ * `lixeira`: lista os orçamentos excluídos em vez dos ativos. `situacao`: só os desta situação
+ * (nula = todas). A busca acha pelo empreendimento, prospecto, objeto ou trecho do número.
+ */
 export async function listarOrcamentos(
   consultoriaId: string,
   busca: string,
   pagina: number,
   lixeira = false,
+  situacao: SituacaoOrcamento | null = null,
 ): Promise<{ itens: OrcamentoNaLista[]; total: number }> {
   const { data, error } = await obterSupabase().rpc('listar_orcamentos', {
     p_consultoria_id: consultoriaId,
@@ -219,6 +233,7 @@ export async function listarOrcamentos(
     p_limite: TAMANHO_PAGINA_ORCAMENTOS,
     p_deslocamento: pagina * TAMANHO_PAGINA_ORCAMENTOS,
     p_lixeira: lixeira,
+    ...(situacao ? { p_situacao: situacao } : {}),
   })
   if (error) throw error
   return {
@@ -240,6 +255,79 @@ export async function listarOrcamentos(
       rowVersion: linha.row_version,
     })),
     total: data[0]?.total ?? 0,
+  }
+}
+
+/** Situação conhecida ou nula (ausente ou desconhecida), para ler a URL (?situacao=…) e o banco. */
+export function situacaoOuNula(valor: unknown): SituacaoOrcamento | null {
+  return (Object.keys(ROTULO_DA_SITUACAO) as SituacaoOrcamento[]).find((s) => s === valor) ?? null
+}
+
+/** Quantos orçamentos de cada situação atendem à busca (contagem das abas). */
+export async function contarOrcamentosPorSituacao(
+  consultoriaId: string,
+  busca: string,
+  lixeira = false,
+): Promise<Record<SituacaoOrcamento, number>> {
+  const { data, error } = await obterSupabase().rpc('contar_orcamentos_por_situacao', {
+    p_consultoria_id: consultoriaId,
+    p_busca: busca,
+    p_lixeira: lixeira,
+  })
+  if (error) throw error
+  const contagem: Record<SituacaoOrcamento, number> = {
+    rascunho: 0,
+    enviada: 0,
+    negociacao: 0,
+    aprovada: 0,
+    recusada: 0,
+  }
+  // Situação sem orçamento não vem do banco: fica zero.
+  for (const linha of (data as typeof data | null) ?? []) {
+    const lida = situacaoOuNula(linha.situacao)
+    if (lida) contagem[lida] = numero(linha.quantidade)
+  }
+  return contagem
+}
+
+/** Um grupo dos indicadores: quantos, a soma dos que têm preço e quantos estão sem preço. */
+export interface IndicadorDeOrcamentos {
+  quantidade: number
+  /** Soma só dos orçamentos com preço calculado. */
+  valorCentavos: number
+  semPreco: number
+}
+
+/** Indicadores do topo da lista (fora da lixeira). */
+export interface ResumoDosOrcamentos {
+  /** Rascunhos. */
+  emElaboracao: number
+  /** Enviadas e em negociação. */
+  aguardandoDecisao: IndicadorDeOrcamentos
+  aprovados: IndicadorDeOrcamentos
+}
+
+export async function obterResumoDosOrcamentos(
+  consultoriaId: string,
+): Promise<ResumoDosOrcamentos> {
+  const { data, error } = await obterSupabase().rpc('resumo_dos_orcamentos', {
+    p_consultoria_id: consultoriaId,
+  })
+  if (error) throw error
+  // A função sempre devolve uma linha; sem ela, tudo zero.
+  const linha = (data as typeof data | null)?.[0]
+  return {
+    emElaboracao: numero(linha?.rascunhos),
+    aguardandoDecisao: {
+      quantidade: numero(linha?.aguardando),
+      valorCentavos: numero(linha?.aguardando_centavos),
+      semPreco: numero(linha?.aguardando_sem_preco),
+    },
+    aprovados: {
+      quantidade: numero(linha?.aprovados),
+      valorCentavos: numero(linha?.aprovados_centavos),
+      semPreco: numero(linha?.aprovados_sem_preco),
+    },
   }
 }
 
@@ -341,6 +429,8 @@ export interface BaseDoOrcamento {
   taxaPorAssinaturaCentavos: number
   valorVisitaCentavos: number
   custoKmCentavos: number
+  /** Modo da visita copiado da base; nulo em orçamento antigo (soma visita e km). */
+  deslocamentoModo: ModoDeDeslocamento | null
   /** Contas do mês e parte administrativa da equipe: servem à prévia do rateio por conta. */
   custosFixosMensaisCentavos: number
   custosFixosEquipeCentavos: number
@@ -449,6 +539,7 @@ export async function obterOrcamento(id: string): Promise<Orcamento | null> {
           taxaPorAssinaturaCentavos: numero(b.taxa_por_assinatura_centavos),
           valorVisitaCentavos: numero(b.valor_visita_centavos),
           custoKmCentavos: numero(b.custo_km_centavos),
+          deslocamentoModo: modoDe(b.deslocamento_modo),
           custosFixosMensaisCentavos: numero(b.custos_fixos_mensais_centavos),
           custosFixosEquipeCentavos: numero(b.custos_fixos_equipe_centavos),
           contas: contasDe(b.custos_fixos_detalhe),
@@ -654,7 +745,14 @@ export interface BaseDeCustosDaConsultoria {
   /** Contas do mês. Com contas, o custo fixo mensal é a soma delas (o banco confere). */
   contas: ContaDoMes[]
   valorVisitaCentavos: number
+  /** Derivado pelo banco ao salvar (combustível ÷ consumo + acréscimo); o enviado só vale sem modo. */
   custoKmCentavos: number
+  /** "visita" ou "km"; nulo em base salva antes da escolha (deduzir com modoDeDeslocamento). */
+  deslocamentoModo: ModoDeDeslocamento | null
+  /** Consumo do carro (km/l), preço do litro e acréscimo por km: dão o valor do km. */
+  consumoKmPorLitro: number | null
+  precoCombustivelCentavos: number | null
+  acrescimoKmCentavos: number | null
   /** Tabela de hora de venda, para orçamentos pela tabela. */
   horasVenda: HoraDeVenda[]
   /** Derivado pelo banco ao salvar; a tela só mostra. */
@@ -706,6 +804,10 @@ export async function obterBaseDeCustos(
     contas: contasDe(b.custos_fixos_detalhe),
     valorVisitaCentavos: numero(b.valor_visita_centavos),
     custoKmCentavos: numero(b.custo_km_centavos),
+    deslocamentoModo: modoDe(b.deslocamento_modo),
+    consumoKmPorLitro: numeroOuNulo(b.consumo_km_por_litro),
+    precoCombustivelCentavos: numeroOuNulo(b.preco_combustivel_centavos),
+    acrescimoKmCentavos: numeroOuNulo(b.acrescimo_km_centavos),
     horasVenda: horasDe(b.horas_venda),
     custoHoraPorProfissao: custosDe(b.custo_hora_profissao),
     rowVersion: numero(b.row_version),
@@ -747,6 +849,10 @@ export async function salvarBaseDeCustos(
     })),
     p_valor_visita_centavos: base.valorVisitaCentavos,
     p_custo_km_centavos: base.custoKmCentavos,
+    p_deslocamento_modo: base.deslocamentoModo,
+    p_consumo_km_por_litro: base.consumoKmPorLitro,
+    p_preco_combustivel_centavos: base.precoCombustivelCentavos,
+    p_acrescimo_km_centavos: base.acrescimoKmCentavos,
     p_horas_venda: horasDeVendaParaOBanco(base.horasVenda),
   })
   if (error) throw error
@@ -937,4 +1043,33 @@ export async function mudarSituacaoOrcamento(
   })
   if (error) throw error
   return data
+}
+
+/** Quem contrata e onde, para a proposta (Protótipo 21). Nulo: prospecto ou sem acesso. */
+export interface ContratanteDaProposta {
+  empreendimentoNome: string
+  /** 14 caracteres, sem máscara. */
+  empreendimentoCnpj: string | null
+  /** Cliente contratante, quando o empreendimento tem um. */
+  clienteNome: string | null
+  /** Unidades do empreendimento, pelo nome; o orçamento não aponta uma delas. */
+  unidades: { nome: string; endereco: string | null }[]
+}
+
+export async function obterContratanteDaProposta(
+  id: string,
+): Promise<ContratanteDaProposta | null> {
+  const { data, error } = await obterSupabase().rpc('obter_contratante_da_proposta', { p_id: id })
+  if (error) throw error
+  const c = objeto(data)
+  if (!c) return null
+  return {
+    empreendimentoNome: texto(c.empreendimento_nome),
+    empreendimentoCnpj: textoOuNulo(c.empreendimento_cnpj),
+    clienteNome: textoOuNulo(c.cliente_nome),
+    unidades: lista(c.unidades).map((u) => ({
+      nome: texto(u.nome),
+      endereco: textoOuNulo(u.endereco),
+    })),
+  }
 }

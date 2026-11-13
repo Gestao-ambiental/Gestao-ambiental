@@ -182,6 +182,8 @@ const baseDoCalculo = {
   taxaPorAssinaturaCentavos: 400,
   valorVisitaCentavos: 15_000,
   custoKmCentavos: 120,
+  // Orçamento antigo, sem modo: soma visita e km, como na época.
+  deslocamentoModo: null,
   custosFixosMensaisCentavos: 960_000,
   custosFixosEquipeCentavos: 0,
   contas: [
@@ -429,9 +431,12 @@ describe('orçamentos (onda 5)', () => {
     expect(acessibilidade.violations.map((v) => v.id)).toEqual([])
     expect(within(proposta).getByText('Indústria Horizonte')).toBeInTheDocument()
     expect(within(proposta).getByText('A/C Marina Couto')).toBeInTheDocument()
-    expect(within(proposta).getByText('RCA/PCA e PGRS')).toBeInTheDocument()
-    expect(within(proposta).getByText('5.100,00')).toBeInTheDocument()
-    expect(within(proposta).getByText('R$ 8.900,00')).toBeInTheDocument()
+    // O serviço aparece no escopo e na composição do investimento (modelo da Envora).
+    expect(within(proposta).getAllByText('RCA/PCA e PGRS')).toHaveLength(2)
+    // Por hora: "1 serviço", valor unitário = total (horas são internas).
+    expect(within(proposta).getAllByText('R$ 5.100,00')).toHaveLength(2)
+    // Total logo de cara e na linha final da tabela.
+    expect(within(proposta).getAllByText('R$ 8.900,00')).toHaveLength(2)
     // Parcelas por maior resto: 40% de 8.900,00 = 3.560,00
     expect(within(proposta).getByText('40,0% · R$ 3.560,00')).toBeInTheDocument()
     // Honorário ≠ taxa do órgão: a taxa fica por conta do cliente.
@@ -569,12 +574,14 @@ describe('orçamentos (onda 5)', () => {
     )
     renderizarApp('/orcamentos/o1/proposta')
     const proposta = await screen.findByRole('article', { name: 'Proposta ORC-2026-041' })
+    // Razão social no cabeçalho, nas duas linhas do aceite e no rodapé.
     expect(
-      await within(proposta).findByText('Filtroville Consultoria Ambiental Ltda.'),
-    ).toBeInTheDocument()
+      await within(proposta).findAllByText('Filtroville Consultoria Ambiental Ltda.'),
+    ).toHaveLength(4)
+    // CNPJ e contatos da consultoria no rodapé da proposta.
     expect(within(proposta).getByText('CNPJ 11.222.333/0001-81')).toBeInTheDocument()
     expect(
-      within(proposta).getByText('(47) 3000-0000 · contato@filtroville.test'),
+      within(proposta).getByText('E-mail: contato@filtroville.test | Telefone: (47) 3000-0000'),
     ).toBeInTheDocument()
     // Sem texto próprio no orçamento, vale o padrão da identidade.
     expect(within(proposta).getByText('Agradecemos a oportunidade.')).toBeInTheDocument()
@@ -699,6 +706,28 @@ describe('orçamentos (onda 5)', () => {
         ],
       },
     })
+  })
+
+  it('sair do editor com alteração não salva pede confirmação', async () => {
+    const usuario = userEvent.setup()
+    renderizarApp('/orcamentos/o1?etapa=parcelas')
+    const percentual = await screen.findByLabelText('Percentual da parcela 3')
+    await usuario.clear(percentual)
+    await usuario.type(percentual, '25')
+
+    await usuario.click(screen.getByRole('link', { name: 'Calendário' }))
+    const dialogo = await screen.findByRole('dialog', { name: 'Sair sem salvar?' })
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Continuar aqui' }))
+    expect(screen.queryByRole('dialog', { name: 'Sair sem salvar?' })).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Percentual da parcela 3')).toHaveValue('25')
+
+    await usuario.click(screen.getByRole('link', { name: 'Calendário' }))
+    await usuario.click(
+      within(await screen.findByRole('dialog', { name: 'Sair sem salvar?' })).getByRole('button', {
+        name: 'Sair sem salvar',
+      }),
+    )
+    expect(await screen.findByRole('heading', { level: 1, name: 'Calendário' })).toBeInTheDocument()
   })
 
   it('horas aceitam 1h30, o item mostra o custo e a margem do fim muda o preço', async () => {
@@ -924,6 +953,90 @@ describe('orçamentos (onda 5)', () => {
     expect(chamada?.[1]).toMatchObject({
       p_dados: { visitas: { quantidade: 2, km_por_visita: 50, outros_por_visita_centavos: 0 } },
     })
+  })
+
+  it('por visita, o km some e não entra; por km, o valor fixo da visita não entra', async () => {
+    falso.reiniciar(
+      cenario('gestao', {
+        rpc: {
+          obter_orcamento: {
+            data: orcamento({
+              base: { ...base, deslocamento_modo: 'visita', custo_km_centavos: 0 },
+            }),
+          },
+        },
+      }),
+    )
+    const usuario = userEvent.setup()
+    renderizarApp('/orcamentos/o1')
+    await usuario.type(await screen.findByLabelText('Quantidade de visitas'), '2')
+    expect(screen.queryByLabelText('Km por visita, ida e volta')).not.toBeInTheDocument()
+    // 2 × 150 = 300
+    expect(screen.getByText('Valor das visitas: R$ 300,00')).toBeInTheDocument()
+  })
+
+  it('por km rodado, a visita custa km × valor do km, sem o valor fixo', async () => {
+    falso.reiniciar(
+      cenario('gestao', {
+        rpc: {
+          obter_orcamento: {
+            data: orcamento({
+              base: {
+                ...base,
+                deslocamento_modo: 'km',
+                valor_visita_centavos: 0,
+                custo_km_centavos: 50,
+              },
+            }),
+          },
+        },
+      }),
+    )
+    const usuario = userEvent.setup()
+    renderizarApp('/orcamentos/o1')
+    await usuario.type(await screen.findByLabelText('Quantidade de visitas'), '2')
+    await usuario.type(screen.getByLabelText('Km por visita, ida e volta'), '80')
+    // 2 × 80 km × 0,50 = 80
+    expect(screen.getByText('Valor das visitas: R$ 80,00')).toBeInTheDocument()
+  })
+
+  it('na escolha do preço, serviços sem "Quem faz" ficam no grupo Serviços', async () => {
+    falso.reiniciar(
+      cenario('gestao', {
+        rpc: {
+          obter_orcamento: {
+            data: orcamento({
+              forma_preco: 'tabela',
+              base: {
+                ...base,
+                horas_venda: [
+                  { id: 'h', profissao: 'Eng.', atividade: 'Júnior', valor_centavos: 16_000 },
+                  {
+                    id: 'fauna',
+                    profissao: '',
+                    atividade: 'Inventário de fauna',
+                    valor_centavos: 10_000,
+                    unidade: 'ha',
+                  },
+                ],
+              },
+            }),
+          },
+        },
+      }),
+    )
+    renderizarApp('/orcamentos/o1')
+    await screen.findByRole('heading', { name: 'Indústria Horizonte' })
+    const preco = screen.getByLabelText('Preço do item 1')
+    const grupos = within(preco).getAllByRole('group')
+    expect(grupos.map((g) => g.getAttribute('label'))).toEqual(['Eng.', 'Serviços'])
+    const servicos = grupos[1]
+    if (!servicos) throw new Error('grupo Serviços não encontrado')
+    expect(
+      within(servicos).getByRole('option', {
+        name: /Inventário de fauna · 100,00\/ha/,
+      }),
+    ).toBeInTheDocument()
   })
 
   it('o catálogo de Joinville aplica etapas e despesas como itens editáveis', async () => {
@@ -1466,20 +1579,20 @@ describe('orçamentos (onda 5)', () => {
       screen.getByRole('button', { name: 'Usar tabela ACEAMB corrigida (ago/2026)' }),
     )
     // Profissão escolhida da lista fixa do Grama (ADR-0021), sem digitar.
-    expect(screen.getByLabelText('Profissão da hora 1')).toHaveDisplayValue(
+    expect(screen.getByLabelText('Profissão do profissional 1')).toHaveDisplayValue(
       'Engenheiro ambiental e sanitarista',
     )
-    expect(screen.getByLabelText('Atividade ou nível da hora 1')).toHaveValue('Júnior')
-    expect(screen.getByLabelText('Preço da linha 1')).toHaveValue('214,19')
-    expect(screen.getByLabelText('Atividade ou nível da hora 4')).toHaveValue(
+    expect(screen.getByLabelText('Nível do profissional 1')).toHaveValue('Júnior')
+    expect(screen.getByLabelText('Preço por hora do profissional 1')).toHaveValue('214,19')
+    expect(screen.getByLabelText('Nível do profissional 4')).toHaveValue(
       'Avaliação e perícia ambiental',
     )
-    expect(screen.getByLabelText('Preço da linha 4')).toHaveValue('356,98')
+    expect(screen.getByLabelText('Preço por hora do profissional 4')).toHaveValue('356,98')
     // Outra profissão, com o valor que a consultoria informar.
-    await usuario.click(screen.getByRole('button', { name: 'Adicionar preço' }))
-    await usuario.selectOptions(screen.getByLabelText('Profissão da hora 5'), 'Biólogo')
-    await usuario.type(screen.getByLabelText('Atividade ou nível da hora 5'), 'Sênior')
-    await usuario.type(screen.getByLabelText('Preço da linha 5'), '300,00')
+    await usuario.click(screen.getByRole('button', { name: 'Adicionar profissional' }))
+    await usuario.selectOptions(screen.getByLabelText('Profissão do profissional 5'), 'Biólogo')
+    await usuario.type(screen.getByLabelText('Nível do profissional 5'), 'Sênior')
+    await usuario.type(screen.getByLabelText('Preço por hora do profissional 5'), '300,00')
 
     await usuario.type(screen.getByLabelText('Custos fixos por mês (R$)'), '250,00')
     await usuario.click(screen.getByRole('button', { name: 'Calcular pela equipe' }))
@@ -1492,7 +1605,7 @@ describe('orçamentos (onda 5)', () => {
       'Engenheiro ambiental e sanitarista',
     )
     await usuario.selectOptions(screen.getByLabelText('Como recebe na linha 1'), 'pro_labore')
-    await digitarReais(usuario, screen.getByLabelText('Custo mensal da linha 1'), '13.751,77')
+    await digitarReais(usuario, screen.getByLabelText('Pró-labore mensal da linha 1'), '13.751,77')
     await usuario.type(screen.getByLabelText('Horas no mês da linha 1'), '173')
     // 13.751,77 ÷ 173 h = 79,49
     expect(screen.getByText('79,49')).toBeInTheDocument()
@@ -1506,8 +1619,8 @@ describe('orçamentos (onda 5)', () => {
     await usuario.selectOptions(pessoa2, 'm-helena')
     expect(screen.getByLabelText('Profissão da linha 2')).toHaveDisplayValue('Biólogo')
     await usuario.selectOptions(screen.getByLabelText('Como recebe na linha 2'), 'diaria')
-    expect(screen.queryByLabelText('Custo mensal da linha 2')).not.toBeInTheDocument()
-    await usuario.type(screen.getByLabelText('Custo por diária da linha 2'), '400,00')
+    expect(screen.queryByLabelText('Salário mensal da linha 2')).not.toBeInTheDocument()
+    await usuario.type(screen.getByLabelText('Valor da diária da linha 2'), '400,00')
     await usuario.type(screen.getByLabelText('Horas por diária da linha 2'), '8')
     // 400 ÷ 8 h = 50,00; sem os dias no mês, a capacidade fica desconhecida (nunca zero).
     expect(screen.getByText('50,00')).toBeInTheDocument()
@@ -1583,37 +1696,42 @@ describe('orçamentos (onda 5)', () => {
     await screen.findByText('Falta configurar para calcular o preço')
     await usuario.type(screen.getByLabelText('Custo da hora técnica (R$)'), '95,00')
     await usuario.type(screen.getByLabelText('Horas faturáveis por mês'), '320')
-    await usuario.click(screen.getByRole('button', { name: 'Adicionar preço' }))
+    await usuario.click(screen.getByRole('button', { name: 'Adicionar serviço' }))
+    await usuario.type(screen.getByLabelText('Serviço 1'), 'Projeto')
     await usuario.selectOptions(
-      screen.getByLabelText('Profissão da hora 1'),
+      screen.getByLabelText('Quem faz o serviço 1'),
       'Arquiteto e urbanista',
     )
-    await usuario.type(screen.getByLabelText('Atividade ou nível da hora 1'), 'Projeto')
-    // Hora não tem faixas; m² tem.
+    // O bloco de serviços não oferece a hora; pacote não tem faixas; m² tem.
+    const unidade = screen.getByLabelText('Unidade do serviço 1')
+    expect(within(unidade).queryByRole('option', { name: 'Hora' })).not.toBeInTheDocument()
+    await usuario.selectOptions(unidade, 'pacote')
     expect(
-      screen.queryByRole('button', { name: 'Usar faixas de quantidade na linha 1' }),
+      screen.queryByRole('button', { name: 'Usar faixas de quantidade no serviço 1' }),
     ).not.toBeInTheDocument()
-    await usuario.selectOptions(screen.getByLabelText('Unidade da linha 1'), 'm2')
-    await usuario.type(screen.getByLabelText('Preço da linha 1'), '2,00')
+    await usuario.selectOptions(unidade, 'm2')
+    await usuario.type(screen.getByLabelText('Preço do serviço 1'), '2,00')
     await usuario.click(
-      screen.getByRole('button', { name: 'Usar faixas de quantidade na linha 1' }),
+      screen.getByRole('button', { name: 'Usar faixas de quantidade no serviço 1' }),
     )
-    expect(screen.queryByLabelText('Preço da linha 1')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Preço do serviço 1')).not.toBeInTheDocument()
     // A primeira faixa começa com o preço que já estava na linha.
-    expect(screen.getByLabelText('Valor por unidade da faixa 1 da linha 1')).toHaveValue('2,00')
-    await usuario.type(screen.getByLabelText('Até quanto vale a faixa 1 da linha 1'), '500')
+    expect(screen.getByLabelText('Valor por unidade da faixa 1 do serviço 1')).toHaveValue('2,00')
+    await usuario.type(screen.getByLabelText('Até quanto vale a faixa 1 do serviço 1'), '500')
     expect(screen.getByText(/Acima de 500/)).toBeInTheDocument()
-    await usuario.type(screen.getByLabelText('Valor por unidade da faixa 2 da linha 1'), '1,50')
+    await usuario.type(screen.getByLabelText('Valor por unidade da faixa 2 do serviço 1'), '1,50')
     // Uma faixa a mais, com limite que não cresce: a tela recusa.
-    await usuario.click(screen.getByRole('button', { name: 'Adicionar faixa na linha 1' }))
-    await usuario.type(screen.getByLabelText('Até quanto vale a faixa 2 da linha 1'), '300')
-    await usuario.type(screen.getByLabelText('Valor por unidade da faixa 2 da linha 1'), '1,80')
+    await usuario.click(screen.getByRole('button', { name: 'Adicionar faixa no serviço 1' }))
+    await usuario.type(screen.getByLabelText('Até quanto vale a faixa 2 do serviço 1'), '300')
+    await usuario.type(screen.getByLabelText('Valor por unidade da faixa 2 do serviço 1'), '1,80')
     await confirmarBaseNova(usuario)
     await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
-    expect(screen.getByRole('alert')).toHaveTextContent('os limites das faixas precisam crescer')
-    await usuario.clear(screen.getByLabelText('Até quanto vale a faixa 2 da linha 1'))
-    await usuario.type(screen.getByLabelText('Até quanto vale a faixa 2 da linha 1'), '1.000')
-    await usuario.type(screen.getByLabelText('Preço mínimo da linha 1'), '800,00')
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Serviços, linha 1: os limites das faixas precisam crescer',
+    )
+    await usuario.clear(screen.getByLabelText('Até quanto vale a faixa 2 do serviço 1'))
+    await usuario.type(screen.getByLabelText('Até quanto vale a faixa 2 do serviço 1'), '1.000')
+    await usuario.type(screen.getByLabelText('Preço mínimo do serviço 1'), '800,00')
 
     await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
     const chamada = falso.cliente.rpc.mock.calls.find(([nome]) => nome === 'salvar_base_de_custos')
@@ -1656,19 +1774,21 @@ describe('orçamentos (onda 5)', () => {
     })
     expect(within(lista).getByText(/Faltam 6 itens/)).toBeInTheDocument()
     expect(
-      within(lista).getByRole('link', { name: 'Tabela de preços (ao menos uma linha)' }),
+      within(lista).getByRole('link', {
+        name: 'Tabela de preços (ao menos um profissional ou serviço)',
+      }),
     ).toHaveAttribute('href', '#grupo-precos')
 
     await usuario.type(screen.getByLabelText('Custo da hora técnica (R$)'), '95,00')
     await usuario.type(screen.getByLabelText('Horas faturáveis por mês'), '320')
     await usuario.type(screen.getByLabelText('Custos fixos por mês (R$)'), '0')
-    await usuario.click(screen.getByRole('button', { name: 'Adicionar preço' }))
+    await usuario.click(screen.getByRole('button', { name: 'Adicionar profissional' }))
     await usuario.selectOptions(
-      screen.getByLabelText('Profissão da hora 1'),
+      screen.getByLabelText('Profissão do profissional 1'),
       'Engenheiro ambiental',
     )
-    await usuario.type(screen.getByLabelText('Atividade ou nível da hora 1'), 'Pleno')
-    await usuario.type(screen.getByLabelText('Preço da linha 1'), '200,00')
+    await usuario.type(screen.getByLabelText('Nível do profissional 1'), 'Pleno')
+    await usuario.type(screen.getByLabelText('Preço por hora do profissional 1'), '200,00')
     expect(within(lista).getByText(/Falta 2 itens|Faltam 2 itens/)).toBeInTheDocument()
 
     // Vazio não vira zero: tributos precisam ser digitados, mesmo que 0.
@@ -1730,20 +1850,140 @@ describe('orçamentos (onda 5)', () => {
     await usuario.type(screen.getByLabelText('Valor por mês da conta 4'), '600,00')
     expect(screen.getByText('9.600,00')).toBeInTheDocument()
     expect(screen.getByText('R$ 30,00 por hora')).toBeInTheDocument()
+    // Base nova: cobra por visita; o km não aparece.
+    expect(screen.getByRole('radio', { name: 'Cobramos por visita' })).toBeChecked()
+    expect(screen.queryByLabelText('Consumo do carro (km/l)')).not.toBeInTheDocument()
     await usuario.type(screen.getByLabelText('Valor de uma visita técnica (R$)'), '150,00')
-    await usuario.type(screen.getByLabelText('Valor por km rodado (R$)'), '1,20')
 
     await confirmarBaseNova(usuario)
     await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
     const chamada = falso.cliente.rpc.mock.calls.find(([nome]) => nome === 'salvar_base_de_custos')
     expect(chamada?.[1]).toMatchObject({
       p_custos_fixos_mensais_centavos: 960_000,
+      p_deslocamento_modo: 'visita',
       p_valor_visita_centavos: 15_000,
-      p_custo_km_centavos: 120,
+      p_custo_km_centavos: 0,
+      p_consumo_km_por_litro: null,
+      p_preco_combustivel_centavos: null,
+      p_acrescimo_km_centavos: null,
     })
     const contas = (chamada?.[1] as { p_custos_fixos: { descricao: string }[] }).p_custos_fixos
     expect(contas[0]).toEqual({ descricao: 'Aluguel e condomínio', valor_centavos: 800_000 })
     expect(contas[2]).toEqual({ descricao: 'Água e esgoto', valor_centavos: 0 })
+  })
+
+  it('cobra por km rodado: combustível ÷ consumo, mais o acréscimo opcional', async () => {
+    const usuario = userEvent.setup()
+    renderizarApp('/configuracoes/custos')
+    await screen.findByText('Falta configurar para calcular o preço')
+    await usuario.type(screen.getByLabelText('Custo da hora técnica (R$)'), '95,00')
+    await usuario.type(screen.getByLabelText('Horas faturáveis por mês'), '320')
+    await usuario.type(screen.getByLabelText('Custos fixos por mês (R$)'), '0')
+    await usuario.type(screen.getByLabelText('Tributos sobre o faturamento (%)'), '0')
+    await usuario.type(screen.getByLabelText('Valor de uma visita técnica (R$)'), '150,00')
+
+    await usuario.click(screen.getByRole('radio', { name: 'Cobramos por km rodado' }))
+    // Só os campos do km: o valor fixo da visita some.
+    expect(screen.queryByLabelText('Valor de uma visita técnica (R$)')).not.toBeInTheDocument()
+    expect(screen.getByText(/Valor do km/)).toHaveTextContent('Valor do km: não cadastrado')
+    await usuario.type(screen.getByLabelText('Consumo do carro (km/l)'), '12')
+    expect(screen.getByText(/Valor do km/)).toHaveTextContent('Valor do km: pendente')
+    await usuario.type(screen.getByLabelText('Preço do combustível (R$/l)'), '6,00')
+    // R$ 6,00 ÷ 12 km/l = R$ 0,50 por km.
+    expect(screen.getByText('R$ 0,50 por km')).toBeInTheDocument()
+    await usuario.type(screen.getByLabelText('Acréscimo por km (R$)'), '0,30')
+    expect(screen.getByText('R$ 0,80 por km')).toBeInTheDocument()
+    await usuario.clear(screen.getByLabelText('Acréscimo por km (R$)'))
+
+    // Consumo sem preço não salva.
+    await usuario.clear(screen.getByLabelText('Preço do combustível (R$/l)'))
+    await confirmarBaseNova(usuario)
+    await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Informe o consumo do carro e o preço do combustível',
+    )
+    await usuario.type(screen.getByLabelText('Preço do combustível (R$/l)'), '6,00')
+    await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
+    const chamada = falso.cliente.rpc.mock.calls.find(([nome]) => nome === 'salvar_base_de_custos')
+    expect(chamada?.[1]).toMatchObject({
+      p_deslocamento_modo: 'km',
+      p_valor_visita_centavos: 0,
+      p_custo_km_centavos: 50,
+      p_consumo_km_por_litro: 12,
+      p_preco_combustivel_centavos: 600,
+      p_acrescimo_km_centavos: null,
+    })
+  })
+
+  it('base antiga só com km abre em "por km rodado", sem perder o valor do km', async () => {
+    falso.reiniciar(
+      cenario('gestao', {
+        rpc: {
+          obter_base_de_custos: {
+            data: {
+              hora_tecnica_centavos: 9_500,
+              custos_fixos_mensais_centavos: 0,
+              custos_fixos_equipe_centavos: 0,
+              custos_fixos_detalhe: [],
+              horas_faturaveis_mes: 160,
+              margem_desejada_pb: 3_000,
+              margem_minima_pb: 2_500,
+              tributos_pb: 0,
+              taxas_pb: 0,
+              taxa_por_cobranca_centavos: 0,
+              taxa_por_assinatura_centavos: 0,
+              valor_visita_centavos: 0,
+              custo_km_centavos: 120,
+              horas_venda: [],
+              custo_hora_profissao: [],
+              custo_hora_membro: [],
+              equipe: [],
+              row_version: 3,
+            },
+          },
+        },
+      }),
+    )
+    renderizarApp('/configuracoes/custos')
+    expect(await screen.findByRole('radio', { name: 'Cobramos por km rodado' })).toBeChecked()
+    expect(screen.getByLabelText('Acréscimo por km (R$)')).toHaveValue('1,20')
+    expect(screen.getByText('R$ 1,20 por km')).toBeInTheDocument()
+  })
+
+  it('serviço sem "Quem faz" é salvo sem profissão; hora sem profissão não', async () => {
+    const usuario = userEvent.setup()
+    renderizarApp('/configuracoes/custos')
+    await screen.findByText('Falta configurar para calcular o preço')
+    await usuario.type(screen.getByLabelText('Custo da hora técnica (R$)'), '95,00')
+    await usuario.type(screen.getByLabelText('Horas faturáveis por mês'), '320')
+    await usuario.type(screen.getByLabelText('Tributos sobre o faturamento (%)'), '0')
+    expect(screen.getByRole('heading', { name: 'Hora de profissional' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Serviços' })).toBeInTheDocument()
+
+    await usuario.click(screen.getByRole('button', { name: 'Adicionar serviço' }))
+    await usuario.type(screen.getByLabelText('Serviço 1'), 'Inventário de fauna')
+    await usuario.selectOptions(screen.getByLabelText('Unidade do serviço 1'), 'ha')
+    await usuario.type(screen.getByLabelText('Preço do serviço 1'), '100,00')
+    expect(screen.getByLabelText('Quem faz o serviço 1')).toHaveDisplayValue(
+      'Qualquer pessoa da equipe',
+    )
+
+    await usuario.click(screen.getByRole('button', { name: 'Adicionar profissional' }))
+    await usuario.type(screen.getByLabelText('Nível do profissional 1'), 'Júnior')
+    await usuario.type(screen.getByLabelText('Preço por hora do profissional 1'), '200,00')
+    await confirmarBaseNova(usuario)
+    await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Hora de profissional, linha 1: informe a profissão.',
+    )
+    await usuario.click(screen.getByRole('button', { name: 'Remover profissional 1' }))
+    await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
+    const chamada = falso.cliente.rpc.mock.calls.find(([nome]) => nome === 'salvar_base_de_custos')
+    expect(chamada?.[1]).toMatchObject({
+      p_horas_venda: [
+        { profissao: '', atividade: 'Inventário de fauna', unidade: 'ha', valor_centavos: 10_000 },
+      ],
+    })
   })
 
   it('calcula hora técnica e horas pela equipe, com o pró-labore entrando uma vez', async () => {
@@ -1761,14 +2001,14 @@ describe('orçamentos (onda 5)', () => {
     await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
     expect(screen.getByRole('alert')).toHaveTextContent('Equipe, linha 1: escolha a pessoa.')
     await usuario.selectOptions(await screen.findByLabelText('Pessoa da linha 1'), 'm-eduardo')
-    await digitarReais(usuario, screen.getByLabelText('Custo mensal da linha 1'), '10.000,00')
+    await digitarReais(usuario, screen.getByLabelText('Salário mensal da linha 1'), '10.000,00')
     await usuario.type(screen.getByLabelText('Horas no mês da linha 1'), '160')
     // Hora de custo: 10.000 ÷ 160 h = 62,50
     expect(screen.getByText('62,50')).toBeInTheDocument()
 
     await usuario.click(screen.getByRole('button', { name: 'Adicionar pessoa' }))
     await usuario.selectOptions(screen.getByLabelText('Pessoa da linha 2'), 'm-helena')
-    await digitarReais(usuario, screen.getByLabelText('Custo mensal da linha 2'), '5.000,00')
+    await digitarReais(usuario, screen.getByLabelText('Salário mensal da linha 2'), '5.000,00')
     await usuario.type(screen.getByLabelText('Horas no mês da linha 2'), '168')
 
     // Média 15.000 ÷ 328 h = 45,73; rateio 9.600 ÷ 328 = 29,27 por hora.

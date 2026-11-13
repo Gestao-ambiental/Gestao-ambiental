@@ -96,7 +96,7 @@ function LinhaDoTempo({
         <span className="absolute top-0 left-0 size-3 rounded-[2px] bg-(--lozenge-inprogress-text)" />
         {hojeVisivel ? (
           <span
-            className="absolute top-0 h-3 w-1 -translate-x-1/2 rounded-full bg-(--brand)"
+            className="absolute top-0 h-3 w-1 -translate-x-1/2 rounded-full bg-(--brand-stroke)"
             style={{ left: `${String(pHoje)}%` }}
           />
         ) : null}

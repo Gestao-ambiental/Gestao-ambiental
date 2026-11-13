@@ -106,7 +106,7 @@ function FormEtapa({
               onChange={() => {
                 setModo(valor)
               }}
-              className="size-4 accent-(--brand)"
+              className="size-4 accent-(--brand-stroke)"
             />
             {rotulo}
           </label>

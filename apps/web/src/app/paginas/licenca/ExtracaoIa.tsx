@@ -52,7 +52,7 @@ export function ComoCadastrar({
               }}
               aria-labelledby="como-ia"
               aria-describedby="ia-descricao"
-              className="size-4 accent-(--brand)"
+              className="size-4 accent-(--brand-stroke)"
             />
             <span id="como-ia" className={semIa ? 'text-(--text-disabled)' : undefined}>
               Extrair com IA
@@ -77,7 +77,7 @@ export function ComoCadastrar({
               }}
               aria-labelledby="como-manual"
               aria-describedby="manual-descricao"
-              className="size-4 accent-(--brand)"
+              className="size-4 accent-(--brand-stroke)"
             />
             <span id="como-manual">Cadastrar manualmente</span>
           </span>

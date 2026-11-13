@@ -29,7 +29,7 @@ const TONS: Record<TomSelo, string> = {
   perigo: 'border-(--lozenge-danger-border) bg-(--lozenge-danger-bg) text-(--lozenge-danger-text)',
   // Faixas de atraso (EQ-03): mais escuro quanto maior o atraso; o número de dias vai escrito.
   perigoMedio: 'border-(--border-danger) bg-(--lozenge-danger-bg) text-(--lozenge-danger-text)',
-  perigoForte: 'border-transparent bg-(--danger) text-(--text-inverse)',
+  perigoForte: 'border-transparent bg-(--danger) text-(--text-on-danger)',
 }
 
 type Props = ComponentProps<'span'> & { tom?: TomSelo }

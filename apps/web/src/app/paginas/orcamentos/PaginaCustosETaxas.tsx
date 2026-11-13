@@ -36,22 +36,26 @@ import {
   textoDoPercentual,
 } from './calculo'
 import {
+  camposDeDeslocamentoDe,
   composicaoDe,
   contasDe,
   CONTAS_SUGERIDAS,
   horasDe,
   lerContas,
+  lerDeslocamento,
   lerEquipe,
   lerHorasDeVenda,
   linhasDe,
   novaPessoa,
   profissoesDosMembros,
+  type CamposDeDeslocamento,
   type LinhaConta,
   type LinhaHora,
   type LinhaPessoa,
 } from './campos-da-base'
 import { classeCampo, reaisDigitados } from './comum'
-import { ContasDoMes, Equipe, Grupo, Linha, TabelaDePrecos } from './PecasDaBase'
+import { ContasDoMes, Equipe, Grupo, Linha } from './PecasDaBase'
+import { Deslocamento, TabelaDePrecos } from './PecasDeCobranca'
 
 interface Campos {
   horaTecnica: string
@@ -63,8 +67,6 @@ interface Campos {
   taxas: string
   taxaPorCobranca: string
   taxaPorAssinatura: string
-  valorVisita: string
-  custoKm: string
 }
 
 /** Campos em reais: mostram o ponto de milhar enquanto a pessoa digita. */
@@ -73,8 +75,6 @@ const CAMPOS_EM_REAIS: ReadonlySet<keyof Campos> = new Set([
   'custosFixos',
   'taxaPorCobranca',
   'taxaPorAssinatura',
-  'valorVisita',
-  'custoKm',
 ])
 
 function camposDe(base: BaseDeCustosDaConsultoria | null): Campos {
@@ -89,8 +89,6 @@ function camposDe(base: BaseDeCustosDaConsultoria | null): Campos {
       taxas: '0',
       taxaPorCobranca: '',
       taxaPorAssinatura: '',
-      valorVisita: '',
-      custoKm: '',
     }
   }
   return {
@@ -103,8 +101,6 @@ function camposDe(base: BaseDeCustosDaConsultoria | null): Campos {
     taxas: textoDoPercentual(base.taxasPb),
     taxaPorCobranca: formatarCentavos(base.taxaPorCobrancaCentavos),
     taxaPorAssinatura: formatarCentavos(base.taxaPorAssinaturaCentavos),
-    valorVisita: base.valorVisitaCentavos ? formatarCentavos(base.valorVisitaCentavos) : '',
-    custoKm: base.custoKmCentavos ? formatarCentavos(base.custoKmCentavos) : '',
   }
 }
 
@@ -113,6 +109,7 @@ function lerCampos(
   linhas: readonly LinhaPessoa[],
   linhasDeContas: readonly LinhaConta[],
   linhasDeHoras: readonly LinhaHora[],
+  deslocamento: CamposDeDeslocamento,
   profissaoDoMembro: ReadonlyMap<string, string>,
 ): { base: BaseDeCustosDaConsultoria; composicao: ComposicaoDaEquipe | null } | string {
   const contas = lerContas(linhasDeContas)
@@ -126,9 +123,9 @@ function lerCampos(
       : lerReaisOuZero(c.custosFixos)
   const taxaPorCobranca = lerReaisOuZero(c.taxaPorCobranca)
   const taxaPorAssinatura = lerReaisOuZero(c.taxaPorAssinatura)
-  const valorVisita = lerReaisOuZero(c.valorVisita)
-  const custoKm = lerReaisOuZero(c.custoKm)
-  if (valorVisita === null || custoKm === null) return 'Confira o valor da visita e o custo por km.'
+  // Visita e km: só os campos do modo escolhido; em branco, 0 ("não cadastrado").
+  const visitas = lerDeslocamento(deslocamento)
+  if (typeof visitas === 'string') return visitas
   const margemDesejada = lerPercentual(c.margemDesejada)
   const margemMinima = lerPercentual(c.margemMinima)
   const tributos = lerPercentual(c.tributos || '0')
@@ -174,8 +171,12 @@ function lerCampos(
       taxaPorAssinaturaCentavos: taxaPorAssinatura,
       equipe,
       contas,
-      valorVisitaCentavos: valorVisita,
-      custoKmCentavos: custoKm,
+      valorVisitaCentavos: visitas.valorVisitaCentavos ?? 0,
+      custoKmCentavos: visitas.custoKmCentavos,
+      deslocamentoModo: visitas.deslocamentoModo,
+      consumoKmPorLitro: visitas.consumoKmPorLitro,
+      precoCombustivelCentavos: visitas.precoCombustivelCentavos,
+      acrescimoKmCentavos: visitas.acrescimoKmCentavos,
       horasVenda,
       custoHoraPorProfissao: custoHoraPorProfissao(linhasMensaisDaEquipe(equipe)),
     },
@@ -237,6 +238,10 @@ function Formulario({
   const [equipe, setEquipe] = useState<LinhaPessoa[]>(() => linhasDe(base))
   const [contas, setContas] = useState<LinhaConta[]>(() => contasDe(base))
   const [horas, setHoras] = useState<LinhaHora[]>(() => horasDe(base))
+  // Na base, visita e km 0 querem dizer "não cadastrado": o campo fica em branco.
+  const [deslocamento, setDeslocamento] = useState<CamposDeDeslocamento>(() =>
+    camposDeDeslocamentoDe(base, { zeroEmBranco: true }),
+  )
   const [salvando, setSalvando] = useState(false)
   const [falha, setFalha] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
@@ -246,7 +251,7 @@ function Formulario({
   const pelaEquipe = equipe.length > 0
   // A profissão de cada pessoa vem do cadastro dela em Equipe (ADR-0021).
   const profissaoDoMembro = profissoesDosMembros(membros.data ?? [])
-  const lido = lerCampos(c, equipe, contas, horas, profissaoDoMembro)
+  const lido = lerCampos(c, equipe, contas, horas, deslocamento, profissaoDoMembro)
   const custoPorProfissao = typeof lido === 'string' ? [] : lido.base.custoHoraPorProfissao
   const totalDasContas = contas.reduce((soma, l) => soma + (lerReaisOuZero(l.valor) ?? 0), 0)
   // Prévia da composição mesmo com algum campo ainda incompleto (linhas inválidas ficam de fora).
@@ -295,7 +300,7 @@ function Formulario({
     },
     {
       id: 'precos',
-      rotulo: 'Tabela de preços (ao menos uma linha)',
+      rotulo: 'Tabela de preços (ao menos um profissional ou serviço)',
       ancora: 'grupo-precos',
       feito: typeof tabelaLida !== 'string' && tabelaLida.length > 0,
     },
@@ -643,30 +648,14 @@ function Formulario({
         </Grupo>
 
         <Grupo id="grupo-visitas" titulo="Visita técnica e deslocamento">
-          <Linha
-            id="base-visita"
-            rotulo="Valor de uma visita técnica (R$)"
-            apoio="Quanto vocês cobram por visita. Entra no orçamento por visita, com preço fixo, sem margem"
-          >
-            <input
-              id="base-visita"
-              inputMode="decimal"
-              className={`${classeCampo} text-right tabular-nums`}
-              {...campo('valorVisita')}
-            />
-          </Linha>
-          <Linha
-            id="base-km"
-            rotulo="Valor por km rodado (R$)"
-            apoio="Cobrado quando a visita é longe: km de ida e volta × este valor. Deixe em branco se não cobram"
-          >
-            <input
-              id="base-km"
-              inputMode="decimal"
-              className={`${classeCampo} text-right tabular-nums`}
-              {...campo('custoKm')}
-            />
-          </Linha>
+          <Deslocamento
+            campos={deslocamento}
+            prefixo="base"
+            aoMudar={(alterar) => {
+              setDeslocamento(alterar)
+              setAviso(null)
+            }}
+          />
         </Grupo>
       </div>
     </div>

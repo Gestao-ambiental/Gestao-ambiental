@@ -20,6 +20,15 @@ export interface Cenario {
   funcoes?: Record<string, Resposta | ((corpo: Record<string, unknown>) => Resposta)>
   /** Linhas devolvidas por from(tabela).select()… (sem filtrar: o teste monta o que quer ver). */
   tabelas?: Record<string, unknown[]>
+  /**
+   * Formação e gênero do vínculo atual, lidos antes do sistema (RequerCadastroCompleto). Padrão:
+   * cadastro completo, para os testes das outras telas não pararem em "Complete seu cadastro".
+   */
+  cadastro?: {
+    profissao: string | null
+    genero: string | null
+    profissao_em_curso?: boolean
+  } | null
   /** Resposta de signInWithPassword; padrão: entra com `sessaoAoEntrar`. */
   entrar?: Resposta
   sessaoAoEntrar?: Session
@@ -41,6 +50,8 @@ export function sessaoDe(email: string, nome: string, id = `u-${email}`): Sessio
     },
   }
 }
+
+const CADASTRO_COMPLETO = { profissao: 'eng_ambiental', genero: 'masculino' }
 
 function criar() {
   let cenario: Cenario = {}
@@ -86,14 +97,29 @@ function criar() {
 
   function consulta(tabela: string) {
     const linhas = () => cenario.tabelas?.[tabela] ?? []
+    let colunas = ''
     const construtor = {
-      select: () => construtor,
+      select: (lidas = '') => {
+        colunas = lidas
+        return construtor
+      },
       eq: () => construtor,
       neq: () => construtor,
       in: () => construtor,
       order: () => construtor,
       range: () => construtor,
-      maybeSingle: () => Promise.resolve({ data: linhas()[0] ?? null, error: null }),
+      maybeSingle: () => {
+        // A leitura do cadastro (lib/api/perfil: COLUNAS_CADASTRO) vem do cenário, não da tabela.
+        if (tabela === 'membro' && colunas === 'profissao, profissao_em_curso, genero') {
+          const cadastro = cenario.cadastro === undefined ? CADASTRO_COMPLETO : cenario.cadastro
+          // Como no banco, "em curso" nunca é nulo: falso quando o cenário não diz.
+          return Promise.resolve({
+            data: cadastro ? { profissao_em_curso: false, ...cadastro } : null,
+            error: null,
+          })
+        }
+        return Promise.resolve({ data: linhas()[0] ?? null, error: null })
+      },
       then: (resolver: (valor: unknown) => unknown, rejeitar?: (erro: unknown) => unknown) =>
         Promise.resolve({ data: linhas(), error: null, count: linhas().length }).then(
           resolver,

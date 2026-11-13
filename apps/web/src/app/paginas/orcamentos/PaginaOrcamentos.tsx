@@ -4,7 +4,7 @@ import {
   rotuloDoConviteDeConfiguracao,
 } from '@gestao-ambiental/domain'
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useDeferredValue, useState } from 'react'
+import { useDeferredValue, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
@@ -17,17 +17,23 @@ import { Icone } from '@/components/ui/icone'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { Selo } from '@/components/ui/selo'
 import {
+  ROTULO_DA_SITUACAO,
   TAMANHO_PAGINA_ORCAMENTOS,
+  contarOrcamentosPorSituacao,
   excluirOrcamento,
   listarOrcamentos,
+  obterResumoDosOrcamentos,
   restaurarOrcamento,
+  situacaoOuNula,
   type OrcamentoNaLista,
+  type SituacaoOrcamento,
 } from '@/lib/api/orcamentos'
 import { dispensarConfiguracao, obterConfiguracao } from '@/lib/api/primeiros-passos'
 import { formatarInstanteComoData, formatarInstanteComHora } from '@/lib/datas'
 import { mensagemDoErro } from '@/lib/erros'
 
 import { classeCabecalho, classeCelula, numeroComRevisao } from './comum'
+import { AbasDeSituacao, IndicadoresDosOrcamentos } from './PecasDaLista'
 import { SeloSituacaoOrcamento } from './SeloSituacaoOrcamento'
 import { DialogoNovoOrcamento } from './DialogoNovoOrcamento'
 
@@ -41,6 +47,10 @@ import { DialogoNovoOrcamento } from './DialogoNovoOrcamento'
  * Primeiros passos (ADR-0020): sem base publicada, um convite para configurar em poucos passos. Só
  * convida: a lista e o novo orçamento continuam disponíveis. "Ver orçamentos mesmo assim" fica
  * guardado para a pessoa. ?novo=1 abre o diálogo de novo orçamento (fim dos primeiros passos).
+ *
+ * Filtros (Protótipo 19): abas por situação com a contagem de cada uma (seguem a busca), a aba em
+ * ?situacao=…, busca também pelo número e indicadores do topo vindos do banco (resumo_dos_orcamentos).
+ * Na lixeira, só a busca.
  */
 export function PaginaOrcamentos() {
   const { atual } = useConsultoria()
@@ -61,8 +71,10 @@ function ListaDaGestao() {
   const queryClient = useQueryClient()
   const [parametros, setParametros] = useSearchParams()
   const lixeira = parametros.get('lixeira') === '1'
+  const situacao = lixeira ? null : situacaoOuNula(parametros.get('situacao'))
   const [busca, setBusca] = useState('')
   const buscaAdiada = useDeferredValue(busca.trim())
+  const campoBusca = useRef<HTMLInputElement>(null)
   const [novoAberto, setNovoAberto] = useState(() => parametros.get('novo') === '1')
   const [aExcluir, setAExcluir] = useState<OrcamentoNaLista | null>(null)
   const [ocupado, setOcupado] = useState(false)
@@ -70,8 +82,8 @@ function ListaDaGestao() {
   const [aviso, setAviso] = useState<string | null>(null)
 
   const consulta = useInfiniteQuery({
-    queryKey: ['orcamentos', cid, buscaAdiada, lixeira],
-    queryFn: ({ pageParam }) => listarOrcamentos(cid, buscaAdiada, pageParam, lixeira),
+    queryKey: ['orcamentos', cid, buscaAdiada, lixeira, situacao],
+    queryFn: ({ pageParam }) => listarOrcamentos(cid, buscaAdiada, pageParam, lixeira, situacao),
     initialPageParam: 0,
     getNextPageParam: (ultima, todas) => {
       const carregados = todas.reduce((soma, pagina) => soma + pagina.itens.length, 0)
@@ -80,6 +92,20 @@ function ListaDaGestao() {
         : undefined
     },
     placeholderData: (anterior) => anterior,
+  })
+
+  // Contagem das abas (segue a busca) e indicadores do topo. Fora da lixeira; o prefixo
+  // ['orcamentos', cid] faz excluir e restaurar recarregarem os dois.
+  const contagem = useQuery({
+    queryKey: ['orcamentos', cid, 'contagem', buscaAdiada],
+    queryFn: () => contarOrcamentosPorSituacao(cid, buscaAdiada),
+    enabled: !lixeira,
+    placeholderData: (anterior) => anterior,
+  })
+  const resumo = useQuery({
+    queryKey: ['orcamentos', cid, 'resumo'],
+    queryFn: () => obterResumoDosOrcamentos(cid),
+    enabled: !lixeira,
   })
 
   // Convite dos primeiros passos. Se a leitura falhar, simplesmente não aparece (não bloqueia).
@@ -110,7 +136,35 @@ function ListaDaGestao() {
 
   const itens = consulta.data?.pages.flatMap((pagina) => pagina.itens) ?? []
   const total = consulta.data?.pages[0]?.total ?? 0
-  const filtrando = buscaAdiada !== ''
+  const filtrando = buscaAdiada !== '' || situacao !== null
+  const comFiltro = busca.trim() !== '' || situacao !== null
+  // Primeiro uso (nenhum orçamento, sem filtro): só o estado vazio, sem indicadores nem abas.
+  const semNenhum = consulta.isSuccess && itens.length === 0 && !filtrando
+
+  function escolherSituacao(nova: SituacaoOrcamento | null) {
+    setParametros(
+      (atuais) => {
+        const novos = new URLSearchParams(atuais)
+        if (nova) novos.set('situacao', nova)
+        else novos.delete('situacao')
+        return novos
+      },
+      { replace: true },
+    )
+  }
+
+  /** Zera busca e aba; o foco vai para a busca (o botão some). */
+  function limparFiltros() {
+    setBusca('')
+    escolherSituacao(null)
+    campoBusca.current?.focus()
+  }
+
+  const botaoLimpar = (
+    <Botao aparencia="sutil" iconeAntes="x" onClick={limparFiltros}>
+      Limpar filtros
+    </Botao>
+  )
 
   function verLixeira(sim: boolean) {
     setFalha(null)
@@ -245,11 +299,16 @@ function ListaDaGestao() {
       />
     )
   } else if (itens.length === 0) {
+    const naAba = situacao ? ` em “${ROTULO_DA_SITUACAO[situacao]}”` : ''
     conteudo = (
       <EstadoVazio
         icone="search"
         titulo="Nenhum orçamento encontrado"
-        descricao={`Nada com “${buscaAdiada}”. Busque pelo empreendimento ou pelo objeto.`}
+        descricao={
+          buscaAdiada
+            ? `Nada com “${buscaAdiada}”${naAba}. Busque pelo empreendimento, objeto ou número.`
+            : `Nenhum orçamento${naAba}.`
+        }
       />
     )
   } else {
@@ -393,9 +452,10 @@ function ListaDaGestao() {
               className="pointer-events-none absolute left-(--space-100) text-(--icon-subtle)"
             />
             <input
+              ref={campoBusca}
               type="search"
               value={busca}
-              placeholder="Buscar empreendimento ou objeto"
+              placeholder="Buscar nome, objeto ou número"
               onChange={(evento) => {
                 setBusca(evento.target.value)
               }}
@@ -491,6 +551,25 @@ function ListaDaGestao() {
           </div>
         </section>
       ) : null}
+
+      {lixeira || semNenhum ? null : (
+        <>
+          <IndicadoresDosOrcamentos
+            resumo={resumo.data}
+            carregando={resumo.isPending}
+            falhou={resumo.isError}
+            aoTentarDeNovo={() => void resumo.refetch()}
+          />
+          <div className="flex flex-wrap items-end justify-between gap-(--space-100)">
+            <AbasDeSituacao
+              situacao={situacao}
+              contagem={contagem.data}
+              aoEscolher={escolherSituacao}
+            />
+            {comFiltro ? botaoLimpar : null}
+          </div>
+        </>
+      )}
 
       {conteudo}
 

@@ -2,7 +2,7 @@
 -- Gestão; foto só pela própria pessoa, PNG ou JPEG até 2 MiB, versionada; nada atravessa consultorias.
 begin;
 
-select plan(22);
+select plan(23);
 
 select testes.criar_dados_sinteticos();
 
@@ -59,14 +59,20 @@ select lives_ok(
   'Gestão (Eduardo) define profissão e cargo de Bruno'
 );
 
-select lives_ok(
+select throws_ok(
   $$select public.definir_profissao_e_cargo('d0000000-0000-4000-8000-0000000000a3', '', '   ')$$,
-  'vazio limpa'
+  '22023', 'profissao_nao_pode_ficar_vazia',
+  'profissão preenchida não volta a ficar vazia (só troca)'
+);
+
+select lives_ok(
+  $$select public.definir_profissao_e_cargo('d0000000-0000-4000-8000-0000000000a3', 'eng_ambiental', '   ')$$,
+  'cargo vazio limpa o cargo'
 );
 
 select ok(
-  (select profissao is null and cargo is null from public.membro where id = 'd0000000-0000-4000-8000-0000000000a3'),
-  'vazio fica nulo'
+  (select profissao = 'eng_ambiental' and cargo is null from public.membro where id = 'd0000000-0000-4000-8000-0000000000a3'),
+  'a profissão fica e o cargo vazio fica nulo'
 );
 
 select testes.autenticar_como('gustavo@verdesul.test');

@@ -27,9 +27,10 @@ import { mensagemDoErro } from '@/lib/erros'
 import { obterSupabase } from '@/lib/supabase'
 
 import { CabecalhoAcesso, RodapeAcesso } from './CabecalhoAcesso'
-import { campoNome, esquemaSenhaNova } from './esquemas'
+import { CamposGeneroEFormacao } from './CamposGeneroEFormacao'
+import { campoNome, esquemaGeneroEFormacao, esquemaSenhaNova } from './esquemas'
 
-const esquemaConta = esquemaSenhaNova.and(z.object({ nome: campoNome }))
+const esquemaConta = esquemaSenhaNova.and(z.object({ nome: campoNome }).and(esquemaGeneroEFormacao))
 type DadosConta = z.infer<typeof esquemaConta>
 
 function Convidou({ convite }: { convite: ConviteRecebido }) {
@@ -99,10 +100,18 @@ export function PaginaConvite() {
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<DadosConta>({
     resolver: zodResolver(esquemaConta),
-    values: { nome: usuario?.nome ?? '', senha: '', repeticao: '' },
+    values: {
+      nome: usuario?.nome ?? '',
+      genero: '',
+      profissao: '',
+      emCurso: false,
+      senha: '',
+      repeticao: '',
+    },
     resetOptions: { keepDirtyValues: true },
   })
 
@@ -115,9 +124,13 @@ export function PaginaConvite() {
     }
   }, [aceitarAoEntrar, podeAceitarDireto, aceite])
 
-  const criarContaEAceitar = handleSubmit(async ({ nome, senha }) => {
+  // Formação e gênero vão nos metadados; o banco os copia para o vínculo no aceite (ADR-0021).
+  const criarContaEAceitar = handleSubmit(async ({ nome, genero, profissao, emCurso, senha }) => {
     setFalhaConta(null)
-    const { error } = await obterSupabase().auth.updateUser({ password: senha, data: { nome } })
+    const { error } = await obterSupabase().auth.updateUser({
+      password: senha,
+      data: { nome, profissao, genero, profissao_em_curso: emCurso },
+    })
     if (error) {
       setFalhaConta(mensagemDoErro(error))
       return
@@ -234,6 +247,7 @@ export function PaginaConvite() {
             {...register('nome')}
           />
           <CampoTexto rotulo="E-mail" type="email" value={convite.email} readOnly />
+          <CamposGeneroEFormacao control={control} />
           <CampoTexto
             rotulo="Senha"
             senha

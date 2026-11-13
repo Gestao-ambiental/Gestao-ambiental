@@ -7,6 +7,7 @@ import { TelaDeEspera } from '@/app/sessao/RequerSessao'
 import { useSessao } from '@/app/sessao/contexto-sessao'
 import { listarMeusVinculos } from '@/lib/api/acesso'
 
+import { RequerCadastroCompleto } from './RequerCadastroCompleto'
 import {
   CHAVE_MEUS_VINCULOS,
   ContextoConsultoria,
@@ -101,7 +102,9 @@ export function RequerConsultoria() {
   return (
     <ContextoConsultoria.Provider value={valor}>
       {/* key: trocar de consultoria remonta as telas, sem sobra de estado da anterior */}
-      <Outlet key={valor.atual.consultoriaId} />
+      <RequerCadastroCompleto key={valor.atual.consultoriaId}>
+        <Outlet />
+      </RequerCadastroCompleto>
     </ContextoConsultoria.Provider>
   )
 }

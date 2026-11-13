@@ -28,7 +28,7 @@ export function CaixaSelecao({ rotulo, id, className, ...rest }: Props) {
           type="checkbox"
           className={cn(
             baseControle,
-            'rounded-(--radius) checked:border-(--brand) checked:bg-(--brand)',
+            'rounded-(--radius) checked:border-(--brand-stroke) checked:bg-(--brand)',
           )}
           {...rest}
         />
@@ -73,7 +73,7 @@ export function OpcaoRadio({ rotulo, descricao, id, className, ...rest }: PropsR
           aria-describedby={descricao ? `${campoId}-descricao` : undefined}
           className={cn(
             baseControle,
-            'rounded-full checked:border-[5px] checked:border-(--brand) checked:bg-(--text-inverse)',
+            'rounded-full checked:border-[5px] checked:border-(--brand-stroke) checked:bg-(--surface)',
           )}
           {...rest}
         />

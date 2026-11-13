@@ -40,3 +40,6 @@ export function gravarConsultoriaPreferida(usuarioId: string, consultoriaId: str
 }
 
 export const CHAVE_MEUS_VINCULOS = 'meus-vinculos'
+
+/** Formação e gênero do vínculo atual (RequerCadastroCompleto). */
+export const CHAVE_MEU_CADASTRO = 'meu-cadastro'

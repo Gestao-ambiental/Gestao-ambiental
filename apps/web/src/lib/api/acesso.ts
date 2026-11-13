@@ -2,12 +2,14 @@
 // autorização é do banco (RLS e checagens nas funções). Erros sobem como vieram: a tela traduz
 // com lib/erros.
 
-import type {
-  CodigoCargo,
-  CodigoProfissao,
-  PapelMembro,
-  SituacaoConviteGravada,
-  SituacaoMembro,
+import {
+  generoDoCodigo,
+  type CodigoCargo,
+  type CodigoProfissao,
+  type GeneroDaPessoa,
+  type PapelMembro,
+  type SituacaoConviteGravada,
+  type SituacaoMembro,
 } from '@gestao-ambiental/domain'
 
 import { obterSupabase } from '@/lib/supabase'
@@ -182,10 +184,14 @@ export interface Membro {
   email: string
   /** Profissão e cargo das listas fixas do Grama (ADR-0021); cargo antigo até o de-para. */
   profissao: CodigoProfissao | null
+  /** A principal ainda em curso: junto do nome aparece "Estudante de …". */
+  profissaoEmCurso: boolean
   outrasProfissoes: CodigoProfissao[]
   cargo: string | null
   cargoCodigo: CodigoCargo | null
   cargoAntigo: string | null
+  /** Gênero que a pessoa informou: a profissão aparece na forma dela. Nulo: não informado. */
+  genero: GeneroDaPessoa | null
   papel: PapelMembro
   situacao: SituacaoMembro
   criadoEm: string
@@ -201,7 +207,7 @@ export async function listarMembros(
   const { data, error, count } = await obterSupabase()
     .from('membro')
     .select(
-      'id, nome, email, papel, situacao, criado_em, desligado_em, profissao, outras_profissoes, cargo, cargo_antigo',
+      'id, nome, email, papel, situacao, criado_em, desligado_em, profissao, outras_profissoes, profissao_em_curso, genero, cargo, cargo_antigo',
       {
         count: 'exact',
       },
@@ -217,6 +223,7 @@ export async function listarMembros(
       nome: linha.nome,
       email: linha.email,
       ...profissaoECargo(linha),
+      genero: generoDoCodigo(linha.genero),
       papel: linha.papel,
       situacao: linha.situacao,
       criadoEm: linha.criado_em,

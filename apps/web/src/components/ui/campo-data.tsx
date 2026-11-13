@@ -202,7 +202,7 @@ export function CampoData({
       className={cn(
         'absolute inset-y-px right-px inline-flex w-9 cursor-pointer items-center justify-center rounded-r-(--radius) text-(--icon) transicao-estado outline-none',
         'hover:bg-(--neutral-subtle-hover) focus-visible:shadow-[inset_0_0_0_2px_var(--border-focus)] disabled:cursor-not-allowed disabled:text-(--text-disabled) disabled:hover:bg-transparent',
-        aberto && 'bg-(--surface-selected) text-(--brand) hover:bg-(--surface-selected)',
+        aberto && 'bg-(--surface-selected) text-(--icon-brand) hover:bg-(--surface-selected)',
       )}
     >
       <Icone nome="calendar" />
@@ -558,7 +558,7 @@ export function PainelCalendario({
                       {ehHoje && !escolhido ? (
                         <span
                           aria-hidden="true"
-                          className="absolute bottom-0.5 left-1/2 h-0.5 w-3 -translate-x-1/2 rounded-full bg-(--brand)"
+                          className="absolute bottom-0.5 left-1/2 h-0.5 w-3 -translate-x-1/2 rounded-full bg-(--brand-stroke)"
                         />
                       ) : null}
                     </button>
@@ -685,7 +685,7 @@ function BotaoGrade({
       {atual && !escolhido ? (
         <span
           aria-hidden="true"
-          className="absolute bottom-1 left-1/2 h-0.5 w-4 -translate-x-1/2 rounded-full bg-(--brand)"
+          className="absolute bottom-1 left-1/2 h-0.5 w-4 -translate-x-1/2 rounded-full bg-(--brand-stroke)"
         />
       ) : null}
     </button>

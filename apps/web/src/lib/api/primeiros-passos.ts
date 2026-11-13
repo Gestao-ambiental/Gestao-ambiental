@@ -3,6 +3,7 @@
 
 import {
   FORMAS_DE_RECEBIMENTO,
+  MODOS_DE_DESLOCAMENTO,
   type DadosDaConfiguracao,
   type PassoContas,
   type PassoEquipe,
@@ -122,8 +123,12 @@ function contasDe(p: Objeto): PassoContas {
 function precosDe(p: Objeto): PassoPrecos<HoraDeVenda> {
   return {
     horasVenda: horasDe(p.horas_venda),
+    deslocamentoModo: MODOS_DE_DESLOCAMENTO.find((m) => m === p.deslocamento_modo) ?? null,
     valorVisitaCentavos: numeroOuNulo(p.valor_visita_centavos),
     custoKmCentavos: numeroOuNulo(p.custo_km_centavos),
+    consumoKmPorLitro: numeroOuNulo(p.consumo_km_por_litro),
+    precoCombustivelCentavos: numeroOuNulo(p.preco_combustivel_centavos),
+    acrescimoKmCentavos: numeroOuNulo(p.acrescimo_km_centavos),
   }
 }
 
@@ -210,8 +215,12 @@ function passoParaOBanco(passo: PassoSalvo): Json {
     case 3:
       return {
         horas_venda: horasDeVendaParaOBanco(passo.dados.horasVenda),
+        deslocamento_modo: passo.dados.deslocamentoModo ?? null,
         valor_visita_centavos: passo.dados.valorVisitaCentavos,
         custo_km_centavos: passo.dados.custoKmCentavos,
+        consumo_km_por_litro: passo.dados.consumoKmPorLitro ?? null,
+        preco_combustivel_centavos: passo.dados.precoCombustivelCentavos ?? null,
+        acrescimo_km_centavos: passo.dados.acrescimoKmCentavos ?? null,
       }
     case 4:
       return {

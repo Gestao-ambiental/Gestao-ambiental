@@ -13,16 +13,21 @@ import { codigoDoErro, mensagemDoErro } from '@/lib/erros'
 import { obterSupabase } from '@/lib/supabase'
 
 import { CabecalhoAcesso, RodapeAcesso } from './CabecalhoAcesso'
-import { campoEmail, campoNome, esquemaSenhaNova } from './esquemas'
+import { CamposGeneroEFormacao } from './CamposGeneroEFormacao'
+import { campoEmail, campoNome, esquemaGeneroEFormacao, esquemaSenhaNova } from './esquemas'
 
-const esquema = esquemaSenhaNova.and(z.object({ nome: campoNome, email: campoEmail }))
+const esquema = esquemaSenhaNova.and(
+  z.object({ nome: campoNome, email: campoEmail }).and(esquemaGeneroEFormacao),
+)
 type Dados = z.infer<typeof esquema>
 
 const JA_EXISTE = 'Já existe uma conta com este e-mail.'
 
 /**
- * /criar-conta (Protótipo 03, fluxo sem convite; ACC-01). Conta pessoal: nome, e-mail e senha,
- * sem CPF (ADR-0004). Com confirmação de e-mail ligada, a conta só entra depois do link.
+ * /criar-conta (Protótipo 03, fluxo sem convite; ACC-01). Conta pessoal: nome, e-mail, gênero,
+ * formação e senha, sem CPF (ADR-0004). Formação e gênero vão nos metadados do Auth e o banco os
+ * copia para o vínculo quando ele é criado (ADR-0021). Com confirmação de e-mail ligada, a conta só
+ * entra depois do link.
  */
 export function PaginaCriarConta() {
   const { sessao } = useSessao()
@@ -35,21 +40,30 @@ export function PaginaCriarConta() {
     register,
     handleSubmit,
     setError,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<Dados>({
     resolver: zodResolver(esquema),
-    defaultValues: { nome: '', email: '', senha: '', repeticao: '' },
+    defaultValues: {
+      nome: '',
+      email: '',
+      genero: '',
+      profissao: '',
+      emCurso: false,
+      senha: '',
+      repeticao: '',
+    },
   })
 
   if (sessao && !confirmarEm) return <Navigate to={para} replace />
 
-  const criar = handleSubmit(async ({ nome, email, senha }) => {
+  const criar = handleSubmit(async ({ nome, email, genero, profissao, emCurso, senha }) => {
     setFalha(null)
     const { data, error } = await obterSupabase().auth.signUp({
       email,
       password: senha,
       options: {
-        data: { nome },
+        data: { nome, profissao, genero, profissao_em_curso: emCurso },
         emailRedirectTo: `${window.location.origin}${para}`,
       },
     })
@@ -119,6 +133,7 @@ export function PaginaCriarConta() {
             </Link>
           ) : null}
         </div>
+        <CamposGeneroEFormacao control={control} />
         <CampoTexto
           rotulo="Senha"
           senha

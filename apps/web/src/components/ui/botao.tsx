@@ -24,7 +24,7 @@ export const variantesBotao = cva(
         sutil:
           'border-transparent bg-transparent text-(--text) hover:bg-(--neutral-subtle-hover) active:bg-(--neutral-subtle-pressed) disabled:bg-transparent',
         perigo:
-          'border-transparent bg-(--danger) text-(--text-inverse) hover:bg-(--danger-hover) active:bg-(--danger-pressed) disabled:bg-(--surface-disabled)',
+          'border-transparent bg-(--danger) text-(--text-on-danger) hover:bg-(--danger-hover) active:bg-(--danger-pressed) disabled:bg-(--surface-disabled)',
         link: 'border-transparent bg-transparent px-(--space-025) text-(--text-link) hover:underline disabled:no-underline',
       },
       tamanho: {

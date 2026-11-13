@@ -550,7 +550,7 @@ export function PaginaVisaoEquipe() {
                 className={cn(
                   '-mb-px inline-flex cursor-pointer items-center gap-(--space-075) border-b-2 pb-(--space-100) transicao-estado',
                   ativa
-                    ? 'border-(--brand) corpo-medio text-(--text-link)'
+                    ? 'border-(--brand-stroke) corpo-medio text-(--text-link)'
                     : 'border-transparent corpo text-(--text-subtle)',
                 )}
               >

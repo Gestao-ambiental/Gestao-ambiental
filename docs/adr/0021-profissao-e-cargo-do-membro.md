@@ -137,3 +137,24 @@ O Eduardo é engenheiro ambiental e sanitarista e técnico em química, e em bre
 - **Regras no banco:** sem principal não há outras; a principal não se repete nas outras; nenhuma se repete. Escolher como principal uma das outras tira essa das outras.
 - **RPC:** `definir_profissao_e_cargo` ganhou `p_outras_profissoes` (nulo mantém as atuais). Migration `20261113160000_outras_formacoes_do_membro.sql`; pgTAP `310_outras_formacoes.test.sql`, com o teste negativo de outra consultoria.
 - **Profissão no passo 1:** na equipe dos primeiros passos (e em Custos e taxas) a Gestão escolhe a profissão principal na própria linha. Grava no cadastro da pessoa na hora, como na Equipe; não faz parte do rascunho.
+
+## 7. Gênero e formação no cadastro da conta (decisões do Eduardo em 13/11/2026)
+
+Quem cria conta informa a formação (profissão principal) e o gênero, para a profissão aparecer certa junto do nome ("Helena · Engenheira ambiental").
+
+- **Gênero:** Feminino, Masculino ou Prefiro não dizer. "Prefiro não dizer" escreve a profissão com "(a)": "Engenheiro(a) ambiental". Fica em `membro.genero` (domínio `public.genero_da_pessoa`); nulo quer dizer que a pessoa ainda não respondeu.
+- **Onde muda:** só junto do nome da pessoa (Equipe, Perfil, responsável, proposta), com `rotuloDaProfissaoDaPessoa`. Custo por profissão, tabela de preços e a equipe da base de custos continuam com a forma da lista, para a mesma profissão não virar duas linhas.
+- **Cadastro:** formação e gênero vão nos metadados da conta do Auth. O gatilho `membro_preencher_formacao` copia os dois para o vínculo quando ele é criado (criar consultoria ou aceitar convite), se ainda estiverem vazios. Valor fora das listas é ignorado.
+- **Contas que já existiam:** no próximo acesso, uma tela pede formação e gênero antes de seguir. A RPC `completar_cadastro` grava os dois em todos os vínculos ativos da própria pessoa; `definir_meu_genero` muda só o gênero. A Gestão não muda o gênero de ninguém.
+- Migration `20261113170000_genero_e_formacao_no_cadastro.sql`; pgTAP `320_genero_e_formacao_no_cadastro.test.sql`, com os testes negativos.
+- **Profissão principal não se apaga** (Eduardo, 13/11/2026): depois de preenchida, só troca por outra. `definir_profissao_e_cargo` recusa com `profissao_nao_pode_ficar_vazia` (migration `20261113172000_profissao_principal_nao_apaga.sql`), e as telas tiram a opção "Não informada" de quem já tem profissão. Assim a tela de completar cadastro aparece uma vez só.
+
+## 8. Formação em curso (decisão do Eduardo em 13/11/2026)
+
+Para o estagiário que ainda não é formado: a pessoa escolhe a formação que está cursando e marca "Ainda estou cursando".
+
+- **Banco:** `membro.profissao_em_curso` (padrão falso). Vem do cadastro da conta (metadado `profissao_em_curso`), de `completar_cadastro(…, p_em_curso)` e de `definir_profissao_e_cargo(…, p_profissao_em_curso)` (nulo mantém). Migration `20261113173000_formacao_em_curso.sql`.
+- **Junto do nome:** "Estudante de <curso>" (ex.: "Estudante de engenharia ambiental"), igual para todo gênero (`rotuloDoCurso`, `rotuloDaFormacaoDaPessoa`). Ao se formar, desmarca e vira a profissão normal.
+- **Custo por profissão:** quem cursa forma um grupo à parte com o nome do curso (`rotuloDaProfissaoNoCusto`; no banco, `private.rotulo_do_curso` no salvar da base, migration `20261113195000_custo_de_quem_cursa.sql`). O salário de estagiário não baixa a hora técnica dos formados. Nos serviços em que a pessoa é responsável, vale a hora dela, como antes.
+- **Outras formações** continuam só as concluídas (§6).
+- pgTAP `330_formacao_em_curso.test.sql`, com o teste negativo de outra consultoria.

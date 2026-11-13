@@ -2,6 +2,7 @@
 // cada passo num rascunho da consultoria. O rascunho não é a base publicada: ausente fica nulo e
 // nunca vira zero. O banco tem as mesmas pendências (private.pendencias_da_configuracao).
 
+import type { ModoDeDeslocamento } from './deslocamento'
 import { composicaoDaEquipe, custoFixoPorHora } from './orcamento'
 import { linhasMensaisDaEquipe, type RemuneracaoDaPessoa } from './remuneracao'
 
@@ -85,10 +86,18 @@ export interface PassoContas {
 }
 
 export interface PassoPrecos<Preco = unknown> {
+  /** Hora de profissional (profissão obrigatória) e serviços ("Quem faz" opcional), numa lista só. */
   horasVenda: Preco[]
+  /** "visita" ou "km"; nulo em rascunho antigo (a base deduz pelos valores). */
+  deslocamentoModo?: ModoDeDeslocamento | null
   /** Opcionais: sem valor, a base fica com a visita "não cadastrada". */
   valorVisitaCentavos: number | null
+  /** Derivado (combustível ÷ consumo + acréscimo); o banco recalcula na publicação. */
   custoKmCentavos: number | null
+  /** Consumo do carro (km por litro), preço do litro e acréscimo por km: só no modo "km". */
+  consumoKmPorLitro?: number | null
+  precoCombustivelCentavos?: number | null
+  acrescimoKmCentavos?: number | null
 }
 
 export interface PassoTributos {

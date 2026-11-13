@@ -126,11 +126,15 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   operacao_invalida: 'Não foi possível salvar este passo. Recarregue e tente de novo.',
   contas_invalidas: 'Confira as contas do mês: nome e valor de cada uma.',
   profissao_invalida: 'Escolha a profissão na lista.',
+  profissao_nao_pode_ficar_vazia: 'A profissão não pode ficar em branco. Escolha outra.',
   profissao_principal_obrigatoria: 'Escolha a formação principal antes das outras.',
   formacoes_demais: 'Informe no máximo 10 outras formações.',
   cargo_invalido: 'Escolha o cargo na lista.',
+  genero_invalido: 'Escolha o gênero.',
   horas_de_venda_invalidas:
     'Confira a tabela de preços: profissão, serviço, unidade, preço e faixas de cada linha.',
+  deslocamento_invalido:
+    'Confira a visita técnica: consumo do carro e preço do combustível vão juntos (ou os dois em branco).',
 }
 
 const MENSAGENS_DO_AUTH: Record<string, string> = {

@@ -2,7 +2,7 @@
 -- principal continua sendo a do orçamento. Quem é de outra consultoria não lê nem muda.
 begin;
 
-select plan(12);
+select plan(13);
 
 select testes.criar_dados_sinteticos();
 
@@ -49,8 +49,8 @@ select is(
 select throws_ok(
   $$select public.definir_profissao_e_cargo('d0000000-0000-4000-8000-0000000000a1',
       null, 'gerente', array['tec_quimica'])$$,
-  '22023', 'profissao_principal_obrigatoria',
-  'sem principal não há outras'
+  '22023', 'profissao_nao_pode_ficar_vazia',
+  'a principal preenchida não fica vazia, nem para deixar só as outras'
 );
 
 select throws_ok(
@@ -60,10 +60,18 @@ select throws_ok(
   'outra formação fora da lista é recusada'
 );
 
-select lives_ok(
+select throws_ok(
   $$select public.definir_profissao_e_cargo('d0000000-0000-4000-8000-0000000000a1',
       null, 'gerente', array[]::text[])$$,
-  'limpar a principal junto com as outras funciona'
+  '22023', 'profissao_nao_pode_ficar_vazia',
+  'a principal preenchida não pode ser apagada, só trocada'
+);
+
+select throws_ok(
+  $$select public.definir_profissao_e_cargo('d0000000-0000-4000-8000-0000000000a3',
+      null, null, array['tec_quimica'])$$,
+  '22023', 'profissao_principal_obrigatoria',
+  'quem ainda não tem principal não ganha outras formações'
 );
 
 reset role;

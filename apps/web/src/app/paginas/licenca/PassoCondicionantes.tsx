@@ -435,7 +435,7 @@ function Editor({
                 />
                 <span
                   aria-hidden="true"
-                  className="inline-flex size-4 shrink-0 items-center justify-center rounded-(--radius-circle) border border-(--border-input-accessible) bg-(--surface-input) transicao-estado peer-checked:border-(--brand) peer-checked:bg-(--brand) peer-focus-visible:shadow-[0_0_0_2px_var(--border-focus)] after:size-1.5 after:rounded-(--radius-circle) after:bg-(--text-inverse) after:opacity-0 peer-checked:after:opacity-100"
+                  className="inline-flex size-4 shrink-0 items-center justify-center rounded-(--radius-circle) border border-(--border-input-accessible) bg-(--surface-input) transicao-estado peer-checked:border-(--brand-stroke) peer-checked:bg-(--brand) peer-focus-visible:shadow-[0_0_0_2px_var(--border-focus)] after:size-1.5 after:rounded-(--radius-circle) after:bg-(--text-inverse) after:opacity-0 peer-checked:after:opacity-100"
                 />
                 {n.rotulo}
               </span>
@@ -865,7 +865,7 @@ function Condicionantes({
               aria-hidden="true"
             >
               <div
-                className="h-full bg-(--brand)"
+                className="h-full bg-(--progress-brand)"
                 style={{
                   width: `${String(itens.length ? (revisados / itens.length) * 100 : 0)}%`,
                 }}

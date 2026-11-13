@@ -102,6 +102,166 @@ export function rotuloDoCargo(codigo: CodigoCargo): string {
   return CARGOS.find((c) => c.codigo === codigo)?.rotulo ?? codigo
 }
 
+// --- Gênero da pessoa (ADR-0021 §7) ----------------------------------------------------------------
+// Serve só para escrever a profissão junto do nome da pessoa (Equipe, Perfil, responsável,
+// proposta). Custo por profissão e tabela de preços continuam na forma da lista (rotuloDaProfissao),
+// para a mesma profissão não virar duas linhas.
+
+export const GENEROS = [
+  { codigo: 'feminino', rotulo: 'Feminino', grupo: 'Gênero' },
+  { codigo: 'masculino', rotulo: 'Masculino', grupo: 'Gênero' },
+  { codigo: 'nao_informar', rotulo: 'Prefiro não dizer', grupo: 'Gênero' },
+] as const satisfies readonly ItemDaLista<string>[]
+
+export type GeneroDaPessoa = (typeof GENEROS)[number]['codigo']
+
+export function generoDoCodigo(valor: unknown): GeneroDaPessoa | null {
+  return GENEROS.find((g) => g.codigo === valor)?.codigo ?? null
+}
+
+/** Forma feminina e forma com "(a)" de cada profissão; a masculina é o rótulo da lista. */
+const FORMAS_DA_PROFISSAO: Record<CodigoProfissao, { feminino: string; neutro: string }> = {
+  eng_ambiental: { feminino: 'Engenheira ambiental', neutro: 'Engenheiro(a) ambiental' },
+  eng_sanitarista: { feminino: 'Engenheira sanitarista', neutro: 'Engenheiro(a) sanitarista' },
+  eng_ambiental_sanitarista: {
+    feminino: 'Engenheira ambiental e sanitarista',
+    neutro: 'Engenheiro(a) ambiental e sanitarista',
+  },
+  eng_civil: { feminino: 'Engenheira civil', neutro: 'Engenheiro(a) civil' },
+  eng_quimico: { feminino: 'Engenheira química', neutro: 'Engenheiro(a) químico(a)' },
+  eng_florestal: { feminino: 'Engenheira florestal', neutro: 'Engenheiro(a) florestal' },
+  eng_agronomo: { feminino: 'Engenheira agrônoma', neutro: 'Engenheiro(a) agrônomo(a)' },
+  eng_minas: { feminino: 'Engenheira de minas', neutro: 'Engenheiro(a) de minas' },
+  eng_agricola: { feminino: 'Engenheira agrícola', neutro: 'Engenheiro(a) agrícola' },
+  eng_pesca: { feminino: 'Engenheira de pesca', neutro: 'Engenheiro(a) de pesca' },
+  eng_seguranca_trabalho: {
+    feminino: 'Engenheira de segurança do trabalho',
+    neutro: 'Engenheiro(a) de segurança do trabalho',
+  },
+  eng_cartografo_agrimensor: {
+    feminino: 'Engenheira cartógrafa e agrimensora',
+    neutro: 'Engenheiro(a) cartógrafo(a) e agrimensor(a)',
+  },
+  geologo: { feminino: 'Geóloga', neutro: 'Geólogo(a)' },
+  geografo: { feminino: 'Geógrafa', neutro: 'Geógrafo(a)' },
+  meteorologista: { feminino: 'Meteorologista', neutro: 'Meteorologista' },
+  arquiteto_urbanista: { feminino: 'Arquiteta e urbanista', neutro: 'Arquiteto(a) e urbanista' },
+  biologo: { feminino: 'Bióloga', neutro: 'Biólogo(a)' },
+  quimico: { feminino: 'Química', neutro: 'Químico(a)' },
+  medico_veterinario: {
+    feminino: 'Médica veterinária',
+    neutro: 'Médico(a) veterinário(a)',
+  },
+  oceanografo: { feminino: 'Oceanógrafa', neutro: 'Oceanógrafo(a)' },
+  arqueologo: { feminino: 'Arqueóloga', neutro: 'Arqueólogo(a)' },
+  sociologo: { feminino: 'Socióloga', neutro: 'Sociólogo(a)' },
+  antropologo: { feminino: 'Antropóloga', neutro: 'Antropólogo(a)' },
+  economista: { feminino: 'Economista', neutro: 'Economista' },
+  advogado: { feminino: 'Advogada', neutro: 'Advogado(a)' },
+  gestor_ambiental: {
+    feminino: 'Gestora ambiental (tecnóloga)',
+    neutro: 'Gestor(a) ambiental (tecnólogo(a))',
+  },
+  ecologo: { feminino: 'Ecóloga', neutro: 'Ecólogo(a)' },
+  tec_meio_ambiente: {
+    feminino: 'Técnica em meio ambiente',
+    neutro: 'Técnico(a) em meio ambiente',
+  },
+  tec_seguranca_trabalho: {
+    feminino: 'Técnica em segurança do trabalho',
+    neutro: 'Técnico(a) em segurança do trabalho',
+  },
+  tec_quimica: { feminino: 'Técnica em química', neutro: 'Técnico(a) em química' },
+  tec_agrimensura: { feminino: 'Técnica em agrimensura', neutro: 'Técnico(a) em agrimensura' },
+  tec_agricola: { feminino: 'Técnica agrícola', neutro: 'Técnico(a) agrícola' },
+  tec_florestal: { feminino: 'Técnica florestal', neutro: 'Técnico(a) florestal' },
+  outra_nao_tecnica: {
+    feminino: 'Outra formação (não técnica)',
+    neutro: 'Outra formação (não técnica)',
+  },
+}
+
+/**
+ * Profissão escrita para a pessoa: feminina, masculina ou com "(a)" ("prefiro não dizer"). Sem
+ * gênero informado, fica a forma da lista.
+ */
+export function rotuloDaProfissaoDaPessoa(
+  codigo: CodigoProfissao,
+  genero: GeneroDaPessoa | null,
+): string {
+  if (genero === 'feminino') return FORMAS_DA_PROFISSAO[codigo].feminino
+  if (genero === 'nao_informar') return FORMAS_DA_PROFISSAO[codigo].neutro
+  return rotuloDaProfissao(codigo)
+}
+
+// --- Formação em curso (ADR-0021 §8) ---------------------------------------------------------------
+// Quem ainda está cursando (ex.: estagiário) escolhe a formação que cursa e marca "Ainda estou
+// cursando". Junto do nome aparece "Estudante de <curso>". No custo por profissão, quem está
+// cursando forma um grupo à parte com esse mesmo nome, para não baixar a hora dos formados.
+
+const CURSO_DA_PROFISSAO: Record<CodigoProfissao, string> = {
+  eng_ambiental: 'engenharia ambiental',
+  eng_sanitarista: 'engenharia sanitária',
+  eng_ambiental_sanitarista: 'engenharia ambiental e sanitária',
+  eng_civil: 'engenharia civil',
+  eng_quimico: 'engenharia química',
+  eng_florestal: 'engenharia florestal',
+  eng_agronomo: 'agronomia',
+  eng_minas: 'engenharia de minas',
+  eng_agricola: 'engenharia agrícola',
+  eng_pesca: 'engenharia de pesca',
+  eng_seguranca_trabalho: 'engenharia de segurança do trabalho',
+  eng_cartografo_agrimensor: 'engenharia cartográfica e de agrimensura',
+  geologo: 'geologia',
+  geografo: 'geografia',
+  meteorologista: 'meteorologia',
+  arquiteto_urbanista: 'arquitetura e urbanismo',
+  biologo: 'ciências biológicas',
+  quimico: 'química',
+  medico_veterinario: 'medicina veterinária',
+  oceanografo: 'oceanografia',
+  arqueologo: 'arqueologia',
+  sociologo: 'ciências sociais',
+  antropologo: 'antropologia',
+  economista: 'ciências econômicas',
+  advogado: 'direito',
+  gestor_ambiental: 'gestão ambiental',
+  ecologo: 'ecologia',
+  tec_meio_ambiente: 'técnico em meio ambiente',
+  tec_seguranca_trabalho: 'técnico em segurança do trabalho',
+  tec_quimica: 'técnico em química',
+  tec_agrimensura: 'técnico em agrimensura',
+  tec_agricola: 'técnico agrícola',
+  tec_florestal: 'técnico florestal',
+  outra_nao_tecnica: 'outra formação (não técnica)',
+}
+
+/** "Estudante de engenharia ambiental"; igual para todo gênero. */
+export function rotuloDoCurso(codigo: CodigoProfissao): string {
+  return `Estudante de ${CURSO_DA_PROFISSAO[codigo]}`
+}
+
+/** A formação principal junto do nome: em curso, "Estudante de …"; senão, no gênero da pessoa. */
+export function rotuloDaFormacaoDaPessoa(
+  codigo: CodigoProfissao,
+  genero: GeneroDaPessoa | null,
+  emCurso: boolean,
+): string {
+  return emCurso ? rotuloDoCurso(codigo) : rotuloDaProfissaoDaPessoa(codigo, genero)
+}
+
+/** Nome do grupo no custo por profissão: em curso fica à parte dos formados. */
+export function rotuloDaProfissaoNoCusto(codigo: CodigoProfissao, emCurso: boolean): string {
+  return emCurso ? rotuloDoCurso(codigo) : rotuloDaProfissao(codigo)
+}
+
+/** A lista de profissões escrita para o gênero escolhido (cadastro da conta e Perfil). */
+export function profissoesParaOGenero(
+  genero: GeneroDaPessoa | null,
+): ItemDaLista<CodigoProfissao>[] {
+  return PROFISSOES.map((p) => ({ ...p, rotulo: rotuloDaProfissaoDaPessoa(p.codigo, genero) }))
+}
+
 /** Até quantas formações além da principal (igual ao banco). */
 export const MAXIMO_DE_OUTRAS_PROFISSOES = 10
 

@@ -57,8 +57,11 @@ import { cn } from '@/lib/utils'
 
 import { lerEstimativa, lerHoras, lerPercentual, textoDasHoras, textoDoPercentual } from './calculo'
 import {
+  camposDeDeslocamentoDe,
+  camposDeDeslocamentoDoRascunho,
   composicaoDe,
   horasDe,
+  lerDeslocamento,
   lerEquipe,
   lerHorasDeVenda,
   linhasDe,
@@ -69,14 +72,17 @@ import {
   CONTAS_SUGERIDAS,
   novaPessoa,
   profissoesDosMembros,
+  rotuloDaLinhaDePreco,
   usaFaixas,
+  type CamposDeDeslocamento,
   type LinhaConta,
   type LinhaHora,
   type LinhaPessoa,
 } from './campos-da-base'
 import { classeCampo, reaisDigitados } from './comum'
 import { DadosDaProposta } from './PaginaDadosDaProposta'
-import { ContasDoMes, Equipe, Linha, TabelaDePrecos } from './PecasDaBase'
+import { ContasDoMes, Equipe, Linha } from './PecasDaBase'
+import { Deslocamento, TabelaDePrecos } from './PecasDeCobranca'
 
 type Etapa = 1 | 2 | 3 | 4 | 5 | 6
 
@@ -180,8 +186,7 @@ interface FormContas {
 
 interface FormPrecos {
   horas: LinhaHora[]
-  visita: string
-  km: string
+  deslocamento: CamposDeDeslocamento
 }
 
 interface FormTributos {
@@ -243,15 +248,13 @@ function formPrecosDe(d: DadosDoRascunho, base: BaseDeCustosDaConsultoria | null
   if (d.precos) {
     return {
       horas: linhasDePrecoDe(d.precos.horasVenda),
-      visita: reaisOuBranco(d.precos.valorVisitaCentavos),
-      km: reaisOuBranco(d.precos.custoKmCentavos),
+      deslocamento: camposDeDeslocamentoDoRascunho(d.precos),
     }
   }
   // Na base, visita e km 0 querem dizer "não cadastrado" (como em Custos e taxas).
   return {
     horas: horasDe(base),
-    visita: base?.valorVisitaCentavos ? formatarCentavos(base.valorVisitaCentavos) : '',
-    km: base?.custoKmCentavos ? formatarCentavos(base.custoKmCentavos) : '',
+    deslocamento: camposDeDeslocamentoDe(base, { zeroEmBranco: true }),
   }
 }
 
@@ -337,16 +340,19 @@ function lerFormPrecos(f: FormPrecos): PassoPrecos<HoraDeVenda> | string {
   // Preço em branco não vira zero: a linha precisa do preço digitado (0 se não cobra).
   for (const [indice, l] of f.horas.entries()) {
     if (!usaFaixas(l) && l.valor.trim() === '') {
-      return `Tabela de preços, linha ${String(indice + 1)}: informe o preço (digite 0 se não cobra).`
+      return `${rotuloDaLinhaDePreco(f.horas, indice)}: informe o preço (digite 0 se não cobra).`
     }
   }
   const horasVenda = lerHorasDeVenda(f.horas)
   if (typeof horasVenda === 'string') return horasVenda
-  const visita = lerEstimativa(f.visita)
-  if (visita === undefined) return 'Valor de uma visita técnica: valor inválido.'
-  const km = lerEstimativa(f.km)
-  if (km === undefined) return 'Valor por km rodado: valor inválido.'
-  return { horasVenda, valorVisitaCentavos: visita, custoKmCentavos: km }
+  const d = lerDeslocamento(f.deslocamento)
+  if (typeof d === 'string') return d
+  // Por visita, o km não se aplica: fica nulo no rascunho (o banco deriva na publicação).
+  return {
+    horasVenda,
+    ...d,
+    custoKmCentavos: d.deslocamentoModo === 'km' ? d.custoKmCentavos : null,
+  }
 }
 
 function lerFormTributos(f: FormTributos): PassoTributos | string {
@@ -898,7 +904,7 @@ function ProgressoDosPassos({
                 }}
                 className={cn(
                   'flex w-full items-start gap-(--space-100) rounded-(--radius) border p-(--space-100) text-left transicao-estado hover:bg-(--surface-hover)',
-                  ehAtual ? 'border-(--brand)' : 'border-(--border-subtle)',
+                  ehAtual ? 'border-(--brand-stroke)' : 'border-(--border-subtle)',
                 )}
               >
                 <span
@@ -1158,37 +1164,21 @@ function PassoDosPrecos({
           aoMudar((f) => ({ ...f, horas: alterar(f.horas) }))
         }}
       />
-      <fieldset className="flex flex-col gap-(--space-100) border-t pt-(--space-150)">
-        <legend className="corpo-medio text-(--text)">
+      <section
+        aria-labelledby="pp-visitas"
+        className="flex flex-col gap-(--space-100) border-t pt-(--space-150)"
+      >
+        <h3 id="pp-visitas" className="corpo-medio text-(--text)">
           Visita técnica e deslocamento (opcional)
-        </legend>
-        <Linha id="pp-visita" rotulo="Valor de uma visita técnica (R$)">
-          <input
-            id="pp-visita"
-            inputMode="decimal"
-            aria-invalid={lerEstimativa(form.visita) === undefined || undefined}
-            className={`${classeCampo} text-right tabular-nums`}
-            value={form.visita}
-            onChange={(e) => {
-              const valor = reaisDigitados(e)
-              aoMudar((f) => ({ ...f, visita: valor }))
-            }}
-          />
-        </Linha>
-        <Linha id="pp-km" rotulo="Valor por km rodado (R$)">
-          <input
-            id="pp-km"
-            inputMode="decimal"
-            aria-invalid={lerEstimativa(form.km) === undefined || undefined}
-            className={`${classeCampo} text-right tabular-nums`}
-            value={form.km}
-            onChange={(e) => {
-              const valor = reaisDigitados(e)
-              aoMudar((f) => ({ ...f, km: valor }))
-            }}
-          />
-        </Linha>
-      </fieldset>
+        </h3>
+        <Deslocamento
+          campos={form.deslocamento}
+          prefixo="pp"
+          aoMudar={(alterar) => {
+            aoMudar((f) => ({ ...f, deslocamento: alterar(f.deslocamento) }))
+          }}
+        />
+      </section>
     </div>
   )
 }

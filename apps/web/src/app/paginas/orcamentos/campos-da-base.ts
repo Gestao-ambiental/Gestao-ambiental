@@ -10,16 +10,22 @@ import {
   HORAS_MAXIMAS_POR_DIARIA,
   lerDuracao,
   linhasMensaisDaEquipe,
+  CONSUMO_MAXIMO_KM_POR_LITRO,
   MAXIMO_DE_FAIXAS,
   mesmaProfissao,
+  modoDeDeslocamento,
   problemaDasFaixas,
+  profissaoObrigatoria,
   resumoDaPessoa,
   UNIDADES_COM_FAIXAS,
-  rotuloDaProfissao,
+  rotuloDaProfissaoNoCusto,
+  valorDoKm,
   type CodigoProfissao,
   type ComposicaoDaEquipe,
   type FaixaDePreco,
   type FormaDeRecebimento,
+  type ModoDeDeslocamento,
+  type PassoPrecos,
   type PessoaDoRascunho,
   type RemuneracaoDaPessoa,
   type UnidadeDeCobranca,
@@ -35,10 +41,16 @@ import type {
 import { lerEstimativa, lerReaisOuZero } from './calculo'
 import { campoDaQuantidade, lerQuantidade } from './comum'
 
-/** Linha da tabela de preços, com os números como texto enquanto a pessoa digita. */
+/**
+ * Linha da tabela de preços, com os números como texto enquanto a pessoa digita. A unidade decide o
+ * bloco: hora = "Hora de profissional" (profissão e nível); as demais = "Serviços" (serviço e "Quem
+ * faz", opcional).
+ */
 export interface LinhaHora {
   id: string
+  /** Na hora, a profissão; no serviço, o "Quem faz" ('' = ninguém específico). */
   profissao: string
+  /** Na hora, o nível (Júnior, Sênior…); no serviço, o nome do serviço. */
   atividade: string
   /** Unidade de cobrança (ADR-0018): hora, m², hectare, diária, campanha ou pacote. */
   unidade: UnidadeDeCobranca
@@ -69,6 +81,34 @@ export function faixasIniciais(valor: string): LinhaFaixa[] {
 
 export function usaFaixas(l: LinhaHora): boolean {
   return UNIDADES_COM_FAIXAS.includes(l.unidade) && l.faixas.length > 0
+}
+
+/** Bloco da linha na tabela: hora de profissional ou serviço. */
+export function ehHoraDeProfissional(l: { unidade: UnidadeDeCobranca }): boolean {
+  return l.unidade === 'hora'
+}
+
+/** Nome da linha nas mensagens: "Hora de profissional, linha 1", "Serviços, linha 2". */
+export function rotuloDaLinhaDePreco(linhas: readonly LinhaHora[], indice: number): string {
+  const linha = linhas[indice]
+  const hora = linha ? ehHoraDeProfissional(linha) : true
+  const posicao = linhas.slice(0, indice + 1).filter((l) => ehHoraDeProfissional(l) === hora).length
+  return `${hora ? 'Hora de profissional' : 'Serviços'}, linha ${String(posicao)}`
+}
+
+/** Linha nova de cada bloco. O serviço começa em m², a primeira unidade da lista depois da hora. */
+export function novaLinhaDePreco(bloco: 'hora' | 'servico'): LinhaHora {
+  return {
+    id: crypto.randomUUID(),
+    profissao: '',
+    atividade: '',
+    unidade: bloco === 'hora' ? 'hora' : 'm2',
+    valor: '',
+    tempo: '',
+    fonte: '',
+    minimo: '',
+    faixas: [],
+  }
 }
 
 /**
@@ -161,8 +201,8 @@ export function linhasDePrecoDe(horasVenda: readonly HoraDeVenda[]): LinhaHora[]
   }))
 }
 
-/** Lê as faixas da linha; devolve o problema em texto, se houver. */
-export function lerFaixas(l: LinhaHora, n: string): FaixaDePreco[] | string {
+/** Lê as faixas da linha; devolve o problema em texto, se houver. `rotulo`: "Serviços, linha 2". */
+export function lerFaixas(l: LinhaHora, rotulo: string): FaixaDePreco[] | string {
   if (!usaFaixas(l)) return []
   const faixas: FaixaDePreco[] = []
   for (const [i, f] of l.faixas.entries()) {
@@ -171,44 +211,52 @@ export function lerFaixas(l: LinhaHora, n: string): FaixaDePreco[] | string {
     const ate = ultima ? null : lerQuantidade(f.ate)
     const valor = lerEstimativa(f.valor)
     if (!ultima && (ate === null || ate === undefined || ate === 0))
-      return `Tabela de preços, linha ${n}: informe até quanto vale a faixa ${k}.`
+      return `${rotulo}: informe até quanto vale a faixa ${k}.`
     if (valor === null || valor === undefined)
-      return `Tabela de preços, linha ${n}: informe o valor por unidade da faixa ${k}.`
+      return `${rotulo}: informe o valor por unidade da faixa ${k}.`
     faixas.push({ ateDezMilesimos: ate ?? null, valorCentavos: valor })
   }
   const problema = problemaDasFaixas(faixas, l.unidade)
-  if (problema === 'faixas_demais')
-    return `Tabela de preços, linha ${n}: use até ${String(MAXIMO_DE_FAIXAS)} faixas.`
+  if (problema === 'faixas_demais') return `${rotulo}: use até ${String(MAXIMO_DE_FAIXAS)} faixas.`
   if (problema !== null)
-    return `Tabela de preços, linha ${n}: os limites das faixas precisam crescer (ex.: até 500, até 1.000, acima).`
+    return `${rotulo}: os limites das faixas precisam crescer (ex.: até 500, até 1.000, acima).`
   return faixas
 }
 
-/** Lê a tabela de hora de venda: profissão e atividade obrigatórias, sem repetir a dupla. */
+/**
+ * Lê a tabela de preços. Hora de profissional: profissão e nível obrigatórios. Serviço: nome
+ * obrigatório, "Quem faz" opcional. A dupla profissão e nível/serviço não se repete.
+ */
 export function lerHorasDeVenda(linhas: readonly LinhaHora[]): HoraDeVenda[] | string {
   const horas: HoraDeVenda[] = []
   for (const [indice, l] of linhas.entries()) {
-    const n = String(indice + 1)
-    const faixas = lerFaixas(l, n)
+    const rotulo = rotuloDaLinhaDePreco(linhas, indice)
+    const hora = ehHoraDeProfissional(l)
+    const faixas = lerFaixas(l, rotulo)
     if (typeof faixas === 'string') return faixas
     // Com faixas, o preço da linha é o da primeira faixa (só para mostrar; o cálculo usa as faixas).
     const valor = faixas[0]?.valorCentavos ?? lerReaisOuZero(l.valor)
     const minimo = l.unidade === 'pacote' ? null : lerEstimativa(l.minimo)
     const minutos = l.tempo.trim() === '' ? null : lerDuracao(l.tempo)
-    if (minimo === undefined) return `Tabela de preços, linha ${n}: preço mínimo inválido.`
-    if (!l.profissao.trim()) return `Tabela de preços, linha ${n}: informe a profissão.`
+    if (minimo === undefined) return `${rotulo}: preço mínimo inválido.`
+    if (profissaoObrigatoria(l.unidade) && !l.profissao.trim())
+      return `${rotulo}: informe a profissão.`
     if (!l.atividade.trim())
-      return `Tabela de preços, linha ${n}: informe o serviço, a atividade ou o nível.`
-    if (valor === null) return `Tabela de preços, linha ${n}: valor inválido.`
+      return hora ? `${rotulo}: informe o nível (ex.: Júnior).` : `${rotulo}: informe o serviço.`
+    if (valor === null) return `${rotulo}: valor inválido.`
     if (minutos === null && l.tempo.trim() !== '')
-      return `Tabela de preços, linha ${n}: tempo por unidade inválido. Use 1h30, 1:30 ou 1,5.`
+      return `${rotulo}: tempo por unidade inválido. Use 1h30, 1:30 ou 1,5.`
     const repetida = horas.some(
       (h) =>
         mesmaProfissao(h.profissao, l.profissao) &&
         h.atividade.toLowerCase() === l.atividade.trim().toLowerCase(),
     )
-    if (repetida)
-      return `Tabela de preços: "${l.profissao.trim()} · ${l.atividade.trim()}" aparece duas vezes.`
+    if (repetida) {
+      const nome = l.profissao.trim()
+        ? `${l.profissao.trim()} · ${l.atividade.trim()}`
+        : l.atividade.trim()
+      return `Tabela de preços: "${nome}" aparece duas vezes.`
+    }
     horas.push({
       id: l.id,
       profissao: l.profissao.trim(),
@@ -355,12 +403,19 @@ export function contaDaHoraDeCusto(r: RemuneracaoDaPessoa, horaCentavos: number)
   return hora
 }
 
-/** Profissão (rótulo da lista) de cada membro que tem uma definida (ADR-0021). */
+/**
+ * Profissão de cada membro que tem uma definida (ADR-0021): o rótulo da lista ou, se a pessoa
+ * ainda está cursando, "Estudante de …", que fica num grupo à parte no custo por profissão.
+ */
 export function profissoesDosMembros(
-  membros: readonly { id: string; profissao: CodigoProfissao | null }[],
+  membros: readonly { id: string; profissao: CodigoProfissao | null; profissaoEmCurso: boolean }[],
 ): ReadonlyMap<string, string> {
   return new Map(
-    membros.flatMap((m) => (m.profissao ? [[m.id, rotuloDaProfissao(m.profissao)] as const] : [])),
+    membros.flatMap((m) =>
+      m.profissao
+        ? [[m.id, rotuloDaProfissaoNoCusto(m.profissao, m.profissaoEmCurso)] as const]
+        : [],
+    ),
   )
 }
 
@@ -400,4 +455,137 @@ export function lerEquipe(
 /** Média e horas da equipe: só quem tem custo e horas do mês conhecidos. */
 export function composicaoDe(equipe: readonly PessoaDaBase[]): ComposicaoDaEquipe {
   return composicaoDaEquipe(linhasMensaisDaEquipe(equipe))
+}
+
+// ---------------------------------------------------------------------------
+// Visita técnica e deslocamento (decisão do Eduardo, 13/11/2026)
+// ---------------------------------------------------------------------------
+
+/** Campos do deslocamento, como texto enquanto a pessoa digita. Só os do modo escolhido contam. */
+export interface CamposDeDeslocamento {
+  modo: ModoDeDeslocamento
+  /** Valor de uma visita (modo "visita"). */
+  visita: string
+  /** Consumo do carro em km por litro (modo "km"). */
+  consumo: string
+  /** Preço do litro do combustível (modo "km"). */
+  combustivel: string
+  /** Acréscimo por km, opcional (modo "km"). */
+  acrescimo: string
+}
+
+/** O deslocamento lido: o que vai para a base ou para o rascunho. Ausente fica nulo. */
+export interface DeslocamentoLido {
+  deslocamentoModo: ModoDeDeslocamento
+  valorVisitaCentavos: number | null
+  /** Derivado (o banco recalcula). */
+  custoKmCentavos: number
+  consumoKmPorLitro: number | null
+  precoCombustivelCentavos: number | null
+  acrescimoKmCentavos: number | null
+}
+
+/** "12", "12,5" ou "12.5" km/l. Vazio é nulo; inválido (zero, negativo, 3 casas…) é undefined. */
+export function lerConsumo(texto: string): number | null | undefined {
+  const limpo = texto.trim().replace(',', '.')
+  if (limpo === '') return null
+  if (!/^\d{1,3}(\.\d{1,2})?$/.test(limpo)) return undefined
+  const valor = Number(limpo)
+  return valor > 0 && valor <= CONSUMO_MAXIMO_KM_POR_LITRO ? valor : undefined
+}
+
+function textoDoConsumo(valor: number | null): string {
+  return valor === null ? '' : String(valor).replace('.', ',')
+}
+
+/**
+ * Campos a partir dos números salvos (base ou rascunho). Base antiga sem modo: deduz pelos valores.
+ * Km antigo sem combustível: o valor do km aparece como acréscimo, para não se perder ao salvar.
+ * `zeroEmBranco`: na base, 0 quer dizer "não cadastrado" e fica em branco.
+ */
+export function camposDeDeslocamentoDe(
+  d: {
+    deslocamentoModo?: ModoDeDeslocamento | null
+    valorVisitaCentavos: number | null
+    custoKmCentavos: number | null
+    consumoKmPorLitro?: number | null
+    precoCombustivelCentavos?: number | null
+    acrescimoKmCentavos?: number | null
+  } | null,
+  { zeroEmBranco }: { zeroEmBranco: boolean },
+): CamposDeDeslocamento {
+  if (!d) return { modo: 'visita', visita: '', consumo: '', combustivel: '', acrescimo: '' }
+  const reais = (v: number | null | undefined) =>
+    v === null || v === undefined || (zeroEmBranco && v === 0) ? '' : formatarCentavos(v)
+  const consumo = d.consumoKmPorLitro ?? null
+  const combustivel = d.precoCombustivelCentavos ?? null
+  const kmAntigo =
+    consumo === null && combustivel === null && (d.acrescimoKmCentavos ?? null) === null
+      ? (d.custoKmCentavos ?? 0)
+      : 0
+  return {
+    modo: modoDeDeslocamento({
+      deslocamentoModo: d.deslocamentoModo ?? null,
+      valorVisitaCentavos: d.valorVisitaCentavos ?? 0,
+      custoKmCentavos: d.custoKmCentavos ?? 0,
+    }),
+    visita: reais(d.valorVisitaCentavos),
+    consumo: textoDoConsumo(consumo),
+    combustivel: reais(combustivel),
+    acrescimo: kmAntigo > 0 ? formatarCentavos(kmAntigo) : reais(d.acrescimoKmCentavos),
+  }
+}
+
+/** Campos do passo 3 dos primeiros passos a partir do rascunho (nulo continua em branco). */
+export function camposDeDeslocamentoDoRascunho(p: PassoPrecos): CamposDeDeslocamento {
+  return camposDeDeslocamentoDe(p, { zeroEmBranco: false })
+}
+
+/**
+ * Lê o deslocamento. Só os campos do modo escolhido valem; os do outro vão nulos. O consumo e o
+ * preço do litro andam juntos (os dois ou nenhum). Devolve a mensagem de erro, se houver.
+ */
+export function lerDeslocamento(c: CamposDeDeslocamento): DeslocamentoLido | string {
+  if (c.modo === 'visita') {
+    const visita = lerEstimativa(c.visita)
+    if (visita === undefined) return 'Valor de uma visita técnica: valor inválido.'
+    return {
+      deslocamentoModo: 'visita',
+      valorVisitaCentavos: visita,
+      custoKmCentavos: 0,
+      consumoKmPorLitro: null,
+      precoCombustivelCentavos: null,
+      acrescimoKmCentavos: null,
+    }
+  }
+  const consumo = lerConsumo(c.consumo)
+  if (consumo === undefined) return 'Consumo do carro: use km por litro, de 0,01 a 999,99.'
+  const combustivel = lerEstimativa(c.combustivel)
+  if (combustivel === undefined) return 'Preço do combustível: valor inválido.'
+  const acrescimo = lerEstimativa(c.acrescimo)
+  if (acrescimo === undefined) return 'Acréscimo por km: valor inválido.'
+  if ((consumo === null) !== (combustivel === null))
+    return 'Informe o consumo do carro e o preço do combustível, ou deixe os dois em branco.'
+  const custoKm = valorDoKm({
+    consumoKmPorLitro: consumo,
+    precoCombustivelCentavos: combustivel,
+    acrescimoKmCentavos: acrescimo,
+  })
+  if (custoKm === null) return 'Confira o consumo do carro e o preço do combustível.'
+  return {
+    deslocamentoModo: 'km',
+    valorVisitaCentavos: null,
+    custoKmCentavos: custoKm,
+    consumoKmPorLitro: consumo,
+    precoCombustivelCentavos: combustivel,
+    acrescimoKmCentavos: acrescimo,
+  }
+}
+
+/** Valor do km a mostrar enquanto a pessoa digita; nulo se ainda não dá para calcular. */
+export function valorDoKmDigitado(c: CamposDeDeslocamento): number | null {
+  if (c.consumo.trim() === '' && c.combustivel.trim() === '' && c.acrescimo.trim() === '')
+    return null
+  const lido = lerDeslocamento({ ...c, modo: 'km' })
+  return typeof lido === 'string' ? null : lido.custoKmCentavos
 }
