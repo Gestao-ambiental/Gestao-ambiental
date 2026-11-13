@@ -594,6 +594,7 @@ function Formulario({
           horasFaturaveisMes: lido.base.horasFaturaveisMes,
         })
   const margem = lerPercentual(c.margemDesejada)
+  const minima = lerPercentual(c.margemMinima)
 
   function campo(nome: keyof Campos) {
     return {
@@ -700,7 +701,7 @@ function Formulario({
             <>
               <Linha
                 id="base-hora"
-                rotulo="Hora técnica (R$)"
+                rotulo="Custo da hora técnica (R$)"
                 apoio="Salários, pró-labore técnico e encargos ÷ horas faturáveis, sem custos fixos"
               >
                 <input
@@ -780,10 +781,11 @@ function Formulario({
             </Linha>
           </ContasDoMes>
           <p className="corpo text-(--text-subtle)">
-            Rateio por hora estimada:{' '}
+            Contas do mês por hora:{' '}
             <span className="corpo-medio text-(--text)">
               {porHora === null ? 'pendente' : `${formatarReais(porHora)} por hora`}
             </span>
+            . Já entra no custo de cada serviço do orçamento, pelas horas dele.
           </p>
         </Grupo>
 
@@ -1015,7 +1017,8 @@ function Formulario({
                         {comFaixas ? (
                           <tr>
                             <td colSpan={8} className={classeCelula}>
-                              <fieldset className="flex flex-col gap-(--space-075) border-l-2 border-(--border-input) pl-(--space-150)">
+                              {/* Fica à esquerda, visível, mesmo com a tabela rolada de lado (celular). */}
+                              <fieldset className="sticky left-0 flex max-w-[calc(100vw-5rem)] flex-col gap-(--space-075) border-l-2 border-(--border-input) pl-(--space-150) sm:max-w-none">
                                 <legend className="mb-(--space-050) text-xs text-(--text-subtle)">
                                   Faixas de quantidade da linha {n}: progressivas, cada trecho paga
                                   o valor da sua faixa.
@@ -1177,6 +1180,17 @@ function Formulario({
         </Grupo>
 
         <Grupo titulo="Margens">
+          <p className="max-w-3xl text-xs text-(--text-subtle)">
+            Desejada: meta usada no cálculo pela margem. Mínima: referência de alerta, não bloqueia.
+            Que sobra: resultado estimado de cada orçamento depois de custos, tributos e taxas.
+          </p>
+          {margem !== null && minima !== null && margem < minima ? (
+            <MensagemSecao tom="atencao">
+              A margem desejada ({formatarPontosBase(margem)}) está abaixo da mínima (
+              {formatarPontosBase(minima)}): os orçamentos calculados pela margem vão nascer com o
+              aviso de margem baixa.
+            </MensagemSecao>
+          ) : null}
           <Linha
             id="base-margem"
             rotulo="Margem desejada (%)"
@@ -1211,7 +1225,7 @@ function Formulario({
           <Linha
             id="base-tributos"
             rotulo="Tributos sobre o faturamento (%)"
-            apoio="Alíquota efetiva informada pela contabilidade"
+            apoio="Peça à contabilidade a alíquota efetiva; imposto pago ÷ faturamento é só uma aproximação, e ela varia por período e regime"
           >
             <input
               id="base-tributos"
@@ -1244,7 +1258,11 @@ function Formulario({
               {...campo('taxaPorCobranca')}
             />
           </Linha>
-          <Linha id="base-assinatura" rotulo="Taxa por documento assinado (R$)">
+          <Linha
+            id="base-assinatura"
+            rotulo="Taxa por documento assinado (R$)"
+            apoio="O que a plataforma de assinatura digital cobra por proposta assinada. Em branco se não usa"
+          >
             <input
               id="base-assinatura"
               inputMode="decimal"
@@ -1288,9 +1306,10 @@ function Equipe({
       <p className="max-w-3xl text-xs text-(--text-subtle)">
         Uma linha por pessoa da equipe, dizendo como ela recebe: salário (CLT), pró-labore, bolsa de
         estágio, por diária ou por projeto. Informe os custos da sua empresa; confirme encargos com
-        a contabilidade. A hora de custo de cada um sai dessas informações. Meio período é a
-        jornada: informe as horas no mês que a pessoa trabalha. Só membros com login entram: quem
-        ainda não tem conta precisa ser convidado em Equipe.
+        a contabilidade. A hora de custo de cada um sai dessas informações. Horas no mês são a
+        jornada real: por exemplo, 40 h por semana ≈ 173 h por mês. Use o mês que deseja estimar e
+        atualize quando souber. Para o sócio, as horas que ele de fato trabalha na consultoria. Só
+        membros com login entram: quem ainda não tem conta precisa ser convidado em Equipe.
       </p>
       {/* relative: textos sr-only (absolutos) ficam presos à área que rola, não à página. */}
       <div className="relative overflow-x-auto">
@@ -1342,16 +1361,24 @@ function Equipe({
                   | 'dias'
                   | 'projeto'
                   | 'horasProjeto',
-                opcoesDoCampo: { reais?: boolean; placeholder?: string; legenda?: string },
+                opcoesDoCampo: {
+                  reais?: boolean
+                  placeholder?: string
+                  legenda?: string
+                  /** Aviso ligado ao campo (ex.: capacidade não calculada). */
+                  aviso?: string | null
+                },
               ) => {
                 const valor = p[chave]
                 const invalido = opcoesDoCampo.reais
                   ? lerReaisOuNulo(valor) === undefined
                   : lerInteiroOuNulo(valor) === undefined
-                return (
+                const idAviso = `aviso-${chave}-${p.id}`
+                const campoDaPessoa = (
                   <label className="flex items-center justify-end gap-(--space-050)">
                     <input
                       aria-label={`${rotulo} da linha ${n}`}
+                      aria-describedby={opcoesDoCampo.aviso ? idAviso : undefined}
                       inputMode={opcoesDoCampo.reais ? 'decimal' : 'numeric'}
                       placeholder={opcoesDoCampo.placeholder}
                       aria-invalid={invalido || undefined}
@@ -1369,7 +1396,27 @@ function Equipe({
                     ) : null}
                   </label>
                 )
+                // Estrutura sempre igual: o campo não é recriado quando o aviso aparece ou some
+                // (senão a digitação se perde no meio). O aviso não é erro.
+                return (
+                  <div className="flex flex-col items-end gap-(--space-050)">
+                    {campoDaPessoa}
+                    {opcoesDoCampo.aviso ? (
+                      <span
+                        id={idAviso}
+                        className="max-w-56 text-right text-xs text-(--text-subtle)"
+                      >
+                        {opcoesDoCampo.aviso}
+                      </span>
+                    ) : null}
+                  </div>
+                )
               }
+              const semCapacidade = resumo?.capacidadeHorasMes === null
+              const avisoCapacidade = (oQueFalta: string) =>
+                semCapacidade
+                  ? `${oQueFalta} não informados; capacidade não calculada. Fica fora da média e do rateio; a hora de custo continua válida.`
+                  : null
               let custo: ReactNode
               let horas: ReactNode
               if (p.forma === 'diaria') {
@@ -1380,6 +1427,7 @@ function Equipe({
                     {numero('Dias no mês', 'dias', {
                       placeholder: 'Opcional',
                       legenda: 'dias/mês',
+                      aviso: avisoCapacidade('Dias no mês'),
                     })}
                   </div>
                 )
@@ -1388,12 +1436,20 @@ function Equipe({
                 horas = (
                   <div className="flex flex-col gap-(--space-050)">
                     {numero('Horas do projeto', 'horasProjeto', { legenda: 'h/projeto' })}
-                    {numero('Horas no mês', 'horas', { placeholder: 'Opcional', legenda: 'h/mês' })}
+                    {numero('Horas no mês', 'horas', {
+                      placeholder: 'Opcional',
+                      legenda: 'h/mês',
+                      aviso: avisoCapacidade('Horas no mês'),
+                    })}
                   </div>
                 )
               } else {
                 custo = numero('Custo mensal', 'custo', { reais: true, legenda: 'mês' })
-                horas = numero('Horas no mês', 'horas', { placeholder: '173', legenda: 'h/mês' })
+                horas = numero('Horas no mês', 'horas', {
+                  placeholder: '173',
+                  legenda: 'h/mês',
+                  aviso: avisoCapacidade('Horas no mês'),
+                })
               }
               return (
                 <tr key={p.id} className="align-top">
@@ -1476,9 +1532,6 @@ function Equipe({
                       ? '—'
                       : formatarCentavos(resumo.horaDeCustoCentavos)}{' '}
                     <span className="sr-only">por hora, na linha {n}</span>
-                    {resumo?.capacidadeHorasMes === null ? (
-                      <span className="block text-xs">capacidade desconhecida</span>
-                    ) : null}
                   </td>
                   <td className={classeCelula}>
                     <BotaoIcone
@@ -1500,14 +1553,14 @@ function Equipe({
           Adicionar pessoa
         </Botao>
         <Botao aparencia="link" onClick={aoVoltar}>
-          Digitar hora técnica e horas
+          Digitar o custo da hora e as horas
         </Botao>
       </div>
       <dl
         aria-label="Resultado da equipe"
         className="grid max-w-xl grid-cols-[1fr_auto] gap-x-(--space-200) gap-y-(--space-075) corpo"
       >
-        <dt className="text-(--text-subtle)">Hora técnica média (custo ÷ horas da equipe)</dt>
+        <dt className="text-(--text-subtle)">Custo médio por hora da equipe</dt>
         <dd className="text-right tabular-nums">
           {previa?.horaTecnicaCentavos == null
             ? 'pendente'
@@ -1523,7 +1576,7 @@ function Equipe({
         </dd>
         {custoPorProfissao.map((c) => (
           <Fragment key={c.profissao}>
-            <dt className="text-(--text-subtle)">Hora técnica de {c.profissao}</dt>
+            <dt className="text-(--text-subtle)">Custo por hora de {c.profissao}</dt>
             <dd className="text-right tabular-nums">{formatarReais(c.horaTecnicaCentavos)}</dd>
           </Fragment>
         ))}
@@ -1611,7 +1664,9 @@ function ContasDoMes({
           {pelaEquipe
             ? 'Sem a remuneração de quem está na equipe: ela já entra pela composição.'
             : 'Inclua o pró-labore que não está na hora técnica.'}{' '}
-          Conta sem valor conta como zero. Cada orçamento mostra quanto cobre de cada conta.
+          Use o valor do último mês (fatura ou extrato); a que não souber, deixe em branco e
+          complete depois. Conta sem valor conta como zero. Cada orçamento mostra quanto cobre de
+          cada conta.
         </p>
       </div>
       <div className="relative overflow-x-auto">

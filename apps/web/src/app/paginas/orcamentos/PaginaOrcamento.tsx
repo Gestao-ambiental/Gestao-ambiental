@@ -328,7 +328,7 @@ export function PaginaOrcamento() {
   const { atual } = useConsultoria()
   const { id = '' } = useParams()
   // O editor remonta quando chega versão nova; o aviso de sucesso mora aqui para não sumir.
-  const [aviso, setAviso] = useState<string | null>(null)
+  const [aviso, setAviso] = useState<Aviso | null>(null)
 
   const consulta = useQuery({
     queryKey: ['orcamento', id],
@@ -371,9 +371,17 @@ export function PaginaOrcamento() {
       key={`${consulta.data.id}:${String(consulta.data.rowVersion)}`}
       orcamento={consulta.data}
       aviso={aviso}
-      aoAvisar={setAviso}
+      aoAvisar={(texto, comLinkDoEmpreendimento = false) => {
+        setAviso(texto === null ? null : { texto, comLinkDoEmpreendimento })
+      }}
     />
   )
+}
+
+/** Aviso de sucesso; o link do empreendimento só vale para o prospecto recém-cadastrado. */
+interface Aviso {
+  texto: string
+  comLinkDoEmpreendimento: boolean
 }
 
 function Editor({
@@ -382,8 +390,9 @@ function Editor({
   aoAvisar,
 }: {
   orcamento: Orcamento
-  aviso: string | null
-  aoAvisar: (aviso: string | null) => void
+  aviso: Aviso | null
+  /** comLinkDoEmpreendimento: só no aviso de prospecto que virou empreendimento. */
+  aoAvisar: (texto: string | null, comLinkDoEmpreendimento?: boolean) => void
 }) {
   const queryClient = useQueryClient()
   // Na lixeira, nada muda até restaurar (o banco também recusa).
@@ -562,6 +571,7 @@ function Editor({
       await cadastrarEmpreendimentoDoProspecto(orcamento.id, crypto.randomUUID())
       aoAvisar(
         `${orcamento.prospecto?.nome ?? 'O prospecto'} agora é um empreendimento cadastrado, e este orçamento está ligado a ele.`,
+        true,
       )
       await queryClient.invalidateQueries({ queryKey: ['orcamento', orcamento.id] })
       await queryClient.invalidateQueries({ queryKey: ['orcamentos'] })
@@ -747,8 +757,8 @@ function Editor({
       ) : null}
       {aviso ? (
         <MensagemSecao role="status" tom="sucesso">
-          {aviso}{' '}
-          {orcamento.empreendimentoId ? (
+          {aviso.texto}{' '}
+          {aviso.comLinkDoEmpreendimento && orcamento.empreendimentoId ? (
             <Link to={`/empreendimentos/${orcamento.empreendimentoId}`}>Abrir empreendimento</Link>
           ) : null}
         </MensagemSecao>
@@ -968,11 +978,11 @@ function Editor({
                                 mudarItem(item.id, (x) => ({ ...x, descricao: valor }))
                               }}
                             />
-                            <label className="mt-(--space-050) flex items-center gap-(--space-050) text-xs text-(--text-subtle)">
-                              Registro
+                            {/* As opções já dizem o que é ("Sem ART/RRT"); o rótulo fica para o leitor de tela. */}
+                            <div className="mt-(--space-050)">
                               <select
                                 aria-label={`ART ou RRT do item ${n}`}
-                                className={`${classeCampo} w-auto py-0 text-xs`}
+                                className={`${classeCampo} w-full py-0 text-xs`}
                                 value={item.responsabilidade}
                                 disabled={!editavel}
                                 onChange={(e) => {
@@ -984,7 +994,7 @@ function Editor({
                                 <option value="art">Com ART</option>
                                 <option value="rrt">Com RRT</option>
                               </select>
-                            </label>
+                            </div>
                           </td>
                           <td className={classeCelula}>
                             <CampoNumero
@@ -1552,6 +1562,11 @@ function Editor({
                         {d.precosFechadosCentavos > 0
                           ? ` Pacotes (${formatarReais(d.precosFechadosCentavos)}) têm preço fechado e ficam fora do acréscimo.`
                           : ''}
+                        <span className="mt-(--space-050) block text-(--text-subtle)">
+                          Exemplo fictício: base R$ 1.000, acréscimo de 20% = R$ 200, preço R$ 1.200
+                          antes de tributos e taxas. É acréscimo sobre a base, não margem de 20%
+                          sobre a venda.
+                        </span>
                       </p>
                     ) : null}
                     <section aria-label="Divisão do valor">
@@ -1834,6 +1849,7 @@ function Editor({
                 <CampoArea
                   id="orcamento-objeto"
                   rotulo="O que está sendo orçado"
+                  apoio="Descreva o escopo. Se quiser, cite a metodologia e a legislação aplicável, conferindo a fonte."
                   linhas={1}
                   valor={r.objeto}
                   desabilitado={!editavel}
@@ -2134,6 +2150,7 @@ function CampoArea({
   valor,
   desabilitado,
   aoMudar,
+  apoio,
 }: {
   id: string
   rotulo: string
@@ -2141,14 +2158,22 @@ function CampoArea({
   valor: string
   desabilitado: boolean
   aoMudar: (valor: string) => void
+  /** Ajuda curta embaixo do campo, ligada por aria-describedby. */
+  apoio?: string
 }) {
   return (
     <div className="flex flex-col gap-(--space-050)">
       <label htmlFor={id} className="rotulo">
         {rotulo}
       </label>
+      {apoio ? (
+        <span id={`${id}-apoio`} className="text-xs text-(--text-subtle)">
+          {apoio}
+        </span>
+      ) : null}
       <textarea
         id={id}
+        aria-describedby={apoio ? `${id}-apoio` : undefined}
         rows={linhas}
         className={`${classeCampo} h-auto min-h-(--size-control) py-(--space-075)`}
         value={valor}
@@ -2173,7 +2198,7 @@ function ComoOPrecoECalculado({
   return (
     <>
       <dl className="grid max-w-xl grid-cols-[1fr_auto] gap-x-(--space-200) gap-y-(--space-075) corpo">
-        <dt className="text-(--text-subtle)">Hora técnica · contas da consultoria por hora</dt>
+        <dt className="text-(--text-subtle)">Custo da hora técnica · contas por hora</dt>
         <dd className="text-right tabular-nums">
           {formatarCentavos(base.horaTecnicaCentavos)} ·{' '}
           {formatarCentavos(base.custoFixoHoraCentavos)}
@@ -2297,7 +2322,7 @@ function CelulaResponsavel({
         >
           {rotuloDoMes(mes)}: {formatarDuracao(carga.totalMinutos)}
           {carga.jornadaMinutos === null
-            ? ' (capacidade desconhecida)'
+            ? ' (jornada não informada em Custos e taxas)'
             : ` de ${formatarDuracao(carga.jornadaMinutos)}`}
           {carga.acimaDaJornada ? ', acima da jornada' : ''}
         </span>

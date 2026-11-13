@@ -180,7 +180,7 @@ function Proposta({ orcamento: o }: { orcamento: Orcamento }) {
 
       <article
         aria-label={`Proposta ${numero}`}
-        className="flex flex-col gap-(--space-300) rounded-(--radius-large) border bg-(--surface) p-(--space-400) text-(--text) shadow-cartao print:rounded-none print:border-0 print:p-0 print:shadow-none"
+        className="flex flex-col gap-(--space-300) rounded-(--radius-large) border bg-(--surface) p-(--space-200) text-(--text) shadow-cartao sm:p-(--space-400) print:rounded-none print:border-0 print:p-0 print:shadow-none"
       >
         <header className="flex flex-wrap items-start justify-between gap-(--space-200) border-b pb-(--space-200)">
           <div className="flex flex-col gap-(--space-050)">
@@ -258,7 +258,7 @@ function Proposta({ orcamento: o }: { orcamento: Orcamento }) {
                       {i.descricao}
                       <DetalheDaUnidade item={i} linhas={o.base?.horasVenda ?? []} />
                       {i.responsabilidadeTecnica ? (
-                        <span className="block text-xs text-(--text-subtle)">
+                        <span className="block corpo-medio">
                           Inclui {ROTULO_DA_RESPONSABILIDADE[i.responsabilidadeTecnica]}
                         </span>
                       ) : null}

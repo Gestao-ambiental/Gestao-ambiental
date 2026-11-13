@@ -37,7 +37,7 @@ function rotuloDaAcao(para: SituacaoOrcamento, revisao: number): string {
 /** O que acontece com a mudança, em uma frase. */
 function explicacao(de: SituacaoOrcamento, para: SituacaoOrcamento, revisao: number): string {
   if (para === 'rascunho')
-    return `Volta a rascunho como revisão ${String(revisao + 1)}, para editar.${de === 'aprovada' ? ' Deixa de contar na carga da equipe até ser aprovado de novo.' : ''}`
+    return `Volta a rascunho como revisão ${String(revisao + 1)}, uma nova versão para editar. O histórico guarda quando foi reaberta.${de === 'aprovada' ? ' Deixa de contar na carga da equipe até ser aprovado de novo.' : ''}`
   if (para === 'aprovada')
     return 'As horas dos serviços passam a contar na carga da equipe, no mês previsto de cada um. Nenhum contrato, cobrança ou tarefa é criado.'
   if (de === 'rascunho')
@@ -105,7 +105,7 @@ export function SituacaoDoOrcamento({
         ))}
       </div>
       {orcamento.historicoSituacao.length > 0 ? (
-        <details className="text-xs text-(--text-subtle)">
+        <details className="corpo text-(--text-subtle)">
           <summary className="cursor-pointer">
             Histórico da situação ({orcamento.historicoSituacao.length})
           </summary>
@@ -154,7 +154,7 @@ export function SituacaoDoOrcamento({
             <span className="rotulo">Observação (opcional)</span>
             <textarea
               id={idObservacao}
-              rows={2}
+              rows={3}
               maxLength={500}
               className={classeCampo}
               placeholder="Ex.: enviada por e-mail; aprovada por telefone com o Sr. Cliente"

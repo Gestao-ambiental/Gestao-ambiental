@@ -1417,16 +1417,19 @@ describe('orçamentos (onda 5)', () => {
     await usuario.type(screen.getByLabelText('Horas por diária da linha 2'), '8')
     // 400 ÷ 8 h = 50,00; sem os dias no mês, a capacidade fica desconhecida (nunca zero).
     expect(screen.getByText('50,00')).toBeInTheDocument()
-    expect(screen.getByText('capacidade desconhecida')).toBeInTheDocument()
+    // O aviso fica embaixo do próprio campo e é lido junto com ele.
+    expect(screen.getByLabelText('Dias no mês da linha 2')).toHaveAccessibleDescription(
+      /Dias no mês não informados; capacidade não calculada/,
+    )
     const resultado = screen.getByLabelText('Resultado da equipe')
     // Só quem tem custo e horas do mês entra na média: por enquanto, só o Eduardo.
     expect(within(resultado).getByText('173 h')).toBeInTheDocument()
     await usuario.type(screen.getByLabelText('Dias no mês da linha 2'), '10')
-    expect(screen.queryByText('capacidade desconhecida')).not.toBeInTheDocument()
+    expect(screen.queryByText(/capacidade não calculada/)).not.toBeInTheDocument()
     // (13.751,77 + 10 × 400) ÷ (173 + 80) h = 70,17
     expect(within(resultado).getByText('253 h')).toBeInTheDocument()
     expect(within(resultado).getByText('R$ 70,17')).toBeInTheDocument()
-    expect(within(resultado).getByText('Hora técnica de Biólogo')).toBeInTheDocument()
+    expect(within(resultado).getByText('Custo por hora de Biólogo')).toBeInTheDocument()
     expect(within(resultado).getByText('R$ 50,00')).toBeInTheDocument()
     expect(within(resultado).getByText('R$ 79,49')).toBeInTheDocument()
 
@@ -1473,7 +1476,7 @@ describe('orçamentos (onda 5)', () => {
     const usuario = userEvent.setup()
     renderizarApp('/configuracoes/custos')
     await screen.findByText(/Ainda não configurado/)
-    await usuario.type(screen.getByLabelText('Hora técnica (R$)'), '95,00')
+    await usuario.type(screen.getByLabelText('Custo da hora técnica (R$)'), '95,00')
     await usuario.type(screen.getByLabelText('Horas faturáveis por mês'), '320')
     await usuario.click(screen.getByRole('button', { name: 'Adicionar preço' }))
     await usuario.type(screen.getByLabelText('Profissão da hora 1'), 'Arquiteta')
@@ -1523,11 +1526,24 @@ describe('orçamentos (onda 5)', () => {
     })
   })
 
+  it('avisa quando a margem desejada fica abaixo da mínima, sem bloquear', async () => {
+    const usuario = userEvent.setup()
+    renderizarApp('/configuracoes/custos')
+    await screen.findByText(/Ainda não configurado/)
+    expect(screen.queryByText(/está abaixo da mínima/)).not.toBeInTheDocument()
+    const desejada = screen.getByLabelText('Margem desejada (%)')
+    await usuario.clear(desejada)
+    await usuario.type(desejada, '20')
+    expect(
+      screen.getByText(/A margem desejada \(20,0%\) está abaixo da mínima \(25,0%\)/),
+    ).toBeInTheDocument()
+  })
+
   it('custos e taxas mostram o rateio por hora e salvam', async () => {
     const usuario = userEvent.setup()
     renderizarApp('/configuracoes/custos')
     expect(await screen.findByText(/Ainda não configurado/)).toBeInTheDocument()
-    await usuario.type(screen.getByLabelText('Hora técnica (R$)'), '95,00')
+    await usuario.type(screen.getByLabelText('Custo da hora técnica (R$)'), '95,00')
     await usuario.type(screen.getByLabelText('Custos fixos por mês (R$)'), '9.600,00')
     await usuario.type(screen.getByLabelText('Horas faturáveis por mês'), '320')
     await usuario.type(screen.getByLabelText('Tributos sobre o faturamento (%)'), '6')
@@ -1548,7 +1564,7 @@ describe('orçamentos (onda 5)', () => {
     const usuario = userEvent.setup()
     renderizarApp('/configuracoes/custos')
     await screen.findByText(/Ainda não configurado/)
-    await usuario.type(screen.getByLabelText('Hora técnica (R$)'), '95,00')
+    await usuario.type(screen.getByLabelText('Custo da hora técnica (R$)'), '95,00')
     await usuario.type(screen.getByLabelText('Horas faturáveis por mês'), '320')
     await usuario.click(screen.getByRole('button', { name: 'Detalhar contas do mês' }))
     // Sugestões só com o nome: nenhum valor inventado.
@@ -1583,7 +1599,7 @@ describe('orçamentos (onda 5)', () => {
     await usuario.type(screen.getByLabelText('Tributos sobre o faturamento (%)'), '6')
     await usuario.click(screen.getByRole('button', { name: 'Calcular pela equipe' }))
     expect(screen.getByLabelText('Outros custos fixos por mês (R$)')).toHaveValue('9.600,00')
-    expect(screen.queryByLabelText('Hora técnica (R$)')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Custo da hora técnica (R$)')).not.toBeInTheDocument()
 
     await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
     expect(screen.getByRole('alert')).toHaveTextContent('Equipe, linha 1: escolha a pessoa.')

@@ -163,7 +163,7 @@ function Formulario({
               disabled={ocupado || identidade.rowVersion === 0}
               title={
                 identidade.rowVersion === 0
-                  ? 'Salve os dados abaixo antes de enviar a logo.'
+                  ? 'Salve os dados abaixo para habilitar o envio da logo.'
                   : undefined
               }
               onClick={() => {
@@ -189,7 +189,7 @@ function Formulario({
           </div>
           {identidade.rowVersion === 0 ? (
             <p className="text-xs text-(--text-subtle)">
-              Salve os dados abaixo antes de enviar a logo.
+              Salve os dados abaixo para habilitar o envio da logo.
             </p>
           ) : null}
           {erroDaLogo ? (

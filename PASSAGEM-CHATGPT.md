@@ -1,5 +1,7 @@
 # Passagem de bastão: módulo de orçamentos do Grama
 
+> **Antes de tudo, leia `ANDAMENTO-ORCAMENTO.md`, na mesma pasta.** Ele diz o que já foi feito, o que está pela metade (com uma lista de tarefas) e o que falta. Atualize esse arquivo a cada passo, do mesmo jeito.
+
 Você vai assumir este projeto a partir de agora. Até aqui, o trabalho foi feito por outro assistente (Claude). A partir desta mensagem, eu (Eduardo, dono do produto) vou pedir alterações e melhorias para você. **Siga 100% o jeito de trabalhar descrito aqui**: as mesmas regras, a mesma arquitetura, o mesmo cuidado com testes e o mesmo jeito de falar comigo. Quando algo não estiver aqui nem no código, **pergunte antes de inventar**.
 
 ---
@@ -34,8 +36,9 @@ Você vai assumir este projeto a partir de agora. Até aqui, o trabalho foi feit
 **Arquivos do orçamento:**
 
 - Domínio: `packages/domain/src/orcamento.ts`, `preco-do-orcamento.ts`, `carga-da-equipe.ts`, exportados em `index.ts`.
-- Banco: `supabase/migrations/20261110200500_cria_orcamentos.sql` até `20261112170000_lixeira_de_orcamentos.sql`.
-- Testes do banco: `supabase/tests/190_orcamentos` até `230_lixeira_de_orcamentos`.
+- Banco: `supabase/migrations/20261110200500_cria_orcamentos.sql` até `20261113130000_situacao_e_proposta.sql`.
+- Testes do banco: `supabase/tests/190_orcamentos` até `280_situacao_e_proposta`.
+- Decisões mais recentes: `docs/adr/0018-unidades-de-cobranca-e-melhorias-do-orcamento.md` e `docs/adr/0019-usabilidade-do-orcamento.md`.
 - API do front: `apps/web/src/lib/api/orcamentos.ts`. Os tipos ficam em `apps/web/src/lib/database.types.ts` (escritos à mão para as RPCs novas) e as mensagens de erro em `apps/web/src/lib/erros.ts`.
 - Telas: `apps/web/src/app/paginas/orcamentos/` (`PaginaOrcamentos`, `PaginaOrcamento`, `PaginaCustosETaxas`, `PaginaProposta`, `calculo.ts`, `orcamentos.test.tsx`). Rotas em `apps/web/src/app/rotas.tsx`.
 
@@ -84,7 +87,7 @@ Você vai assumir este projeto a partir de agora. Até aqui, o trabalho foi feit
    - `./node_modules/.bin/prettier --check <arquivos alterados>`
    - `./node_modules/.bin/pnpm test`
    - `./node_modules/.bin/pnpm build`
-   - testes do banco (pgTAP): não há Docker nem Supabase local. Até aqui eles rodavam num executor PGlite do assistente anterior, que você não tem. Rode pelo job `banco` do CI ou com o Supabase CLI se ele estiver disponível, e **me diga claramente se não conseguiu rodar**.
+   - testes do banco (pgTAP): não há Docker nem Supabase local. Use o executor PGlite em `ferramentas-locais/pg/` (fora do git): `node ferramentas-locais/pg/rodar.mjs .` (todos) ou `node ferramentas-locais/pg/rodar.mjs . 280` (um). Ele não substitui o job `banco` do CI; **me diga claramente o que rodou e o que não rodou**.
 4. **Seja honesto no relatório:** diga o que passou, o que falhou (com a saída) e o que **não** foi verificado (ex.: "não conferi a tela com os olhos").
 5. **Navegador:** quando for abrir algo para eu ver, use o **Brave**, nunca outro navegador:
    `Start-Process "C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe" <url>`

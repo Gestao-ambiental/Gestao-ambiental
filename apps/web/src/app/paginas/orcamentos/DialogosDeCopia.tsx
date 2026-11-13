@@ -192,10 +192,11 @@ export function DialogoDuplicar({
         </p>
         <p className="text-(--text-subtle)">
           <strong className="font-semibold text-(--text)">Com os preços</strong> também copia o
-          acréscimo, os preços fechados, os outros custos e as estimativas das despesas.{' '}
-          <strong className="font-semibold text-(--text)">Sem os preços</strong>, esses valores
-          ficam para preencher e as despesas voltam a cotar. A tabela de preços e a base de custos
-          são sempre as atuais; o mês previsto não vai junto.
+          acréscimo, os preços fechados, os outros custos e as estimativas das despesas, que não
+          voltam a cotar. <strong className="font-semibold text-(--text)">Sem os preços</strong>,
+          esses valores ficam para preencher e as despesas voltam a cotar. A tabela de preços e a
+          base de custos são sempre as atuais. O mês não é copiado: escolha o mês para calcular a
+          carga. Só orçamentos aprovados contam como comprometidos.
         </p>
         {falha ? (
           <MensagemSecao role="alert" tom="perigo">

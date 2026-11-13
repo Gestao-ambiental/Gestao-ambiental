@@ -151,6 +151,7 @@ export function DialogoNovoOrcamento({
           <OpcaoRadio
             name="destino-orcamento"
             rotulo="Empreendimento cadastrado"
+            descricao="Empresa, obra ou propriedade rural já cadastrada no Grama."
             checked={destino === 'empreendimento'}
             disabled={salvando}
             onChange={() => {
