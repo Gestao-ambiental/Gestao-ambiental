@@ -2,14 +2,17 @@
 
 **Leia isto primeiro, depois `PASSAGEM-CHATGPT.md`.** Este arquivo diz o que já foi feito, o que está pela metade e o que falta. O Claude atualiza a cada passo; quem assumir continua atualizando do mesmo jeito.
 
-- **Última atualização:** 13/11/2026, pelo Claude, ao implementar os primeiros passos do orçamento (ADR-0020 §8), sem commit.
+- **Última atualização:** 13/11/2026, pelo Claude, ao juntar os primeiros passos na `branch-do-duds` local.
 - **Pasta:** `C:\Users\eduka\Documents\Codex\2026-11-06\https-github-com-gestao-ambiental-gestao\work\Gestao-ambiental-orcamentos`.
-- **Branch:** `feature/primeiros-passos-orcamento`, só local.
-  - Foi criada a partir de `local/orcamentos-fluent` e levou as alterações sem commit (fatias 2 e 3 do ADR-0019 e o trabalho do Codex). A `local/orcamentos-fluent` continua no commit `06e079a`.
-  - Sem push e sem PR. Commit só quando o Eduardo pedir.
+- **Branch de trabalho:** `branch-do-duds`, só local. É a branch principal do Eduardo: as funções novas entram nela, nunca na `main`.
+  - Foi criada a partir da `main` do `origin` (`c2813c1`), sem acompanhar a `main`, e recebeu a `feature/primeiros-passos-orcamento` por merge.
+  - A `feature/primeiros-passos-orcamento` tem o commit `2e1c670` (primeiros passos e fatias 2 e 3 do ADR-0019) em cima da `local/orcamentos-fluent`, que continua no `06e079a`.
+  - **Sem push e sem PR, por enquanto.** O GitHub recusou criar a `branch-do-duds` no `origin` (erro 403): a conta `edukarnopp3` não tem escrita no `Gestao-ambiental/Gestao-ambiental`. O Eduardo vai pedir acesso; até lá, tudo fica local. O `gh` também não está logado nesta máquina.
+  - Commit só quando o Eduardo pedir.
 - **Fluxo de branches** (combinado em 13/11/2026):
-  - uma branch por função nova, no repositório principal (`origin`);
-  - PR para uma branch principal do Eduardo (ex.: `branch-do-duds`; nome a confirmar), nunca para a `main`.
+  - uma branch por função nova, criada a partir da `branch-do-duds`;
+  - a função entra na `branch-do-duds` (hoje por merge local; com acesso, por PR no `origin`), nunca na `main`.
+  - Com acesso: criar a `branch-do-duds` no `origin`, enviar as branches e abrir os PRs para ela. O envio leva os 20 commits do módulo de orçamentos que nunca saíram desta máquina, inclusive os valores da simulação da Envora em testes e documentos; o Eduardo autorizou enviar assim.
 
 ## 1. Onde estamos
 
@@ -20,10 +23,10 @@
 | Textos do segundo teste com os 20 donos | Feito e commitado (mesmo commit) |
 | ADR-0019 (usabilidade), escrito pelo ChatGPT, com as respostas do Eduardo na seção 11 | Feito e commitado (mesmo commit) |
 | ADR-0019, fatia 1: textos e leitura | Feito e commitado (mesmo commit; seção 3) |
-| ADR-0019, fatia 2: primeira configuração | Feito, **sem commit** (seção 3b) |
-| ADR-0019, fatia 3: cartões no celular e tabela do notebook | Feito, **sem commit** (seção 3c) |
+| ADR-0019, fatia 2: primeira configuração | Feito e commitado em `2e1c670` (seção 3b) |
+| ADR-0019, fatia 3: cartões no celular e tabela do notebook | Feito e commitado em `2e1c670` (seção 3c) |
 | ADR-0019, fatias 4 a 6 | A fazer: a próxima é a **fatia 4, ART/RRT** (seção 4) |
-| Primeiros passos do orçamento (tela de configuração inicial) | Feito localmente, **sem commit**: ADR-0020 §8 e seção 4b. As escolhas do ADR-0020 §8.3 foram confirmadas pelo Eduardo; falta o job `banco` do CI |
+| Primeiros passos do orçamento (tela de configuração inicial) | Feito e commitado em `2e1c670`, já na `branch-do-duds` local: ADR-0020 §8 e seção 4b. As escolhas do ADR-0020 §8.3 foram confirmadas pelo Eduardo; falta o job `banco` do CI |
 
 ## 2. O que entrou no último commit
 
@@ -165,7 +168,7 @@ As respostas do Eduardo estão no ADR-0019, seção 11; todas seguem a recomenda
 
 O que ficou para depois e o que nunca entra está no ADR-0019, §8 (Anexo B), e no ADR-0018. Exemplos de "depois": unidades de nicho, envio por e-mail ou WhatsApp, exportar para Excel, contrato recorrente.
 
-## 4b. Primeiros passos do orçamento (feito localmente, sem commit)
+## 4b. Primeiros passos do orçamento (feito e commitado, só local)
 
 **Estado em 13/11/2026:** o Codex especificou (ADR-0020 §1 a §6) e começou o banco. O Claude revisou, corrigiu e implementou a tela; está tudo no ADR-0020 §8.
 
@@ -263,6 +266,10 @@ Ao mudar uma RPC, a demo (`apps/web/demo-local/supabase-demo.ts`) precisa imitar
 
 ## 8. Registro do que foi feito (mais recente em cima)
 
+- **13/11/2026, Claude, branches:**
+  - commit `2e1c670` na `feature/primeiros-passos-orcamento`;
+  - o envio ao `origin` foi recusado (403, sem permissão de escrita) e o Eduardo pediu para fazer tudo local por enquanto;
+  - criada a `branch-do-duds` local a partir da `main` do `origin`, com a função juntada por merge.
 - **13/11/2026, Eduardo:** confirmou as oito escolhas de implementação dos primeiros passos (ADR-0020 §8.3).
 - **13/11/2026, Claude, primeiros passos (sem commit, branch `feature/primeiros-passos-orcamento`):**
   - **Revisão do Codex:** nove problemas no banco, corrigidos na mesma migration, que ainda não tinha sido aplicada fora do PGlite (ADR-0020 §8.1). Por exemplo:
