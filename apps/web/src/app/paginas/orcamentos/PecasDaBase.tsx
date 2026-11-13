@@ -7,6 +7,8 @@ import {
   formatarReais,
   lerDuracao,
   MAXIMO_DE_FAIXAS,
+  PROFISSOES,
+  rotuloDaProfissao,
   resumoDaPessoa,
   UNIDADES_COM_FAIXAS,
   UNIDADES_DE_COBRANCA,
@@ -15,10 +17,11 @@ import {
   type UnidadeDeCobranca,
 } from '@gestao-ambiental/domain'
 import { Fragment, type ReactNode } from 'react'
+import { Link } from 'react-router'
 
+import { SelecaoDaLista } from '@/components/selecao-da-lista'
 import { Botao } from '@/components/ui/botao'
 import { BotaoIcone } from '@/components/ui/botao-icone'
-import { CaixaSelecao } from '@/components/ui/caixa-selecao'
 import type { CustoDaProfissao } from '@/lib/api/orcamentos'
 import type { MembroAtivo } from '@/lib/api/perfil'
 
@@ -93,9 +96,6 @@ export function Equipe({
               <th scope="col" className={`${classeCabecalho} w-44`}>
                 Profissão
               </th>
-              <th scope="col" className={`${classeCabecalho} w-16 text-center`}>
-                Sócio
-              </th>
               <th scope="col" className={`${classeCabecalho} w-44`}>
                 Como recebe
               </th>
@@ -122,6 +122,8 @@ export function Equipe({
               const escolhidos = new Set(linhas.filter((x) => x.id !== p.id).map((x) => x.membroId))
               const opcoes = membros.filter((m) => !escolhidos.has(m.id))
               const membroSumiu = p.membroId !== '' && !membros.some((m) => m.id === p.membroId)
+              const doMembro = membros.find((m) => m.id === p.membroId)?.profissao ?? null
+              const profissaoDaPessoa = doMembro ? rotuloDaProfissao(doMembro) : null
               const numero = (
                 rotulo: string,
                 chave:
@@ -246,27 +248,19 @@ export function Equipe({
                     </select>
                   </td>
                   <td className={classeCelula}>
-                    <input
-                      aria-label={`Profissão da linha ${n}`}
-                      list="profissoes-da-consultoria"
-                      placeholder="Ex.: Biólogo"
-                      className={classeCampo}
-                      value={p.profissao}
-                      onChange={(e) => {
-                        const valor = e.target.value
-                        aoMudar(p.id, (x) => ({ ...x, profissao: valor }))
-                      }}
-                    />
-                  </td>
-                  <td className={`${classeCelula} text-center`}>
-                    <CaixaSelecao
-                      rotulo={<span className="sr-only">Sócio, com pró-labore, na linha {n}</span>}
-                      checked={p.socio}
-                      onChange={(e) => {
-                        const marcado = e.target.checked
-                        aoMudar(p.id, (x) => ({ ...x, socio: marcado }))
-                      }}
-                    />
+                    {/* Profissão vem do cadastro da pessoa (Equipe), sem digitar (ADR-0021). */}
+                    <span className="flex min-h-(--size-control) flex-col justify-center">
+                      <span aria-label={`Profissão da linha ${n}`}>
+                        {profissaoDaPessoa ??
+                          (p.profissao.trim() ? `${p.profissao.trim()} (antigo)` : 'Não informada')}
+                      </span>
+                      {profissaoDaPessoa ? null : (
+                        <Link to="/configuracoes/equipe" className="text-xs">
+                          Definir em Equipe{' '}
+                          <span className="sr-only">a profissão da linha {n}</span>
+                        </Link>
+                      )}
+                    </span>
                   </td>
                   <td className={classeCelula}>
                     <select
@@ -352,10 +346,6 @@ export function Equipe({
         <CartaoDoResultado
           rotulo="Horas da equipe por mês"
           valor={previa ? `${textoDasHoras(previa.horasFaturaveisMes)} h` : 'pendente'}
-        />
-        <CartaoDoResultado
-          rotulo="Remuneração dos sócios (pró-labore)"
-          valor={previa ? formatarReais(previa.remuneracaoDosSociosCentavos) : 'pendente'}
         />
         {custoPorProfissao.map((c) => (
           <CartaoDoResultado
@@ -575,12 +565,10 @@ export function ContasDoMes({
  */
 export function TabelaDePrecos({
   horas,
-  profissoes,
   comAtalhoAceamb = true,
   aoMudar,
 }: {
   horas: readonly LinhaHora[]
-  profissoes: readonly string[]
   /**
    * Atalho histórico da tabela ACEAMB em Custos e taxas. Os primeiros passos não oferecem tabela
    * de referência: cada consultoria digita os próprios preços (ADR-0020).
@@ -592,16 +580,11 @@ export function TabelaDePrecos({
     <>
       <p className="max-w-3xl text-xs text-(--text-subtle)">
         Quanto vocês cobram do cliente, do jeito que cobram: por hora, por m², por hectare, por
-        diária ou campanha de campo, ou um pacote com preço fechado (ex.: Eng. ambiental · Júnior
-        por hora; Arquiteta · Projeto por m²; Bióloga · Campo por diária). Cada serviço do orçamento
-        escolhe uma linha. O tempo por unidade é opcional: ele sugere as horas do serviço, que
-        estimam o custo e a carga da equipe.
+        diária ou campanha de campo, ou um pacote com preço fechado (ex.: Engenheiro ambiental ·
+        Júnior por hora; Arquiteto e urbanista · Projeto por m²; Biólogo · Campo por diária). Cada
+        serviço do orçamento escolhe uma linha. O tempo por unidade é opcional: ele sugere as horas
+        do serviço, que estimam o custo e a carga da equipe.
       </p>
-      <datalist id="profissoes-da-consultoria">
-        {profissoes.map((nome) => (
-          <option key={nome} value={nome} />
-        ))}
-      </datalist>
       {horas.length > 0 ? (
         <div className="relative overflow-x-auto">
           <table className="w-full min-w-[1100px] border-collapse corpo">
@@ -648,14 +631,17 @@ export function TabelaDePrecos({
                   <Fragment key={l.id}>
                     <tr>
                       <td className={classeCelula}>
-                        <input
+                        {/* Profissão da lista fixa do Grama; texto antigo aparece até trocar. */}
+                        <SelecaoDaLista
                           aria-label={`Profissão da hora ${n}`}
-                          list="profissoes-da-consultoria"
+                          lista={PROFISSOES}
+                          valor={PROFISSOES.find((x) => x.rotulo === l.profissao)?.codigo ?? ''}
+                          valorAntigo={l.profissao.trim() || null}
+                          aria-invalid={l.profissao.trim() === '' || undefined}
                           className={classeCampo}
-                          value={l.profissao}
-                          onChange={(e) => {
-                            const valor = e.target.value
-                            mudarHora((x) => ({ ...x, profissao: valor }))
+                          aoMudar={(codigo) => {
+                            const rotulo = codigo ? rotuloDaProfissao(codigo) : ''
+                            mudarHora((x) => ({ ...x, profissao: rotulo }))
                           }}
                         />
                       </td>

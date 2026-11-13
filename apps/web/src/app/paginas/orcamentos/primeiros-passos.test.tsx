@@ -181,9 +181,7 @@ async function escolherPessoa(
 }
 
 function chamadas(nome: string): Record<string, unknown>[] {
-  return falso.cliente.rpc.mock.calls
-    .filter(([n]) => n === nome)
-    .map(([, args]) => args ?? {})
+  return falso.cliente.rpc.mock.calls.filter(([n]) => n === nome).map(([, args]) => args ?? {})
 }
 
 describe('primeiros passos do orçamento (ADR-0020)', () => {
@@ -297,7 +295,10 @@ describe('primeiros passos do orçamento (ADR-0020)', () => {
     // Passo 3: preço em branco não vira zero; nenhuma tabela de referência é oferecida.
     expect(screen.queryByRole('button', { name: /ACEAMB/ })).not.toBeInTheDocument()
     await usuario.click(screen.getByRole('button', { name: 'Adicionar preço' }))
-    await usuario.type(screen.getByLabelText('Profissão da hora 1'), 'Engenheiro')
+    await usuario.selectOptions(
+      screen.getByLabelText('Profissão da hora 1'),
+      'Engenheiro ambiental',
+    )
     await usuario.type(screen.getByLabelText('Atividade ou nível da hora 1'), 'Licenciamento')
     await usuario.click(screen.getByRole('button', { name: 'Salvar e continuar' }))
     expect(await screen.findByRole('alert')).toHaveTextContent(
@@ -313,7 +314,7 @@ describe('primeiros passos do orçamento (ADR-0020)', () => {
         valor_visita_centavos: null,
         custo_km_centavos: null,
         horas_venda: [
-          { profissao: 'Engenheiro', atividade: 'Licenciamento', valor_centavos: 20_000 },
+          { profissao: 'Engenheiro ambiental', atividade: 'Licenciamento', valor_centavos: 20_000 },
         ],
       },
     })

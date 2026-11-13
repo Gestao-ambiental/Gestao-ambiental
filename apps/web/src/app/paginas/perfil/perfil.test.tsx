@@ -15,7 +15,7 @@ function cenario(membro: Record<string, unknown> = {}): Cenario {
     sessao: ana,
     rpc: {
       meus_vinculos: { data: [vinculoFalso('Filtroville', 'equipe', { membro_id: 'm-ana' })] },
-      definir_cargo: { data: null },
+      definir_profissao_e_cargo: { data: null },
       registrar_foto_membro: (args) => ({ data: args.p_versao_id }),
       remover_foto_membro: { data: null },
     },
@@ -27,7 +27,7 @@ function cenario(membro: Record<string, unknown> = {}): Cenario {
   }
 }
 
-describe('meu perfil: foto e cargo', () => {
+describe('meu perfil: foto, profissão e cargo', () => {
   beforeEach(() => {
     falso.reiniciar(cenario())
   })
@@ -42,19 +42,29 @@ describe('meu perfil: foto e cargo', () => {
     })
   })
 
-  it('salva o cargo da própria pessoa', async () => {
+  it('escolhe profissão e cargo nas listas, sem digitar (ADR-0021)', async () => {
     const usuario = userEvent.setup()
     renderizarApp('/perfil')
 
-    const campo = await screen.findByRole('textbox', { name: 'Cargo' })
-    const salvar = screen.getByRole('button', { name: 'Salvar cargo' })
+    const profissao = await screen.findByRole('combobox', { name: 'Profissão' })
+    const salvar = screen.getByRole('button', { name: 'Salvar profissão e cargo' })
     expect(salvar).toBeDisabled()
-    await usuario.type(campo, 'Analista ambiental')
+    expect(screen.queryByRole('textbox', { name: 'Cargo' })).not.toBeInTheDocument()
+    await usuario.selectOptions(profissao, 'Engenheiro ambiental')
+    await usuario.selectOptions(screen.getByRole('combobox', { name: 'Cargo' }), 'Estagiário')
     await usuario.click(salvar)
-    expect(falso.cliente.rpc).toHaveBeenCalledWith('definir_cargo', {
+    expect(falso.cliente.rpc).toHaveBeenCalledWith('definir_profissao_e_cargo', {
       p_membro_id: 'm-ana',
-      p_cargo: 'Analista ambiental',
+      p_profissao: 'eng_ambiental',
+      p_cargo: 'estagiario',
     })
+  })
+
+  it('cargo digitado antes aparece como antigo até escolher um da lista', async () => {
+    falso.reiniciar(cenario({ cargo_antigo: 'Analista ambiental' }))
+    renderizarApp('/perfil')
+    const cargo = await screen.findByRole('combobox', { name: 'Cargo' })
+    expect(cargo).toHaveDisplayValue('Analista ambiental (antigo, escolha na lista)')
   })
 
   it('envia a foto como objeto novo e registra a versão', async () => {
@@ -99,7 +109,7 @@ describe('meu perfil: foto e cargo', () => {
   it('com foto: mostra a imagem e permite tirar', async () => {
     falso.reiniciar(
       cenario({
-        cargo: 'Analista ambiental',
+        cargo: 'analista_pleno',
         foto: { excluido_em: null, versao: { caminho: 'c-Filtroville/membro/f1.png' } },
       }),
     )
@@ -116,7 +126,7 @@ describe('meu perfil: foto e cargo', () => {
 
   it('não tem violações de acessibilidade detectáveis pelo axe', async () => {
     const { container } = renderizarApp('/perfil')
-    await screen.findByRole('textbox', { name: 'Cargo' })
+    await screen.findByRole('combobox', { name: 'Cargo' })
     const resultado = await axe.run(container, { rules: { 'color-contrast': { enabled: false } } })
     expect(resultado.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([])
   })

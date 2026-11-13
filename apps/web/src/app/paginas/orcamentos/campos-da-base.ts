@@ -15,6 +15,8 @@ import {
   problemaDasFaixas,
   resumoDaPessoa,
   UNIDADES_COM_FAIXAS,
+  rotuloDaProfissao,
+  type CodigoProfissao,
   type ComposicaoDaEquipe,
   type FaixaDePreco,
   type FormaDeRecebimento,
@@ -77,11 +79,11 @@ export function usaFaixas(l: LinhaHora): boolean {
  */
 export const FONTE_ACEAMB = 'ACEAMB 2015 corrigida pelo IPCA (ago/2026)'
 export const HORAS_ACEAMB_2026 = [
-  { profissao: 'Eng. ambiental e sanitarista', atividade: 'Júnior', valor: '214,19' },
-  { profissao: 'Eng. ambiental e sanitarista', atividade: 'Sênior', valor: '356,98' },
-  { profissao: 'Eng. ambiental e sanitarista', atividade: 'Máster', valor: '446,22' },
+  { profissao: 'Engenheiro ambiental e sanitarista', atividade: 'Júnior', valor: '214,19' },
+  { profissao: 'Engenheiro ambiental e sanitarista', atividade: 'Sênior', valor: '356,98' },
+  { profissao: 'Engenheiro ambiental e sanitarista', atividade: 'Máster', valor: '446,22' },
   {
-    profissao: 'Eng. ambiental e sanitarista',
+    profissao: 'Engenheiro ambiental e sanitarista',
     atividade: 'Avaliação e perícia ambiental',
     valor: '356,98',
   },
@@ -353,8 +355,23 @@ export function contaDaHoraDeCusto(r: RemuneracaoDaPessoa, horaCentavos: number)
   return hora
 }
 
-/** Lê a equipe digitada. Devolve a primeira mensagem de erro, se houver. */
-export function lerEquipe(linhas: readonly LinhaPessoa[]): PessoaDaBase[] | string {
+/** Profissão (rótulo da lista) de cada membro que tem uma definida (ADR-0021). */
+export function profissoesDosMembros(
+  membros: readonly { id: string; profissao: CodigoProfissao | null }[],
+): ReadonlyMap<string, string> {
+  return new Map(
+    membros.flatMap((m) => (m.profissao ? [[m.id, rotuloDaProfissao(m.profissao)] as const] : [])),
+  )
+}
+
+/**
+ * Lê a equipe digitada. Devolve a primeira mensagem de erro, se houver. A profissão vem do membro
+ * quando ele tem uma (o banco faz o mesmo); sem ela, fica o texto antigo da linha.
+ */
+export function lerEquipe(
+  linhas: readonly LinhaPessoa[],
+  profissaoDoMembro: ReadonlyMap<string, string> = new Map(),
+): PessoaDaBase[] | string {
   const equipe: PessoaDaBase[] = []
   for (const [indice, l] of linhas.entries()) {
     const n = String(indice + 1)
@@ -374,7 +391,7 @@ export function lerEquipe(linhas: readonly LinhaPessoa[]): PessoaDaBase[] | stri
       membroId: l.membroId,
       descricao: '',
       socio: l.socio,
-      profissao: l.profissao.trim() || null,
+      profissao: profissaoDoMembro.get(l.membroId) ?? (l.profissao.trim() || null),
     })
   }
   return equipe

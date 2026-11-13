@@ -473,14 +473,14 @@ isOneToOne: false
                   ]
                 },"membro": {
                   Row: {
-                    "cargo": string | null,"consultoria_id": string,"criado_em": string,"desligado_em": string | null,"email": string,"foto_documento_id": string | null,"id": string,"nome": string,"papel": Database["public"]['Enums']["papel_membro"],"situacao": Database["public"]['Enums']["situacao_membro"],"usuario_id": string
+                    "cargo": string | null,"cargo_antigo": string | null,"profissao": string | null,"consultoria_id": string,"criado_em": string,"desligado_em": string | null,"email": string,"foto_documento_id": string | null,"id": string,"nome": string,"papel": Database["public"]['Enums']["papel_membro"],"situacao": Database["public"]['Enums']["situacao_membro"],"usuario_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "cargo"?: string | null,"consultoria_id": string,"criado_em"?: string,"desligado_em"?: string | null,"email": string,"foto_documento_id"?: string | null,"id"?: string,"nome": string,"papel": Database["public"]['Enums']["papel_membro"],"situacao"?: Database["public"]['Enums']["situacao_membro"],"usuario_id": string
+                    "cargo"?: string | null,"cargo_antigo"?: string | null,"profissao"?: string | null,"consultoria_id": string,"criado_em"?: string,"desligado_em"?: string | null,"email": string,"foto_documento_id"?: string | null,"id"?: string,"nome": string,"papel": Database["public"]['Enums']["papel_membro"],"situacao"?: Database["public"]['Enums']["situacao_membro"],"usuario_id": string
                   }
                   Update: {
-                    "cargo"?: string | null,"consultoria_id"?: string,"criado_em"?: string,"desligado_em"?: string | null,"email"?: string,"foto_documento_id"?: string | null,"id"?: string,"nome"?: string,"papel"?: Database["public"]['Enums']["papel_membro"],"situacao"?: Database["public"]['Enums']["situacao_membro"],"usuario_id"?: string
+                    "cargo"?: string | null,"cargo_antigo"?: string | null,"profissao"?: string | null,"consultoria_id"?: string,"criado_em"?: string,"desligado_em"?: string | null,"email"?: string,"foto_documento_id"?: string | null,"id"?: string,"nome"?: string,"papel"?: Database["public"]['Enums']["papel_membro"],"situacao"?: Database["public"]['Enums']["situacao_membro"],"usuario_id"?: string
                   }
                   Relationships: [
                     {
@@ -756,8 +756,8 @@ isOneToOne: false
 "definir_antecedencia_renovacao":
 { Args: { "p_antecedencia": number,"p_plano_id": string,"p_row_version": number }; Returns: number
                            },
-"definir_cargo":
-{ Args: { "p_cargo": string,"p_membro_id": string }; Returns: undefined
+"definir_profissao_e_cargo":
+{ Args: { "p_cargo": string | null,"p_membro_id": string,"p_profissao": string | null }; Returns: undefined
                            },
 "definir_responsavel":
 { Args: { "p_condicionante_id": string,"p_membro_id": string }; Returns: undefined

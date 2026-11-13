@@ -226,3 +226,14 @@ export type {
   PessoaDoRascunho,
   ResumoDaConfiguracao,
 } from './primeiros-passos-orcamento'
+
+export {
+  CARGOS,
+  PROFISSOES,
+  cargoDoCodigo,
+  gruposDaLista,
+  profissaoDoCodigo,
+  rotuloDaProfissao,
+  rotuloDoCargo,
+} from './profissao-e-cargo'
+export type { CodigoCargo, CodigoProfissao, ItemDaLista } from './profissao-e-cargo'

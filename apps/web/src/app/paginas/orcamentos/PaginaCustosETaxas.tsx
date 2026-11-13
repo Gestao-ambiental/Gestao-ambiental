@@ -45,6 +45,7 @@ import {
   lerHorasDeVenda,
   linhasDe,
   novaPessoa,
+  profissoesDosMembros,
   type LinhaConta,
   type LinhaHora,
   type LinhaPessoa,
@@ -102,6 +103,7 @@ function lerCampos(
   linhas: readonly LinhaPessoa[],
   linhasDeContas: readonly LinhaConta[],
   linhasDeHoras: readonly LinhaHora[],
+  profissaoDoMembro: ReadonlyMap<string, string>,
 ): { base: BaseDeCustosDaConsultoria; composicao: ComposicaoDaEquipe | null } | string {
   const contas = lerContas(linhasDeContas)
   if (typeof contas === 'string') return contas
@@ -129,7 +131,7 @@ function lerCampos(
   let equipe: PessoaDaBase[] = []
   let composicao: ComposicaoDaEquipe | null = null
   if (linhas.length > 0) {
-    const lida = lerEquipe(linhas)
+    const lida = lerEquipe(linhas, profissaoDoMembro)
     if (typeof lida === 'string') return lida
     equipe = lida
     composicao = composicaoDe(equipe)
@@ -232,21 +234,15 @@ function Formulario({
   const [margensConfirmadas, setMargensConfirmadas] = useState(base !== null)
 
   const pelaEquipe = equipe.length > 0
-  const lido = lerCampos(c, equipe, contas, horas)
-  // Profissões já usadas, para sugerir o mesmo nome na tabela e na equipe.
-  const profissoes = [
-    ...new Set(
-      [...horas.map((h) => h.profissao.trim()), ...equipe.map((p) => p.profissao.trim())].filter(
-        Boolean,
-      ),
-    ),
-  ]
+  // A profissão de cada pessoa vem do cadastro dela em Equipe (ADR-0021).
+  const profissaoDoMembro = profissoesDosMembros(membros.data ?? [])
+  const lido = lerCampos(c, equipe, contas, horas, profissaoDoMembro)
   const custoPorProfissao = typeof lido === 'string' ? [] : lido.base.custoHoraPorProfissao
   const totalDasContas = contas.reduce((soma, l) => soma + (lerReaisOuZero(l.valor) ?? 0), 0)
   // Prévia da composição mesmo com algum campo ainda incompleto (linhas inválidas ficam de fora).
   const previa = pelaEquipe
     ? (() => {
-        const lida = lerEquipe(equipe)
+        const lida = lerEquipe(equipe, profissaoDoMembro)
         return typeof lida === 'string' ? null : composicaoDe(lida)
       })()
     : null
@@ -521,7 +517,6 @@ function Formulario({
         <Grupo id="grupo-precos" titulo="Tabela de preços">
           <TabelaDePrecos
             horas={horas}
-            profissoes={profissoes}
             aoMudar={(alterar) => {
               setHoras(alterar)
               setAviso(null)

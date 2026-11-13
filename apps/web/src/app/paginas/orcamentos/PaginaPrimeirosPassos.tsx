@@ -68,6 +68,7 @@ import {
   contasDe,
   CONTAS_SUGERIDAS,
   novaPessoa,
+  profissoesDosMembros,
   usaFaixas,
   type LinhaConta,
   type LinhaHora,
@@ -299,13 +300,16 @@ function lerPercentualOuNulo(texto: string): number | null | undefined {
   return lerPercentual(texto) ?? undefined
 }
 
-function lerFormEquipe(f: FormEquipe): PassoEquipe | string {
+function lerFormEquipe(
+  f: FormEquipe,
+  profissaoDoMembro: ReadonlyMap<string, string>,
+): PassoEquipe | string {
   if (f.modo === 'manual') {
     const hora = lerEstimativa(f.horaTecnica)
     if (hora === undefined) return 'Custo da hora técnica: valor inválido. Use, por exemplo, 95,00.'
     return { modo: 'manual', equipe: [], horaTecnicaCentavos: hora }
   }
-  const equipe = lerEquipe(f.linhas)
+  const equipe = lerEquipe(f.linhas, profissaoDoMembro)
   if (typeof equipe === 'string') return equipe
   return { modo: 'equipe', equipe, horaTecnicaCentavos: null }
 }
@@ -401,6 +405,8 @@ function Fluxo({
     queryKey: ['membros-ativos', consultoriaId],
     queryFn: () => listarMembrosAtivos(consultoriaId),
   })
+  // A profissão de cada pessoa vem do cadastro dela em Equipe (ADR-0021).
+  const profissaoDoMembro = profissoesDosMembros(membros.data ?? [])
 
   const [rascunho, setRascunho] = useState<RascunhoDaConfiguracao | null>(estado.rascunho)
   const dados: DadosDoRascunho = rascunho?.dados ?? {}
@@ -480,7 +486,7 @@ function Fluxo({
   function passoAtual(e: Etapa): PassoSalvo | string {
     switch (e) {
       case 1: {
-        const lido = lerFormEquipe(equipe)
+        const lido = lerFormEquipe(equipe, profissaoDoMembro)
         return typeof lido === 'string' ? lido : { etapa: 1, dados: lido }
       }
       case 2: {
@@ -595,12 +601,12 @@ function Fluxo({
   }
 
   // Leitura do passo atual para as pendências e prévias (o que ainda não foi salvo também conta).
-  const lidoEquipe = lerFormEquipe(equipe)
+  const lidoEquipe = lerFormEquipe(equipe, profissaoDoMembro)
   const equipeLida = typeof lidoEquipe === 'string' ? null : lidoEquipe
   const previa: ComposicaoDaEquipe | null =
     equipe.modo === 'equipe'
       ? (() => {
-          const lida = lerEquipe(equipe.linhas)
+          const lida = lerEquipe(equipe.linhas, profissaoDoMembro)
           return typeof lida === 'string' ? null : composicaoDe(lida)
         })()
       : null
@@ -617,15 +623,6 @@ function Fluxo({
 
   const salvoNoRascunho = (e: Etapa): boolean => rascunho?.passosSalvos.includes(e) ?? false
 
-  const profissoes = [
-    ...new Set(
-      [
-        ...precos.horas.map((h) => h.profissao.trim()),
-        ...equipe.linhas.map((p) => p.profissao.trim()),
-      ].filter(Boolean),
-    ),
-  ]
-
   let conteudo: ReactNode
   if (etapa === 1) {
     conteudo = (
@@ -634,7 +631,6 @@ function Fluxo({
         membros={membros.data ?? []}
         membrosCarregando={membros.isPending}
         previa={previa}
-        profissoes={profissoes}
         aoMudar={(alterar) => {
           setEquipe(alterar)
           marcarAlterado(1)
@@ -664,7 +660,6 @@ function Fluxo({
     conteudo = (
       <PassoDosPrecos
         form={precos}
-        profissoes={profissoes}
         aoMudar={(alterar) => {
           setPrecos(alterar)
           marcarAlterado(3)
@@ -960,7 +955,6 @@ function PassoDaEquipe({
   membros,
   membrosCarregando,
   previa,
-  profissoes,
   aoMudar,
   aoDigitarHoras,
 }: {
@@ -968,11 +962,10 @@ function PassoDaEquipe({
   membros: readonly MembroAtivo[]
   membrosCarregando: boolean
   previa: ComposicaoDaEquipe | null
-  profissoes: readonly string[]
   aoMudar: (alterar: (f: FormEquipe) => FormEquipe) => void
   aoDigitarHoras: (horas: string) => void
 }) {
-  const lida = form.modo === 'equipe' ? lerEquipe(form.linhas) : null
+  const lida = form.modo === 'equipe' ? lerEquipe(form.linhas, profissoesDosMembros(membros)) : null
   const custoPorProfissao =
     lida && typeof lida !== 'string' ? custoHoraPorProfissao(linhasMensaisDaEquipe(lida)) : []
   return (
@@ -981,11 +974,6 @@ function PassoDaEquipe({
         Quem trabalha na consultoria e como recebe. O Grama só divide o que você informa: nenhum
         salário, encargo ou valor é estimado. Confirme encargos e benefícios com a contabilidade.
       </p>
-      <datalist id="profissoes-da-consultoria">
-        {profissoes.map((nome) => (
-          <option key={nome} value={nome} />
-        ))}
-      </datalist>
       {form.modo === 'equipe' ? (
         <Equipe
           linhas={form.linhas}
@@ -1206,11 +1194,9 @@ function PassoDasContas({
 
 function PassoDosPrecos({
   form,
-  profissoes,
   aoMudar,
 }: {
   form: FormPrecos
-  profissoes: readonly string[]
   aoMudar: (alterar: (f: FormPrecos) => FormPrecos) => void
 }) {
   return (
@@ -1221,7 +1207,6 @@ function PassoDosPrecos({
       </p>
       <TabelaDePrecos
         horas={form.horas}
-        profissoes={profissoes}
         comAtalhoAceamb={false}
         aoMudar={(alterar) => {
           aoMudar((f) => ({ ...f, horas: alterar(f.horas) }))

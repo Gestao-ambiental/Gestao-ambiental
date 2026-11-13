@@ -1,4 +1,10 @@
-import { impedimentoDoVinculo, situacaoDoConvite } from '@gestao-ambiental/domain'
+import {
+  impedimentoDoVinculo,
+  rotuloDaProfissao,
+  situacaoDoConvite,
+  type CodigoCargo,
+  type CodigoProfissao,
+} from '@gestao-ambiental/domain'
 import {
   useInfiniteQuery,
   useMutation,
@@ -35,9 +41,11 @@ import {
   type ConvitePendente,
   type Membro,
 } from '@/lib/api/acesso'
+import { definirProfissaoECargo } from '@/lib/api/perfil'
 import { formatarInstanteComoData } from '@/lib/datas'
 import { ehSemPermissao, mensagemDoErro } from '@/lib/erros'
 
+import { CamposProfissaoECargo } from './CamposProfissaoECargo'
 import { DialogoConvidar, type ResultadoConvite } from './DialogoConvidar'
 
 const MOTIVO_ULTIMA_GESTAO = 'A consultoria precisa de pelo menos uma pessoa na Gestão.'
@@ -103,6 +111,7 @@ function EquipeDaGestao() {
   const queryClient = useQueryClient()
   const [convidarAberto, setConvidarAberto] = useState(false)
   const [desligando, setDesligando] = useState<Membro | null>(null)
+  const [editando, setEditando] = useState<Membro | null>(null)
   const [aviso, setAviso] = useState<Aviso>(null)
 
   const membros = useInfiniteQuery({
@@ -237,6 +246,14 @@ function EquipeDaGestao() {
             </span>
           </DropdownMenuItem>
           <DropdownMenuItem
+            onSelect={() => {
+              setAviso(null)
+              setEditando(membro)
+            }}
+          >
+            Profissão e cargo
+          </DropdownMenuItem>
+          <DropdownMenuItem
             disabled={impedimentoDesligar !== null}
             onSelect={() => {
               setAviso(null)
@@ -262,6 +279,24 @@ function EquipeDaGestao() {
       <Selo tom={membro.papel === 'gestao' ? 'sucesso' : 'padrao'}>
         {NOMES_PAPEL[membro.papel]}
       </Selo>
+    )
+  }
+
+  /** Profissão e cargo em texto; o que falta aparece como "não informado". */
+  function profissaoECargoDoMembro(membro: Membro) {
+    return (
+      <span className="flex min-w-0 flex-col">
+        <span className="truncate">
+          {membro.profissao ? rotuloDaProfissao(membro.profissao) : 'Profissão não informada'}
+        </span>
+        <span className="truncate text-xs text-(--text-subtle)">
+          {membro.cargoCodigo
+            ? membro.cargo
+            : membro.cargoAntigo
+              ? `${membro.cargoAntigo} (cargo antigo)`
+              : 'Cargo não informado'}
+        </span>
+      </span>
     )
   }
 
@@ -366,6 +401,9 @@ function EquipeDaGestao() {
                       E-mail
                     </th>
                     <th scope="col" className={classeCabecalho}>
+                      Profissão e cargo
+                    </th>
+                    <th scope="col" className={classeCabecalho}>
                       Papel
                     </th>
                     <th scope="col" className={classeCabecalho}>
@@ -381,6 +419,9 @@ function EquipeDaGestao() {
                     <tr key={membro.id} className="last:[&>td]:border-b-0">
                       <td className={classeCelula}>{nomeDoMembro(membro)}</td>
                       <td className={`${classeCelula} text-(--text-subtle)`}>{membro.email}</td>
+                      <td className={`${classeCelula} max-w-56`}>
+                        {profissaoECargoDoMembro(membro)}
+                      </td>
                       <td className={classeCelula}>{seloPapel(membro)}</td>
                       <td className={`${classeCelula} whitespace-nowrap text-(--text-subtle)`}>
                         {formatarInstanteComoData(membro.criadoEm, atual.fuso)}
@@ -403,6 +444,7 @@ function EquipeDaGestao() {
                   <span className="flex min-w-0 flex-1 flex-col gap-(--space-025)">
                     {nomeDoMembro(membro)}
                     <span className="truncate text-xs text-(--text-subtle)">{membro.email}</span>
+                    {profissaoECargoDoMembro(membro)}
                     <span>{seloPapel(membro)}</span>
                   </span>
                   {acoesDoMembro(membro)}
@@ -517,6 +559,24 @@ function EquipeDaGestao() {
         aoConvidar={aoConvidar}
       />
 
+      {editando ? (
+        <DialogoProfissaoECargo
+          key={editando.id}
+          membro={editando}
+          aoFechar={() => {
+            setEditando(null)
+          }}
+          aoSalvar={(membro) => {
+            setEditando(null)
+            setAviso({ tom: 'sucesso', texto: `Profissão e cargo de ${membro.nome} salvos.` })
+            void Promise.all([
+              atualizar(),
+              queryClient.invalidateQueries({ queryKey: ['membros-ativos', cid] }),
+            ])
+          }}
+        />
+      ) : null}
+
       <Dialogo
         aberto={desligando !== null}
         aoMudar={(aberto) => {
@@ -552,5 +612,66 @@ function EquipeDaGestao() {
         <p className="text-(--text-subtle)">Nada é apagado nem cancelado.</p>
       </Dialogo>
     </div>
+  )
+}
+
+/** Profissão e cargo de um membro, pela Gestão (ADR-0021). */
+function DialogoProfissaoECargo({
+  membro,
+  aoFechar,
+  aoSalvar,
+}: {
+  membro: Membro
+  aoFechar: () => void
+  aoSalvar: (membro: Membro) => void
+}) {
+  const [profissao, setProfissao] = useState<CodigoProfissao | ''>(membro.profissao ?? '')
+  const [cargo, setCargo] = useState<CodigoCargo | ''>(membro.cargoCodigo ?? '')
+  const salvar = useMutation({
+    mutationFn: () => definirProfissaoECargo(membro.id, profissao || null, cargo || null),
+    onSuccess: () => {
+      aoSalvar(membro)
+    },
+  })
+  return (
+    <Dialogo
+      aberto
+      aoMudar={(aberto) => {
+        if (!aberto) aoFechar()
+      }}
+      titulo={`Profissão e cargo de ${membro.nome}`}
+      descricao="Escolha nas listas. A profissão vale para o sistema inteiro, inclusive para o custo por profissão no orçamento."
+      acoes={
+        <>
+          <Botao onClick={aoFechar}>Cancelar</Botao>
+          <Botao
+            aparencia="primario"
+            disabled={salvar.isPending}
+            aria-busy={salvar.isPending || undefined}
+            onClick={() => {
+              salvar.mutate()
+            }}
+          >
+            {salvar.isPending ? 'Salvando…' : 'Salvar'}
+          </Botao>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-(--space-150)">
+        <CamposProfissaoECargo
+          profissao={profissao}
+          cargo={cargo}
+          cargoAntigo={membro.cargoAntigo}
+          desabilitado={salvar.isPending}
+          aoMudarProfissao={setProfissao}
+          aoMudarCargo={setCargo}
+        />
+        {salvar.error ? (
+          <MensagemSecao role="alert" tom="perigo">
+            {mensagemDoErro(salvar.error)}
+          </MensagemSecao>
+        ) : null}
+      </div>
+    </Dialogo>
   )
 }

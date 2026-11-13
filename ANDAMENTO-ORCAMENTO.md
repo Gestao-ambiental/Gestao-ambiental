@@ -266,6 +266,17 @@ Ao mudar uma RPC, a demo (`apps/web/demo-local/supabase-demo.ts`) precisa imitar
 
 ## 8. Registro do que foi feito (mais recente em cima)
 
+- **13/11/2026, Eduardo e Claude, profissão e cargo (ADR-0021, sem commit):**
+  - Eduardo decidiu: a profissão fica no membro; a profissão vem de uma lista fixa do Grama; o cargo também vira lista; a caixa "Sócio" sai de tudo;
+  - feito: a caixa "Sócio" e o cartão "Remuneração dos sócios" saíram da tela da equipe (Custos e taxas e primeiros passos); 61 testes das telas de orçamento verdes;
+  - listas aprovadas pelo Eduardo: 34 profissões e 11 cargos, fixos do Grama (ADR-0021 §3);
+  - feito:
+    - profissão e cargo no membro, com a migration `20261113150000` e os pgTAP `180` (reescrita) e `300` (nova);
+    - seleção no Perfil e na Equipe;
+    - na equipe do orçamento, a profissão vem da pessoa;
+    - na tabela de preços, a profissão é escolhida da lista;
+  - verificação: 690 testes do domínio, 220 da web, suíte completa de banco no PGlite, typecheck, ESLint e build verdes; demo conferida (Equipe e passo 1);
+  - falta: o de-para dos textos antigos (cargo e profissões já digitados), para o Eduardo revisar.
 - **13/11/2026, Claude, branches:**
   - commit `2e1c670` na `feature/primeiros-passos-orcamento`;
   - o envio ao `origin` foi recusado (403, sem permissão de escrita) e o Eduardo pediu para fazer tudo local por enquanto;

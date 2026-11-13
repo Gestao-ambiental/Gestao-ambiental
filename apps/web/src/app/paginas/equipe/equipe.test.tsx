@@ -83,8 +83,11 @@ describe('tela Equipe (ACC-02, ACC-03)', () => {
 
     await usuario.click(within(tabela).getByRole('button', { name: 'Ações de Eduardo Karnopp' }))
     const menu = await screen.findByRole('menu')
+    // Profissão e cargo continuam editáveis (ADR-0021); papel e desligamento, não.
     for (const item of within(menu).getAllByRole('menuitem')) {
-      expect(item).toHaveAttribute('aria-disabled', 'true')
+      if (item.textContent === 'Profissão e cargo')
+        expect(item).not.toHaveAttribute('aria-disabled')
+      else expect(item).toHaveAttribute('aria-disabled', 'true')
     }
     expect(
       within(menu).getAllByText('A consultoria precisa de pelo menos uma pessoa na Gestão.'),
@@ -178,5 +181,55 @@ describe('tela Equipe (ACC-02, ACC-03)', () => {
     await screen.findAllByText('gabriela@exemplo.test')
     const resultado = await axe.run(container, { rules: { 'color-contrast': { enabled: false } } })
     expect(resultado.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([])
+  })
+})
+
+describe('profissão e cargo na Equipe (ADR-0021)', () => {
+  beforeEach(() => {
+    falso.reiniciar({
+      sessao: eduardo,
+      rpc: {
+        meus_vinculos: { data: [vinculoFalso('Filtroville', 'gestao')] },
+        definir_profissao_e_cargo: { data: null },
+      },
+      tabelas: {
+        membro: [
+          { ...membro('m-Filtroville', 'Eduardo Karnopp', 'gestao'), profissao: 'eng_ambiental' },
+          { ...membro('ana', 'Ana Ribeiro', 'equipe'), cargo_antigo: 'Analista ambiental' },
+        ],
+        convite: [],
+      },
+    })
+  })
+
+  it('mostra profissão e cargo e a Gestão escolhe nas listas', async () => {
+    const usuario = userEvent.setup()
+    renderizarApp('/configuracoes/equipe')
+    const membros = await screen.findByRole('region', { name: 'Membros' })
+    const tabela = await within(membros).findByRole('table')
+    expect(within(tabela).getByText('Engenheiro ambiental')).toBeInTheDocument()
+    expect(within(tabela).getByText('Analista ambiental (cargo antigo)')).toBeInTheDocument()
+
+    await usuario.click(within(tabela).getByRole('button', { name: 'Ações de Ana Ribeiro' }))
+    await usuario.click(await screen.findByRole('menuitem', { name: 'Profissão e cargo' }))
+    const dialogo = await screen.findByRole('dialog', { name: 'Profissão e cargo de Ana Ribeiro' })
+    expect(within(dialogo).getByRole('combobox', { name: 'Cargo' })).toHaveDisplayValue(
+      'Analista ambiental (antigo, escolha na lista)',
+    )
+    await usuario.selectOptions(
+      within(dialogo).getByRole('combobox', { name: 'Profissão' }),
+      'Biólogo',
+    )
+    await usuario.selectOptions(
+      within(dialogo).getByRole('combobox', { name: 'Cargo' }),
+      'Analista pleno',
+    )
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Salvar' }))
+    expect(falso.cliente.rpc).toHaveBeenCalledWith('definir_profissao_e_cargo', {
+      p_membro_id: 'ana',
+      p_profissao: 'biologo',
+      p_cargo: 'analista_pleno',
+    })
+    expect(await screen.findByText('Profissão e cargo de Ana Ribeiro salvos.')).toBeInTheDocument()
   })
 })

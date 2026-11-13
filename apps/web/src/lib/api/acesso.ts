@@ -2,9 +2,17 @@
 // autorização é do banco (RLS e checagens nas funções). Erros sobem como vieram: a tela traduz
 // com lib/erros.
 
-import type { PapelMembro, SituacaoConviteGravada, SituacaoMembro } from '@gestao-ambiental/domain'
+import type {
+  CodigoCargo,
+  CodigoProfissao,
+  PapelMembro,
+  SituacaoConviteGravada,
+  SituacaoMembro,
+} from '@gestao-ambiental/domain'
 
 import { obterSupabase } from '@/lib/supabase'
+
+import { profissaoECargo } from './perfil'
 
 export const TAMANHO_PAGINA = 50
 
@@ -172,6 +180,11 @@ export interface Membro {
   id: string
   nome: string
   email: string
+  /** Profissão e cargo das listas fixas do Grama (ADR-0021); cargo antigo até o de-para. */
+  profissao: CodigoProfissao | null
+  cargo: string | null
+  cargoCodigo: CodigoCargo | null
+  cargoAntigo: string | null
   papel: PapelMembro
   situacao: SituacaoMembro
   criadoEm: string
@@ -186,7 +199,12 @@ export async function listarMembros(
   const inicio = pagina * TAMANHO_PAGINA
   const { data, error, count } = await obterSupabase()
     .from('membro')
-    .select('id, nome, email, papel, situacao, criado_em, desligado_em', { count: 'exact' })
+    .select(
+      'id, nome, email, papel, situacao, criado_em, desligado_em, profissao, cargo, cargo_antigo',
+      {
+        count: 'exact',
+      },
+    )
     .eq('consultoria_id', consultoriaId)
     .order('situacao', { ascending: true })
     .order('nome', { ascending: true })
@@ -197,6 +215,7 @@ export async function listarMembros(
       id: linha.id,
       nome: linha.nome,
       email: linha.email,
+      ...profissaoECargo(linha),
       papel: linha.papel,
       situacao: linha.situacao,
       criadoEm: linha.criado_em,

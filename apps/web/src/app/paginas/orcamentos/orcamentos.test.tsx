@@ -22,8 +22,22 @@ const eduardo = sessaoDe('eduardo@filtroville.test', 'Eduardo Karnopp')
 
 /** Membros ativos (tabela membro), para a equipe de Custos e taxas e o responsável do serviço. */
 const membros = [
-  { id: 'm-eduardo', nome: 'Eduardo Karnopp', papel: 'gestao', cargo: null, foto: null },
-  { id: 'm-helena', nome: 'Helena Costa', papel: 'equipe', cargo: null, foto: null },
+  {
+    id: 'm-eduardo',
+    nome: 'Eduardo Karnopp',
+    papel: 'gestao',
+    cargo: null,
+    profissao: 'eng_ambiental_sanitarista',
+    foto: null,
+  },
+  {
+    id: 'm-helena',
+    nome: 'Helena Costa',
+    papel: 'equipe',
+    cargo: null,
+    profissao: 'biologo',
+    foto: null,
+  },
 ]
 
 // Exemplo da auditoria de 10/11/2026: hora R$ 95, custo fixo R$ 30/h (9.600 ÷ 320), margem 30%,
@@ -1450,7 +1464,10 @@ describe('orçamentos (onda 5)', () => {
     await usuario.click(
       screen.getByRole('button', { name: 'Usar tabela ACEAMB corrigida (ago/2026)' }),
     )
-    expect(screen.getByLabelText('Profissão da hora 1')).toHaveValue('Eng. ambiental e sanitarista')
+    // Profissão escolhida da lista fixa do Grama (ADR-0021), sem digitar.
+    expect(screen.getByLabelText('Profissão da hora 1')).toHaveDisplayValue(
+      'Engenheiro ambiental e sanitarista',
+    )
     expect(screen.getByLabelText('Atividade ou nível da hora 1')).toHaveValue('Júnior')
     expect(screen.getByLabelText('Preço da linha 1')).toHaveValue('214,19')
     expect(screen.getByLabelText('Atividade ou nível da hora 4')).toHaveValue(
@@ -1459,7 +1476,7 @@ describe('orçamentos (onda 5)', () => {
     expect(screen.getByLabelText('Preço da linha 4')).toHaveValue('356,98')
     // Outra profissão, com o valor que a consultoria informar.
     await usuario.click(screen.getByRole('button', { name: 'Adicionar preço' }))
-    await usuario.type(screen.getByLabelText('Profissão da hora 5'), 'Biólogo')
+    await usuario.selectOptions(screen.getByLabelText('Profissão da hora 5'), 'Biólogo')
     await usuario.type(screen.getByLabelText('Atividade ou nível da hora 5'), 'Sênior')
     await usuario.type(screen.getByLabelText('Preço da linha 5'), '300,00')
 
@@ -1469,9 +1486,9 @@ describe('orçamentos (onda 5)', () => {
     expect(screen.queryByLabelText(/Piso/)).not.toBeInTheDocument()
     expect(screen.queryByLabelText(/Aproveitamento/)).not.toBeInTheDocument()
     await usuario.selectOptions(await screen.findByLabelText('Pessoa da linha 1'), 'm-eduardo')
-    await usuario.type(
-      screen.getByLabelText('Profissão da linha 1'),
-      'Eng. ambiental e sanitarista',
+    // A profissão vem do cadastro da pessoa em Equipe; não se digita aqui.
+    expect(screen.getByLabelText('Profissão da linha 1')).toHaveTextContent(
+      'Engenheiro ambiental e sanitarista',
     )
     await usuario.selectOptions(screen.getByLabelText('Como recebe na linha 1'), 'pro_labore')
     await usuario.type(screen.getByLabelText('Custo mensal da linha 1'), '13.751,77')
@@ -1486,7 +1503,7 @@ describe('orçamentos (onda 5)', () => {
     // Quem já está numa linha não aparece de novo.
     expect(within(pessoa2).queryByRole('option', { name: 'Eduardo Karnopp' })).toBeNull()
     await usuario.selectOptions(pessoa2, 'm-helena')
-    await usuario.type(screen.getByLabelText('Profissão da linha 2'), 'Biólogo')
+    expect(screen.getByLabelText('Profissão da linha 2')).toHaveTextContent('Biólogo')
     await usuario.selectOptions(screen.getByLabelText('Como recebe na linha 2'), 'diaria')
     expect(screen.queryByLabelText('Custo mensal da linha 2')).not.toBeInTheDocument()
     await usuario.type(screen.getByLabelText('Custo por diária da linha 2'), '400,00')
@@ -1516,11 +1533,23 @@ describe('orçamentos (onda 5)', () => {
     expect(chamada?.[1]).not.toHaveProperty('p_piso_hora_centavos')
     expect(chamada?.[1]).toMatchObject({
       p_horas_venda: [
-        { profissao: 'Eng. ambiental e sanitarista', atividade: 'Júnior', valor_centavos: 21_419 },
-        { profissao: 'Eng. ambiental e sanitarista', atividade: 'Sênior', valor_centavos: 35_698 },
-        { profissao: 'Eng. ambiental e sanitarista', atividade: 'Máster', valor_centavos: 44_622 },
         {
-          profissao: 'Eng. ambiental e sanitarista',
+          profissao: 'Engenheiro ambiental e sanitarista',
+          atividade: 'Júnior',
+          valor_centavos: 21_419,
+        },
+        {
+          profissao: 'Engenheiro ambiental e sanitarista',
+          atividade: 'Sênior',
+          valor_centavos: 35_698,
+        },
+        {
+          profissao: 'Engenheiro ambiental e sanitarista',
+          atividade: 'Máster',
+          valor_centavos: 44_622,
+        },
+        {
+          profissao: 'Engenheiro ambiental e sanitarista',
           atividade: 'Avaliação e perícia ambiental',
           valor_centavos: 35_698,
         },
@@ -1530,7 +1559,7 @@ describe('orçamentos (onda 5)', () => {
         {
           membro_id: 'm-eduardo',
           tipo_recebimento: 'pro_labore',
-          profissao: 'Eng. ambiental e sanitarista',
+          profissao: 'Engenheiro ambiental e sanitarista',
           custo_mensal_centavos: 1_375_177,
           horas_disponiveis_mes: 173,
         },
@@ -1557,7 +1586,10 @@ describe('orçamentos (onda 5)', () => {
     await usuario.type(screen.getByLabelText('Custo da hora técnica (R$)'), '95,00')
     await usuario.type(screen.getByLabelText('Horas faturáveis por mês'), '320')
     await usuario.click(screen.getByRole('button', { name: 'Adicionar preço' }))
-    await usuario.type(screen.getByLabelText('Profissão da hora 1'), 'Arquiteta')
+    await usuario.selectOptions(
+      screen.getByLabelText('Profissão da hora 1'),
+      'Arquiteto e urbanista',
+    )
     await usuario.type(screen.getByLabelText('Atividade ou nível da hora 1'), 'Projeto')
     // Hora não tem faixas; m² tem.
     expect(
@@ -1590,7 +1622,7 @@ describe('orçamentos (onda 5)', () => {
     expect(chamada?.[1]).toMatchObject({
       p_horas_venda: [
         {
-          profissao: 'Arquiteta',
+          profissao: 'Arquiteto e urbanista',
           atividade: 'Projeto',
           unidade: 'm2',
           valor_centavos: 200,
@@ -1633,7 +1665,10 @@ describe('orçamentos (onda 5)', () => {
     await usuario.type(screen.getByLabelText('Horas faturáveis por mês'), '320')
     await usuario.type(screen.getByLabelText('Custos fixos por mês (R$)'), '0')
     await usuario.click(screen.getByRole('button', { name: 'Adicionar preço' }))
-    await usuario.type(screen.getByLabelText('Profissão da hora 1'), 'Eng. ambiental')
+    await usuario.selectOptions(
+      screen.getByLabelText('Profissão da hora 1'),
+      'Engenheiro ambiental',
+    )
     await usuario.type(screen.getByLabelText('Atividade ou nível da hora 1'), 'Pleno')
     await usuario.type(screen.getByLabelText('Preço da linha 1'), '200,00')
     expect(within(lista).getByText(/Falta 2 itens|Faltam 2 itens/)).toBeInTheDocument()
@@ -1728,7 +1763,6 @@ describe('orçamentos (onda 5)', () => {
     await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
     expect(screen.getByRole('alert')).toHaveTextContent('Equipe, linha 1: escolha a pessoa.')
     await usuario.selectOptions(await screen.findByLabelText('Pessoa da linha 1'), 'm-eduardo')
-    await usuario.click(screen.getByLabelText('Sócio, com pró-labore, na linha 1'))
     await usuario.type(screen.getByLabelText('Custo mensal da linha 1'), '10.000,00')
     await usuario.type(screen.getByLabelText('Horas no mês da linha 1'), '160')
     // Hora de custo: 10.000 ÷ 160 h = 62,50
@@ -1739,11 +1773,13 @@ describe('orçamentos (onda 5)', () => {
     await usuario.type(screen.getByLabelText('Custo mensal da linha 2'), '5.000,00')
     await usuario.type(screen.getByLabelText('Horas no mês da linha 2'), '168')
 
-    // Média 15.000 ÷ 328 h = 45,73; o pró-labore entra uma vez; rateio 9.600 ÷ 328 = 29,27 por hora.
+    // Média 15.000 ÷ 328 h = 45,73; rateio 9.600 ÷ 328 = 29,27 por hora.
     const resultado = screen.getByLabelText('Resultado da equipe')
     expect(within(resultado).getByText('R$ 45,73')).toBeInTheDocument()
     expect(within(resultado).getByText('328 h')).toBeInTheDocument()
-    expect(within(resultado).getByText('R$ 10.000,00')).toBeInTheDocument()
+    // A caixa "Sócio" e o cartão dos sócios saíram (ADR-0021).
+    expect(screen.queryByLabelText(/Sócio/)).not.toBeInTheDocument()
+    expect(within(resultado).queryByText(/Remuneração dos sócios/)).not.toBeInTheDocument()
     expect(screen.getByText('R$ 29,27 por hora')).toBeInTheDocument()
 
     await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
@@ -1755,7 +1791,7 @@ describe('orçamentos (onda 5)', () => {
       p_equipe: [
         {
           membro_id: 'm-eduardo',
-          socio: true,
+          socio: false,
           custo_mensal_centavos: 1_000_000,
           horas_disponiveis_mes: 160,
         },

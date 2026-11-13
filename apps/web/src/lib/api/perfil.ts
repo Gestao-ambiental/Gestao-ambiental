@@ -1,15 +1,22 @@
-// Perfil do membro: cargo e foto (o seletor de responsável mostra quem é quem). Cargo e foto vivem
+// Perfil do membro: profissão, cargo e foto (o seletor de responsável mostra quem é quem). Profissão
+// e cargo são códigos das listas fixas do Grama (ADR-0021). Cargo e foto vivem
 // no vínculo (membro). A foto vai direto para o Storage como objeto novo em
 // consultoria_id/membro/<uuid>.<ext> e vira versão pela RPC, que confere caminho, MIME e tamanho.
 
-import type { PapelMembro } from '@gestao-ambiental/domain'
+import {
+  cargoDoCodigo,
+  profissaoDoCodigo,
+  rotuloDoCargo,
+  type CodigoCargo,
+  type CodigoProfissao,
+  type PapelMembro,
+} from '@gestao-ambiental/domain'
 
 import { obterSupabase } from '@/lib/supabase'
 
 import { sha256 } from './ocorrencias'
 
 export const TAMANHO_MAXIMO_FOTO = 2 * 1024 * 1024
-export const TAMANHO_MAXIMO_CARGO = 80
 export const TIPOS_DE_FOTO = ['image/png', 'image/jpeg'] as const
 const EXTENSOES: Record<(typeof TIPOS_DE_FOTO)[number], string> = {
   'image/png': 'png',
@@ -22,7 +29,12 @@ export interface MembroAtivo {
   id: string
   nome: string
   papel: PapelMembro | null
+  /** Para exibir: o cargo da lista ou, sem ele, o cargo digitado antes. */
   cargo: string | null
+  cargoCodigo: CodigoCargo | null
+  /** Cargo digitado antes da lista fixa (ADR-0021), até o de-para. */
+  cargoAntigo: string | null
+  profissao: CodigoProfissao | null
   /** URL assinada da foto; null mostra as iniciais. */
   fotoUrl: string | null
 }
@@ -32,10 +44,12 @@ interface LinhaMembro {
   nome: string
   papel?: PapelMembro | null
   cargo?: string | null
+  cargo_antigo?: string | null
+  profissao?: string | null
   foto?: { excluido_em: string | null; versao: { caminho: string } | null } | null
 }
 
-const COLUNAS_MEMBRO = `id, nome, papel, cargo,
+const COLUNAS_MEMBRO = `id, nome, papel, cargo, cargo_antigo, profissao,
   foto:documento!membro_foto_fk(excluido_em, versao:documento_versao!documento_versao_vigente_fk(caminho))`
 
 function caminhoDaFoto(linha: LinhaMembro): string | null {
@@ -65,7 +79,7 @@ async function comFotos(linhas: readonly LinhaMembro[]): Promise<MembroAtivo[]> 
       id: linha.id,
       nome: linha.nome,
       papel: linha.papel ?? null,
-      cargo: linha.cargo ?? null,
+      ...profissaoECargo(linha),
       fotoUrl: caminho ? (urls.get(caminho) ?? null) : null,
     }
   })
@@ -96,9 +110,31 @@ export async function meuPerfil(membroId: string): Promise<MembroAtivo> {
   return membro
 }
 
-export async function definirCargo(membroId: string, cargo: string): Promise<void> {
-  const { error } = await obterSupabase().rpc('definir_cargo', {
+/** Profissão e cargo do membro, lidos das colunas; código desconhecido fica nulo. */
+export function profissaoECargo(linha: {
+  cargo?: string | null
+  cargo_antigo?: string | null
+  profissao?: string | null
+}): Pick<MembroAtivo, 'cargo' | 'cargoCodigo' | 'cargoAntigo' | 'profissao'> {
+  const cargoCodigo = cargoDoCodigo(linha.cargo)
+  const cargoAntigo = linha.cargo_antigo ?? null
+  return {
+    cargo: cargoCodigo ? rotuloDoCargo(cargoCodigo) : cargoAntigo,
+    cargoCodigo,
+    cargoAntigo,
+    profissao: profissaoDoCodigo(linha.profissao),
+  }
+}
+
+/** A própria pessoa ou a Gestão. Nulo limpa. */
+export async function definirProfissaoECargo(
+  membroId: string,
+  profissao: CodigoProfissao | null,
+  cargo: CodigoCargo | null,
+): Promise<void> {
+  const { error } = await obterSupabase().rpc('definir_profissao_e_cargo', {
     p_membro_id: membroId,
+    p_profissao: profissao,
     p_cargo: cargo,
   })
   if (error) throw error
