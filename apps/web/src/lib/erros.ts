@@ -92,6 +92,16 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   orcamento_nao_editavel:
     'Proposta enviada não é editada no lugar. Mudanças viram uma nova revisão.',
   orcamento_na_lixeira: 'Este orçamento está na lixeira. Restaure para editar.',
+  texto_longo_demais: 'Texto longo demais. Encurte e tente de novo.',
+  horas_pendentes: 'Informe as horas de todos os serviços antes de enviar ou aprovar.',
+  preco_pendente:
+    'O preço ainda tem pendência (preço do serviço, quantidade ou despesa a cotar). Resolva antes de enviar ou aprovar.',
+  sem_itens: 'Inclua ao menos um serviço antes de enviar ou aprovar.',
+  transicao_invalida: 'Essa mudança de situação não é permitida a partir da situação atual.',
+  identidade_nao_salva: 'Salve os dados da consultoria antes de enviar a logo.',
+  modelo_com_mesmo_nome: 'Já existe um modelo com esse nome. Escolha outro nome.',
+  modelo_sem_itens: 'Salve ao menos um serviço antes de guardar como modelo.',
+  nome_invalido: 'Informe um nome de até 120 caracteres.',
   orcamento_aprovado_nao_exclui:
     'Orçamento aprovado não vai para a lixeira: ele vira contrato, cobrança e tarefas.',
   validade_invalida: 'Validade: um número de 1 a 365 dias.',

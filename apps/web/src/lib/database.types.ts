@@ -868,6 +868,33 @@ isOneToOne: false
 "revisar_condicionante":
 { Args: { "p_id": string,"p_revisao": Database["public"]['Enums']["revisao_condicionante"] }; Returns: undefined
                            },
+"duplicar_orcamento":
+{ Args: { "p_copiar_precos"?: boolean,"p_id": string,"p_novo_id": string }; Returns: string
+                           },
+"excluir_modelo_de_orcamento":
+{ Args: { "p_id": string,"p_row_version": number }; Returns: undefined
+                           },
+"listar_modelos_de_orcamento":
+{ Args: { "p_busca"?: string,"p_consultoria_id": string,"p_deslocamento"?: number,"p_limite"?: number }; Returns: Json
+                           },
+"salvar_modelo_de_orcamento":
+{ Args: { "p_modelo_id": string,"p_nome": string,"p_orcamento_id": string }; Returns: string
+                           },
+"mudar_situacao_orcamento":
+{ Args: { "p_id": string,"p_observacao"?: string,"p_para": string,"p_row_version": number }; Returns: number
+                           },
+"obter_identidade_da_consultoria":
+{ Args: { "p_consultoria_id": string }; Returns: Json
+                           },
+"registrar_logo_da_consultoria":
+{ Args: { "p_caminho": string,"p_consultoria_id": string,"p_nome_original": string,"p_sha256": string,"p_versao_id": string }; Returns: string
+                           },
+"remover_logo_da_consultoria":
+{ Args: { "p_consultoria_id": string }; Returns: undefined
+                           },
+"salvar_identidade_da_consultoria":
+{ Args: { "p_consultoria_id": string,"p_dados": Json,"p_row_version": number }; Returns: number
+                           },
 "restaurar_orcamento":
 { Args: { "p_id": string,"p_row_version": number }; Returns: number
                            },

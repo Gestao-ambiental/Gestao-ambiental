@@ -71,6 +71,10 @@ export interface LinhaParaCalculo {
   horaVendaId?: string | null
   /** Membro responsável: o custo usa a hora dele. */
   responsavelId?: string | null
+  /** Quantidade na unidade da linha de preço (× 10.000). */
+  quantidadeDezMilesimos?: number | null
+  /** Preço fechado do pacote. */
+  precoFechadoCentavos?: number | null
 }
 
 export interface CalculoDoOrcamento extends PrecoDoOrcamento {

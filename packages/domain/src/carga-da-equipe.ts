@@ -25,8 +25,8 @@ const NOMES_DOS_MESES = [
 
 export interface JornadaDoMembro {
   membroId: string
-  /** Horas de trabalho no mês (Custos e taxas). */
-  horasMes: number
+  /** Horas de trabalho no mês (Custos e taxas); nulo = capacidade desconhecida, nunca zero. */
+  horasMes: number | null
 }
 
 export interface HorasComprometidas {
@@ -92,7 +92,7 @@ export function cargaDoMes(
     .filter((s) => s.responsavelId === membroId && s.mesPrevisto === mes)
     .reduce((soma, s) => soma + s.minutos, 0)
   const totalMinutos = comprometidoMinutos + desteOrcamentoMinutos
-  const jornadaMinutos = jornada ? jornada.horasMes * 60 : null
+  const jornadaMinutos = jornada?.horasMes == null ? null : jornada.horasMes * 60
   return {
     jornadaMinutos,
     comprometidoMinutos,

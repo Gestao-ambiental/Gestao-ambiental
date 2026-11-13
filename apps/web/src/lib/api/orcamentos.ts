@@ -1,6 +1,15 @@
 // Orçamentos, fatia 1 (onda 5; ORC-02, ORC-03, ORC-04). Leitura por funções do banco; escrita só
 // por RPC. Nesta fatia tudo é da Gestão: a RLS devolve zero linhas para a Equipe.
 
+import {
+  ESCALA_DA_QUANTIDADE,
+  FORMAS_DE_RECEBIMENTO,
+  UNIDADES_DE_COBRANCA,
+  type FaixaDePreco,
+  type RemuneracaoDaPessoa,
+  type UnidadeDeCobranca,
+} from '@gestao-ambiental/domain'
+
 import type { Json } from '@/lib/database.types'
 import { obterSupabase } from '@/lib/supabase'
 
@@ -19,6 +28,14 @@ export interface HoraDeVenda {
   valorCentavos: number
   /** De onde veio o valor (ex.: "ACEAMB 2015 corrigida"). */
   fonte: string | null
+  /** Unidade de cobrança da linha (ADR-0018): hora, m², hectare, diária, campanha ou pacote. */
+  unidade: UnidadeDeCobranca
+  /** Tempo sugerido por unidade, em minutos (opcional): sugere as horas do serviço. */
+  minutosPorUnidade: number | null
+  /** Faixas progressivas (ADR-0018, fatia 4); vazio = preço por unidade. */
+  faixas: FaixaDePreco[]
+  /** Preço mínimo do serviço, só sobre os honorários (opcional; nunca no pacote). */
+  minimoCentavos: number | null
 }
 
 /** Hora técnica (custo) de uma profissão, derivada da equipe. */
@@ -84,6 +101,14 @@ function contasDe(valor: Json | undefined): ContaDoMes[] {
     valorCentavos: numero(c.valor_centavos),
   }))
 }
+function unidadeDe(valor: Json | undefined): UnidadeDeCobranca {
+  return UNIDADES_DE_COBRANCA.find((u) => u === valor) ?? 'hora'
+}
+/** numeric(18,4) do banco → quantidade × 10.000, sem erro de ponto flutuante. */
+function quantidadeDe(valor: Json | undefined): number | null {
+  const lido = numeroOuNulo(valor)
+  return lido === null ? null : Math.round(lido * ESCALA_DA_QUANTIDADE)
+}
 function horasDe(valor: Json | undefined): HoraDeVenda[] {
   return lista(valor).map((h) => ({
     id: texto(h.id),
@@ -91,7 +116,29 @@ function horasDe(valor: Json | undefined): HoraDeVenda[] {
     atividade: texto(h.atividade),
     valorCentavos: numero(h.valor_centavos),
     fonte: textoOuNulo(h.fonte),
+    unidade: unidadeDe(h.unidade),
+    minutosPorUnidade: numeroOuNulo(h.minutos_por_unidade),
+    faixas: lista(h.faixas).map((f) => ({
+      ateDezMilesimos: quantidadeDe(f.ate),
+      valorCentavos: numero(f.valor_centavos),
+    })),
+    minimoCentavos: numeroOuNulo(h.minimo_centavos),
   }))
+}
+function duplicadoDe(d: Objeto | null): Orcamento['duplicadoDe'] {
+  return d
+    ? {
+        id: texto(d.id),
+        ano: numero(d.ano),
+        sequencia: numero(d.sequencia),
+        revisao: numero(d.revisao),
+      }
+    : null
+}
+function situacaoDe(valor: Json | undefined): SituacaoOrcamento {
+  return (
+    (Object.keys(ROTULO_DA_SITUACAO) as SituacaoOrcamento[]).find((s) => s === valor) ?? 'rascunho'
+  )
 }
 function custosDeMembrosDe(valor: Json | undefined): CustoDoMembro[] {
   return lista(valor).map((c) => ({
@@ -213,6 +260,38 @@ export interface ItemDoOrcamento {
   responsavelId: string | null
   /** Mês previsto de execução (aaaa-mm-01). */
   mesPrevisto: string | null
+  /** Quantidade na unidade da linha de preço (× 10.000); nula na hora e no pacote. */
+  quantidadeDezMilesimos: number | null
+  /** Preço fechado do pacote. */
+  precoFechadoCentavos: number | null
+  /** O serviço inclui ART ou RRT (fatia 6); nulo = não informado. */
+  responsabilidadeTecnica: ResponsabilidadeTecnica | null
+}
+
+export type ResponsabilidadeTecnica = 'art' | 'rrt'
+
+export const ROTULO_DA_RESPONSABILIDADE: Record<ResponsabilidadeTecnica, string> = {
+  art: 'ART',
+  rrt: 'RRT',
+}
+
+/** Mudança manual de situação: quem, quando, de qual para qual e em que revisão. */
+export interface MudancaDeSituacao {
+  de: SituacaoOrcamento
+  para: SituacaoOrcamento
+  revisao: number
+  membroNome: string | null
+  em: string
+  observacao: string | null
+}
+
+/** Transições que o banco aceita (private.transicao_de_situacao_valida). */
+export const PROXIMAS_SITUACOES: Record<SituacaoOrcamento, SituacaoOrcamento[]> = {
+  rascunho: ['enviada', 'aprovada'],
+  enviada: ['negociacao', 'aprovada', 'recusada', 'rascunho'],
+  negociacao: ['aprovada', 'recusada', 'rascunho'],
+  aprovada: ['rascunho'],
+  recusada: ['negociacao', 'rascunho'],
 }
 
 /** O que a tela envia de cada item: o preço sai do banco, nunca da tela. */
@@ -295,6 +374,10 @@ export interface Orcamento {
   validadeDias: number
   premissas: string[]
   exclusoes: string[]
+  /** Texto de apresentação desta proposta; vazio = o padrão da identidade. */
+  apresentacao: string
+  /** Mudanças de situação, da mais recente para a mais antiga. */
+  historicoSituacao: MudancaDeSituacao[]
   /** Margem escolhida no fim do orçamento; nula = margem desejada da base. */
   margemPb: number | null
   formaPreco: FormaDePreco
@@ -306,6 +389,8 @@ export interface Orcamento {
   /** Na lixeira desde; nulo fora dela. Na lixeira, nada muda até restaurar. */
   excluidoEm: string | null
   rowVersion: number
+  /** Orçamento de onde esta cópia veio (fatia 5); nulo quando não é cópia. */
+  duplicadoDe: { id: string; ano: number; sequencia: number; revisao: number } | null
   itens: ItemDoOrcamento[]
   despesas: DespesaDoOrcamento[]
   parcelas: ParcelaDoOrcamento[]
@@ -334,6 +419,15 @@ export async function obterOrcamento(id: string): Promise<Orcamento | null> {
     validadeDias: numero(o.validade_dias),
     premissas: textos(o.premissas),
     exclusoes: textos(o.exclusoes),
+    apresentacao: textoOuNulo(o.apresentacao) ?? '',
+    historicoSituacao: lista(o.historico_situacao).map((h) => ({
+      de: situacaoDe(h.de),
+      para: situacaoDe(h.para),
+      revisao: numero(h.revisao),
+      membroNome: textoOuNulo(h.membro_nome),
+      em: texto(h.em),
+      observacao: textoOuNulo(h.observacao),
+    })),
     margemPb: numeroOuNulo(o.margem_pb),
     formaPreco: o.forma_preco === 'tabela' ? 'tabela' : 'margem',
     visitas: {
@@ -365,6 +459,7 @@ export async function obterOrcamento(id: string): Promise<Orcamento | null> {
     atualizadoEm: texto(o.atualizado_em),
     excluidoEm: textoOuNulo(o.excluido_em),
     rowVersion: numero(o.row_version),
+    duplicadoDe: duplicadoDe(objeto(o.duplicado_de)),
     itens: lista(o.itens).map((i) => ({
       id: texto(i.id),
       descricao: texto(i.descricao),
@@ -374,6 +469,12 @@ export async function obterOrcamento(id: string): Promise<Orcamento | null> {
       horaVendaId: textoOuNulo(i.hora_venda_id),
       responsavelId: textoOuNulo(i.responsavel_id),
       mesPrevisto: textoOuNulo(i.mes_previsto),
+      quantidadeDezMilesimos: quantidadeDe(i.quantidade),
+      precoFechadoCentavos: numeroOuNulo(i.preco_fechado_centavos),
+      responsabilidadeTecnica:
+        i.responsabilidade_tecnica === 'art' || i.responsabilidade_tecnica === 'rrt'
+          ? i.responsabilidade_tecnica
+          : null,
     })),
     despesas: lista(o.despesas).map((d) => ({
       id: texto(d.id),
@@ -442,6 +543,7 @@ export interface DadosDoRascunho {
   validadeDias: number
   premissas: string[]
   exclusoes: string[]
+  apresentacao: string
   /** Nula: usa a margem desejada da base. */
   margemPb: number | null
   formaPreco: FormaDePreco
@@ -469,6 +571,7 @@ export async function salvarOrcamento(
       validade_dias: dados.validadeDias,
       premissas: dados.premissas,
       exclusoes: dados.exclusoes,
+      apresentacao: dados.apresentacao,
       margem_pb: dados.margemPb,
       forma_preco: dados.formaPreco,
       ...(dados.prospecto ? { prospecto: prospectoParaRpc(dados.prospecto) } : {}),
@@ -485,6 +588,13 @@ export async function salvarOrcamento(
         hora_venda_id: i.horaVendaId,
         responsavel_id: i.responsavelId,
         mes_previsto: i.mesPrevisto,
+        // Texto com até 4 casas: o banco guarda numeric(18,4) exato.
+        quantidade:
+          i.quantidadeDezMilesimos === null
+            ? null
+            : textoDaQuantidadeParaOBanco(i.quantidadeDezMilesimos),
+        preco_fechado_centavos: i.precoFechadoCentavos,
+        responsabilidade_tecnica: i.responsabilidadeTecnica,
       })),
       despesas: dados.despesas.map((d) => ({
         id: d.id,
@@ -508,22 +618,19 @@ export async function salvarOrcamento(
 // Base de custos
 // ---------------------------------------------------------------------------
 
-/** Pessoa ou perfil da composição da hora técnica (P9 e P10). Dado restrito: só a Gestão. */
-export interface PessoaDaBase {
+/**
+ * Pessoa da equipe e como ela recebe (ADR-0018, fatia 3). Dado restrito: só a Gestão. Os valores
+ * de remuneração seguem `RemuneracaoDaPessoa` (packages/domain): ausente é nulo, nunca zero.
+ */
+export interface PessoaDaBase extends RemuneracaoDaPessoa {
   id: string
   descricao: string
   /** Sócio com pró-labore: só identifica a remuneração dos sócios. */
   socio: boolean
-  /** Remuneração pelo piso: horas no mês × piso por hora (o banco calcula). */
-  peloPiso: boolean
   /** Profissão (Eng. ambiental, Biólogo…): agrupa o custo da hora por profissão. */
   profissao: string | null
   /** Membro da consultoria (com login): recebe os serviços dos orçamentos. */
   membroId: string
-  /** Remuneração, piso ou pró-labore + encargos + benefícios do mês. */
-  custoMensalCentavos: number
-  /** Horas de trabalho no mês (jornada). Hora de custo = custo ÷ horas. */
-  horasDisponiveisMes: number
 }
 
 export interface BaseDeCustosDaConsultoria {
@@ -551,8 +658,6 @@ export interface BaseDeCustosDaConsultoria {
   horasVenda: HoraDeVenda[]
   /** Derivado pelo banco ao salvar; a tela só mostra. */
   custoHoraPorProfissao: CustoDaProfissao[]
-  /** Piso por hora informado pela consultoria; vale para quem está "pelo piso". */
-  pisoHoraCentavos: number
 }
 
 /** Nulo quando ainda não foi configurada. */
@@ -581,17 +686,25 @@ export async function obterBaseDeCustos(
       descricao: texto(p.descricao),
       membroId: texto(p.membro_id),
       socio: p.socio === true,
-      peloPiso: p.pelo_piso === true,
       profissao: textoOuNulo(p.profissao),
-      custoMensalCentavos: numero(p.custo_mensal_centavos),
-      horasDisponiveisMes: numero(p.horas_disponiveis_mes),
+      forma: FORMAS_DE_RECEBIMENTO.find((f) => f === p.tipo_recebimento) ?? null,
+      // Na diária e no projeto o banco deriva o custo do mês: a tela usa os campos próprios.
+      custoMensalCentavos:
+        p.tipo_recebimento === 'diaria' || p.tipo_recebimento === 'projeto'
+          ? null
+          : numeroOuNulo(p.custo_mensal_centavos),
+      horasNoMes: p.tipo_recebimento === 'diaria' ? null : numeroOuNulo(p.horas_disponiveis_mes),
+      custoDiariaCentavos: numeroOuNulo(p.custo_diaria_centavos),
+      horasPorDiaria: numeroOuNulo(p.horas_por_diaria),
+      diasNoMes: numeroOuNulo(p.dias_no_mes),
+      custoProjetoCentavos: numeroOuNulo(p.custo_projeto_centavos),
+      horasDoProjeto: numeroOuNulo(p.horas_projeto),
     })),
     contas: contasDe(b.custos_fixos_detalhe),
     valorVisitaCentavos: numero(b.valor_visita_centavos),
     custoKmCentavos: numero(b.custo_km_centavos),
     horasVenda: horasDe(b.horas_venda),
     custoHoraPorProfissao: custosDe(b.custo_hora_profissao),
-    pisoHoraCentavos: numero(b.piso_hora_centavos),
   }
 }
 
@@ -614,10 +727,15 @@ export async function salvarBaseDeCustos(
       id: p.id,
       membro_id: p.membroId,
       socio: p.socio,
-      pelo_piso: p.peloPiso,
       profissao: p.profissao,
+      tipo_recebimento: p.forma,
       custo_mensal_centavos: p.custoMensalCentavos,
-      horas_disponiveis_mes: p.horasDisponiveisMes,
+      horas_disponiveis_mes: p.horasNoMes,
+      custo_diaria_centavos: p.custoDiariaCentavos,
+      horas_por_diaria: p.horasPorDiaria,
+      dias_no_mes: p.diasNoMes,
+      custo_projeto_centavos: p.custoProjetoCentavos,
+      horas_projeto: p.horasDoProjeto,
     })),
     p_custos_fixos: base.contas.map((c) => ({
       descricao: c.descricao,
@@ -631,15 +749,22 @@ export async function salvarBaseDeCustos(
       atividade: h.atividade,
       valor_centavos: h.valorCentavos,
       fonte: h.fonte,
+      unidade: h.unidade,
+      minutos_por_unidade: h.minutosPorUnidade,
+      minimo_centavos: h.minimoCentavos,
+      faixas: h.faixas.map((f) => ({
+        ate: f.ateDezMilesimos === null ? null : textoDaQuantidadeParaOBanco(f.ateDezMilesimos),
+        valor_centavos: f.valorCentavos,
+      })),
     })),
-    p_piso_hora_centavos: base.pisoHoraCentavos,
   })
   if (error) throw error
 }
 
 /** Jornada da equipe e horas já comprometidas em orçamentos aprovados, por membro e mês. */
 export interface CargaDaEquipe {
-  jornada: { membroId: string; horasMes: number }[]
+  /** horasMes nulo = capacidade desconhecida. */
+  jornada: { membroId: string; horasMes: number | null }[]
   comprometido: { membroId: string; mes: string; minutos: number }[]
 }
 
@@ -652,7 +777,7 @@ export async function obterCargaDaEquipe(consultoriaId: string): Promise<CargaDa
   return {
     jornada: lista(c?.jornada).map((j) => ({
       membroId: texto(j.membro_id),
-      horasMes: numero(j.horas_mes),
+      horasMes: numeroOuNulo(j.horas_mes),
     })),
     comprometido: lista(c?.comprometido).map((x) => ({
       membroId: texto(x.membro_id),
@@ -677,6 +802,129 @@ export async function restaurarOrcamento(id: string, rowVersion: number): Promis
   const { data, error } = await obterSupabase().rpc('restaurar_orcamento', {
     p_id: id,
     p_row_version: rowVersion,
+  })
+  if (error) throw error
+  return data
+}
+
+/** 125000 → "12.5000": a quantidade como o banco espera (ponto decimal, 4 casas). */
+export function textoDaQuantidadeParaOBanco(dezMilesimos: number): string {
+  const inteiro = Math.floor(dezMilesimos / ESCALA_DA_QUANTIDADE)
+  const fracao = dezMilesimos % ESCALA_DA_QUANTIDADE
+  return `${String(inteiro)}.${String(fracao).padStart(4, '0')}`
+}
+
+// ---------------------------------------------------------------------------
+// Modelos próprios e duplicação (ADR-0018, fatia 5; P7)
+// ---------------------------------------------------------------------------
+
+export const TAMANHO_PAGINA_MODELOS = 50
+
+/** Modelo de serviço da consultoria: só escopo, unidade e horas; sem cliente nem preço. */
+export interface ModeloDeOrcamento {
+  id: string
+  nome: string
+  objeto: string
+  itens: {
+    descricao: string
+    minutos: number
+    /** Linha da tabela de preços; o preço vale o da tabela no momento de aplicar. */
+    horaVendaId: string | null
+    unidade: UnidadeDeCobranca
+  }[]
+  /** Entram a cotar. */
+  despesas: { descricao: string; tratamento: TratamentoDespesa }[]
+  premissas: string[]
+  exclusoes: string[]
+  rowVersion: number
+}
+
+export async function listarModelosDeOrcamento(
+  consultoriaId: string,
+  busca = '',
+  pagina = 0,
+): Promise<{ itens: ModeloDeOrcamento[]; total: number }> {
+  const { data, error } = await obterSupabase().rpc('listar_modelos_de_orcamento', {
+    p_consultoria_id: consultoriaId,
+    p_busca: busca,
+    p_limite: TAMANHO_PAGINA_MODELOS,
+    p_deslocamento: pagina * TAMANHO_PAGINA_MODELOS,
+  })
+  if (error) throw error
+  const r = objeto(data)
+  return {
+    total: numero(r?.total),
+    itens: lista(r?.itens).map((m) => ({
+      id: texto(m.id),
+      nome: texto(m.nome),
+      objeto: texto(m.objeto),
+      itens: lista(m.itens).map((i) => ({
+        descricao: texto(i.descricao),
+        minutos: numero(i.minutos),
+        horaVendaId: textoOuNulo(i.hora_venda_id),
+        unidade: unidadeDe(i.unidade),
+      })),
+      despesas: lista(m.despesas).map((d) => ({
+        descricao: texto(d.descricao),
+        tratamento: tratamento(d.tratamento),
+      })),
+      premissas: textos(m.premissas),
+      exclusoes: textos(m.exclusoes),
+      rowVersion: numero(m.row_version),
+    })),
+  }
+}
+
+/** Salva o orçamento (como está no banco) como modelo. Repetir com o mesmo id não duplica. */
+export async function salvarModeloDeOrcamento(
+  orcamentoId: string,
+  modeloId: string,
+  nome: string,
+): Promise<string> {
+  const { data, error } = await obterSupabase().rpc('salvar_modelo_de_orcamento', {
+    p_orcamento_id: orcamentoId,
+    p_modelo_id: modeloId,
+    p_nome: nome,
+  })
+  if (error) throw error
+  return data
+}
+
+export async function excluirModeloDeOrcamento(id: string, rowVersion: number): Promise<void> {
+  const { error } = await obterSupabase().rpc('excluir_modelo_de_orcamento', {
+    p_id: id,
+    p_row_version: rowVersion,
+  })
+  if (error) throw error
+}
+
+/** Novo rascunho a partir deste orçamento; os preços dele só vão junto se pedido. */
+export async function duplicarOrcamento(
+  id: string,
+  novoId: string,
+  copiarPrecos: boolean,
+): Promise<string> {
+  const { data, error } = await obterSupabase().rpc('duplicar_orcamento', {
+    p_id: id,
+    p_novo_id: novoId,
+    p_copiar_precos: copiarPrecos,
+  })
+  if (error) throw error
+  return data
+}
+
+/** Muda a situação à mão (ORC-04). Reabrir (voltar a rascunho) cria a revisão seguinte. */
+export async function mudarSituacaoOrcamento(
+  id: string,
+  rowVersion: number,
+  para: SituacaoOrcamento,
+  observacao: string,
+): Promise<number> {
+  const { data, error } = await obterSupabase().rpc('mudar_situacao_orcamento', {
+    p_id: id,
+    p_row_version: rowVersion,
+    p_para: para,
+    p_observacao: observacao,
   })
   if (error) throw error
   return data

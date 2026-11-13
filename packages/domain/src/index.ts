@@ -156,26 +156,46 @@ export type {
 } from './carga-da-equipe'
 
 export {
+  DIAS_MAXIMOS_NO_MES,
+  FORMAS_DE_RECEBIMENTO,
+  HORAS_MAXIMAS_DO_PROJETO,
+  HORAS_MAXIMAS_POR_DIARIA,
+  horaDeCustoPorMembro,
+  linhasMensaisDaEquipe,
+  resumoDaPessoa,
+} from './remuneracao'
+export type { FormaDeRecebimento, RemuneracaoDaPessoa, ResumoDaPessoa } from './remuneracao'
+
+export {
+  ESCALA_DA_QUANTIDADE,
   MAXIMO_CONTAS_DO_MES,
+  MAXIMO_DE_FAIXAS,
   MAXIMO_KM_POR_VISITA,
   MAXIMO_VISITAS,
+  QUANTIDADE_MAXIMA,
   SEM_VISITAS,
+  UNIDADES_COM_FAIXAS,
+  UNIDADES_DE_COBRANCA,
   custoHoraPorMembro,
   custoHoraPorProfissao,
   mesmaProfissao,
   precificarOrcamento,
+  problemaDasFaixas,
   rateioPorConta,
   valorDasVisitas,
+  valorPorFaixas,
 } from './preco-do-orcamento'
 export type {
   BaseDoPreco,
   DivisaoDoValor,
   EntradaDoPreco,
+  FaixaDePreco,
   FormaDePreco,
   CustoDaProfissao,
   CustoDoMembro,
   HoraDeVenda,
   PendenciaDoPreco,
   PrecoDoOrcamento,
+  UnidadeDeCobranca,
   VisitasDoOrcamento,
 } from './preco-do-orcamento'

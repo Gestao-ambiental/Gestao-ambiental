@@ -16,7 +16,8 @@ select lives_ok(
   $sql$select public.salvar_base_de_custos('c0000000-0000-4000-8000-00000000000a',
       1, 25000, 1, 3000, 0, 0, 0, 0, 0, $json$[
       {"id": "40000000-0000-4000-8000-0000000000e1", "membro_id": "d0000000-0000-4000-8000-0000000000a1",
-       "socio": true, "pelo_piso": true, "profissao": "Eng. ambiental", "horas_disponiveis_mes": 173},
+       "socio": true, "tipo_recebimento": "pro_labore", "custo_mensal_centavos": 1375177,
+       "profissao": "Eng. ambiental", "horas_disponiveis_mes": 173},
       {"id": "40000000-0000-4000-8000-0000000000e2", "membro_id": "d0000000-0000-4000-8000-0000000000a2",
        "profissao": "Biólogo", "custo_mensal_centavos": 500000, "horas_disponiveis_mes": 87}
     ]$json$::jsonb, '[]'::jsonb, 0, 0, $json$[
@@ -56,11 +57,11 @@ select is(
 
 -- Rateio 250 ÷ 260 h = 0,96. Custos: 1h × (57,47 + 0,96) = 58,43 (responsável); sem responsável,
 -- Eng. civil sem ninguém na equipe: média 18.751,77 ÷ 260 h = 72,12 → 1h × (72,12 + 0,96) = 73,08.
--- Total 131,51 ÷ 0,80 = 164,39, repartido pelo custo.
+-- Cada serviço usa a hora de venda de 250,00 mais o rateio e 20%.
 select results_eq(
   $$select array_agg(preco_centavos order by ordem) from public.orcamento_item
     where orcamento_id = 'f0000000-0000-4000-8000-0000000000e1'$$,
-  $$values (array[7304, 9135]::bigint[])$$,
+  $$values (array[30115, 30115]::bigint[])$$,
   'o custo do serviço usa a hora do responsável; sem responsável, a profissão ou a média'
 );
 

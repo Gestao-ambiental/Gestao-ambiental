@@ -122,3 +122,15 @@ Decisões do Eduardo: a consultoria paga o piso (ou o pró-labore) pela jornada,
   - deslocamento por faixa;
   - CTF por porte;
   - sugestão de hora pelo modelo do catálogo ou pelo responsável do serviço.
+
+## Atualização de 12/11/2026: acréscimo sobre trabalho e contas
+
+- Decisão do Eduardo: o percentual escolhido incide sobre a soma do trabalho da equipe e do rateio das contas da consultoria. Outros custos dos itens e despesas incluídas não recebem esse acréscimo.
+- Tributos e taxas percentuais são cobertos no preço dos serviços, inclusive os que incidem sobre visitas de valor fixo; taxas fixas também são incluídas. A margem efetiva sobre a venda pode diferir do percentual escolhido.
+- O preço de rascunhos pela margem é recalculado ao salvar com a regra nova; a visita mantém seu valor.
+
+## Atualização de 12/11/2026: hora de venda na base do acréscimo
+
+- Eduardo confirmou que o acréscimo incide sobre as horas de venda selecionadas e o rateio das contas. Exemplo: 3 × R$ 214,19 + R$ 2,88 = R$ 645,45; com 30%, R$ 839,09 antes de tributos e despesas.
+- O custo interno da equipe permanece para cálculo do lucro estimado, mas não substitui nem se soma novamente à hora de venda. Despesas de terceiros continuam sem acréscimo.
+- Para qualquer forma de preço é necessário selecionar hora de venda válida por item. Rascunhos antigos sem hora de venda ficam pendentes até sua seleção.

@@ -3,15 +3,30 @@ import {
   composicaoDaEquipe,
   custoFixoPorHora,
   custoHoraPorProfissao,
+  DIAS_MAXIMOS_NO_MES,
+  FORMAS_DE_RECEBIMENTO,
+  HORAS_MAXIMAS_DO_PROJETO,
+  HORAS_MAXIMAS_POR_DIARIA,
+  linhasMensaisDaEquipe,
+  MAXIMO_DE_FAIXAS,
   mesmaProfissao,
+  problemaDasFaixas,
+  UNIDADES_COM_FAIXAS,
   formatarCentavos,
   formatarPontosBase,
+  formatarDuracao,
   formatarReais,
-  horaDeCustoDaPessoa,
+  lerDuracao,
+  resumoDaPessoa,
+  UNIDADES_DE_COBRANCA,
   type ComposicaoDaEquipe,
+  type FaixaDePreco,
+  type FormaDeRecebimento,
+  type RemuneracaoDaPessoa,
+  type UnidadeDeCobranca,
 } from '@gestao-ambiental/domain'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Fragment, useState } from 'react'
+import { Fragment, useState, type ReactNode } from 'react'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Pagina } from '@/app/paginas/Pagina'
@@ -33,13 +48,22 @@ import { listarMembrosAtivos, type MembroAtivo } from '@/lib/api/perfil'
 import { mensagemDoErro } from '@/lib/erros'
 
 import {
+  lerEstimativa,
   lerHoras,
   lerPercentual,
   lerReaisOuZero,
   textoDasHoras,
   textoDoPercentual,
 } from './calculo'
-import { classeCabecalho, classeCampo, classeCelula } from './comum'
+import {
+  ROTULO_DA_UNIDADE,
+  SUFIXO_DA_UNIDADE,
+  campoDaQuantidade,
+  classeCabecalho,
+  classeCampo,
+  classeCelula,
+  lerQuantidade,
+} from './comum'
 
 interface Campos {
   horaTecnica: string
@@ -53,16 +77,42 @@ interface Campos {
   taxaPorAssinatura: string
   valorVisita: string
   custoKm: string
-  pisoHora: string
 }
 
-/** Linha da tabela de hora de venda, com o valor como texto enquanto a pessoa digita. */
+/** Linha da tabela de preços, com os números como texto enquanto a pessoa digita. */
 interface LinhaHora {
   id: string
   profissao: string
   atividade: string
+  /** Unidade de cobrança (ADR-0018): hora, m², hectare, diária, campanha ou pacote. */
+  unidade: UnidadeDeCobranca
   valor: string
+  /** Tempo sugerido por unidade (1h30, 1,5…), opcional: sugere as horas do serviço. */
+  tempo: string
   fonte: string
+  /** Preço mínimo (opcional), só sobre os honorários; nunca no pacote. */
+  minimo: string
+  /** Faixas progressivas; a última fica aberta ("acima de"). Vazio = preço único. */
+  faixas: LinhaFaixa[]
+}
+
+interface LinhaFaixa {
+  id: string
+  /** Até quanto (na unidade da linha); vazio na última. */
+  ate: string
+  valor: string
+}
+
+/** Duas faixas para começar: a primeira com o preço da linha e a última aberta. */
+function faixasIniciais(valor: string): LinhaFaixa[] {
+  return [
+    { id: crypto.randomUUID(), ate: '', valor },
+    { id: crypto.randomUUID(), ate: '', valor: '' },
+  ]
+}
+
+function usaFaixas(l: LinhaHora): boolean {
+  return UNIDADES_COM_FAIXAS.includes(l.unidade) && l.faixas.length > 0
 }
 
 /**
@@ -81,7 +131,7 @@ const HORAS_ACEAMB_2026 = [
     atividade: 'Avaliação e perícia ambiental',
     valor: '356,98',
   },
-]
+].map((h) => ({ ...h, unidade: 'hora' as const, tempo: '', minimo: '', faixas: [] }))
 
 /** Conta do mês (energia, água, internet…), com o valor como texto enquanto a pessoa digita. */
 interface LinhaConta {
@@ -108,12 +158,28 @@ interface LinhaPessoa {
   /** Membro da consultoria: recebe os serviços dos orçamentos. */
   membroId: string
   socio: boolean
-  custo: string
-  /** Horas de trabalho no mês (jornada). */
-  horas: string
-  /** Remuneração pelo piso: horas no mês × piso por hora. */
-  peloPiso: boolean
   profissao: string
+  /** Como recebe; '' = ainda não informado (linhas antigas). */
+  forma: FormaDeRecebimento | ''
+  /** CLT, pró-labore, estágio: custo do mês. */
+  custo: string
+  /** Horas no mês (jornada); no projeto, opcional. */
+  horas: string
+  diaria: string
+  horasDiaria: string
+  /** Dias no mês, opcional. */
+  dias: string
+  projeto: string
+  horasProjeto: string
+}
+
+/** Nome de cada forma de recebimento na tela. */
+const ROTULO_DA_FORMA: Record<FormaDeRecebimento, string> = {
+  clt: 'Salário (CLT)',
+  pro_labore: 'Pró-labore',
+  estagio: 'Bolsa de estágio',
+  diaria: 'Por diária',
+  projeto: 'Por projeto',
 }
 
 function camposDe(base: BaseDeCustosDaConsultoria | null): Campos {
@@ -130,7 +196,6 @@ function camposDe(base: BaseDeCustosDaConsultoria | null): Campos {
       taxaPorAssinatura: '',
       valorVisita: '',
       custoKm: '',
-      pisoHora: '',
     }
   }
   return {
@@ -145,7 +210,6 @@ function camposDe(base: BaseDeCustosDaConsultoria | null): Campos {
     taxaPorAssinatura: formatarCentavos(base.taxaPorAssinaturaCentavos),
     valorVisita: base.valorVisitaCentavos ? formatarCentavos(base.valorVisitaCentavos) : '',
     custoKm: base.custoKmCentavos ? formatarCentavos(base.custoKmCentavos) : '',
-    pisoHora: base.pisoHoraCentavos ? formatarCentavos(base.pisoHoraCentavos) : '',
   }
 }
 
@@ -154,9 +218,40 @@ function horasDe(base: BaseDeCustosDaConsultoria | null): LinhaHora[] {
     id: h.id,
     profissao: h.profissao,
     atividade: h.atividade,
+    unidade: h.unidade,
     valor: formatarCentavos(h.valorCentavos),
+    tempo: h.minutosPorUnidade === null ? '' : formatarDuracao(h.minutosPorUnidade),
     fonte: h.fonte ?? '',
+    minimo: h.minimoCentavos === null ? '' : formatarCentavos(h.minimoCentavos),
+    faixas: h.faixas.map((f) => ({
+      id: crypto.randomUUID(),
+      ate: f.ateDezMilesimos === null ? '' : campoDaQuantidade(f.ateDezMilesimos),
+      valor: formatarCentavos(f.valorCentavos),
+    })),
   }))
+}
+
+/** Lê as faixas da linha; devolve o problema em texto, se houver. */
+function lerFaixas(l: LinhaHora, n: string): FaixaDePreco[] | string {
+  if (!usaFaixas(l)) return []
+  const faixas: FaixaDePreco[] = []
+  for (const [i, f] of l.faixas.entries()) {
+    const k = String(i + 1)
+    const ultima = i === l.faixas.length - 1
+    const ate = ultima ? null : lerQuantidade(f.ate)
+    const valor = lerEstimativa(f.valor)
+    if (!ultima && (ate === null || ate === undefined || ate === 0))
+      return `Tabela de preços, linha ${n}: informe até quanto vale a faixa ${k}.`
+    if (valor === null || valor === undefined)
+      return `Tabela de preços, linha ${n}: informe o valor por unidade da faixa ${k}.`
+    faixas.push({ ateDezMilesimos: ate ?? null, valorCentavos: valor })
+  }
+  const problema = problemaDasFaixas(faixas, l.unidade)
+  if (problema === 'faixas_demais')
+    return `Tabela de preços, linha ${n}: use até ${String(MAXIMO_DE_FAIXAS)} faixas.`
+  if (problema !== null)
+    return `Tabela de preços, linha ${n}: os limites das faixas precisam crescer (ex.: até 500, até 1.000, acima).`
+  return faixas
 }
 
 /** Lê a tabela de hora de venda: profissão e atividade obrigatórias, sem repetir a dupla. */
@@ -164,23 +259,36 @@ function lerHorasDeVenda(linhas: readonly LinhaHora[]): HoraDeVenda[] | string {
   const horas: HoraDeVenda[] = []
   for (const [indice, l] of linhas.entries()) {
     const n = String(indice + 1)
-    const valor = lerReaisOuZero(l.valor)
-    if (!l.profissao.trim()) return `Hora de venda, linha ${n}: informe a profissão.`
-    if (!l.atividade.trim()) return `Hora de venda, linha ${n}: informe a atividade ou o nível.`
-    if (valor === null) return `Hora de venda, linha ${n}: valor inválido.`
+    const faixas = lerFaixas(l, n)
+    if (typeof faixas === 'string') return faixas
+    // Com faixas, o preço da linha é o da primeira faixa (só para mostrar; o cálculo usa as faixas).
+    const valor = faixas[0]?.valorCentavos ?? lerReaisOuZero(l.valor)
+    const minimo = l.unidade === 'pacote' ? null : lerEstimativa(l.minimo)
+    const minutos = l.tempo.trim() === '' ? null : lerDuracao(l.tempo)
+    if (minimo === undefined) return `Tabela de preços, linha ${n}: preço mínimo inválido.`
+    if (!l.profissao.trim()) return `Tabela de preços, linha ${n}: informe a profissão.`
+    if (!l.atividade.trim())
+      return `Tabela de preços, linha ${n}: informe o serviço, a atividade ou o nível.`
+    if (valor === null) return `Tabela de preços, linha ${n}: valor inválido.`
+    if (minutos === null && l.tempo.trim() !== '')
+      return `Tabela de preços, linha ${n}: tempo por unidade inválido. Use 1h30, 1:30 ou 1,5.`
     const repetida = horas.some(
       (h) =>
         mesmaProfissao(h.profissao, l.profissao) &&
         h.atividade.toLowerCase() === l.atividade.trim().toLowerCase(),
     )
     if (repetida)
-      return `Hora de venda: "${l.profissao.trim()} · ${l.atividade.trim()}" aparece duas vezes.`
+      return `Tabela de preços: "${l.profissao.trim()} · ${l.atividade.trim()}" aparece duas vezes.`
     horas.push({
       id: l.id,
       profissao: l.profissao.trim(),
       atividade: l.atividade.trim(),
       valorCentavos: valor,
       fonte: l.fonte.trim() || null,
+      unidade: l.unidade,
+      minutosPorUnidade: minutos,
+      faixas,
+      minimoCentavos: minimo,
     })
   }
   return horas
@@ -208,14 +316,21 @@ function lerContas(linhas: readonly LinhaConta[]): ContaDoMes[] | string {
 }
 
 function linhasDe(base: BaseDeCustosDaConsultoria | null): LinhaPessoa[] {
+  const reais = (v: number | null) => (v === null ? '' : formatarCentavos(v))
+  const inteiro = (v: number | null) => (v === null ? '' : String(v))
   return (base?.equipe ?? []).map((p) => ({
     id: p.id,
     membroId: p.membroId,
     socio: p.socio,
-    custo: formatarCentavos(p.custoMensalCentavos),
-    horas: String(p.horasDisponiveisMes),
-    peloPiso: p.peloPiso,
     profissao: p.profissao ?? '',
+    forma: p.forma ?? '',
+    custo: reais(p.custoMensalCentavos),
+    horas: inteiro(p.horasNoMes),
+    diaria: reais(p.custoDiariaCentavos),
+    horasDiaria: inteiro(p.horasPorDiaria),
+    dias: inteiro(p.diasNoMes),
+    projeto: reais(p.custoProjetoCentavos),
+    horasProjeto: inteiro(p.horasDoProjeto),
   }))
 }
 
@@ -224,64 +339,98 @@ function novaPessoa(): LinhaPessoa {
     id: crypto.randomUUID(),
     membroId: '',
     socio: false,
+    profissao: '',
+    forma: 'clt',
     custo: '',
     horas: '',
-    peloPiso: false,
-    profissao: '',
+    diaria: '',
+    horasDiaria: '',
+    dias: '',
+    projeto: '',
+    horasProjeto: '',
   }
 }
 
-/** Horas de trabalho no mês: inteiro de 0 a 744; vazio é zero. */
-function lerHorasDoMes(texto: string): number | null {
+/** Reais digitados; vazio é nulo (desconhecido); inválido é undefined. */
+const lerReaisOuNulo = lerEstimativa
+
+/** Inteiro digitado; vazio é nulo (desconhecido); inválido é undefined. */
+function lerInteiroOuNulo(texto: string): number | null | undefined {
   const limpo = texto.trim()
-  if (limpo === '') return 0
-  if (!/^\d{1,3}$/.test(limpo)) return null
-  const horas = Number(limpo)
-  return horas <= 744 ? horas : null
+  if (limpo === '') return null
+  return /^\d{1,6}$/.test(limpo) ? Number(limpo) : undefined
 }
 
-/** Pelo piso: horas no mês × piso por hora (o banco faz a mesma conta ao salvar). */
-function custoPeloPiso(horas: number, pisoHoraCentavos: number): number {
-  return Math.round(horas * pisoHoraCentavos)
-}
-
-/** Custo do mês da linha: pelo piso, horas × piso; senão, o digitado. `null` se inválido. */
-function custoDaLinha(l: LinhaPessoa, pisoHoraCentavos: number): number | null {
-  const horas = lerHorasDoMes(l.horas)
-  return l.peloPiso ? custoPeloPiso(horas ?? 0, pisoHoraCentavos) : lerReaisOuZero(l.custo)
+/** Os números da linha conforme a forma; só os campos da forma escolhida contam. */
+function remuneracaoDaLinha(l: LinhaPessoa): RemuneracaoDaPessoa | string {
+  const forma = l.forma === '' ? null : l.forma
+  const custo = lerReaisOuNulo(l.custo)
+  const horas = lerInteiroOuNulo(l.horas)
+  const diaria = lerReaisOuNulo(l.diaria)
+  const horasDiaria = lerInteiroOuNulo(l.horasDiaria)
+  const dias = lerInteiroOuNulo(l.dias)
+  const projeto = lerReaisOuNulo(l.projeto)
+  const horasProjeto = lerInteiroOuNulo(l.horasProjeto)
+  const r: RemuneracaoDaPessoa = {
+    forma,
+    custoMensalCentavos: null,
+    horasNoMes: null,
+    custoDiariaCentavos: null,
+    horasPorDiaria: null,
+    diasNoMes: null,
+    custoProjetoCentavos: null,
+    horasDoProjeto: null,
+  }
+  if (forma === 'diaria') {
+    if (diaria === undefined) return 'custo da diária inválido'
+    if (horasDiaria === undefined || (horasDiaria ?? 0) > HORAS_MAXIMAS_POR_DIARIA)
+      return `horas por diária de 0 a ${String(HORAS_MAXIMAS_POR_DIARIA)}`
+    if (dias === undefined || (dias ?? 0) > DIAS_MAXIMOS_NO_MES)
+      return `dias no mês de 0 a ${String(DIAS_MAXIMOS_NO_MES)}`
+    return { ...r, custoDiariaCentavos: diaria, horasPorDiaria: horasDiaria, diasNoMes: dias }
+  }
+  if (forma === 'projeto') {
+    if (projeto === undefined) return 'custo do projeto inválido'
+    if (horasProjeto === undefined || (horasProjeto ?? 0) > HORAS_MAXIMAS_DO_PROJETO)
+      return 'horas do projeto inválidas'
+    if (horas === undefined || (horas ?? 0) > 744) return 'horas no mês de 0 a 744'
+    return { ...r, custoProjetoCentavos: projeto, horasDoProjeto: horasProjeto, horasNoMes: horas }
+  }
+  if (custo === undefined) return 'custo mensal inválido'
+  if (horas === undefined || (horas ?? 0) > 744) return 'horas no mês de 0 a 744'
+  return { ...r, custoMensalCentavos: custo, horasNoMes: horas }
 }
 
 /** Lê a equipe digitada. Devolve a primeira mensagem de erro, se houver. */
-function lerEquipe(
-  linhas: readonly LinhaPessoa[],
-  pisoHoraCentavos: number,
-): PessoaDaBase[] | string {
+function lerEquipe(linhas: readonly LinhaPessoa[]): PessoaDaBase[] | string {
   const equipe: PessoaDaBase[] = []
   for (const [indice, l] of linhas.entries()) {
     const n = String(indice + 1)
-    const horas = lerHorasDoMes(l.horas)
-    const custo = custoDaLinha(l, pisoHoraCentavos)
+    const r = remuneracaoDaLinha(l)
     if (!l.membroId) return `Equipe, linha ${n}: escolha a pessoa.`
     if (equipe.some((p) => p.membroId === l.membroId))
       return `Equipe, linha ${n}: a pessoa já está em outra linha.`
-    if (custo === null) return `Equipe, linha ${n}: custo mensal inválido.`
-    if (horas === null) return `Equipe, linha ${n}: horas no mês de 0 a 744.`
+    if (typeof r === 'string') return `Equipe, linha ${n}: ${r}.`
+    try {
+      resumoDaPessoa(r)
+    } catch {
+      return `Equipe, linha ${n}: confira os números (o mês tem até 744 horas).`
+    }
     equipe.push({
+      ...r,
       id: l.id,
       membroId: l.membroId,
       descricao: '',
       socio: l.socio,
-      peloPiso: l.peloPiso,
       profissao: l.profissao.trim() || null,
-      custoMensalCentavos: custo,
-      horasDisponiveisMes: horas,
     })
   }
   return equipe
 }
 
+/** Média e horas da equipe: só quem tem custo e horas do mês conhecidos. */
 function composicaoDe(equipe: readonly PessoaDaBase[]): ComposicaoDaEquipe {
-  return composicaoDaEquipe(equipe)
+  return composicaoDaEquipe(linhasMensaisDaEquipe(equipe))
 }
 
 function lerCampos(
@@ -294,8 +443,6 @@ function lerCampos(
   if (typeof contas === 'string') return contas
   const horasVenda = lerHorasDeVenda(linhasDeHoras)
   if (typeof horasVenda === 'string') return horasVenda
-  const pisoHora = lerReaisOuZero(c.pisoHora)
-  if (pisoHora === null) return 'Confira o piso por hora.'
   // Com contas, o custo fixo do mês é a soma delas; sem contas, vale o total digitado.
   const custosFixos =
     contas.length > 0
@@ -318,14 +465,12 @@ function lerCampos(
   let equipe: PessoaDaBase[] = []
   let composicao: ComposicaoDaEquipe | null = null
   if (linhas.length > 0) {
-    if (pisoHora === 0 && linhas.some((l) => l.peloPiso))
-      return 'Informe o piso por hora: há pessoas marcadas pelo piso.'
-    const lida = lerEquipe(linhas, pisoHora)
+    const lida = lerEquipe(linhas)
     if (typeof lida === 'string') return lida
     equipe = lida
     composicao = composicaoDe(equipe)
     if (composicao.horaTecnicaCentavos === null)
-      return 'A equipe precisa de horas no mês: informe as horas de cada pessoa.'
+      return 'A média da equipe precisa de alguém com custo e horas do mês (CLT, pró-labore, estágio ou diária com os dias no mês).'
     horaTecnica = composicao.horaTecnicaCentavos
     horas = composicao.horasFaturaveisMes
   } else {
@@ -356,8 +501,7 @@ function lerCampos(
       valorVisitaCentavos: valorVisita,
       custoKmCentavos: custoKm,
       horasVenda,
-      custoHoraPorProfissao: custoHoraPorProfissao(equipe),
-      pisoHoraCentavos: pisoHora,
+      custoHoraPorProfissao: custoHoraPorProfissao(linhasMensaisDaEquipe(equipe)),
     },
   }
 }
@@ -432,12 +576,11 @@ function Formulario({
     ),
   ]
   const custoPorProfissao = typeof lido === 'string' ? [] : lido.base.custoHoraPorProfissao
-  const pisoLido = lerReaisOuZero(c.pisoHora) ?? 0
   const totalDasContas = contas.reduce((soma, l) => soma + (lerReaisOuZero(l.valor) ?? 0), 0)
   // Prévia da composição mesmo com algum campo ainda incompleto (linhas inválidas ficam de fora).
   const previa = pelaEquipe
     ? (() => {
-        const lida = lerEquipe(equipe, pisoLido)
+        const lida = lerEquipe(equipe)
         return typeof lida === 'string' ? null : composicaoDe(lida)
       })()
     : null
@@ -543,8 +686,6 @@ function Formulario({
               membros={membros.data ?? []}
               membrosCarregando={membros.isPending}
               custoPorProfissao={custoPorProfissao}
-              pisoHoraCentavos={pisoLido}
-              campoPiso={campo('pisoHora')}
               previa={previa}
               aoMudar={mudarPessoa}
               aoAdicionar={() => {
@@ -673,11 +814,13 @@ function Formulario({
           </Linha>
         </Grupo>
 
-        <Grupo titulo="Hora de venda (tabela)">
+        <Grupo titulo="Tabela de preços">
           <p className="max-w-3xl text-xs text-(--text-subtle)">
-            Quanto vocês cobram do cliente por hora, por profissão e atividade ou nível (ex.: Eng.
-            ambiental · Júnior; Eng. ambiental · Perícia; Biólogo · Sênior). Cada serviço do
-            orçamento escolhe uma linha: ela define o preço pela tabela e a profissão do custo.
+            Quanto vocês cobram do cliente, do jeito que cobram: por hora, por m², por hectare, por
+            diária ou campanha de campo, ou um pacote com preço fechado (ex.: Eng. ambiental ·
+            Júnior por hora; Arquiteta · Projeto por m²; Bióloga · Campo por diária). Cada serviço
+            do orçamento escolhe uma linha. O tempo por unidade é opcional: ele sugere as horas do
+            serviço, que estimam o custo e a carga da equipe.
           </p>
           <datalist id="profissoes-da-consultoria">
             {profissoes.map((nome) => (
@@ -686,17 +829,26 @@ function Formulario({
           </datalist>
           {horas.length > 0 ? (
             <div className="relative overflow-x-auto">
-              <table className="w-full min-w-[760px] border-collapse corpo">
+              <table className="w-full min-w-[1100px] border-collapse corpo">
                 <thead>
                   <tr>
                     <th scope="col" className={classeCabecalho}>
                       Profissão
                     </th>
                     <th scope="col" className={classeCabecalho}>
-                      Atividade ou nível
+                      Serviço, atividade ou nível
                     </th>
-                    <th scope="col" className={`${classeCabecalho} w-36 text-right`}>
-                      Hora de venda (R$)
+                    <th scope="col" className={`${classeCabecalho} w-44`}>
+                      Unidade
+                    </th>
+                    <th scope="col" className={`${classeCabecalho} w-32 text-right`}>
+                      Preço (R$)
+                    </th>
+                    <th scope="col" className={`${classeCabecalho} w-32 text-right`}>
+                      Preço mínimo (R$)
+                    </th>
+                    <th scope="col" className={`${classeCabecalho} w-28 text-right`}>
+                      Tempo por unidade
                     </th>
                     <th scope="col" className={classeCabecalho}>
                       Fonte
@@ -713,67 +865,265 @@ function Formulario({
                       setHoras((a) => a.map((x) => (x.id === l.id ? alterar(x) : x)))
                       setAviso(null)
                     }
+                    const comFaixas = usaFaixas(l)
+                    const sufixo = SUFIXO_DA_UNIDADE[l.unidade]
+                    const mudarFaixas = (alterar: (f: LinhaFaixa[]) => LinhaFaixa[]) => {
+                      mudarHora((x) => ({ ...x, faixas: alterar(x.faixas) }))
+                    }
                     return (
-                      <tr key={l.id}>
-                        <td className={classeCelula}>
-                          <input
-                            aria-label={`Profissão da hora ${n}`}
-                            list="profissoes-da-consultoria"
-                            className={classeCampo}
-                            value={l.profissao}
-                            onChange={(e) => {
-                              const valor = e.target.value
-                              mudarHora((x) => ({ ...x, profissao: valor }))
-                            }}
-                          />
-                        </td>
-                        <td className={classeCelula}>
-                          <input
-                            aria-label={`Atividade ou nível da hora ${n}`}
-                            className={classeCampo}
-                            value={l.atividade}
-                            onChange={(e) => {
-                              const valor = e.target.value
-                              mudarHora((x) => ({ ...x, atividade: valor }))
-                            }}
-                          />
-                        </td>
-                        <td className={classeCelula}>
-                          <input
-                            aria-label={`Hora de venda da linha ${n}`}
-                            inputMode="decimal"
-                            aria-invalid={lerReaisOuZero(l.valor) === null || undefined}
-                            className={`${classeCampo} text-right tabular-nums`}
-                            value={l.valor}
-                            onChange={(e) => {
-                              const valor = e.target.value
-                              mudarHora((x) => ({ ...x, valor }))
-                            }}
-                          />
-                        </td>
-                        <td className={classeCelula}>
-                          <input
-                            aria-label={`Fonte da hora ${n}`}
-                            placeholder="Opcional"
-                            className={classeCampo}
-                            value={l.fonte}
-                            onChange={(e) => {
-                              const valor = e.target.value
-                              mudarHora((x) => ({ ...x, fonte: valor }))
-                            }}
-                          />
-                        </td>
-                        <td className={classeCelula}>
-                          <BotaoIcone
-                            icone="trash-2"
-                            rotulo={`Remover hora ${n}`}
-                            onClick={() => {
-                              setHoras((a) => a.filter((x) => x.id !== l.id))
-                              setAviso(null)
-                            }}
-                          />
-                        </td>
-                      </tr>
+                      <Fragment key={l.id}>
+                        <tr>
+                          <td className={classeCelula}>
+                            <input
+                              aria-label={`Profissão da hora ${n}`}
+                              list="profissoes-da-consultoria"
+                              className={classeCampo}
+                              value={l.profissao}
+                              onChange={(e) => {
+                                const valor = e.target.value
+                                mudarHora((x) => ({ ...x, profissao: valor }))
+                              }}
+                            />
+                          </td>
+                          <td className={classeCelula}>
+                            <input
+                              aria-label={`Atividade ou nível da hora ${n}`}
+                              className={classeCampo}
+                              value={l.atividade}
+                              onChange={(e) => {
+                                const valor = e.target.value
+                                mudarHora((x) => ({ ...x, atividade: valor }))
+                              }}
+                            />
+                          </td>
+                          <td className={classeCelula}>
+                            <select
+                              aria-label={`Unidade da linha ${n}`}
+                              className={classeCampo}
+                              value={l.unidade}
+                              onChange={(e) => {
+                                const valor = e.target.value as UnidadeDeCobranca
+                                // Faixas só em m², ha, diária e campanha; mínimo nunca no pacote.
+                                mudarHora((x) => ({
+                                  ...x,
+                                  unidade: valor,
+                                  faixas: UNIDADES_COM_FAIXAS.includes(valor) ? x.faixas : [],
+                                  minimo: valor === 'pacote' ? '' : x.minimo,
+                                }))
+                              }}
+                            >
+                              {UNIDADES_DE_COBRANCA.map((u) => (
+                                <option key={u} value={u}>
+                                  {ROTULO_DA_UNIDADE[u]}
+                                </option>
+                              ))}
+                            </select>
+                          </td>
+                          <td className={classeCelula}>
+                            {comFaixas ? (
+                              <span className="block text-right text-(--text-subtle)">
+                                Por faixas
+                              </span>
+                            ) : (
+                              <input
+                                aria-label={`Preço da linha ${n}`}
+                                inputMode="decimal"
+                                aria-invalid={lerReaisOuZero(l.valor) === null || undefined}
+                                className={`${classeCampo} text-right tabular-nums`}
+                                value={l.valor}
+                                onChange={(e) => {
+                                  const valor = e.target.value
+                                  mudarHora((x) => ({ ...x, valor }))
+                                }}
+                              />
+                            )}
+                            {UNIDADES_COM_FAIXAS.includes(l.unidade) && !comFaixas ? (
+                              <Botao
+                                aparencia="link"
+                                className="mt-(--space-050) text-xs"
+                                onClick={() => {
+                                  mudarHora((x) => ({ ...x, faixas: faixasIniciais(x.valor) }))
+                                }}
+                              >
+                                Usar faixas{' '}
+                                <span className="sr-only">de quantidade na linha {n}</span>
+                              </Botao>
+                            ) : null}
+                          </td>
+                          <td className={classeCelula}>
+                            {l.unidade === 'pacote' ? (
+                              <span className="block text-right text-(--text-subtle)">—</span>
+                            ) : (
+                              <input
+                                aria-label={`Preço mínimo da linha ${n}`}
+                                inputMode="decimal"
+                                placeholder="Opcional"
+                                aria-invalid={lerEstimativa(l.minimo) === undefined || undefined}
+                                className={`${classeCampo} text-right tabular-nums`}
+                                value={l.minimo}
+                                onChange={(e) => {
+                                  const valor = e.target.value
+                                  mudarHora((x) => ({ ...x, minimo: valor }))
+                                }}
+                              />
+                            )}
+                          </td>
+                          <td className={classeCelula}>
+                            {l.unidade === 'hora' ? (
+                              <span className="block text-right text-(--text-subtle)">—</span>
+                            ) : (
+                              <input
+                                aria-label={`Tempo por unidade da linha ${n}`}
+                                inputMode="decimal"
+                                placeholder="Opcional"
+                                aria-invalid={
+                                  (l.tempo.trim() !== '' && lerDuracao(l.tempo) === null) ||
+                                  undefined
+                                }
+                                className={`${classeCampo} text-right tabular-nums`}
+                                value={l.tempo}
+                                onChange={(e) => {
+                                  const valor = e.target.value
+                                  mudarHora((x) => ({ ...x, tempo: valor }))
+                                }}
+                              />
+                            )}
+                          </td>
+                          <td className={classeCelula}>
+                            <input
+                              aria-label={`Fonte da hora ${n}`}
+                              placeholder="Opcional"
+                              className={classeCampo}
+                              value={l.fonte}
+                              onChange={(e) => {
+                                const valor = e.target.value
+                                mudarHora((x) => ({ ...x, fonte: valor }))
+                              }}
+                            />
+                          </td>
+                          <td className={classeCelula}>
+                            <BotaoIcone
+                              icone="trash-2"
+                              rotulo={`Remover preço ${n}`}
+                              onClick={() => {
+                                setHoras((a) => a.filter((x) => x.id !== l.id))
+                                setAviso(null)
+                              }}
+                            />
+                          </td>
+                        </tr>
+                        {comFaixas ? (
+                          <tr>
+                            <td colSpan={8} className={classeCelula}>
+                              <fieldset className="flex flex-col gap-(--space-075) border-l-2 border-(--border-input) pl-(--space-150)">
+                                <legend className="mb-(--space-050) text-xs text-(--text-subtle)">
+                                  Faixas de quantidade da linha {n}: progressivas, cada trecho paga
+                                  o valor da sua faixa.
+                                </legend>
+                                {l.faixas.map((f, i) => {
+                                  const k = String(i + 1)
+                                  const ultima = i === l.faixas.length - 1
+                                  const ateAnterior = (l.faixas[i - 1]?.ate ?? '').trim()
+                                  const anterior =
+                                    i === 0 ? '0' : ateAnterior === '' ? '…' : ateAnterior
+                                  const ateInvalido =
+                                    !ultima && f.ate.trim() !== '' && !lerQuantidade(f.ate)
+                                  return (
+                                    <div
+                                      key={f.id}
+                                      className="flex flex-wrap items-center gap-(--space-100) text-xs"
+                                    >
+                                      {ultima ? (
+                                        <span className="w-48">
+                                          Acima de {anterior} {sufixo.slice(1)}
+                                        </span>
+                                      ) : (
+                                        <label className="flex w-48 items-center gap-(--space-050)">
+                                          Até
+                                          <input
+                                            aria-label={`Até quanto vale a faixa ${k} da linha ${n}`}
+                                            inputMode="decimal"
+                                            aria-invalid={ateInvalido || undefined}
+                                            className={`${classeCampo} w-24 text-right tabular-nums`}
+                                            value={f.ate}
+                                            onChange={(e) => {
+                                              const valor = e.target.value
+                                              mudarFaixas((a) =>
+                                                a.map((x) =>
+                                                  x.id === f.id ? { ...x, ate: valor } : x,
+                                                ),
+                                              )
+                                            }}
+                                          />
+                                          {sufixo.slice(1)}
+                                        </label>
+                                      )}
+                                      <label className="flex items-center gap-(--space-050)">
+                                        R$
+                                        <input
+                                          aria-label={`Valor por unidade da faixa ${k} da linha ${n}`}
+                                          inputMode="decimal"
+                                          aria-invalid={
+                                            lerEstimativa(f.valor) === undefined || undefined
+                                          }
+                                          className={`${classeCampo} w-28 text-right tabular-nums`}
+                                          value={f.valor}
+                                          onChange={(e) => {
+                                            const valor = e.target.value
+                                            mudarFaixas((a) =>
+                                              a.map((x) => (x.id === f.id ? { ...x, valor } : x)),
+                                            )
+                                          }}
+                                        />
+                                        {sufixo}
+                                      </label>
+                                      {!ultima && l.faixas.length > 2 ? (
+                                        <BotaoIcone
+                                          icone="trash-2"
+                                          rotulo={`Remover faixa ${k} da linha ${n}`}
+                                          onClick={() => {
+                                            mudarFaixas((a) => a.filter((x) => x.id !== f.id))
+                                          }}
+                                        />
+                                      ) : null}
+                                    </div>
+                                  )
+                                })}
+                                <div className="flex flex-wrap gap-(--space-150)">
+                                  {l.faixas.length < MAXIMO_DE_FAIXAS ? (
+                                    <Botao
+                                      aparencia="link"
+                                      iconeAntes="plus"
+                                      onClick={() => {
+                                        // A nova entra antes da última, que continua aberta.
+                                        mudarFaixas((a) => [
+                                          ...a.slice(0, -1),
+                                          { id: crypto.randomUUID(), ate: '', valor: '' },
+                                          ...a.slice(-1),
+                                        ])
+                                      }}
+                                    >
+                                      Adicionar faixa <span className="sr-only">na linha {n}</span>
+                                    </Botao>
+                                  ) : null}
+                                  <Botao
+                                    aparencia="link"
+                                    onClick={() => {
+                                      mudarHora((x) => ({
+                                        ...x,
+                                        valor: x.faixas[0]?.valor ?? x.valor,
+                                        faixas: [],
+                                      }))
+                                    }}
+                                  >
+                                    Usar preço único <span className="sr-only">na linha {n}</span>
+                                  </Botao>
+                                </div>
+                              </fieldset>
+                            </td>
+                          </tr>
+                        ) : null}
+                      </Fragment>
                     )
                   })}
                 </tbody>
@@ -787,12 +1137,22 @@ function Formulario({
               onClick={() => {
                 setHoras((a) => [
                   ...a,
-                  { id: crypto.randomUUID(), profissao: '', atividade: '', valor: '', fonte: '' },
+                  {
+                    id: crypto.randomUUID(),
+                    profissao: '',
+                    atividade: '',
+                    unidade: 'hora',
+                    valor: '',
+                    tempo: '',
+                    fonte: '',
+                    minimo: '',
+                    faixas: [],
+                  },
                 ])
                 setAviso(null)
               }}
             >
-              Adicionar hora
+              Adicionar preço
             </Botao>
             {horas.every((h) => h.fonte !== FONTE_ACEAMB) ? (
               <Botao
@@ -907,8 +1267,6 @@ function Equipe({
   membros,
   membrosCarregando,
   custoPorProfissao,
-  pisoHoraCentavos,
-  campoPiso,
   previa,
   aoMudar,
   aoAdicionar,
@@ -919,48 +1277,43 @@ function Equipe({
   membros: readonly MembroAtivo[]
   membrosCarregando: boolean
   custoPorProfissao: readonly CustoDaProfissao[]
-  pisoHoraCentavos: number
-  campoPiso: { value: string; onChange: (e: { target: { value: string } }) => void }
   previa: ComposicaoDaEquipe | null
   aoMudar: (id: string, alterar: (p: LinhaPessoa) => LinhaPessoa) => void
   aoAdicionar: () => void
   aoRemover: (id: string) => void
   aoVoltar: () => void
 }) {
-  const algumPeloPiso = linhas.some((p) => p.peloPiso)
-  const pisoDigitado = lerReaisOuZero(campoPiso.value)
-  const pisoFaltando = algumPeloPiso && (pisoDigitado === null || pisoDigitado === 0)
   return (
     <div className="flex flex-col gap-(--space-150)">
       <p className="max-w-3xl text-xs text-(--text-subtle)">
-        Uma linha por pessoa da equipe, com o custo do mês (salário, piso ou pró-labore, com
-        encargos) e as horas de trabalho no mês. A hora de custo de cada um é custo ÷ horas. Quanto
-        dessas horas vira serviço é decidido em cada orçamento, ao escolher o responsável de cada
-        serviço. Só membros com login entram: quem ainda não tem conta precisa ser convidado em
-        Equipe.
+        Uma linha por pessoa da equipe, dizendo como ela recebe: salário (CLT), pró-labore, bolsa de
+        estágio, por diária ou por projeto. Informe os custos da sua empresa; confirme encargos com
+        a contabilidade. A hora de custo de cada um sai dessas informações. Meio período é a
+        jornada: informe as horas no mês que a pessoa trabalha. Só membros com login entram: quem
+        ainda não tem conta precisa ser convidado em Equipe.
       </p>
       {/* relative: textos sr-only (absolutos) ficam presos à área que rola, não à página. */}
       <div className="relative overflow-x-auto">
-        <table className="w-full min-w-[860px] border-collapse corpo">
+        <table className="w-full min-w-[980px] border-collapse corpo">
           <thead>
             <tr>
               <th scope="col" className={classeCabecalho}>
                 Pessoa
               </th>
-              <th scope="col" className={`${classeCabecalho} w-48`}>
+              <th scope="col" className={`${classeCabecalho} w-44`}>
                 Profissão
               </th>
               <th scope="col" className={`${classeCabecalho} w-16 text-center`}>
                 Sócio
               </th>
-              <th scope="col" className={`${classeCabecalho} w-20 text-center`}>
-                Pelo piso
+              <th scope="col" className={`${classeCabecalho} w-44`}>
+                Como recebe
+              </th>
+              <th scope="col" className={`${classeCabecalho} w-40 text-right`}>
+                Custo (R$)
               </th>
               <th scope="col" className={`${classeCabecalho} w-36 text-right`}>
-                Custo mensal (R$)
-              </th>
-              <th scope="col" className={`${classeCabecalho} w-24 text-right`}>
-                Horas no mês
+                Horas
               </th>
               <th scope="col" className={`${classeCabecalho} w-28 text-right`}>
                 Hora de custo
@@ -973,22 +1326,77 @@ function Equipe({
           <tbody>
             {linhas.map((p, indice) => {
               const n = String(indice + 1)
-              const horas = lerHorasDoMes(p.horas)
-              const custo = custoDaLinha(p, pisoHoraCentavos)
-              const hora =
-                custo === null || horas === null
-                  ? null
-                  : horaDeCustoDaPessoa({
-                      custoMensalCentavos: custo,
-                      horasDisponiveisMes: horas,
-                      socio: p.socio,
-                    })
+              const lida = remuneracaoDaLinha(p)
+              const resumo = typeof lida === 'string' ? null : resumoDaPessoa(lida)
               // Cada membro uma vez: os já escolhidos em outras linhas saem da lista.
               const escolhidos = new Set(linhas.filter((x) => x.id !== p.id).map((x) => x.membroId))
               const opcoes = membros.filter((m) => !escolhidos.has(m.id))
               const membroSumiu = p.membroId !== '' && !membros.some((m) => m.id === p.membroId)
+              const numero = (
+                rotulo: string,
+                chave:
+                  | 'custo'
+                  | 'horas'
+                  | 'diaria'
+                  | 'horasDiaria'
+                  | 'dias'
+                  | 'projeto'
+                  | 'horasProjeto',
+                opcoesDoCampo: { reais?: boolean; placeholder?: string; legenda?: string },
+              ) => {
+                const valor = p[chave]
+                const invalido = opcoesDoCampo.reais
+                  ? lerReaisOuNulo(valor) === undefined
+                  : lerInteiroOuNulo(valor) === undefined
+                return (
+                  <label className="flex items-center justify-end gap-(--space-050)">
+                    <input
+                      aria-label={`${rotulo} da linha ${n}`}
+                      inputMode={opcoesDoCampo.reais ? 'decimal' : 'numeric'}
+                      placeholder={opcoesDoCampo.placeholder}
+                      aria-invalid={invalido || undefined}
+                      className={`${classeCampo} text-right tabular-nums`}
+                      value={valor}
+                      onChange={(e) => {
+                        const novo = e.target.value
+                        aoMudar(p.id, (x) => ({ ...x, [chave]: novo }))
+                      }}
+                    />
+                    {opcoesDoCampo.legenda ? (
+                      <span className="w-14 shrink-0 text-xs text-(--text-subtle)">
+                        {opcoesDoCampo.legenda}
+                      </span>
+                    ) : null}
+                  </label>
+                )
+              }
+              let custo: ReactNode
+              let horas: ReactNode
+              if (p.forma === 'diaria') {
+                custo = numero('Custo por diária', 'diaria', { reais: true, legenda: 'diária' })
+                horas = (
+                  <div className="flex flex-col gap-(--space-050)">
+                    {numero('Horas por diária', 'horasDiaria', { legenda: 'h/diária' })}
+                    {numero('Dias no mês', 'dias', {
+                      placeholder: 'Opcional',
+                      legenda: 'dias/mês',
+                    })}
+                  </div>
+                )
+              } else if (p.forma === 'projeto') {
+                custo = numero('Custo do projeto', 'projeto', { reais: true, legenda: 'projeto' })
+                horas = (
+                  <div className="flex flex-col gap-(--space-050)">
+                    {numero('Horas do projeto', 'horasProjeto', { legenda: 'h/projeto' })}
+                    {numero('Horas no mês', 'horas', { placeholder: 'Opcional', legenda: 'h/mês' })}
+                  </div>
+                )
+              } else {
+                custo = numero('Custo mensal', 'custo', { reais: true, legenda: 'mês' })
+                horas = numero('Horas no mês', 'horas', { placeholder: '173', legenda: 'h/mês' })
+              }
               return (
-                <tr key={p.id}>
+                <tr key={p.id} className="align-top">
                   <td className={classeCelula}>
                     <select
                       aria-label={`Pessoa da linha ${n}`}
@@ -1033,53 +1441,44 @@ function Equipe({
                       }}
                     />
                   </td>
-                  <td className={`${classeCelula} text-center`}>
-                    <CaixaSelecao
-                      rotulo={<span className="sr-only">Remuneração pelo piso na linha {n}</span>}
-                      checked={p.peloPiso}
-                      onChange={(e) => {
-                        const marcado = e.target.checked
-                        aoMudar(p.id, (x) => ({ ...x, peloPiso: marcado }))
-                      }}
-                    />
-                  </td>
                   <td className={classeCelula}>
-                    {p.peloPiso ? (
-                      <span className="block text-right tabular-nums">
-                        {formatarCentavos(custo ?? 0)}
-                        <span className="sr-only"> por mês, pelo piso, na linha {n}</span>
+                    <select
+                      aria-label={`Como recebe na linha ${n}`}
+                      className={classeCampo}
+                      value={p.forma}
+                      aria-invalid={p.forma === '' || undefined}
+                      aria-describedby={p.forma === '' ? `forma-pendente-${n}` : undefined}
+                      onChange={(e) => {
+                        const valor = e.target.value as FormaDeRecebimento | ''
+                        aoMudar(p.id, (x) => ({ ...x, forma: valor }))
+                      }}
+                    >
+                      {p.forma === '' ? <option value="">Ainda não informado</option> : null}
+                      {FORMAS_DE_RECEBIMENTO.map((f) => (
+                        <option key={f} value={f}>
+                          {ROTULO_DA_FORMA[f]}
+                        </option>
+                      ))}
+                    </select>
+                    {p.forma === '' ? (
+                      <span
+                        id={`forma-pendente-${n}`}
+                        className="mt-(--space-025) block text-xs text-(--text-subtle)"
+                      >
+                        Confirme como esta pessoa recebe
                       </span>
-                    ) : (
-                      <input
-                        aria-label={`Custo mensal da linha ${n}`}
-                        inputMode="decimal"
-                        aria-invalid={custo === null || undefined}
-                        className={`${classeCampo} text-right tabular-nums`}
-                        value={p.custo}
-                        onChange={(e) => {
-                          const valor = e.target.value
-                          aoMudar(p.id, (x) => ({ ...x, custo: valor }))
-                        }}
-                      />
-                    )}
+                    ) : null}
                   </td>
-                  <td className={classeCelula}>
-                    <input
-                      aria-label={`Horas no mês da linha ${n}`}
-                      inputMode="numeric"
-                      placeholder="173"
-                      aria-invalid={horas === null || undefined}
-                      className={`${classeCampo} text-right tabular-nums`}
-                      value={p.horas}
-                      onChange={(e) => {
-                        const valor = e.target.value
-                        aoMudar(p.id, (x) => ({ ...x, horas: valor }))
-                      }}
-                    />
-                  </td>
+                  <td className={classeCelula}>{custo}</td>
+                  <td className={classeCelula}>{horas}</td>
                   <td className={`${classeCelula} text-right tabular-nums text-(--text-subtle)`}>
-                    {hora === null ? '—' : formatarCentavos(hora)}
-                    <span className="sr-only"> por hora, na linha {n}</span>
+                    {resumo?.horaDeCustoCentavos == null
+                      ? '—'
+                      : formatarCentavos(resumo.horaDeCustoCentavos)}{' '}
+                    <span className="sr-only">por hora, na linha {n}</span>
+                    {resumo?.capacidadeHorasMes === null ? (
+                      <span className="block text-xs">capacidade desconhecida</span>
+                    ) : null}
                   </td>
                   <td className={classeCelula}>
                     <BotaoIcone
@@ -1096,40 +1495,6 @@ function Equipe({
           </tbody>
         </table>
       </div>
-      {algumPeloPiso ? (
-        <div className="flex flex-col gap-(--space-075)">
-          <Linha
-            id="base-piso"
-            rotulo="Piso por hora (R$)"
-            apoio="Pelo piso: custo do mês = horas no mês × piso por hora. Confirme o valor com o contador."
-          >
-            <input
-              id="base-piso"
-              inputMode="decimal"
-              aria-invalid={pisoFaltando || undefined}
-              aria-describedby={pisoFaltando ? 'base-piso-falta' : undefined}
-              className={`${classeCampo} text-right tabular-nums`}
-              {...campoPiso}
-            />
-          </Linha>
-          {pisoFaltando ? (
-            <p id="base-piso-falta" className="text-xs text-(--text-danger)">
-              Informe o piso por hora: sem ele, o custo de quem está pelo piso fica zero.
-            </p>
-          ) : null}
-          <details className="max-w-3xl text-xs text-(--text-subtle)">
-            <summary className="w-fit cursor-pointer text-(--text-link) hover:underline">
-              Como calcular o piso por hora
-            </summary>
-            <p className="mt-(--space-075)">
-              Referência: piso de engenheiro (Lei 4.950-A/66), 6 salários mínimos para 6 h por dia.
-              Para 8 h por dia, as 2 horas a mais têm 25% de acréscimo, o que dá 8,5 salários
-              mínimos por mês. Por hora: piso do mês ÷ horas do mês (40 h por semana são cerca de
-              173,33 h). Atualize quando o salário mínimo mudar e confirme a conta com o contador.
-            </p>
-          </details>
-        </div>
-      ) : null}
       <div className="flex flex-wrap items-center justify-between gap-(--space-100)">
         <Botao aparencia="link" iconeAntes="plus" onClick={aoAdicionar}>
           Adicionar pessoa
@@ -1164,9 +1529,9 @@ function Equipe({
         ))}
       </dl>
       <p className="max-w-3xl text-xs text-(--text-subtle)">
-        No orçamento, o custo de cada serviço usa a hora do responsável. Sem responsável, vale a
-        hora da profissão da hora de venda escolhida; sem ninguém dessa profissão, a média da
-        equipe.
+        A média e o rateio das contas usam quem tem custo e horas do mês conhecidos; quem recebe por
+        projeto, ou por diária sem os dias no mês, fica de fora deles, mas tem a própria hora de
+        custo. No orçamento, o custo de cada serviço usa a hora do responsável.
       </p>
     </div>
   )

@@ -5,7 +5,7 @@
 -- profissão (sem ninguém da profissão, a média); só a Gestão da consultoria lê.
 begin;
 
-select plan(17);
+select plan(19);
 
 select testes.criar_dados_sinteticos();
 
@@ -30,7 +30,8 @@ select lives_ok(
   $sql$select public.salvar_base_de_custos('c0000000-0000-4000-8000-00000000000a',
       1, 25000, 1, 3000, 0, 0, 0, 0, 0, $json$[
       {"id": "40000000-0000-4000-8000-0000000000d1", "membro_id": "d0000000-0000-4000-8000-0000000000a1",
-       "socio": true, "pelo_piso": true, "profissao": "Eng. ambiental", "horas_disponiveis_mes": 173},
+       "socio": true, "tipo_recebimento": "pro_labore", "custo_mensal_centavos": 1375177,
+       "profissao": "Eng. ambiental", "horas_disponiveis_mes": 173},
       {"id": "40000000-0000-4000-8000-0000000000d2", "membro_id": "d0000000-0000-4000-8000-0000000000a2",
        "socio": true, "profissao": "Biólogo", "custo_mensal_centavos": 500000, "horas_disponiveis_mes": 87}
     ]$json$::jsonb, '[]'::jsonb, 25000, 0, $json$[
@@ -161,12 +162,32 @@ select is(
 );
 
 -- Custos: 10h × (79,49 + 0,96) = 804,50 · 8h × (57,47 + 0,96) = 467,44 · 1h × (72,12 + 0,96) = 73,08
--- (engenheiro civil sem ninguém da profissão: média da equipe). Total 1.345,02 ÷ 0,80 = 1.681,28.
+-- (engenheiro civil sem ninguém da profissão: média da equipe). O preço usa as horas de venda mais as contas, com acréscimo de 20%.
 select results_eq(
   $$select array_agg(preco_centavos order by ordem) from public.orcamento_item
     where orcamento_id = 'f0000000-0000-4000-8000-0000000000d1'$$,
-  $$values (array[100563, 58430, 9135]::bigint[])$$,
+  $$values (array[258180, 288922, 30115]::bigint[])$$,
   'pela margem, cada item usa a hora técnica da profissão; sem ninguém da profissão, a média'
+);
+
+-- Mesmo exemplo do domínio: 3 × R$ 214,19 + 3 × R$ 0,96, com 30%.
+select is(
+  public.salvar_orcamento('f0000000-0000-4000-8000-0000000000d1', 4, $json${
+    "objeto": "Exemplo hora de venda", "forma_preco": "margem", "margem_pb": 3000,
+    "visitas": {"quantidade": 0},
+    "itens": [
+      {"id": "10000000-0000-4000-8000-0000000000d1", "descricao": "Etapa 1", "minutos": 60, "hora_venda_id": "h-eng-jr"},
+      {"id": "10000000-0000-4000-8000-0000000000d2", "descricao": "Etapa 2", "minutos": 60, "hora_venda_id": "h-eng-jr"},
+      {"id": "10000000-0000-4000-8000-0000000000d4", "descricao": "Etapa 3", "minutos": 60, "hora_venda_id": "h-eng-jr"}
+    ], "despesas": []
+  }$json$::jsonb),
+  5,
+  'salva o exemplo de três horas de venda com acréscimo de 30%'
+);
+select results_eq(
+  $$select sum(preco_centavos)::bigint from public.orcamento_item where orcamento_id = 'f0000000-0000-4000-8000-0000000000d1'$$,
+  $$values (83909::bigint)$$,
+  'três horas de 214,19 mais contas de 2,88, com 30%, totalizam 839,09'
 );
 
 -- ---------------------------------------------------------------------------

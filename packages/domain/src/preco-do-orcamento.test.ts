@@ -14,6 +14,7 @@ import {
 // R$ 2 por cobrança e R$ 4 de assinatura, visita R$ 150, km R$ 1,20.
 const base: BaseDoPreco = {
   horaTecnicaCentavos: 10_000,
+  horasVenda: [{ id: 'venda', profissao: 'Engenheiro', atividade: 'Venda', valorCentavos: 10_000 }],
   custoFixoHoraCentavos: 5_000,
   tributosPb: 600,
   taxasPb: 0,
@@ -24,8 +25,8 @@ const base: BaseDoPreco = {
 }
 
 const doisItens = [
-  { minutos: 120, custoDiretoExtraCentavos: 0 }, // 2h: 200 + 100 de rateio = 300
-  { minutos: 60, custoDiretoExtraCentavos: 5_000 }, // 1h: 100 + 50 extra + 50 de rateio = 200
+  { minutos: 120, custoDiretoExtraCentavos: 0, horaVendaId: 'venda' }, // 2h: 200 + 100 de rateio = 300
+  { minutos: 60, custoDiretoExtraCentavos: 5_000, horaVendaId: 'venda' }, // 1h: 100 + 50 extra + 50 de rateio = 200
 ]
 
 describe('valorDasVisitas', () => {
@@ -45,7 +46,7 @@ describe('valorDasVisitas', () => {
 })
 
 describe('precificarOrcamento', () => {
-  it('aplica uma margem só no total e reparte pelo custo', () => {
+  it('aplica acréscimo só no trabalho e contas e reparte pelo custo', () => {
     const p = precificarOrcamento({
       itens: doisItens,
       visitas: SEM_VISITAS,
@@ -55,17 +56,17 @@ describe('precificarOrcamento', () => {
       base,
     })
     expect(p.pendencia).toBeNull()
-    // custo 500 + fixos (2 × 2 + 4 = 8) = 508 ÷ (1 − 0,30 − 0,06) = 793,75
+    // Trabalho e contas 450 + 30% = 585; extras 50 e taxas fixas 8; ÷ 0,94 = 684,04
     expect(p.custoTotalCentavos).toBe(50_000)
     expect(p.fixosPorCobrancaCentavos).toBe(800)
-    expect(p.precoTotalCentavos).toBe(79_375)
-    // Repartição 300 : 200 → 476,25 e 317,50
-    expect(p.precosDosItens).toEqual([47_625, 31_750])
+    expect(p.precoTotalCentavos).toBe(68_404)
+    // Repartição proporcional aos custos dos itens.
+    expect(p.precosDosItens).toEqual([41_042, 27_362])
     expect(p.precosDosItens.reduce((a, b) => a + b, 0)).toBe(p.precoTotalCentavos)
     expect(p.precoVisitasCentavos).toBe(0)
   })
 
-  it('a divisão do valor fecha com o preço e o lucro dá a margem escolhida', () => {
+  it('a divisão fecha e o lucro corresponde ao acréscimo sobre trabalho e contas', () => {
     const p = precificarOrcamento({
       itens: doisItens,
       visitas: SEM_VISITAS,
@@ -80,7 +81,7 @@ describe('precificarOrcamento', () => {
     expect(d.trabalhoTecnicoCentavos).toBe(30_000)
     expect(d.outrosCustosDiretosCentavos).toBe(5_000)
     expect(d.contasDaConsultoriaCentavos).toBe(15_000)
-    expect(d.tributosCentavos).toBe(4_763) // 6% de 793,75
+    expect(d.tributosCentavos).toBe(4_104) // 6% de 684,04
     expect(d.taxasCentavos).toBe(800)
     const soma =
       d.trabalhoTecnicoCentavos +
@@ -92,7 +93,7 @@ describe('precificarOrcamento', () => {
       d.taxasCentavos +
       d.lucroCentavos
     expect(soma).toBe(p.precoTotalCentavos)
-    expect(Math.round((d.lucroCentavos * 10_000) / p.precoTotalCentavos)).toBe(3_000)
+    expect(d.lucroCentavos).toBe(13_500)
   })
 
   it('visitas têm preço fixo, sem margem, numa linha própria', () => {
@@ -104,18 +105,18 @@ describe('precificarOrcamento', () => {
       margemPb: 3_000,
       base,
     })
-    // Serviços: (500 + 6 de taxas fixas) ÷ 0,64 = 790,625 → 790,63; visita: 150 fixo
+    // A visita permanece em 150; seus tributos são cobertos nos serviços.
     expect(p.valorVisitasCentavos).toBe(15_000)
     expect(p.precoVisitasCentavos).toBe(15_000)
-    expect(p.precoTotalCentavos).toBe(94_063)
-    // Só os serviços se repartem: 300 : 200 → 474,38 e 316,25
-    expect(p.precosDosItens).toEqual([47_438, 31_625])
+    expect(p.precoTotalCentavos).toBe(84_149)
+    // Só os serviços se repartem na proporção dos custos.
+    expect(p.precosDosItens).toEqual([41_489, 27_660])
     expect(p.custoTotalCentavos).toBe(50_000)
   })
 
   it('despesa incluída entra no custo e se espalha pelas linhas', () => {
     const p = precificarOrcamento({
-      itens: [{ minutos: 60, custoDiretoExtraCentavos: 0 }],
+      itens: [{ minutos: 60, custoDiretoExtraCentavos: 0, horaVendaId: 'venda' }],
       visitas: SEM_VISITAS,
       despesasIncluidasCentavos: [10_000],
       quantidadeDeParcelas: 0,
@@ -125,6 +126,68 @@ describe('precificarOrcamento', () => {
     // custo 150 + 100 de despesa = 250, sem margem nem tributos
     expect(p.precoTotalCentavos).toBe(25_000)
     expect(p.precosDosItens).toEqual([25_000])
+  })
+
+  it('acrescenta 15% apenas ao trabalho e às contas, sem acréscimo nas despesas', () => {
+    const p = precificarOrcamento({
+      itens: [{ minutos: 600, custoDiretoExtraCentavos: 5_000, horaVendaId: 'venda' }],
+      visitas: SEM_VISITAS,
+      despesasIncluidasCentavos: [15_000],
+      quantidadeDeParcelas: 0,
+      margemPb: 1_500,
+      base: {
+        ...base,
+        horaTecnicaCentavos: 8_000,
+        horasVenda: [
+          { id: 'venda', profissao: 'Engenheiro', atividade: 'Venda', valorCentavos: 8_000 },
+        ],
+        custoFixoHoraCentavos: 2_000,
+        tributosPb: 0,
+        taxaPorAssinaturaCentavos: 0,
+      },
+    })
+    expect(p.precoTotalCentavos).toBe(135_000)
+    expect(p.divisao?.lucroCentavos).toBe(15_000)
+  })
+
+  it('usa as horas de venda escolhidas, não o custo interno: exemplo confirmado', () => {
+    const p = precificarOrcamento({
+      itens: Array.from({ length: 3 }, () => ({
+        minutos: 60,
+        custoDiretoExtraCentavos: 0,
+        horaVendaId: 'venda',
+      })),
+      visitas: SEM_VISITAS,
+      despesasIncluidasCentavos: [],
+      quantidadeDeParcelas: 0,
+      margemPb: 3_000,
+      base: {
+        ...base,
+        horaTecnicaCentavos: 7_949,
+        custoFixoHoraCentavos: 96,
+        horasVenda: [
+          { id: 'venda', profissao: 'Engenheiro', atividade: 'Júnior', valorCentavos: 21_419 },
+        ],
+        tributosPb: 0,
+        taxaPorAssinaturaCentavos: 0,
+      },
+    })
+    expect(p.custoTotalCentavos).toBe(24_135)
+    expect(p.divisao?.horasDeVendaCentavos).toBe(64_257)
+    expect(p.precoTotalCentavos).toBe(83_909)
+    expect(p.divisao?.lucroCentavos).toBe(59_774)
+  })
+
+  it('sem hora de venda, preço pela margem fica pendente', () => {
+    const p = precificarOrcamento({
+      itens: [{ minutos: 60, custoDiretoExtraCentavos: 0 }],
+      visitas: SEM_VISITAS,
+      despesasIncluidasCentavos: [],
+      quantidadeDeParcelas: 0,
+      margemPb: 1_500,
+      base,
+    })
+    expect(p.pendencia).toBe('hora_sem_valor')
   })
 
   it('fica pendente, sem preço, com despesa incluída a cotar', () => {
@@ -177,15 +240,18 @@ describe('precificarOrcamento', () => {
     expect(p.pendencia).toBe('percentuais_impossiveis')
   })
 
-  it('dá o mesmo centavo que o banco (caso de supabase/tests/190_orcamentos.test.sql)', () => {
+  it('inclui tributos e taxas preservando o valor fixo das visitas', () => {
     const p = precificarOrcamento({
-      itens: [{ minutos: 60, custoDiretoExtraCentavos: 0 }],
+      itens: [{ minutos: 60, custoDiretoExtraCentavos: 0, horaVendaId: 'venda' }],
       visitas: { quantidade: 2, kmPorVisita: 50, outrosPorVisitaCentavos: 1_000 },
       despesasIncluidasCentavos: [],
       quantidadeDeParcelas: 1,
       margemPb: 2_000,
       base: {
         horaTecnicaCentavos: 9_500,
+        horasVenda: [
+          { id: 'venda', profissao: 'Engenheiro', atividade: 'Venda', valorCentavos: 9_500 },
+        ],
         custoFixoHoraCentavos: 3_000,
         tributosPb: 600,
         taxasPb: 0,
@@ -195,17 +261,17 @@ describe('precificarOrcamento', () => {
         custoKmCentavos: 120,
       },
     })
-    // Serviços: (125 + 5,99) ÷ 0,74 = 177,01; visitas: 2 × (150 + 50 × 1,20 + 10) = 440
-    expect(p.precoTotalCentavos).toBe(61_701)
-    expect(p.precosDosItens).toEqual([17_701])
+    // Serviços: (125 + 25 + 5,99 + 6% de 440) ÷ 0,94 = 194,03; visitas = 440.
+    expect(p.precoTotalCentavos).toBe(63_403)
+    expect(p.precosDosItens).toEqual([19_403])
     expect(p.precoVisitasCentavos).toBe(44_000)
   })
 
   it('itens sem custo repartem por igual', () => {
     const p = precificarOrcamento({
       itens: [
-        { minutos: 0, custoDiretoExtraCentavos: 0 },
-        { minutos: 0, custoDiretoExtraCentavos: 0 },
+        { minutos: 0, custoDiretoExtraCentavos: 0, horaVendaId: 'venda' },
+        { minutos: 0, custoDiretoExtraCentavos: 0, horaVendaId: 'venda' },
       ],
       visitas: SEM_VISITAS,
       despesasIncluidasCentavos: [],
@@ -279,7 +345,7 @@ describe('precificarOrcamento pela tabela (hora de venda) e custo por profissão
       base: comTabela,
     })
     expect(p.custosDosItens.map((c) => c.totalCentavos)).toEqual([80_450, 46_744, 7_308])
-    expect(p.precosDosItens).toEqual([100_563, 58_430, 9_135])
+    expect(p.precosDosItens).toEqual([258_180, 288_922, 30_115])
   })
 
   it('com responsável, o custo usa a hora dele; fora da equipe, volta para a profissão', () => {

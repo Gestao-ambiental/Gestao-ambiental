@@ -24,6 +24,7 @@ import { PaginaPlanoRenovacao } from './paginas/acompanhamentos/PaginaPlanoRenov
 import { PaginaCalendario } from './paginas/calendario/PaginaCalendario'
 import { PaginaOcorrencia } from './paginas/ocorrencia/PaginaOcorrencia'
 import { PaginaCustosETaxas } from './paginas/orcamentos/PaginaCustosETaxas'
+import { PaginaDadosDaProposta } from './paginas/orcamentos/PaginaDadosDaProposta'
 import { PaginaOrcamento } from './paginas/orcamentos/PaginaOrcamento'
 import { PaginaProposta } from './paginas/orcamentos/PaginaProposta'
 import { PaginaOrcamentos } from './paginas/orcamentos/PaginaOrcamentos'
@@ -86,6 +87,7 @@ export const rotas: RouteObject[] = [
               { path: 'orcamentos/:id', element: <PaginaOrcamento /> },
               { path: 'configuracoes/equipe', element: <PaginaEquipe /> },
               { path: 'configuracoes/custos', element: <PaginaCustosETaxas /> },
+              { path: 'configuracoes/proposta', element: <PaginaDadosDaProposta /> },
               { path: 'perfil', element: <PaginaPerfil /> },
               { path: '*', element: <PaginaNaoEncontrada /> },
             ],

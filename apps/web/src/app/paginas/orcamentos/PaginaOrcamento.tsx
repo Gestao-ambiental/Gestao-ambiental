@@ -1,5 +1,6 @@
 import {
   cargaDoMes,
+  ESCALA_DA_QUANTIDADE,
   formatarCentavos,
   formatarDuracao,
   hojeNoFuso,
@@ -12,6 +13,7 @@ import {
   MAXIMO_KM_POR_VISITA,
   MAXIMO_VISITAS,
   type PendenciaDoPreco,
+  type UnidadeDeCobranca,
 } from '@gestao-ambiental/domain'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
@@ -37,6 +39,8 @@ import {
   type DadosDoRascunho,
   type FormaDePreco,
   type Orcamento,
+  ROTULO_DA_SITUACAO,
+  type ResponsabilidadeTecnica,
   type TratamentoDespesa,
 } from '@/lib/api/orcamentos'
 import { mensagemDoErro } from '@/lib/erros'
@@ -51,8 +55,19 @@ import {
   lerReaisOuZero,
   textoDoPercentual,
 } from './calculo'
-import { classeCabecalho, classeCampo, classeCelula, numeroComRevisao } from './comum'
+import {
+  ROTULO_DA_UNIDADE,
+  SUFIXO_DA_UNIDADE,
+  campoDaQuantidade,
+  classeCabecalho,
+  classeCampo,
+  classeCelula,
+  lerQuantidade,
+  numeroComRevisao,
+} from './comum'
 import { DialogoModelo, type SelecaoDoModelo } from './DialogoModelo'
+import { DialogoDuplicar, DialogoSalvarModelo } from './DialogosDeCopia'
+import { SituacaoDoOrcamento } from './SituacaoDoOrcamento'
 import { camposDoProspecto, lerProspecto, type CamposDoProspecto } from './prospecto'
 import { SeloSituacaoOrcamento } from './SeloSituacaoOrcamento'
 
@@ -78,8 +93,9 @@ const MENSAGEM_DA_PENDENCIA: Record<PendenciaDoPreco, string> = {
   percentuais_impossiveis:
     'Margem, tributos e taxas somam 100% ou mais: não há preço possível. Reduza a margem.',
   valor_invalido: 'O preço passou do limite. Confira as horas e os valores.',
-  hora_sem_valor:
-    'Há serviço sem hora de venda, ou com uma hora que não existe mais em Custos e taxas: escolha a hora.',
+  hora_sem_valor: 'Escolha um preço válido da tabela de preços para cada serviço.',
+  quantidade_pendente:
+    'Há serviço sem quantidade ou, no pacote, sem preço fechado: preencha para calcular o preço.',
 }
 
 // ---------------------------------------------------------------------------
@@ -98,6 +114,12 @@ interface LinhaItem {
   responsavelId: string
   /** Mês previsto (aaaa-mm-01; '' = sem mês). */
   mesPrevisto: string
+  /** Quantidade na unidade da linha de preço (m², ha, diárias, campanhas), como digitada. */
+  quantidade: string
+  /** Preço fechado do pacote, como digitado. */
+  precoFechado: string
+  /** O serviço inclui ART ou RRT ('' = não informado). */
+  responsabilidade: ResponsabilidadeTecnica | ''
 }
 interface LinhaDespesa {
   id: string
@@ -118,6 +140,8 @@ interface Rascunho {
   validade: string
   premissas: string
   exclusoes: string
+  /** Apresentação desta proposta; vazio = o padrão da identidade da consultoria. */
+  apresentacao: string
   /** Margem sobre o preço de venda, escolhida no fim. */
   margem: string
   formaPreco: FormaDePreco
@@ -140,6 +164,7 @@ function rascunhoDe(o: Orcamento): Rascunho {
     validade: String(o.validadeDias),
     premissas: o.premissas.join('\n'),
     exclusoes: o.exclusoes.join('\n'),
+    apresentacao: o.apresentacao,
     formaPreco: o.formaPreco,
     prospecto: camposDoProspecto(o.prospecto),
     margem: margem === null ? '' : textoDoPercentual(margem),
@@ -156,6 +181,10 @@ function rascunhoDe(o: Orcamento): Rascunho {
       horaVendaId: i.horaVendaId ?? '',
       responsavelId: i.responsavelId ?? '',
       mesPrevisto: i.mesPrevisto ?? '',
+      quantidade:
+        i.quantidadeDezMilesimos === null ? '' : campoDaQuantidade(i.quantidadeDezMilesimos),
+      precoFechado: i.precoFechadoCentavos === null ? '' : formatarCentavos(i.precoFechadoCentavos),
+      responsabilidade: i.responsabilidadeTecnica ?? '',
     })),
     despesas: o.despesas.map((d) => ({
       id: d.id,
@@ -205,6 +234,7 @@ function paraSalvar(r: Rascunho, deProspecto: boolean): DadosDoRascunho | string
     if ('erros' in lido) return `Prospecto: ${Object.values(lido.erros)[0] ?? 'confira os dados'}.`
     prospecto = lido.prospecto
   }
+  if (r.apresentacao.trim().length > 4000) return 'Apresentação da proposta: até 4.000 caracteres.'
   const validade = Number(r.validade)
   if (!Number.isInteger(validade) || validade < 1 || validade > 365)
     return 'Validade: um número de 1 a 365 dias.'
@@ -223,6 +253,11 @@ function paraSalvar(r: Rascunho, deProspecto: boolean): DadosDoRascunho | string
     if (minutos === null)
       return `Item ${String(indice + 1)}: horas inválidas. Use 1h30, 1:30 ou 1,5.`
     if (extra === null) return `Item ${String(indice + 1)}: valor inválido.`
+    const quantidade = lerQuantidade(i.quantidade)
+    const precoFechado = lerEstimativa(i.precoFechado)
+    if (quantidade === undefined)
+      return `Item ${String(indice + 1)}: quantidade inválida. Use até 4 casas, como 12,5.`
+    if (precoFechado === undefined) return `Item ${String(indice + 1)}: preço fechado inválido.`
     itens.push({
       id: i.id,
       descricao: i.descricao,
@@ -231,6 +266,9 @@ function paraSalvar(r: Rascunho, deProspecto: boolean): DadosDoRascunho | string
       horaVendaId: i.horaVendaId || null,
       responsavelId: i.responsavelId || null,
       mesPrevisto: i.mesPrevisto || null,
+      quantidadeDezMilesimos: quantidade,
+      precoFechadoCentavos: precoFechado,
+      responsabilidadeTecnica: i.responsabilidade || null,
     })
   }
   const despesas: DadosDoRascunho['despesas'] = []
@@ -261,6 +299,7 @@ function paraSalvar(r: Rascunho, deProspecto: boolean): DadosDoRascunho | string
     validadeDias: validade,
     premissas: linhasDeTexto(r.premissas),
     exclusoes: linhasDeTexto(r.exclusoes),
+    apresentacao: r.apresentacao.trim(),
     margemPb,
     formaPreco: r.formaPreco,
     ...(prospecto ? { prospecto } : {}),
@@ -357,6 +396,8 @@ function Editor({
   const [salvando, setSalvando] = useState(false)
   const [falha, setFalha] = useState<string | null>(null)
   const [catalogoAberto, setCatalogoAberto] = useState(false)
+  const [salvarModeloAberto, setSalvarModeloAberto] = useState(false)
+  const [duplicarAberto, setDuplicarAberto] = useState(false)
   // A etapa fica na URL (?etapa=preco): recarregar ou voltar no navegador não perde o lugar.
   const [parametros, setParametros] = useSearchParams()
   const indiceDaUrl = ETAPAS.findIndex((e) => e.id === parametros.get('etapa'))
@@ -400,6 +441,8 @@ function Editor({
       custoDiretoExtraCentavos: lerReaisOuZero(i.extra) ?? 0,
       horaVendaId: i.horaVendaId || null,
       responsavelId: i.responsavelId || null,
+      quantidadeDezMilesimos: lerQuantidade(i.quantidade) ?? null,
+      precoFechadoCentavos: lerEstimativa(i.precoFechado) ?? null,
     }))
     const incluidas = r.despesas
       .filter((d) => d.tratamento === 'incluida')
@@ -482,20 +525,27 @@ function Editor({
           horas:
             e.horasSugeridas === null ? '' : formatarDuracao(Math.round(e.horasSugeridas * 60)),
           extra: '',
-          horaVendaId: horaPadrao,
+          // Modelo da consultoria: a mesma linha da tabela, se ela ainda existir.
+          horaVendaId:
+            e.horaVendaId && horas.some((h) => h.id === e.horaVendaId) ? e.horaVendaId : horaPadrao,
           responsavelId: '',
           mesPrevisto: '',
+          quantidade: '',
+          precoFechado: '',
+          responsabilidade: '' as const,
         })),
       ],
       despesas: [
         ...a.despesas,
-        ...selecao.despesas.map((nome) => ({
+        ...selecao.despesas.map((d) => ({
           id: crypto.randomUUID(),
-          descricao: nome,
+          descricao: d.nome,
           estimativa: '',
-          tratamento: 'cliente_direto' as const,
+          tratamento: d.tratamento ?? ('cliente_direto' as const),
         })),
       ],
+      premissas: juntarLinhas(a.premissas, selecao.premissas),
+      exclusoes: juntarLinhas(a.exclusoes, selecao.exclusoes),
     }))
     setAplicado(
       `Modelo "${selecao.modelo}" aplicado: ${String(selecao.etapas.length)} etapas e ${String(selecao.despesas.length)} despesas. Revise o escopo e informe as horas.`,
@@ -606,10 +656,46 @@ function Editor({
             </span>
             <SeloSituacaoOrcamento situacao={orcamento.situacao} />
             {deProspecto ? <Selo tom="revisao">Prospecto</Selo> : null}
+            {orcamento.duplicadoDe ? (
+              <span>
+                Cópia de{' '}
+                <Link to={`/orcamentos/${orcamento.duplicadoDe.id}`} className="tabular-nums">
+                  {numeroComRevisao(
+                    orcamento.duplicadoDe.ano,
+                    orcamento.duplicadoDe.sequencia,
+                    orcamento.duplicadoDe.revisao,
+                  )}
+                </Link>
+              </span>
+            ) : null}
             {alterado ? <span>Alterações não salvas</span> : null}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-(--space-100)">
+          {naLixeira ? null : (
+            <>
+              <Botao
+                iconeAntes="copy"
+                disabled={alterado}
+                title={alterado ? 'Salve antes: a cópia parte do que está salvo.' : undefined}
+                onClick={() => {
+                  setDuplicarAberto(true)
+                }}
+              >
+                Duplicar
+              </Botao>
+              <Botao
+                iconeAntes="star"
+                disabled={alterado}
+                title={alterado ? 'Salve antes: o modelo parte do que está salvo.' : undefined}
+                onClick={() => {
+                  setSalvarModeloAberto(true)
+                }}
+              >
+                Salvar como modelo
+              </Botao>
+            </>
+          )}
           {verProposta('padrao')}
           {editavel ? (
             <Botao
@@ -623,6 +709,20 @@ function Editor({
           ) : null}
         </div>
       </div>
+
+      {naLixeira ? null : (
+        <SituacaoDoOrcamento
+          orcamento={orcamento}
+          alterado={alterado}
+          fuso={atual.fuso}
+          aoMudar={(para) => {
+            aoAvisar(`Situação: ${ROTULO_DA_SITUACAO[para]}.`)
+            void queryClient.invalidateQueries({ queryKey: ['orcamento', orcamento.id] })
+            void queryClient.invalidateQueries({ queryKey: ['orcamentos'] })
+            void queryClient.invalidateQueries({ queryKey: ['carga-da-equipe'] })
+          }}
+        />
+      )}
 
       {naLixeira ? (
         <MensagemSecao tom="atencao">
@@ -700,7 +800,7 @@ function Editor({
                 ? undefined
                 : pelaTabela
                   ? `pela tabela · sobra ${formatarPontosBase(calculo.margemResultantePb ?? 0)}`
-                  : `com margem de ${formatarPontosBase(calculo.margemPb)}, escolhida no fim`
+                  : `com acréscimo de ${formatarPontosBase(calculo.margemPb)} sobre horas de venda e contas`
             }
           >
             {precoTotal === null ? (
@@ -813,7 +913,7 @@ function Editor({
                       </th>
                       {horas.length > 0 ? (
                         <th scope="col" className={`${classeCabecalho} w-56`}>
-                          {pelaTabela ? 'Hora de venda' : 'Profissão'}
+                          Hora de venda
                         </th>
                       ) : null}
                       <th scope="col" className={`${classeCabecalho} w-52`}>
@@ -868,6 +968,23 @@ function Editor({
                                 mudarItem(item.id, (x) => ({ ...x, descricao: valor }))
                               }}
                             />
+                            <label className="mt-(--space-050) flex items-center gap-(--space-050) text-xs text-(--text-subtle)">
+                              Registro
+                              <select
+                                aria-label={`ART ou RRT do item ${n}`}
+                                className={`${classeCampo} w-auto py-0 text-xs`}
+                                value={item.responsabilidade}
+                                disabled={!editavel}
+                                onChange={(e) => {
+                                  const valor = e.target.value as ResponsabilidadeTecnica | ''
+                                  mudarItem(item.id, (x) => ({ ...x, responsabilidade: valor }))
+                                }}
+                              >
+                                <option value="">Sem ART/RRT</option>
+                                <option value="art">Com ART</option>
+                                <option value="rrt">Com RRT</option>
+                              </select>
+                            </label>
                           </td>
                           <td className={classeCelula}>
                             <CampoNumero
@@ -884,39 +1001,71 @@ function Editor({
                           </td>
                           {horas.length > 0 ? (
                             <td className={classeCelula}>
-                              <select
-                                aria-label={`Hora de venda do item ${n}`}
-                                className={classeCampo}
-                                value={item.horaVendaId}
-                                disabled={!editavel}
-                                aria-invalid={
-                                  (pelaTabela && !horas.some((h) => h.id === item.horaVendaId)) ||
-                                  undefined
-                                }
-                                onChange={(e) => {
-                                  const valor = e.target.value
-                                  mudarItem(item.id, (x) => ({ ...x, horaVendaId: valor }))
-                                }}
-                              >
-                                {horas.some((h) => h.id === item.horaVendaId) ? null : (
-                                  <option value={item.horaVendaId}>
-                                    {item.horaVendaId
-                                      ? 'Hora que não existe mais'
-                                      : pelaTabela
-                                        ? 'Escolha a hora'
-                                        : 'Média da equipe'}
-                                  </option>
-                                )}
-                                {horasPorProfissao.map((grupo) => (
-                                  <optgroup key={grupo.profissao} label={grupo.profissao}>
-                                    {grupo.horas.map((h) => (
-                                      <option key={h.id} value={h.id}>
-                                        {h.atividade} · {formatarCentavos(h.valorCentavos)}/h
-                                      </option>
-                                    ))}
-                                  </optgroup>
-                                ))}
-                              </select>
+                              <div className="flex flex-col gap-(--space-050)">
+                                <select
+                                  aria-label={`Preço do item ${n}`}
+                                  className={classeCampo}
+                                  value={item.horaVendaId}
+                                  disabled={!editavel}
+                                  aria-invalid={
+                                    !horas.some((h) => h.id === item.horaVendaId) || undefined
+                                  }
+                                  onChange={(e) => {
+                                    const valor = e.target.value
+                                    const linha = horas.find((h) => h.id === valor)
+                                    mudarItem(item.id, (x) => ({
+                                      ...x,
+                                      horaVendaId: valor,
+                                      // Só fica o campo que a unidade usa; o pacote já vem
+                                      // com o preço da tabela, que dá para mudar.
+                                      quantidade:
+                                        linha &&
+                                        linha.unidade !== 'hora' &&
+                                        linha.unidade !== 'pacote'
+                                          ? x.quantidade
+                                          : '',
+                                      precoFechado:
+                                        linha?.unidade === 'pacote'
+                                          ? x.precoFechado || formatarCentavos(linha.valorCentavos)
+                                          : '',
+                                    }))
+                                  }}
+                                >
+                                  {horas.some((h) => h.id === item.horaVendaId) ? null : (
+                                    <option value={item.horaVendaId}>
+                                      {item.horaVendaId
+                                        ? 'Preço que não existe mais'
+                                        : 'Escolha o preço'}
+                                    </option>
+                                  )}
+                                  {horasPorProfissao.map((grupo) => (
+                                    <optgroup key={grupo.profissao} label={grupo.profissao}>
+                                      {grupo.horas.map((h) => (
+                                        <option key={h.id} value={h.id}>
+                                          {h.atividade} ·{' '}
+                                          {h.unidade === 'pacote'
+                                            ? `pacote ${formatarCentavos(h.valorCentavos)}`
+                                            : h.faixas.length > 0
+                                              ? `preço por faixas${SUFIXO_DA_UNIDADE[h.unidade]}`
+                                              : `${formatarCentavos(h.valorCentavos)}${SUFIXO_DA_UNIDADE[h.unidade]}`}
+                                          {h.minimoCentavos !== null
+                                            ? ` · mínimo ${formatarCentavos(h.minimoCentavos)}`
+                                            : ''}
+                                        </option>
+                                      ))}
+                                    </optgroup>
+                                  ))}
+                                </select>
+                                <CampoDaUnidade
+                                  n={n}
+                                  linha={horas.find((h) => h.id === item.horaVendaId) ?? null}
+                                  item={item}
+                                  desabilitado={!editavel}
+                                  aoMudar={(alterar) => {
+                                    mudarItem(item.id, alterar)
+                                  }}
+                                />
+                              </div>
                             </td>
                           ) : null}
                           <td className={classeCelula}>
@@ -1037,6 +1186,9 @@ function Editor({
                             horaVendaId: horaPadrao,
                             responsavelId: '',
                             mesPrevisto: '',
+                            quantidade: '',
+                            precoFechado: '',
+                            responsabilidade: '' as const,
                           },
                         ],
                       }))
@@ -1306,7 +1458,7 @@ function Editor({
                     <OpcaoRadio
                       name="forma-de-preco"
                       rotulo="Pela margem"
-                      descricao="Custo ÷ (1 − margem − tributos − taxas)."
+                      descricao="Acréscimo sobre as horas de venda e as contas da consultoria."
                       checked={!pelaTabela}
                       disabled={!editavel}
                       onChange={() => {
@@ -1315,7 +1467,7 @@ function Editor({
                     />
                   </div>
                 </fieldset>
-                {pelaTabela && horas.length === 0 ? (
+                {horas.length === 0 ? (
                   <MensagemSecao tom="atencao">
                     Nenhuma hora de venda cadastrada.{' '}
                     <Link to="/configuracoes/custos">Cadastrar em Custos e taxas</Link>
@@ -1339,11 +1491,11 @@ function Editor({
                 ) : (
                   <CampoRotulado
                     id="orcamento-margem"
-                    rotulo="Margem de lucro (%)"
+                    rotulo="Acréscimo sobre horas de venda e contas (%)"
                     apoio={
                       base
-                        ? `Sobre o preço de venda · desejada ${formatarPontosBase(base.margemDesejadaPb)} · mínima ${formatarPontosBase(base.margemMinimaPb)}`
-                        : 'Sobre o preço de venda'
+                        ? `Sobre as horas de venda e as contas · referência ${formatarPontosBase(base.margemDesejadaPb)} · mínima ${formatarPontosBase(base.margemMinimaPb)}`
+                        : 'Sobre as horas de venda e as contas da consultoria'
                     }
                   >
                     <div className="flex flex-wrap items-center gap-(--space-100)">
@@ -1391,10 +1543,21 @@ function Editor({
 
                 {d && precoTotal !== null ? (
                   <div className="grid gap-(--space-300) lg:grid-cols-2">
+                    {!pelaTabela ? (
+                      <p className="corpo lg:col-span-2">
+                        Sobre o que incide o acréscimo: {formatarReais(d.horasDeVendaCentavos)} da
+                        venda dos serviços +{' '}
+                        {formatarReais(d.baseDoAcrescimoCentavos - d.horasDeVendaCentavos)} das
+                        contas da consultoria = {formatarReais(d.baseDoAcrescimoCentavos)}.
+                        {d.precosFechadosCentavos > 0
+                          ? ` Pacotes (${formatarReais(d.precosFechadosCentavos)}) têm preço fechado e ficam fora do acréscimo.`
+                          : ''}
+                      </p>
+                    ) : null}
                     <section aria-label="Divisão do valor">
                       <h3 className="mb-(--space-100) corpo-medio">Divisão do valor</h3>
                       <dl className="grid grid-cols-[1fr_auto] gap-x-(--space-200) gap-y-(--space-075) corpo">
-                        <Valor rotulo="Trabalho técnico (horas × hora técnica)">
+                        <Valor rotulo="Custo da equipe (horas × custo por hora)">
                           {d.trabalhoTecnicoCentavos}
                         </Valor>
                         {d.outrosCustosDiretosCentavos > 0 ? (
@@ -1417,12 +1580,7 @@ function Editor({
                         ) : null}
                         <Valor rotulo="Tributos sobre o faturamento">{d.tributosCentavos}</Valor>
                         <Valor rotulo="Taxas de cobrança e assinatura">{d.taxasCentavos}</Valor>
-                        <Valor
-                          rotulo={`Lucro (${formatarPontosBase(
-                            pelaTabela ? (calculo.margemResultantePb ?? 0) : calculo.margemPb,
-                          )})`}
-                          destaque
-                        >
+                        <Valor rotulo="Lucro estimado" destaque>
                           {d.lucroCentavos}
                         </Valor>
                         <dt className="border-t pt-(--space-075) corpo-medio">Preço</dt>
@@ -1458,8 +1616,8 @@ function Editor({
                     <section aria-label="Preço na proposta" className="lg:col-span-2">
                       <h3 className="mb-(--space-025) corpo-medio">Preço na proposta</h3>
                       <p className="mb-(--space-100) text-xs text-(--text-subtle)">
-                        O preço é repartido entre os serviços pelo custo de cada um. Custo e margem
-                        não aparecem para o cliente.
+                        O preço é repartido entre os serviços proporcionalmente às horas de venda,
+                        contas e outros custos. Custo e margem não aparecem para o cliente.
                       </p>
                       <dl className="grid max-w-2xl grid-cols-[1fr_auto] gap-x-(--space-200) gap-y-(--space-075) corpo">
                         {r.itens.map((item, indice) => (
@@ -1491,9 +1649,17 @@ function Editor({
             {base ? (
               <Recolhido
                 titulo="Como o preço é calculado"
-                resumo="custos + taxas fixas ÷ (1 − margem − tributos − taxas)"
+                resumo={
+                  pelaTabela
+                    ? 'horas de venda + outros custos e despesas'
+                    : 'horas de venda + contas + acréscimo + despesas e taxas'
+                }
               >
-                <ComoOPrecoECalculado base={base} fixos={calculo.fixosPorCobrancaCentavos} />
+                <ComoOPrecoECalculado
+                  base={base}
+                  fixos={calculo.fixosPorCobrancaCentavos}
+                  pelaTabela={pelaTabela}
+                />
               </Recolhido>
             ) : null}
           </>
@@ -1713,6 +1879,21 @@ function Editor({
                 </div>
               </div>
             </Recolhido>
+            <Recolhido
+              titulo="Apresentação da proposta"
+              resumo={r.apresentacao.trim() ? 'própria' : 'padrão'}
+            >
+              <CampoArea
+                id="orcamento-apresentacao"
+                rotulo="Texto no início da proposta (vazio usa o padrão da identidade da consultoria)"
+                linhas={4}
+                valor={r.apresentacao}
+                desabilitado={!editavel}
+                aoMudar={(valor) => {
+                  mudar((a) => ({ ...a, apresentacao: valor }))
+                }}
+              />
+            </Recolhido>
             <Recolhido titulo="Premissas" resumo={String(linhasDeTexto(r.premissas).length)}>
               <CampoArea
                 id="orcamento-premissas"
@@ -1747,9 +1928,40 @@ function Editor({
         aberto={catalogoAberto}
         aoMudar={setCatalogoAberto}
         aoAplicar={aplicarModelo}
+        consultoriaId={atual.consultoriaId}
+      />
+      <DialogoSalvarModelo
+        aberto={salvarModeloAberto}
+        aoMudar={setSalvarModeloAberto}
+        orcamentoId={orcamento.id}
+        nomeSugerido={orcamento.objeto}
+        aoSalvar={(nome) => {
+          aoAvisar(
+            `Modelo "${nome}" salvo. Ele aparece em Escolher modelo, nos modelos da consultoria.`,
+          )
+          void queryClient.invalidateQueries({ queryKey: ['modelos-de-orcamento'] })
+        }}
+      />
+      <DialogoDuplicar
+        aberto={duplicarAberto}
+        aoMudar={setDuplicarAberto}
+        orcamentoId={orcamento.id}
+        aoDuplicar={(novoId) => {
+          aoAvisar('Cópia criada como rascunho. Revise o cliente, os prazos e os preços.')
+          void queryClient.invalidateQueries({ queryKey: ['orcamentos'] })
+          void navegar(`/orcamentos/${novoId}`)
+        }}
       />
     </div>
   )
+}
+
+/** Acrescenta linhas (premissas, exclusões) sem repetir as que já estão. */
+function juntarLinhas(atual: string, novas: readonly string[] | undefined): string {
+  if (!novas || novas.length === 0) return atual
+  const existentes = linhasDeTexto(atual)
+  const faltam = novas.filter((n) => !existentes.includes(n))
+  return [...existentes, ...faltam].join('\n')
 }
 
 // ---------------------------------------------------------------------------
@@ -1952,9 +2164,11 @@ function CampoArea({
 function ComoOPrecoECalculado({
   base,
   fixos,
+  pelaTabela,
 }: {
   base: NonNullable<Orcamento['base']>
   fixos: number
+  pelaTabela: boolean
 }) {
   return (
     <>
@@ -1976,9 +2190,10 @@ function ComoOPrecoECalculado({
         </dd>
       </dl>
       <p className="mt-(--space-150) max-w-xl text-xs text-(--text-subtle)">
-        Preço dos serviços = (custo dos serviços + despesas incluídas + taxas fixas) ÷ (1 − margem −
-        tributos − taxas), repartido entre os serviços pelo custo de cada um. As visitas têm preço
-        fixo, sem margem, e linha própria.
+        {pelaTabela
+          ? 'Pela tabela, cada serviço usa as horas e a hora de venda escolhida, com os outros custos e despesas incluídas. O lucro é o que sobra após custos, tributos e taxas.'
+          : 'O acréscimo incide sobre as horas de venda e as contas. Outros custos e despesas entram sem acréscimo. Tributos e taxas são cobertos separadamente, inclusive os incidentes sobre as visitas. O preço dos serviços é repartido conforme as horas de venda, contas e outros custos.'}{' '}
+        As visitas têm preço fixo e linha própria.
       </p>
     </>
   )
@@ -2082,11 +2297,98 @@ function CelulaResponsavel({
         >
           {rotuloDoMes(mes)}: {formatarDuracao(carga.totalMinutos)}
           {carga.jornadaMinutos === null
-            ? ' (sem jornada em Custos e taxas)'
+            ? ' (capacidade desconhecida)'
             : ` de ${formatarDuracao(carga.jornadaMinutos)}`}
           {carga.acimaDaJornada ? ', acima da jornada' : ''}
         </span>
       ) : null}
     </div>
+  )
+}
+
+/**
+ * Abaixo do preço escolhido: a quantidade (m², hectare, diárias, campanhas) ou o preço fechado do
+ * pacote. Com tempo por unidade na tabela, a quantidade sugere as horas estimadas, que continuam
+ * editáveis (ADR-0018, P2). Na hora, nada aparece: o preço sai das horas.
+ */
+function CampoDaUnidade({
+  n,
+  linha,
+  item,
+  desabilitado,
+  aoMudar,
+}: {
+  n: string
+  linha: { unidade: UnidadeDeCobranca; minutosPorUnidade: number | null } | null
+  item: LinhaItem
+  desabilitado: boolean
+  aoMudar: (alterar: (x: LinhaItem) => LinhaItem) => void
+}) {
+  if (!linha || linha.unidade === 'hora') return null
+  const semHoras = (lerDuracao(item.horas) ?? 0) === 0
+  if (linha.unidade === 'pacote') {
+    return (
+      <>
+        <CampoNumero
+          rotulo={`Preço fechado do item ${n}`}
+          reais
+          valor={item.precoFechado}
+          placeholder="Preço fechado"
+          invalido={
+            item.precoFechado.trim() === '' || lerEstimativa(item.precoFechado) === undefined
+          }
+          desabilitado={desabilitado}
+          aoMudar={(valor) => {
+            aoMudar((x) => ({ ...x, precoFechado: valor }))
+          }}
+        />
+        {semHoras ? (
+          <span className="text-xs text-(--text-subtle)">Informe as horas estimadas</span>
+        ) : null}
+      </>
+    )
+  }
+  const quantidade = lerQuantidade(item.quantidade)
+  return (
+    <>
+      <label className="flex items-center gap-(--space-050)">
+        <input
+          aria-label={`Quantidade do item ${n}`}
+          inputMode="decimal"
+          placeholder="Quantidade"
+          aria-invalid={quantidade === null || quantidade === undefined || undefined}
+          className={`${classeCampo} text-right tabular-nums`}
+          value={item.quantidade}
+          disabled={desabilitado}
+          onChange={(e) => {
+            const valor = e.target.value
+            const minutos = linha.minutosPorUnidade
+            const sugestao = (texto: string): string | null => {
+              const lida = lerQuantidade(texto)
+              return minutos && lida
+                ? formatarDuracao(Math.round((lida * minutos) / ESCALA_DA_QUANTIDADE))
+                : null
+            }
+            aoMudar((x) => {
+              // As horas acompanham a quantidade enquanto forem a própria sugestão (ou estiverem
+              // vazias); editadas à mão, ficam como a pessoa deixou.
+              const seguindo =
+                (lerDuracao(x.horas) ?? 0) === 0 || x.horas === sugestao(x.quantidade)
+              return {
+                ...x,
+                quantidade: valor,
+                horas: seguindo ? (sugestao(valor) ?? x.horas) : x.horas,
+              }
+            })
+          }}
+        />
+        <span className="shrink-0 text-xs text-(--text-subtle)">
+          {ROTULO_DA_UNIDADE[linha.unidade]}
+        </span>
+      </label>
+      {semHoras ? (
+        <span className="text-xs text-(--text-subtle)">Informe as horas estimadas</span>
+      ) : null}
+    </>
   )
 }

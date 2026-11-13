@@ -1,9 +1,11 @@
 import {
+  ESCALA_DA_QUANTIDADE,
   diferencaDasParcelas,
   distribuirPorMaiorResto,
   formatarCentavos,
   formatarPontosBase,
   mascararCnpj,
+  valorPorFaixas,
 } from '@gestao-ambiental/domain'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, type ReactNode } from 'react'
@@ -14,11 +16,17 @@ import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/
 import { Botao } from '@/components/ui/botao'
 import { Icone } from '@/components/ui/icone'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
-import { obterOrcamento, type Orcamento } from '@/lib/api/orcamentos'
+import { obterIdentidade } from '@/lib/api/identidade'
+import {
+  ROTULO_DA_RESPONSABILIDADE,
+  obterOrcamento,
+  type HoraDeVenda,
+  type Orcamento,
+} from '@/lib/api/orcamentos'
 import { formatarInstanteComoData } from '@/lib/datas'
 
 import { calcularOrcamento } from './calculo'
-import { numeroComRevisao } from './comum'
+import { SUFIXO_DA_UNIDADE, numeroComRevisao, textoDaQuantidade, textoDasFaixas } from './comum'
 
 /**
  * /orcamentos/:id/proposta (ORC-05). A proposta como o cliente recebe: serviços com preço, visitas,
@@ -88,8 +96,26 @@ function Moldura({ id, acoes, children }: { id: string; acoes?: ReactNode; child
   )
 }
 
+/** O texto, sem espaços nas pontas; vazio ou ausente devolve o padrão. */
+function textoOu(texto: string | undefined, padrao: string): string {
+  const limpo = texto?.trim() ?? ''
+  return limpo === '' ? padrao : limpo
+}
+
 function Proposta({ orcamento: o }: { orcamento: Orcamento }) {
   const { atual } = useConsultoria()
+  // Dados da consultoria (P8). Sem eles (ou se falhar), a proposta sai só com o nome.
+  const consultaIdentidade = useQuery({
+    queryKey: ['identidade', atual.consultoriaId],
+    queryFn: () => obterIdentidade(atual.consultoriaId),
+  })
+  const identidade = consultaIdentidade.data ?? null
+  // Texto vazio vale como não informado: cai no padrão.
+  const apresentacao = textoOu(o.apresentacao, textoOu(identidade?.textoApresentacao, ''))
+  const nomeDaConsultoria = textoOu(identidade?.razaoSocial, atual.consultoriaNome)
+  const contato = [identidade?.telefone, identidade?.email, identidade?.site].filter(
+    (parte): parte is string => Boolean(parte),
+  )
   const numero = numeroComRevisao(o.ano, o.sequencia, o.revisao)
   // O título da aba vira o nome sugerido do PDF ao salvar.
   useEffect(() => {
@@ -103,6 +129,8 @@ function Proposta({ orcamento: o }: { orcamento: Orcamento }) {
       custoDiretoExtraCentavos: i.custoDiretoExtraCentavos,
       horaVendaId: i.horaVendaId,
       responsavelId: i.responsavelId,
+      quantidadeDezMilesimos: i.quantidadeDezMilesimos,
+      precoFechadoCentavos: i.precoFechadoCentavos,
     })),
     o.visitas,
     o.despesas.filter((d) => d.tratamento === 'incluida').map((d) => d.estimativaCentavos),
@@ -156,8 +184,26 @@ function Proposta({ orcamento: o }: { orcamento: Orcamento }) {
       >
         <header className="flex flex-wrap items-start justify-between gap-(--space-200) border-b pb-(--space-200)">
           <div className="flex flex-col gap-(--space-050)">
-            <span className="corpo-medio">{atual.consultoriaNome}</span>
-            <h2 className="titulo-tela">Proposta comercial</h2>
+            {identidade?.logoUrl ? (
+              <img
+                src={identidade.logoUrl}
+                alt={`Logo de ${nomeDaConsultoria}`}
+                className="mb-(--space-050) h-14 max-w-56 object-contain object-left"
+              />
+            ) : null}
+            <span className="corpo-medio">{nomeDaConsultoria}</span>
+            {identidade?.cnpj ? (
+              <span className="text-xs text-(--text-subtle)">
+                CNPJ {mascararCnpj(identidade.cnpj)}
+              </span>
+            ) : null}
+            {identidade?.endereco ? (
+              <span className="text-xs text-(--text-subtle)">{identidade.endereco}</span>
+            ) : null}
+            {contato.length > 0 ? (
+              <span className="text-xs text-(--text-subtle)">{contato.join(' · ')}</span>
+            ) : null}
+            <h2 className="mt-(--space-100) titulo-tela">Proposta comercial</h2>
           </div>
           <dl className="grid grid-cols-[auto_auto] gap-x-(--space-150) gap-y-(--space-025) text-right corpo">
             <dt className="text-(--text-subtle)">Número</dt>
@@ -177,6 +223,12 @@ function Proposta({ orcamento: o }: { orcamento: Orcamento }) {
           ) : null}
           {o.destinatario ? <p>A/C {o.destinatario}</p> : null}
         </section>
+
+        {apresentacao ? (
+          <section aria-label="Apresentação" className="flex flex-col gap-(--space-050)">
+            <p className="whitespace-pre-line">{apresentacao}</p>
+          </section>
+        ) : null}
 
         <section aria-label="Objeto" className="flex flex-col gap-(--space-050)">
           <h3 className="rotulo">Objeto</h3>
@@ -204,6 +256,12 @@ function Proposta({ orcamento: o }: { orcamento: Orcamento }) {
                   <tr key={i.id} className="border-b align-top">
                     <td className="py-(--space-075) pr-(--space-150) whitespace-pre-line">
                       {i.descricao}
+                      <DetalheDaUnidade item={i} linhas={o.base?.horasVenda ?? []} />
+                      {i.responsabilidadeTecnica ? (
+                        <span className="block text-xs text-(--text-subtle)">
+                          Inclui {ROTULO_DA_RESPONSABILIDADE[i.responsabilidadeTecnica]}
+                        </span>
+                      ) : null}
                     </td>
                     <td className="py-(--space-075) text-right tabular-nums">
                       {formatarCentavos(i.precoCentavos)}
@@ -296,6 +354,62 @@ function Proposta({ orcamento: o }: { orcamento: Orcamento }) {
         <ListaDeTextos titulo="Não incluído nesta proposta" itens={o.exclusoes} />
       </article>
     </Moldura>
+  )
+}
+
+/**
+ * Como o serviço é cobrado, para o cliente: "1.250 m² × R$ 2,00/m²" ou "Pacote". Na hora não
+ * aparece nada: horas são internas (ADR-0018).
+ */
+/**
+ * Como o serviço foi cobrado: "12,5 ha × R$ 80,00/ha", "Pacote", ou a quantidade com as faixas
+ * (nunca uma média como tarifa). Quando o preço mínimo valeu, diz isso.
+ */
+function DetalheDaUnidade({
+  item,
+  linhas,
+}: {
+  item: Orcamento['itens'][number]
+  linhas: readonly HoraDeVenda[]
+}) {
+  const linha = linhas.find((h) => h.id === item.horaVendaId)
+  if (!linha) return null
+  if (linha.unidade === 'pacote') {
+    return <span className="block text-xs text-(--text-subtle)">Pacote</span>
+  }
+  const quantidade = item.quantidadeDezMilesimos
+  const porFaixas = linha.faixas.length > 0 && linha.unidade !== 'hora'
+  // Valor pela tabela, para saber se o mínimo valeu (o banco calcula o mesmo).
+  let pelaTabela: number | null = null
+  if (linha.unidade === 'hora') pelaTabela = Math.round((item.minutos * linha.valorCentavos) / 60)
+  else if (quantidade !== null)
+    pelaTabela = porFaixas
+      ? valorPorFaixas(quantidade, linha.faixas)
+      : Math.round((quantidade * linha.valorCentavos) / ESCALA_DA_QUANTIDADE)
+  const minimoValeu =
+    linha.minimoCentavos !== null && pelaTabela !== null && pelaTabela < linha.minimoCentavos
+  const minimo = minimoValeu ? (
+    <span className="block text-xs text-(--text-subtle)">
+      Preço mínimo do serviço: R$ {formatarCentavos(linha.minimoCentavos ?? 0)}
+    </span>
+  ) : null
+  if (linha.unidade === 'hora' || quantidade === null) return minimo
+  return (
+    <>
+      <span className="block text-xs text-(--text-subtle) tabular-nums">
+        {textoDaQuantidade(quantidade, linha.unidade)}
+        {porFaixas ? (
+          <> por faixas: {textoDasFaixas(linha.faixas, linha.unidade).join('; ')}</>
+        ) : (
+          <>
+            {' '}
+            × R$ {formatarCentavos(linha.valorCentavos)}
+            {SUFIXO_DA_UNIDADE[linha.unidade]}
+          </>
+        )}
+      </span>
+      {minimo}
+    </>
   )
 }
 

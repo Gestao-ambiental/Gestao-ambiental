@@ -211,8 +211,8 @@ select results_eq(
   $$select preco_automatico, preco_centavos from public.orcamento_item
     where id in ('10000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000004')
     order by ordem$$,
-  $$values (true, 194047::bigint), (true, 19561::bigint)$$,
-  'preço digitado é ignorado: total = (1.250 + 1.240 + 125 + 4 de assinatura) ÷ (1 − 30% − 6%) = 4.092,19, repartido pelo custo'
+  $$values (true, 0::bigint), (true, 0::bigint)$$,
+  'preço digitado é ignorado enquanto falta hora de venda'
 );
 
 select results_eq(
@@ -269,7 +269,7 @@ select results_eq(
   $$select sequencia, empreendimento_nome, total_centavos, total
     from public.listar_orcamentos('c0000000-0000-4000-8000-00000000000a', 'horizonte')
     order by sequencia$$,
-  $$values (1, 'Indústria Horizonte', 409219::bigint, 2::bigint),
+  $$values (1, 'Indústria Horizonte', null::bigint, 2::bigint),
            (2, 'Indústria Horizonte', null::bigint, 2::bigint)$$,
   'a lista traz o total dos itens e o total de linhas; sem base, o total é nulo (nunca zero)'
 );
@@ -397,8 +397,8 @@ select results_eq(
   $$select o.base_hora_tecnica_centavos, o.base_custo_fixo_hora_centavos, i.preco_centavos
     from public.orcamento as o join public.orcamento_item as i on i.orcamento_id = o.id
     where o.id = 'f0000000-0000-4000-8000-000000000001'$$,
-  $$values (3629::bigint, 1935::bigint, 9319::bigint)$$,
-  'rateio = 9.600 ÷ 496 h = 19,35/h; 1h custa 36,29 + 19,35 = 55,64; com a assinatura (4,00), ÷ 0,64 = 93,19'
+  $$values (3629::bigint, 1935::bigint, 0::bigint)$$,
+  'base composta é copiada; sem hora de venda o preço permanece pendente'
 );
 
 -- ---------------------------------------------------------------------------
@@ -445,15 +445,15 @@ select results_eq(
   $$select i.preco_centavos, o.preco_visitas_centavos, o.margem_pb
     from public.orcamento as o join public.orcamento_item as i on i.orcamento_id = o.id
     where o.id = 'f0000000-0000-4000-8000-000000000001'$$,
-  $$values (17701::bigint, 44000::bigint, 2000)$$,
-  'serviços = (125 + 5,99 de taxas) ÷ (1 − 20% − 6%) = 177,01; visitas com preço fixo, sem margem: 2 × (150 + 50 km × 1,20 + 10) = 440'
+  $$values (0::bigint, 0::bigint, 2000)$$,
+  'sem hora de venda, itens e visitas permanecem pendentes'
 );
 
 select results_eq(
   $$select total_centavos from public.listar_orcamentos('c0000000-0000-4000-8000-00000000000a', 'horizonte')
     where sequencia = 1$$,
-  $$values (61701::bigint)$$,
-  'o total da lista soma os itens e a linha de visitas'
+  $$values (null::bigint)$$,
+  'sem hora de venda a lista mostra preço pendente'
 );
 
 select results_eq(
@@ -461,7 +461,7 @@ select results_eq(
            (j ->> 'preco_visitas_centavos')::bigint, (j -> 'base' ->> 'valor_visita_centavos')::bigint,
            jsonb_array_length(j -> 'base' -> 'custos_fixos_detalhe')
     from public.obter_orcamento('f0000000-0000-4000-8000-000000000001') as j$$,
-  $$values (2000, 2, 44000::bigint, 15000::bigint, 3)$$,
+  $$values (2000, 2, 0::bigint, 15000::bigint, 3)$$,
   'o detalhe traz a margem, as visitas e a base com as contas do mês'
 );
 

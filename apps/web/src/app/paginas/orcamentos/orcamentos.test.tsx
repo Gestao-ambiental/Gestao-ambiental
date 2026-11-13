@@ -1,5 +1,5 @@
 import { hojeNoFuso, inicioDoMes, rotuloDoMes } from '@gestao-ambiental/domain'
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import axe from 'axe-core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -47,7 +47,9 @@ const base = {
     { descricao: 'Energia elétrica', valor_centavos: 100_000 },
     { descricao: 'Internet e telefone', valor_centavos: 60_000 },
   ],
-  horas_venda: [],
+  horas_venda: [
+    { id: 'venda', profissao: 'Engenheiro', atividade: 'Venda', valor_centavos: 9_500 },
+  ],
   custo_hora_profissao: [],
   custo_hora_membro: [],
   registrada_em: '2026-11-06T19:00:00Z',
@@ -80,6 +82,7 @@ function orcamento(extra: Record<string, unknown> = {}) {
     itens: [
       {
         id: 'i1',
+        hora_venda_id: 'venda',
         descricao: 'Visita técnica e diagnóstico',
         minutos: 480,
         preco_automatico: false,
@@ -88,6 +91,7 @@ function orcamento(extra: Record<string, unknown> = {}) {
       },
       {
         id: 'i2',
+        hora_venda_id: 'venda',
         descricao: 'RCA/PCA e PGRS',
         minutos: 1_440,
         preco_automatico: false,
@@ -96,6 +100,7 @@ function orcamento(extra: Record<string, unknown> = {}) {
       },
       {
         id: 'i3',
+        hora_venda_id: 'venda',
         descricao: 'Protocolo e acompanhamento',
         minutos: 600,
         preco_automatico: false,
@@ -169,20 +174,32 @@ const baseDoCalculo = {
     { descricao: 'Energia elétrica', valorCentavos: 100_000 },
     { descricao: 'Internet e telefone', valorCentavos: 60_000 },
   ],
-  horasVenda: [],
+  horasVenda: [
+    {
+      id: 'venda',
+      profissao: 'Engenheiro',
+      atividade: 'Venda',
+      valorCentavos: 9_500,
+      fonte: null,
+      unidade: 'hora' as const,
+      minutosPorUnidade: null,
+      faixas: [],
+      minimoCentavos: null,
+    },
+  ],
   custoHoraPorProfissao: [],
   custoHoraPorMembro: [],
 }
 
 const semVisitas = { quantidade: 0, kmPorVisita: 0, outrosPorVisitaCentavos: 0 }
 const tresItens = [
-  { minutos: 480, custoDiretoExtraCentavos: 24_000 }, // 760 + 240 + 240 = 1.240
-  { minutos: 1_440, custoDiretoExtraCentavos: 26_000 }, // 2.280 + 260 + 720 = 3.260
-  { minutos: 600, custoDiretoExtraCentavos: 0 }, // 950 + 300 = 1.250
+  { minutos: 480, custoDiretoExtraCentavos: 24_000, horaVendaId: 'venda' }, // 760 + 240 + 240 = 1.240
+  { minutos: 1_440, custoDiretoExtraCentavos: 26_000, horaVendaId: 'venda' }, // 2.280 + 260 + 720 = 3.260
+  { minutos: 600, custoDiretoExtraCentavos: 0, horaVendaId: 'venda' }, // 950 + 300 = 1.250
 ]
 
 describe('cálculo da tela de orçamento (margem única no fim)', () => {
-  it('reproduz o exemplo conferido: R$ 8.999,95 repartido pelo custo de cada serviço', () => {
+  it('reproduz o exemplo conferido: R$ 7.803,16 repartido pelo custo de cada serviço', () => {
     const c = calcularOrcamento(
       tresItens,
       semVisitas,
@@ -193,34 +210,33 @@ describe('cálculo da tela de orçamento (margem única no fim)', () => {
     )
     expect(c.custoTotalCentavos).toBe(575_000)
     expect(c.fixosPorCobrancaCentavos).toBe(997)
-    // (5.750 + 9,97) ÷ (1 − 30% − 6%) = 8.999,95
-    expect(c.precoTotalCentavos).toBe(899_995)
-    expect(c.precosDosItens).toEqual([194_086, 510_258, 195_651])
+    // Acréscimo de 30% sobre trabalho e contas, com tributos e taxas separados.
+    expect(c.precoTotalCentavos).toBe(780_316)
+    expect(c.precosDosItens).toEqual([168_277, 442_405, 169_634])
     expect(c.situacaoDaMargem).toBe('adequada')
-    expect(c.parcelasCentavos).toEqual([359_998, 269_999, 269_998])
+    expect(c.parcelasCentavos).toEqual([312_126, 234_095, 234_095])
   })
 
   it('a margem escolhida no fim muda o preço; abaixo da mínima avisa', () => {
     const c = calcularOrcamento(tresItens, semVisitas, [], [10_000], 2_000, baseDoCalculo)
-    // (5.750 + 1,99 + 4) ÷ 0,74 = 7.778,36
-    expect(c.precoTotalCentavos).toBe(777_836)
+    // Acréscimo de 20% sobre trabalho e contas, com tributos e taxas separados.
+    expect(c.precoTotalCentavos).toBe(724_041)
     expect(c.situacaoDaMargem).toBe('abaixo_da_minima')
   })
 
   it('visitas têm preço fixo, sem margem, numa linha própria', () => {
     const c = calcularOrcamento(
-      [{ minutos: 60, custoDiretoExtraCentavos: 0 }],
+      [{ minutos: 60, custoDiretoExtraCentavos: 0, horaVendaId: 'venda' }],
       { quantidade: 2, kmPorVisita: 50, outrosPorVisitaCentavos: 1_000 },
       [],
       [10_000],
       2_000,
       baseDoCalculo,
     )
-    // Serviços: (125 + 5,99) ÷ 0,74 = 177,01; visitas: 2 × (150 + 50 × 1,20 + 10) = 440, sem
-    // margem (o mesmo do pgTAP).
+    // Visitas por R$ 440 fixos; os tributos sobre elas são cobertos nos serviços.
     expect(c.valorVisitasCentavos).toBe(44_000)
-    expect(c.precoTotalCentavos).toBe(61_701)
-    expect(c.precosDosItens).toEqual([17_701])
+    expect(c.precoTotalCentavos).toBe(63_403)
+    expect(c.precosDosItens).toEqual([19_403])
     expect(c.precoVisitasCentavos).toBe(44_000)
   })
 
@@ -404,6 +420,167 @@ describe('orçamentos (onda 5)', () => {
     imprimir.mockRestore()
   })
 
+  it('muda a situação à mão, com observação, e mostra o histórico', async () => {
+    falso.reiniciar(
+      cenario('gestao', {
+        rpc: {
+          mudar_situacao_orcamento: { data: 4 },
+          obter_orcamento: {
+            data: orcamento({
+              historico_situacao: [
+                {
+                  de: 'enviada',
+                  para: 'rascunho',
+                  revisao: 1,
+                  membro_nome: 'Eduardo Karnopp',
+                  em: '2026-11-10T14:00:00Z',
+                  observacao: 'Cliente pediu ajuste',
+                },
+              ],
+            }),
+          },
+        },
+      }),
+    )
+    const usuario = userEvent.setup()
+    renderizarApp('/orcamentos/o1')
+    const painel = await screen.findByRole('region', { name: 'Situação do orçamento' })
+    // Do rascunho só se vai para enviada ou aprovada.
+    expect(within(painel).queryByRole('button', { name: 'Marcar como recusada' })).toBeNull()
+    expect(within(painel).getByText(/Eduardo Karnopp: Enviada para Rascunho/)).toBeInTheDocument()
+    await usuario.click(within(painel).getByRole('button', { name: 'Marcar como enviada' }))
+    expect(screen.getByText(/deixa de ser editada no lugar/)).toBeInTheDocument()
+    await usuario.type(screen.getByLabelText('Observação (opcional)'), 'Enviada por e-mail')
+    await usuario.click(screen.getByRole('button', { name: 'Confirmar' }))
+    expect(falso.cliente.rpc).toHaveBeenCalledWith('mudar_situacao_orcamento', {
+      p_id: 'o1',
+      p_row_version: 3,
+      p_para: 'enviada',
+      p_observacao: 'Enviada por e-mail',
+    })
+    expect(await screen.findByText('Situação: Enviada.')).toBeInTheDocument()
+  })
+
+  it('sem horas em todos os serviços, a situação não muda e a tela explica', async () => {
+    falso.reiniciar(
+      cenario('gestao', {
+        rpc: { mudar_situacao_orcamento: { error: { message: 'horas_pendentes' } } },
+      }),
+    )
+    const usuario = userEvent.setup()
+    renderizarApp('/orcamentos/o1')
+    await usuario.click(await screen.findByRole('button', { name: 'Marcar como aprovada' }))
+    await usuario.click(screen.getByRole('button', { name: 'Confirmar' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Informe as horas de todos os serviços antes de enviar ou aprovar.',
+    )
+  })
+
+  it('enviada: reabrir vira nova revisão; com mudanças pendentes, a situação espera o salvar', async () => {
+    falso.reiniciar(
+      cenario('gestao', { rpc: { obter_orcamento: { data: orcamento({ situacao: 'enviada' }) } } }),
+    )
+    renderizarApp('/orcamentos/o1')
+    const painel = await screen.findByRole('region', { name: 'Situação do orçamento' })
+    expect(within(painel).getByRole('button', { name: 'Reabrir como revisão 2' })).toBeEnabled()
+    expect(within(painel).getByRole('button', { name: 'Marcar como recusada' })).toBeEnabled()
+  })
+
+  it('serviço com ART e texto de apresentação próprio vão no salvar', async () => {
+    const usuario = userEvent.setup()
+    renderizarApp('/orcamentos/o1')
+    await usuario.selectOptions(await screen.findByLabelText('ART ou RRT do item 2'), 'art')
+    expect(screen.getByRole('button', { name: 'Marcar como enviada' })).toBeDisabled()
+    await usuario.click(
+      within(screen.getByRole('navigation', { name: 'Etapas do orçamento' })).getByRole('button', {
+        name: /Parcelas/,
+      }),
+    )
+    await usuario.click(screen.getByText('Apresentação da proposta'))
+    await usuario.type(
+      screen.getByLabelText(/Texto no início da proposta/),
+      'Prezada Marina, segue a proposta.',
+    )
+    await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
+    const chamada = falso.cliente.rpc.mock.calls.find(([nome]) => nome === 'salvar_orcamento')
+    const dados = (
+      chamada?.[1] as {
+        p_dados: { apresentacao: string; itens: { responsabilidade_tecnica: string | null }[] }
+      }
+    ).p_dados
+    expect(dados.apresentacao).toBe('Prezada Marina, segue a proposta.')
+    expect(dados.itens.map((i) => i.responsabilidade_tecnica)).toEqual([null, 'art', null])
+  })
+
+  it('a proposta leva a identidade da consultoria, a apresentação e a ART do serviço', async () => {
+    const base = orcamento()
+    falso.reiniciar(
+      cenario('gestao', {
+        rpc: {
+          obter_identidade_da_consultoria: {
+            data: {
+              razao_social: 'Filtroville Consultoria Ambiental Ltda.',
+              cnpj: '11222333000181',
+              telefone: '(47) 3000-0000',
+              email: 'contato@filtroville.test',
+              site: null,
+              endereco: null,
+              texto_apresentacao: 'Agradecemos a oportunidade.',
+              logo_caminho: null,
+              row_version: 1,
+            },
+          },
+          obter_orcamento: {
+            data: {
+              ...base,
+              itens: base.itens.map((i, indice) =>
+                indice === 1 ? { ...i, responsabilidade_tecnica: 'art' } : i,
+              ),
+            },
+          },
+        },
+      }),
+    )
+    renderizarApp('/orcamentos/o1/proposta')
+    const proposta = await screen.findByRole('article', { name: 'Proposta ORC-2026-041' })
+    expect(
+      await within(proposta).findByText('Filtroville Consultoria Ambiental Ltda.'),
+    ).toBeInTheDocument()
+    expect(within(proposta).getByText('CNPJ 11.222.333/0001-81')).toBeInTheDocument()
+    expect(
+      within(proposta).getByText('(47) 3000-0000 · contato@filtroville.test'),
+    ).toBeInTheDocument()
+    // Sem texto próprio no orçamento, vale o padrão da identidade.
+    expect(within(proposta).getByText('Agradecemos a oportunidade.')).toBeInTheDocument()
+    expect(within(proposta).getByText('Inclui ART')).toBeInTheDocument()
+  })
+
+  it('cadastra os dados da proposta; a logo espera os dados salvos', async () => {
+    falso.reiniciar(cenario('gestao', { rpc: { salvar_identidade_da_consultoria: { data: 1 } } }))
+    const usuario = userEvent.setup()
+    const { container } = renderizarApp('/configuracoes/proposta')
+    await screen.findByRole('heading', { name: 'Dados da proposta' })
+    const acessibilidade = await axe.run(container, {
+      rules: { 'color-contrast': { enabled: false } },
+    })
+    expect(acessibilidade.violations.map((v) => v.id)).toEqual([])
+    expect(screen.getByRole('button', { name: 'Enviar logo' })).toBeDisabled()
+    await usuario.type(screen.getByLabelText('Razão social'), 'Filtroville Ltda.')
+    await usuario.type(screen.getByLabelText('CNPJ'), '11.222.333/0001-81')
+    await usuario.type(screen.getByLabelText('Texto de apresentação padrão'), 'Agradecemos.')
+    await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
+    expect(falso.cliente.rpc).toHaveBeenCalledWith('salvar_identidade_da_consultoria', {
+      p_consultoria_id: expect.any(String) as unknown,
+      p_row_version: 0,
+      p_dados: expect.objectContaining({
+        razao_social: 'Filtroville Ltda.',
+        cnpj: '11.222.333/0001-81',
+        texto_apresentacao: 'Agradecemos.',
+      }) as unknown,
+    })
+    expect(await screen.findByText('Dados da proposta salvos.')).toBeInTheDocument()
+  })
+
   it('o editor vai por etapas: serviços, preço e margem, parcelas', async () => {
     const usuario = userEvent.setup()
     renderizarApp('/orcamentos/o1')
@@ -417,13 +594,15 @@ describe('orçamentos (onda 5)', () => {
     expect(screen.getByText('R$ 5.750,00')).toBeInTheDocument()
     // Custo do item 1: 8h × 95 + 240 + 8h × 30 = 1.240,00
     expect(screen.getByText('1.240,00')).toBeInTheDocument()
-    expect(screen.queryByLabelText('Margem de lucro (%)')).not.toBeInTheDocument()
+    expect(
+      screen.queryByLabelText('Acréscimo sobre horas de venda e contas (%)'),
+    ).not.toBeInTheDocument()
 
     // Etapa 2: margem e preço; o foco vai para o conteúdo da etapa.
     await usuario.click(screen.getByRole('button', { name: 'Continuar para preço e margem' }))
     expect(screen.getByRole('group', { name: /Etapa 2 de 3/ })).toHaveFocus()
-    expect(screen.getByLabelText('Margem de lucro (%)')).toHaveValue('30')
-    expect(screen.getAllByText('R$ 8.999,95').length).toBeGreaterThan(0)
+    expect(screen.getByLabelText('Acréscimo sobre horas de venda e contas (%)')).toHaveValue('30')
+    expect(screen.getAllByText('R$ 7.803,16').length).toBeGreaterThan(0)
     const contas = screen.getByRole('region', { name: 'Contas da consultoria neste orçamento' })
     expect(within(contas).getByText('Energia elétrica')).toBeInTheDocument()
     expect(within(contas).getByText('131,25')).toBeInTheDocument()
@@ -431,19 +610,19 @@ describe('orçamentos (onda 5)', () => {
 
     // Etapa 3: parcelas sobre o preço.
     await usuario.click(screen.getByRole('button', { name: 'Continuar para parcelas' }))
-    expect(screen.getByText('3.599,98')).toBeInTheDocument()
+    expect(screen.getByText('3.121,26')).toBeInTheDocument()
     expect(screen.getByText('Somam 100% do preço.')).toBeInTheDocument()
     expect(
       within(trilha).getByRole('button', { name: 'Serviços, concluída, 3 serviços' }),
     ).toBeInTheDocument()
     await usuario.click(within(trilha).getByRole('button', { name: /Preço e margem/ }))
-    expect(screen.getByLabelText('Margem de lucro (%)')).toBeInTheDocument()
+    expect(screen.getByLabelText('Acréscimo sobre horas de venda e contas (%)')).toBeInTheDocument()
   })
 
   it('a margem tem atalhos de 5 em 5 e aceita outro valor', async () => {
     const usuario = userEvent.setup()
     renderizarApp('/orcamentos/o1?etapa=preco')
-    const margem = await screen.findByLabelText('Margem de lucro (%)')
+    const margem = await screen.findByLabelText('Acréscimo sobre horas de venda e contas (%)')
     const atalhos = screen.getByRole('group', { name: 'Margens mais usadas' })
     expect(
       within(atalhos)
@@ -475,8 +654,8 @@ describe('orçamentos (onda 5)', () => {
     await usuario.clear(percentual)
     await usuario.type(percentual, '25')
     expect(screen.getByText('Faltam 5,0% para fechar 100%.')).toBeInTheDocument()
-    // Sem fechar 100%, cada parcela mostra o próprio percentual do preço (25% de R$ 8.999,95).
-    expect(screen.getByText('2.249,99')).toBeInTheDocument()
+    // Sem fechar 100%, cada parcela mostra o próprio percentual do preço (25% de R$ 7.803,16).
+    expect(screen.getByText('1.950,79')).toBeInTheDocument()
 
     await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
     const chamada = falso.cliente.rpc.mock.calls.find(([nome]) => nome === 'salvar_orcamento')
@@ -510,11 +689,11 @@ describe('orçamentos (onda 5)', () => {
     expect(screen.getByText('187,50')).toBeInTheDocument()
 
     await usuario.click(screen.getByRole('button', { name: 'Continuar para preço e margem' }))
-    const margem = screen.getByLabelText('Margem de lucro (%)')
+    const margem = screen.getByLabelText('Acréscimo sobre horas de venda e contas (%)')
     await usuario.clear(margem)
     await usuario.type(margem, '20')
-    // (5.937,50 + 9,97) ÷ (1 − 20% − 6%) = 8.037,12, abaixo da mínima de 25%.
-    expect(screen.getAllByText('R$ 8.037,12').length).toBeGreaterThan(0)
+    // Acréscimo de 20% sobre trabalho e contas, abaixo da referência mínima de 25%.
+    expect(screen.getAllByText('R$ 7.484,01').length).toBeGreaterThan(0)
     expect(screen.getByText(/A margem está abaixo da mínima/)).toBeInTheDocument()
 
     await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
@@ -526,10 +705,180 @@ describe('orçamentos (onda 5)', () => {
       descricao: 'Revisão técnica',
       minutos: 90,
       custo_direto_extra_centavos: 0,
-      hora_venda_id: null,
+      hora_venda_id: 'venda',
       responsavel_id: null,
       mes_previsto: null,
+      quantidade: null,
+      preco_fechado_centavos: null,
+      responsabilidade_tecnica: null,
     })
+  })
+
+  it('serviço por hectare e pacote: quantidade sugere as horas, pacote vem com o preço fechado', async () => {
+    falso.reiniciar(
+      cenario('gestao', {
+        rpc: {
+          obter_orcamento: {
+            data: orcamento({
+              forma_preco: 'tabela',
+              base: {
+                ...base,
+                horas_venda: [
+                  {
+                    id: 'h',
+                    profissao: 'Eng.',
+                    atividade: 'Hora',
+                    valor_centavos: 16_000,
+                    fonte: null,
+                  },
+                  {
+                    id: 'ha',
+                    profissao: 'Bio.',
+                    atividade: 'Levantamento',
+                    valor_centavos: 8_000,
+                    fonte: null,
+                    unidade: 'ha',
+                    minutos_por_unidade: 96,
+                  },
+                  {
+                    id: 'pac',
+                    profissao: 'Eng.',
+                    atividade: 'PGRSS',
+                    valor_centavos: 120_000,
+                    fonte: null,
+                    unidade: 'pacote',
+                  },
+                ],
+              },
+              itens: [
+                {
+                  id: 'i1',
+                  descricao: 'Levantamento de fauna',
+                  minutos: 0,
+                  preco_centavos: 0,
+                  custo_direto_extra_centavos: 0,
+                  hora_venda_id: 'ha',
+                  quantidade: null,
+                },
+                {
+                  id: 'i2',
+                  descricao: 'PGRSS',
+                  minutos: 600,
+                  preco_centavos: 0,
+                  custo_direto_extra_centavos: 0,
+                  hora_venda_id: 'h',
+                },
+              ],
+            }),
+          },
+        },
+      }),
+    )
+    const usuario = userEvent.setup()
+    renderizarApp('/orcamentos/o1')
+    await screen.findByRole('heading', { name: 'Indústria Horizonte' })
+    // Sem quantidade, o preço fica pendente e o campo avisa.
+    expect(screen.getByLabelText('Quantidade do item 1')).toHaveAttribute('aria-invalid', 'true')
+
+    // 12,5 ha × 96 min = 20h sugeridas; 12,5 ha × 80,00 = 1.000,00
+    await usuario.type(screen.getByLabelText('Quantidade do item 1'), '12,5')
+    expect(screen.getByLabelText('Horas do item 1')).toHaveValue('20h')
+    expect(screen.getByText('1.000,00')).toBeInTheDocument()
+
+    // Ao escolher o pacote, o preço fechado vem da tabela e dá para mudar.
+    await usuario.selectOptions(screen.getByLabelText('Preço do item 2'), 'pac')
+    expect(screen.getByLabelText('Preço fechado do item 2')).toHaveValue('1.200,00')
+
+    await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
+    const chamada = falso.cliente.rpc.mock.calls.find(([nome]) => nome === 'salvar_orcamento')
+    const itens = (
+      chamada?.[1] as {
+        p_dados: {
+          itens: {
+            quantidade: string | null
+            preco_fechado_centavos: number | null
+            minutos: number
+          }[]
+        }
+      }
+    ).p_dados.itens
+    expect(itens[0]).toMatchObject({ quantidade: '12.5000', minutos: 1_200 })
+    expect(itens[1]).toMatchObject({ quantidade: null, preco_fechado_centavos: 120_000 })
+  })
+
+  it('faixas progressivas e preço mínimo entram no preço do serviço', async () => {
+    falso.reiniciar(
+      cenario('gestao', {
+        rpc: {
+          obter_orcamento: {
+            data: orcamento({
+              forma_preco: 'tabela',
+              base: {
+                ...base,
+                horas_venda: [
+                  {
+                    id: 'm2',
+                    profissao: 'Arq.',
+                    atividade: 'Projeto',
+                    valor_centavos: 200,
+                    fonte: null,
+                    unidade: 'm2',
+                    faixas: [
+                      { ate: 500, valor_centavos: 200 },
+                      { ate: null, valor_centavos: 150 },
+                    ],
+                  },
+                  {
+                    id: 'h',
+                    profissao: 'Eng.',
+                    atividade: 'Consulta',
+                    valor_centavos: 16_000,
+                    fonte: null,
+                    minimo_centavos: 50_000,
+                  },
+                ],
+              },
+              itens: [
+                {
+                  id: 'i1',
+                  descricao: 'Projeto do loteamento',
+                  minutos: 1_800,
+                  preco_centavos: 0,
+                  custo_direto_extra_centavos: 0,
+                  hora_venda_id: 'm2',
+                  quantidade: null,
+                },
+                {
+                  id: 'i2',
+                  descricao: 'Consulta',
+                  minutos: 60,
+                  preco_centavos: 0,
+                  custo_direto_extra_centavos: 0,
+                  hora_venda_id: 'h',
+                },
+              ],
+            }),
+          },
+        },
+      }),
+    )
+    const usuario = userEvent.setup()
+    renderizarApp('/orcamentos/o1')
+    await screen.findByRole('heading', { name: 'Indústria Horizonte' })
+    const preco1 = screen.getByLabelText('Preço do item 1')
+    expect(
+      within(preco1).getByRole('option', { name: /Projeto · preço por faixas\/m²/ }),
+    ).toBeInTheDocument()
+    expect(
+      within(screen.getByLabelText('Preço do item 2')).getByRole('option', {
+        name: /Consulta · 160,00\/h · mínimo 500,00/,
+      }),
+    ).toBeInTheDocument()
+    // 1.250 m²: 500 × 2,00 + 750 × 1,50 = 2.125,00 (progressivo, não 1.250 × 1,50)
+    await usuario.type(screen.getByLabelText('Quantidade do item 1'), '1250')
+    expect(screen.getByText('2.125,00')).toBeInTheDocument()
+    // 1 h × 160,00 fica abaixo do mínimo: vale 500,00.
+    expect(screen.getByText('500,00')).toBeInTheDocument()
   })
 
   it('visitas técnicas têm preço fixo e viram uma linha da proposta', async () => {
@@ -539,8 +888,8 @@ describe('orçamentos (onda 5)', () => {
     await usuario.type(screen.getByLabelText('Km por visita, ida e volta'), '50')
     // 2 × (150 + 50 km × 1,20) = 420
     expect(screen.getByText('Valor das visitas: R$ 420,00')).toBeInTheDocument()
-    // Sem margem: o preço sobe exatamente R$ 420 (8.999,95 → 9.419,95).
-    expect(screen.getAllByText('R$ 9.419,95').length).toBeGreaterThan(0)
+    // Visitas de R$ 420, com seus tributos cobertos nos serviços.
+    expect(screen.getAllByText('R$ 8.249,97').length).toBeGreaterThan(0)
     await usuario.click(screen.getByRole('button', { name: 'Continuar para preço e margem' }))
     expect(screen.getByText('Visitas técnicas (2) e deslocamento')).toBeInTheDocument()
 
@@ -579,6 +928,114 @@ describe('orçamentos (onda 5)', () => {
     expect(screen.getByLabelText('Estimativa da despesa 2')).toHaveValue('')
   })
 
+  it('aplica um modelo da consultoria: escopo, linha da tabela, despesa a cotar e premissas', async () => {
+    falso.reiniciar(
+      cenario('gestao', {
+        rpc: {
+          listar_modelos_de_orcamento: {
+            data: {
+              total: 1,
+              itens: [
+                {
+                  id: 'm1',
+                  nome: 'LAO rural',
+                  objeto: 'Licença de operação',
+                  itens: [
+                    {
+                      descricao: 'Diagnóstico de campo',
+                      minutos: 90,
+                      hora_venda_id: 'venda',
+                      unidade: 'hora',
+                    },
+                    {
+                      descricao: 'Item de linha apagada',
+                      minutos: 0,
+                      hora_venda_id: 'sumiu',
+                      unidade: 'm2',
+                    },
+                  ],
+                  despesas: [{ descricao: 'Laboratório', tratamento: 'incluida' }],
+                  premissas: ['Cliente fornece as plantas'],
+                  exclusoes: [],
+                  row_version: 1,
+                },
+              ],
+            },
+          },
+        },
+      }),
+    )
+    const usuario = userEvent.setup()
+    renderizarApp('/orcamentos/o1')
+    await screen.findByRole('heading', { name: 'Indústria Horizonte' })
+    await usuario.click(screen.getByRole('button', { name: 'Escolher modelo' }))
+    const proprios = await screen.findByRole('region', { name: 'Modelos da consultoria' })
+    await usuario.click(within(proprios).getByRole('button', { name: /^LAO rural/ }))
+    expect(screen.getByText(/Os preços vêm da tabela de preços atual/)).toBeInTheDocument()
+    await usuario.click(screen.getByRole('button', { name: 'Adicionar ao orçamento' }))
+
+    expect(screen.getByLabelText('Serviço do item 4')).toHaveValue('Diagnóstico de campo')
+    expect(screen.getByLabelText('Horas do item 4')).toHaveValue('1h30')
+    expect(screen.getByLabelText('Preço do item 4')).toHaveValue('venda')
+    expect(screen.getByLabelText('Despesa 2')).toHaveValue('Laboratório')
+    expect(screen.getByLabelText('Estimativa da despesa 2')).toHaveValue('')
+    await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
+    const chamada = falso.cliente.rpc.mock.calls.find(([nome]) => nome === 'salvar_orcamento')
+    expect(chamada?.[1]).toMatchObject({
+      p_dados: {
+        premissas: expect.arrayContaining(['Cliente fornece as plantas']) as unknown,
+        despesas: expect.arrayContaining([
+          expect.objectContaining({ descricao: 'Laboratório', tratamento: 'incluida' }),
+        ]) as unknown,
+      },
+    })
+  })
+
+  it('salva o orçamento como modelo, sem cliente nem preço', async () => {
+    falso.reiniciar(cenario('gestao', { rpc: { salvar_modelo_de_orcamento: { data: 'm9' } } }))
+    const usuario = userEvent.setup()
+    renderizarApp('/orcamentos/o1')
+    await usuario.click(await screen.findByRole('button', { name: 'Salvar como modelo' }))
+    const nome = screen.getByLabelText('Nome do modelo')
+    expect(nome).toHaveValue('Licenciamento (LO)')
+    expect(screen.getByText(/Sem cliente, preços, responsáveis nem meses/)).toBeInTheDocument()
+    await usuario.clear(nome)
+    await usuario.type(nome, 'LO industrial')
+    await usuario.click(screen.getByRole('button', { name: 'Salvar modelo' }))
+    const chamada = falso.cliente.rpc.mock.calls.find(
+      ([nomeRpc]) => nomeRpc === 'salvar_modelo_de_orcamento',
+    )
+    expect(chamada?.[1]).toMatchObject({ p_orcamento_id: 'o1', p_nome: 'LO industrial' })
+    expect(await screen.findByText(/Modelo "LO industrial" salvo/)).toBeInTheDocument()
+  })
+
+  it('duplica pedindo se os preços vão junto; com mudanças pendentes, pede para salvar antes', async () => {
+    falso.reiniciar(cenario('gestao', { rpc: { duplicar_orcamento: { data: 'o9' } } }))
+    const usuario = userEvent.setup()
+    renderizarApp('/orcamentos/o1')
+    await usuario.type(await screen.findByLabelText('Horas do item 1'), '0')
+    expect(screen.getByRole('button', { name: 'Duplicar' })).toBeDisabled()
+    await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Duplicar' })).toBeEnabled()
+    })
+    await usuario.click(screen.getByRole('button', { name: 'Duplicar' }))
+    expect(screen.getByText(/as despesas voltam a cotar/)).toBeInTheDocument()
+    await usuario.click(screen.getByRole('button', { name: 'Duplicar sem os preços' }))
+    const chamada = falso.cliente.rpc.mock.calls.find(([nome]) => nome === 'duplicar_orcamento')
+    expect(chamada?.[1]).toMatchObject({ p_id: 'o1', p_copiar_precos: false })
+    // A cópia abre no lugar (nova rota) e o aviso continua na tela.
+    await waitFor(() => {
+      expect(
+        falso.cliente.rpc.mock.calls.some(
+          ([nome, args]) => nome === 'obter_orcamento' && (args as { p_id: string }).p_id === 'o9',
+        ),
+      ).toBe(true)
+    })
+    expect(await screen.findByRole('heading', { name: 'Indústria Horizonte' })).toBeInTheDocument()
+    expect(screen.getByText(/Cópia criada como rascunho/)).toBeInTheDocument()
+  })
+
   it('horas fora do formato são marcadas e explicadas ao salvar', async () => {
     const usuario = userEvent.setup()
     renderizarApp('/orcamentos/o1')
@@ -604,7 +1061,7 @@ describe('orçamentos (onda 5)', () => {
     expect(
       screen.getAllByText(/Há despesa incluída no preço ainda a cotar/).length,
     ).toBeGreaterThan(0)
-    expect(screen.queryByText('R$ 8.999,95')).not.toBeInTheDocument()
+    expect(screen.queryByText('R$ 7.803,16')).not.toBeInTheDocument()
 
     await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
     const chamada = falso.cliente.rpc.mock.calls.find(([nome]) => nome === 'salvar_orcamento')
@@ -637,7 +1094,7 @@ describe('orçamentos (onda 5)', () => {
         name: /Preço e margem/,
       }),
     )
-    expect(screen.getByLabelText('Margem de lucro (%)')).toBeDisabled()
+    expect(screen.getByLabelText('Acréscimo sobre horas de venda e contas (%)')).toBeDisabled()
     expect(screen.getByRole('button', { name: '25%' })).toBeDisabled()
   })
 
@@ -829,7 +1286,7 @@ describe('orçamentos (onda 5)', () => {
     const usuario = userEvent.setup()
     renderizarApp('/orcamentos/o1')
     await screen.findByRole('heading', { name: 'Indústria Horizonte' })
-    const hora1 = screen.getByLabelText('Hora de venda do item 1')
+    const hora1 = screen.getByLabelText('Preço do item 1')
     expect(hora1).toHaveValue('h-jr')
     // A lista é agrupada por profissão.
     expect(within(hora1).getByRole('group', { name: 'Biólogo' })).toBeInTheDocument()
@@ -837,13 +1294,15 @@ describe('orçamentos (onda 5)', () => {
     expect(screen.getByText('1.953,52')).toBeInTheDocument()
     expect(screen.getAllByText('R$ 9.495,98').length).toBeGreaterThan(0)
 
-    await usuario.selectOptions(screen.getByLabelText('Hora de venda do item 3'), 'h-sr')
+    await usuario.selectOptions(screen.getByLabelText('Preço do item 3'), 'h-sr')
     // 10h × 356,98 = 3.569,80
     expect(screen.getByText('3.569,80')).toBeInTheDocument()
 
     await usuario.click(screen.getByRole('button', { name: 'Continuar para preço e margem' }))
     expect(screen.getByRole('radio', { name: /Pela tabela/ })).toBeChecked()
-    expect(screen.queryByLabelText('Margem de lucro (%)')).not.toBeInTheDocument()
+    expect(
+      screen.queryByLabelText('Acréscimo sobre horas de venda e contas (%)'),
+    ).not.toBeInTheDocument()
     expect(screen.getByText(/Margem que sobra/)).toBeInTheDocument()
 
     await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
@@ -909,7 +1368,7 @@ describe('orçamentos (onda 5)', () => {
     expect(itens[1]).toMatchObject({ responsavel_id: null, mes_previsto: null })
   })
 
-  it('cadastra a tabela de horas (ACEAMB e outras profissões), o piso e a equipe com profissão', async () => {
+  it('cadastra a tabela de horas e a equipe dizendo como cada pessoa recebe (sem piso)', async () => {
     falso.reiniciar({ ...cenario(), tabelas: { membro: membros } })
     const usuario = userEvent.setup()
     renderizarApp('/configuracoes/custos')
@@ -919,40 +1378,32 @@ describe('orçamentos (onda 5)', () => {
     )
     expect(screen.getByLabelText('Profissão da hora 1')).toHaveValue('Eng. ambiental e sanitarista')
     expect(screen.getByLabelText('Atividade ou nível da hora 1')).toHaveValue('Júnior')
-    expect(screen.getByLabelText('Hora de venda da linha 1')).toHaveValue('214,19')
+    expect(screen.getByLabelText('Preço da linha 1')).toHaveValue('214,19')
     expect(screen.getByLabelText('Atividade ou nível da hora 4')).toHaveValue(
       'Avaliação e perícia ambiental',
     )
-    expect(screen.getByLabelText('Hora de venda da linha 4')).toHaveValue('356,98')
+    expect(screen.getByLabelText('Preço da linha 4')).toHaveValue('356,98')
     // Outra profissão, com o valor que a consultoria informar.
-    await usuario.click(screen.getByRole('button', { name: 'Adicionar hora' }))
+    await usuario.click(screen.getByRole('button', { name: 'Adicionar preço' }))
     await usuario.type(screen.getByLabelText('Profissão da hora 5'), 'Biólogo')
     await usuario.type(screen.getByLabelText('Atividade ou nível da hora 5'), 'Sênior')
-    await usuario.type(screen.getByLabelText('Hora de venda da linha 5'), '300,00')
+    await usuario.type(screen.getByLabelText('Preço da linha 5'), '300,00')
 
     await usuario.type(screen.getByLabelText('Custos fixos por mês (R$)'), '250,00')
     await usuario.click(screen.getByRole('button', { name: 'Calcular pela equipe' }))
-    // O piso só aparece quando alguém está pelo piso; os percentuais saíram.
-    expect(screen.queryByLabelText('Piso por hora (R$)')).not.toBeInTheDocument()
+    // Sem piso: cada pessoa diz como recebe; os percentuais saíram.
+    expect(screen.queryByLabelText(/Piso/)).not.toBeInTheDocument()
     expect(screen.queryByLabelText(/Aproveitamento/)).not.toBeInTheDocument()
     await usuario.selectOptions(await screen.findByLabelText('Pessoa da linha 1'), 'm-eduardo')
     await usuario.type(
       screen.getByLabelText('Profissão da linha 1'),
       'Eng. ambiental e sanitarista',
     )
-    await usuario.click(screen.getByLabelText('Remuneração pelo piso na linha 1'))
-    expect(
-      screen.getByText(/sem ele, o custo de quem está pelo piso fica zero/),
-    ).toBeInTheDocument()
-    await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
-    expect(screen.getByRole('alert')).toHaveTextContent(
-      'Informe o piso por hora: há pessoas marcadas pelo piso.',
-    )
-    await usuario.type(screen.getByLabelText('Piso por hora (R$)'), '79,49')
+    await usuario.selectOptions(screen.getByLabelText('Como recebe na linha 1'), 'pro_labore')
+    await usuario.type(screen.getByLabelText('Custo mensal da linha 1'), '13.751,77')
     await usuario.type(screen.getByLabelText('Horas no mês da linha 1'), '173')
-    // 173 h × 79,49 = 13.751,77
-    expect(screen.getByText('13.751,77')).toBeInTheDocument()
-    expect(screen.queryByLabelText('Custo mensal da linha 1')).not.toBeInTheDocument()
+    // 13.751,77 ÷ 173 h = 79,49
+    expect(screen.getByText('79,49')).toBeInTheDocument()
 
     await usuario.click(screen.getByRole('button', { name: 'Adicionar pessoa' }))
     const pessoa2 = screen.getByLabelText('Pessoa da linha 2')
@@ -960,19 +1411,29 @@ describe('orçamentos (onda 5)', () => {
     expect(within(pessoa2).queryByRole('option', { name: 'Eduardo Karnopp' })).toBeNull()
     await usuario.selectOptions(pessoa2, 'm-helena')
     await usuario.type(screen.getByLabelText('Profissão da linha 2'), 'Biólogo')
-    await usuario.type(screen.getByLabelText('Custo mensal da linha 2'), '5.000,00')
-    await usuario.type(screen.getByLabelText('Horas no mês da linha 2'), '87')
-    // Hora de custo: 5.000 ÷ 87 h = 57,47
-    expect(screen.getByText('57,47')).toBeInTheDocument()
+    await usuario.selectOptions(screen.getByLabelText('Como recebe na linha 2'), 'diaria')
+    expect(screen.queryByLabelText('Custo mensal da linha 2')).not.toBeInTheDocument()
+    await usuario.type(screen.getByLabelText('Custo por diária da linha 2'), '400,00')
+    await usuario.type(screen.getByLabelText('Horas por diária da linha 2'), '8')
+    // 400 ÷ 8 h = 50,00; sem os dias no mês, a capacidade fica desconhecida (nunca zero).
+    expect(screen.getByText('50,00')).toBeInTheDocument()
+    expect(screen.getByText('capacidade desconhecida')).toBeInTheDocument()
     const resultado = screen.getByLabelText('Resultado da equipe')
+    // Só quem tem custo e horas do mês entra na média: por enquanto, só o Eduardo.
+    expect(within(resultado).getByText('173 h')).toBeInTheDocument()
+    await usuario.type(screen.getByLabelText('Dias no mês da linha 2'), '10')
+    expect(screen.queryByText('capacidade desconhecida')).not.toBeInTheDocument()
+    // (13.751,77 + 10 × 400) ÷ (173 + 80) h = 70,17
+    expect(within(resultado).getByText('253 h')).toBeInTheDocument()
+    expect(within(resultado).getByText('R$ 70,17')).toBeInTheDocument()
     expect(within(resultado).getByText('Hora técnica de Biólogo')).toBeInTheDocument()
-    expect(within(resultado).getByText('R$ 57,47')).toBeInTheDocument()
+    expect(within(resultado).getByText('R$ 50,00')).toBeInTheDocument()
     expect(within(resultado).getByText('R$ 79,49')).toBeInTheDocument()
 
     await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
     const chamada = falso.cliente.rpc.mock.calls.find(([nome]) => nome === 'salvar_base_de_custos')
+    expect(chamada?.[1]).not.toHaveProperty('p_piso_hora_centavos')
     expect(chamada?.[1]).toMatchObject({
-      p_piso_hora_centavos: 7_949,
       p_horas_venda: [
         { profissao: 'Eng. ambiental e sanitarista', atividade: 'Júnior', valor_centavos: 21_419 },
         { profissao: 'Eng. ambiental e sanitarista', atividade: 'Sênior', valor_centavos: 35_698 },
@@ -987,17 +1448,76 @@ describe('orçamentos (onda 5)', () => {
       p_equipe: [
         {
           membro_id: 'm-eduardo',
-          pelo_piso: true,
+          tipo_recebimento: 'pro_labore',
           profissao: 'Eng. ambiental e sanitarista',
           custo_mensal_centavos: 1_375_177,
           horas_disponiveis_mes: 173,
         },
         {
           membro_id: 'm-helena',
-          pelo_piso: false,
+          tipo_recebimento: 'diaria',
           profissao: 'Biólogo',
-          custo_mensal_centavos: 500_000,
-          horas_disponiveis_mes: 87,
+          custo_mensal_centavos: null,
+          horas_disponiveis_mes: null,
+          custo_diaria_centavos: 40_000,
+          horas_por_diaria: 8,
+          dias_no_mes: 10,
+        },
+      ],
+    })
+    const enviada = chamada?.[1] as { p_equipe: Record<string, unknown>[] } | undefined
+    expect(enviada?.p_equipe[0]).not.toHaveProperty('pelo_piso')
+  })
+
+  it('cadastra preço por faixas de quantidade e preço mínimo', async () => {
+    const usuario = userEvent.setup()
+    renderizarApp('/configuracoes/custos')
+    await screen.findByText(/Ainda não configurado/)
+    await usuario.type(screen.getByLabelText('Hora técnica (R$)'), '95,00')
+    await usuario.type(screen.getByLabelText('Horas faturáveis por mês'), '320')
+    await usuario.click(screen.getByRole('button', { name: 'Adicionar preço' }))
+    await usuario.type(screen.getByLabelText('Profissão da hora 1'), 'Arquiteta')
+    await usuario.type(screen.getByLabelText('Atividade ou nível da hora 1'), 'Projeto')
+    // Hora não tem faixas; m² tem.
+    expect(
+      screen.queryByRole('button', { name: 'Usar faixas de quantidade na linha 1' }),
+    ).not.toBeInTheDocument()
+    await usuario.selectOptions(screen.getByLabelText('Unidade da linha 1'), 'm2')
+    await usuario.type(screen.getByLabelText('Preço da linha 1'), '2,00')
+    await usuario.click(
+      screen.getByRole('button', { name: 'Usar faixas de quantidade na linha 1' }),
+    )
+    expect(screen.queryByLabelText('Preço da linha 1')).not.toBeInTheDocument()
+    // A primeira faixa começa com o preço que já estava na linha.
+    expect(screen.getByLabelText('Valor por unidade da faixa 1 da linha 1')).toHaveValue('2,00')
+    await usuario.type(screen.getByLabelText('Até quanto vale a faixa 1 da linha 1'), '500')
+    expect(screen.getByText(/Acima de 500/)).toBeInTheDocument()
+    await usuario.type(screen.getByLabelText('Valor por unidade da faixa 2 da linha 1'), '1,50')
+    // Uma faixa a mais, com limite que não cresce: a tela recusa.
+    await usuario.click(screen.getByRole('button', { name: 'Adicionar faixa na linha 1' }))
+    await usuario.type(screen.getByLabelText('Até quanto vale a faixa 2 da linha 1'), '300')
+    await usuario.type(screen.getByLabelText('Valor por unidade da faixa 2 da linha 1'), '1,80')
+    await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
+    expect(screen.getByRole('alert')).toHaveTextContent('os limites das faixas precisam crescer')
+    await usuario.clear(screen.getByLabelText('Até quanto vale a faixa 2 da linha 1'))
+    await usuario.type(screen.getByLabelText('Até quanto vale a faixa 2 da linha 1'), '1.000')
+    await usuario.type(screen.getByLabelText('Preço mínimo da linha 1'), '800,00')
+
+    await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
+    const chamada = falso.cliente.rpc.mock.calls.find(([nome]) => nome === 'salvar_base_de_custos')
+    expect(chamada?.[1]).toMatchObject({
+      p_horas_venda: [
+        {
+          profissao: 'Arquiteta',
+          atividade: 'Projeto',
+          unidade: 'm2',
+          valor_centavos: 200,
+          minimo_centavos: 80_000,
+          faixas: [
+            { ate: '500.0000', valor_centavos: 200 },
+            { ate: '1000.0000', valor_centavos: 180 },
+            { ate: null, valor_centavos: 150 },
+          ],
         },
       ],
     })

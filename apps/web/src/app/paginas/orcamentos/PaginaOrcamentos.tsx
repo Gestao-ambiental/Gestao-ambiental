@@ -393,6 +393,12 @@ function ListaDaGestao() {
               >
                 Custos e taxas
               </Link>
+              <Link
+                to="/configuracoes/proposta"
+                className="corpo-medio text-(--text-link) no-underline hover:underline"
+              >
+                Dados da proposta
+              </Link>
               {botaoNovo}
             </>
           )}
