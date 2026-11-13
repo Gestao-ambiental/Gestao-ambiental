@@ -85,6 +85,48 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
     'Este rascunho já tem condicionantes: a IA só preenche rascunho sem itens. Siga pelo manual.',
   extracao_em_andamento: 'Já há uma extração em andamento para este rascunho. Aguarde.',
   cargo_longo_demais: 'O cargo pode ter até 80 caracteres.',
+  // Orçamentos (onda 5)
+  orcamento_existente: 'Não foi possível criar o orçamento. Tente de novo.',
+  objeto_obrigatorio: 'Diga o que está sendo orçado.',
+  empreendimento_invalido: 'Escolha um empreendimento desta consultoria.',
+  orcamento_nao_editavel:
+    'Proposta enviada não é editada no lugar. Mudanças viram uma nova revisão.',
+  orcamento_na_lixeira: 'Este orçamento está na lixeira. Restaure para editar.',
+  texto_longo_demais: 'Texto longo demais. Encurte e tente de novo.',
+  horas_pendentes: 'Informe as horas de todos os serviços antes de enviar ou aprovar.',
+  preco_pendente:
+    'O preço ainda tem pendência (preço do serviço, quantidade ou despesa a cotar). Resolva antes de enviar ou aprovar.',
+  sem_itens: 'Inclua ao menos um serviço antes de enviar ou aprovar.',
+  transicao_invalida: 'Essa mudança de situação não é permitida a partir da situação atual.',
+  identidade_nao_salva: 'Salve os dados da consultoria antes de enviar a logo.',
+  modelo_com_mesmo_nome: 'Já existe um modelo com esse nome. Escolha outro nome.',
+  modelo_sem_itens: 'Salve ao menos um serviço antes de guardar como modelo.',
+  nome_invalido: 'Informe um nome de até 120 caracteres.',
+  orcamento_aprovado_nao_exclui:
+    'Orçamento aprovado não vai para a lixeira: ele vira contrato, cobrança e tarefas.',
+  validade_invalida: 'Validade: um número de 1 a 365 dias.',
+  textos_demais: 'Use até 50 premissas e 50 exclusões.',
+  lista_invalida: 'Não foi possível salvar o orçamento. Tente de novo.',
+  parcelas_demais: 'Use até 60 parcelas.',
+  item_invalido: 'Confira os itens: serviço, horas e valores.',
+  equipe_invalida:
+    'Confira a equipe: cada pessoa uma vez, membro ativo da consultoria, custo mensal e horas de 0 a 744.',
+  equipe_sem_horas_faturaveis: 'A equipe precisa de horas no mês: informe as horas de cada pessoa.',
+  preco_automatico_sem_base:
+    'Para usar o preço automático, configure antes os custos e taxas da consultoria.',
+  despesa_invalida: 'Confira as despesas: descrição, valor e como é paga.',
+  parcela_invalida: 'Confira as parcelas: marco, dias de 0 a 365 e percentual de 0 a 100.',
+  base_invalida: 'Confira os valores: horas faturáveis precisam ser maiores que zero.',
+  percentuais_invalidos: 'Margem, tributos e taxas somados precisam ficar abaixo de 100%.',
+  // Primeiros passos do orçamento (ADR-0020)
+  dados_invalidos: 'Confira os campos deste passo e tente de novo.',
+  base_alterada:
+    'Custos e taxas foram salvos por outra pessoa depois que esta configuração começou. Para não sobrescrever, recomece a partir dos valores atuais.',
+  configuracao_incompleta: 'Ainda falta configurar algum passo. Veja a lista e complete antes.',
+  operacao_invalida: 'Não foi possível salvar este passo. Recarregue e tente de novo.',
+  contas_invalidas: 'Confira as contas do mês: nome e valor de cada uma.',
+  horas_de_venda_invalidas:
+    'Confira a tabela de preços: profissão, serviço, unidade, preço e faixas de cada linha.',
 }
 
 const MENSAGENS_DO_AUTH: Record<string, string> = {

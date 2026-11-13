@@ -26,7 +26,7 @@ export function SheetContent({
       <Primitivo.Overlay className="fixed inset-0 z-50 bg-(--scrim) data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 duration-(--duration-medium)" />
       <Primitivo.Content
         className={cn(
-          'fixed inset-y-0 z-50 flex h-full w-(--nav-side-width) flex-col bg-(--surface-nav) text-(--text) shadow-sobreposicao outline-none duration-(--duration-medium)',
+          'fixed inset-y-0 z-50 flex h-full w-(--nav-side-width) flex-col bg-(--surface-nav) text-(--text) shadow-dialogo outline-none duration-(--duration-medium)',
           'data-[state=open]:animate-in data-[state=closed]:animate-out',
           lado === 'esquerda'
             ? 'left-0 border-r data-[state=open]:slide-in-from-left data-[state=closed]:slide-out-to-left'

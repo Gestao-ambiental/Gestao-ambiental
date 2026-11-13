@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 
 import type { NomeIcone } from './nomes-icones'
 
-// SVGs Lucide do design system, servidos pelo Vite (pequenos viram data URI no build).
+// Fluent System Icons (ADR-0015, ver assets/icons/LEIA-ME.md), servidos pelo Vite (pequenos viram data URI no build).
 const urls = import.meta.glob<string>('../../assets/icons/*.svg', {
   eager: true,
   query: '?url',

@@ -139,7 +139,7 @@ export function SeletorPessoa({
           }
         }}
         className={cn(
-          'flex h-(--size-control) min-w-0 cursor-pointer items-center gap-(--space-100) rounded-(--radius) border border-(--border-input) bg-(--surface-input) px-(--space-100) text-left corpo text-(--text) transicao-estado',
+          'flex h-(--size-control) min-w-0 cursor-pointer items-center gap-(--space-100) rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) px-(--space-100) text-left corpo text-(--text) transicao-estado',
           'hover:bg-(--surface-hover) focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-(--border-focus)',
           'disabled:cursor-not-allowed disabled:text-(--text-disabled)',
           className,

@@ -1,13 +1,14 @@
-/* Motion is functional: state feedback and overlay entrance. Nothing decorative,
-   nothing that delays a click. */
+/* Movimento do Fluent 2 (ADR-0015): funcional, nunca decorativo, nunca atrasa um clique.
+   Valores de fluent.css (durationFaster 100ms, durationFast 150ms, durationNormal 200ms). */
 :root{
   --duration-instant:0ms; /* @kind other */
-  --duration-fast:100ms; /* @kind other */
-  --duration-medium:175ms; /* @kind other */
-  --ease-out:cubic-bezier(0.2,0,0,1); /* @kind other */
-  --ease-in-out:cubic-bezier(0.4,0,0.2,1); /* @kind other */
-  --transition-state:background-color var(--duration-fast) var(--ease-out),border-color var(--duration-fast) var(--ease-out),color var(--duration-fast) var(--ease-out);
+  --duration-fast:var(--durationFaster); /* @kind other */
+  --duration-medium:var(--durationFast); /* @kind other */
+  --duration-slow:var(--durationNormal); /* @kind other */
+  --ease-out:var(--curveDecelerateMid); /* @kind other */
+  --ease-in-out:var(--curveEasyEase); /* @kind other */
+  --transition-state:background-color var(--duration-fast) var(--ease-in-out),border-color var(--duration-fast) var(--ease-in-out),color var(--duration-fast) var(--ease-in-out),box-shadow var(--duration-fast) var(--ease-in-out);
 }
 @media (prefers-reduced-motion:reduce){
-  :root{--duration-fast:0ms; /* @kind other */ --duration-medium:0ms; /* @kind other */}
+  :root{--duration-fast:0ms; /* @kind other */ --duration-medium:0ms; /* @kind other */ --duration-slow:0ms; /* @kind other */}
 }

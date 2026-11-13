@@ -684,8 +684,17 @@ isOneToOne: false
 "atribuir_ocorrencia":
 { Args: { "p_membro_id": string,"p_ocorrencia_id": string,"p_row_version": number }; Returns: number
                            },
+"cadastrar_empreendimento_do_prospecto":
+{ Args: { "p_empreendimento_id": string,"p_orcamento_id": string }; Returns: string
+                           },
 "cancelar_convite":
 { Args: { "p_convite_id": string }; Returns: undefined
+                           },
+"excluir_orcamento":
+{ Args: { "p_id": string,"p_row_version": number }; Returns: number
+                           },
+"carga_da_equipe":
+{ Args: { "p_consultoria_id": string }; Returns: Json
                            },
 "concluir_etapa":
 { Args: { "p_etapa_id": string }; Returns: undefined
@@ -731,6 +740,9 @@ isOneToOne: false
                            },
 "criar_instrumento":
 { Args: { "p_id": string,"p_unidade_id": string }; Returns: string
+                           },
+"criar_orcamento":
+{ Args: { "p_consultoria_id": string,"p_empreendimento_id": string | null,"p_id": string,"p_objeto": string,"p_prospecto"?: Json }; Returns: string
                            },
 "criar_tipo_instrumento":
 { Args: { "p_consultoria_id": string,"p_nome": string,"p_sigla": string }; Returns: string
@@ -796,6 +808,11 @@ isOneToOne: false
               "cliente_nome": string,"cnpj": string,"criado_em": string,"id": string,"licencas": Json,"nome": string,"total": number,"unidades": number
             }[]
                            },
+"listar_orcamentos":
+{ Args: { "p_busca"?: string,"p_consultoria_id": string,"p_deslocamento"?: number,"p_limite"?: number,"p_lixeira"?: boolean }; Returns: {
+              "ano": number,"atualizado_em": string,"empreendimento_id": string,"empreendimento_nome": string,"excluido_em": string,"id": string,"objeto": string,"revisao": number,"row_version": number,"sequencia": number,"situacao": Database["public"]['Enums']["situacao_orcamento"],"total": number,"total_centavos": number
+            }[]
+                           },
 "listar_prazos":
 { Args: { "p_aba"?: string,"p_consultoria_id": string,"p_deslocamento"?: number,"p_empreendimento_id"?: string,"p_faixa"?: string,"p_limite"?: number,"p_ordem"?: string,"p_responsavel_id"?: string,"p_sem_responsavel"?: boolean,"p_tipo_id"?: string }; Returns: {
               "codigo": string,"dias": number,"empreendimento_id": string,"empreendimento_nome": string,"id": string,"instrumento_id": string,"licenca": string,"prazo": string,"responsavel_id": string,"responsavel_nome": string,"row_version": number,"situacao_ocorrencia": Database["public"]['Enums']["situacao_ocorrencia"],"tipo_linha": string,"titulo": string,"total": number,"unidade_nome": string
@@ -814,10 +831,26 @@ isOneToOne: false
 "mover_condicionante":
 { Args: { "p_id": string,"p_pai_id": string }; Returns: undefined
                            },
+"obter_base_de_custos":
+{ Args: { "p_consultoria_id": string }; Returns: Json
+                           },
+"obter_rascunho_configuracao_orcamento":
+{ Args: { "p_consultoria_id": string }; Returns: Json },
+"salvar_passo_configuracao_orcamento":
+{ Args: { "p_consultoria_id": string; "p_row_version": number; "p_etapa": number; "p_dados": Json; "p_proxima_etapa": number; "p_base_row_version": number; "p_operacao"?: string }; Returns: Json },
+"descartar_rascunho_configuracao_orcamento":
+{ Args: { "p_consultoria_id": string; "p_row_version": number }; Returns: undefined },
+"dispensar_convite_configuracao_orcamento":
+{ Args: { "p_consultoria_id": string }; Returns: undefined },
+"publicar_configuracao_orcamento":
+{ Args: { "p_consultoria_id": string; "p_row_version": number }; Returns: number },
 "obter_ocorrencia":
 { Args: { "p_id": string }; Returns: {
               "ciclo": number,"codigo": string,"concluida_em": string,"concluida_por_nome": string,"concluida_sem_evidencia": boolean,"conferencia_independente": boolean,"conferente_id": string,"conferente_nome": string,"consultoria_id": string,"data_referencia": string,"empreendimento_id": string,"empreendimento_nome": string,"hoje": string,"id": string,"instrumento_id": string,"licenca": string,"meta_interna": string,"prazo_ciclo_anterior": string,"prazo_oficial_atual": string,"prazo_oficial_original": string,"responsavel_id": string,"responsavel_nome": string,"row_version": number,"situacao": Database["public"]['Enums']["situacao_ocorrencia"],"texto_literal": string,"titulo": string,"unidade_nome": string
             }[]
+                           },
+"obter_orcamento":
+{ Args: { "p_id": string }; Returns: Json
                            },
 "obter_plano_renovacao":
 { Args: { "p_instrumento_id": string }; Returns: {
@@ -845,15 +878,51 @@ isOneToOne: false
 "revisar_condicionante":
 { Args: { "p_id": string,"p_revisao": Database["public"]['Enums']["revisao_condicionante"] }; Returns: undefined
                            },
+"duplicar_orcamento":
+{ Args: { "p_copiar_precos"?: boolean,"p_id": string,"p_novo_id": string }; Returns: string
+                           },
+"excluir_modelo_de_orcamento":
+{ Args: { "p_id": string,"p_row_version": number }; Returns: undefined
+                           },
+"listar_modelos_de_orcamento":
+{ Args: { "p_busca"?: string,"p_consultoria_id": string,"p_deslocamento"?: number,"p_limite"?: number }; Returns: Json
+                           },
+"salvar_modelo_de_orcamento":
+{ Args: { "p_modelo_id": string,"p_nome": string,"p_orcamento_id": string }; Returns: string
+                           },
+"mudar_situacao_orcamento":
+{ Args: { "p_id": string,"p_observacao"?: string,"p_para": string,"p_row_version": number }; Returns: number
+                           },
+"obter_identidade_da_consultoria":
+{ Args: { "p_consultoria_id": string }; Returns: Json
+                           },
+"registrar_logo_da_consultoria":
+{ Args: { "p_caminho": string,"p_consultoria_id": string,"p_nome_original": string,"p_sha256": string,"p_versao_id": string }; Returns: string
+                           },
+"remover_logo_da_consultoria":
+{ Args: { "p_consultoria_id": string }; Returns: undefined
+                           },
+"salvar_identidade_da_consultoria":
+{ Args: { "p_consultoria_id": string,"p_dados": Json,"p_row_version": number }; Returns: number
+                           },
+"restaurar_orcamento":
+{ Args: { "p_id": string,"p_row_version": number }; Returns: number
+                           },
+"salvar_base_de_custos":
+{ Args: { "p_consultoria_id": string,"p_custo_km_centavos"?: number,"p_custos_fixos"?: Json,"p_custos_fixos_mensais_centavos": number,"p_hora_tecnica_centavos": number,"p_horas_faturaveis_mes": number,"p_margem_desejada_pb": number,"p_margem_minima_pb": number,"p_equipe"?: Json,"p_horas_venda"?: Json,"p_piso_hora_centavos"?: number,"p_taxa_por_assinatura_centavos": number,"p_taxa_por_cobranca_centavos": number,"p_taxas_pb": number,"p_tributos_pb": number,"p_valor_visita_centavos"?: number }; Returns: undefined
+                           },
 "salvar_condicionante":
 { Args: { "p_codigo": string,"p_id": string,"p_instrumento_id": string,"p_natureza": Database["public"]['Enums']["natureza_condicionante"],"p_pai_id": string,"p_texto_literal": string,"p_titulo": string }; Returns: string
+                           },
+"salvar_orcamento":
+{ Args: { "p_dados": Json,"p_id": string,"p_row_version": number }; Returns: number
                            },
 "salvar_identificacao":
 { Args: { "p_assinado_em": string,"p_emitido_em": string,"p_id": string,"p_marco": Database["public"]['Enums']["marco_instrumento"],"p_numero": string,"p_orgao": string,"p_publicado_em": string,"p_recebido_em": string,"p_row_version": number,"p_tipo_id": string,"p_unidade_id": string,"p_validade": string }; Returns: number
                            }
           }
           Enums: {
-            "acao_auditoria": "insert"|"update"|"delete","contagem_prazo": "corridos"|"uteis","decisao_conferencia": "aprovada"|"devolvida","marco_instrumento": "emissao"|"assinatura"|"publicacao"|"recebimento","modo_etapa": "trabalho"|"espera_externa","natureza_condicionante": "obrigacao"|"agrupador"|"informacao_geral"|"condicao_continua","papel_membro": "gestao"|"equipe","recorrencia_prazo": "anual"|"semestral"|"trimestral"|"bimestral"|"mensal"|"unica"|"na_renovacao"|"continua"|"personalizada","revisao_condicionante": "pendente"|"aceita"|"descartada","situacao_consultoria": "ativa"|"suspensa"|"arquivada","situacao_convite": "pendente"|"aceito"|"cancelado","situacao_evidencia": "em_conferencia"|"aprovada"|"devolvida","situacao_instrumento": "rascunho"|"ativo","situacao_membro": "ativo"|"desligado","situacao_ocorrencia": "aberta"|"em_conferencia"|"concluida","unidade_ciclo": "mes"|"dia"
+            "acao_auditoria": "insert"|"update"|"delete","contagem_prazo": "corridos"|"uteis","decisao_conferencia": "aprovada"|"devolvida","marco_instrumento": "emissao"|"assinatura"|"publicacao"|"recebimento","modo_etapa": "trabalho"|"espera_externa","natureza_condicionante": "obrigacao"|"agrupador"|"informacao_geral"|"condicao_continua","papel_membro": "gestao"|"equipe","recorrencia_prazo": "anual"|"semestral"|"trimestral"|"bimestral"|"mensal"|"unica"|"na_renovacao"|"continua"|"personalizada","revisao_condicionante": "pendente"|"aceita"|"descartada","situacao_consultoria": "ativa"|"suspensa"|"arquivada","situacao_convite": "pendente"|"aceito"|"cancelado","situacao_evidencia": "em_conferencia"|"aprovada"|"devolvida","situacao_instrumento": "rascunho"|"ativo","situacao_membro": "ativo"|"desligado","situacao_ocorrencia": "aberta"|"em_conferencia"|"concluida","situacao_orcamento": "rascunho"|"enviada"|"negociacao"|"aprovada"|"recusada","tratamento_despesa": "incluida"|"cliente_direto"|"reembolsavel","unidade_ciclo": "mes"|"dia"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -969,7 +1038,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "acao_auditoria": ["insert", "update", "delete"],"contagem_prazo": ["corridos", "uteis"],"decisao_conferencia": ["aprovada", "devolvida"],"marco_instrumento": ["emissao", "assinatura", "publicacao", "recebimento"],"modo_etapa": ["trabalho", "espera_externa"],"natureza_condicionante": ["obrigacao", "agrupador", "informacao_geral", "condicao_continua"],"papel_membro": ["gestao", "equipe"],"recorrencia_prazo": ["anual", "semestral", "trimestral", "bimestral", "mensal", "unica", "na_renovacao", "continua", "personalizada"],"revisao_condicionante": ["pendente", "aceita", "descartada"],"situacao_consultoria": ["ativa", "suspensa", "arquivada"],"situacao_convite": ["pendente", "aceito", "cancelado"],"situacao_evidencia": ["em_conferencia", "aprovada", "devolvida"],"situacao_instrumento": ["rascunho", "ativo"],"situacao_membro": ["ativo", "desligado"],"situacao_ocorrencia": ["aberta", "em_conferencia", "concluida"],"unidade_ciclo": ["mes", "dia"]
+            "acao_auditoria": ["insert", "update", "delete"],"contagem_prazo": ["corridos", "uteis"],"decisao_conferencia": ["aprovada", "devolvida"],"marco_instrumento": ["emissao", "assinatura", "publicacao", "recebimento"],"modo_etapa": ["trabalho", "espera_externa"],"natureza_condicionante": ["obrigacao", "agrupador", "informacao_geral", "condicao_continua"],"papel_membro": ["gestao", "equipe"],"recorrencia_prazo": ["anual", "semestral", "trimestral", "bimestral", "mensal", "unica", "na_renovacao", "continua", "personalizada"],"revisao_condicionante": ["pendente", "aceita", "descartada"],"situacao_consultoria": ["ativa", "suspensa", "arquivada"],"situacao_convite": ["pendente", "aceito", "cancelado"],"situacao_evidencia": ["em_conferencia", "aprovada", "devolvida"],"situacao_instrumento": ["rascunho", "ativo"],"situacao_membro": ["ativo", "desligado"],"situacao_ocorrencia": ["aberta", "em_conferencia", "concluida"],"situacao_orcamento": ["rascunho", "enviada", "negociacao", "aprovada", "recusada"],"tratamento_despesa": ["incluida", "cliente_direto", "reembolsavel"],"unidade_ciclo": ["mes", "dia"]
           }
         }
 } as const

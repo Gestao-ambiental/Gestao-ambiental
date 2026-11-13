@@ -35,7 +35,7 @@ const DIAS_DA_SEMANA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 const VISIVEIS_POR_DIA = 3
 
 const classeSelect =
-  'h-(--size-control) max-w-[200px] rounded-(--radius) border border-(--border-input) bg-(--surface-input) px-(--space-100) corpo text-(--text) outline-none focus:border-(--border-focus)'
+  'h-(--size-control) max-w-[200px] rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) px-(--space-100) corpo text-(--text) outline-none focus:border-b-(--border-input-active) focus:shadow-[inset_0_-1px_0_0_var(--border-input-active)]'
 
 type Modo = 'mes' | 'semana'
 
@@ -296,13 +296,13 @@ export function PaginaCalendario() {
           aoTentarDeNovo={() => void eventos.refetch()}
         />
       ) : eventos.isPending ? (
-        <div role="status" className="rounded-(--radius) border bg-(--surface)">
+        <div role="status" className="rounded-(--radius-large) border bg-(--surface) shadow-cartao">
           <span className="sr-only">Carregando o calendário</span>
           <EsqueletoLinhas linhas={6} />
         </div>
       ) : (
         <>
-          <div className="hidden overflow-x-auto rounded-(--radius) border bg-(--surface) md:block">
+          <div className="hidden overflow-x-auto rounded-(--radius-large) border bg-(--surface) shadow-cartao md:block">
             <table
               className="w-full table-fixed border-collapse"
               aria-label={`Calendário de ${titulo}`}

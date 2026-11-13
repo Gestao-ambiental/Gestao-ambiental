@@ -18,7 +18,7 @@ import { concluirEtapa, criarEtapa, type Etapa } from '@/lib/api/ocorrencias'
 import { mensagemDoErro } from '@/lib/erros'
 
 const classeSelect =
-  'h-(--size-control) w-full rounded-(--radius) border border-(--border-input) bg-(--surface-input) px-(--space-100) corpo text-(--text)'
+  'h-(--size-control) w-full rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) px-(--space-100) corpo text-(--text)'
 
 function dataDe(valor: string): DataCivil | null {
   return /^\d{4}-\d{2}-\d{2}$/.test(valor) ? (valor as DataCivil) : null

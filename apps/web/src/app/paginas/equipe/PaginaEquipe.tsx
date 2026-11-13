@@ -355,7 +355,7 @@ function EquipeDaGestao() {
           <EstadoErro aoTentarDeNovo={() => void membros.refetch()} />
         ) : (
           <>
-            <div className="hidden overflow-x-auto rounded-(--radius) border bg-(--surface) md:block">
+            <div className="hidden overflow-x-auto rounded-(--radius-large) border bg-(--surface) shadow-cartao md:block">
               <table className={classeTabela}>
                 <thead>
                   <tr>
@@ -392,7 +392,7 @@ function EquipeDaGestao() {
               </table>
             </div>
             <ul
-              className="flex flex-col rounded-(--radius) border bg-(--surface) md:hidden"
+              className="flex flex-col rounded-(--radius-large) border bg-(--surface) shadow-cartao md:hidden"
               aria-label="Membros"
             >
               {listaMembros.itens.map((membro) => (
@@ -439,7 +439,7 @@ function EquipeDaGestao() {
           </p>
         ) : (
           <>
-            <div className="hidden overflow-x-auto rounded-(--radius) border bg-(--surface) md:block">
+            <div className="hidden overflow-x-auto rounded-(--radius-large) border bg-(--surface) shadow-cartao md:block">
               <table className={classeTabela}>
                 <thead>
                   <tr>
@@ -480,7 +480,7 @@ function EquipeDaGestao() {
               </table>
             </div>
             <ul
-              className="flex flex-col rounded-(--radius) border bg-(--surface) md:hidden"
+              className="flex flex-col rounded-(--radius-large) border bg-(--surface) shadow-cartao md:hidden"
               aria-label="Convites pendentes"
             >
               {listaConvites.itens.map((convite) => (
