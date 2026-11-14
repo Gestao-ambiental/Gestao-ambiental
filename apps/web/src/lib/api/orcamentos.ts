@@ -17,6 +17,7 @@ import {
   type VisitasDoOrcamento,
 } from '@gestao-ambiental/domain'
 
+import { aceitaNulo } from '@/lib/api/nulo'
 import type { Json } from '@/lib/database.types'
 import { obterSupabase } from '@/lib/supabase'
 
@@ -560,7 +561,9 @@ export async function criarOrcamento(
   const { data, error } = await obterSupabase().rpc('criar_orcamento', {
     p_id: id,
     p_consultoria_id: consultoriaId,
-    p_empreendimento_id: 'empreendimentoId' in paraQuem ? paraQuem.empreendimentoId : null,
+    p_empreendimento_id: aceitaNulo(
+      'empreendimentoId' in paraQuem ? paraQuem.empreendimentoId : null,
+    ),
     p_objeto: objetoDoOrcamento,
     ...('prospecto' in paraQuem ? { p_prospecto: prospectoParaRpc(paraQuem.prospecto) } : {}),
   })
@@ -792,10 +795,10 @@ export async function salvarBaseDeCustos(
     })),
     p_valor_visita_centavos: base.valorVisitaCentavos,
     p_custo_km_centavos: base.custoKmCentavos,
-    p_deslocamento_modo: base.deslocamentoModo,
-    p_consumo_km_por_litro: base.consumoKmPorLitro,
-    p_preco_combustivel_centavos: base.precoCombustivelCentavos,
-    p_acrescimo_km_centavos: base.acrescimoKmCentavos,
+    p_deslocamento_modo: aceitaNulo(base.deslocamentoModo),
+    p_consumo_km_por_litro: aceitaNulo(base.consumoKmPorLitro),
+    p_preco_combustivel_centavos: aceitaNulo(base.precoCombustivelCentavos),
+    p_acrescimo_km_centavos: aceitaNulo(base.acrescimoKmCentavos),
     p_horas_venda: horasDeVendaParaOBanco(base.horasVenda),
   })
   if (error) throw error

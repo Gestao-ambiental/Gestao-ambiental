@@ -15,6 +15,7 @@ import {
   type PapelMembro,
 } from '@gestao-ambiental/domain'
 
+import { aceitaNulo } from '@/lib/api/nulo'
 import { obterSupabase } from '@/lib/supabase'
 
 import { sha256 } from './ocorrencias'
@@ -56,7 +57,8 @@ interface LinhaMembro {
   cargo?: string | null
   cargo_antigo?: string | null
   profissao?: string | null
-  outras_profissoes?: string[] | null
+  /** O gerador tipa a lista de enum como unknown[]; o domínio filtra os códigos válidos. */
+  outras_profissoes?: readonly unknown[] | null
   profissao_em_curso?: boolean | null
   genero?: string | null
   foto?: { excluido_em: string | null; versao: { caminho: string } | null } | null
@@ -129,7 +131,7 @@ export function profissaoECargo(linha: {
   cargo?: string | null
   cargo_antigo?: string | null
   profissao?: string | null
-  outras_profissoes?: readonly string[] | null
+  outras_profissoes?: readonly unknown[] | null
   profissao_em_curso?: boolean | null
 }): Pick<
   MembroAtivo,
@@ -220,8 +222,8 @@ export async function definirProfissaoECargo(
 ): Promise<void> {
   const { error } = await obterSupabase().rpc('definir_profissao_e_cargo', {
     p_membro_id: membroId,
-    p_profissao: profissao,
-    p_cargo: cargo,
+    p_profissao: aceitaNulo(profissao),
+    p_cargo: aceitaNulo(cargo),
     ...(outras ? { p_outras_profissoes: [...outras] } : {}),
     ...(emCurso === undefined ? {} : { p_profissao_em_curso: emCurso }),
   })

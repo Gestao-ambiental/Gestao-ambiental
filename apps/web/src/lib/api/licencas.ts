@@ -11,6 +11,7 @@ import {
 } from '@gestao-ambiental/domain'
 
 import type { Database } from '@/lib/database.types'
+import { aceitaNulo } from '@/lib/api/nulo'
 import { obterSupabase } from '@/lib/supabase'
 
 type Enums = Database['public']['Enums']
@@ -20,13 +21,6 @@ export type Revisao = Enums['revisao_condicionante']
 
 export const TAMANHO_MAXIMO_PDF = 25 * 1024 * 1024
 
-/**
- * O gerador de tipos do Supabase marca todo argumento de RPC como não nulo, mas o banco aceita
- * nulo (campo ainda vazio no rascunho, "sem responsável"). Só aqui a tipagem é contornada.
- */
-function aceitaNulo<T>(valor: T | null): T {
-  return valor as unknown as T
-}
 export const TAMANHO_PAGINA_LICENCAS = 50
 
 // ---------------------------------------------------------------------------
