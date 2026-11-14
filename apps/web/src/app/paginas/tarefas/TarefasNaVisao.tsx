@@ -22,6 +22,7 @@ export function TarefasNaVisao({ aba }: { aba: 'todos' | 'minhas' }) {
   const cid = atual.consultoriaId
   const ehGestao = atual.papel === 'gestao'
   const [falha, setFalha] = useState<string | null>(null)
+  const titulo = aba === 'minhas' ? 'Minhas tarefas de serviço' : 'Tarefas de serviço'
   const filtros = {
     abertas: true,
     responsavelId: aba === 'minhas' ? atual.membroId : null,
@@ -87,10 +88,8 @@ export function TarefasNaVisao({ aba }: { aba: 'todos' | 'minhas' }) {
   }
 
   return (
-    <section aria-label="Tarefas de serviço" className="flex flex-col gap-(--space-100)">
-      <h2 className="titulo-secao">
-        {aba === 'minhas' ? 'Minhas tarefas de serviço' : 'Tarefas de serviço'}
-      </h2>
+    <section aria-label={titulo} className="flex flex-col gap-(--space-100)">
+      <h2 className="titulo-secao">{titulo}</h2>
       {falha ? (
         <MensagemSecao role="alert" tom="perigo">
           {falha}
