@@ -158,7 +158,7 @@ export async function listarTiposEmUso(
 // Calendário (EQ-04)
 // ---------------------------------------------------------------------------
 
-export type TipoEvento = 'prazo' | 'meta' | 'validade' | 'limite_protocolo'
+export type TipoEvento = 'prazo' | 'meta' | 'validade' | 'limite_protocolo' | 'tarefa'
 
 export interface EventoDoCalendario {
   tipo: TipoEvento
@@ -171,6 +171,8 @@ export interface EventoDoCalendario {
   licenca: string | null
   responsavelNome: string | null
   semResponsavel: boolean
+  /** Só na tarefa de serviço (ADR-0029): o orçamento de origem. */
+  orcamentoId?: string
 }
 
 export interface FiltrosDoCalendario {

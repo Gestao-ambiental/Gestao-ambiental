@@ -1,5 +1,6 @@
 // Situação manual do orçamento (ORC-04; ADR-0018, fatia 6, P9). Quem muda e quando fica no histórico.
-// Nada de contrato, cobrança ou tarefa é criado: só a situação muda. Só "aprovada" conta na carga.
+// Aprovar abre o registro do aceite com as tarefas da execução (ADR-0029, DialogoAprovarOrcamento);
+// as outras mudanças só trocam a situação. Só "aprovada" conta na carga.
 
 import { useId, useState } from 'react'
 
@@ -17,6 +18,7 @@ import { formatarInstanteComoData } from '@/lib/datas'
 import { mensagemDoErro } from '@/lib/erros'
 
 import { classeCampo } from './comum'
+import { DialogoAprovarOrcamento } from './DialogoAprovarOrcamento'
 
 /** Rótulo do botão de cada mudança. */
 function rotuloDaAcao(para: SituacaoOrcamento, revisao: number): string {
@@ -26,7 +28,7 @@ function rotuloDaAcao(para: SituacaoOrcamento, revisao: number): string {
     case 'negociacao':
       return 'Em negociação'
     case 'aprovada':
-      return 'Marcar como aprovada'
+      return 'Registrar aprovação'
     case 'recusada':
       return 'Marcar como recusada'
     case 'rascunho':
@@ -38,8 +40,6 @@ function rotuloDaAcao(para: SituacaoOrcamento, revisao: number): string {
 function explicacao(de: SituacaoOrcamento, para: SituacaoOrcamento, revisao: number): string {
   if (para === 'rascunho')
     return `Volta a rascunho como revisão ${String(revisao + 1)}, uma nova versão para editar. O histórico guarda quando foi reaberta.${de === 'aprovada' ? ' Deixa de contar na carga da equipe até ser aprovado de novo.' : ''}`
-  if (para === 'aprovada')
-    return 'As horas dos serviços passam a contar na carga da equipe, no mês previsto de cada um. Nenhum contrato, cobrança ou tarefa é criado.'
   if (de === 'rascunho')
     return 'A proposta deixa de ser editada no lugar; para mudar depois, reabra como nova revisão.'
   if (para === 'recusada') return 'Fica registrado que o cliente recusou. Dá para reabrir depois.'
@@ -52,7 +52,10 @@ export function SituacaoDoOrcamento({
   fuso,
   aoMudar,
 }: {
-  orcamento: Pick<Orcamento, 'id' | 'rowVersion' | 'situacao' | 'revisao' | 'historicoSituacao'>
+  orcamento: Pick<
+    Orcamento,
+    'id' | 'rowVersion' | 'situacao' | 'revisao' | 'historicoSituacao' | 'itens'
+  >
   alterado: boolean
   fuso: string
   aoMudar: (para: SituacaoOrcamento) => void
@@ -62,6 +65,7 @@ export function SituacaoDoOrcamento({
   const [observacao, setObservacao] = useState('')
   const [falha, setFalha] = useState<string | null>(null)
   const [mudando, setMudando] = useState(false)
+  const [aprovando, setAprovando] = useState(false)
   const proximas = PROXIMAS_SITUACOES[orcamento.situacao]
 
   function abrir(alvo: SituacaoOrcamento | null) {
@@ -97,7 +101,8 @@ export function SituacaoDoOrcamento({
             disabled={alterado}
             title={alterado ? 'Salve antes: a situação muda o que está salvo.' : undefined}
             onClick={() => {
-              abrir(alvo)
+              if (alvo === 'aprovada') setAprovando(true)
+              else abrir(alvo)
             }}
           >
             {rotuloDaAcao(alvo, orcamento.revisao)}
@@ -120,6 +125,16 @@ export function SituacaoDoOrcamento({
           </ol>
         </details>
       ) : null}
+
+      <DialogoAprovarOrcamento
+        orcamento={orcamento}
+        aberto={aprovando}
+        aoMudarAberto={setAprovando}
+        aoAprovar={() => {
+          setAprovando(false)
+          aoMudar('aprovada')
+        }}
+      />
 
       <Dialogo
         aberto={para !== null}

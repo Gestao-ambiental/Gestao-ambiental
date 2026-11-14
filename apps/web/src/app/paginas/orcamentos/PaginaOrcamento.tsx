@@ -47,6 +47,7 @@ import {
 } from '@/lib/api/orcamentos'
 import { mensagemDoErro } from '@/lib/erros'
 import { listarMembrosAtivos } from '@/lib/api/perfil'
+import { CHAVE_TAREFAS } from '@/lib/api/tarefas'
 import { mascararDocumento } from '@gestao-ambiental/domain'
 
 import {
@@ -73,6 +74,7 @@ import { AvisoDeSaida } from './AvisoDeSaida'
 import { DialogoModelo, type SelecaoDoModelo } from './DialogoModelo'
 import { DialogoDuplicar, DialogoSalvarModelo } from './DialogosDeCopia'
 import { SituacaoDoOrcamento } from './SituacaoDoOrcamento'
+import { TarefasDoOrcamento } from './TarefasDoOrcamento'
 import { camposDoProspecto, lerProspecto, type CamposDoProspecto } from './prospecto'
 import { SeloSituacaoOrcamento } from './SeloSituacaoOrcamento'
 
@@ -1019,8 +1021,14 @@ function Editor({
             void queryClient.invalidateQueries({ queryKey: ['orcamento', orcamento.id] })
             void queryClient.invalidateQueries({ queryKey: ['orcamentos'] })
             void queryClient.invalidateQueries({ queryKey: ['carga-da-equipe'] })
+            void queryClient.invalidateQueries({ queryKey: [CHAVE_TAREFAS] })
+            void queryClient.invalidateQueries({ queryKey: ['aceites-do-orcamento', orcamento.id] })
           }}
         />
+      )}
+
+      {naLixeira ? null : (
+        <TarefasDoOrcamento orcamentoId={orcamento.id} situacao={orcamento.situacao} />
       )}
 
       {naLixeira ? (

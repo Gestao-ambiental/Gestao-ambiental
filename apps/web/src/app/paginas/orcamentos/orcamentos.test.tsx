@@ -495,14 +495,18 @@ describe('orçamentos (onda 5)', () => {
   it('sem horas em todos os serviços, a situação não muda e a tela explica', async () => {
     falso.reiniciar(
       cenario('gestao', {
-        rpc: { mudar_situacao_orcamento: { error: { message: 'horas_pendentes' } } },
+        rpc: { aprovar_orcamento: { error: { message: 'horas_pendentes' } } },
       }),
     )
     const usuario = userEvent.setup()
     renderizarApp('/orcamentos/o1')
-    await usuario.click(await screen.findByRole('button', { name: 'Marcar como aprovada' }))
-    await usuario.click(screen.getByRole('button', { name: 'Confirmar' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent(
+    // Aprovar passa pelo registro do aceite (ADR-0029); a regra das horas continua no banco.
+    await usuario.click(await screen.findByRole('button', { name: 'Registrar aprovação' }))
+    const dialogo = await screen.findByRole('dialog', { name: 'Registrar aprovação' })
+    await usuario.type(await within(dialogo).findByLabelText('Quem aprovou'), 'Marina')
+    await usuario.type(within(dialogo).getByLabelText('Referência'), 'e-mail')
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Confirmar aprovação' }))
+    expect(await within(dialogo).findByRole('alert')).toHaveTextContent(
       'Informe as horas de todos os serviços antes de enviar ou aprovar.',
     )
   })

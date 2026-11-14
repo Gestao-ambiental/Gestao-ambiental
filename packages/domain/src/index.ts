@@ -433,3 +433,25 @@ export type {
   TipoObrigacaoResiduo,
   UnidadeResiduo,
 } from './residuos'
+export {
+  METODOS_DE_ACEITE,
+  ROTULO_DA_SITUACAO_DA_TAREFA,
+  ROTULO_DO_METODO_DE_ACEITE,
+  SITUACOES_DA_TAREFA,
+  ehSituacaoDaTarefa,
+  errosDoAceite,
+  errosDoRoteiro,
+  horasDoCampo,
+  minutosDasHoras,
+  prazoInternoSugerido,
+  proximasSituacoesDaTarefa,
+  roteiroInicial,
+  rotuloDaAcaoDaTarefa,
+} from './tarefas-de-servico'
+export type {
+  AceiteDigitado,
+  ItemParaTarefa,
+  MetodoDeAceite,
+  SituacaoDaTarefa,
+  TarefaDoRoteiro,
+} from './tarefas-de-servico'
