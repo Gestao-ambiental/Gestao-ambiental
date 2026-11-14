@@ -34,22 +34,23 @@
   --grama-texto-terciario:#5E695F;
   --grama-texto-desabilitado:#A6AEA2;
   /* Tema escuro: tinta como fundo e tinta clareada nas superfícies. */
-  --grama-tinta-fundo:#20291F;
-  --grama-tinta-1:#2A3329;
-  --grama-tinta-2:#303A2F;
-  --grama-tinta-3:#353F34;
-  --grama-tinta-4:#3D483C;
-  --grama-tinta-borda:#434E41;
-  --grama-tinta-borda-forte:#5A6657;
-  --grama-tinta-borda-acessivel:#8E998A;
-  --grama-tinta-lima-suave:#465234;  /* lima a ~15% sobre tinta-1 */
-  --grama-tinta-lima-suave-hover:#536039;
-  --grama-tinta-ceu:#2C3F48;
-  --grama-tinta-texto-secundario:#BCC5B8;
-  --grama-tinta-texto-terciario:#A5AFA1;
-  --grama-tinta-texto-desabilitado:#6B7569;
-  --grama-tinta-icone:#CDD5C9;
-  --grama-tinta-avatar:#AAB4A6;
+  --grama-tinta-fundo:#1C1C1C;      /* tema escuro em cinza neutro (pedido do Eduardo, 13/11/2026); o lima segue na ação */
+  --grama-tinta-1:#242424;
+  --grama-tinta-2:#2B2B2B;
+  --grama-tinta-3:#313131;
+  --grama-tinta-4:#3A3A3A;
+  --grama-tinta-borda:#444444;
+  --grama-tinta-borda-forte:#5C5C5C;
+  --grama-tinta-borda-acessivel:#8F8F8F;
+  --grama-tinta-lima-suave:#434732;  /* lima a ~15% sobre tinta-1 */
+  --grama-tinta-lima-suave-hover:#50553A;
+  --grama-tinta-ceu:#2C3A42;
+  --grama-tinta-texto-secundario:#BDBDBD;
+  --grama-tinta-texto-terciario:#A3A3A3;
+  --grama-tinta-texto-desabilitado:#6E6E6E;
+  --grama-tinta-icone:#D0D0D0;
+  --grama-tinta-avatar:#ABABAB;
+  --grama-cinza-texto:#F2F2F2;      /* texto do tema escuro, cinza neutro */
 
   /* Superfícies em camadas: página (claro) < cartão e controles (branco) < sobreposição (branco + sombra) */
   --surface:var(--grama-branco);
@@ -181,9 +182,9 @@
   --surface-disabled:var(--grama-tinta-2);
   --surface-skeleton:var(--grama-tinta-3);
   --surface-skeleton-shine:var(--grama-tinta-4);
-  --surface-inverse:var(--grama-claro);
+  --surface-inverse:var(--grama-cinza-texto);
 
-  --text:var(--grama-claro);
+  --text:var(--grama-cinza-texto);
   --text-subtle:var(--grama-tinta-texto-secundario);
   --text-subtlest:var(--grama-tinta-texto-terciario);
   --text-disabled:var(--grama-tinta-texto-desabilitado);
