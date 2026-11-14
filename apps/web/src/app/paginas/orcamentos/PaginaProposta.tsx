@@ -6,7 +6,9 @@ import {
   formatarCentavos,
   formatarDataCivil,
   formatarPontosBase,
+  formatarDocumentoDoTitular,
   mascararCnpj,
+  rotuloDoDocumentoDoTitular,
   valorPorFaixas,
 } from '@gestao-ambiental/domain'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -356,7 +358,11 @@ function Proposta({ orcamento: o }: { orcamento: Orcamento }) {
           <table className="proposta-tabela">
             <tbody>
               <LinhaDoQuadro rotulo="Cliente">{cliente}</LinhaDoQuadro>
-              {cnpj ? <LinhaDoQuadro rotulo="CNPJ">{mascararCnpj(cnpj)}</LinhaDoQuadro> : null}
+              {cnpj ? (
+                <LinhaDoQuadro rotulo={rotuloDoDocumentoDoTitular(cnpj)}>
+                  {formatarDocumentoDoTitular(cnpj)}
+                </LinhaDoQuadro>
+              ) : null}
               {aosCuidados || contatoDoCliente.length > 0 ? (
                 <LinhaDoQuadro rotulo="Contato">
                   {aosCuidados ? <span className="block">{`A/C ${aosCuidados}`}</span> : null}

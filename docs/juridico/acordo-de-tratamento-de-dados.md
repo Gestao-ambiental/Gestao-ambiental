@@ -57,7 +57,7 @@ e) comunicar a ANPD e os titulares sobre incidentes, quando exigido, com apoio d
 
 4.3. O Grama **não** vende dados, **não** usa os dados da Consultoria para publicidade, **não** os compartilha com terceiros fora do que este Acordo prevê e **não** os usa para treinar modelos de IA.
 
-4.4. O Grama não pede CPF de ninguém.
+4.4. O Grama não pede CPF das Pessoas Usuárias. Na contratação de um plano, quem paga e não tem CNPJ informa o próprio CPF, que segue direto para o processador de pagamentos (Asaas) e não é guardado pelo Grama.
 
 ## 5. Instruções da Consultoria
 
@@ -210,7 +210,7 @@ Este Acordo segue as leis do Brasil. Fica eleito o foro de [FORO].
 
 **Dados sensíveis:** o Grama não foi feito para tratar dados sensíveis. Se algum documento enviado contiver dados sensíveis, eles serão tratados apenas como parte do documento, com as mesmas medidas de segurança.
 
-**CPF:** o Grama não pede nem guarda CPF em campos próprios. Pode haver CPF dentro de documentos enviados pela Consultoria.
+**CPF:** o Grama não guarda CPF em campos próprios. O CPF de quem paga o plano (quando não há CNPJ) só passa pelo Grama a caminho do processador de pagamentos. Pode haver CPF dentro de documentos enviados pela Consultoria.
 
 ## Anexo II — Medidas de segurança
 

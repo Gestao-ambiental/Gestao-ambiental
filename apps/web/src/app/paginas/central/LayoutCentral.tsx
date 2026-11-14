@@ -89,6 +89,10 @@ export function LayoutCentral() {
   } else {
     conteudo = (
       <ExigeDoisFatores>
+        <nav aria-label="Central" className="mb-(--space-200) flex flex-wrap gap-(--space-100)">
+          <Link to="/admin">Consultorias</Link>
+          <Link to="/admin/financeiro">Financeiro</Link>
+        </nav>
         <Outlet />
       </ExigeDoisFatores>
     )

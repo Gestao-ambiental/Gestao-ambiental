@@ -6,6 +6,7 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   sem_permissao: 'Você não tem permissão para esta ação.',
   nome_obrigatorio: 'Informe o nome',
   cnpj_invalido: 'CNPJ incompleto',
+  cpf_invalido: 'CPF inválido',
   empreendimento_existente: 'Não foi possível salvar o empreendimento. Tente de novo.',
   unidade_existente: 'Não foi possível salvar a unidade. Tente de novo.',
   consultoria_existente: 'Não foi possível criar a consultoria. Tente de novo.',
@@ -153,6 +154,14 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   acesso_de_suporte_ativo:
     'Já há acesso de suporte valendo nesta consultoria. Use “Entrar como suporte”.',
   sem_acesso_de_emergencia: 'Não há acesso de emergência valendo.',
+  // Planos e cobrança (ADR-0026)
+  consultoria_somente_leitura: 'Somente leitura até o pagamento: ninguém cria nem edita.',
+  orcamentos_fora_do_plano: 'Orçamentos fazem parte dos planos Equipe e Escala.',
+  adicional_nao_confirmado: 'Isso passa do limite do plano. Confirme o valor adicional antes.',
+  recurso_invalido: 'Não foi possível concluir. Tente de novo.',
+  dias_de_teste_invalidos: 'Use de 0 a 365 dias úteis.',
+  valor_obrigatorio: 'Escolha marcar ou desmarcar.',
+  grupo_invalido: 'Não foi possível concluir. Tente de novo.',
 }
 
 const MENSAGENS_DO_AUTH: Record<string, string> = {
@@ -241,5 +250,8 @@ export function ehDoisFatoresNecessarios(erro: unknown): boolean {
 export function ehSemPermissao(erro: unknown): boolean {
   if (ehDoisFatoresNecessarios(erro)) return false
   const { code, message } = comoObjeto(erro)
+  // Só leitura por atraso e orçamento fora do plano usam 42501, mas têm mensagem própria (ADR-0026).
+  if (message === 'consultoria_somente_leitura' || message === 'orcamentos_fora_do_plano')
+    return false
   return code === '42501' || message === 'sem_permissao'
 }

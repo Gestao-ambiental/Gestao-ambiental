@@ -3,7 +3,7 @@
 -- quebra este teste.
 begin;
 
-select plan(15);
+select plan(17);
 
 select is(
   (select coalesce(array_agg(c.relname::text order by c.relname), '{}')
@@ -132,6 +132,44 @@ select is(
          and (t.tgtype & 31) = 31)),
   '{}'::text[],
   'toda tabela de public com consultoria_id tem a trigger que barra escrita do suporte'
+);
+
+-- Planos e cobrança (ADR-0026): toda tabela de public com consultoria_id (e a consultoria) tem a
+-- trigger da barreira comercial (só leitura por atraso ou teste acabado; orçamento fora do plano).
+-- Exceções: o que o pagamento e a central precisam e a trilha da plataforma. As tabelas de
+-- orçamento passam 'orcamentos' como segundo argumento. Uma tabela nova sem a trigger quebra
+-- este teste.
+select is(
+  (select coalesce(array_agg(c.relname::text order by c.relname), '{}')
+   from pg_catalog.pg_class as c
+   join pg_catalog.pg_namespace as n on n.oid = c.relnamespace
+   where n.nspname = 'public' and c.relkind in ('r', 'p')
+     and (c.relname = 'consultoria' or exists (
+       select 1 from pg_catalog.pg_attribute as a
+       where a.attrelid = c.oid and a.attname = 'consultoria_id' and not a.attisdropped))
+     and c.relname not in ('assinatura', 'cobranca', 'consultoria_condicao_comercial',
+       'condicao_comercial_historico', 'consultoria_situacao_historico', 'acesso_suporte',
+       'acesso_suporte_evento', 'uso_diario', 'auditoria')
+     and not exists (
+       select 1 from pg_catalog.pg_trigger as t
+       join pg_catalog.pg_proc as p on p.oid = t.tgfoid
+       where t.tgrelid = c.oid and not t.tgisinternal
+         and t.tgname = '_comercial_somente_leitura'
+         and p.proname = 'bloquear_escrita_comercial'
+         and (t.tgtype & 31) = 31)),
+  '{}'::text[],
+  'toda tabela de public com consultoria_id tem a barreira comercial de escrita'
+);
+
+select is(
+  (select coalesce(array_agg(c.relname::text order by c.relname), '{}')
+   from pg_catalog.pg_class as c
+   join pg_catalog.pg_namespace as n on n.oid = c.relnamespace
+   join pg_catalog.pg_trigger as t on t.tgrelid = c.oid and t.tgname = '_comercial_somente_leitura'
+   where n.nspname = 'public' and c.relname like 'orcamento%'
+     and encode(t.tgargs, 'escape') not like '%orcamentos%'),
+  '{}'::text[],
+  'toda tabela de orçamento tem a regra do plano (Equipe e Escala)'
 );
 
 select * from finish();

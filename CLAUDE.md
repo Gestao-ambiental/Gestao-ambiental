@@ -53,7 +53,7 @@ Nunca regra de negócio só no front. O front esconde coisas por apresentação,
 - Papel (`gestao | equipe`) vive no **vínculo** (`membro`), nunca no usuário nem em claim editável.
 - Responsável, autor e ator são sempre `membro_id`, nunca nome.
 - Service role só em Edge Functions, migrations e CI. O front usa sempre a chave anônima + JWT.
-- Sem CPF em lugar nenhum. Convite guarda só o hash do token.
+- Sem CPF no nosso banco, no front (armazenamento), em log ou no repositório. Única exceção (decisão do Eduardo, 14/11/2026): na assinatura do plano, quem não tem CNPJ digita o CPF, que vai direto pela Edge Function para o Asaas e não é gravado. Convite guarda só o hash do token.
 - Segredos nunca no front, no repositório ou em log.
 
 ## Dados

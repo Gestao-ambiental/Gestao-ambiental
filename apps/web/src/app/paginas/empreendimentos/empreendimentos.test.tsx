@@ -113,12 +113,20 @@ describe('carteira de empreendimentos (EMP-01)', () => {
       within(dialogo).getByLabelText('Nome do empreendimento'),
       'Cerâmica Pirabeiraba',
     )
-    await usuario.type(within(dialogo).getByLabelText('CNPJ'), '1234567800')
-    expect(within(dialogo).getByLabelText('CNPJ')).toHaveValue('12.345.678/00')
+    // CNPJ ou CPF: CPF com dígito errado é recusado; até 11 dígitos a máscara é de CPF.
+    const documento = within(dialogo).getByLabelText('CNPJ ou CPF')
+    await usuario.type(documento, '52998224726')
+    expect(documento).toHaveValue('529.982.247-26')
     await usuario.click(within(dialogo).getByRole('button', { name: 'Salvar' }))
-    expect(await within(dialogo).findByText('CNPJ incompleto')).toBeInTheDocument()
+    expect(await within(dialogo).findByText('CPF inválido')).toBeInTheDocument()
 
-    await usuario.type(within(dialogo).getByLabelText('CNPJ'), '0190')
+    await usuario.clear(documento)
+    await usuario.type(documento, '1234567800')
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Salvar' }))
+    expect(await within(dialogo).findByText('CNPJ ou CPF incompleto')).toBeInTheDocument()
+
+    await usuario.type(documento, '0190')
+    expect(documento).toHaveValue('12.345.678/0001-90')
     await usuario.type(within(dialogo).getByLabelText('Primeira unidade'), 'Matriz')
     await usuario.click(within(dialogo).getByRole('button', { name: 'Salvar' }))
 

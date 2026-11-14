@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/sheet'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
+import { FaixaComercial } from '@/app/plano/FaixaComercial'
 
 import { AvisoDeEmergenciaDoSuporte } from './AvisoDeEmergenciaDoSuporte'
 import { BotaoTema } from './BotaoTema'
@@ -98,6 +99,7 @@ export function AppShell() {
         <main id="conteudo" tabIndex={-1} className="min-w-0 flex-1 overflow-auto outline-none">
           <div className="w-full p-(--space-200) md:p-(--space-300)">
             <AvisoDeEmergenciaDoSuporte />
+            <FaixaComercial />
             <Outlet />
           </div>
         </main>

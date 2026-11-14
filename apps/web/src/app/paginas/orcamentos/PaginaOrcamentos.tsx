@@ -5,6 +5,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Pagina } from '@/app/paginas/Pagina'
+import { AvisoOrcamentosForaDoPlano } from '@/app/plano/AvisoOrcamentosForaDoPlano'
 import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
 import { BotaoIcone } from '@/components/ui/botao-icone'
@@ -483,6 +484,7 @@ function ListaDaGestao() {
           )}
         </div>
       </div>
+      <AvisoOrcamentosForaDoPlano />
 
       {falha ? (
         <MensagemSecao role="alert" tom="perigo">

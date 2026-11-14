@@ -1311,10 +1311,10 @@ describe('orçamentos (onda 5)', () => {
     await usuario.click(await screen.findByRole('button', { name: 'Novo orçamento' }))
     await usuario.click(screen.getByRole('radio', { name: 'Prospecto, ainda não cadastrado' }))
     await usuario.type(screen.getByLabelText(/Nome da empresa ou do cliente/), 'Padaria Pão Quente')
-    await usuario.type(screen.getByLabelText(/^CNPJ/), '11222333')
+    await usuario.type(screen.getByLabelText(/^CNPJ ou CPF/), '11222333')
     await usuario.type(screen.getByLabelText(/O que será orçado/), 'AUA da padaria')
     await usuario.click(screen.getByRole('button', { name: 'Criar rascunho' }))
-    expect(screen.getByText('CNPJ incompleto: são 14 caracteres')).toBeInTheDocument()
+    expect(screen.getByText('CNPJ ou CPF incompleto')).toBeInTheDocument()
     expect(falso.cliente.rpc.mock.calls.some(([nome]) => nome === 'criar_orcamento')).toBe(false)
 
     await usuario.type(screen.getByLabelText(/^CNPJ/), '000181')

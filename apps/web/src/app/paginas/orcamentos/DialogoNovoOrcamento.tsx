@@ -1,4 +1,4 @@
-import { mascararCnpj } from '@gestao-ambiental/domain'
+import { mascararDocumento } from '@gestao-ambiental/domain'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 
@@ -71,7 +71,7 @@ export function DialogoNovoOrcamento({
       disabled: salvando,
       erro: erros.prospecto?.[nome],
       onChange: (evento: { target: { value: string } }) => {
-        const valor = nome === 'cnpj' ? mascararCnpj(evento.target.value) : evento.target.value
+        const valor = nome === 'cnpj' ? mascararDocumento(evento.target.value) : evento.target.value
         setProspecto((a) => ({ ...a, [nome]: valor }))
       },
     }
@@ -217,7 +217,7 @@ export function DialogoNovoOrcamento({
               {...campoDoProspecto('nome')}
             />
             <CampoTexto
-              rotulo="CNPJ"
+              rotulo="CNPJ ou CPF"
               ajuda="Opcional. Evita cadastro repetido."
               inputMode="text"
               {...campoDoProspecto('cnpj')}

@@ -24,6 +24,7 @@ import { ehDoisFatoresNecessarios, ehSemPermissao } from '@/lib/erros'
 
 import { AcessoDeSuporteNaCentral } from './AcessoDeSuporteNaCentral'
 import { DialogoMudarSituacao } from './DialogoMudarSituacao'
+import { PlanoNaCentral } from './PlanoNaCentral'
 import { RelerDoisFatores } from './ExigeDoisFatores'
 import { UsoPorModulo } from './UsoNaCentral'
 import { TOM_DA_SITUACAO, classeCabecalho, classeCelula, plural, ultimoUsoComHora } from './comum'
@@ -389,6 +390,7 @@ export function PaginaCentralConsultoria() {
       ) : null}
 
       <Numeros consultoria={consultoria} />
+      <PlanoNaCentral consultoriaId={consultoria.id} fuso={consultoria.fuso} />
       <AcessoDeSuporteNaCentral
         consultoriaId={consultoria.id}
         consultoriaNome={consultoria.nome}

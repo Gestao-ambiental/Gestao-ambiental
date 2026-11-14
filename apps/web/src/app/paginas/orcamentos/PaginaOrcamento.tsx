@@ -46,7 +46,7 @@ import {
 } from '@/lib/api/orcamentos'
 import { mensagemDoErro } from '@/lib/erros'
 import { listarMembrosAtivos } from '@/lib/api/perfil'
-import { mascararCnpj } from '@gestao-ambiental/domain'
+import { mascararDocumento } from '@gestao-ambiental/domain'
 
 import {
   calcularOrcamento,
@@ -645,7 +645,7 @@ function Editor({
       value: r.prospecto[nome],
       disabled: !editavel,
       onChange: (evento: { target: { value: string } }) => {
-        const valor = nome === 'cnpj' ? mascararCnpj(evento.target.value) : evento.target.value
+        const valor = nome === 'cnpj' ? mascararDocumento(evento.target.value) : evento.target.value
         mudar((a) => ({ ...a, prospecto: { ...a.prospecto, [nome]: valor } }))
       },
     }
@@ -1142,7 +1142,7 @@ function Editor({
                   <p className="text-xs text-(--text-subtle)">
                     {alterado
                       ? 'Salve as alterações antes de cadastrar o prospecto.'
-                      : 'Quem pediu o orçamento ainda não está cadastrado. Ao cadastrar, um CNPJ que já existe é ligado ao empreendimento existente, sem duplicar.'}
+                      : 'Quem pediu o orçamento ainda não está cadastrado. Ao cadastrar, um CNPJ ou CPF que já existe é ligado ao empreendimento existente, sem duplicar.'}
                   </p>
                   <div className="grid gap-(--space-150) sm:grid-cols-2 lg:grid-cols-3">
                     <CampoTexto
@@ -1150,7 +1150,11 @@ function Editor({
                       required
                       {...campoDoProspecto('nome')}
                     />
-                    <CampoTexto rotulo="CNPJ" ajuda="Opcional" {...campoDoProspecto('cnpj')} />
+                    <CampoTexto
+                      rotulo="CNPJ ou CPF"
+                      ajuda="Opcional"
+                      {...campoDoProspecto('cnpj')}
+                    />
                     <CampoTexto
                       rotulo="Contato"
                       ajuda="Opcional"

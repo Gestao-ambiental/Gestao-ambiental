@@ -1,4 +1,8 @@
-import { formatarCnpj, hojeNoFuso } from '@gestao-ambiental/domain'
+import {
+  formatarDocumentoDoTitular,
+  hojeNoFuso,
+  rotuloDoDocumentoDoTitular,
+} from '@gestao-ambiental/domain'
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router'
@@ -53,7 +57,7 @@ function Cabecalho({
   /** Só a Gestão cadastra licença; sem destino, o botão não aparece. */
   cadastrarPara: string | null
 }) {
-  const cnpj = formatarCnpj(empreendimento.cnpj)
+  const cnpj = formatarDocumentoDoTitular(empreendimento.cnpj)
   return (
     <div className="flex flex-wrap items-start gap-(--space-150)">
       <SiglaEmpreendimento nome={empreendimento.nome} grande />
@@ -65,7 +69,7 @@ function Cabecalho({
           </span>
           <span aria-hidden="true">·</span>
           <span>
-            CNPJ{' '}
+            {rotuloDoDocumentoDoTitular(empreendimento.cnpj)}{' '}
             {cnpj ? (
               <span className="font-mono text-(--text)">{cnpj}</span>
             ) : (

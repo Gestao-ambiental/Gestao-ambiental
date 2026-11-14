@@ -1,7 +1,11 @@
 // Prospecto: quem pediu orçamento sem estar cadastrado (ORC-02). A tela confere o formato para
-// avisar cedo; o banco confere de novo (private.gravar_prospecto). Nunca pedimos CPF.
+// avisar cedo; o banco confere de novo (private.gravar_prospecto). O documento é CNPJ ou CPF.
 
-import { mascararCnpj, normalizarCnpj, situacaoDoCnpj } from '@gestao-ambiental/domain'
+import {
+  documentoDoTitularParaGravar,
+  mascararDocumento,
+  situacaoDoDocumentoDoTitular,
+} from '@gestao-ambiental/domain'
 
 import type { Prospecto } from '@/lib/api/orcamentos'
 
@@ -29,7 +33,7 @@ export function camposDoProspecto(p: Prospecto | null): CamposDoProspecto {
   if (!p) return PROSPECTO_VAZIO
   return {
     nome: p.nome,
-    cnpj: p.cnpj ? mascararCnpj(p.cnpj) : '',
+    cnpj: p.cnpj ? mascararDocumento(p.cnpj) : '',
     contato: p.contato ?? '',
     email: p.email ?? '',
     telefone: p.telefone ?? '',
@@ -42,14 +46,16 @@ export function lerProspecto(
 ): { prospecto: Prospecto } | { erros: ErrosDoProspecto } {
   const erros: ErrosDoProspecto = {}
   if (!c.nome.trim()) erros.nome = 'Informe o nome da empresa ou do cliente'
-  if (situacaoDoCnpj(c.cnpj) === 'incompleto') erros.cnpj = 'CNPJ incompleto: são 14 caracteres'
+  const documento = situacaoDoDocumentoDoTitular(c.cnpj)
+  if (documento === 'incompleto') erros.cnpj = 'CNPJ ou CPF incompleto'
+  if (documento === 'cpf_invalido') erros.cnpj = 'CPF inválido'
   if (c.email.trim() && !EMAIL.test(c.email.trim())) erros.email = 'E-mail inválido'
   if (Object.keys(erros).length > 0) return { erros }
   const vazioViraNulo = (texto: string) => texto.trim() || null
   return {
     prospecto: {
       nome: c.nome.trim(),
-      cnpj: situacaoDoCnpj(c.cnpj) === 'completo' ? normalizarCnpj(c.cnpj) : null,
+      cnpj: documentoDoTitularParaGravar(c.cnpj),
       contato: vazioViraNulo(c.contato),
       email: vazioViraNulo(c.email),
       telefone: vazioViraNulo(c.telefone),

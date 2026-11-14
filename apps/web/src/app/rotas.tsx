@@ -24,6 +24,7 @@ import { PaginaPlanoRenovacao } from './paginas/acompanhamentos/PaginaPlanoRenov
 import { PaginaCalendario } from './paginas/calendario/PaginaCalendario'
 import { LayoutCentral } from './paginas/central/LayoutCentral'
 import { PaginaCentral } from './paginas/central/PaginaCentral'
+import { PaginaCentralFinanceiro } from './paginas/central/PaginaCentralFinanceiro'
 import { PaginaCentralConsultoria } from './paginas/central/PaginaCentralConsultoria'
 import { PaginaOcorrencia } from './paginas/ocorrencia/PaginaOcorrencia'
 import { PaginaCustosETaxas } from './paginas/orcamentos/PaginaCustosETaxas'
@@ -36,6 +37,7 @@ import { PaginaNaoEncontrada } from './paginas/paginas'
 import { PaginaPerfil } from './paginas/perfil/PaginaPerfil'
 import { PaginaSeguranca } from './paginas/perfil/PaginaSeguranca'
 import { PaginaVisaoEquipe } from './paginas/visao/PaginaVisaoEquipe'
+import { PaginaPlano } from './plano/PaginaPlano'
 import { RequerSessao } from './sessao/RequerSessao'
 
 /**
@@ -73,6 +75,7 @@ export const rotas: RouteObject[] = [
         children: [
           { index: true, element: <PaginaCentral /> },
           { path: 'consultorias/:id', element: <PaginaCentralConsultoria /> },
+          { path: 'financeiro', element: <PaginaCentralFinanceiro /> },
         ],
       },
       {
@@ -103,6 +106,7 @@ export const rotas: RouteObject[] = [
               { path: 'configuracoes/equipe', element: <PaginaEquipe /> },
               { path: 'configuracoes/custos', element: <PaginaCustosETaxas /> },
               { path: 'configuracoes/proposta', element: <PaginaDadosDaProposta /> },
+              { path: 'configuracoes/plano', element: <PaginaPlano /> },
               { path: 'perfil', element: <PaginaPerfil /> },
               { path: 'seguranca', element: <PaginaSeguranca /> },
               { path: '*', element: <PaginaNaoEncontrada /> },

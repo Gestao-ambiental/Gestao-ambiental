@@ -47,7 +47,7 @@ Versão: minuta de 14/11/2026
 
 3.4. A Consultoria deve avisar o Grama imediatamente se suspeitar de uso indevido de alguma conta.
 
-3.5. O Grama não pede CPF das Pessoas Usuárias.
+3.5. O Grama não pede CPF das Pessoas Usuárias. Na contratação de um plano, quem paga e não tem CNPJ informa o próprio CPF, que segue direto para o processador de pagamentos (Asaas) e não é guardado pelo Grama.
 
 ## 4. O que o Grama faz e o que não faz
 
@@ -104,10 +104,10 @@ d) presta consultoria ambiental, jurídica, contábil ou de precificação.
 
 8.3. **Atraso:** se o pagamento não for confirmado no vencimento, a Gestão é avisada no mesmo dia.
 
-8.4. **Bloqueio funcional:** depois de 2 dias úteis de atraso, o uso do Grama pela Consultoria fica bloqueado. Durante o bloqueio:
+8.4. **Bloqueio funcional:** depois de 2 dias úteis de atraso, o Grama fica em **somente leitura** para todas as Pessoas Usuárias da Consultoria: todos continuam vendo os dados e baixando os arquivos, mas ninguém cria nem edita. O mesmo vale ao fim do teste sem contratação de plano. Durante o bloqueio:
 
 a) os dados da Consultoria **são preservados** e não são excluídos por causa do atraso;
-b) a Gestão continua podendo regularizar o pagamento [CONFIRMAR se a exportação de dados também fica disponível durante o bloqueio];
+b) a Gestão continua podendo regularizar o pagamento, e os arquivos continuam disponíveis para baixar [CONFIRMAR se a exportação completa de dados também fica disponível durante o bloqueio];
 c) o acesso é liberado depois da confirmação do pagamento.
 
 8.5. Encargos por atraso (multa e juros): [ENCARGOS POR ATRASO, se houver].

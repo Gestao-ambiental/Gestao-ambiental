@@ -279,3 +279,73 @@ export {
   suporteValendo,
 } from './acesso-de-suporte'
 export type { CategoriaDeEmergencia, DuracaoDeSuporte } from './acesso-de-suporte'
+
+export {
+  ADICIONAL_MENSAL_CENTAVOS,
+  CODIGOS_DE_PLANO,
+  DIAS_DE_TESTE_PADRAO,
+  DIAS_UTEIS_DE_TOLERANCIA,
+  DIAS_UTEIS_TESTE_ACABANDO,
+  MENSALIDADES_NO_ANUAL,
+  MOEDA,
+  PLANOS,
+  ROTULO_DA_FORMA,
+  ROTULO_DA_SITUACAO_COMERCIAL,
+  ROTULO_DO_CICLO,
+  SITUACOES_COMERCIAIS,
+  adicionaisDoUso,
+  cicloVigente,
+  economiaDoAnual,
+  ehCicloDoPlano,
+  ehCodigoPlano,
+  ehDiaUtilNacional,
+  ehFormaDePagamento,
+  ehPlanoMaior,
+  ehSituacaoComercial,
+  equivalenteMensal,
+  feriadosNacionais,
+  fimDoTeste,
+  inicioDoTeste,
+  limitesDoPlano,
+  pascoa,
+  passagemDoLimite,
+  planoVigente,
+  primeiroVencimento,
+  situacaoComercial,
+  somarDiasUteis,
+  testeAcabando,
+  valorDoCiclo,
+  valorMensalComAdicionais,
+} from './planos'
+export type {
+  Adicionais,
+  AssinaturaParaSituacao,
+  CicloDoPlano,
+  CodigoPlano,
+  EntradaDaSituacao,
+  FormaDePagamento,
+  Limites,
+  PassagemDoLimite,
+  Plano,
+  RecursoDoLimite,
+  SituacaoComercial,
+  SituacaoComercialCodigo,
+  Uso,
+} from './planos'
+
+export {
+  cnpjValido,
+  cpfValido,
+  mascararDocumento,
+  normalizarDocumento,
+  tipoDoDocumento,
+} from './documento'
+export type { TipoDeDocumento } from './documento'
+
+export {
+  documentoDoTitularParaGravar,
+  formatarDocumentoDoTitular,
+  rotuloDoDocumentoDoTitular,
+  situacaoDoDocumentoDoTitular,
+} from './documento-do-titular'
+export type { SituacaoDoDocumento } from './documento-do-titular'
