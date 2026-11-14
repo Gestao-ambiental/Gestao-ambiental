@@ -92,6 +92,7 @@ export function LayoutCentral() {
         <nav aria-label="Central" className="mb-(--space-200) flex flex-wrap gap-(--space-100)">
           <Link to="/admin">Consultorias</Link>
           <Link to="/admin/financeiro">Financeiro</Link>
+          <Link to="/admin/valor">Valor</Link>
         </nav>
         <Outlet />
       </ExigeDoisFatores>

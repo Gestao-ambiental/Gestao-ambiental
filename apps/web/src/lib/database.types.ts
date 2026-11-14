@@ -1313,6 +1313,11 @@ isOneToOne: false
 "central_marcar_conta_interna":
 { Args: { "p_consultoria_id": string,"p_interna": boolean,"p_motivo": string,"p_row_version": number }; Returns: number
                            },
+"central_metricas_de_valor":
+{ Args: { "p_consultoria_id"?: string,"p_meses"?: number }; Returns: {
+              "antecedencia_media": number,"atrasadas": number,"carga_celulas": number,"carga_entregas": number,"carga_pico": number,"concluidas": number,"concluidas_com_evidencia": number,"condicionantes_ativas": number,"condicionantes_com_responsavel": number,"criadas": number,"dias_ate_decisao": number,"dias_ate_envio": number,"dias_de_atraso": number,"mes": string,"meta_cumpridas": number,"meta_previstas": number,"nao_planejadas": number,"orcamentos_aprovados": number,"orcamentos_criados": number,"orcamentos_decididos": number,"orcamentos_enviados": number,"orcamentos_pelos_custos": number,"orcamentos_preco_digitado": number,"prazo_cumpridas": number,"prazo_previstas": number,"renovacoes_protegidas": number,"renovacoes_vencendo": number,"ticket_medio_aprovado_centavos": number,"urgencias": number
+            }[]
+                           },
 "central_mudar_situacao":
 { Args: { "p_chave": string,"p_consultoria_id": string,"p_motivo": string,"p_row_version": number,"p_situacao": Database["public"]['Enums']["situacao_consultoria"] }; Returns: number
                            },

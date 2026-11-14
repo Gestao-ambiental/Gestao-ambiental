@@ -349,3 +349,19 @@ export {
   situacaoDoDocumentoDoTitular,
 } from './documento-do-titular'
 export type { SituacaoDoDocumento } from './documento-do-titular'
+
+export {
+  DIAS_DE_RENOVACAO_PROTEGIDA,
+  DIAS_UTEIS_DE_NAO_PLANEJADA,
+  DIAS_UTEIS_DE_URGENCIA,
+  MESES_DE_METRICAS,
+  antecedenciaEmDiasUteis,
+  diasUteisEntre,
+  ehNaoPlanejada,
+  ehNoPrazo,
+  ehUrgencia,
+  picoSobreMedia,
+  proporcao,
+  renovacaoProtegida,
+  variacao,
+} from './metricas-de-valor'

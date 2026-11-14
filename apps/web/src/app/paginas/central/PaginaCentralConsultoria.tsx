@@ -27,6 +27,7 @@ import { DialogoMudarSituacao } from './DialogoMudarSituacao'
 import { PlanoNaCentral } from './PlanoNaCentral'
 import { RelerDoisFatores } from './ExigeDoisFatores'
 import { UsoPorModulo } from './UsoNaCentral'
+import { ValorDaConsultoria } from './ValorNaCentral'
 import { TOM_DA_SITUACAO, classeCabecalho, classeCelula, plural, ultimoUsoComHora } from './comum'
 
 function proximaPagina<T>(
@@ -397,6 +398,7 @@ export function PaginaCentralConsultoria() {
         fuso={consultoria.fuso}
       />
       <UsoPorModulo consultoriaId={consultoria.id} />
+      <ValorDaConsultoria consultoriaId={consultoria.id} />
       <Pessoas consultoria={consultoria} />
       <Historico consultoria={consultoria} />
 
