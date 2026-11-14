@@ -1,6 +1,6 @@
 # ADR-0028 — Resíduos, fase 1: MTR, CDF, conferência, painel e prazos, sem integração com o IMA (protótipo)
 
-**Situação:** aceita em 14/11/2026 como **protótipo** (o Cadu revisa e provavelmente refaz). Base no estudo `docs/estudos/integracao-ima-mtr.md` (seções 2, 3b e 5). Migration `20261114210000_residuos_mtr_cdf.sql`; teste `supabase/tests/470_residuos.test.sql`; domínio `packages/domain/src/residuos.ts`; API `apps/web/src/lib/api/residuos.ts`; telas em `apps/web/src/app/paginas/residuos/`.
+**Situação:** aceita em 14/11/2026 como **protótipo** (o Kadu revisa e provavelmente refaz). Base no estudo `docs/estudos/integracao-ima-mtr.md` (seções 2, 3b e 5). Migration `20261114210000_residuos_mtr_cdf.sql`; teste `supabase/tests/470_residuos.test.sql`; domínio `packages/domain/src/residuos.ts`; API `apps/web/src/lib/api/residuos.ts`; telas em `apps/web/src/app/paginas/residuos/`.
 
 ## 1. O que entrou
 

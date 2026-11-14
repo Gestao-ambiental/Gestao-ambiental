@@ -15,7 +15,7 @@ const SP = 'America/Sao_Paulo'
 const HORA = 60 * 60_000
 const eduardo = sessaoDe('eduardo@filtroville.test', 'Eduardo Karnopp')
 const ana = sessaoDe('ana@filtroville.test', 'Ana Ribeiro')
-const operador = sessaoDe('cadu@grama.test', 'Cadu Operador')
+const operador = sessaoDe('kadu@grama.test', 'Kadu Operador')
 const COM_DOIS_FATORES: CenarioDoisFatores = {
   nivel: 'aal2',
   fatores: [{ id: 'fator-1', status: 'verified' }],
@@ -39,7 +39,7 @@ function acesso(extra: Record<string, unknown> = {}) {
     encerrado_por_nome: null,
     autorizado_por_nome: 'Eduardo Karnopp',
     aberto_por_nome: null,
-    entradas: [{ nome: 'Cadu Operador', instante: '2026-11-14T13:05:00Z' }],
+    entradas: [{ nome: 'Kadu Operador', instante: '2026-11-14T13:05:00Z' }],
     aviso_visto_em: null,
     aviso_visto_por_nome: null,
     total: 1,
@@ -57,10 +57,10 @@ const emergenciaEncerrada = acesso({
   ativo: false,
   encerrado_em: '2026-11-10T14:00:00Z',
   encerramento: 'operador',
-  encerrado_por_nome: 'Cadu Operador',
+  encerrado_por_nome: 'Kadu Operador',
   autorizado_por_nome: null,
-  aberto_por_nome: 'Cadu Operador',
-  entradas: [{ nome: 'Cadu Operador', instante: '2026-11-10T13:00:00Z' }],
+  aberto_por_nome: 'Kadu Operador',
+  entradas: [{ nome: 'Kadu Operador', instante: '2026-11-10T13:00:00Z' }],
   aviso_visto_em: '2026-11-10T13:30:00Z',
   aviso_visto_por_nome: 'Eduardo Karnopp',
   total: 2,
@@ -163,14 +163,14 @@ describe('acesso de suporte: Gestão na Equipe (ADR-0025)', () => {
     // Selo e encerramento: ainda valendo.
     expect(within(autorizado).getAllByText('Valendo')).toHaveLength(2)
     expect(within(autorizado).getByText('Erro ao gerar a proposta')).toBeInTheDocument()
-    expect(within(autorizado).getByText('Cadu Operador em 14/11/2026 às 10:05')).toBeInTheDocument()
+    expect(within(autorizado).getByText('Kadu Operador em 14/11/2026 às 10:05')).toBeInTheDocument()
 
     const item = emergencia
     expect(within(item).getByText('Emergência')).toBeInTheDocument()
     expect(within(item).getByText('Encerrado')).toBeInTheDocument()
     expect(within(item).getByText('Falha grave que impede o uso')).toBeInTheDocument()
     expect(
-      within(item).getByText('Pelo suporte (Cadu Operador) em 10/11/2026 às 11:00'),
+      within(item).getByText('Pelo suporte (Kadu Operador) em 10/11/2026 às 11:00'),
     ).toBeInTheDocument()
     expect(
       within(item).getByText('Visto por Eduardo Karnopp em 10/11/2026 às 10:30'),
@@ -224,7 +224,7 @@ describe('acesso de suporte: aviso de emergência para a Gestão', () => {
     motivo: 'Tentativas de acesso suspeitas',
     inicio: '2026-11-14T13:00:00Z',
     fim_previsto: '2026-11-14T15:00:00Z',
-    operador_nome: 'Cadu Operador',
+    operador_nome: 'Kadu Operador',
   }
 
   it('faixa com data, hora, operador, categoria e motivo, até marcar como visto', async () => {
@@ -241,7 +241,7 @@ describe('acesso de suporte: aviso de emergência para a Gestão', () => {
 
     const faixa = await screen.findByRole('region', { name: 'Avisos do suporte' })
     expect(within(faixa).getByText('Acesso de emergência do suporte')).toBeInTheDocument()
-    expect(within(faixa).getByText('14/11/2026 às 10:00 · Cadu Operador')).toBeInTheDocument()
+    expect(within(faixa).getByText('14/11/2026 às 10:00 · Kadu Operador')).toBeInTheDocument()
     expect(within(faixa).getByText('Categoria: Incidente de segurança')).toBeInTheDocument()
     expect(within(faixa).getByText('Motivo: Tentativas de acesso suspeitas')).toBeInTheDocument()
 

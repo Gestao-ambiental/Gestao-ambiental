@@ -9,7 +9,7 @@ vi.mock('@/lib/supabase', () => import('@/test/supabase-falso'))
 
 const eduardo = sessaoDe('eduardo@filtroville.test', 'Eduardo Karnopp')
 const ana = sessaoDe('ana@filtroville.test', 'Ana Ribeiro')
-const operador = sessaoDe('cadu@grama.test', 'Cadu Operador')
+const operador = sessaoDe('kadu@grama.test', 'Kadu Operador')
 const CPF = '529.982.247-25'
 
 /** Linha da RPC situacao_comercial: em teste (criada em 25/02/2027, hoje 01/03/2027). */

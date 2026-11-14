@@ -1,6 +1,6 @@
 # ADR-0027 — Indicadores de valor, etapas 2 e 3: horas devolvidas e resumo do mês (protótipo)
 
-**Situação:** aceita em 14/11/2026 como **protótipo** (o Cadu revisa e provavelmente refaz). Continua a etapa 1 (métricas de valor da central, migration `20261114170000_metricas_de_valor.sql`). Migrations `20261114190000_tempo_poupado.sql` e `20261114200000_resumo_do_mes.sql`; testes `supabase/tests/450_tempo_poupado.test.sql` e `460_resumo_do_mes.test.sql`; domínio `packages/domain/src/horas-poupadas.ts`; front `apps/web/src/app/consultoria/tempo-ativo.ts`, `apps/web/src/app/indicadores/` e `app/paginas/central/HorasNaCentral.tsx`; Edge Function `supabase/functions/enviar-resumo-do-mes` (regra em `_shared/resumo-do-mes.ts`); agendamento `.github/workflows/resumo-do-mes.yml`.
+**Situação:** aceita em 14/11/2026 como **protótipo** (o Kadu revisa e provavelmente refaz). Continua a etapa 1 (métricas de valor da central, migration `20261114170000_metricas_de_valor.sql`). Migrations `20261114190000_tempo_poupado.sql` e `20261114200000_resumo_do_mes.sql`; testes `supabase/tests/450_tempo_poupado.test.sql` e `460_resumo_do_mes.test.sql`; domínio `packages/domain/src/horas-poupadas.ts`; front `apps/web/src/app/consultoria/tempo-ativo.ts`, `apps/web/src/app/indicadores/` e `app/paginas/central/HorasNaCentral.tsx`; Edge Function `supabase/functions/enviar-resumo-do-mes` (regra em `_shared/resumo-do-mes.ts`); agendamento `.github/workflows/resumo-do-mes.yml`.
 
 ## 1. Decisões do Eduardo
 
@@ -59,7 +59,7 @@
 3. Aplicar as migrations (`supabase db push`, pelo fluxo normal) e publicar a função: `supabase functions deploy enviar-resumo-do-mes --project-ref <ref> --use-api` (o `verify_jwt = false` vem do `config.toml`; se publicar sem ele, use `--no-verify-jwt`).
 4. GitHub → Settings → Secrets and variables → Actions: `SUPABASE_FUNCTIONS_URL` = `https://<ref>.supabase.co/functions/v1` e `CRON_TOKEN` = o mesmo token do passo 1.
 5. Testar: na central, "Enviar resumo de teste para mim"; depois Actions → Resumo do mês → Run workflow (manda de verdade para a Gestão de cada consultoria pendente do mês anterior).
-6. O `deploy-producao.yml` publica só a `extrair-licenca`; incluir a `enviar-resumo-do-mes` lá quando o Cadu aprovar.
+6. O `deploy-producao.yml` publica só a `extrair-licenca`; incluir a `enviar-resumo-do-mes` lá quando o Kadu aprovar.
 
 ## 7. Termos
 

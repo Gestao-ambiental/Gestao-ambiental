@@ -1,6 +1,6 @@
 # ADR-0026 — Planos, limites, teste grátis, só leitura por atraso e cobrança (protótipo)
 
-**Situação:** aceita em 14/11/2026 como **protótipo funcional** (decisão do Eduardo: ver as telas funcionando; o Cadu revisa e provavelmente refaz). Migrations `20261114150000_planos_e_limites.sql` e `20261114160000_cobranca_simulada.sql`; testes `supabase/tests/410_planos_e_limites.test.sql`, `420_cobranca_simulada.test.sql` e duas regras novas no `020_estrutura.test.sql`; domínio `packages/domain/src/planos.ts` e `documento.ts`; front em `apps/web/src/app/plano/` e `app/paginas/central/PaginaCentralFinanceiro.tsx` e `PlanoNaCentral.tsx`.
+**Situação:** aceita em 14/11/2026 como **protótipo funcional** (decisão do Eduardo: ver as telas funcionando; o Kadu revisa e provavelmente refaz). Migrations `20261114150000_planos_e_limites.sql` e `20261114160000_cobranca_simulada.sql`; testes `supabase/tests/410_planos_e_limites.test.sql`, `420_cobranca_simulada.test.sql` e duas regras novas no `020_estrutura.test.sql`; domínio `packages/domain/src/planos.ts` e `documento.ts`; front em `apps/web/src/app/plano/` e `app/paginas/central/PaginaCentralFinanceiro.tsx` e `PlanoNaCentral.tsx`.
 
 ## 1. Decisões do Eduardo
 

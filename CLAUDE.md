@@ -91,7 +91,7 @@ Toda mudança testa o que já existia, sem ninguém precisar pedir:
 - **Bug corrigido ganha um teste que falhava antes da correção**, para não voltar.
 - **A suíte inteira roda antes de entregar:** `corepack pnpm verificar` (lint, tipos, testes, build e pgTAP). Rodar só os testes do arquivo mexido não basta.
 - **Teste antigo que quebrou é sinal de regressão:** corrija o código. Só mude o teste quando a regra mudou de propósito, e diga isso no commit.
-- **Gancho de push** (`.githooks/pre-push`, ativo com `git config --worktree core.hooksPath .githooks`): roda `verificar` e cancela o push se algo falhar; também bloqueia push para o repositório do Cadu.
+- **Gancho de push** (`.githooks/pre-push`, ativo com `git config --worktree core.hooksPath .githooks`): roda `verificar` e cancela o push se algo falhar; também bloqueia push para o repositório do Kadu.
 - **CI** roda em todo push na `main` e na `branch-do-duds`, e em todo PR.
 
 ## Definition of Done (itens que você verifica)

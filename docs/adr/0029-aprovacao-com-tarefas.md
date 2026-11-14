@@ -1,6 +1,6 @@
 # ADR-0029: Aprovação do orçamento com tarefas
 
-- **Situação:** aceito em 14/11/2026. É protótipo funcional, e o Cadu revisa.
+- **Situação:** aceito em 14/11/2026. É protótipo funcional, e o Kadu revisa.
 - **Requisitos:** FIN-01 (aceite) e FIN-03 (demandas de serviço), além do Protótipo 22.
 - **Estudo:** [docs/estudos/aprovacao-tarefas-e-capacidade.md](../estudos/aprovacao-tarefas-e-capacidade.md), fatia 1.
 - **Decisões:** A1 a A8 do estudo. O Eduardo pediu que eu seguisse as minhas recomendações.

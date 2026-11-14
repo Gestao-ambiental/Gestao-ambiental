@@ -1,5 +1,5 @@
 #!/bin/sh
-# Antes de qualquer push: nunca no GitHub do Cadu, e só com todos os testes passando.
+# Antes de qualquer push: nunca no GitHub do Kadu, e só com todos os testes passando.
 # Ativar nesta cópia: git config --worktree core.hooksPath .githooks
 
 remoto="$1"
@@ -7,7 +7,7 @@ url="$2"
 
 case "$url" in
   *github.com/Gestao-ambiental/Gestao-ambiental*)
-    echo "Push bloqueado: $remoto aponta para o repositório do Cadu, que não pode ser alterado daqui."
+    echo "Push bloqueado: $remoto aponta para o repositório do Kadu, que não pode ser alterado daqui."
     exit 1
     ;;
 esac

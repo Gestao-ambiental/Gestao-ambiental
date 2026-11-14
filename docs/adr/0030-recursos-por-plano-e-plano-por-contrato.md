@@ -1,6 +1,6 @@
 # ADR-0030: Recursos por plano e plano por contrato
 
-- **Situação:** aceito em 14/11/2026, como protótipo funcional. O Cadu revisa.
+- **Situação:** aceito em 14/11/2026, como protótipo funcional. O Kadu revisa.
 - **Pedido do Eduardo:** cada plano com as suas funcionalidades, ligadas de forma automática, e a central entendendo isso. As decisões abaixo seguem as recomendações que o Eduardo aprovou.
 - **Arquivos:**
   - migration `20261114230000_recursos_e_plano_por_contrato.sql`;
@@ -32,7 +32,7 @@ Orçamentos e IA continuam como colunas do catálogo. Os outros recursos viram u
 
 **Recursos que ainda não existem já nascem presos.** Quando a tabela de um recurso for criada, a trigger dela recebe o nome do recurso. O teste 020 deve passar a exigir isso nessas tabelas.
 
-**IA.** A chave existe no catálogo e aparece na tela. O bloqueio dentro da extração por IA fica com o Cadu, porque não mexemos na função de IA.
+**IA.** A chave existe no catálogo e aparece na tela. O bloqueio dentro da extração por IA fica com o Kadu, porque não mexemos na função de IA.
 
 ### 2. Plano por contrato
 
@@ -60,5 +60,5 @@ Depois da data, valem as regras de sempre: assinatura, teste encerrado ou só le
 ## Fora desta decisão
 
 - Integração real com o Asaas (depende do CNPJ).
-- Bloqueio da IA no Essencial dentro da função de IA (fica com o Cadu).
+- Bloqueio da IA no Essencial dentro da função de IA (fica com o Kadu).
 - Esconder no menu os recursos fora do plano: os recursos novos ainda não têm tela. Quando tiverem, a tela usa `recursoLiberado`.

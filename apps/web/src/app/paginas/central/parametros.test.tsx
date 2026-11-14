@@ -7,7 +7,7 @@ import { falso, sessaoDe, type Cenario } from '@/test/supabase-falso'
 
 vi.mock('@/lib/supabase', () => import('@/test/supabase-falso'))
 
-const operador = sessaoDe('cadu@grama.test', 'Cadu Operador')
+const operador = sessaoDe('kadu@grama.test', 'Kadu Operador')
 
 function cenario(rpc: Cenario['rpc']): Cenario {
   return {

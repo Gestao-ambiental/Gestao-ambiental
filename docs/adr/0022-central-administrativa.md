@@ -4,7 +4,7 @@
 
 ## 1. Contexto
 
-Com o beta, quem opera a plataforma (Eduardo e Cadu) precisa ver as consultorias cadastradas e marcar a situação de cada uma, sem entrar nos dados delas. O ADM-01 pede auditoria própria, permissão de plataforma e nada de "entrar como cliente".
+Com o beta, quem opera a plataforma (Eduardo e Kadu) precisa ver as consultorias cadastradas e marcar a situação de cada uma, sem entrar nos dados delas. O ADM-01 pede auditoria própria, permissão de plataforma e nada de "entrar como cliente".
 
 ## 2. Decisões
 

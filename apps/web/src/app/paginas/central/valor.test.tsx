@@ -7,7 +7,7 @@ import { falso, sessaoDe } from '@/test/supabase-falso'
 
 vi.mock('@/lib/supabase', () => import('@/test/supabase-falso'))
 
-const operador = sessaoDe('cadu@grama.test', 'Cadu Operador')
+const operador = sessaoDe('kadu@grama.test', 'Kadu Operador')
 
 /** O cartão (rótulo e valor) de uma métrica dentro de um grupo. */
 function cartao(grupo: HTMLElement, rotulo: string): HTMLElement {

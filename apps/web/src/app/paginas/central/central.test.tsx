@@ -14,7 +14,7 @@ import {
 
 vi.mock('@/lib/supabase', () => import('@/test/supabase-falso'))
 
-const operador = sessaoDe('cadu@grama.test', 'Cadu Operador')
+const operador = sessaoDe('kadu@grama.test', 'Kadu Operador')
 
 /** Operador que já confirmou o código nesta sessão (aal2): a central abre direto. */
 const COM_DOIS_FATORES: CenarioDoisFatores = {
@@ -135,7 +135,7 @@ const historico = [
     situacao_nova: 'ativa',
     motivo: 'Contrato do beta assinado',
     alterada_em: '2026-11-10T13:30:00Z',
-    alterada_por_nome: 'Cadu Operador',
+    alterada_por_nome: 'Kadu Operador',
     total: 1,
   },
 ]
@@ -263,7 +263,7 @@ describe('central administrativa: detalhe e situação (ADM-01)', () => {
     const secaoHistorico = screen.getByRole('region', { name: 'Histórico de situações' })
     expect(await within(secaoHistorico).findByText('Contrato do beta assinado')).toBeInTheDocument()
     expect(
-      within(secaoHistorico).getByText(/10\/11\/2026 às 10:30 · Cadu Operador/),
+      within(secaoHistorico).getByText(/10\/11\/2026 às 10:30 · Kadu Operador/),
     ).toBeInTheDocument()
   })
 

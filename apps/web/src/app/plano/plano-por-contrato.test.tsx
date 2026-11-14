@@ -11,7 +11,7 @@ import { falso, sessaoDe, type Cenario } from '@/test/supabase-falso'
 vi.mock('@/lib/supabase', () => import('@/test/supabase-falso'))
 
 const eduardo = sessaoDe('eduardo@filtroville.test', 'Eduardo Karnopp')
-const operador = sessaoDe('cadu@grama.test', 'Cadu Operador')
+const operador = sessaoDe('kadu@grama.test', 'Kadu Operador')
 
 /** Linha da RPC situacao_comercial: teste encerrado (criada em 25/02/2027, hoje 01/06/2027). */
 const encerrada = {
