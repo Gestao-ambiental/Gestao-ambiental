@@ -6,6 +6,7 @@ import type { MetricasDoMes } from '@/lib/api/metricas-de-valor'
 import { ehDoisFatoresNecessarios, ehSemPermissao } from '@/lib/erros'
 
 import { RelerDoisFatores } from './ExigeDoisFatores'
+import { HorasDevolvidas, ResumoDeTeste } from './HorasNaCentral'
 import { classeCabecalho, classeCelula } from './comum'
 import { GRUPOS, formatarValor, formatarVariacao, semNenhumDado, useMetricasDeValor } from './valor'
 
@@ -132,6 +133,8 @@ export function ValorDaConsultoria({ consultoriaId }: { consultoriaId: string })
       <h2 id="central-valor" className="titulo-secao text-(--text)">
         Valor
       </h2>
+      <HorasDevolvidas consultoriaId={consultoriaId} />
+      <ResumoDeTeste consultoriaId={consultoriaId} />
       <EstadoDasMetricas consulta={consulta}>
         {(meses) => <CartoesDeValor meses={meses} />}
       </EstadoDasMetricas>

@@ -13,6 +13,7 @@ import { definirModoSuporte, ehDoisFatoresNecessarios, ehSemPermissao } from '@/
 import { FaixaDeSuporte } from './FaixaDeSuporte'
 import { RequerCadastroCompleto } from './RequerCadastroCompleto'
 import { useRegistroDeUso } from './registro-de-uso'
+import { useTempoDeAcompanhamento } from './tempo-ativo'
 import {
   CHAVE_MEUS_ACESSOS_DE_SUPORTE,
   CHAVE_MEUS_VINCULOS,
@@ -137,6 +138,8 @@ function ConsultoriaDoVinculo({
 
   // Sinal de uso diário para a central (ADR-0024): só com consultoria escolhida.
   useRegistroDeUso(valor ? valor.atual.consultoriaId : null)
+  // Tempo ativo na área de licenças e prazos (ADR-0027): só com vínculo, nunca no suporte.
+  useTempoDeAcompanhamento(valor ? valor.atual.consultoriaId : null)
 
   if (consulta.isPending) return <TelaDeEspera />
   if (consulta.isError) {

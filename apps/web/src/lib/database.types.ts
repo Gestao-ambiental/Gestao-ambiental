@@ -693,6 +693,32 @@ isOneToOne: false
       referencedColumns: ["consultoria_id","empreendimento_id","id"]
     }
                   ]
+                },"linha_de_base": {
+                  Row: {
+                    "consultoria_id": string,"horas_semana_conferindo": number,"id": string,"licencas_ativas": number,"minutos_por_condicionante": number,"respondido_em": string,"respondido_por": string,"surpresas_por_mes": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "consultoria_id": string,"horas_semana_conferindo": number,"id"?: string,"licencas_ativas": number,"minutos_por_condicionante": number,"respondido_em"?: string,"respondido_por": string,"surpresas_por_mes": number
+                  }
+                  Update: {
+                    "consultoria_id"?: string,"horas_semana_conferindo"?: number,"id"?: string,"licencas_ativas"?: number,"minutos_por_condicionante"?: number,"respondido_em"?: string,"respondido_por"?: string,"surpresas_por_mes"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "linha_de_base_consultoria_id_fkey"
+      columns: ["consultoria_id"]
+isOneToOne: false
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "linha_de_base_respondido_por_fk"
+      columns: ["consultoria_id","respondido_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    }
+                  ]
                 },"membro": {
                   Row: {
                     "cargo": string | null,"cargo_antigo": string | null,"consultoria_id": string,"criado_em": string,"desligado_em": string | null,"email": string,"foto_documento_id": string | null,"genero": string | null,"id": string,"nome": string,"outras_profissoes": (unknown)[],"papel": Database["public"]['Enums']["papel_membro"],"profissao": string | null,"profissao_em_curso": boolean,"situacao": Database["public"]['Enums']["situacao_membro"],"usuario_id": string
@@ -1141,6 +1167,52 @@ isOneToOne: false
       referencedColumns: ["consultoria_id","id"]
     }
                   ]
+                },"resumo_do_mes_envio": {
+                  Row: {
+                    "consultoria_id": string,"destinatarios": number,"enviado_em": string,"mes": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "consultoria_id": string,"destinatarios": number,"enviado_em"?: string,"mes": string
+                  }
+                  Update: {
+                    "consultoria_id"?: string,"destinatarios"?: number,"enviado_em"?: string,"mes"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "resumo_do_mes_envio_consultoria_id_fkey"
+      columns: ["consultoria_id"]
+isOneToOne: false
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"tarefa_cronometrada": {
+                  Row: {
+                    "consultoria_id": string,"id": string,"instante": string,"membro_id": string,"quantidade": number,"segundos_ativos": number,"tipo": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "consultoria_id": string,"id"?: string,"instante"?: string,"membro_id": string,"quantidade": number,"segundos_ativos": number,"tipo": string
+                  }
+                  Update: {
+                    "consultoria_id"?: string,"id"?: string,"instante"?: string,"membro_id"?: string,"quantidade"?: number,"segundos_ativos"?: number,"tipo"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "tarefa_cronometrada_consultoria_id_fkey"
+      columns: ["consultoria_id"]
+isOneToOne: false
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "tarefa_cronometrada_membro_fk"
+      columns: ["consultoria_id","membro_id"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    }
+                  ]
                 },"tipo_instrumento": {
                   Row: {
                     "consultoria_id": string,"criado_em": string,"id": string,"nome": string,"sigla": string,"sigla_normalizada": string | null
@@ -1316,6 +1388,11 @@ isOneToOne: false
               "alterada_em": string,"alterada_por_nome": string,"id": string,"motivo": string,"situacao_anterior": Database["public"]['Enums']["situacao_consultoria"],"situacao_nova": Database["public"]['Enums']["situacao_consultoria"],"total": number
             }[]
                            },
+"central_horas_poupadas":
+{ Args: { "p_consultoria_id"?: string,"p_meses"?: number }; Returns: {
+              "consultorias_com_dados": number,"consultorias_juntando": number,"estimado": boolean,"horas_acompanhamento": number,"horas_cadastro": number,"horas_total": number,"mes": string,"reais_centavos": number
+            }[]
+                           },
 "central_listar_consultorias":
 { Args: { "p_busca"?: string,"p_deslocamento"?: number,"p_limite"?: number,"p_situacao"?: Database["public"]['Enums']["situacao_consultoria"] }; Returns: {
               "criada_em": string,"empreendimentos": number,"fuso": string,"gestao": Json,"id": string,"licencas": number,"nome": string,"orcamentos": number,"pessoas_ativas": number,"situacao": Database["public"]['Enums']["situacao_consultoria"],"situacao_alterada_em": string,"total": number,"ultimo_uso_em": string
@@ -1345,6 +1422,11 @@ isOneToOne: false
 "central_resumo_de_uso":
 { Args: { "p_minutos_agora"?: number }; Returns: {
               "agora": number,"ultimos_30_dias": number,"ultimos_7_dias": number
+            }[]
+                           },
+"central_resumo_do_mes":
+{ Args: { "p_consultoria_id": string,"p_mes"?: string }; Returns: {
+              "consultoria_id": string,"consultoria_nome": string,"horas_estimadas": boolean,"horas_total": number,"juntando_dados": boolean,"mes": string,"mes_do_resumo": string,"prazo_cumpridas": number,"prazo_previstas": number,"reais_centavos": number,"renovacoes_protegidas": number,"renovacoes_vencendo": number
             }[]
                            },
 "central_resumo_financeiro":
@@ -1596,6 +1678,9 @@ isOneToOne: false
 "reenviar_convite":
 { Args: { "p_convite_id": string }; Returns: string
                            },
+"registrar_envio_do_resumo":
+{ Args: { "p_consultoria_id": string,"p_destinatarios": number,"p_mes": string }; Returns: boolean
+                           },
 "registrar_foto_membro":
 { Args: { "p_caminho": string,"p_membro_id": string,"p_nome_original": string,"p_sha256": string,"p_versao_id": string }; Returns: string
                            },
@@ -1608,6 +1693,9 @@ isOneToOne: false
 "registrar_protocolo":
 { Args: { "p_caminho": string,"p_data": string,"p_nome_original": string,"p_numero": string,"p_plano_id": string,"p_row_version": number,"p_sha256": string,"p_versao_id": string }; Returns: number
                            },
+"registrar_tarefa":
+{ Args: { "p_consultoria_id": string,"p_quantidade": number,"p_segundos": number,"p_tipo": string }; Returns: undefined
+                           },
 "registrar_uso":
 { Args: { "p_consultoria_id": string,"p_modulo": string }; Returns: undefined
                            },
@@ -1617,12 +1705,25 @@ isOneToOne: false
 "remover_logo_da_consultoria":
 { Args: { "p_consultoria_id": string }; Returns: undefined
                            },
+"responder_linha_de_base":
+{ Args: { "p_consultoria_id": string,"p_horas_semana_conferindo": number,"p_licencas_ativas": number,"p_minutos_por_condicionante": number,"p_surpresas_por_mes": number }; Returns: string
+                           },
 "restaurar_orcamento":
 { Args: { "p_id": string,"p_row_version": number }; Returns: number
+                           },
+"resumo_do_mes":
+{ Args: { "p_consultoria_id": string,"p_mes": string }; Returns: {
+              "horas_estimadas": boolean,"horas_total": number,"juntando_dados": boolean,"mes": string,"prazo_cumpridas": number,"prazo_previstas": number,"reais_centavos": number,"renovacoes_protegidas": number,"renovacoes_vencendo": number
+            }[]
                            },
 "resumo_dos_orcamentos":
 { Args: { "p_consultoria_id": string }; Returns: {
               "aguardando": number,"aguardando_centavos": number,"aguardando_sem_preco": number,"aprovados": number,"aprovados_centavos": number,"aprovados_sem_preco": number,"rascunhos": number
+            }[]
+                           },
+"resumos_do_mes_pendentes":
+{ Args: { "p_mes"?: string }; Returns: {
+              "consultoria_id": string,"consultoria_nome": string,"horas_estimadas": boolean,"horas_total": number,"juntando_dados": boolean,"mes": string,"mes_do_resumo": string,"prazo_cumpridas": number,"prazo_previstas": number,"reais_centavos": number,"renovacoes_protegidas": number,"renovacoes_vencendo": number
             }[]
                            },
 "revisar_condicionante":
@@ -1659,6 +1760,11 @@ isOneToOne: false
                            },
 "sou_operador":
 { Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"ultima_linha_de_base":
+{ Args: { "p_consultoria_id": string }; Returns: {
+              "respondido_em": string
+            }[]
                            }
           }
           Enums: {

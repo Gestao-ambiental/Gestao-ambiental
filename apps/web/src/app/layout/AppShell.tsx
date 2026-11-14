@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/sheet'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
+import { DialogoLinhaDeBase } from '@/app/indicadores/DialogoLinhaDeBase'
 import { FaixaComercial } from '@/app/plano/FaixaComercial'
 
 import { AvisoDeEmergenciaDoSuporte } from './AvisoDeEmergenciaDoSuporte'
@@ -101,6 +102,7 @@ export function AppShell() {
             <AvisoDeEmergenciaDoSuporte />
             <FaixaComercial />
             <Outlet />
+            <DialogoLinhaDeBase />
           </div>
         </main>
       </div>

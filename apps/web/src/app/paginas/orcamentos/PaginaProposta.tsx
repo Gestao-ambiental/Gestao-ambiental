@@ -16,6 +16,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
+import { chaveDoOrcamento, usePrenderTarefa, useTarefas } from '@/app/consultoria/tempo-ativo'
 import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
 import { Icone } from '@/components/ui/icone'
@@ -152,6 +153,9 @@ function Proposta({ orcamento: o }: { orcamento: Orcamento }) {
   const queryClient = useQueryClient()
   const [marcando, setMarcando] = useState(false)
   const [marcada, setMarcada] = useState(false)
+  // Tempo ativo do orçamento (ADR-0027): termina ao imprimir/salvar o PDF ou marcar como enviada.
+  const tarefas = useTarefas()
+  usePrenderTarefa(chaveDoOrcamento(o.id))
   // Dados da consultoria (P8). Sem eles (ou se falhar), a proposta sai só com o nome.
   const consultaIdentidade = useQuery({
     queryKey: ['identidade', atual.consultoriaId],
@@ -278,6 +282,7 @@ function Proposta({ orcamento: o }: { orcamento: Orcamento }) {
             aparencia="primario"
             iconeAntes="printer"
             onClick={() => {
+              tarefas.concluir(chaveDoOrcamento(o.id), 'orcamento', 1)
               window.print()
             }}
           >
@@ -629,6 +634,7 @@ function Proposta({ orcamento: o }: { orcamento: Orcamento }) {
         aberto={marcando}
         aoMudarAberto={setMarcando}
         aoMarcar={() => {
+          tarefas.concluir(chaveDoOrcamento(o.id), 'orcamento', 1)
           setMarcada(true)
           void queryClient.invalidateQueries({ queryKey: ['orcamento', o.id] })
           void queryClient.invalidateQueries({ queryKey: ['orcamentos'] })

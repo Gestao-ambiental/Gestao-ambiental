@@ -20,6 +20,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
+import { chaveDoOrcamento, usePrenderTarefa } from '@/app/consultoria/tempo-ativo'
 import { Pagina } from '@/app/paginas/Pagina'
 import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
@@ -360,6 +361,8 @@ export function PaginaOrcamento() {
   const { id = '' } = useParams()
   // O editor remonta quando chega versão nova; o aviso de sucesso mora aqui para não sumir.
   const [aviso, setAviso] = useState<Aviso | null>(null)
+  // Tempo ativo do orçamento aberto em Novo orçamento (ADR-0027).
+  usePrenderTarefa(chaveDoOrcamento(id))
 
   const consulta = useQuery({
     queryKey: ['orcamento', id],

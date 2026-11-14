@@ -1,7 +1,8 @@
 import { mascararDocumento } from '@gestao-ambiental/domain'
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
+import { chaveDoOrcamento, usePrenderTarefa, useTarefas } from '@/app/consultoria/tempo-ativo'
 import { Botao } from '@/components/ui/botao'
 import { OpcaoRadio } from '@/components/ui/caixa-selecao'
 import { CampoTexto } from '@/components/ui/campo-texto'
@@ -20,6 +21,8 @@ import {
 } from './prospecto'
 
 type Destino = 'empreendimento' | 'prospecto'
+
+const CHAVE_DO_NOVO = 'orcamento:novo'
 
 /**
  * "Novo orçamento": para um empreendimento cadastrado ou para um prospecto (quem pediu preço e
@@ -47,6 +50,12 @@ export function DialogoNovoOrcamento({
   >({})
   const [falha, setFalha] = useState<string | null>(null)
   const [salvando, setSalvando] = useState(false)
+  // Tempo ativo do orçamento (ADR-0027): começa aqui e segue com o id do orçamento criado.
+  const tarefas = useTarefas()
+  usePrenderTarefa(aberto ? CHAVE_DO_NOVO : null)
+  useEffect(() => {
+    if (aberto) tarefas.iniciar(CHAVE_DO_NOVO)
+  }, [aberto, tarefas])
 
   const empreendimentos = useQuery({
     queryKey: ['empreendimentos', consultoriaId, '', 'para-orcamento'],
@@ -62,6 +71,7 @@ export function DialogoNovoOrcamento({
     setObjeto('')
     setErros({})
     setFalha(null)
+    tarefas.descartar(CHAVE_DO_NOVO)
     aoMudar(false)
   }
 
@@ -94,6 +104,7 @@ export function DialogoNovoOrcamento({
     setSalvando(true)
     try {
       await criarOrcamento(id, consultoriaId, paraQuem, objeto)
+      tarefas.transferir(CHAVE_DO_NOVO, chaveDoOrcamento(id))
       aoCriar(id)
       fechar()
     } catch (erro) {

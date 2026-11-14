@@ -150,4 +150,35 @@ describe('central administrativa: valor', () => {
       'Não foi possível carregar as métricas.',
     )
   })
+  it('horas devolvidas: total, cadastro, acompanhamento, reais e variação (ADR-0027)', async () => {
+    cenario({ data: metricas })
+    const horas = (mes: string, total: number) => ({
+      mes,
+      consultorias_com_dados: 1,
+      consultorias_juntando: 1,
+      horas_cadastro: 3,
+      horas_acompanhamento: total - 3,
+      horas_total: total,
+      reais_centavos: total * 10000,
+      estimado: true,
+    })
+    falso.reiniciar({
+      sessao: operador,
+      doisFatores: { nivel: 'aal2', fatores: [{ id: 'fator-1', status: 'verified' }] },
+      rpc: {
+        sou_operador: { data: true },
+        meus_vinculos: { data: [vinculoFalso('Filtroville', 'gestao')] },
+        central_metricas_de_valor: { data: metricas },
+        central_horas_poupadas: { data: [horas('2026-11-01', 21), horas('2026-10-01', 18)] },
+      },
+    })
+    renderizarApp('/admin/valor')
+    const grupo = await screen.findByRole('region', { name: 'Horas devolvidas' })
+    expect(await within(grupo).findByText('21,0 h')).toBeInTheDocument()
+    expect(within(grupo).getByLabelText('+3,0 h contra o mês anterior')).toBeInTheDocument()
+    expect(within(grupo).getByText('18,0 h')).toBeInTheDocument()
+    expect(within(grupo).getByText('R$ 2.100,00')).toBeInTheDocument()
+    expect(within(grupo).getByText('Estimado')).toBeInTheDocument()
+    expect(within(grupo).getByText('1 juntando dados')).toBeInTheDocument()
+  })
 })

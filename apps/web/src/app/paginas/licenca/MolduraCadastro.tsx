@@ -2,6 +2,7 @@ import { useContext, useEffect, type ReactNode } from 'react'
 import { Link } from 'react-router'
 
 import { ContextoConsultoria } from '@/app/consultoria/contexto-consultoria'
+import { usePrenderTarefa } from '@/app/consultoria/tempo-ativo'
 
 import { Botao } from '@/components/ui/botao'
 import { Icone } from '@/components/ui/icone'
@@ -47,6 +48,8 @@ export function MolduraCadastro({
 }: Props) {
   // Em modo suporte a faixa do suporte fica acima: a moldura ocupa o resto da altura (ADR-0025).
   const suporte = useContext(ContextoConsultoria)?.suporte ?? null
+  // Cadastro com IA (ADR-0027): o tempo ativo conta em todos os passos desta licença.
+  usePrenderTarefa(instrumentoId ? `ia:${instrumentoId}` : null)
   const indiceAtual = PASSOS.findIndex((p) => p.chave === passo)
   const titulo = identificacao ? `Cadastrar licença · ${identificacao}` : 'Cadastrar licença'
 

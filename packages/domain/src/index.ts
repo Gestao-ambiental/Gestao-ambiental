@@ -369,3 +369,31 @@ export {
   renovacaoProtegida,
   variacao,
 } from './metricas-de-valor'
+
+export {
+  BLOCO_DE_ACOMPANHAMENTO_SEGUNDOS,
+  CONDICIONANTES_MANUAIS_PARA_MEDIR,
+  CONDICIONANTES_PARA_MOSTRAR_HORAS,
+  DIAS_DE_VALIDADE_DA_LINHA_DE_BASE,
+  DIAS_PARA_ADIAR_LINHA_DE_BASE,
+  DIAS_PARA_MOSTRAR_HORAS,
+  JANELA_DE_INTERACAO_SEGUNDOS,
+  MESES_DO_RESUMO,
+  TIPOS_DE_TAREFA,
+  adiarLinhaDeBase,
+  calcularHorasPoupadas,
+  contaComoTempoAtivo,
+  ehRotaDeAcompanhamento,
+  errosDaLinhaDeBase,
+  formatarHoras,
+  juntandoDados,
+  mesesDoResumo,
+  precisaResponderLinhaDeBase,
+  semanasParaAcompanhamento,
+} from './horas-poupadas'
+export type {
+  EntradaDasHorasPoupadas,
+  HorasPoupadas,
+  LinhaDeBase,
+  TipoDeTarefa,
+} from './horas-poupadas'

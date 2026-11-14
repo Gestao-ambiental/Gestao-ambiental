@@ -10,6 +10,7 @@ import {
 } from 'react'
 import { useNavigate, useParams } from 'react-router'
 
+import { usePrenderTarefa, useTarefas } from '@/app/consultoria/tempo-ativo'
 import { Carregando, EstadoErro, EstadoVazio } from '@/components/estados'
 import type { PedidoDePagina } from '@/components/pdf/VisualizadorPdf'
 import { Botao } from '@/components/ui/botao'
@@ -561,6 +562,11 @@ function Condicionantes({
   // Item novo ainda na linha da árvore, esperando o título (antes de abrir no centro).
   const [nomeando, setNomeando] = useState(false)
   const dicaMoverId = useId()
+  // Tempo ativo (ADR-0027): cada condicionante digitada, do clique em Obrigação/Agrupador até
+  // Adicionar; e o cadastro com IA termina ao confirmar as condicionantes (Continuar).
+  const tarefas = useTarefas()
+  const chaveManual = `manual:${instrumento.id}`
+  usePrenderTarefa(chaveManual)
 
   const itens = consulta.data ?? []
   const porId = new Map(itens.map((item) => [item.id, item]))
@@ -586,6 +592,8 @@ function Condicionantes({
   const recolhiveis = agrupadoresComFilhos(arvore)
 
   function nova(natureza: Natureza) {
+    tarefas.descartar(chaveManual)
+    tarefas.iniciar(chaveManual)
     if (destino) {
       setRecolhidos((atual) => {
         const proximo = new Set(atual)
@@ -622,6 +630,7 @@ function Condicionantes({
   }
 
   function selecionar(item: Condicionante) {
+    tarefas.descartar(chaveManual)
     setNomeando(false)
     setEdicao({ tipo: 'existente', id: item.id })
     mostrarNoPdf(item)
@@ -643,6 +652,7 @@ function Condicionantes({
           setNomeando(false)
         }}
         aoCancelar={() => {
+          tarefas.descartar(chaveManual)
           setEdicao(null)
           setNomeando(false)
         }}
@@ -805,7 +815,14 @@ function Condicionantes({
                 : undefined
           }
           voltarPara={`/licencas/${instrumento.id}/identificacao`}
-          aoContinuar={() => void navegar(`/licencas/${instrumento.id}/prazos`)}
+          aoContinuar={() => {
+            tarefas.concluir(
+              `ia:${instrumento.id}`,
+              'cadastro_licenca_ia',
+              itens.filter((i) => i.origem === 'ia' && i.revisao === 'aceita').length,
+            )
+            void navegar(`/licencas/${instrumento.id}/prazos`)
+          }}
           podeContinuar={podeContinuar}
         />
       }
@@ -1115,6 +1132,9 @@ function Condicionantes({
               item={selecionado}
               pdfFechado={!pdfAberto}
               aoSalvar={async (salvoId) => {
+                if (edicao.tipo === 'nova') {
+                  tarefas.concluir(chaveManual, 'cadastro_condicionante_manual', 1)
+                }
                 await registrar()
                 setEdicao({ tipo: 'existente', id: salvoId })
               }}

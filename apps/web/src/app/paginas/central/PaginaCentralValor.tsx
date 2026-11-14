@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router'
 import { Pagina } from '@/app/paginas/Pagina'
 import { listarConsultoriasDaCentral } from '@/lib/api/central'
 
+import { HorasDevolvidas, ResumoDeTeste } from './HorasNaCentral'
 import { CartoesDeValor, EstadoDasMetricas, TabelaDeValor } from './ValorNaCentral'
 import { useMetricasDeValor } from './valor'
 
@@ -44,6 +45,8 @@ export function PaginaCentralValor() {
           </select>
         </label>
       </div>
+      <HorasDevolvidas consultoriaId={consultoriaId} />
+      {consultoriaId ? <ResumoDeTeste consultoriaId={consultoriaId} /> : null}
       <EstadoDasMetricas consulta={metricas}>
         {(meses) => (
           <>

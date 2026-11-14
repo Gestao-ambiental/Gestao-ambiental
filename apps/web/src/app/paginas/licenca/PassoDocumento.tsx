@@ -3,6 +3,7 @@ import { useId, useRef, useState, type DragEvent } from 'react'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
+import { useTarefas } from '@/app/consultoria/tempo-ativo'
 import { Carregando, EstadoErro } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
 import { Icone } from '@/components/ui/icone'
@@ -173,6 +174,7 @@ function DocumentoNovo() {
   const [metodo, setMetodo] = useState<Metodo | null>(null)
   const [falha, setFalha] = useState<string | null>(null)
   const [enviando, setEnviando] = useState(false)
+  const tarefas = useTarefas()
 
   const empreendimentos = useQuery({
     queryKey: ['empreendimentos', cid, '', 'selecao'],
@@ -200,6 +202,8 @@ function DocumentoNovo() {
       await criarInstrumento(id, unidadeEscolhida)
       if (arquivo) await enviarPdf(id, cid, arquivo)
       if (metodoValido === 'ia') {
+        // Cadastro com IA (ADR-0027): o tempo ativo conta do envio até confirmar as condicionantes.
+        tarefas.iniciar(`ia:${id}`)
         await navegar(`/licencas/${id}/documento`, {
           replace: true,
           state: { extrair: crypto.randomUUID() },
@@ -337,6 +341,7 @@ function DocumentoExistente({ instrumento }: { instrumento: Instrumento }) {
   const [falha, setFalha] = useState<string | null>(null)
   const [enviando, setEnviando] = useState(false)
   const [abertaEm] = useState(() => Date.now())
+  const tarefas = useTarefas()
 
   const ultima = useQuery({
     queryKey: ['extracao', instrumento.id],
@@ -360,8 +365,10 @@ function DocumentoExistente({ instrumento }: { instrumento: Instrumento }) {
         await enviarPdf(instrumento.id, atual.consultoriaId, arquivo)
         setArquivo(null)
       }
-      if (metodoValido === 'ia') setExtracaoId(crypto.randomUUID())
-      else irParaIdentificacao()
+      if (metodoValido === 'ia') {
+        tarefas.iniciar(`ia:${instrumento.id}`)
+        setExtracaoId(crypto.randomUUID())
+      } else irParaIdentificacao()
     } catch (erro) {
       setFalha(mensagemDoErro(erro))
     } finally {

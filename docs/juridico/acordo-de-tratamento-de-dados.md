@@ -119,7 +119,7 @@ i) devolver ou excluir os dados ao fim do contrato, conforme a seção 14.
 
 9.3. **Fora do acesso de suporte da seção 8, os Operadores do Grama não acessam documentos, licenças, orçamentos nem o conteúdo deles.**
 
-9.4. **Registro de uso:** o Grama registra, por Pessoa Usuária, os dias e as áreas do sistema usadas (licenças e prazos, orçamentos, propostas, equipe e conta), com o horário do primeiro e do último uso em cada dia. Esse registro serve para suporte e melhoria do serviço, é visto só pelos Operadores do Grama (nem a Gestão da Consultoria o vê) e não inclui o conteúdo do que foi feito.
+9.4. **Registro de uso:** o Grama registra, por Pessoa Usuária, os dias e as áreas do sistema usadas (licenças e prazos, orçamentos, propostas, equipe e conta), com o horário do primeiro e do último uso em cada dia. Esse registro serve para suporte e melhoria do serviço, é visto só pelos Operadores do Grama (nem a Gestão da Consultoria o vê) e não inclui o conteúdo do que foi feito. O Grama também mede, por tarefa (cadastro de licença com IA, cadastro de condicionante à mão, acompanhamento de licenças e prazos e orçamento), o tempo ativo em que a tela fica aberta com uso, e guarda as respostas da Gestão às perguntas sobre a rotina antes do Grama (licenças acompanhadas, horas por semana conferindo prazos, minutos por condicionante e prazos que pegaram a equipe de surpresa). Com isso o Grama estima as horas devolvidas à equipe: a Gestão vê só o total da Consultoria, os Operadores veem totais por Consultoria e ninguém vê o tempo de uma pessoa.
 
 ## 10. Suboperadores
 
