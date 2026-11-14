@@ -33,6 +33,7 @@ import { SecaoConclusao } from './SecaoConclusao'
 import { SecaoEtapas } from './SecaoEtapas'
 import { SecaoEvidencia } from './SecaoEvidencia'
 import { SecaoHistorico } from './SecaoHistorico'
+import { SecaoVistorias } from './SecaoVistorias'
 
 const SITUACAO: Record<SituacaoExibida, { texto: string; tom: TomSelo }> = {
   a_fazer: { texto: 'A fazer', tom: 'padrao' },
@@ -356,6 +357,11 @@ export function PaginaOcorrencia() {
                 membros={membros.data ?? []}
                 podeEditar={dados.situacao !== 'concluida'}
                 aoMudar={recarregar}
+              />
+              <SecaoVistorias
+                ocorrenciaId={dados.id}
+                membros={membros.data ?? []}
+                podeAgendar={dados.situacao !== 'concluida'}
               />
               <SecaoEvidencia
                 ocorrencia={dados}

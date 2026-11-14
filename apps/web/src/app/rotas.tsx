@@ -22,6 +22,11 @@ import { ErroDeRota } from './paginas/ErroDeRota'
 import { PaginaAcompanhamentos } from './paginas/acompanhamentos/PaginaAcompanhamentos'
 import { PaginaPlanoRenovacao } from './paginas/acompanhamentos/PaginaPlanoRenovacao'
 import { PaginaCalendario } from './paginas/calendario/PaginaCalendario'
+import { PaginaChecklist } from './paginas/campo/PaginaChecklist'
+import { PaginaDetalheVistoria } from './paginas/campo/PaginaDetalheVistoria'
+import { PaginaEnvio } from './paginas/campo/PaginaEnvio'
+import { PaginaFoto } from './paginas/campo/PaginaFoto'
+import { PaginaMinhasVistorias } from './paginas/campo/PaginaMinhasVistorias'
 import { LayoutCentral } from './paginas/central/LayoutCentral'
 import { PaginaCentral } from './paginas/central/PaginaCentral'
 import { PaginaCentralFinanceiro } from './paginas/central/PaginaCentralFinanceiro'
@@ -109,6 +114,12 @@ export const rotas: RouteObject[] = [
               { path: 'empreendimentos/:id', element: <PaginaEmpreendimento /> },
               { path: 'empreendimentos/:id/residuos', element: <PaginaMtrs /> },
               { path: 'ocorrencias/:id', element: <PaginaOcorrencia /> },
+              // Vistoria móvel (ADR-0029): celular primeiro.
+              { path: 'campo', element: <PaginaMinhasVistorias /> },
+              { path: 'campo/:id', element: <PaginaDetalheVistoria /> },
+              { path: 'campo/:id/checklist', element: <PaginaChecklist /> },
+              { path: 'campo/:id/itens/:itemId/foto', element: <PaginaFoto /> },
+              { path: 'campo/:id/envio', element: <PaginaEnvio /> },
               { path: 'acompanhamentos', element: <PaginaAcompanhamentos /> },
               { path: 'renovacoes/:instrumentoId', element: <PaginaPlanoRenovacao /> },
               // Resíduos, fase 1 (sem integração com o IMA; ADR-0028): abas da área.
