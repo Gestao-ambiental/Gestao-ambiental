@@ -1009,14 +1009,14 @@ isOneToOne: false
                   ]
                 },"orcamento_item": {
                   Row: {
-                    "consultoria_id": string,"custo_direto_extra_centavos": number,"descricao": string,"hora_venda_id": string | null,"id": string,"mes_previsto": string | null,"minutos": number,"orcamento_id": string,"ordem": number,"preco_automatico": boolean,"preco_centavos": number,"preco_fechado_centavos": number | null,"quantidade": number | null,"responsabilidade_tecnica": string | null,"responsavel_id": string | null
+                    "consultoria_id": string,"custo_direto_extra_centavos": number,"descricao": string,"hora_venda_id": string | null,"id": string,"mes_previsto": string | null,"minutos": number,"orcamento_id": string,"ordem": number,"preco_automatico": boolean,"preco_centavos": number,"preco_fechado_centavos": number | null,"quantidade": number | null,"responsabilidade_tecnica": string | null,"responsavel_id": string | null,"terceiro_cobranca": string | null,"terceiro_nome": string | null,"terceiro_profissao": string | null,"terceiro_valor_centavos": number | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "consultoria_id": string,"custo_direto_extra_centavos"?: number,"descricao": string,"hora_venda_id"?: string | null,"id"?: string,"mes_previsto"?: string | null,"minutos"?: number,"orcamento_id": string,"ordem": number,"preco_automatico"?: boolean,"preco_centavos"?: number,"preco_fechado_centavos"?: number | null,"quantidade"?: number | null,"responsabilidade_tecnica"?: string | null,"responsavel_id"?: string | null
+                    "consultoria_id": string,"custo_direto_extra_centavos"?: number,"descricao": string,"hora_venda_id"?: string | null,"id"?: string,"mes_previsto"?: string | null,"minutos"?: number,"orcamento_id": string,"ordem": number,"preco_automatico"?: boolean,"preco_centavos"?: number,"preco_fechado_centavos"?: number | null,"quantidade"?: number | null,"responsabilidade_tecnica"?: string | null,"responsavel_id"?: string | null,"terceiro_cobranca"?: string | null,"terceiro_nome"?: string | null,"terceiro_profissao"?: string | null,"terceiro_valor_centavos"?: number | null
                   }
                   Update: {
-                    "consultoria_id"?: string,"custo_direto_extra_centavos"?: number,"descricao"?: string,"hora_venda_id"?: string | null,"id"?: string,"mes_previsto"?: string | null,"minutos"?: number,"orcamento_id"?: string,"ordem"?: number,"preco_automatico"?: boolean,"preco_centavos"?: number,"preco_fechado_centavos"?: number | null,"quantidade"?: number | null,"responsabilidade_tecnica"?: string | null,"responsavel_id"?: string | null
+                    "consultoria_id"?: string,"custo_direto_extra_centavos"?: number,"descricao"?: string,"hora_venda_id"?: string | null,"id"?: string,"mes_previsto"?: string | null,"minutos"?: number,"orcamento_id"?: string,"ordem"?: number,"preco_automatico"?: boolean,"preco_centavos"?: number,"preco_fechado_centavos"?: number | null,"quantidade"?: number | null,"responsabilidade_tecnica"?: string | null,"responsavel_id"?: string | null,"terceiro_cobranca"?: string | null,"terceiro_nome"?: string | null,"terceiro_profissao"?: string | null,"terceiro_valor_centavos"?: number | null
                   }
                   Relationships: [
                     {

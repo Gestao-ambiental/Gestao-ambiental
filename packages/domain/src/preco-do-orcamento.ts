@@ -231,10 +231,31 @@ export type PendenciaDoPreco =
   | 'valor_invalido'
   | 'hora_sem_valor'
   | 'quantidade_pendente'
+  | 'terceiro_sem_valor'
+
+/** Profissional terceirizado do serviço (sem login, ADR-0028): cobra por hora ou valor fechado. */
+export interface TerceiroDoItem {
+  cobranca: 'hora' | 'fechado'
+  /** Valor por hora ou pelo serviço inteiro; `null` = a informar (preço pendente). */
+  valorCentavos: number | null
+}
+
+/**
+ * Custo do terceirizado no serviço: por hora, minutos × valor ÷ 60 (arredondado como o banco);
+ * fechado, o próprio valor. `null` sem o valor.
+ */
+export function custoDoTerceiro(minutos: number, terceiro: TerceiroDoItem): number | null {
+  const valor = terceiro.valorCentavos
+  if (valor === null) return null
+  exigirInteiro(valor, PRECO_MAXIMO_CENTAVOS)
+  return terceiro.cobranca === 'hora' ? dividir(BigInt(minutos) * BigInt(valor), 60n) : valor
+}
 
 export interface DivisaoDoValor {
-  /** Custo interno das horas da equipe. */
+  /** Custo interno das horas da equipe (sem os terceirizados). */
   trabalhoTecnicoCentavos: number
+  /** Custo dos profissionais terceirizados (ADR-0028). */
+  terceirizadosCentavos: number
   /** Venda dos serviços que recebem acréscimo (horas, m², hectare, diária, campanha). */
   horasDeVendaCentavos: number
   /** Pacotes: preço fechado, sem acréscimo. */
@@ -288,6 +309,8 @@ export interface EntradaDoPreco {
     quantidadeDezMilesimos?: number | null
     /** Preço fechado do pacote; sem linha da tabela, o preço digitado do serviço (ADR-0023). */
     precoFechadoCentavos?: number | null
+    /** Terceirizado no lugar do responsável da equipe (ADR-0028). */
+    terceiro?: TerceiroDoItem | null
   }[]
   visitas: VisitasDoOrcamento
   /** Estimativas das despesas incluídas no preço; `null` = a cotar. */
@@ -343,11 +366,23 @@ export function precificarOrcamento(entrada: EntradaDoPreco): PrecoDoOrcamento {
       : undefined
     return custo?.horaTecnicaCentavos ?? base.horaTecnicaCentavos
   }
+  // Terceirizado (ADR-0028): o custo é o valor dele, sem rateio das contas (a hora não é da equipe).
+  const custoTerceiro = itens.map((item) =>
+    item.terceiro ? custoDoTerceiro(item.minutos, item.terceiro) : null,
+  )
   // Venda de cada item, sem os outros custos: hora = horas × preço; m², ha, diária e campanha =
   // quantidade × preço; pacote = preço fechado. Pacote não recebe acréscimo (P1, ADR-0018).
+  // Terceirizado "pela margem": a venda é o custo dele, que recebe o acréscimo (ADR-0028).
   const vendaDoItem = (
     item: (typeof itens)[number],
+    indice: number,
   ): { venda: number; fixo: boolean } | PendenciaDoPreco => {
+    if (formaDePreco === 'margem' && item.terceiro) {
+      const custo = custoTerceiro[indice]
+      return custo === null || custo === undefined
+        ? 'terceiro_sem_valor'
+        : { venda: custo, fixo: false }
+    }
     // Preço digitado (ADR-0023): sem linha da tabela, vale como preço fechado, igual ao pacote.
     if (!item.horaVendaId) {
       const preco = item.precoFechadoCentavos
@@ -385,13 +420,17 @@ export function precificarOrcamento(entrada: EntradaDoPreco): PrecoDoOrcamento {
       fixo: false,
     }
   }
-  const custosDosItens = itens.map((item) =>
-    custoDoItem(item, {
+  const custosDosItens = itens.map((item, indice): CustoDoItem => {
+    if (item.terceiro) {
+      const direto = (custoTerceiro[indice] ?? 0) + item.custoDiretoExtraCentavos
+      return { diretoCentavos: direto, rateioCentavos: 0, totalCentavos: direto }
+    }
+    return custoDoItem(item, {
       horaTecnicaCentavos: horaTecnicaDoItem(item),
       custosFixosMensaisCentavos: base.custoFixoHoraCentavos,
       horasFaturaveisMes: 1,
-    }),
-  )
+    })
+  })
   const valorVisitasCentavos = valorDasVisitas(entrada.visitas, base)
   const fixosPorCobrancaCentavos =
     entrada.quantidadeDeParcelas * base.taxaPorCobrancaCentavos + base.taxaPorAssinaturaCentavos
@@ -410,13 +449,18 @@ export function precificarOrcamento(entrada: EntradaDoPreco): PrecoDoOrcamento {
 
   if (itens.length === 0) return pendente('sem_itens', parcial)
   if (aCotar) return pendente('despesa_a_cotar', parcial)
+  if (itens.some((item, i) => item.terceiro && custoTerceiro[i] === null)) {
+    return pendente('terceiro_sem_valor', parcial)
+  }
 
   const custoTotalCentavos = custoItens + despesasIncluidasCentavos
   const precoVisitasCentavos = valorVisitasCentavos
-  const trabalhoTecnicoCentavos = custosDosItens.reduce(
-    (soma, c, indice) => soma + c.diretoCentavos - (itens[indice]?.custoDiretoExtraCentavos ?? 0),
-    0,
-  )
+  const terceirizadosCentavos = custoTerceiro.reduce<number>((soma, c) => soma + (c ?? 0), 0)
+  const trabalhoTecnicoCentavos =
+    custosDosItens.reduce(
+      (soma, c, indice) => soma + c.diretoCentavos - (itens[indice]?.custoDiretoExtraCentavos ?? 0),
+      0,
+    ) - terceirizadosCentavos
   const outrosCustosDiretosCentavos = itens.reduce(
     (soma, item) => soma + item.custoDiretoExtraCentavos,
     0,
@@ -458,6 +502,7 @@ export function precificarOrcamento(entrada: EntradaDoPreco): PrecoDoOrcamento {
       pendencia: null,
       divisao: {
         trabalhoTecnicoCentavos,
+        terceirizadosCentavos,
         horasDeVendaCentavos: vendas.reduce((soma, v) => soma + (v.fixo ? 0 : v.venda), 0),
         precosFechadosCentavos: vendas.reduce((soma, v) => soma + (v.fixo ? v.venda : 0), 0),
         baseDoAcrescimoCentavos: vendas.reduce(
@@ -479,8 +524,8 @@ export function precificarOrcamento(entrada: EntradaDoPreco): PrecoDoOrcamento {
     // Pela tabela: horas × hora de venda + outros custos; despesas incluídas se repartem pelos
     // itens na proporção desse preço; a margem é o que sobra.
     const vendas: { venda: number; fixo: boolean }[] = []
-    for (const item of itens) {
-      const v = vendaDoItem(item)
+    for (const [indice, item] of itens.entries()) {
+      const v = vendaDoItem(item, indice)
       if (typeof v === 'string') return pendente(v, parcial)
       vendas.push(v)
     }
@@ -508,8 +553,8 @@ export function precificarOrcamento(entrada: EntradaDoPreco): PrecoDoOrcamento {
   // Conta em inteiros, arredondando a metade para cima: o banco faz round() em numeric e chega
   // ao mesmo centavo (ponto flutuante poderia errar um centavo no caso ",5").
   const vendas: { venda: number; fixo: boolean }[] = []
-  for (const item of itens) {
-    const v = vendaDoItem(item)
+  for (const [indice, item] of itens.entries()) {
+    const v = vendaDoItem(item, indice)
     if (typeof v === 'string') return pendente(v, parcial)
     vendas.push(v)
   }

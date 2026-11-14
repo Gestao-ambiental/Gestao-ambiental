@@ -272,6 +272,21 @@ Ao mudar uma RPC, a demo (`apps/web/demo-local/supabase-demo.ts`) precisa imitar
 
 ## 8. Registro do que foi feito (mais recente em cima)
 
+- **14/11/2026, Eduardo e Claude, profissional terceirizado no orçamento (ADR-0028, sem commit, branch `claude/terceirizado-orcamento` a partir da `branch-do-duds` em `5d88f1e`):**
+  - Eduardo decidiu: terceirizado sem login como opção do "Responsável"; cobra por hora ou valor fechado; leva o acréscimo pela margem; a proposta não o mostra;
+  - feito:
+    - migration `20261114210000`;
+    - domínio `custoDoTerceiro`, com o terceirizado no `precificarOrcamento`;
+    - tela "Terceirizado" com nome, profissão, cobrança e valor;
+    - linha "Terceirizados" na divisão do valor;
+    - pgTAP `470`;
+  - verificado:
+    - ESLint e Prettier;
+    - tipos e build;
+    - 1.044 testes do domínio e 352 da web;
+    - pgTAP inteiro.
+  - **Para o Eduardo:** o serviço terceirizado não leva rateio das contas do mês (ADR-0028 §5).
+
 - **13/11/2026, Eduardo e Claude, profissão e cargo (ADR-0021, sem commit):**
   - Eduardo decidiu: a profissão fica no membro; a profissão vem de uma lista fixa do Grama; o cargo também vira lista; a caixa "Sócio" sai de tudo;
   - feito: a caixa "Sócio" e o cartão "Remuneração dos sócios" saíram da tela da equipe (Custos e taxas e primeiros passos); 61 testes das telas de orçamento verdes;

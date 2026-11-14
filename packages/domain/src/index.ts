@@ -161,6 +161,7 @@ export {
   QUANTIDADE_MAXIMA,
   UNIDADES_COM_FAIXAS,
   UNIDADES_DE_COBRANCA,
+  custoDoTerceiro,
   custoHoraPorProfissao,
   mesmaProfissao,
   precificarOrcamento,
@@ -191,6 +192,7 @@ export type {
   HoraDeVenda,
   PendenciaDoPreco,
   PrecoDoOrcamento,
+  TerceiroDoItem,
   UnidadeDeCobranca,
   VisitasDoOrcamento,
 } from './preco-do-orcamento'

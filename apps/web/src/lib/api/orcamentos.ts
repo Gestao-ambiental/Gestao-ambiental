@@ -4,9 +4,11 @@
 import {
   ESCALA_DA_QUANTIDADE,
   FORMAS_DE_RECEBIMENTO,
+  profissaoDoCodigo,
   MODOS_DE_DESLOCAMENTO,
   UNIDADES_DE_COBRANCA,
   type CustoDaProfissao,
+  type CodigoProfissao,
   type CustoDoMembro,
   type FaixaDePreco,
   type FormaDePreco,
@@ -326,6 +328,16 @@ export interface ItemDoOrcamento {
   precoFechadoCentavos: number | null
   /** O serviço inclui ART ou RRT (fatia 6); nulo = não informado. */
   responsabilidadeTecnica: ResponsabilidadeTecnica | null
+  /** Profissional terceirizado no lugar do responsável da equipe (ADR-0028); nulo = equipe. */
+  terceiro: TerceiroDoServico | null
+}
+
+/** Terceirizado sem login: nome, profissão da lista, cobrança e valor (nulo = a informar). */
+export interface TerceiroDoServico {
+  nome: string
+  profissao: CodigoProfissao | null
+  cobranca: 'hora' | 'fechado'
+  valorCentavos: number | null
 }
 
 export type ResponsabilidadeTecnica = 'art' | 'rrt'
@@ -524,6 +536,7 @@ export async function obterOrcamento(id: string): Promise<Orcamento | null> {
         i.responsabilidade_tecnica === 'art' || i.responsabilidade_tecnica === 'rrt'
           ? i.responsabilidade_tecnica
           : null,
+      terceiro: terceiroDe(i),
     })),
     despesas: lista(o.despesas).map((d) => ({
       id: texto(d.id),
@@ -646,6 +659,15 @@ export async function salvarOrcamento(
             : textoDaQuantidadeParaOBanco(i.quantidadeDezMilesimos),
         preco_fechado_centavos: i.precoFechadoCentavos,
         responsabilidade_tecnica: i.responsabilidadeTecnica,
+        // Terceirizado (ADR-0028): só vai quando o serviço tem um.
+        ...(i.terceiro
+          ? {
+              terceiro_nome: i.terceiro.nome,
+              terceiro_profissao: i.terceiro.profissao,
+              terceiro_cobranca: i.terceiro.cobranca,
+              terceiro_valor_centavos: i.terceiro.valorCentavos,
+            }
+          : {}),
       })),
       despesas: dados.despesas.map((d) => ({
         id: d.id,
@@ -1041,5 +1063,17 @@ export async function obterContratanteDaProposta(
       nome: texto(u.nome),
       endereco: textoOuNulo(u.endereco),
     })),
+  }
+}
+
+/** Terceirizado do item lido do banco; sem nome, o serviço é da equipe. */
+function terceiroDe(i: Objeto): TerceiroDoServico | null {
+  const nome = textoOuNulo(i.terceiro_nome)
+  if (!nome) return null
+  return {
+    nome,
+    profissao: profissaoDoCodigo(i.terceiro_profissao),
+    cobranca: i.terceiro_cobranca === 'fechado' ? 'fechado' : 'hora',
+    valorCentavos: numeroOuNulo(i.terceiro_valor_centavos),
   }
 }
