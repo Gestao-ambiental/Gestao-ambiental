@@ -44,4 +44,4 @@ Ficaram de fora:
 
 ## Nota
 
-A branch `claude/terceirizado-orcamento` também usa o número 0028. Ao juntá-la, o ADR dela vira 0030.
+A branch `claude/terceirizado-orcamento` também usa o número 0028. Ao juntá-la, o ADR dela vira 0031 (a 0030 é a de recursos por plano).

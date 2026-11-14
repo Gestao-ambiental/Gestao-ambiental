@@ -57,6 +57,12 @@ export const CATALOGO_COMERCIAL_FALSO = [
   dias_uteis_de_tolerancia: 2,
   fim_do_beta: '2027-01-31',
   moeda: 'BRL',
+  recursos:
+    codigo === 'escala'
+      ? ['capacidade', 'integracao_ima', 'financeiro', 'analise_lotes']
+      : codigo === 'equipe'
+        ? ['capacidade']
+        : [],
 }))
 
 export interface Cenario {

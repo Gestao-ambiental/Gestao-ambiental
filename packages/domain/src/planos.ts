@@ -21,6 +21,29 @@ export interface Plano {
   empreendimentos: number
   orcamentos: boolean
   ia: boolean
+  /** Recursos ligados neste plano (ADR-0030), além de orçamentos e IA. */
+  recursos: readonly RecursoDoPlano[]
+}
+
+/** Recursos que a central liga por plano (ADR-0030). Os que ainda não existem já nascem presos. */
+export type RecursoDoPlano = 'capacidade' | 'integracao_ima' | 'financeiro' | 'analise_lotes'
+
+export const RECURSOS_DO_PLANO: readonly RecursoDoPlano[] = [
+  'capacidade',
+  'integracao_ima',
+  'financeiro',
+  'analise_lotes',
+]
+
+export const ROTULO_DO_RECURSO: Readonly<Record<RecursoDoPlano, string>> = {
+  capacidade: 'Capacidade e carga da equipe',
+  integracao_ima: 'Integração com o MTR do IMA',
+  financeiro: 'Financeiro da consultoria',
+  analise_lotes: 'Análise de lotes',
+}
+
+export function ehRecursoDoPlano(valor: unknown): valor is RecursoDoPlano {
+  return RECURSOS_DO_PLANO.some((r) => r === valor)
 }
 
 export const CODIGOS_DE_PLANO: readonly CodigoPlano[] = ['essencial', 'equipe', 'escala']
@@ -35,6 +58,7 @@ export const PLANOS: Readonly<Record<CodigoPlano, Plano>> = {
     empreendimentos: 10,
     orcamentos: false,
     ia: false,
+    recursos: [],
   },
   equipe: {
     codigo: 'equipe',
@@ -44,6 +68,7 @@ export const PLANOS: Readonly<Record<CodigoPlano, Plano>> = {
     empreendimentos: 30,
     orcamentos: true,
     ia: true,
+    recursos: ['capacidade'],
   },
   escala: {
     codigo: 'escala',
@@ -53,6 +78,7 @@ export const PLANOS: Readonly<Record<CodigoPlano, Plano>> = {
     empreendimentos: 100,
     orcamentos: true,
     ia: true,
+    recursos: ['capacidade', 'integracao_ima', 'financeiro', 'analise_lotes'],
   },
 }
 
@@ -347,6 +373,7 @@ export function passagemDoLimite(
 
 export type SituacaoComercialCodigo =
   | 'interna'
+  | 'contrato'
   | 'beta'
   | 'teste'
   | 'ativa'
@@ -357,6 +384,7 @@ export type SituacaoComercialCodigo =
 
 export const SITUACOES_COMERCIAIS: readonly SituacaoComercialCodigo[] = [
   'interna',
+  'contrato',
   'beta',
   'teste',
   'ativa',
@@ -368,6 +396,7 @@ export const SITUACOES_COMERCIAIS: readonly SituacaoComercialCodigo[] = [
 
 export const ROTULO_DA_SITUACAO_COMERCIAL: Readonly<Record<SituacaoComercialCodigo, string>> = {
   interna: 'Conta interna',
+  contrato: 'Plano por contrato',
   beta: 'Beta',
   teste: 'Em teste',
   ativa: 'Ativa',
@@ -402,6 +431,8 @@ export interface EntradaDaSituacao {
   fimDoBeta: DataCivil
   diasDeTeste: number
   interna: boolean
+  /** Plano definido pela central sem cobrança pelo Grama (ADR-0030); `ate` nulo = sem prazo. */
+  contrato?: { plano: CodigoPlano; ate: DataCivil | null } | null
   assinatura: AssinaturaParaSituacao | null
   /** Vencimentos das cobranças não pagas (nem estornadas nem removidas). */
   vencimentosEmAberto: readonly DataCivil[]
@@ -478,6 +509,18 @@ export function situacaoComercial(
   })
 
   if (entrada.interna) return { ...liberada('interna', null, null), venceHoje: false }
+  const contrato = entrada.contrato ?? null
+  if (contrato && (contrato.ate === null || hoje <= contrato.ate))
+    return {
+      ...base,
+      situacao: 'contrato',
+      somenteLeitura: false,
+      orcamentosLiberados: catalogo.planos[contrato.plano].orcamentos,
+      planoVigente: contrato.plano,
+      cicloVigente: null,
+      limites: limitesDoPlano(contrato.plano, catalogo),
+      venceHoje: false,
+    }
   if (betaAte && hoje <= betaAte)
     return liberada(
       'beta',
@@ -533,4 +576,29 @@ export function situacaoComercial(
     limites: null,
     venceHoje: false,
   }
+}
+
+/**
+ * A consultoria pode usar o recurso hoje? Teste, beta e conta interna liberam tudo; só leitura não
+ * libera nada; nos outros casos vale o plano vigente (o mesmo de private.recurso_liberado).
+ */
+export function recursoLiberado(
+  situacao: Pick<
+    SituacaoComercial,
+    'situacao' | 'somenteLeitura' | 'orcamentosLiberados' | 'planoVigente'
+  >,
+  recurso: RecursoDoPlano | 'orcamentos' | 'ia',
+  catalogo: CatalogoComercial = CATALOGO_PADRAO,
+): boolean {
+  if (situacao.somenteLeitura) return false
+  if (
+    situacao.situacao === 'interna' ||
+    situacao.situacao === 'beta' ||
+    situacao.situacao === 'teste'
+  )
+    return true
+  if (recurso === 'orcamentos') return situacao.orcamentosLiberados
+  if (situacao.planoVigente === null) return false
+  const plano = catalogo.planos[situacao.planoVigente]
+  return recurso === 'ia' ? plano.ia : plano.recursos.includes(recurso)
 }

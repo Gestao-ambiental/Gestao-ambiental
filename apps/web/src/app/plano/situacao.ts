@@ -34,6 +34,7 @@ export function useDadosComerciais() {
 
 export const TOM_DA_SITUACAO_COMERCIAL: Record<SituacaoComercialCodigo, TomSelo> = {
   interna: 'revisao',
+  contrato: 'sucesso',
   beta: 'andamento',
   teste: 'andamento',
   ativa: 'sucesso',
@@ -48,6 +49,8 @@ export function rotuloDaSituacao(s: SituacaoComercial): string {
   switch (s.situacao) {
     case 'interna':
       return 'Conta interna'
+    case 'contrato':
+      return 'Plano por contrato'
     case 'beta':
       return `Beta até ${formatarDataCivil(s.betaAte)}`
     case 'teste':

@@ -1,5 +1,8 @@
 import {
   CODIGOS_DE_PLANO,
+  RECURSOS_DO_PLANO,
+  ROTULO_DO_RECURSO,
+  ehRecursoDoPlano,
   formatarCentavos,
   formatarDataCivil,
   formatarReais,
@@ -12,6 +15,7 @@ import {
   type ConfiguracaoComercial,
   type DataCivil,
   type Plano,
+  type RecursoDoPlano,
 } from '@gestao-ambiental/domain'
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -33,6 +37,7 @@ import {
   TAMANHO_PAGINA_HISTORICO_PARAMETROS,
   atualizarConfiguracaoComercial,
   atualizarPlano,
+  definirRecursosDoPlano,
   listarHistoricoDeParametros,
 } from '@/lib/api/parametros'
 
@@ -54,6 +59,7 @@ interface PlanoEditado {
   empreendimentos: string
   orcamentos: boolean
   ia: boolean
+  recursos: readonly RecursoDoPlano[]
 }
 
 interface RegrasEditadas {
@@ -77,6 +83,7 @@ function rascunhoDo(catalogo: CatalogoComercial): Rascunho {
     empreendimentos: String(p.empreendimentos),
     orcamentos: p.orcamentos,
     ia: p.ia,
+    recursos: p.recursos,
   })
   const c = catalogo.configuracao
   return {
@@ -116,6 +123,7 @@ function catalogoDo(rascunho: Rascunho, atual: CatalogoComercial): CatalogoComer
       empreendimentos,
       orcamentos: p.orcamentos,
       ia: p.ia,
+      recursos: RECURSOS_DO_PLANO.filter((r) => p.recursos.includes(r)),
     }
   }
   const r = rascunho.regras
@@ -167,6 +175,11 @@ function valoresDoPlano(p: Plano): Valores {
   }
 }
 
+/** Recursos ligados, na ordem fixa (para comparar e para o histórico). */
+function valoresDosRecursos(p: Plano): Valores {
+  return { recursos: RECURSOS_DO_PLANO.filter((r) => p.recursos.includes(r)) }
+}
+
 function valoresDasRegras(c: ConfiguracaoComercial): Valores {
   return {
     fim_do_beta: c.fimDoBeta,
@@ -184,6 +197,7 @@ const ROTULO_DO_CAMPO: Record<string, string> = {
   empreendimentos: 'Empreendimentos',
   orcamentos: 'Orçamentos',
   ia: 'IA',
+  recursos: 'Recursos',
   adicional_mensal_centavos: 'Adicional por mês',
   mensalidades_no_anual: 'Mensalidades no anual',
   dias_de_teste_padrao: 'Dias úteis de teste',
@@ -194,6 +208,12 @@ const ROTULO_DO_CAMPO: Record<string, string> = {
 function formatarValor(campo: string, valor: Json | undefined): string {
   if (valor === undefined || valor === null) return '—'
   if (typeof valor === 'boolean') return valor ? 'Sim' : 'Não'
+  if (Array.isArray(valor))
+    return valor.length === 0
+      ? 'nenhum'
+      : valor
+          .map((r) => (ehRecursoDoPlano(r) ? ROTULO_DO_RECURSO[r] : JSON.stringify(r)))
+          .join(', ')
   if (typeof valor === 'number' && campo.endsWith('_centavos')) return formatarReais(valor)
   if (typeof valor === 'string' && ehDataCivil(valor)) return formatarDataCivil(valor)
   return typeof valor === 'object' ? JSON.stringify(valor) : String(valor)
@@ -228,8 +248,8 @@ function gruposDeMudancas(atual: CatalogoComercial, novo: CatalogoComercial): Gr
     alvo: codigo,
     titulo: `Plano ${atual.planos[codigo].nome}`,
     mudancas: mudancasEntre(
-      valoresDoPlano(atual.planos[codigo]),
-      valoresDoPlano(novo.planos[codigo]),
+      { ...valoresDoPlano(atual.planos[codigo]), ...valoresDosRecursos(atual.planos[codigo]) },
+      { ...valoresDoPlano(novo.planos[codigo]), ...valoresDosRecursos(novo.planos[codigo]) },
     ),
   }))
   grupos.push({
@@ -285,7 +305,14 @@ function Formulario({
       for (const g of grupos) {
         if (g.alvo === 'configuracao')
           await atualizarConfiguracaoComercial(novo.configuracao, motivo)
-        else await atualizarPlano(novo.planos[g.alvo], motivo)
+        else {
+          const antes = catalogo.planos[g.alvo]
+          const depois = novo.planos[g.alvo]
+          if (mudancasEntre(valoresDoPlano(antes), valoresDoPlano(depois)).length > 0)
+            await atualizarPlano(depois, motivo)
+          if (mudancasEntre(valoresDosRecursos(antes), valoresDosRecursos(depois)).length > 0)
+            await definirRecursosDoPlano(g.alvo, depois.recursos, motivo)
+        }
       }
     },
     // Repetir depois de um erro no meio é seguro: o banco ignora o que já está igual.
@@ -351,6 +378,11 @@ function Formulario({
                 <th scope="col" className={classeCabecalho}>
                   IA
                 </th>
+                {RECURSOS_DO_PLANO.map((r) => (
+                  <th key={r} scope="col" className={classeCabecalho}>
+                    {ROTULO_DO_RECURSO[r]}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -434,6 +466,29 @@ function Formulario({
                         <span aria-hidden="true">{p.ia ? 'Sim' : 'Não'}</span>
                       </label>
                     </td>
+                    {RECURSOS_DO_PLANO.map((r) => {
+                      const ligado = p.recursos.includes(r)
+                      return (
+                        <td key={r} className={classeCelula}>
+                          <label className="flex items-center gap-(--space-075)">
+                            <input
+                              type="checkbox"
+                              checked={ligado}
+                              className="accent-(--brand)"
+                              aria-label={`${ROTULO_DO_RECURSO[r]} no ${nome}`}
+                              onChange={(e) => {
+                                mudarPlano(codigo, {
+                                  recursos: e.target.checked
+                                    ? [...p.recursos, r]
+                                    : p.recursos.filter((x) => x !== r),
+                                })
+                              }}
+                            />
+                            <span aria-hidden="true">{ligado ? 'Sim' : 'Não'}</span>
+                          </label>
+                        </td>
+                      )
+                    })}
                   </tr>
                 )
               })}

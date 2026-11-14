@@ -61,6 +61,7 @@ function Numeros({ r, catalogo }: { r: ResumoFinanceiro; catalogo: CatalogoComer
         <Cartao rotulo="Teste acabando" valor={String(r.testeAcabando)} />
         <Cartao rotulo="Beta" valor={String(r.beta)} />
         <Cartao rotulo="Contas internas" valor={String(r.internas)} />
+        <Cartao rotulo="Por contrato" valor={String(r.porContrato)} />
         <Cartao rotulo="Em atraso" valor={String(r.emAtraso)} />
         <Cartao rotulo="Somente leitura" valor={String(r.bloqueadas)} />
         <Cartao rotulo="Cancelados" valor={String(r.cancelados)} />

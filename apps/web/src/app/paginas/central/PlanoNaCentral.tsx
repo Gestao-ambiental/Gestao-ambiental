@@ -1,7 +1,11 @@
 import {
+  CODIGOS_DE_PLANO,
   ROTULO_DO_CICLO,
+  ehCodigoPlano,
   formatarDataCivil,
   formatarReais,
+  hojeNoFuso,
+  type CodigoPlano,
   type DataCivil,
 } from '@gestao-ambiental/domain'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -11,6 +15,7 @@ import { opcoesDoCatalogo, useCatalogoComercial } from '@/app/plano/catalogo'
 import { TOM_DA_SITUACAO_COMERCIAL, rotuloDaSituacao } from '@/app/plano/situacao'
 import { Carregando, EstadoErro } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
+import { CampoData } from '@/components/ui/campo-data'
 import { CampoTexto } from '@/components/ui/campo-texto'
 import { Dialogo } from '@/components/ui/dialogo'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
@@ -18,6 +23,7 @@ import { Selo } from '@/components/ui/selo'
 import {
   ROTULO_DA_COBRANCA,
   ajustarDiasDeTeste,
+  definirPlanoPorContrato,
   listarCobrancasNaCentral,
   listarHistoricoComercial,
   marcarContaInterna,
@@ -30,7 +36,16 @@ import { mensagemDoErro } from '@/lib/erros'
 
 import { classeCabecalho, classeCelula } from './comum'
 
-type Acao = 'dias' | 'interna' | null
+type Acao = 'dias' | 'interna' | 'contrato' | 'encerrar_contrato' | null
+
+/** "escala até 2027-12-31" (histórico do banco) → "Escala até 31/12/2027". */
+function textoDoContrato(valor: string, nomes: Partial<Record<CodigoPlano, string>>): string {
+  if (valor === 'sem contrato') return 'sem contrato'
+  const [codigo, ...resto] = valor.split(' ')
+  const nome = ehCodigoPlano(codigo) ? (nomes[codigo] ?? codigo) : (codigo ?? '')
+  const data = /(\d{4}-\d{2}-\d{2})$/.exec(valor)?.[1]
+  return data ? `${nome} até ${formatarDataCivil(data as DataCivil)}` : `${nome} ${resto.join(' ')}`
+}
 
 /**
  * Plano e cobrança no detalhe da consultoria, na central (ADR-0026): situação, plano, uso contra o
@@ -55,6 +70,8 @@ export function PlanoNaCentral({ consultoriaId, fuso }: { consultoriaId: string;
   })
   const [acao, setAcao] = useState<Acao>(null)
   const [dias, setDias] = useState('10')
+  const [planoDoContrato, setPlanoDoContrato] = useState<CodigoPlano>('equipe')
+  const [contratoAte, setContratoAte] = useState<DataCivil | null>(null)
   const [motivo, setMotivo] = useState('')
   const [aviso, setAviso] = useState<string | null>(null)
 
@@ -78,6 +95,10 @@ export function PlanoNaCentral({ consultoriaId, fuso }: { consultoriaId: string;
     mutationFn: async () => {
       const versao = plano.data?.condicaoRowVersion ?? 0
       if (acao === 'dias') return ajustarDiasDeTeste(consultoriaId, Number(dias), motivo, versao)
+      if (acao === 'contrato')
+        return definirPlanoPorContrato(consultoriaId, planoDoContrato, contratoAte, motivo, versao)
+      if (acao === 'encerrar_contrato')
+        return definirPlanoPorContrato(consultoriaId, null, null, motivo, versao)
       return marcarContaInterna(consultoriaId, !plano.data?.dados?.interna, motivo, versao)
     },
     onSuccess: async () => {
@@ -97,6 +118,9 @@ export function PlanoNaCentral({ consultoriaId, fuso }: { consultoriaId: string;
     )
   const d = plano.data.dados
   const s = d.situacao
+  const nomes: Partial<Record<CodigoPlano, string>> = {}
+  for (const c of CODIGOS_DE_PLANO) nomes[c] = catalogo.data?.planos[c].nome ?? c
+  const hoje = hojeNoFuso(new Date(), fuso)
   const erro = atraso.error ?? pagamento.error
 
   return (
@@ -108,9 +132,13 @@ export function PlanoNaCentral({ consultoriaId, fuso }: { consultoriaId: string;
         <div className="flex flex-wrap items-center gap-(--space-100)">
           <Selo tom={TOM_DA_SITUACAO_COMERCIAL[s.situacao]}>{rotuloDaSituacao(s)}</Selo>
           <span>
-            {s.planoVigente && s.cicloVigente && catalogo.data
-              ? `${catalogo.data.planos[s.planoVigente].nome} · ${ROTULO_DO_CICLO[s.cicloVigente]}`
-              : 'Sem plano'}
+            {s.situacao === 'contrato' && s.planoVigente
+              ? `${nomes[s.planoVigente] ?? s.planoVigente} por contrato · ${
+                  d.contrato?.ate ? `até ${formatarDataCivil(d.contrato.ate)}` : 'sem prazo'
+                } · sem cobrança pelo Grama`
+              : s.planoVigente && s.cicloVigente && catalogo.data
+                ? `${catalogo.data.planos[s.planoVigente].nome} · ${ROTULO_DO_CICLO[s.cicloVigente]}`
+                : 'Sem plano'}
           </span>
         </div>
         <dl className="grid grid-cols-1 gap-(--space-100) sm:grid-cols-3">
@@ -154,6 +182,24 @@ export function PlanoNaCentral({ consultoriaId, fuso }: { consultoriaId: string;
           >
             {d.interna ? 'Desmarcar conta interna' : 'Marcar como conta interna'}
           </Botao>
+          <Botao
+            onClick={() => {
+              setPlanoDoContrato(d.contrato?.plano ?? 'equipe')
+              setContratoAte(d.contrato?.ate ?? null)
+              setAcao('contrato')
+            }}
+          >
+            {d.contrato ? 'Mudar plano por contrato' : 'Definir plano por contrato'}
+          </Botao>
+          {d.contrato ? (
+            <Botao
+              onClick={() => {
+                setAcao('encerrar_contrato')
+              }}
+            >
+              Encerrar contrato
+            </Botao>
+          ) : null}
           {d.assinatura && !d.assinatura.validaAte ? (
             <>
               <Botao
@@ -235,7 +281,9 @@ export function PlanoNaCentral({ consultoriaId, fuso }: { consultoriaId: string;
                   ? h.valorNovo === 'true'
                     ? 'Marcou conta interna'
                     : 'Desmarcou conta interna'
-                  : `Dias de teste: ${h.valorAnterior} → ${h.valorNovo}`}{' '}
+                  : h.tipo === 'plano_contrato'
+                    ? `Plano por contrato: ${textoDoContrato(h.valorAnterior, nomes)} → ${textoDoContrato(h.valorNovo, nomes)}`
+                    : `Dias de teste: ${h.valorAnterior} → ${h.valorNovo}`}{' '}
                 · {h.motivo}
               </li>
             ))}
@@ -254,9 +302,13 @@ export function PlanoNaCentral({ consultoriaId, fuso }: { consultoriaId: string;
         titulo={
           acao === 'dias'
             ? 'Ajustar dias de teste'
-            : d.interna
-              ? 'Desmarcar conta interna'
-              : 'Marcar como conta interna'
+            : acao === 'contrato'
+              ? 'Plano por contrato'
+              : acao === 'encerrar_contrato'
+                ? 'Encerrar contrato'
+                : d.interna
+                  ? 'Desmarcar conta interna'
+                  : 'Marcar como conta interna'
         }
         acoes={
           <>
@@ -280,6 +332,34 @@ export function PlanoNaCentral({ consultoriaId, fuso }: { consultoriaId: string;
           </>
         }
       >
+        {acao === 'contrato' ? (
+          <>
+            <label className="flex flex-col gap-(--space-050)">
+              <span className="rotulo">Plano</span>
+              <select
+                className="h-(--size-control) rounded-(--radius) border bg-(--surface) px-(--space-100)"
+                value={planoDoContrato}
+                onChange={(e) => {
+                  if (ehCodigoPlano(e.target.value)) setPlanoDoContrato(e.target.value)
+                }}
+              >
+                {CODIGOS_DE_PLANO.map((c) => (
+                  <option key={c} value={c}>
+                    {nomes[c]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <CampoData
+              rotulo="Vale até (vazio = sem prazo)"
+              valor={contratoAte}
+              aoMudar={setContratoAte}
+              hoje={hoje}
+              minimo={hoje}
+              motivoDoLimite="O contrato não pode acabar no passado."
+            />
+          </>
+        ) : null}
         {acao === 'dias' ? (
           <CampoTexto
             rotulo="Dias úteis de teste"

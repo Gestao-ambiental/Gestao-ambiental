@@ -20,6 +20,7 @@ import {
 } from '@gestao-ambiental/domain'
 
 import type { Json } from '@/lib/database.types'
+import { aceitaNulo } from '@/lib/api/nulo'
 import { obterSupabase } from '@/lib/supabase'
 
 export const TAMANHO_PAGINA_COBRANCAS = 20
@@ -33,6 +34,8 @@ export interface DadosComerciais {
   assinatura: (AssinaturaParaSituacao & { forma: FormaDePagamento | null }) | null
   proximoVencimento: DataCivil | null
   interna: boolean
+  /** Plano definido pela central sem cobrança pelo Grama (ADR-0030); nulo sem contrato. */
+  contrato: { plano: CodigoPlano; ate: DataCivil | null } | null
   diasDeTeste: number
   uso: { pessoas: number; convitesPendentes: number; empreendimentos: number }
   /** Cobrança em aberto já vencida (ou vencendo hoje): só a Gestão recebe. */
@@ -71,6 +74,9 @@ interface LinhaDaSituacao {
   cobranca_aberta_id: string | null
   cobranca_aberta_valor_centavos: number | null
   cobranca_aberta_vencimento: string | null
+  /** Ausentes em servidores falsos antigos. */
+  plano_contrato?: string | null
+  contrato_ate?: string | null
 }
 
 /**
@@ -97,6 +103,9 @@ export function dadosComerciaisDaLinha(
           forma: ehFormaDePagamento(linha.forma) ? linha.forma : null,
         }
       : null
+  const contrato = ehCodigoPlano(linha.plano_contrato)
+    ? { plano: linha.plano_contrato, ate: data(linha.contrato_ate) }
+    : null
   const vencimentosEmAberto = datas(linha.vencimentos_em_aberto)
   const vencimentoAberto = data(linha.cobranca_aberta_vencimento)
   return {
@@ -108,6 +117,7 @@ export function dadosComerciaisDaLinha(
         fimDoBeta,
         diasDeTeste: linha.dias_de_teste,
         interna: linha.interna,
+        contrato,
         assinatura,
         vencimentosEmAberto,
       },
@@ -117,6 +127,7 @@ export function dadosComerciaisDaLinha(
     assinatura,
     proximoVencimento: data(linha.proximo_vencimento),
     interna: linha.interna,
+    contrato,
     diasDeTeste: linha.dias_de_teste,
     uso: {
       pessoas: linha.pessoas,
@@ -352,6 +363,8 @@ export interface ResumoFinanceiro {
   cancelados: number
   testeEncerrado: number
   testeAcabando: number
+  /** No plano por contrato (fora do MRR: o dinheiro não passa pelo Grama). */
+  porContrato: number
   mrrCentavos: number
   ticketMedioCentavos: number
   mensais: number
@@ -373,6 +386,7 @@ export async function obterResumoFinanceiro(): Promise<ResumoFinanceiro> {
     cancelados: r?.cancelados ?? 0,
     testeEncerrado: r?.teste_encerrado ?? 0,
     testeAcabando: r?.teste_acabando ?? 0,
+    porContrato: r?.por_contrato ?? 0,
     mrrCentavos: r?.mrr_centavos ?? 0,
     ticketMedioCentavos: r?.ticket_medio_centavos ?? 0,
     mensais: r?.mensais ?? 0,
@@ -391,6 +405,7 @@ export const GRUPOS_FINANCEIROS = [
   'teste_acabando',
   'beta',
   'internas',
+  'contrato',
   'em_atraso',
   'cancelados',
   'teste_encerrado',
@@ -403,6 +418,7 @@ export const ROTULO_DO_GRUPO: Record<GrupoFinanceiro, string> = {
   teste_acabando: 'Teste acabando',
   beta: 'Beta',
   internas: 'Contas internas',
+  contrato: 'Por contrato',
   em_atraso: 'Em atraso',
   cancelados: 'Cancelados',
   teste_encerrado: 'Teste encerrado',
@@ -514,7 +530,7 @@ export async function marcarContaInterna(
 
 export interface MudancaComercial {
   id: string
-  tipo: 'dias_de_teste' | 'interna'
+  tipo: 'dias_de_teste' | 'interna' | 'plano_contrato'
   valorAnterior: string
   valorNovo: string
   motivo: string
@@ -531,11 +547,30 @@ export async function listarHistoricoComercial(consultoriaId: string): Promise<M
   if (error) throw error
   return linhas.map((l) => ({
     id: l.id,
-    tipo: l.tipo === 'interna' ? 'interna' : 'dias_de_teste',
+    tipo: l.tipo === 'interna' || l.tipo === 'plano_contrato' ? l.tipo : 'dias_de_teste',
     valorAnterior: l.valor_anterior,
     valorNovo: l.valor_novo,
     motivo: l.motivo,
     alteradaEm: l.alterada_em,
     alteradaPorNome: l.alterada_por_nome,
   }))
+}
+
+/** Central: põe a consultoria num plano por contrato (sem cobrança pelo Grama) ou encerra (plano nulo). */
+export async function definirPlanoPorContrato(
+  consultoriaId: string,
+  plano: CodigoPlano | null,
+  ate: DataCivil | null,
+  motivo: string,
+  rowVersion: number,
+): Promise<number> {
+  const { data: versao, error } = await obterSupabase().rpc('central_definir_plano_contrato', {
+    p_consultoria_id: consultoriaId,
+    p_plano: aceitaNulo(plano),
+    p_ate: aceitaNulo(ate),
+    p_motivo: motivo,
+    p_row_version: rowVersion,
+  })
+  if (error) throw error
+  return versao
 }

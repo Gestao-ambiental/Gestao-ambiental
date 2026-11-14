@@ -413,14 +413,14 @@ isOneToOne: false
                   ]
                 },"consultoria_condicao_comercial": {
                   Row: {
-                    "alterada_em": string,"alterada_por": string | null,"consultoria_id": string,"dias_de_teste": number,"id": string,"interna": boolean,"row_version": number
+                    "alterada_em": string,"alterada_por": string | null,"consultoria_id": string,"contrato_ate": string | null,"dias_de_teste": number,"id": string,"interna": boolean,"plano_contrato": string | null,"row_version": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "alterada_em"?: string,"alterada_por"?: string | null,"consultoria_id": string,"dias_de_teste"?: number,"id"?: string,"interna"?: boolean,"row_version"?: number
+                    "alterada_em"?: string,"alterada_por"?: string | null,"consultoria_id": string,"contrato_ate"?: string | null,"dias_de_teste"?: number,"id"?: string,"interna"?: boolean,"plano_contrato"?: string | null,"row_version"?: number
                   }
                   Update: {
-                    "alterada_em"?: string,"alterada_por"?: string | null,"consultoria_id"?: string,"dias_de_teste"?: number,"id"?: string,"interna"?: boolean,"row_version"?: number
+                    "alterada_em"?: string,"alterada_por"?: string | null,"consultoria_id"?: string,"contrato_ate"?: string | null,"dias_de_teste"?: number,"id"?: string,"interna"?: boolean,"plano_contrato"?: string | null,"row_version"?: number
                   }
                   Relationships: [
                     {
@@ -1611,7 +1611,7 @@ isOneToOne: false
                            },
 "catalogo_comercial":
 { Args: Record<PropertyKey, never>; Returns: {
-              "adicional_mensal_centavos": number,"codigo": string,"dias_de_teste_padrao": number,"dias_uteis_de_tolerancia": number,"empreendimentos": number,"fim_do_beta": string,"ia": boolean,"mensal_centavos": number,"mensalidades_no_anual": number,"moeda": string,"nome": string,"orcamentos": boolean,"ordem": number,"pessoas": number
+              "adicional_mensal_centavos": number,"codigo": string,"dias_de_teste_padrao": number,"dias_uteis_de_tolerancia": number,"empreendimentos": number,"fim_do_beta": string,"ia": boolean,"mensal_centavos": number,"mensalidades_no_anual": number,"moeda": string,"nome": string,"orcamentos": boolean,"ordem": number,"pessoas": number,"recursos": (string)[]
             }[]
                            },
 "central_acessos_de_suporte":
@@ -1637,6 +1637,12 @@ isOneToOne: false
 { Args: { "p_consultoria_id": string,"p_deslocamento"?: number,"p_limite"?: number }; Returns: {
               "forma": string,"id": string,"invoice_url": string,"pago_em": string,"situacao": string,"tipo": string,"total": number,"valor_centavos": number,"vencimento": string
             }[]
+                           },
+"central_definir_plano_contrato":
+{ Args: { "p_ate": string,"p_consultoria_id": string,"p_motivo": string,"p_plano": string,"p_row_version": number }; Returns: number
+                           },
+"central_definir_recursos_do_plano":
+{ Args: { "p_codigo": string,"p_motivo": string,"p_recursos": (string)[] }; Returns: undefined
                            },
 "central_detalhar_consultoria":
 { Args: { "p_consultoria_id": string }; Returns: {
@@ -1691,7 +1697,7 @@ isOneToOne: false
                            },
 "central_plano_da_consultoria":
 { Args: { "p_consultoria_id": string }; Returns: {
-              "bloqueio_em": string,"ciclo": string,"ciclo_agendado": string,"condicao_row_version": number,"convites_pendentes": number,"criada_em": string,"dias_de_teste": number,"em_atraso_desde": string,"empreendimentos": number,"fim_do_beta": string,"forma": string,"hoje": string,"interna": boolean,"mudanca_em": string,"pessoas": number,"plano": string,"plano_agendado": string,"proximo_vencimento": string,"situacao": string,"situacao_asaas": string,"somente_leitura": boolean,"teste_ate": string,"valida_ate": string,"vencimentos_em_aberto": Json
+              "bloqueio_em": string,"ciclo": string,"ciclo_agendado": string,"condicao_row_version": number,"contrato_ate": string,"convites_pendentes": number,"criada_em": string,"dias_de_teste": number,"em_atraso_desde": string,"empreendimentos": number,"fim_do_beta": string,"forma": string,"hoje": string,"interna": boolean,"mudanca_em": string,"pessoas": number,"plano": string,"plano_agendado": string,"plano_contrato": string,"proximo_vencimento": string,"situacao": string,"situacao_asaas": string,"somente_leitura": boolean,"teste_ate": string,"valida_ate": string,"vencimentos_em_aberto": Json
             }[]
                            },
 "central_resumo_de_uso":
@@ -1706,7 +1712,7 @@ isOneToOne: false
                            },
 "central_resumo_financeiro":
 { Args: Record<PropertyKey, never>; Returns: {
-              "anuais": number,"beta": number,"bloqueadas": number,"cancelados": number,"em_atraso": number,"em_teste": number,"internas": number,"mensais": number,"mrr_centavos": number,"pagantes": number,"receita_equipe_centavos": number,"receita_escala_centavos": number,"receita_essencial_centavos": number,"teste_acabando": number,"teste_encerrado": number,"ticket_medio_centavos": number
+              "anuais": number,"beta": number,"bloqueadas": number,"cancelados": number,"em_atraso": number,"em_teste": number,"internas": number,"mensais": number,"mrr_centavos": number,"pagantes": number,"por_contrato": number,"receita_equipe_centavos": number,"receita_escala_centavos": number,"receita_essencial_centavos": number,"teste_acabando": number,"teste_encerrado": number,"ticket_medio_centavos": number
             }[]
                            },
 "central_simular_atraso":
@@ -2097,7 +2103,7 @@ isOneToOne: false
                            },
 "situacao_comercial":
 { Args: { "p_consultoria_id": string }; Returns: {
-              "bloqueio_em": string,"ciclo": string,"ciclo_agendado": string,"cobranca_aberta_id": string,"cobranca_aberta_valor_centavos": number,"cobranca_aberta_vencimento": string,"convites_pendentes": number,"criada_em": string,"dias_de_teste": number,"em_atraso_desde": string,"empreendimentos": number,"fim_do_beta": string,"forma": string,"hoje": string,"interna": boolean,"mudanca_em": string,"orcamentos_liberados": boolean,"pessoas": number,"plano": string,"plano_agendado": string,"proximo_vencimento": string,"situacao": string,"somente_leitura": boolean,"teste_ate": string,"valida_ate": string,"vencimentos_em_aberto": Json
+              "bloqueio_em": string,"ciclo": string,"ciclo_agendado": string,"cobranca_aberta_id": string,"cobranca_aberta_valor_centavos": number,"cobranca_aberta_vencimento": string,"contrato_ate": string,"convites_pendentes": number,"criada_em": string,"dias_de_teste": number,"em_atraso_desde": string,"empreendimentos": number,"fim_do_beta": string,"forma": string,"hoje": string,"interna": boolean,"mudanca_em": string,"orcamentos_liberados": boolean,"pessoas": number,"plano": string,"plano_agendado": string,"plano_contrato": string,"proximo_vencimento": string,"situacao": string,"somente_leitura": boolean,"teste_ate": string,"valida_ate": string,"vencimentos_em_aberto": Json
             }[]
                            },
 "sou_operador":

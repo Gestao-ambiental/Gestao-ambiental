@@ -2,12 +2,14 @@
 // "Parâmetros pela central"). Qualquer pessoa logada lê; só o operador com dois fatores muda.
 
 import {
+  RECURSOS_DO_PLANO,
   ehCodigoPlano,
   type CatalogoComercial,
   type CodigoPlano,
   type ConfiguracaoComercial,
   type DataCivil,
   type Plano,
+  type RecursoDoPlano,
 } from '@gestao-ambiental/domain'
 
 import type { Json } from '@/lib/database.types'
@@ -38,6 +40,10 @@ export async function obterCatalogoComercial(): Promise<CatalogoComercial> {
       empreendimentos: l.empreendimentos,
       orcamentos: l.orcamentos,
       ia: l.ia,
+      // Nulo só em servidores falsos antigos; o banco sempre devolve a lista.
+      recursos: RECURSOS_DO_PLANO.filter((r) =>
+        ((l.recursos as string[] | null) ?? []).includes(r),
+      ),
     }
   }
   const primeira = dados[0]
@@ -66,6 +72,20 @@ export async function atualizarPlano(plano: Plano, motivo: string): Promise<void
     p_empreendimentos: plano.empreendimentos,
     p_orcamentos: plano.orcamentos,
     p_ia: plano.ia,
+    p_motivo: motivo,
+  })
+  if (error) throw error
+}
+
+/** Central: liga e desliga recursos de um plano (motivo obrigatório; ADR-0030). */
+export async function definirRecursosDoPlano(
+  codigo: CodigoPlano,
+  recursos: readonly RecursoDoPlano[],
+  motivo: string,
+): Promise<void> {
+  const { error } = await obterSupabase().rpc('central_definir_recursos_do_plano', {
+    p_codigo: codigo,
+    p_recursos: [...recursos],
     p_motivo: motivo,
   })
   if (error) throw error

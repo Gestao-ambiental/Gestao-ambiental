@@ -1,5 +1,7 @@
 import {
   CODIGOS_DE_PLANO,
+  RECURSOS_DO_PLANO,
+  ROTULO_DO_RECURSO,
   ROTULO_DA_FORMA,
   ROTULO_DO_CICLO,
   adicionaisDoUso,
@@ -114,9 +116,13 @@ function SituacaoEUso({
       </div>
       <dl className="flex flex-col">
         <Linha rotulo="Plano">
-          {plano && ciclo
-            ? `${catalogo.planos[plano].nome} · ${ROTULO_DO_CICLO[ciclo]}${a?.forma ? ` · ${ROTULO_DA_FORMA[a.forma]}` : ''}`
-            : 'Sem plano'}
+          {s.situacao === 'contrato' && plano
+            ? `${catalogo.planos[plano].nome} por contrato · ${
+                dados.contrato?.ate ? `até ${formatarDataCivil(dados.contrato.ate)}` : 'sem prazo'
+              }`
+            : plano && ciclo
+              ? `${catalogo.planos[plano].nome} · ${ROTULO_DO_CICLO[ciclo]}${a?.forma ? ` · ${ROTULO_DA_FORMA[a.forma]}` : ''}`
+              : 'Sem plano'}
         </Linha>
         {a?.mudancaEm && a.mudancaEm > dados.hoje && (a.planoAgendado || a.cicloAgendado) ? (
           <Linha rotulo="Mudança agendada">
@@ -199,7 +205,13 @@ function OpcaoDePlano({
       <span>
         {p.pessoas} pessoas · {p.empreendimentos} empreendimentos ativos
       </span>
-      <span>{p.orcamentos ? 'Com orçamentos' : 'Sem orçamentos'}</span>
+      <ul aria-label={`O que o ${p.nome} inclui`} className="flex flex-col gap-(--space-025)">
+        <li>{p.orcamentos ? 'Orçamentos, aprovação e tarefas' : 'Sem orçamentos'}</li>
+        <li>{p.ia ? 'Leitura da licença por IA' : 'Sem leitura por IA'}</li>
+        {RECURSOS_DO_PLANO.filter((r) => p.recursos.includes(r)).map((r) => (
+          <li key={r}>{ROTULO_DO_RECURSO[r]}</li>
+        ))}
+      </ul>
     </label>
   )
 }
@@ -591,7 +603,7 @@ export function PaginaPlano() {
     conteudo = (
       <div className="flex flex-col gap-(--space-200)">
         <SituacaoEUso dados={dados} catalogo={catalogo.data} />
-        {dados.interna || suporte ? null : (
+        {dados.interna || dados.situacao.situacao === 'contrato' || suporte ? null : (
           <EscolhaDePlano dados={dados} catalogo={catalogo.data} />
         )}
         <Cobrancas />
