@@ -1,14 +1,15 @@
 import {
-  PLANOS,
   ROTULO_DO_CICLO,
   formatarDataCivil,
   formatarReais,
+  type CatalogoComercial,
   type DataCivil,
 } from '@gestao-ambiental/domain'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router'
 
 import { Pagina } from '@/app/paginas/Pagina'
+import { useCatalogoComercial } from '@/app/plano/catalogo'
 import { TOM_DA_SITUACAO_COMERCIAL } from '@/app/plano/situacao'
 import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
@@ -48,7 +49,7 @@ function Cartao({ rotulo, valor }: { rotulo: string; valor: string }) {
   )
 }
 
-function Numeros({ r }: { r: ResumoFinanceiro }) {
+function Numeros({ r, catalogo }: { r: ResumoFinanceiro; catalogo: CatalogoComercial }) {
   return (
     <section aria-label="Números do Financeiro" className="flex flex-col gap-(--space-150)">
       <dl className="grid grid-cols-2 gap-(--space-100) md:grid-cols-4">
@@ -71,7 +72,11 @@ function Numeros({ r }: { r: ResumoFinanceiro }) {
         </h2>
         <dl className="grid grid-cols-1 gap-(--space-100) sm:grid-cols-3">
           {(['essencial', 'equipe', 'escala'] as const).map((p) => (
-            <Cartao key={p} rotulo={PLANOS[p].nome} valor={formatarReais(r.receitaPorPlano[p])} />
+            <Cartao
+              key={p}
+              rotulo={catalogo.planos[p].nome}
+              valor={formatarReais(r.receitaPorPlano[p])}
+            />
           ))}
         </dl>
       </section>
@@ -86,7 +91,13 @@ function detalheDaLinha(l: LinhaFinanceira): string {
   return ''
 }
 
-function Lista({ grupo }: { grupo: GrupoFinanceiro | null }) {
+function Lista({
+  grupo,
+  catalogo,
+}: {
+  grupo: GrupoFinanceiro | null
+  catalogo: CatalogoComercial
+}) {
   const consulta = useInfiniteQuery({
     queryKey: ['central', 'financeiro', 'lista', grupo],
     queryFn: ({ pageParam }) => listarFinanceiro(grupo, pageParam),
@@ -155,7 +166,7 @@ function Lista({ grupo }: { grupo: GrupoFinanceiro | null }) {
                 </td>
                 <td className={`${classeCelula} whitespace-nowrap`}>
                   {l.plano && l.ciclo
-                    ? `${PLANOS[l.plano].nome} · ${ROTULO_DO_CICLO[l.ciclo]}`
+                    ? `${catalogo.planos[l.plano].nome} · ${ROTULO_DO_CICLO[l.ciclo]}`
                     : '—'}
                 </td>
                 <td className={`${classeCelula} text-right tabular-nums`}>
@@ -192,24 +203,29 @@ export function PaginaCentralFinanceiro() {
     queryKey: ['central', 'financeiro', 'resumo'],
     queryFn: obterResumoFinanceiro,
   })
+  const catalogo = useCatalogoComercial()
 
   let conteudo
-  if (resumo.isPending) conteudo = <Carregando rotulo="Carregando o Financeiro" linhas={4} />
+  if (resumo.isPending || catalogo.isPending)
+    conteudo = <Carregando rotulo="Carregando o Financeiro" linhas={4} />
   else if (resumo.isError && ehDoisFatoresNecessarios(resumo.error)) conteudo = <RelerDoisFatores />
   else if (resumo.isError && ehSemPermissao(resumo.error))
     conteudo = <SemPermissao descricao={null} />
-  else if (resumo.isError)
+  else if (resumo.isError || catalogo.isError)
     conteudo = (
       <EstadoErro
         titulo="Não foi possível carregar o Financeiro."
         descricao="Verifique a conexão e tente de novo."
-        aoTentarDeNovo={() => void resumo.refetch()}
+        aoTentarDeNovo={() => {
+          void resumo.refetch()
+          void catalogo.refetch()
+        }}
       />
     )
   else
     conteudo = (
       <>
-        <Numeros r={resumo.data} />
+        <Numeros r={resumo.data} catalogo={catalogo.data} />
         <section aria-labelledby="financeiro-lista" className="flex flex-col gap-(--space-150)">
           <div className="flex flex-wrap items-center justify-between gap-(--space-100)">
             <h2 id="financeiro-lista" className="titulo-secao text-(--text)">
@@ -234,7 +250,7 @@ export function PaginaCentralFinanceiro() {
               </select>
             </label>
           </div>
-          <Lista grupo={grupo} />
+          <Lista grupo={grupo} catalogo={catalogo.data} />
         </section>
       </>
     )

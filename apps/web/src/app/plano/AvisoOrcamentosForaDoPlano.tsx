@@ -1,8 +1,10 @@
+import { CODIGOS_DE_PLANO } from '@gestao-ambiental/domain'
 import { Link } from 'react-router'
 
 import { Botao } from '@/components/ui/botao'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 
+import { useCatalogoComercial } from './catalogo'
 import { useDadosComerciais } from './situacao'
 
 /**
@@ -11,16 +13,27 @@ import { useDadosComerciais } from './situacao'
  */
 export function AvisoOrcamentosForaDoPlano() {
   const dados = useDadosComerciais().data
-  if (!dados || dados.situacao.orcamentosLiberados || dados.situacao.somenteLeitura) return null
+  const catalogo = useCatalogoComercial().data
+  if (!dados || !catalogo || dados.situacao.orcamentosLiberados || dados.situacao.somenteLeitura)
+    return null
+  const comOrcamentos = CODIGOS_DE_PLANO.map((c) => catalogo.planos[c]).filter((p) => p.orcamentos)
+  const nomes = comOrcamentos.map((p) => p.nome)
+  const primeiro = comOrcamentos[0]
   return (
     <MensagemSecao
       tom="informacao"
       role="status"
-      titulo="Orçamentos fazem parte dos planos Equipe e Escala"
+      titulo={
+        nomes.length > 1
+          ? `Orçamentos fazem parte dos planos ${nomes.slice(0, -1).join(', ')} e ${String(nomes.at(-1))}`
+          : `Orçamentos fazem parte do plano ${nomes.join('')}`
+      }
       acoes={
-        <Botao asChild tamanho="compacto" aparencia="primario">
-          <Link to="/configuracoes/plano">Conhecer o plano Equipe</Link>
-        </Botao>
+        primeiro ? (
+          <Botao asChild tamanho="compacto" aparencia="primario">
+            <Link to="/configuracoes/plano">Conhecer o plano {primeiro.nome}</Link>
+          </Botao>
+        ) : null
       }
     >
       Os orçamentos já feitos continuam aqui para consulta.

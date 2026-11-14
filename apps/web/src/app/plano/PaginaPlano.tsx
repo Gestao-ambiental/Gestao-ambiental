@@ -1,7 +1,5 @@
 import {
   CODIGOS_DE_PLANO,
-  MENSALIDADES_NO_ANUAL,
-  PLANOS,
   ROTULO_DA_FORMA,
   ROTULO_DO_CICLO,
   adicionaisDoUso,
@@ -12,6 +10,7 @@ import {
   primeiroVencimento,
   tipoDoDocumento,
   valorDoCiclo,
+  type CatalogoComercial,
   type CicloDoPlano,
   type CodigoPlano,
   type DataCivil,
@@ -39,6 +38,7 @@ import {
 import { ehSemPermissao, mensagemDoErro } from '@/lib/erros'
 import { cn } from '@/lib/utils'
 
+import { useCatalogoComercial } from './catalogo'
 import {
   BotaoPagarSimulado,
   DialogoPagamentoSimulado,
@@ -81,13 +81,23 @@ function Linha({ rotulo, children }: { rotulo: string; children: ReactNode }) {
   )
 }
 
-function valorDoPlanoNoCiclo(plano: CodigoPlano, ciclo: CicloDoPlano): string {
+function valorDoPlanoNoCiclo(
+  plano: CodigoPlano,
+  ciclo: CicloDoPlano,
+  catalogo: CatalogoComercial,
+): string {
   return ciclo === 'anual'
-    ? `${formatarReais(valorDoCiclo(plano, 'anual'))} por ano`
-    : `${formatarReais(valorDoCiclo(plano, 'mensal'))} por mês`
+    ? `${formatarReais(valorDoCiclo(plano, 'anual', catalogo))} por ano`
+    : `${formatarReais(valorDoCiclo(plano, 'mensal', catalogo))} por mês`
 }
 
-function SituacaoEUso({ dados }: { dados: DadosComerciais }) {
+function SituacaoEUso({
+  dados,
+  catalogo,
+}: {
+  dados: DadosComerciais
+  catalogo: CatalogoComercial
+}) {
   const s = dados.situacao
   const a = dados.assinatura
   const plano = s.planoVigente
@@ -95,6 +105,7 @@ function SituacaoEUso({ dados }: { dados: DadosComerciais }) {
   const adicionais = adicionaisDoUso(
     { pessoas: dados.uso.pessoas, empreendimentos: dados.uso.empreendimentos },
     s.limites,
+    catalogo,
   )
   return (
     <Secao titulo="Situação">
@@ -104,12 +115,12 @@ function SituacaoEUso({ dados }: { dados: DadosComerciais }) {
       <dl className="flex flex-col">
         <Linha rotulo="Plano">
           {plano && ciclo
-            ? `${PLANOS[plano].nome} · ${ROTULO_DO_CICLO[ciclo]}${a?.forma ? ` · ${ROTULO_DA_FORMA[a.forma]}` : ''}`
+            ? `${catalogo.planos[plano].nome} · ${ROTULO_DO_CICLO[ciclo]}${a?.forma ? ` · ${ROTULO_DA_FORMA[a.forma]}` : ''}`
             : 'Sem plano'}
         </Linha>
         {a?.mudancaEm && a.mudancaEm > dados.hoje && (a.planoAgendado || a.cicloAgendado) ? (
           <Linha rotulo="Mudança agendada">
-            {PLANOS[a.planoAgendado ?? a.plano].nome} ·{' '}
+            {catalogo.planos[a.planoAgendado ?? a.plano].nome} ·{' '}
             {ROTULO_DO_CICLO[a.cicloAgendado ?? a.ciclo]} a partir de{' '}
             {formatarDataCivil(a.mudancaEm)}
           </Linha>
@@ -136,7 +147,7 @@ function SituacaoEUso({ dados }: { dados: DadosComerciais }) {
         {plano && ciclo && s.limites ? (
           <Linha rotulo={ciclo === 'anual' ? 'Valor mensal equivalente' : 'Valor mensal'}>
             <span className="corpo-medio">
-              {formatarReais(equivalenteMensal(plano, ciclo) + adicionais.valorCentavos)}
+              {formatarReais(equivalenteMensal(plano, ciclo, catalogo) + adicionais.valorCentavos)}
             </span>
           </Linha>
         ) : null}
@@ -151,14 +162,16 @@ function OpcaoDePlano({
   escolhido,
   aoEscolher,
   nome,
+  catalogo,
 }: {
   plano: CodigoPlano
   ciclo: CicloDoPlano
   escolhido: boolean
   aoEscolher: () => void
   nome: string
+  catalogo: CatalogoComercial
 }) {
-  const p = PLANOS[plano]
+  const p = catalogo.planos[plano]
   return (
     <label
       className={cn(
@@ -177,9 +190,11 @@ function OpcaoDePlano({
         />
         <span className="corpo-medio">{p.nome}</span>
       </span>
-      <span className="tabular-nums">{valorDoPlanoNoCiclo(plano, ciclo)}</span>
+      <span className="tabular-nums">{valorDoPlanoNoCiclo(plano, ciclo, catalogo)}</span>
       {ciclo === 'anual' ? (
-        <span className="tabular-nums">{MENSALIDADES_NO_ANUAL} mensalidades, pago de uma vez</span>
+        <span className="tabular-nums">
+          {catalogo.configuracao.mensalidadesNoAnual} mensalidades, pago de uma vez
+        </span>
       ) : null}
       <span>
         {p.pessoas} pessoas · {p.empreendimentos} empreendimentos ativos
@@ -189,7 +204,13 @@ function OpcaoDePlano({
   )
 }
 
-function EscolhaDePlano({ dados }: { dados: DadosComerciais }) {
+function EscolhaDePlano({
+  dados,
+  catalogo,
+}: {
+  dados: DadosComerciais
+  catalogo: CatalogoComercial
+}) {
   const { atual } = useConsultoria()
   const queryClient = useQueryClient()
   const ativa = dados.assinatura !== null && dados.assinatura.validaAte === null
@@ -221,7 +242,7 @@ function EscolhaDePlano({ dados }: { dados: DadosComerciais }) {
       if (resultado.cobrancaId) {
         setAPagar({
           id: resultado.cobrancaId,
-          valorCentavos: valorDoCiclo(plano, ciclo),
+          valorCentavos: valorDoCiclo(plano, ciclo, catalogo),
           vencimento: primeiroVencimento(dados.hoje, dados.situacao.testeAte),
         })
       }
@@ -282,6 +303,7 @@ function EscolhaDePlano({ dados }: { dados: DadosComerciais }) {
               plano={p}
               ciclo={ciclo}
               nome={nomeDoGrupo}
+              catalogo={catalogo}
               escolhido={plano === p}
               aoEscolher={() => {
                 setPlano(p)
@@ -544,27 +566,34 @@ function Cobrancas() {
 export function PaginaPlano() {
   const { atual, suporte } = useConsultoria()
   const consulta = useDadosComerciais()
+  const catalogo = useCatalogoComercial()
   const gestao = atual.papel === 'gestao'
 
   let conteudo
   if (!gestao) conteudo = <SemPermissao descricao={null} />
-  else if (consulta.isPending) conteudo = <Carregando rotulo="Carregando o plano" linhas={5} />
+  else if (consulta.isPending || catalogo.isPending)
+    conteudo = <Carregando rotulo="Carregando o plano" linhas={5} />
   else if (consulta.isError && ehSemPermissao(consulta.error))
     conteudo = <SemPermissao descricao={null} />
-  else if (consulta.isError || !consulta.data)
+  else if (consulta.isError || catalogo.isError || !consulta.data)
     conteudo = (
       <EstadoErro
         titulo="Não foi possível carregar o plano."
         descricao="Verifique a conexão e tente de novo."
-        aoTentarDeNovo={() => void consulta.refetch()}
+        aoTentarDeNovo={() => {
+          void consulta.refetch()
+          void catalogo.refetch()
+        }}
       />
     )
   else {
     const dados = consulta.data
     conteudo = (
       <div className="flex flex-col gap-(--space-200)">
-        <SituacaoEUso dados={dados} />
-        {dados.interna || suporte ? null : <EscolhaDePlano dados={dados} />}
+        <SituacaoEUso dados={dados} catalogo={catalogo.data} />
+        {dados.interna || suporte ? null : (
+          <EscolhaDePlano dados={dados} catalogo={catalogo.data} />
+        )}
         <Cobrancas />
       </div>
     )

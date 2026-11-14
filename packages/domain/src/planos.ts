@@ -66,6 +66,39 @@ export const DIAS_DE_TESTE_PADRAO = 10
 export const DIAS_UTEIS_DE_TOLERANCIA = 2
 /** "Teste acabando" na central: acaba nos próximos 3 dias úteis. */
 export const DIAS_UTEIS_TESTE_ACABANDO = 3
+/** Último dia do beta na migration 20261114150000 (a central pode mudar). */
+export const FIM_DO_BETA_PADRAO = '2027-01-31' as DataCivil
+
+/** Configuração comercial da plataforma (private.configuracao_comercial). */
+export interface ConfiguracaoComercial {
+  fimDoBeta: DataCivil
+  diasDeTestePadrao: number
+  adicionalMensalCentavos: number
+  mensalidadesNoAnual: number
+  diasUteisDeTolerancia: number
+  moeda: string
+}
+
+/**
+ * Catálogo e configuração vigentes. A fonte é o banco (RPC catalogo_comercial; a central edita);
+ * as constantes acima são o padrão de quem ainda não leu o banco.
+ */
+export interface CatalogoComercial {
+  planos: Readonly<Record<CodigoPlano, Plano>>
+  configuracao: ConfiguracaoComercial
+}
+
+export const CATALOGO_PADRAO: CatalogoComercial = {
+  planos: PLANOS,
+  configuracao: {
+    fimDoBeta: FIM_DO_BETA_PADRAO,
+    diasDeTestePadrao: DIAS_DE_TESTE_PADRAO,
+    adicionalMensalCentavos: ADICIONAL_MENSAL_CENTAVOS,
+    mensalidadesNoAnual: MENSALIDADES_NO_ANUAL,
+    diasUteisDeTolerancia: DIAS_UTEIS_DE_TOLERANCIA,
+    moeda: MOEDA,
+  },
+}
 
 export function ehCodigoPlano(valor: unknown): valor is CodigoPlano {
   return valor === 'essencial' || valor === 'equipe' || valor === 'escala'
@@ -184,22 +217,33 @@ export function testeAcabando(testeAte: DataCivil, hoje: DataCivil): boolean {
 // Valores
 // ---------------------------------------------------------------------------
 
-/** Valor cobrado por ciclo: a mensalidade, ou 10 mensalidades no anual. */
-export function valorDoCiclo(plano: CodigoPlano, ciclo: CicloDoPlano): number {
-  const mensal = PLANOS[plano].mensalCentavos
-  return ciclo === 'anual' ? mensal * MENSALIDADES_NO_ANUAL : mensal
+/** Valor cobrado por ciclo: a mensalidade, ou 10 mensalidades (configuração) no anual. */
+export function valorDoCiclo(
+  plano: CodigoPlano,
+  ciclo: CicloDoPlano,
+  catalogo: CatalogoComercial = CATALOGO_PADRAO,
+): number {
+  const mensal = catalogo.planos[plano].mensalCentavos
+  return ciclo === 'anual' ? mensal * catalogo.configuracao.mensalidadesNoAnual : mensal
 }
 
 /** Receita mensal equivalente (MRR): no anual, o valor do ano dividido por 12, arredondado. */
-export function equivalenteMensal(plano: CodigoPlano, ciclo: CicloDoPlano): number {
+export function equivalenteMensal(
+  plano: CodigoPlano,
+  ciclo: CicloDoPlano,
+  catalogo: CatalogoComercial = CATALOGO_PADRAO,
+): number {
   return ciclo === 'anual'
-    ? Math.round(valorDoCiclo(plano, 'anual') / 12)
-    : valorDoCiclo(plano, ciclo)
+    ? Math.round(valorDoCiclo(plano, 'anual', catalogo) / 12)
+    : valorDoCiclo(plano, ciclo, catalogo)
 }
 
 /** Economia do anual frente a 12 mensalidades. */
-export function economiaDoAnual(plano: CodigoPlano): number {
-  return PLANOS[plano].mensalCentavos * 12 - valorDoCiclo(plano, 'anual')
+export function economiaDoAnual(
+  plano: CodigoPlano,
+  catalogo: CatalogoComercial = CATALOGO_PADRAO,
+): number {
+  return catalogo.planos[plano].mensalCentavos * 12 - valorDoCiclo(plano, 'anual', catalogo)
 }
 
 export interface Uso {
@@ -221,7 +265,11 @@ export interface Adicionais {
 }
 
 /** Pessoas e empreendimentos além do limite, a R$ 20 por mês cada. Sem limite: zero. */
-export function adicionaisDoUso(uso: Uso, limites: Limites | null): Adicionais {
+export function adicionaisDoUso(
+  uso: Uso,
+  limites: Limites | null,
+  catalogo: CatalogoComercial = CATALOGO_PADRAO,
+): Adicionais {
   if (!limites) return { pessoas: 0, empreendimentos: 0, quantidade: 0, valorCentavos: 0 }
   const pessoas = Math.max(0, uso.pessoas - limites.pessoas)
   const empreendimentos = Math.max(0, uso.empreendimentos - limites.empreendimentos)
@@ -230,12 +278,16 @@ export function adicionaisDoUso(uso: Uso, limites: Limites | null): Adicionais {
     pessoas,
     empreendimentos,
     quantidade,
-    valorCentavos: quantidade * ADICIONAL_MENSAL_CENTAVOS,
+    valorCentavos: quantidade * catalogo.configuracao.adicionalMensalCentavos,
   }
 }
 
-export function limitesDoPlano(plano: CodigoPlano): Limites {
-  return { pessoas: PLANOS[plano].pessoas, empreendimentos: PLANOS[plano].empreendimentos }
+export function limitesDoPlano(
+  plano: CodigoPlano,
+  catalogo: CatalogoComercial = CATALOGO_PADRAO,
+): Limites {
+  const p = catalogo.planos[plano]
+  return { pessoas: p.pessoas, empreendimentos: p.empreendimentos }
 }
 
 /** Valor por mês do plano (equivalente mensal) mais os adicionais. */
@@ -243,8 +295,12 @@ export function valorMensalComAdicionais(
   plano: CodigoPlano,
   ciclo: CicloDoPlano,
   uso: Uso,
+  catalogo: CatalogoComercial = CATALOGO_PADRAO,
 ): number {
-  return equivalenteMensal(plano, ciclo) + adicionaisDoUso(uso, limitesDoPlano(plano)).valorCentavos
+  return (
+    equivalenteMensal(plano, ciclo, catalogo) +
+    adicionaisDoUso(uso, limitesDoPlano(plano, catalogo), catalogo).valorCentavos
+  )
 }
 
 export type RecursoDoLimite = 'pessoas' | 'empreendimentos'
@@ -270,17 +326,18 @@ export function passagemDoLimite(
   plano: CodigoPlano | null,
   ciclo: CicloDoPlano | null,
   limites: Limites | null,
+  catalogo: CatalogoComercial = CATALOGO_PADRAO,
 ): PassagemDoLimite | null {
   if (!limites || !plano || !ciclo) return null
   const depois: Uso = { ...uso, [recurso]: uso[recurso] + 1 }
   if (depois[recurso] <= limites[recurso]) return null
-  const adicionais = adicionaisDoUso(depois, limites).valorCentavos
+  const adicionais = adicionaisDoUso(depois, limites, catalogo).valorCentavos
   return {
     recurso,
     quantidade: depois[recurso],
     limite: limites[recurso],
     adicionaisDepois: adicionais,
-    mensalDepois: equivalenteMensal(plano, ciclo) + adicionais,
+    mensalDepois: equivalenteMensal(plano, ciclo, catalogo) + adicionais,
   }
 }
 
@@ -386,11 +443,18 @@ export function cicloVigente(assinatura: AssinaturaParaSituacao, hoje: DataCivil
 }
 
 /** O plano de destino é mais caro que o de origem (mostrado como "subir de plano"). */
-export function ehPlanoMaior(de: CodigoPlano, para: CodigoPlano): boolean {
-  return PLANOS[para].mensalCentavos > PLANOS[de].mensalCentavos
+export function ehPlanoMaior(
+  de: CodigoPlano,
+  para: CodigoPlano,
+  catalogo: CatalogoComercial = CATALOGO_PADRAO,
+): boolean {
+  return catalogo.planos[para].mensalCentavos > catalogo.planos[de].mensalCentavos
 }
 
-export function situacaoComercial(entrada: EntradaDaSituacao): SituacaoComercial {
+export function situacaoComercial(
+  entrada: EntradaDaSituacao,
+  catalogo: CatalogoComercial = CATALOGO_PADRAO,
+): SituacaoComercial {
   const { hoje, assinatura } = entrada
   const testeAte = fimDoTeste(
     inicioDoTeste(entrada.criadaEm, entrada.fimDoBeta),
@@ -425,17 +489,20 @@ export function situacaoComercial(entrada: EntradaDaSituacao): SituacaoComercial
   if (assinatura && vigente) {
     const plano = planoVigente(assinatura, hoje)
     const ciclo = cicloVigente(assinatura, hoje)
-    const limites = limitesDoPlano(plano)
+    const limites = limitesDoPlano(plano, catalogo)
     const vencidos = entrada.vencimentosEmAberto.filter((v) => v < hoje).sort()
     const maisAntigo = vencidos[0]
     if (maisAntigo) {
-      const ultimoDiaDeTolerancia = somarDiasUteis(maisAntigo, DIAS_UTEIS_DE_TOLERANCIA)
+      const ultimoDiaDeTolerancia = somarDiasUteis(
+        maisAntigo,
+        catalogo.configuracao.diasUteisDeTolerancia,
+      )
       const bloqueada = hoje > ultimoDiaDeTolerancia
       return {
         ...base,
         situacao: bloqueada ? 'bloqueada' : 'em_atraso',
         somenteLeitura: bloqueada,
-        orcamentosLiberados: !bloqueada && PLANOS[plano].orcamentos,
+        orcamentosLiberados: !bloqueada && catalogo.planos[plano].orcamentos,
         planoVigente: plano,
         cicloVigente: ciclo,
         limites,
@@ -448,7 +515,7 @@ export function situacaoComercial(entrada: EntradaDaSituacao): SituacaoComercial
       ...base,
       situacao: 'ativa',
       somenteLeitura: false,
-      orcamentosLiberados: PLANOS[plano].orcamentos,
+      orcamentosLiberados: catalogo.planos[plano].orcamentos,
       planoVigente: plano,
       cicloVigente: ciclo,
       limites,

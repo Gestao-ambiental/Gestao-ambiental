@@ -1,9 +1,4 @@
-import {
-  ADICIONAL_MENSAL_CENTAVOS,
-  PLANOS,
-  formatarReais,
-  passagemDoLimite,
-} from '@gestao-ambiental/domain'
+import { formatarReais, passagemDoLimite } from '@gestao-ambiental/domain'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
@@ -12,6 +7,7 @@ import { Dialogo } from '@/components/ui/dialogo'
 import { confirmarAdicional, type RecursoDoAdicional } from '@/lib/api/plano'
 import { mensagemDoErro } from '@/lib/erros'
 
+import { useCatalogoComercial } from './catalogo'
 import { CHAVE_SITUACAO_COMERCIAL, useDadosComerciais } from './situacao'
 
 const NOME_DO_RECURSO: Record<RecursoDoAdicional, { titulo: string; um: string }> = {
@@ -36,6 +32,7 @@ export function DialogoAdicional({ recurso, aberto, aoMudar, aoConfirmado }: Pro
   const { atual } = useConsultoria()
   const queryClient = useQueryClient()
   const dados = useDadosComerciais().data
+  const catalogo = useCatalogoComercial().data
   const nome = NOME_DO_RECURSO[recurso]
   const s = dados?.situacao
   const uso = dados
@@ -46,7 +43,9 @@ export function DialogoAdicional({ recurso, aberto, aoMudar, aoConfirmado }: Pro
       }
     : null
   const passagem =
-    s && uso ? passagemDoLimite(recurso, uso, s.planoVigente, s.cicloVigente, s.limites) : null
+    s && uso && catalogo
+      ? passagemDoLimite(recurso, uso, s.planoVigente, s.cicloVigente, s.limites, catalogo)
+      : null
 
   const confirmar = useMutation({
     mutationFn: () => confirmarAdicional(atual.consultoriaId, recurso),
@@ -64,7 +63,11 @@ export function DialogoAdicional({ recurso, aberto, aoMudar, aoConfirmado }: Pro
         if (!confirmar.isPending) aoMudar(novo)
       }}
       titulo="Passa do limite do plano"
-      descricao={`Cada ${nome.um} a mais custa ${formatarReais(ADICIONAL_MENSAL_CENTAVOS)} por mês.`}
+      descricao={
+        catalogo
+          ? `Cada ${nome.um} a mais custa ${formatarReais(catalogo.configuracao.adicionalMensalCentavos)} por mês.`
+          : null
+      }
       acoes={
         <>
           <Botao
@@ -87,11 +90,12 @@ export function DialogoAdicional({ recurso, aberto, aoMudar, aoConfirmado }: Pro
         </>
       }
     >
-      {passagem && s?.planoVigente ? (
+      {passagem && catalogo && s?.planoVigente ? (
         <dl className="grid grid-cols-[1fr_auto] gap-x-(--space-200) gap-y-(--space-075)">
           <dt>{nome.titulo}</dt>
           <dd className="text-right tabular-nums">
-            {passagem.quantidade} de {passagem.limite} no plano {PLANOS[s.planoVigente].nome}
+            {passagem.quantidade} de {passagem.limite} no plano{' '}
+            {catalogo.planos[s.planoVigente].nome}
           </dd>
           <dt>Adicionais por mês</dt>
           <dd className="text-right tabular-nums">{formatarReais(passagem.adicionaisDepois)}</dd>

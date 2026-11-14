@@ -1,5 +1,4 @@
 import {
-  PLANOS,
   ROTULO_DO_CICLO,
   formatarDataCivil,
   formatarReais,
@@ -8,6 +7,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 
+import { opcoesDoCatalogo, useCatalogoComercial } from '@/app/plano/catalogo'
 import { TOM_DA_SITUACAO_COMERCIAL, rotuloDaSituacao } from '@/app/plano/situacao'
 import { Carregando, EstadoErro } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
@@ -40,7 +40,11 @@ type Acao = 'dias' | 'interna' | null
 export function PlanoNaCentral({ consultoriaId, fuso }: { consultoriaId: string; fuso: string }) {
   const queryClient = useQueryClient()
   const chave = ['central', 'plano', consultoriaId]
-  const plano = useQuery({ queryKey: chave, queryFn: () => obterPlanoNaCentral(consultoriaId) })
+  const plano = useQuery({
+    queryKey: chave,
+    queryFn: () => obterPlanoNaCentral(consultoriaId, () => queryClient.query(opcoesDoCatalogo)),
+  })
+  const catalogo = useCatalogoComercial()
   const cobrancas = useQuery({
     queryKey: [...chave, 'cobrancas'],
     queryFn: () => listarCobrancasNaCentral(consultoriaId, 0),
@@ -104,8 +108,8 @@ export function PlanoNaCentral({ consultoriaId, fuso }: { consultoriaId: string;
         <div className="flex flex-wrap items-center gap-(--space-100)">
           <Selo tom={TOM_DA_SITUACAO_COMERCIAL[s.situacao]}>{rotuloDaSituacao(s)}</Selo>
           <span>
-            {s.planoVigente && s.cicloVigente
-              ? `${PLANOS[s.planoVigente].nome} · ${ROTULO_DO_CICLO[s.cicloVigente]}`
+            {s.planoVigente && s.cicloVigente && catalogo.data
+              ? `${catalogo.data.planos[s.planoVigente].nome} · ${ROTULO_DO_CICLO[s.cicloVigente]}`
               : 'Sem plano'}
           </span>
         </div>

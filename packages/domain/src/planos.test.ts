@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   ADICIONAL_MENSAL_CENTAVOS,
+  CATALOGO_PADRAO,
   PLANOS,
   adicionaisDoUso,
   cicloVigente,
@@ -23,6 +24,7 @@ import {
   valorDoCiclo,
   valorMensalComAdicionais,
   type AssinaturaParaSituacao,
+  type CatalogoComercial,
   type EntradaDaSituacao,
 } from './planos'
 
@@ -414,5 +416,78 @@ describe('primeiro vencimento de uma assinatura nova', () => {
   it('assinou depois do teste: vence hoje', () => {
     expect(primeiroVencimento('2027-04-08', '2027-04-07')).toBe('2027-04-08')
     expect(primeiroVencimento('2027-05-20', '2027-04-07')).toBe('2027-05-20')
+  })
+})
+
+describe('catálogo vindo do banco (editado pela central)', () => {
+  const editado: CatalogoComercial = {
+    planos: {
+      ...CATALOGO_PADRAO.planos,
+      equipe: { ...CATALOGO_PADRAO.planos.equipe, mensalCentavos: 139_000, pessoas: 12 },
+    },
+    configuracao: {
+      ...CATALOGO_PADRAO.configuracao,
+      adicionalMensalCentavos: 2_500,
+      mensalidadesNoAnual: 11,
+      diasUteisDeTolerancia: 0,
+    },
+  }
+
+  it('sem catálogo, as constantes de sempre', () => {
+    expect(CATALOGO_PADRAO.planos).toBe(PLANOS)
+    expect(valorDoCiclo('equipe', 'anual', CATALOGO_PADRAO)).toBe(valorDoCiclo('equipe', 'anual'))
+  })
+
+  it('valores, adicionais e limites usam o catálogo recebido', () => {
+    expect(valorDoCiclo('equipe', 'mensal', editado)).toBe(139_000)
+    expect(valorDoCiclo('equipe', 'anual', editado)).toBe(1_529_000)
+    expect(equivalenteMensal('equipe', 'anual', editado)).toBe(127_417)
+    expect(economiaDoAnual('equipe', editado)).toBe(139_000)
+    expect(limitesDoPlano('equipe', editado)).toEqual({ pessoas: 12, empreendimentos: 30 })
+    expect(
+      adicionaisDoUso(
+        { pessoas: 14, empreendimentos: 30 },
+        limitesDoPlano('equipe', editado),
+        editado,
+      ).valorCentavos,
+    ).toBe(5_000)
+    expect(
+      valorMensalComAdicionais('equipe', 'mensal', { pessoas: 13, empreendimentos: 0 }, editado),
+    ).toBe(141_500)
+    expect(
+      passagemDoLimite(
+        'pessoas',
+        { pessoas: 12, empreendimentos: 0 },
+        'equipe',
+        'mensal',
+        limitesDoPlano('equipe', editado),
+        editado,
+      ),
+    ).toMatchObject({ quantidade: 13, limite: 12, adicionaisDepois: 2_500, mensalDepois: 141_500 })
+    expect(ehPlanoMaior('equipe', 'escala', editado)).toBe(true)
+  })
+
+  it('a tolerância do atraso vem da configuração', () => {
+    const entrada: EntradaDaSituacao = {
+      hoje: '2027-05-10',
+      criadaEm: '2027-03-24',
+      fimDoBeta: '2027-01-31',
+      diasDeTeste: 10,
+      interna: false,
+      assinatura: {
+        plano: 'equipe',
+        ciclo: 'mensal',
+        planoAgendado: null,
+        cicloAgendado: null,
+        mudancaEm: null,
+        validaAte: null,
+      },
+      vencimentosEmAberto: ['2027-05-07'],
+    }
+    expect(situacaoComercial(entrada).situacao).toBe('em_atraso')
+    expect(situacaoComercial(entrada, editado)).toMatchObject({
+      situacao: 'bloqueada',
+      limites: { pessoas: 12, empreendimentos: 30 },
+    })
   })
 })

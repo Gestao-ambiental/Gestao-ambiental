@@ -6,11 +6,13 @@ import {
   type SituacaoComercial,
   type SituacaoComercialCodigo,
 } from '@gestao-ambiental/domain'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import type { TomSelo } from '@/components/ui/selo'
 import { obterDadosComerciais } from '@/lib/api/plano'
+
+import { opcoesDoCatalogo } from './catalogo'
 
 export const CHAVE_SITUACAO_COMERCIAL = 'situacao-comercial'
 export const CHAVE_COBRANCAS = 'cobrancas'
@@ -18,9 +20,12 @@ export const CHAVE_COBRANCAS = 'cobrancas'
 /** Situação comercial da consultoria atual, relida a cada 5 minutos e ao voltar para a aba. */
 export function useDadosComerciais() {
   const { atual } = useConsultoria()
+  const queryClient = useQueryClient()
   return useQuery({
     queryKey: [CHAVE_SITUACAO_COMERCIAL, atual.consultoriaId],
-    queryFn: () => obterDadosComerciais(atual.consultoriaId),
+    // Limites e tolerância do catálogo vigente (cache compartilhado com as telas de preço).
+    queryFn: () =>
+      obterDadosComerciais(atual.consultoriaId, () => queryClient.query(opcoesDoCatalogo)),
     refetchInterval: 5 * 60_000,
     refetchOnWindowFocus: true,
     retry: false,

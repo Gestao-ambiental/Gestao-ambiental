@@ -25,6 +25,7 @@ import { PaginaCalendario } from './paginas/calendario/PaginaCalendario'
 import { LayoutCentral } from './paginas/central/LayoutCentral'
 import { PaginaCentral } from './paginas/central/PaginaCentral'
 import { PaginaCentralFinanceiro } from './paginas/central/PaginaCentralFinanceiro'
+import { PaginaCentralParametros } from './paginas/central/PaginaCentralParametros'
 import { PaginaCentralValor } from './paginas/central/PaginaCentralValor'
 import { PaginaCentralConsultoria } from './paginas/central/PaginaCentralConsultoria'
 import { PaginaOcorrencia } from './paginas/ocorrencia/PaginaOcorrencia'
@@ -78,6 +79,7 @@ export const rotas: RouteObject[] = [
           { path: 'consultorias/:id', element: <PaginaCentralConsultoria /> },
           { path: 'financeiro', element: <PaginaCentralFinanceiro /> },
           { path: 'valor', element: <PaginaCentralValor /> },
+          { path: 'parametros', element: <PaginaCentralParametros /> },
         ],
       },
       {

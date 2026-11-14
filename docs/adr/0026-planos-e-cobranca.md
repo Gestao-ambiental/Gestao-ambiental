@@ -48,6 +48,14 @@
 - **Diálogo do adicional** ao convidar pessoa e ao ativar a licença que torna um empreendimento ativo, quando o banco pede a confirmação.
 - **Central:** página **Financeiro** (`/admin/financeiro`: MRR = mensal + anual/12 + adicionais, ticket médio, receita por plano, mensal × anual, pagantes, em teste, teste acabando nos próximos 3 dias úteis, beta, internas, em atraso, somente leitura, cancelados, teste encerrado; lista paginada por grupo) e, no detalhe da consultoria, **Plano e cobrança** (situação, uso, cobranças, ajustar dias de teste, marcar/desmarcar conta interna com motivo e histórico, simular atraso e pagamento).
 
+## 5a. Parâmetros pela central (protótipo, 14/11/2026)
+
+- Migration `20261114180000_parametros_comerciais.sql`; teste `supabase/tests/440_parametros_comerciais.test.sql`; página `/admin/parametros` (`PaginaCentralParametros.tsx`).
+- **Fonte da verdade é o banco.** `catalogo_comercial()` (qualquer pessoa logada) devolve os 3 planos e a configuração; o front mostra preço, nome e limite a partir dele (hook `useCatalogoComercial`, cache compartilhado). As funções de valor do domínio (`valorDoCiclo`, `adicionaisDoUso`, `passagemDoLimite`, `situacaoComercial` etc.) recebem o catálogo como parâmetro; `PLANOS` e as constantes ficam só como padrão (`CATALOGO_PADRAO`).
+- **Edição só pelo operador com dois fatores** (`central_atualizar_plano`, `central_atualizar_configuracao_comercial`), com **motivo obrigatório** e validação pelos checks das tabelas. Cada mudança grava antes e depois (jsonb), motivo, quem e quando em `private.parametro_comercial_historico` (append-only, mesma trigger do histórico da central); `central_historico_parametros` lista, paginado.
+- **Vale para as próximas cobranças.** A cobrança guarda o próprio `valor_centavos` ao ser criada; as funções do banco leem catálogo e configuração no momento do cálculo (nenhuma usa número fixo), então cobranças já criadas não mudam e as seguintes saem com o valor novo. O MRR da central passa a usar o preço novo para todas as assinaturas.
+- Tolerância do atraso, dias de teste padrão e fim do beta valem **na hora** para a situação calculada (inclusive de quem já está em teste sem dias próprios ou em atraso), porque situação é calculada e nunca gravada.
+
 ## 6. Fica para depois
 
 - **Integração real com o Asaas** (sandbox e produção com CNPJ): clientes, assinaturas (plano e "Adicionais do Grama"), página de pagamento (`invoiceUrl`), webhook com `asaas-access-token` e idempotência por id do evento, recálculo dos adicionais e CPF enviado direto ao Asaas sem gravar.

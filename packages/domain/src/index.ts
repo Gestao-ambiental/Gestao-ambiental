@@ -282,10 +282,12 @@ export type { CategoriaDeEmergencia, DuracaoDeSuporte } from './acesso-de-suport
 
 export {
   ADICIONAL_MENSAL_CENTAVOS,
+  CATALOGO_PADRAO,
   CODIGOS_DE_PLANO,
   DIAS_DE_TESTE_PADRAO,
   DIAS_UTEIS_DE_TOLERANCIA,
   DIAS_UTEIS_TESTE_ACABANDO,
+  FIM_DO_BETA_PADRAO,
   MENSALIDADES_NO_ANUAL,
   MOEDA,
   PLANOS,
@@ -320,8 +322,10 @@ export {
 export type {
   Adicionais,
   AssinaturaParaSituacao,
+  CatalogoComercial,
   CicloDoPlano,
   CodigoPlano,
+  ConfiguracaoComercial,
   EntradaDaSituacao,
   FormaDePagamento,
   Limites,

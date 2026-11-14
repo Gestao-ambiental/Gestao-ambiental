@@ -162,6 +162,11 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   dias_de_teste_invalidos: 'Use de 0 a 365 dias úteis.',
   valor_obrigatorio: 'Escolha marcar ou desmarcar.',
   grupo_invalido: 'Não foi possível concluir. Tente de novo.',
+  // Planos e parâmetros pela central
+  valores_invalidos:
+    'Confira os valores: preço, pessoas e empreendimentos acima de zero; anual de 1 a 12 mensalidades.',
+  plano_inexistente: 'Este plano não existe.',
+  catalogo_incompleto: 'Não foi possível carregar os planos. Tente de novo.',
 }
 
 const MENSAGENS_DO_AUTH: Record<string, string> = {

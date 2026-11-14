@@ -1262,6 +1262,11 @@ isOneToOne: false
 "carga_da_equipe":
 { Args: { "p_consultoria_id": string }; Returns: Json
                            },
+"catalogo_comercial":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "adicional_mensal_centavos": number,"codigo": string,"dias_de_teste_padrao": number,"dias_uteis_de_tolerancia": number,"empreendimentos": number,"fim_do_beta": string,"ia": boolean,"mensal_centavos": number,"mensalidades_no_anual": number,"moeda": string,"nome": string,"orcamentos": boolean,"ordem": number,"pessoas": number
+            }[]
+                           },
 "central_acessos_de_suporte":
 { Args: { "p_consultoria_id": string,"p_deslocamento"?: number,"p_limite"?: number }; Returns: {
               "aberto_por_nome": string,"ativo": boolean,"autorizado_por_nome": string,"aviso_visto_em": string,"aviso_visto_por_nome": string,"categoria": string,"encerrado_em": string,"encerrado_por_nome": string,"encerramento": string,"entradas": Json,"fim_previsto": string,"id": string,"inicio": string,"modo": string,"motivo": string,"total": number
@@ -1274,6 +1279,12 @@ isOneToOne: false
 { Args: { "p_deslocamento"?: number,"p_dias"?: number,"p_limite"?: number }; Returns: {
               "criada_em": string,"fuso": string,"id": string,"nome": string,"pessoas_ativas": number,"situacao": Database["public"]['Enums']["situacao_consultoria"],"total": number,"ultimo_uso_em": string
             }[]
+                           },
+"central_atualizar_configuracao_comercial":
+{ Args: { "p_adicional_mensal_centavos": number,"p_dias_de_teste_padrao": number,"p_dias_uteis_de_tolerancia": number,"p_fim_do_beta": string,"p_mensalidades_no_anual": number,"p_motivo": string }; Returns: undefined
+                           },
+"central_atualizar_plano":
+{ Args: { "p_codigo": string,"p_empreendimentos": number,"p_ia": boolean,"p_mensal_centavos": number,"p_motivo": string,"p_nome": string,"p_orcamentos": boolean,"p_pessoas": number }; Returns: undefined
                            },
 "central_cobrancas":
 { Args: { "p_consultoria_id": string,"p_deslocamento"?: number,"p_limite"?: number }; Returns: {
@@ -1293,6 +1304,11 @@ isOneToOne: false
 "central_historico_comercial":
 { Args: { "p_consultoria_id": string,"p_deslocamento"?: number,"p_limite"?: number }; Returns: {
               "alterada_em": string,"alterada_por_nome": string,"id": string,"motivo": string,"tipo": string,"total": number,"valor_anterior": string,"valor_novo": string
+            }[]
+                           },
+"central_historico_parametros":
+{ Args: { "p_deslocamento"?: number,"p_limite"?: number }; Returns: {
+              "alterada_em": string,"alterada_por_nome": string,"alvo": string,"antes": Json,"depois": Json,"id": string,"motivo": string,"total": number
             }[]
                            },
 "central_historico_situacao":

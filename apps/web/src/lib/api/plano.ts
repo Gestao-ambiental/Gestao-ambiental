@@ -10,6 +10,7 @@ import {
   ehSituacaoComercial,
   situacaoComercial,
   type AssinaturaParaSituacao,
+  type CatalogoComercial,
   type CicloDoPlano,
   type CodigoPlano,
   type DataCivil,
@@ -72,8 +73,14 @@ interface LinhaDaSituacao {
   cobranca_aberta_vencimento: string | null
 }
 
-/** Monta as entradas do domínio a partir da linha da RPC e calcula a situação. */
-export function dadosComerciaisDaLinha(linha: LinhaDaSituacao): DadosComerciais | null {
+/**
+ * Monta as entradas do domínio a partir da linha da RPC e calcula a situação com o catálogo lido do
+ * banco (sem ele, as constantes do domínio).
+ */
+export function dadosComerciaisDaLinha(
+  linha: LinhaDaSituacao,
+  catalogo?: CatalogoComercial,
+): DadosComerciais | null {
   const hoje = data(linha.hoje)
   const criadaEm = data(linha.criada_em)
   const fimDoBeta = data(linha.fim_do_beta)
@@ -94,15 +101,18 @@ export function dadosComerciaisDaLinha(linha: LinhaDaSituacao): DadosComerciais 
   const vencimentoAberto = data(linha.cobranca_aberta_vencimento)
   return {
     hoje,
-    situacao: situacaoComercial({
-      hoje,
-      criadaEm,
-      fimDoBeta,
-      diasDeTeste: linha.dias_de_teste,
-      interna: linha.interna,
-      assinatura,
-      vencimentosEmAberto,
-    }),
+    situacao: situacaoComercial(
+      {
+        hoje,
+        criadaEm,
+        fimDoBeta,
+        diasDeTeste: linha.dias_de_teste,
+        interna: linha.interna,
+        assinatura,
+        vencimentosEmAberto,
+      },
+      catalogo,
+    ),
     situacaoNoBanco: ehSituacaoComercial(linha.situacao) ? linha.situacao : null,
     assinatura,
     proximoVencimento: data(linha.proximo_vencimento),
@@ -125,13 +135,16 @@ export function dadosComerciaisDaLinha(linha: LinhaDaSituacao): DadosComerciais 
 }
 
 /** Situação comercial da consultoria (qualquer membro). Nulo quando o banco não devolveu nada. */
-export async function obterDadosComerciais(consultoriaId: string): Promise<DadosComerciais | null> {
+export async function obterDadosComerciais(
+  consultoriaId: string,
+  catalogo?: () => Promise<CatalogoComercial>,
+): Promise<DadosComerciais | null> {
   const { data: linhas, error } = await obterSupabase().rpc('situacao_comercial', {
     p_consultoria_id: consultoriaId,
   })
   if (error) throw error
   const linha = (Array.isArray(linhas) ? linhas[0] : null) as LinhaDaSituacao | null | undefined
-  return linha ? dadosComerciaisDaLinha(linha) : null
+  return linha ? dadosComerciaisDaLinha(linha, catalogo ? await catalogo() : undefined) : null
 }
 
 // ---------------------------------------------------------------------------
@@ -442,7 +455,10 @@ export interface PlanoNaCentral {
   situacaoAsaas: string | null
 }
 
-export async function obterPlanoNaCentral(consultoriaId: string): Promise<PlanoNaCentral> {
+export async function obterPlanoNaCentral(
+  consultoriaId: string,
+  catalogo?: () => Promise<CatalogoComercial>,
+): Promise<PlanoNaCentral> {
   const { data: linhas, error } = await obterSupabase().rpc('central_plano_da_consultoria', {
     p_consultoria_id: consultoriaId,
   })
@@ -450,12 +466,15 @@ export async function obterPlanoNaCentral(consultoriaId: string): Promise<PlanoN
   const l = linhas[0]
   if (!l) return { dados: null, condicaoRowVersion: 0, situacaoAsaas: null }
   return {
-    dados: dadosComerciaisDaLinha({
-      ...l,
-      cobranca_aberta_id: null,
-      cobranca_aberta_valor_centavos: null,
-      cobranca_aberta_vencimento: null,
-    }),
+    dados: dadosComerciaisDaLinha(
+      {
+        ...l,
+        cobranca_aberta_id: null,
+        cobranca_aberta_valor_centavos: null,
+        cobranca_aberta_vencimento: null,
+      },
+      catalogo ? await catalogo() : undefined,
+    ),
     condicaoRowVersion: l.condicao_row_version,
     situacaoAsaas: l.situacao_asaas,
   }

@@ -34,6 +34,31 @@ export interface CenarioDoisFatores {
   erroAoLer?: unknown
 }
 
+/**
+ * Linhas da RPC catalogo_comercial iguais às da migration (o padrão do domínio). Usadas quando o
+ * cenário não define `catalogo_comercial`, para as telas de preço e limite não pararem no erro.
+ */
+export const CATALOGO_COMERCIAL_FALSO = [
+  ['essencial', 'Essencial', 99000, 3, 10, false, false, 1],
+  ['equipe', 'Equipe', 129000, 10, 30, true, true, 2],
+  ['escala', 'Escala', 299000, 25, 100, true, true, 3],
+].map(([codigo, nome, mensal, pessoas, empreendimentos, orcamentos, ia, ordem]) => ({
+  codigo,
+  nome,
+  mensal_centavos: mensal,
+  pessoas,
+  empreendimentos,
+  orcamentos,
+  ia,
+  ordem,
+  adicional_mensal_centavos: 2000,
+  mensalidades_no_anual: 10,
+  dias_de_teste_padrao: 10,
+  dias_uteis_de_tolerancia: 2,
+  fim_do_beta: '2027-01-31',
+  moeda: 'BRL',
+}))
+
 export interface Cenario {
   sessao?: Session | null
   /** Resposta de cada RPC, por nome; função recebe os argumentos. */
@@ -185,7 +210,9 @@ function criar() {
   const auth = { ...funcoesDoAuth, mfa }
 
   const rpc = vi.fn((nome: string, args: Record<string, unknown> = {}) => {
-    const definida = cenario.rpc?.[nome]
+    const definida =
+      cenario.rpc?.[nome] ??
+      (nome === 'catalogo_comercial' ? { data: CATALOGO_COMERCIAL_FALSO } : undefined)
     const resposta = typeof definida === 'function' ? definida(args) : definida
     return Promise.resolve({ data: resposta?.data ?? null, error: resposta?.error ?? null })
   })
