@@ -54,6 +54,7 @@ export function moduloDaRota(caminho: string): ModuloDeUso | null {
     case 'acompanhamentos':
     case 'renovacoes':
     case 'licencas':
+    case 'residuos': // Resíduos, fase 1 (ADR-0028): MTR, CDF, conferência, painel e prazos
       return 'licencas_e_prazos'
     case 'orcamentos':
       return segundo !== undefined && terceiro === 'proposta' ? 'propostas' : 'orcamentos'

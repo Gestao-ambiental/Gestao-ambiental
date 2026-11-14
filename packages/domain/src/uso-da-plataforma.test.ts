@@ -28,6 +28,9 @@ describe('moduloDaRota', () => {
       '/renovacoes/i1',
       '/licencas/nova',
       '/licencas/i1/prazos',
+      '/residuos',
+      '/residuos/conferencia',
+      '/empreendimentos/e1/residuos',
     ]) {
       expect(moduloDaRota(caminho), caminho).toBe('licencas_e_prazos')
     }

@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
+import { SecaoResiduosDoEmpreendimento } from '@/app/paginas/residuos/registro'
 import { Carregando, EstadoErro, EstadoVazio } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
 import { Icone } from '@/components/ui/icone'
@@ -341,6 +342,8 @@ export function PaginaEmpreendimento() {
           ) : null}
         </div>
       </section>
+
+      <SecaoResiduosDoEmpreendimento empreendimentoId={id} />
 
       <DialogoEmpreendimento
         aberto={editarAberto}

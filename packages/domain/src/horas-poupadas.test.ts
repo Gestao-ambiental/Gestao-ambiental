@@ -86,8 +86,10 @@ describe('horas poupadas (ADR-0027)', () => {
 
   it('rotas de acompanhamento, semanas do mês, seletor e linha de base', () => {
     expect(
-      ['/', '/calendario', '/empreendimentos/e1', '/acompanhamentos'].map(ehRotaDeAcompanhamento),
-    ).toEqual([true, true, true, true])
+      ['/', '/calendario', '/empreendimentos/e1', '/acompanhamentos', '/residuos/painel'].map(
+        ehRotaDeAcompanhamento,
+      ),
+    ).toEqual([true, true, true, true, true])
     expect(
       ['/licencas/x/condicionantes', '/orcamentos', '/admin'].map(ehRotaDeAcompanhamento),
     ).toEqual([false, false, false])

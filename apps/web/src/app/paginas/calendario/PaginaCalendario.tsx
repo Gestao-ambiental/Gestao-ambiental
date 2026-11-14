@@ -14,6 +14,12 @@ import { Link } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Pagina } from '@/app/paginas/Pagina'
+import { EventoPrazoDeResiduo } from '@/app/paginas/residuos/prazos/EventoPrazoDeResiduo'
+import {
+  CHAVE_PRAZOS_RESIDUO,
+  agruparPrazosDeResiduoPorDia,
+  descricaoDoPrazoDeResiduo,
+} from '@/app/paginas/residuos/prazos/prazos-de-residuos'
 import { EstadoErro, EstadoVazio } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
 import { BotaoIcone } from '@/components/ui/botao-icone'
@@ -21,6 +27,7 @@ import { CaixaSelecao } from '@/components/ui/caixa-selecao'
 import { Dialogo } from '@/components/ui/dialogo'
 import { Icone } from '@/components/ui/icone'
 import { EsqueletoLinhas } from '@/components/ui/esqueleto'
+import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { listarMembrosAtivos } from '@/lib/api/licencas'
 import {
   listarCalendario,
@@ -28,6 +35,7 @@ import {
   type EventoDoCalendario,
   type FiltrosDoCalendario,
 } from '@/lib/api/prazos'
+import { prazosDasObrigacoesDeResiduo, type PrazoDeObrigacaoNoCalendario } from '@/lib/api/residuos'
 import { nomeDoMes } from '@/lib/datas'
 import { cn } from '@/lib/utils'
 
@@ -162,6 +170,18 @@ export function PaginaCalendario() {
     placeholderData: keepPreviousData,
     refetchInterval: 60_000,
   })
+  // Prazos das obrigações de resíduos (ADR-0028): não têm responsável nem unidade, então somem
+  // quando o filtro é por pessoa, unidade ou "sem responsável". Falhar aqui não derruba o calendário.
+  const semFiltroDePessoa = !filtros.responsavelId && !filtros.unidadeId && !filtros.semResponsavel
+  const residuos = useQuery({
+    queryKey: [CHAVE_PRAZOS_RESIDUO, cid, null, inicio, fim],
+    queryFn: () => prazosDasObrigacoesDeResiduo(cid, { de: inicio, ate: fim }),
+    placeholderData: keepPreviousData,
+    enabled: semFiltroDePessoa,
+  })
+  const residuosPorDia: Map<DataCivil, PrazoDeObrigacaoNoCalendario[]> = semFiltroDePessoa
+    ? agruparPrazosDeResiduoPorDia(residuos.data ?? [])
+    : new Map<DataCivil, PrazoDeObrigacaoNoCalendario[]>()
   const membros = useQuery({
     queryKey: ['membros-ativos', cid],
     queryFn: () => listarMembrosAtivos(cid),
@@ -191,7 +211,9 @@ export function PaginaCalendario() {
   const diasVisiveis = dias(inicio, fim)
   const semanas: DataCivil[][] = []
   for (let i = 0; i < diasVisiveis.length; i += 7) semanas.push(diasVisiveis.slice(i, i + 7))
-  const agenda = diasVisiveis.filter((d) => d >= hoje && (porDia.get(d)?.length ?? 0) > 0)
+  const quantosNoDia = (d: DataCivil) =>
+    (porDia.get(d)?.length ?? 0) + (residuosPorDia.get(d)?.length ?? 0)
+  const agenda = diasVisiveis.filter((d) => d >= hoje && quantosNoDia(d) > 0)
 
   return (
     <div className="flex flex-col gap-(--space-200)">
@@ -288,7 +310,14 @@ export function PaginaCalendario() {
         <span>Tracejado “Meta”: meta interna</span>
         <span>Âmbar com relógio: limite de protocolo</span>
         <span>Azul: validade da licença</span>
+        <span>Verde com “Resíduos”: obrigação de resíduos</span>
       </p>
+
+      {semFiltroDePessoa && residuos.isError ? (
+        <MensagemSecao role="alert" tom="atencao">
+          Não foi possível carregar os prazos de resíduos.
+        </MensagemSecao>
+      ) : null}
 
       {eventos.isError ? (
         <EstadoErro
@@ -325,10 +354,12 @@ export function PaginaCalendario() {
                   <tr key={semana[0]}>
                     {semana.map((dia) => {
                       const doDia = porDia.get(dia) ?? []
+                      const residuosDoDia = residuosPorDia.get(dia) ?? []
+                      const totalDoDia = doDia.length + residuosDoDia.length
                       const foraDoMes = modo === 'mes' && partes(dia)[1] !== mesRef
                       const ehHoje = dia === hoje
-                      const limite = modo === 'semana' ? doDia.length : VISIVEIS_POR_DIA
-                      const restantes = doDia.length - limite
+                      const limite = modo === 'semana' ? totalDoDia : VISIVEIS_POR_DIA
+                      const restantes = totalDoDia - limite
                       return (
                         <td
                           key={dia}
@@ -344,7 +375,7 @@ export function PaginaCalendario() {
                               onClick={() => {
                                 setDiaAberto(dia)
                               }}
-                              aria-label={`${formatarDataCivil(dia)}, ${String(doDia.length)} ${doDia.length === 1 ? 'evento' : 'eventos'}`}
+                              aria-label={`${formatarDataCivil(dia)}, ${String(totalDoDia)} ${totalDoDia === 1 ? 'evento' : 'eventos'}`}
                               className={cn(
                                 'inline-flex w-fit cursor-pointer items-center gap-(--space-050) rounded-(--radius) text-xs transicao-estado hover:underline',
                                 foraDoMes ? 'text-(--text-subtle)' : 'text-(--text)',
@@ -364,6 +395,12 @@ export function PaginaCalendario() {
                             </button>
                             {doDia.slice(0, limite).map((evento) => (
                               <Evento key={`${evento.tipo}:${evento.id}`} evento={evento} />
+                            ))}
+                            {residuosDoDia.slice(0, Math.max(0, limite - doDia.length)).map((p) => (
+                              <EventoPrazoDeResiduo
+                                key={`residuo:${p.obrigacaoId}:${p.prazo}`}
+                                prazo={p}
+                              />
                             ))}
                             {restantes > 0 ? (
                               <button
@@ -403,6 +440,13 @@ export function PaginaCalendario() {
                   {(porDia.get(dia) ?? []).map((evento) => (
                     <Evento key={`${evento.tipo}:${evento.id}`} evento={evento} inteiro />
                   ))}
+                  {(residuosPorDia.get(dia) ?? []).map((p) => (
+                    <EventoPrazoDeResiduo
+                      key={`residuo:${p.obrigacaoId}:${p.prazo}`}
+                      prazo={p}
+                      inteiro
+                    />
+                  ))}
                 </div>
               ))
             )}
@@ -419,12 +463,21 @@ export function PaginaCalendario() {
           diaAberto ? `${nomeDoDiaDaSemana(diaAberto)}, ${formatarDataCivil(diaAberto)}` : 'Dia'
         }
       >
-        {diaAberto && (porDia.get(diaAberto)?.length ?? 0) > 0 ? (
+        {diaAberto && quantosNoDia(diaAberto) > 0 ? (
           <ul className="flex flex-col gap-(--space-100)" aria-label="Eventos do dia">
             {(porDia.get(diaAberto) ?? []).map((evento) => (
               <li key={`${evento.tipo}:${evento.id}`} className="flex flex-col gap-(--space-025)">
                 <Evento evento={evento} inteiro />
                 <span className="text-xs text-(--text-subtle)">{descricaoDoEvento(evento)}</span>
+              </li>
+            ))}
+            {(residuosPorDia.get(diaAberto) ?? []).map((p) => (
+              <li
+                key={`residuo:${p.obrigacaoId}:${p.prazo}`}
+                className="flex flex-col gap-(--space-025)"
+              >
+                <EventoPrazoDeResiduo prazo={p} inteiro />
+                <span className="text-xs text-(--text-subtle)">{descricaoDoPrazoDeResiduo(p)}</span>
               </li>
             ))}
           </ul>

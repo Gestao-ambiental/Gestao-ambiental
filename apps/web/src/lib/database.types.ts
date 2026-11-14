@@ -135,6 +135,88 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"cdf": {
+                  Row: {
+                    "atualizado_em": string,"consultoria_id": string,"criado_em": string,"criado_por": string,"destinador_cnpj": string | null,"destinador_nome": string,"documento_id": string | null,"emitido_em": string,"empreendimento_id": string,"excluido_em": string | null,"excluido_por": string | null,"id": string,"numero": string,"observacao": string | null,"periodo_fim": string,"periodo_inicio": string,"row_version": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "atualizado_em"?: string,"consultoria_id": string,"criado_em"?: string,"criado_por": string,"destinador_cnpj"?: string | null,"destinador_nome": string,"documento_id"?: string | null,"emitido_em": string,"empreendimento_id": string,"excluido_em"?: string | null,"excluido_por"?: string | null,"id"?: string,"numero": string,"observacao"?: string | null,"periodo_fim": string,"periodo_inicio": string,"row_version"?: number
+                  }
+                  Update: {
+                    "atualizado_em"?: string,"consultoria_id"?: string,"criado_em"?: string,"criado_por"?: string,"destinador_cnpj"?: string | null,"destinador_nome"?: string,"documento_id"?: string | null,"emitido_em"?: string,"empreendimento_id"?: string,"excluido_em"?: string | null,"excluido_por"?: string | null,"id"?: string,"numero"?: string,"observacao"?: string | null,"periodo_fim"?: string,"periodo_inicio"?: string,"row_version"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "cdf_consultoria_id_fkey"
+      columns: ["consultoria_id"]
+isOneToOne: false
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "cdf_criado_por_fk"
+      columns: ["consultoria_id","criado_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "cdf_documento_fk"
+      columns: ["consultoria_id","documento_id"]
+isOneToOne: false
+      referencedRelation: "documento"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "cdf_empreendimento_fk"
+      columns: ["consultoria_id","empreendimento_id"]
+isOneToOne: false
+      referencedRelation: "empreendimento"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "cdf_excluido_por_fk"
+      columns: ["consultoria_id","excluido_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    }
+                  ]
+                },"cdf_mtr": {
+                  Row: {
+                    "cdf_id": string,"consultoria_id": string,"empreendimento_id": string,"id": string,"mtr_id": string,"mtr_item_id": string,"quantidade": number | null,"unidade": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "cdf_id": string,"consultoria_id": string,"empreendimento_id": string,"id"?: string,"mtr_id": string,"mtr_item_id": string,"quantidade"?: number | null,"unidade"?: string | null
+                  }
+                  Update: {
+                    "cdf_id"?: string,"consultoria_id"?: string,"empreendimento_id"?: string,"id"?: string,"mtr_id"?: string,"mtr_item_id"?: string,"quantidade"?: number | null,"unidade"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "cdf_mtr_cdf_fk"
+      columns: ["consultoria_id","empreendimento_id","cdf_id"]
+isOneToOne: false
+      referencedRelation: "cdf"
+      referencedColumns: ["consultoria_id","empreendimento_id","id"]
+    },{
+      foreignKeyName: "cdf_mtr_consultoria_id_fkey"
+      columns: ["consultoria_id"]
+isOneToOne: false
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "cdf_mtr_item_fk"
+      columns: ["consultoria_id","mtr_id","mtr_item_id"]
+isOneToOne: false
+      referencedRelation: "mtr_item"
+      referencedColumns: ["consultoria_id","mtr_id","id"]
+    },{
+      foreignKeyName: "cdf_mtr_mtr_fk"
+      columns: ["consultoria_id","empreendimento_id","mtr_id"]
+isOneToOne: false
+      referencedRelation: "mtr"
+      referencedColumns: ["consultoria_id","empreendimento_id","id"]
+    }
+                  ]
                 },"cliente": {
                   Row: {
                     "consultoria_id": string,"criado_em": string,"id": string,"nome": string,"nome_normalizado": string | null
@@ -745,6 +827,108 @@ isOneToOne: false
       referencedColumns: ["consultoria_id","id"]
     }
                   ]
+                },"mtr": {
+                  Row: {
+                    "atualizado_em": string,"consultoria_id": string,"criado_em": string,"criado_por": string,"destinador_cnpj": string | null,"destinador_nome": string,"documento_id": string | null,"emitido_em": string,"empreendimento_id": string,"excluido_em": string | null,"excluido_por": string | null,"id": string,"numero": string,"observacao": string | null,"row_version": number,"situacao": string,"transportador_cnpj": string | null,"transportador_nome": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "atualizado_em"?: string,"consultoria_id": string,"criado_em"?: string,"criado_por": string,"destinador_cnpj"?: string | null,"destinador_nome": string,"documento_id"?: string | null,"emitido_em": string,"empreendimento_id": string,"excluido_em"?: string | null,"excluido_por"?: string | null,"id"?: string,"numero": string,"observacao"?: string | null,"row_version"?: number,"situacao"?: string,"transportador_cnpj"?: string | null,"transportador_nome": string
+                  }
+                  Update: {
+                    "atualizado_em"?: string,"consultoria_id"?: string,"criado_em"?: string,"criado_por"?: string,"destinador_cnpj"?: string | null,"destinador_nome"?: string,"documento_id"?: string | null,"emitido_em"?: string,"empreendimento_id"?: string,"excluido_em"?: string | null,"excluido_por"?: string | null,"id"?: string,"numero"?: string,"observacao"?: string | null,"row_version"?: number,"situacao"?: string,"transportador_cnpj"?: string | null,"transportador_nome"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "mtr_consultoria_id_fkey"
+      columns: ["consultoria_id"]
+isOneToOne: false
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "mtr_criado_por_fk"
+      columns: ["consultoria_id","criado_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "mtr_documento_fk"
+      columns: ["consultoria_id","documento_id"]
+isOneToOne: false
+      referencedRelation: "documento"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "mtr_empreendimento_fk"
+      columns: ["consultoria_id","empreendimento_id"]
+isOneToOne: false
+      referencedRelation: "empreendimento"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "mtr_excluido_por_fk"
+      columns: ["consultoria_id","excluido_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    }
+                  ]
+                },"mtr_item": {
+                  Row: {
+                    "classe": string | null,"consultoria_id": string,"id": string,"mtr_id": string,"posicao": number,"quantidade": number,"residuo_codigo": string,"residuo_descricao": string,"unidade": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "classe"?: string | null,"consultoria_id": string,"id"?: string,"mtr_id": string,"posicao": number,"quantidade": number,"residuo_codigo": string,"residuo_descricao": string,"unidade": string
+                  }
+                  Update: {
+                    "classe"?: string | null,"consultoria_id"?: string,"id"?: string,"mtr_id"?: string,"posicao"?: number,"quantidade"?: number,"residuo_codigo"?: string,"residuo_descricao"?: string,"unidade"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "mtr_item_consultoria_id_fkey"
+      columns: ["consultoria_id"]
+isOneToOne: false
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "mtr_item_mtr_fk"
+      columns: ["consultoria_id","mtr_id"]
+isOneToOne: false
+      referencedRelation: "mtr"
+      referencedColumns: ["consultoria_id","id"]
+    }
+                  ]
+                },"obrigacao_residuo": {
+                  Row: {
+                    "ativa": boolean,"atualizado_em": string,"atualizado_por": string,"consultoria_id": string,"empreendimento_id": string,"id": string,"observacao": string | null,"tipo": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "ativa"?: boolean,"atualizado_em"?: string,"atualizado_por": string,"consultoria_id": string,"empreendimento_id": string,"id"?: string,"observacao"?: string | null,"tipo": string
+                  }
+                  Update: {
+                    "ativa"?: boolean,"atualizado_em"?: string,"atualizado_por"?: string,"consultoria_id"?: string,"empreendimento_id"?: string,"id"?: string,"observacao"?: string | null,"tipo"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "obrigacao_residuo_atualizado_por_fk"
+      columns: ["consultoria_id","atualizado_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "obrigacao_residuo_consultoria_id_fkey"
+      columns: ["consultoria_id"]
+isOneToOne: false
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "obrigacao_residuo_empreendimento_fk"
+      columns: ["consultoria_id","empreendimento_id"]
+isOneToOne: false
+      referencedRelation: "empreendimento"
+      referencedColumns: ["consultoria_id","id"]
+    }
+                  ]
                 },"ocorrencia": {
                   Row: {
                     "chave_idempotencia": string,"ciclo": number,"concluida_em": string | null,"concluida_por": string | null,"concluida_sem_evidencia": boolean,"condicionante_versao_id": string | null,"conferente_id": string | null,"consultoria_id": string,"criado_em": string,"id": string,"instrumento_id": string,"meta_interna": string | null,"prazo_oficial_atual": string,"prazo_oficial_original": string,"responsavel_id": string | null,"row_version": number,"situacao": Database["public"]['Enums']["situacao_ocorrencia"]
@@ -1300,6 +1484,9 @@ isOneToOne: false
 "alterar_papel":
 { Args: { "p_membro_id": string,"p_papel": Database["public"]['Enums']["papel_membro"] }; Returns: undefined
                            },
+"anexar_pdf_residuo":
+{ Args: { "p_caminho": string,"p_entidade": string,"p_nome_original": string,"p_registro_id": string,"p_sha256": string,"p_versao_id": string }; Returns: string
+                           },
 "assinar_plano_simulado":
 { Args: { "p_ciclo": string,"p_consultoria_id": string,"p_forma": string,"p_plano": string }; Returns: {
               "cobranca_id": string,"mudanca_em": string
@@ -1460,6 +1647,11 @@ isOneToOne: false
 "concluir_sem_evidencia":
 { Args: { "p_justificativa": string,"p_ocorrencia_id": string,"p_row_version": number }; Returns: number
                            },
+"conferencia_residuos":
+{ Args: { "p_consultoria_id": string,"p_empreendimento_id"?: string }; Returns: {
+              "cdfs": Json,"dias": number,"diferenca": number,"emitido_em": string,"empreendimento_id": string,"empreendimento_nome": string,"mtr_id": string,"mtr_item_id": string,"numero": string,"quantidade_cdf": number,"quantidade_mtr": number,"residuo_codigo": string,"residuo_descricao": string,"tipo": string,"unidade": string,"unidades_cdf": Json
+            }[]
+                           },
 "conferir_evidencia":
 { Args: { "p_decisao": Database["public"]['Enums']["decisao_conferencia"],"p_evidencia_id": string,"p_motivo": string }; Returns: undefined
                            },
@@ -1526,6 +1718,9 @@ isOneToOne: false
 "definir_meu_genero":
 { Args: { "p_genero": string }; Returns: undefined
                            },
+"definir_obrigacao_residuo":
+{ Args: { "p_ativa": boolean,"p_empreendimento_id": string,"p_observacao"?: string,"p_tipo": string }; Returns: string
+                           },
 "definir_profissao_e_cargo":
 { Args: { "p_cargo": string,"p_membro_id": string,"p_outras_profissoes"?: (string)[],"p_profissao": string,"p_profissao_em_curso"?: boolean }; Returns: undefined
                            },
@@ -1550,8 +1745,14 @@ isOneToOne: false
 "duplicar_orcamento":
 { Args: { "p_copiar_precos"?: boolean,"p_id": string,"p_novo_id": string }; Returns: string
                            },
+"editar_cdf":
+{ Args: { "p_destinador_cnpj": string,"p_destinador_nome": string,"p_emitido_em": string,"p_id": string,"p_mtrs": Json,"p_numero": string,"p_observacao"?: string,"p_periodo_fim": string,"p_periodo_inicio": string,"p_row_version": number }; Returns: number
+                           },
 "editar_empreendimento":
 { Args: { "p_cliente": string,"p_cnpj": string,"p_id": string,"p_nome": string }; Returns: undefined
+                           },
+"editar_mtr":
+{ Args: { "p_destinador_cnpj": string,"p_destinador_nome": string,"p_emitido_em": string,"p_id": string,"p_itens": Json,"p_numero": string,"p_observacao"?: string,"p_row_version": number,"p_situacao": string,"p_transportador_cnpj": string,"p_transportador_nome": string }; Returns: number
                            },
 "editar_unidade":
 { Args: { "p_endereco": string,"p_id": string,"p_nome": string }; Returns: undefined
@@ -1570,7 +1771,13 @@ isOneToOne: false
 "enviar_evidencia":
 { Args: { "p_caminho": string,"p_data_execucao": string,"p_evidencia_id": string,"p_nome_original": string,"p_ocorrencia_id": string,"p_sha256": string,"p_versao_id": string }; Returns: number
                            },
+"excluir_cdf":
+{ Args: { "p_id": string,"p_row_version": number }; Returns: undefined
+                           },
 "excluir_modelo_de_orcamento":
+{ Args: { "p_id": string,"p_row_version": number }; Returns: undefined
+                           },
+"excluir_mtr":
 { Args: { "p_id": string,"p_row_version": number }; Returns: undefined
                            },
 "excluir_orcamento":
@@ -1599,6 +1806,11 @@ isOneToOne: false
               "codigo": string,"data": string,"dias": number,"empreendimento_nome": string,"id": string,"instrumento_id": string,"licenca": string,"responsavel_nome": string,"sem_responsavel": boolean,"tipo_evento": string,"titulo": string,"unidade_nome": string
             }[]
                            },
+"listar_cdfs":
+{ Args: { "p_ate"?: string,"p_busca"?: string,"p_consultoria_id": string,"p_de"?: string,"p_deslocamento"?: number,"p_empreendimento_id"?: string,"p_limite"?: number }; Returns: {
+              "criado_em": string,"destinador_cnpj": string,"destinador_nome": string,"emitido_em": string,"empreendimento_id": string,"empreendimento_nome": string,"id": string,"mtrs": Json,"numero": string,"observacao": string,"pdf_caminho": string,"pdf_nome": string,"periodo_fim": string,"periodo_inicio": string,"row_version": number,"total": number
+            }[]
+                           },
 "listar_empreendimentos":
 { Args: { "p_busca"?: string,"p_consultoria_id": string,"p_deslocamento"?: number,"p_limite"?: number }; Returns: {
               "cliente_nome": string,"cnpj": string,"criado_em": string,"id": string,"licencas": Json,"nome": string,"total": number,"unidades": number
@@ -1606,6 +1818,11 @@ isOneToOne: false
                            },
 "listar_modelos_de_orcamento":
 { Args: { "p_busca"?: string,"p_consultoria_id": string,"p_deslocamento"?: number,"p_limite"?: number }; Returns: Json
+                           },
+"listar_mtrs":
+{ Args: { "p_ate"?: string,"p_busca"?: string,"p_consultoria_id": string,"p_de"?: string,"p_deslocamento"?: number,"p_empreendimento_id"?: string,"p_limite"?: number,"p_sem_cdf"?: boolean,"p_situacao"?: string }; Returns: {
+              "cdfs": Json,"criado_em": string,"destinador_cnpj": string,"destinador_nome": string,"emitido_em": string,"empreendimento_id": string,"empreendimento_nome": string,"id": string,"itens": Json,"numero": string,"observacao": string,"pdf_caminho": string,"pdf_nome": string,"row_version": number,"situacao": string,"tem_cdf": boolean,"total": number,"transportador_cnpj": string,"transportador_nome": string
+            }[]
                            },
 "listar_orcamentos":
 { Args: { "p_busca"?: string,"p_consultoria_id": string,"p_deslocamento"?: number,"p_limite"?: number,"p_lixeira"?: boolean,"p_situacao"?: Database["public"]['Enums']["situacao_orcamento"] }; Returns: {
@@ -1641,6 +1858,11 @@ isOneToOne: false
 "mudar_situacao_orcamento":
 { Args: { "p_id": string,"p_observacao"?: string,"p_para": string,"p_row_version": number }; Returns: number
                            },
+"obrigacoes_residuo":
+{ Args: { "p_empreendimento_id": string }; Returns: {
+              "ativa": boolean,"atualizado_em": string,"obrigacao_id": string,"observacao": string,"tipo": string
+            }[]
+                           },
 "obter_base_de_custos":
 { Args: { "p_consultoria_id": string }; Returns: Json
                            },
@@ -1669,6 +1891,16 @@ isOneToOne: false
 "pagar_cobranca_simulada":
 { Args: { "p_cobranca_id": string }; Returns: undefined
                            },
+"painel_residuos":
+{ Args: { "p_ate"?: string,"p_consultoria_id": string,"p_de"?: string,"p_empreendimento_id"?: string }; Returns: {
+              "destinador_nome": string,"empreendimento_id": string,"empreendimento_nome": string,"mes": string,"mtrs": number,"quantidade": number,"residuo_codigo": string,"residuo_descricao": string,"unidade": string
+            }[]
+                           },
+"prazos_obrigacoes_residuo":
+{ Args: { "p_ate"?: string,"p_consultoria_id": string,"p_de"?: string,"p_empreendimento_id"?: string }; Returns: {
+              "dias": number,"empreendimento_id": string,"empreendimento_nome": string,"inicio": string,"obrigacao_id": string,"observacao": string,"prazo": string,"referencia": string,"tipo": string
+            }[]
+                           },
 "publicar_configuracao_orcamento":
 { Args: { "p_consultoria_id": string,"p_row_version": number }; Returns: number
                            },
@@ -1678,6 +1910,9 @@ isOneToOne: false
 "reenviar_convite":
 { Args: { "p_convite_id": string }; Returns: string
                            },
+"registrar_cdf":
+{ Args: { "p_destinador_cnpj": string,"p_destinador_nome": string,"p_emitido_em": string,"p_empreendimento_id": string,"p_id": string,"p_mtrs": Json,"p_numero": string,"p_observacao"?: string,"p_periodo_fim": string,"p_periodo_inicio": string }; Returns: string
+                           },
 "registrar_envio_do_resumo":
 { Args: { "p_consultoria_id": string,"p_destinatarios": number,"p_mes": string }; Returns: boolean
                            },
@@ -1686,6 +1921,9 @@ isOneToOne: false
                            },
 "registrar_logo_da_consultoria":
 { Args: { "p_caminho": string,"p_consultoria_id": string,"p_nome_original": string,"p_sha256": string,"p_versao_id": string }; Returns: string
+                           },
+"registrar_mtr":
+{ Args: { "p_destinador_cnpj": string,"p_destinador_nome": string,"p_emitido_em": string,"p_empreendimento_id": string,"p_id": string,"p_itens": Json,"p_numero": string,"p_observacao"?: string,"p_situacao": string,"p_transportador_cnpj": string,"p_transportador_nome": string }; Returns: string
                            },
 "registrar_pdf_instrumento":
 { Args: { "p_caminho": string,"p_instrumento_id": string,"p_nome_original": string,"p_sha256": string,"p_versao_id": string }; Returns: string

@@ -151,7 +151,7 @@ export function useTarefas() {
 }
 
 /**
- * Tempo na área de licenças e prazos (visão da equipe, calendário, acompanhamentos,
+ * Tempo na área de licenças e prazos (visão da equipe, calendário, acompanhamentos, resíduos,
  * empreendimentos, ocorrência e renovação). Grava ao sair da área, ao esconder a aba e a cada 30
  * minutos ativos. Só com vínculo de verdade (o modo suporte não chama este hook).
  */

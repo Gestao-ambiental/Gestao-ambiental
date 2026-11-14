@@ -52,16 +52,21 @@ function segmentos(caminho: string): string[] {
 
 /**
  * Área de acompanhamento de licenças e prazos: visão da equipe, calendário, acompanhamentos,
- * empreendimentos, ocorrência e plano de renovação. O cadastro de licença fica fora (é medido
- * como cadastro).
+ * empreendimentos, ocorrência, plano de renovação e resíduos (ADR-0028). O cadastro de licença
+ * fica fora (é medido como cadastro).
  */
 export function ehRotaDeAcompanhamento(caminho: string): boolean {
   const [primeiro] = segmentos(caminho)
   return (
     primeiro === undefined ||
-    ['calendario', 'acompanhamentos', 'empreendimentos', 'ocorrencias', 'renovacoes'].includes(
-      primeiro,
-    )
+    [
+      'calendario',
+      'acompanhamentos',
+      'empreendimentos',
+      'ocorrencias',
+      'renovacoes',
+      'residuos',
+    ].includes(primeiro)
   )
 }
 

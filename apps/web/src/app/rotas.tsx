@@ -37,6 +37,11 @@ import { PaginaProposta } from './paginas/orcamentos/PaginaProposta'
 import { PaginaOrcamentos } from './paginas/orcamentos/PaginaOrcamentos'
 import { PaginaNaoEncontrada } from './paginas/paginas'
 import { PaginaPerfil } from './paginas/perfil/PaginaPerfil'
+import { LayoutResiduos } from './paginas/residuos/LayoutResiduos'
+import { PaginaResiduosPorEmpreendimento } from './paginas/residuos/PaginaResiduosPorEmpreendimento'
+import { PaginaConferenciaResiduos, PaginaPainelResiduos } from './paginas/residuos/painel'
+import { PaginaObrigacoesResiduos } from './paginas/residuos/prazos/PaginaObrigacoesResiduos'
+import { PaginaMtrs } from './paginas/residuos/registro'
 import { PaginaSeguranca } from './paginas/perfil/PaginaSeguranca'
 import { PaginaVisaoEquipe } from './paginas/visao/PaginaVisaoEquipe'
 import { PaginaResumoDoMes } from './indicadores/PaginaResumoDoMes'
@@ -102,9 +107,21 @@ export const rotas: RouteObject[] = [
               { path: 'calendario', element: <PaginaCalendario /> },
               { path: 'empreendimentos', element: <PaginaEmpreendimentos /> },
               { path: 'empreendimentos/:id', element: <PaginaEmpreendimento /> },
+              { path: 'empreendimentos/:id/residuos', element: <PaginaMtrs /> },
               { path: 'ocorrencias/:id', element: <PaginaOcorrencia /> },
               { path: 'acompanhamentos', element: <PaginaAcompanhamentos /> },
               { path: 'renovacoes/:instrumentoId', element: <PaginaPlanoRenovacao /> },
+              // Resíduos, fase 1 (sem integração com o IMA; ADR-0028): abas da área.
+              {
+                path: 'residuos',
+                element: <LayoutResiduos />,
+                children: [
+                  { index: true, element: <PaginaResiduosPorEmpreendimento /> },
+                  { path: 'conferencia', element: <PaginaConferenciaResiduos /> },
+                  { path: 'painel', element: <PaginaPainelResiduos /> },
+                  { path: 'prazos', element: <PaginaObrigacoesResiduos /> },
+                ],
+              },
               { path: 'orcamentos', element: <PaginaOrcamentos /> },
               { path: 'orcamentos/primeiros-passos', element: <PaginaPrimeirosPassos /> },
               { path: 'orcamentos/:id', element: <PaginaOrcamento /> },

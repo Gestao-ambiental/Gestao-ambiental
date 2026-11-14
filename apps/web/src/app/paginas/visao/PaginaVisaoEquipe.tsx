@@ -6,6 +6,7 @@ import { Link } from 'react-router'
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Pagina } from '@/app/paginas/Pagina'
 import { SiglaEmpreendimento } from '@/app/paginas/empreendimentos/SiglaEmpreendimento'
+import { ProximosPrazosDeResiduos } from '@/app/paginas/residuos/prazos/ProximosPrazosDeResiduos'
 import { Carregando, EstadoErro, EstadoVazio } from '@/components/estados'
 import { Avatar } from '@/components/ui/avatar'
 import { Botao } from '@/components/ui/botao'
@@ -630,6 +631,8 @@ export function PaginaVisaoEquipe() {
       <div role="tabpanel" aria-label={filtros.aba === 'todos' ? 'Toda a equipe' : 'Minhas ações'}>
         {tabela}
       </div>
+
+      <ProximosPrazosDeResiduos limite={5} ocultarSeVazio />
     </div>
   )
 }
