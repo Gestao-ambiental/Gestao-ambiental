@@ -2,9 +2,9 @@
 // texto de apresentação padrão. Uma por consultoria; só a Gestão lê e edita. A logo vai direto para
 // o Storage como objeto novo em consultoria_id/consultoria/<uuid>.<ext> e vira versão pela RPC.
 
-import type { Json } from '@/lib/database.types'
 import { obterSupabase } from '@/lib/supabase'
 
+import { objeto, texto } from './json'
 import { sha256 } from './ocorrencias'
 import { TIPOS_DE_FOTO } from './perfil'
 
@@ -44,10 +44,6 @@ export const IDENTIDADE_VAZIA: IdentidadeDaConsultoria = {
   rowVersion: 0,
 }
 
-function texto(valor: Json | undefined): string {
-  return typeof valor === 'string' ? valor : ''
-}
-
 /** Nunca salva: devolve a identidade vazia (versão 0). */
 export async function obterIdentidade(consultoriaId: string): Promise<IdentidadeDaConsultoria> {
   const supabase = obterSupabase()
@@ -55,7 +51,7 @@ export async function obterIdentidade(consultoriaId: string): Promise<Identidade
     p_consultoria_id: consultoriaId,
   })
   if (error) throw error
-  const i = typeof data === 'object' && data !== null && !Array.isArray(data) ? data : null
+  const i = objeto(data)
   if (!i) return IDENTIDADE_VAZIA
   const caminho = texto(i.logo_caminho)
   let logoUrl: string | null = null

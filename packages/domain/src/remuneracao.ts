@@ -3,7 +3,14 @@
 // forma de recebimento. A consultoria informa os valores; o sistema só divide. Ausente é
 // desconhecido, nunca zero. O banco faz a mesma conta (salvar_base_de_custos).
 
-import { ErroDeOrcamento, HORAS_DISPONIVEIS_MAXIMAS_MES, type LinhaDaEquipe } from './orcamento'
+import {
+  dividirArredondando,
+  ErroDeOrcamento,
+  exigirInteiro,
+  HORAS_DISPONIVEIS_MAXIMAS_MES,
+  PRECO_MAXIMO_CENTAVOS,
+  type LinhaDaEquipe,
+} from './orcamento'
 
 /** Meio período não é forma de recebimento: é a jornada (horas no mês) de uma destas formas. */
 export type FormaDeRecebimento = 'clt' | 'pro_labore' | 'estagio' | 'diaria' | 'projeto'
@@ -46,25 +53,21 @@ export interface ResumoDaPessoa {
 }
 
 function exigir(valor: number | null, maximo: number): void {
-  if (valor === null) return
-  if (!Number.isSafeInteger(valor) || valor < 0 || valor > maximo) {
-    throw new ErroDeOrcamento('valor_invalido')
-  }
+  if (valor !== null) exigirInteiro(valor, maximo)
 }
 
-/** round(a ÷ b), metade para cima, em inteiros (igual ao round() em numeric do banco). */
 function dividir(numerador: number, divisor: number): number {
-  return Number((BigInt(numerador) * 2n + BigInt(divisor)) / (BigInt(divisor) * 2n))
+  return dividirArredondando(BigInt(numerador), BigInt(divisor))
 }
 
 /** Hora de custo, custo do mês e capacidade de uma pessoa, conforme a forma de recebimento. */
 export function resumoDaPessoa(r: RemuneracaoDaPessoa): ResumoDaPessoa {
-  exigir(r.custoMensalCentavos, 99_999_999_999)
+  exigir(r.custoMensalCentavos, PRECO_MAXIMO_CENTAVOS)
   exigir(r.horasNoMes, HORAS_DISPONIVEIS_MAXIMAS_MES)
-  exigir(r.custoDiariaCentavos, 99_999_999_999)
+  exigir(r.custoDiariaCentavos, PRECO_MAXIMO_CENTAVOS)
   exigir(r.horasPorDiaria, HORAS_MAXIMAS_POR_DIARIA)
   exigir(r.diasNoMes, DIAS_MAXIMOS_NO_MES)
-  exigir(r.custoProjetoCentavos, 99_999_999_999)
+  exigir(r.custoProjetoCentavos, PRECO_MAXIMO_CENTAVOS)
   exigir(r.horasDoProjeto, HORAS_MAXIMAS_DO_PROJETO)
 
   if (r.forma === 'diaria') {

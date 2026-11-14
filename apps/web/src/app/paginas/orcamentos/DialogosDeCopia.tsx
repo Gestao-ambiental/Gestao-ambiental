@@ -10,7 +10,7 @@ import { mensagemDoErro } from '@/lib/erros'
 
 import { classeCampo } from './comum'
 
-/** Guarda o escopo do orçamento como modelo da consultoria: sem cliente nem preço. */
+/** Guarda o escopo do orçamento como modelo da consultoria: sem cliente; só o preço digitado vai junto. */
 export function DialogoSalvarModelo({
   aberto,
   aoMudar,
@@ -88,9 +88,9 @@ export function DialogoSalvarModelo({
     >
       <div className="flex flex-col gap-(--space-150)">
         <p className="text-(--text-subtle)">
-          O modelo guarda só o escopo: os serviços com a unidade e as horas, as despesas (a cotar),
-          premissas e exclusões. Sem cliente, preços, responsáveis nem meses. Ao usar, os preços vêm
-          da tabela de preços do momento.
+          O modelo guarda o escopo: os serviços com a unidade e as horas, as despesas (a cotar),
+          premissas e exclusões. Sem cliente, responsáveis nem meses. Dos preços, só os digitados
+          vão junto; os demais vêm da tabela de preços do momento.
         </p>
         <label htmlFor={idCampo} className="flex flex-col gap-(--space-050)">
           <span className="rotulo">Nome do modelo</span>

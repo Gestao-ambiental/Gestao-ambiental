@@ -3,7 +3,7 @@
 -- quebra este teste.
 begin;
 
-select plan(14);
+select plan(15);
 
 select is(
   (select coalesce(array_agg(c.relname::text order by c.relname), '{}')
@@ -108,6 +108,31 @@ select ok(
 
 select col_is_unique('public', 'membro', array['consultoria_id', 'id'],
   'membro tem unique (consultoria_id, id) para FKs compostas');
+
+-- Acesso de suporte (ADR-0025): o suporte só lê. Toda tabela de public com consultoria_id (e a
+-- própria consultoria) tem a trigger que barra a escrita de quem só tem acesso de suporte. As
+-- únicas exceções são as tabelas da plataforma, escritas só por RPCs com conferência própria.
+-- Uma tabela nova sem a trigger quebra este teste.
+select is(
+  (select coalesce(array_agg(c.relname::text order by c.relname), '{}')
+   from pg_catalog.pg_class as c
+   join pg_catalog.pg_namespace as n on n.oid = c.relnamespace
+   where n.nspname = 'public' and c.relkind in ('r', 'p')
+     and (c.relname = 'consultoria' or exists (
+       select 1 from pg_catalog.pg_attribute as a
+       where a.attrelid = c.oid and a.attname = 'consultoria_id' and not a.attisdropped))
+     and c.relname not in ('acesso_suporte', 'acesso_suporte_evento', 'consultoria_situacao_historico')
+     and not exists (
+       select 1 from pg_catalog.pg_trigger as t
+       join pg_catalog.pg_proc as p on p.oid = t.tgfoid
+       where t.tgrelid = c.oid and not t.tgisinternal
+         and t.tgname = '_suporte_somente_leitura'
+         and p.proname = 'bloquear_escrita_do_suporte'
+         -- BEFORE (bit 1), ROW (bit 0), INSERT (2), DELETE (3) e UPDATE (4)
+         and (t.tgtype & 31) = 31)),
+  '{}'::text[],
+  'toda tabela de public com consultoria_id tem a trigger que barra escrita do suporte'
+);
 
 select * from finish();
 

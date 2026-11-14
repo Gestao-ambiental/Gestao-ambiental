@@ -20,8 +20,16 @@ import { classeCampo } from './comum'
 
 export interface SelecaoDoModelo {
   modelo: string
-  /** horaVendaId: linha da tabela de preços salva no modelo da consultoria. */
-  etapas: { nome: string; horasSugeridas: number | null; horaVendaId?: string | null }[]
+  /**
+   * horaVendaId: linha da tabela de preços salva no modelo da consultoria; precoDigitadoCentavos: o
+   * preço digitado do serviço, quando ele não usa a tabela (ADR-0023).
+   */
+  etapas: {
+    nome: string
+    horasSugeridas: number | null
+    horaVendaId?: string | null
+    precoDigitadoCentavos?: number | null
+  }[]
   despesas: { nome: string; tratamento?: TratamentoDespesa }[]
   /** Só nos modelos da consultoria. */
   premissas?: string[]
@@ -37,7 +45,7 @@ function comoModeloDeServico(m: ModeloDeOrcamento): ModeloDeServico {
     jurisdicao: 'Modelo salvo pela consultoria',
     consultadoEm: null,
     fonte: null,
-    nota: 'Os preços vêm da tabela de preços atual. Informe quantidades, responsáveis e meses; as despesas entram a cotar.',
+    nota: 'Os preços vêm da tabela de preços atual; preços digitados vão junto. Informe quantidades, responsáveis e meses; as despesas entram a cotar.',
     etapas: m.itens.map((i) => ({
       nome: i.descricao,
       marcada: true,
@@ -198,6 +206,7 @@ export function DialogoModelo({
                             nome: e.nome,
                             horasSugeridas: e.horasSugeridas,
                             horaVendaId: proprio?.itens[i]?.horaVendaId ?? null,
+                            precoDigitadoCentavos: proprio?.itens[i]?.precoDigitadoCentavos ?? null,
                           },
                         ]
                       : [],

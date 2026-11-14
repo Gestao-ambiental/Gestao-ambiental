@@ -4,6 +4,7 @@
 import {
   FORMAS_DE_RECEBIMENTO,
   formatarCentavos,
+  formatarPontosBase,
   formatarReais,
   PROFISSOES,
   rotuloDaProfissao,
@@ -20,15 +21,16 @@ import { SelecaoDaLista } from '@/components/selecao-da-lista'
 import { Botao } from '@/components/ui/botao'
 import { BotaoIcone } from '@/components/ui/botao-icone'
 import { Icone } from '@/components/ui/icone'
+import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import type { CustoDaProfissao } from '@/lib/api/orcamentos'
 import { definirProfissaoECargo, type MembroAtivo } from '@/lib/api/perfil'
 import { mensagemDoErro } from '@/lib/erros'
 
-import { lerReaisOuZero, textoDasHoras } from './calculo'
+import { lerEstimativa, lerReaisOuZero, textoDasHoras } from './calculo'
 import {
+  CONTAS_SUGERIDAS,
   contaDaHoraDeCusto,
   lerInteiroOuNulo,
-  lerReaisOuNulo,
   remuneracaoDaLinha,
   ROTULO_DA_FORMA,
   type LinhaConta,
@@ -228,7 +230,7 @@ export function Equipe({
               ) => {
                 const valor = p[chave]
                 const invalido = opcoesDoCampo.reais
-                  ? lerReaisOuNulo(valor) === undefined
+                  ? lerEstimativa(valor) === undefined
                   : lerInteiroOuNulo(valor) === undefined
                 const idAviso = `aviso-${chave}-${p.id}`
                 // O campo começa na borda da célula, como o cabeçalho; a legenda fica à direita,
@@ -499,27 +501,33 @@ export function Linha({
 export function ContasDoMes({
   linhas,
   total,
-  aoMudar,
-  aoAdicionar,
-  aoSugerir,
-  aoRemover,
+  aoMudarLinhas,
   children,
 }: {
   linhas: readonly LinhaConta[]
   total: number
-  aoMudar: (id: string, alterar: (l: LinhaConta) => LinhaConta) => void
-  aoAdicionar: (descricao: string) => void
-  aoSugerir: () => void
-  aoRemover: (id: string) => void
+  /** Toda mudança da lista (editar, adicionar, sugerir e remover) passa por aqui. */
+  aoMudarLinhas: (alterar: (linhas: LinhaConta[]) => LinhaConta[]) => void
   /** Campo do total, mostrado enquanto não há contas detalhadas. */
   children: React.ReactNode
 }) {
+  function mudar(id: string, alterar: (l: LinhaConta) => LinhaConta) {
+    aoMudarLinhas((a) => a.map((l) => (l.id === id ? alterar(l) : l)))
+  }
+  function sugerir() {
+    aoMudarLinhas((a) => [
+      ...a,
+      ...CONTAS_SUGERIDAS.filter((nome) => !a.some((l) => l.descricao === nome)).map(
+        (descricao) => ({ id: crypto.randomUUID(), descricao, valor: '' }),
+      ),
+    ])
+  }
   if (linhas.length === 0) {
     return (
       <>
         {children}
         <div className="flex flex-wrap gap-(--space-100)">
-          <Botao aparencia="link" iconeAntes="list" onClick={aoSugerir}>
+          <Botao aparencia="link" iconeAntes="list" onClick={sugerir}>
             Detalhar contas do mês
           </Botao>
         </div>
@@ -558,7 +566,7 @@ export function ContasDoMes({
                       value={l.descricao}
                       onChange={(e) => {
                         const valor = e.target.value
-                        aoMudar(l.id, (x) => ({ ...x, descricao: valor }))
+                        mudar(l.id, (x) => ({ ...x, descricao: valor }))
                       }}
                     />
                   </td>
@@ -572,7 +580,7 @@ export function ContasDoMes({
                       value={l.valor}
                       onChange={(e) => {
                         const valor = reaisDigitados(e)
-                        aoMudar(l.id, (x) => ({ ...x, valor }))
+                        mudar(l.id, (x) => ({ ...x, valor }))
                       }}
                     />
                   </td>
@@ -581,7 +589,7 @@ export function ContasDoMes({
                       icone="trash-2"
                       rotulo={`Remover conta ${n}`}
                       onClick={() => {
-                        aoRemover(l.id)
+                        aoMudarLinhas((a) => a.filter((x) => x.id !== l.id))
                       }}
                     />
                   </td>
@@ -607,12 +615,30 @@ export function ContasDoMes({
           aparencia="link"
           iconeAntes="plus"
           onClick={() => {
-            aoAdicionar('')
+            aoMudarLinhas((a) => [...a, { id: crypto.randomUUID(), descricao: '', valor: '' }])
           }}
         >
           Adicionar conta
         </Botao>
       </div>
     </section>
+  )
+}
+
+/** Margem desejada abaixo da mínima: os orçamentos pela margem nascem com o aviso de margem baixa. */
+export function AvisoDeMargemBaixa({
+  desejada,
+  minima,
+}: {
+  desejada: number | null | undefined
+  minima: number | null | undefined
+}) {
+  if (desejada == null || minima == null || desejada >= minima) return null
+  return (
+    <MensagemSecao tom="atencao">
+      A margem desejada ({formatarPontosBase(desejada)}) está abaixo da mínima (
+      {formatarPontosBase(minima)}): os orçamentos calculados pela margem vão nascer com o aviso de
+      margem baixa.
+    </MensagemSecao>
   )
 }

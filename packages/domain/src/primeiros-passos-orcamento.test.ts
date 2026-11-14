@@ -1,14 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  ETAPAS_DA_CONFIGURACAO,
-  etapaDaConfiguracao,
   exibirConviteDeConfiguracao,
   horasDaEquipe,
   pendenciasDaConfiguracao,
   resumoDaConfiguracao,
   rotuloDoConviteDeConfiguracao,
-  valorFoiInformado,
   type PessoaDoRascunho,
 } from './primeiros-passos-orcamento'
 
@@ -54,21 +51,6 @@ describe('primeiros passos do orçamento', () => {
     expect(rotuloDoConviteDeConfiguracao({ ...estado, possuiRascunho: true })).toBe(
       'Continuar configuração',
     )
-  })
-
-  it('reconhece somente as seis etapas previstas', () => {
-    expect(ETAPAS_DA_CONFIGURACAO).toHaveLength(6)
-    for (const etapa of ETAPAS_DA_CONFIGURACAO) expect(etapaDaConfiguracao(etapa)).toBe(etapa)
-    expect(etapaDaConfiguracao('outra')).toBeNull()
-    expect(etapaDaConfiguracao(null)).toBeNull()
-  })
-
-  it('não confunde ausência com zero digitado', () => {
-    expect(valorFoiInformado(null)).toBe(false)
-    expect(valorFoiInformado(undefined)).toBe(false)
-    expect(valorFoiInformado(Number.NaN)).toBe(false)
-    expect(valorFoiInformado(0)).toBe(true)
-    expect(valorFoiInformado(12)).toBe(true)
   })
 })
 

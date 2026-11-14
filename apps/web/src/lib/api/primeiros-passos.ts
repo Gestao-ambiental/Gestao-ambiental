@@ -4,6 +4,7 @@
 import {
   FORMAS_DE_RECEBIMENTO,
   MODOS_DE_DESLOCAMENTO,
+  PASSO_DA_PENDENCIA,
   type DadosDaConfiguracao,
   type PassoContas,
   type PassoEquipe,
@@ -16,7 +17,13 @@ import {
 import type { Json } from '@/lib/database.types'
 import { obterSupabase } from '@/lib/supabase'
 
-import { horasDe, horasDeVendaParaOBanco, type HoraDeVenda } from './orcamentos'
+import { lista, objeto, textoOuNulo, type Objeto } from './json'
+import {
+  horasDe,
+  horasDeVendaParaOBanco,
+  pessoaDaEquipeParaOBanco,
+  type HoraDeVenda,
+} from './orcamentos'
 
 export type DadosDoRascunho = DadosDaConfiguracao<HoraDeVenda>
 
@@ -51,35 +58,12 @@ export type PassoSalvo =
   | { etapa: 4; dados: PassoTributos }
   | { etapa: 5 }
 
-const PENDENCIAS: readonly PendenciaDaConfiguracao[] = [
-  'equipe',
-  'horas',
-  'contas',
-  'precos',
-  'tributos',
-  'taxas',
-  'margens',
-]
+const PENDENCIAS = Object.keys(PASSO_DA_PENDENCIA) as PendenciaDaConfiguracao[]
 
 // ---------------------------------------------------------------------------
 // Leitura defensiva
 // ---------------------------------------------------------------------------
 
-type Objeto = Record<string, Json | undefined>
-
-function objeto(valor: Json | undefined): Objeto | null {
-  return typeof valor === 'object' && valor !== null && !Array.isArray(valor) ? valor : null
-}
-function lista(valor: Json | undefined): Objeto[] {
-  if (!Array.isArray(valor)) return []
-  return valor.flatMap((item): Objeto[] => {
-    const lido = objeto(item)
-    return lido ? [lido] : []
-  })
-}
-function textoOuNulo(valor: Json | undefined): string | null {
-  return typeof valor === 'string' ? valor : null
-}
 /** Número ou nulo: o nulo do rascunho continua nulo (nunca vira zero). */
 function numeroOuNulo(valor: Json | undefined): number | null {
   return typeof valor === 'number' && Number.isFinite(valor) ? valor : null
@@ -188,20 +172,7 @@ function passoParaOBanco(passo: PassoSalvo): Json {
       return {
         modo: passo.dados.modo,
         hora_tecnica_centavos: passo.dados.horaTecnicaCentavos,
-        equipe: passo.dados.equipe.map((p) => ({
-          id: p.id,
-          membro_id: p.membroId,
-          socio: p.socio,
-          profissao: p.profissao,
-          tipo_recebimento: p.forma,
-          custo_mensal_centavos: p.custoMensalCentavos,
-          horas_disponiveis_mes: p.horasNoMes,
-          custo_diaria_centavos: p.custoDiariaCentavos,
-          horas_por_diaria: p.horasPorDiaria,
-          dias_no_mes: p.diasNoMes,
-          custo_projeto_centavos: p.custoProjetoCentavos,
-          horas_projeto: p.horasDoProjeto,
-        })),
+        equipe: passo.dados.equipe.map(pessoaDaEquipeParaOBanco),
       }
     case 2:
       return {

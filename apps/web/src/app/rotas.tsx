@@ -22,6 +22,9 @@ import { ErroDeRota } from './paginas/ErroDeRota'
 import { PaginaAcompanhamentos } from './paginas/acompanhamentos/PaginaAcompanhamentos'
 import { PaginaPlanoRenovacao } from './paginas/acompanhamentos/PaginaPlanoRenovacao'
 import { PaginaCalendario } from './paginas/calendario/PaginaCalendario'
+import { LayoutCentral } from './paginas/central/LayoutCentral'
+import { PaginaCentral } from './paginas/central/PaginaCentral'
+import { PaginaCentralConsultoria } from './paginas/central/PaginaCentralConsultoria'
 import { PaginaOcorrencia } from './paginas/ocorrencia/PaginaOcorrencia'
 import { PaginaCustosETaxas } from './paginas/orcamentos/PaginaCustosETaxas'
 import { PaginaDadosDaProposta } from './paginas/orcamentos/PaginaDadosDaProposta'
@@ -31,12 +34,14 @@ import { PaginaProposta } from './paginas/orcamentos/PaginaProposta'
 import { PaginaOrcamentos } from './paginas/orcamentos/PaginaOrcamentos'
 import { PaginaNaoEncontrada } from './paginas/paginas'
 import { PaginaPerfil } from './paginas/perfil/PaginaPerfil'
+import { PaginaSeguranca } from './paginas/perfil/PaginaSeguranca'
 import { PaginaVisaoEquipe } from './paginas/visao/PaginaVisaoEquipe'
 import { RequerSessao } from './sessao/RequerSessao'
 
 /**
  * Rotas do app. Públicas: entrar, senha, criar conta e convite. Com login e sem consultoria:
- * escolher e criar consultoria. O resto exige login e um vínculo ativo escolhido (ACC-04).
+ * escolher e criar consultoria e a central administrativa (/admin, ADM-01: o operador pode não ser
+ * membro de nenhuma consultoria). O resto exige login e um vínculo ativo escolhido (ACC-04).
  * Proteger rota é apresentação: quem decide o acesso aos dados é a RLS.
  */
 export const rotas: RouteObject[] = [
@@ -62,6 +67,14 @@ export const rotas: RouteObject[] = [
     element: <RequerSessao />,
     errorElement: <ErroDeRota />,
     children: [
+      {
+        path: 'admin',
+        element: <LayoutCentral />,
+        children: [
+          { index: true, element: <PaginaCentral /> },
+          { path: 'consultorias/:id', element: <PaginaCentralConsultoria /> },
+        ],
+      },
       {
         element: <RequerConsultoria />,
         children: [
@@ -91,6 +104,7 @@ export const rotas: RouteObject[] = [
               { path: 'configuracoes/custos', element: <PaginaCustosETaxas /> },
               { path: 'configuracoes/proposta', element: <PaginaDadosDaProposta /> },
               { path: 'perfil', element: <PaginaPerfil /> },
+              { path: 'seguranca', element: <PaginaSeguranca /> },
               { path: '*', element: <PaginaNaoEncontrada /> },
             ],
           },

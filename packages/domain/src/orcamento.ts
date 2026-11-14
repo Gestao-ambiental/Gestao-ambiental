@@ -27,8 +27,9 @@ export class ErroDeOrcamento extends Error {
   }
 }
 
-function exigirCentavos(valor: number): void {
-  if (!Number.isSafeInteger(valor) || valor < 0 || valor > PRECO_MAXIMO_CENTAVOS) {
+/** Inteiro de 0 a `maximo`; fora disso, `valor_invalido`. Usado pelos outros módulos do domínio. */
+export function exigirInteiro(valor: number, maximo: number): void {
+  if (!Number.isSafeInteger(valor) || valor < 0 || valor > maximo) {
     throw new ErroDeOrcamento('valor_invalido')
   }
 }
@@ -39,14 +40,19 @@ function exigirPontosBase(valor: number): void {
   }
 }
 
-/** `numerador ÷ divisor` arredondado ao inteiro mais próximo (meio sobe), sem ponto flutuante. */
-function dividirArredondando(numerador: bigint, divisor: bigint): number {
+/**
+ * `numerador ÷ divisor` arredondado ao inteiro mais próximo (meio sobe), sem ponto flutuante: igual
+ * ao round() em numeric do banco. Usado pelos outros módulos do domínio. Negativo arredonda como o
+ * banco, com o meio para longe do zero (−2,5 → −3), e divisão exata fica exata (−21.000 ÷ 1 = −21.000).
+ */
+export function dividirArredondando(numerador: bigint, divisor: bigint): number {
+  if (numerador < 0n) return -dividirArredondando(-numerador, divisor)
   return Number((numerador * 2n + divisor) / (divisor * 2n))
 }
 
 /** Parte inteira de `valor × pontosBase ÷ 10.000`, arredondada ao centavo mais próximo. */
 export function aplicarPontosBase(valorCentavos: number, pontosBase: number): number {
-  exigirCentavos(valorCentavos)
+  exigirInteiro(valorCentavos, PRECO_MAXIMO_CENTAVOS)
   exigirPontosBase(pontosBase)
   return Math.round((valorCentavos * pontosBase) / PONTOS_BASE_TOTAL)
 }
@@ -69,7 +75,7 @@ export interface BaseDeCustos {
  * é apresentado como zero.
  */
 export function custoFixoPorHora(base: BaseDeCustos): number | null {
-  exigirCentavos(base.custosFixosMensaisCentavos)
+  exigirInteiro(base.custosFixosMensaisCentavos, PRECO_MAXIMO_CENTAVOS)
   if (!Number.isFinite(base.horasFaturaveisMes) || base.horasFaturaveisMes <= 0) return null
   return Math.round(base.custosFixosMensaisCentavos / base.horasFaturaveisMes)
 }
@@ -108,7 +114,7 @@ export interface ComposicaoDaEquipe {
 }
 
 function exigirLinhaDaEquipe(linha: LinhaDaEquipe): void {
-  exigirCentavos(linha.custoMensalCentavos)
+  exigirInteiro(linha.custoMensalCentavos, PRECO_MAXIMO_CENTAVOS)
   if (
     !Number.isSafeInteger(linha.horasDisponiveisMes) ||
     linha.horasDisponiveisMes < 0 ||
@@ -173,8 +179,8 @@ export function custoDoItem(
   ) {
     throw new ErroDeOrcamento('valor_invalido')
   }
-  exigirCentavos(item.custoDiretoExtraCentavos)
-  exigirCentavos(base.horaTecnicaCentavos)
+  exigirInteiro(item.custoDiretoExtraCentavos, PRECO_MAXIMO_CENTAVOS)
+  exigirInteiro(base.horaTecnicaCentavos, PRECO_MAXIMO_CENTAVOS)
   const minutos = BigInt(item.minutos)
   const diretoCentavos =
     dividirArredondando(minutos * BigInt(base.horaTecnicaCentavos), 60n) +
@@ -190,91 +196,8 @@ export function custoDoItem(
 }
 
 // ---------------------------------------------------------------------------
-// Preço sugerido e resultado
+// Margem
 // ---------------------------------------------------------------------------
-
-export interface PercentuaisDoPreco {
-  /** Margem desejada sobre o preço de venda (não é acréscimo sobre o custo). */
-  margemPontosBase: number
-  /** Tributos sobre o faturamento, alíquota efetiva informada pela contabilidade. */
-  tributosPontosBase: number
-  /** Taxas de cobrança que são percentual do preço (cartão). Pix e boleto são fixas. */
-  taxasPontosBase: number
-}
-
-/**
- * Preço = (custos + custos fixos por cobrança e assinatura) ÷ (1 − margem − tributos − taxas).
- * Percentuais que somam 100% ou mais não têm preço possível.
- */
-export function precoSugerido(
-  custoTotalCentavos: number,
-  custosFixosPorCobrancaCentavos: number,
-  percentuais: PercentuaisDoPreco,
-): number {
-  exigirCentavos(custoTotalCentavos)
-  exigirCentavos(custosFixosPorCobrancaCentavos)
-  exigirPontosBase(percentuais.margemPontosBase)
-  exigirPontosBase(percentuais.tributosPontosBase)
-  exigirPontosBase(percentuais.taxasPontosBase)
-  const soma =
-    percentuais.margemPontosBase + percentuais.tributosPontosBase + percentuais.taxasPontosBase
-  if (soma >= PONTOS_BASE_TOTAL) throw new ErroDeOrcamento('percentuais_invalidos')
-  const preco = Math.round(
-    ((custoTotalCentavos + custosFixosPorCobrancaCentavos) * PONTOS_BASE_TOTAL) /
-      (PONTOS_BASE_TOTAL - soma),
-  )
-  exigirCentavos(preco)
-  return preco
-}
-
-/**
- * Preço automático de um item: o custo dele (horas, rateio e outros custos) dividido por
- * (1 − margem desejada − tributos − taxas). As taxas fixas por cobrança e assinatura ficam no total
- * do orçamento, não no item. O banco grava o mesmo valor (private.preco_automatico_do_item).
- */
-export function precoAutomaticoDoItem(
-  custoCentavos: number,
-  percentuais: PercentuaisDoPreco,
-): number {
-  return precoSugerido(custoCentavos, 0, percentuais)
-}
-
-export interface ResultadoDoPreco {
-  tributosCentavos: number
-  taxasCentavos: number
-  /** Preço − custos − fixos por cobrança − tributos − taxas. Pode ser negativo. */
-  resultadoCentavos: number
-  /** Resultado ÷ preço. `null` com preço zero. */
-  margemPontosBase: number | null
-}
-
-/** O que sobra com o preço praticado, depois de tributos e taxas. */
-export function resultadoDoPreco(
-  precoCentavos: number,
-  custoTotalCentavos: number,
-  custosFixosPorCobrancaCentavos: number,
-  percentuais: Pick<PercentuaisDoPreco, 'tributosPontosBase' | 'taxasPontosBase'>,
-): ResultadoDoPreco {
-  exigirCentavos(custoTotalCentavos)
-  exigirCentavos(custosFixosPorCobrancaCentavos)
-  const tributosCentavos = aplicarPontosBase(precoCentavos, percentuais.tributosPontosBase)
-  const taxasCentavos = aplicarPontosBase(precoCentavos, percentuais.taxasPontosBase)
-  const resultadoCentavos =
-    precoCentavos -
-    custoTotalCentavos -
-    custosFixosPorCobrancaCentavos -
-    tributosCentavos -
-    taxasCentavos
-  return {
-    tributosCentavos,
-    taxasCentavos,
-    resultadoCentavos,
-    margemPontosBase:
-      precoCentavos === 0
-        ? null
-        : Math.round((resultadoCentavos * PONTOS_BASE_TOTAL) / precoCentavos),
-  }
-}
 
 /** Acréscimo sobre o custo que equivale a uma margem sobre o preço: m ÷ (1 − m). */
 export function acrescimoEquivalente(margemPontosBase: number): number {
@@ -307,7 +230,7 @@ export function situacaoDaMargem(
  * a soma é sempre igual ao total, nenhuma parcela é negativa e, no empate, ganha a primeira.
  */
 export function distribuirPorMaiorResto(totalCentavos: number, pesos: readonly number[]): number[] {
-  exigirCentavos(totalCentavos)
+  exigirInteiro(totalCentavos, PRECO_MAXIMO_CENTAVOS)
   if (pesos.length === 0) throw new ErroDeOrcamento('sem_parcelas')
   if (pesos.length > MAXIMO_PARCELAS) throw new ErroDeOrcamento('parcelas_demais')
   if (pesos.some((peso) => !Number.isSafeInteger(peso) || peso < 0)) {

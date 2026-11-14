@@ -1,5 +1,7 @@
-import { useEffect, type ReactNode } from 'react'
+import { useContext, useEffect, type ReactNode } from 'react'
 import { Link } from 'react-router'
+
+import { ContextoConsultoria } from '@/app/consultoria/contexto-consultoria'
 
 import { Botao } from '@/components/ui/botao'
 import { Icone } from '@/components/ui/icone'
@@ -43,6 +45,8 @@ export function MolduraCadastro({
   larga = false,
   children,
 }: Props) {
+  // Em modo suporte a faixa do suporte fica acima: a moldura ocupa o resto da altura (ADR-0025).
+  const suporte = useContext(ContextoConsultoria)?.suporte ?? null
   const indiceAtual = PASSOS.findIndex((p) => p.chave === passo)
   const titulo = identificacao ? `Cadastrar licença · ${identificacao}` : 'Cadastrar licença'
 
@@ -51,7 +55,9 @@ export function MolduraCadastro({
   }, [titulo])
 
   return (
-    <div className="flex h-dvh flex-col bg-(--surface-sunken)">
+    <div
+      className={cn('flex flex-col bg-(--surface-sunken)', suporte ? 'min-h-0 flex-1' : 'h-dvh')}
+    >
       <a
         href="#conteudo"
         className="sr-only focus:not-sr-only focus:absolute focus:top-(--space-100) focus:left-(--space-100) focus:z-50 focus:rounded-(--radius) focus:bg-(--surface-overlay) focus:px-(--space-150) focus:py-(--space-100)"

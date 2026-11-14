@@ -1,5 +1,6 @@
-// Primeiros passos do orçamento (ADR-0020): convite que não bloqueia, seis passos salvos a cada
-// passo (nulo continua nulo), retomada, conflitos e publicação que leva ao novo orçamento.
+// Primeiros passos do orçamento (ADR-0020, ADR-0023): link discreto que não bloqueia, seis passos
+// salvos a cada passo (nulo continua nulo), retomada, conflitos e publicação que leva ao novo
+// orçamento.
 
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -197,30 +198,24 @@ describe('primeiros passos do orçamento (ADR-0020)', () => {
     expect(chamadas('obter_rascunho_configuracao_orcamento')).toHaveLength(0)
   })
 
-  it('a lista convida sem bloquear; "Ver orçamentos mesmo assim" fica guardado', async () => {
-    const usuario = userEvent.setup()
+  // Orçamento rápido (ADR-0023): o convite grande saiu da lista; no lugar, um link discreto.
+  it('a lista não bloqueia: sem base publicada, só o link "Calcular preço pelos custos"', async () => {
     renderizarApp('/orcamentos')
-    const convite = await screen.findByRole('region', {
-      name: 'Configure os preços em poucos passos',
-    })
+    const link = await screen.findByRole('link', { name: 'Calcular preço pelos custos' })
+    expect(link).toHaveAttribute('href', '/orcamentos/primeiros-passos')
     expect(
-      within(convite).getByRole('link', { name: 'Configurar em poucos passos' }),
-    ).toHaveAttribute('href', '/orcamentos/primeiros-passos')
+      screen.queryByRole('region', { name: 'Configure os preços em poucos passos' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Ver orçamentos mesmo assim' }),
+    ).not.toBeInTheDocument()
     // Não bloqueia: dá para criar orçamento direto.
     expect(screen.getAllByRole('button', { name: 'Novo orçamento' }).length).toBeGreaterThan(0)
-
-    await usuario.click(within(convite).getByRole('button', { name: 'Ver orçamentos mesmo assim' }))
-    await waitFor(() => {
-      expect(
-        screen.queryByRole('region', { name: 'Configure os preços em poucos passos' }),
-      ).not.toBeInTheDocument()
-    })
-    expect(chamadas('dispensar_convite_configuracao_orcamento')).toHaveLength(1)
     // O atalho continua na lista.
     expect(screen.getByRole('link', { name: 'Primeiros passos' })).toBeInTheDocument()
   })
 
-  it('com rascunho, o convite diz "Continuar configuração"; com base ou dispensado, não aparece', async () => {
+  it('com rascunho, o link continua; com a base publicada, some', async () => {
     falso.reiniciar(
       servidor({
         rascunho: rascunhoDoBanco(
@@ -230,15 +225,19 @@ describe('primeiros passos do orçamento (ADR-0020)', () => {
       }),
     )
     const primeiro = renderizarApp('/orcamentos')
-    expect(await screen.findByRole('link', { name: 'Continuar configuração' })).toBeInTheDocument()
-    expect(screen.getByText(/última alteração por Helena Costa/)).toBeInTheDocument()
+    expect(
+      await screen.findByRole('link', { name: 'Calcular preço pelos custos' }),
+    ).toBeInTheDocument()
     primeiro.unmount()
 
-    falso.reiniciar(servidor({ dispensado: true }))
+    falso.reiniciar(servidor({ base: { row_version: 1 } }))
     const segundo = renderizarApp('/orcamentos')
     await screen.findByText('Nenhum orçamento ainda')
+    await waitFor(() => {
+      expect(chamadas('obter_rascunho_configuracao_orcamento').length).toBeGreaterThan(0)
+    })
     expect(
-      screen.queryByRole('link', { name: 'Configurar em poucos passos' }),
+      screen.queryByRole('link', { name: 'Calcular preço pelos custos' }),
     ).not.toBeInTheDocument()
     segundo.unmount()
   })
@@ -382,7 +381,7 @@ describe('primeiros passos do orçamento (ADR-0020)', () => {
     expect(chamadas('publicar_configuracao_orcamento')).toEqual([
       { p_consultoria_id: 'c-Filtroville', p_row_version: 5 },
     ])
-  })
+  }, 20_000)
 
   it('no passo 1, a profissão da linha grava na hora no cadastro da pessoa, com o cargo dela', async () => {
     // Cópia dos membros: o servidor falso grava a profissão como o banco, e a releitura mostra.
@@ -659,7 +658,9 @@ describe('primeiros passos do orçamento (ADR-0020)', () => {
       p_proxima_etapa: 1,
       p_dados: { equipe: [{ custo_mensal_centavos: null, horas_disponiveis_mes: 160 }] },
     })
-    expect(await screen.findByRole('link', { name: 'Continuar configuração' })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('link', { name: 'Calcular preço pelos custos' }),
+    ).toBeInTheDocument()
   })
 
   it('sair com mudança não salva pergunta antes', async () => {

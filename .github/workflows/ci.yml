@@ -3,7 +3,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, branch-do-duds]
 
 # Um push novo no mesmo PR cancela a execução anterior; na main, cada push roda até o fim.
 concurrency:
@@ -105,7 +105,8 @@ jobs:
           deno-version: v2.x
       - name: Checagem de tipos
         working-directory: supabase/functions
-        run: deno check --config deno.json extrair-licenca/index.ts
-      - name: Testes das regras da extração
+        run: deno check --config deno.json extrair-licenca/index.ts avisar-acesso-de-suporte/index.ts
+      # _shared/ tem os testes da extração e do aviso de acesso de suporte (ADR-0025).
+      - name: Testes das regras das funções
         working-directory: supabase/functions
         run: deno test --config deno.json _shared/

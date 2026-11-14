@@ -16,17 +16,17 @@
 
 ## 1. Onde estamos
 
-| Etapa | Situação |
-|---|---|
-| ADR-0018, fatias 2 a 6 (unidades, remuneração, faixas e mínimo, modelos e duplicar, situação e proposta) | **Feito e commitado** em `1afce02` |
-| Correções de celular depois da revisão a 375 px | Feito e commitado (commit "feat: textos e leitura do orçamento", logo depois de `1afce02`) |
-| Textos do segundo teste com os 20 donos | Feito e commitado (mesmo commit) |
-| ADR-0019 (usabilidade), escrito pelo ChatGPT, com as respostas do Eduardo na seção 11 | Feito e commitado (mesmo commit) |
-| ADR-0019, fatia 1: textos e leitura | Feito e commitado (mesmo commit; seção 3) |
-| ADR-0019, fatia 2: primeira configuração | Feito e commitado em `2e1c670` (seção 3b) |
-| ADR-0019, fatia 3: cartões no celular e tabela do notebook | Feito e commitado em `2e1c670` (seção 3c) |
-| ADR-0019, fatias 4 a 6 | A fazer: a próxima é a **fatia 4, ART/RRT** (seção 4) |
-| Primeiros passos do orçamento (tela de configuração inicial) | Feito e commitado em `2e1c670`, já na `branch-do-duds` local: ADR-0020 §8 e seção 4b. As escolhas do ADR-0020 §8.3 foram confirmadas pelo Eduardo; falta o job `banco` do CI |
+| Etapa                                                                                                    | Situação                                                                                                                                                                     |
+| -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ADR-0018, fatias 2 a 6 (unidades, remuneração, faixas e mínimo, modelos e duplicar, situação e proposta) | **Feito e commitado** em `1afce02`                                                                                                                                           |
+| Correções de celular depois da revisão a 375 px                                                          | Feito e commitado (commit "feat: textos e leitura do orçamento", logo depois de `1afce02`)                                                                                   |
+| Textos do segundo teste com os 20 donos                                                                  | Feito e commitado (mesmo commit)                                                                                                                                             |
+| ADR-0019 (usabilidade), escrito pelo ChatGPT, com as respostas do Eduardo na seção 11                    | Feito e commitado (mesmo commit)                                                                                                                                             |
+| ADR-0019, fatia 1: textos e leitura                                                                      | Feito e commitado (mesmo commit; seção 3)                                                                                                                                    |
+| ADR-0019, fatia 2: primeira configuração                                                                 | Feito e commitado em `2e1c670` (seção 3b)                                                                                                                                    |
+| ADR-0019, fatia 3: cartões no celular e tabela do notebook                                               | Feito e commitado em `2e1c670` (seção 3c)                                                                                                                                    |
+| ADR-0019, fatias 4 a 6                                                                                   | A fazer: a próxima é a **fatia 4, ART/RRT** (seção 4)                                                                                                                        |
+| Primeiros passos do orçamento (tela de configuração inicial)                                             | Feito e commitado em `2e1c670`, já na `branch-do-duds` local: ADR-0020 §8 e seção 4b. As escolhas do ADR-0020 §8.3 foram confirmadas pelo Eduardo; falta o job `banco` do CI |
 
 ## 2. O que entrou no último commit
 
@@ -70,6 +70,7 @@ Marque `[x]` ao terminar cada item.
   - projeto ou mensal sem horas: o mesmo, começando por "Horas no mês não informadas".
 
   O campo é montado pela função `numero(...)` dentro de `Equipe` em `PaginaCustosETaxas.tsx`. O teste "cadastra a tabela de horas e a equipe dizendo como cada pessoa recebe" procura `/Sem dias no mês/`: atualizar.
+
 - [x] **Texto da equipe:** "Horas no mês são a jornada real: por exemplo, 40 h por semana ≈ 173 h por mês. Use o mês que deseja estimar e atualize quando souber. Para o sócio, as horas que ele de fato trabalha na consultoria." (Patrícia).
 - [x] **Tributos:** ajuda "Peça à contabilidade a alíquota efetiva; imposto pago ÷ faturamento é só uma aproximação, e ela varia por período e regime".
 - [x] **Margens:** texto curto no grupo: "Desejada: meta usada no cálculo pela margem. Mínima: referência de alerta, não bloqueia. Que sobra: resultado estimado depois de custos, tributos e taxas." Mais o aviso (não bloqueio) quando a desejada estiver abaixo da mínima (Paulo).
@@ -91,6 +92,7 @@ Marque `[x]` ao terminar cada item.
 - [x] **Atualizar este arquivo e acrescentar ao ADR-0019** a seção "12. Implementado: fatia 1".
 
 Ficaram de fora da fatia 1 (vão em outras fatias):
+
 - "Ver cálculo" da hora de custo (Marcos);
 - resultado da equipe em cartões (Beatriz);
 - lista de pendências da configuração (fatia 2);
@@ -113,6 +115,7 @@ Marque `[x]` ao terminar cada item.
   - margens confirmadas.
 
   Com tudo feito, mostra "Tudo pronto para calcular o preço".
+
 - [x] **Nova ordem dos grupos:** Custos e capacidade (equipe, horas e contas), Tabela de preços, Tributos e taxas, Margens, Visita técnica e deslocamento. Cada grupo ganha um `id` para os links.
 - [x] **"Calcular pela equipe" em destaque (P2):** botão no lugar do link, com o texto "Recomendado: a hora de custo de cada pessoa sai de como ela recebe". A entrada manual continua; a troca já preservava os valores (`voltarADigitar`).
 - [x] **"Ver cálculo" da hora de custo** (Marcos): recolhível na linha da pessoa, por exemplo "13.751,77 ÷ 173 h = 79,49"; na diária e no projeto, o divisor certo.
@@ -155,6 +158,7 @@ As respostas do Eduardo estão no ADR-0019, seção 11; todas seguem a recomenda
    - "Calcular pela equipe" em destaque (P2);
    - "Ver cálculo" da hora de custo;
    - resultado da equipe em cartões.
+
 3. **Cartões no celular** (ADR-0019 §4): a mesma fonte de estado e as mesmas regras, sem cálculo novo. No notebook, os detalhes do serviço ficam recolhíveis. A coluna "Hora de venda" passa a se chamar "Tabela de preços".
 4. **ART/RRT** (ADR-0019 §2): seção única "Responsabilidade técnica (ART/RRT)".
    - Tabelas `orcamento_responsabilidade` e `orcamento_responsabilidade_item`, com RLS forçada, FK composta, RPC e pgTAP negativo.
@@ -214,6 +218,7 @@ A pasta `ferramentas-locais/` está no `.git/info/exclude`.
   - um teste: `node ferramentas-locais/pg/rodar.mjs . 280`
 
   Ele aplica todas as migrations num Postgres em memória e roda `supabase/tests`. Não substitui o job `banco` do CI no Supabase de verdade, que **ainda não rodou** para as fatias 2 a 6.
+
 - **Consultar o esquema:** `node ferramentas-locais/pg/esquema.mjs . "select ..."`
 - **Capturas de tela no Brave** (sem janela, 375×812, claro e escuro):
   - com a demo rodando (seção 6), `node ferramentas-locais/telas/capturar.mjs` (ou `capturar2.mjs`, `capturar3.mjs`);
@@ -222,6 +227,7 @@ A pasta `ferramentas-locais/` está no `.git/info/exclude`.
   - `capturar5.mjs` mostra a fatia 3: os cartões dos serviços a 375 px e a tabela a 1366 px.
 
   A demo guarda os dados na memória da página: recarregar apaga o que foi salvo. Por isso os scripts navegam sem recarregar.
+
 - **Painel de 20 donos:** `pesquisa-personas/`, fora do git. O segundo teste está em `outputs/2026-11-12/teste-orcamentos-20-v2/` (`sintese.md`, `results.json`, `roteiro.md`).
 
 ## 6. Como verificar antes de dizer que terminou

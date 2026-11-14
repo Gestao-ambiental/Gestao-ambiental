@@ -112,8 +112,6 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   equipe_invalida:
     'Confira a equipe: cada pessoa uma vez, membro ativo da consultoria, custo mensal e horas de 0 a 744.',
   equipe_sem_horas_faturaveis: 'A equipe precisa de horas no mês: informe as horas de cada pessoa.',
-  preco_automatico_sem_base:
-    'Para usar o preço automático, configure antes os custos e taxas da consultoria.',
   despesa_invalida: 'Confira as despesas: descrição, valor e como é paga.',
   parcela_invalida: 'Confira as parcelas: marco, dias de 0 a 365 e percentual de 0 a 100.',
   base_invalida: 'Confira os valores: horas faturáveis precisam ser maiores que zero.',
@@ -135,6 +133,26 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
     'Confira a tabela de preços: profissão, serviço, unidade, preço e faixas de cada linha.',
   deslocamento_invalido:
     'Confira a visita técnica: consumo do carro e preço do combustível vão juntos (ou os dois em branco).',
+  // Central administrativa (ADM-01)
+  situacao_obrigatoria: 'Escolha a situação nova.',
+  mesma_situacao: 'A consultoria já está nesta situação.',
+  consultoria_inexistente: 'Esta consultoria não existe mais.',
+  chave_reutilizada: 'Não foi possível mudar a situação. Feche e tente de novo.',
+  // Central administrativa, fase 2 (ADR-0024)
+  dois_fatores_necessarios: 'Confirme o código do aplicativo autenticador para continuar.',
+  modulo_invalido: 'Não foi possível concluir. Tente de novo.',
+  // Acesso de suporte (ADR-0025)
+  acesso_de_suporte_somente_leitura: 'Acesso de suporte é somente leitura.',
+  duracao_invalida: 'Escolha 2, 24 ou 48 horas.',
+  autorizacao_ativa:
+    'Já há um acesso do suporte autorizado. Encerre esse acesso antes de autorizar outro.',
+  sem_autorizacao_de_suporte: 'Esta consultoria não tem acesso de suporte valendo.',
+  suporte_em_consultoria_propria:
+    'Você faz parte desta consultoria: entre por ela, sem acesso de suporte.',
+  categoria_obrigatoria: 'Escolha a categoria',
+  acesso_de_suporte_ativo:
+    'Já há acesso de suporte valendo nesta consultoria. Use “Entrar como suporte”.',
+  sem_acesso_de_emergencia: 'Não há acesso de emergência valendo.',
 }
 
 const MENSAGENS_DO_AUTH: Record<string, string> = {
@@ -145,6 +163,15 @@ const MENSAGENS_DO_AUTH: Record<string, string> = {
   weak_password: 'Use pelo menos 8 caracteres',
   same_password: 'Use uma senha diferente da atual.',
   otp_expired: 'Este link expirou ou já foi usado.',
+  // Dois fatores (ADR-0024)
+  mfa_verification_failed: 'Código incorreto. Confira o aplicativo e tente de novo.',
+  mfa_verification_rejected: 'Código incorreto. Confira o aplicativo e tente de novo.',
+  mfa_challenge_expired: 'O código expirou. Digite o código novo do aplicativo.',
+  mfa_factor_not_found: 'Os dois fatores desta conta mudaram. Recarregue a página.',
+  insufficient_aal: 'Confirme o código do aplicativo autenticador para continuar.',
+  mfa_totp_enroll_not_enabled: 'Dois fatores indisponíveis no momento. Tente mais tarde.',
+  mfa_totp_verify_not_enabled: 'Dois fatores indisponíveis no momento. Tente mais tarde.',
+  mfa_factor_name_conflict: 'Não foi possível ativar. Recarregue a página e tente de novo.',
 }
 
 export const MENSAGEM_MUITAS_TENTATIVAS =
@@ -181,15 +208,38 @@ export function ehMuitasTentativas(erro: unknown): boolean {
   )
 }
 
+/** Mensagem de qualquer escrita recusada enquanto o operador navega como suporte. */
+export const MENSAGEM_SUPORTE_SOMENTE_LEITURA = 'Acesso de suporte é somente leitura.'
+
+// Modo suporte (ADR-0025): ligado por RequerConsultoria enquanto o operador navega uma consultoria
+// como suporte. Algumas RPCs de escrita recusam antes de gravar, com sem_permissao (exigem autor);
+// as demais chegam à barreira do banco (acesso_de_suporte_somente_leitura). Em modo suporte as duas
+// viram a mesma mensagem. É só apresentação: quem recusa é o banco.
+let modoSuporte = false
+
+export function definirModoSuporte(ligado: boolean): void {
+  modoSuporte = ligado
+}
+
 export function mensagemDoErro(erro: unknown, padrao = MENSAGEM_PADRAO): string {
   if (ehMuitasTentativas(erro)) return MENSAGEM_MUITAS_TENTATIVAS
+  if (modoSuporte && ehSemPermissao(erro)) return MENSAGEM_SUPORTE_SOMENTE_LEITURA
   const codigo = codigoDoErro(erro)
   if (!codigo) return padrao
   return MENSAGENS_DO_BANCO[codigo] ?? MENSAGENS_DO_AUTH[codigo] ?? padrao
 }
 
+/**
+ * A central recusou porque a sessão ainda não confirmou o segundo fator (aal1). Usa o mesmo código
+ * 42501 de permissão, mas a tela pede o código em vez de mostrar "sem permissão" (ADR-0024).
+ */
+export function ehDoisFatoresNecessarios(erro: unknown): boolean {
+  return comoObjeto(erro).message === 'dois_fatores_necessarios'
+}
+
 /** Erro de permissão do servidor (RLS ou RPC): a tela mostra "sem permissão", não "erro". */
 export function ehSemPermissao(erro: unknown): boolean {
+  if (ehDoisFatoresNecessarios(erro)) return false
   const { code, message } = comoObjeto(erro)
   return code === '42501' || message === 'sem_permissao'
 }

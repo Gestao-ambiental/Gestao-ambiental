@@ -7,3 +7,8 @@ CLAUDE.md
 apps/web/src/lib/database.types.ts
 # Exportado do Claude Design: mantém os bytes originais
 docs/design-system
+# Ferramentas só desta máquina (fora do git)
+ferramentas-locais
+apps/web/demo-local
+pesquisa-personas
+.claude

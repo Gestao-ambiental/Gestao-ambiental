@@ -1,12 +1,12 @@
 # ADR-0018 — Unidades de cobrança e melhorias do orçamento
 
-**Situação:** proposta de pesquisa e especificação, 12/11/2026. As decisões novas dependem de Eduardo. Não é implementação, migration ou autorização para modificar o código. Complementa [ADR-0017](0017-orcamento-margem-no-fim-visitas-e-catalogo.md); as decisões D1–D12 do [ADR-0016](0016-automacao-do-orcamento-a-execucao.md) continuam pendentes.
+**Situação:** proposta de pesquisa e especificação, 12/11/2026. As respostas do Eduardo estão na §9 e as fatias 2 a 6 foram implementadas (§10 a §14); o resto continua proposta. Complementa [ADR-0017](0017-orcamento-margem-no-fim-visitas-e-catalogo.md); as decisões D1–D12 do [ADR-0016](0016-automacao-do-orcamento-a-execucao.md) continuam pendentes.
 
 ## 1. Contexto e pesquisa
 
-O checkout contém trabalho do Claude **não commitado**, inclusive as migrations `20261112210000` e `20261112220000`; não se deve revertê-lo ou sobrescrevê-lo. O domínio atual tem modos `tabela` e `margem` no orçamento inteiro. Após a alteração local mais recente, o acréscimo incide sobre **horas de venda selecionadas e rateio das contas**, não sobre o custo da equipe. Custos internos seguem separados. Visita tem preço fixo. A carga usa minutos por responsável e mês em orçamentos aprovados, mais a prévia do orçamento em tela. O botão de aprovação e as integrações externas ainda não foram implementados. Referências: `packages/domain/src/preco-do-orcamento.ts`, `carga-da-equipe.ts`, ADR-0017 e as duas migrations locais.
+O domínio atual tem modos `tabela` e `margem` no orçamento inteiro. Após a alteração local mais recente, o acréscimo incide sobre **horas de venda selecionadas e rateio das contas**, não sobre o custo da equipe. Custos internos seguem separados. Visita tem preço fixo. A carga usa minutos por responsável e mês em orçamentos aprovados, mais a prévia do orçamento em tela. O botão de aprovação e as integrações externas ainda não foram implementados. Referências: `packages/domain/src/preco-do-orcamento.ts`, `carga-da-equipe.ts`, ADR-0017 e as duas migrations locais.
 
-O teste citado foi com **20 personas simuladas**, 19 respostas completas e uma parcial; ninguém operou uma tela real. As contagens são indícios de produto, não pesquisa estatística com clientes. Fontes locais: `pesquisa-personas/outputs/2026-11-12/teste-orcamentos-20/{sintese.md,roteiro.md,anexo-por-pessoa.md}`. O relato aponta 17/19 para cobrança não horária, 17/19 para modelos locais e 13/19 para dificuldades com piso.
+O teste citado foi com **20 personas simuladas**, 19 respostas completas e uma parcial; ninguém operou uma tela real. As contagens são indícios de produto, não pesquisa estatística com clientes. Fonte: painel simulado, fora do repositório. O relato aponta 17/19 para cobrança não horária, 17/19 para modelos locais e 13/19 para dificuldades com piso.
 
 **Fontes externas consultadas em 12/11/2026; fatos, sem importar valores de mercado:**
 
@@ -196,7 +196,24 @@ Vitest **e pgTAP**, com mesmos números: fronteira exata e decimal das faixas, z
 11. **P11. Envio:** (A) preparar mensagem para revisão humana primeiro (**recomendo**); (B) API depois de escolher provedor e custos. D11 continua aberto.
 12. **P12. Mínimo e despesas:** mínimo cobre só honorários (**recomendo**) ou inclui despesas? Como identificar custo direto já embutido na tarifa para evitar cobrança dupla?
 
-**Limite:** nenhuma regra nova foi aprovada ou implementada, nenhum código/migration foi modificado, e não foram executados testes de banco nem realizadas integrações externas neste trabalho.
+**Limite, na data da proposta:** nenhuma regra nova foi aprovada ou implementada, nenhum código/migration foi modificado, e não foram executados testes de banco nem realizadas integrações externas neste trabalho.
+
+## 9. Respostas do Eduardo (12/11/2026)
+
+Todas as recomendações foram aceitas:
+
+- **P1:** cada serviço escolhe a unidade de cobrança no mesmo orçamento. O pacote fica protegido do acréscimo e só mostra o que sobra (ou o prejuízo).
+- **P2:** as horas estimadas são obrigatórias para concluir. No rascunho podem ficar pendentes. A tabela de preços pode sugerir minutos por unidade, e a sugestão é editável.
+- **P3 e P12:** as faixas são progressivas. O preço mínimo é opcional e vale só para os honorários, sem despesas. As faixas entram depois do preço simples.
+- **P5 e P6:** o responsável continua sendo um membro com login. Capacidade não informada aparece como "desconhecida", nunca como zero. Terceiro sem login entra como custo ou despesa do serviço.
+  - Continua valendo um responsável por serviço (ADR-0017). Várias pessoas no mesmo serviço (fatia 7) ficam para depois.
+- **P7:** "Salvar como modelo" guarda só escopo, unidade e horas, sem cliente nem preço. "Duplicar orçamento" cria um rascunho novo e pergunta se copia os preços.
+- **P8:** a identidade da consultoria (logo, CNPJ, dados) é cadastrada uma vez, e só a Gestão edita. A ART/RRT é opcional por serviço, e o texto da proposta é editável antes do PDF.
+- **P9:** a situação muda manualmente (enviado, em negociação, aprovado, recusado), com quem e quando. Só aprovado conta na carga. Reabrir um aprovado volta a rascunho com nova revisão. Nada de contrato ou cobrança automáticos.
+- **P4, P10 e P11:** ficam para depois, como recomendado:
+  - mensalidade recorrente, como contrato próprio;
+  - rateio por hora, com explicação;
+  - envio, preparando a mensagem para revisão humana.
 
 ## 10. Implementado: fatia 2 (unidades simples, pacote e horas separadas)
 
@@ -221,23 +238,6 @@ Vitest **e pgTAP**, com mesmos números: fronteira exata e decimal das faixas, z
   - migration `20261113090000_unidades_de_cobranca.sql`;
   - domínio em `preco-do-orcamento.ts`;
   - testes em `preco-unidades.test.ts` e em `supabase/tests/240_unidades_de_cobranca.test.sql` (17 casos, com os mesmos centavos).
-
-## 9. Respostas do Eduardo (12/11/2026)
-
-Todas as recomendações foram aceitas:
-
-- **P1:** cada serviço escolhe a unidade de cobrança no mesmo orçamento. O pacote fica protegido do acréscimo e só mostra o que sobra (ou o prejuízo).
-- **P2:** as horas estimadas são obrigatórias para concluir. No rascunho podem ficar pendentes. A tabela de preços pode sugerir minutos por unidade, e a sugestão é editável.
-- **P3 e P12:** as faixas são progressivas. O preço mínimo é opcional e vale só para os honorários, sem despesas. As faixas entram depois do preço simples.
-- **P5 e P6:** o responsável continua sendo um membro com login. Capacidade não informada aparece como "desconhecida", nunca como zero. Terceiro sem login entra como custo ou despesa do serviço.
-  - Continua valendo um responsável por serviço (ADR-0017). Várias pessoas no mesmo serviço (fatia 7) ficam para depois.
-- **P7:** "Salvar como modelo" guarda só escopo, unidade e horas, sem cliente nem preço. "Duplicar orçamento" cria um rascunho novo e pergunta se copia os preços.
-- **P8:** a identidade da consultoria (logo, CNPJ, dados) é cadastrada uma vez, e só a Gestão edita. A ART/RRT é opcional por serviço, e o texto da proposta é editável antes do PDF.
-- **P9:** a situação muda manualmente (enviado, em negociação, aprovado, recusado), com quem e quando. Só aprovado conta na carga. Reabrir um aprovado volta a rascunho com nova revisão. Nada de contrato ou cobrança automáticos.
-- **P4, P10 e P11:** ficam para depois, como recomendado:
-  - mensalidade recorrente, como contrato próprio;
-  - rateio por hora, com explicação;
-  - envio, preparando a mensagem para revisão humana.
 
 ## 11. Implementado: fatia 3 (como cada pessoa recebe, sem piso)
 

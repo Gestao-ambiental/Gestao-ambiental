@@ -83,6 +83,17 @@ Nunca regra de negócio só no front. O front esconde coisas por apresentação,
 - Migrations só pela CLI (`supabase migration new`), nunca pelo painel. Migration que cria tabela vem com RLS, políticas e teste pgTAP negativo **no mesmo PR**.
 - Antes de dizer que terminou: `pnpm lint`, `pnpm typecheck`, `pnpm test` e build verdes localmente, e o job `banco` do CI (migrations, seed e pgTAP) verde. Não há Supabase local (sem Docker): o desenvolvimento usa staging.
 
+## Testes de regressão (regra permanente)
+
+Toda mudança testa o que já existia, sem ninguém precisar pedir:
+
+- **Código novo vem com teste novo no mesmo commit:** regra de cálculo em `packages/domain`, tela em Vitest + Testing Library (incluindo o caminho de erro), RPC ou tabela em pgTAP (incluindo o teste negativo de outra consultoria).
+- **Bug corrigido ganha um teste que falhava antes da correção**, para não voltar.
+- **A suíte inteira roda antes de entregar:** `corepack pnpm verificar` (lint, tipos, testes, build e pgTAP). Rodar só os testes do arquivo mexido não basta.
+- **Teste antigo que quebrou é sinal de regressão:** corrija o código. Só mude o teste quando a regra mudou de propósito, e diga isso no commit.
+- **Gancho de push** (`.githooks/pre-push`, ativo com `git config --worktree core.hooksPath .githooks`): roda `verificar` e cancela o push se algo falhar; também bloqueia push para o repositório do Cadu.
+- **CI** roda em todo push na `main` e na `branch-do-duds`, e em todo PR.
+
 ## Definition of Done (itens que você verifica)
 
 1. CI verde: lint, tipos, testes de domínio, pgTAP, build.

@@ -77,11 +77,9 @@ Estas escolhas não devem ser tratadas como respostas do Eduardo; implementar co
 
 O modelo de convite e etapas, a migration de rascunho e preferência por membro, as RPCs de gravação e promoção e os adaptadores da API foram iniciados localmente. A gravação usa versão otimista e aceita repetição idempotente da última operação com o mesmo conteúdo. A promoção usa uma transação, reaproveita o cálculo existente e rejeita alterações concorrentes na base. A suíte PGlite `290` passou com 20 verificações, incluindo isolamento, dados incompletos, conflitos, repetição e reversão se as horas calculadas diferirem das informadas. Na criação de base, os valores de visita e quilômetro precisam ser informados explicitamente; não se converte ausência em zero.
 
-**Ainda não há interface dos seis passos, integração da identidade, teste visual, validação de concorrência em sessões simultâneas nem implantação remota.** A reabertura de base já existente precisa carregar e preservar todos os dados antes da promoção. A soma das horas informadas precisa ser reconciliada com o cálculo legado pela equipe. Não aplicar a migration em ambiente remoto nem apresentar a funcionalidade como concluída até resolver e testar esses pontos. Os arquivos de trabalho preexistentes de Claude foram preservados.
+A interface dos seis passos e as correções desta primeira versão estão na §8.
 
-## 8. Revisão e implementação local (13/11/2026, Claude, sem commit)
-
-Branch local `feature/primeiros-passos-orcamento`, criada a partir de `local/orcamentos-fluent` levando as alterações locais anteriores. Nada foi aplicado em banco remoto, commitado ou publicado.
+## 8. Revisão e implementação (13/11/2026)
 
 ### 8.1 Achados na revisão do que o Codex começou
 

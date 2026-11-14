@@ -6,18 +6,6 @@ import type { ModoDeDeslocamento } from './deslocamento'
 import { composicaoDaEquipe, custoFixoPorHora } from './orcamento'
 import { linhasMensaisDaEquipe, type RemuneracaoDaPessoa } from './remuneracao'
 
-/** Etapas de apresentação do fluxo inicial. O rascunho não é a base publicada. */
-export const ETAPAS_DA_CONFIGURACAO = [
-  'equipe',
-  'contas',
-  'precos',
-  'tributos',
-  'proposta',
-  'resumo',
-] as const
-
-export type EtapaDaConfiguracao = (typeof ETAPAS_DA_CONFIGURACAO)[number]
-
 export interface EstadoDoConvite {
   /** A base completa e validada existe no servidor. */
   baseConfigurada: boolean
@@ -35,16 +23,6 @@ export function exibirConviteDeConfiguracao(estado: EstadoDoConvite): boolean {
 /** Nome do CTA de acesso ao mesmo rascunho; retomar não publica a base. */
 export function rotuloDoConviteDeConfiguracao(estado: EstadoDoConvite): string {
   return estado.possuiRascunho ? 'Continuar configuração' : 'Configurar em poucos passos'
-}
-
-/** Garante que uma etapa desconhecida nunca vira uma etapa válida silenciosamente. */
-export function etapaDaConfiguracao(valor: unknown): EtapaDaConfiguracao | null {
-  return ETAPAS_DA_CONFIGURACAO.find((etapa) => etapa === valor) ?? null
-}
-
-/** Ausência é distinta de zero digitado, inclusive para tributos e contas. */
-export function valorFoiInformado(valor: number | null | undefined): boolean {
-  return valor !== null && valor !== undefined && Number.isFinite(valor)
 }
 
 // ---------------------------------------------------------------------------

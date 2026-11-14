@@ -12,6 +12,7 @@ import {
   custoFixoPorHora,
   diferencaDasParcelas,
   distribuirPorMaiorResto,
+  dividirArredondando,
   formatarCentavos,
   formatarDuracao,
   formatarPontosBase,
@@ -19,21 +20,17 @@ import {
   lerDuracao,
   lerReais,
   numeroDoOrcamento,
-  precoAutomaticoDoItem,
-  precoSugerido,
-  resultadoDoPreco,
   situacaoDaMargem,
 } from './orcamento'
 import type { BaseDeCustos } from './orcamento'
 
-// Exemplo conferido na auditoria de 10/11/2026: hora técnica R$ 95, custos fixos R$ 9.600/mês,
-// 320 h faturáveis, margem 30%, tributos 6%, 3 cobranças Pix a R$ 1,99 e 1 assinatura a R$ 4,00.
+// Exemplo conferido na auditoria de 10/11/2026: hora técnica R$ 95, custos fixos R$ 9.600/mês e
+// 320 h faturáveis.
 const base: BaseDeCustos = {
   horaTecnicaCentavos: 9_500,
   custosFixosMensaisCentavos: 960_000,
   horasFaturaveisMes: 320,
 }
-const fixosPorCobranca = 3 * 199 + 400
 
 describe('base de custos', () => {
   it('custo fixo por hora é o custo do mês dividido pelas horas faturáveis', () => {
@@ -138,25 +135,6 @@ describe('composição pela equipe', () => {
   })
 })
 
-describe('preço automático do item', () => {
-  const percentuais = { margemPontosBase: 3_000, tributosPontosBase: 600, taxasPontosBase: 0 }
-
-  it('parte do custo do item e atinge a margem desejada, sem taxas fixas por cobrança', () => {
-    // 1h: R$ 95 de hora técnica + R$ 30 de rateio = R$ 125 ÷ (1 − 30% − 6%) = R$ 195,31.
-    const custo = custoDoItem({ minutos: 60, custoDiretoExtraCentavos: 0 }, base).totalCentavos
-    expect(custo).toBe(12_500)
-    const preco = precoAutomaticoDoItem(12_500, percentuais)
-    expect(preco).toBe(19_531)
-    const margem = resultadoDoPreco(preco, 12_500, 0, percentuais).margemPontosBase
-    expect(margem).toBe(3_000)
-  })
-
-  it('outros custos do item também recebem tributos e margem', () => {
-    // Só R$ 240 de deslocamento: o preço cobre os 6% de tributo e a margem.
-    expect(precoAutomaticoDoItem(24_000, percentuais)).toBe(37_500)
-  })
-})
-
 describe('duração digitada', () => {
   it.each([
     ['', 0],
@@ -194,70 +172,10 @@ describe('duração digitada', () => {
   })
 })
 
-describe('preço sugerido', () => {
-  const percentuais = { margemPontosBase: 3_000, tributosPontosBase: 600, taxasPontosBase: 0 }
-
-  it('divide os custos por (1 − margem − tributos − taxas)', () => {
-    expect(precoSugerido(575_000, fixosPorCobranca, percentuais)).toBe(899_995)
-  })
-
+describe('margem e pontos-base', () => {
   it('margem sobre o preço não é acréscimo sobre o custo', () => {
-    // R$ 3.500 com 30% de margem dá R$ 5.000; 30% de acréscimo daria R$ 4.550 (23,1% de margem).
-    const semTributos = { margemPontosBase: 3_000, tributosPontosBase: 0, taxasPontosBase: 0 }
-    expect(precoSugerido(350_000, 0, semTributos)).toBe(500_000)
+    // 30% de margem sobre o preço equivale a 42,86% de acréscimo sobre o custo.
     expect(acrescimoEquivalente(3_000)).toBe(4_286)
-    expect(resultadoDoPreco(455_000, 350_000, 0, semTributos).margemPontosBase).toBe(2_308)
-  })
-
-  it('tributos e taxas entram no divisor, não somados no fim', () => {
-    const comTaxa = { margemPontosBase: 3_000, tributosPontosBase: 600, taxasPontosBase: 300 }
-    const preco = precoSugerido(350_000, 0, comTaxa)
-    expect(preco).toBe(573_770)
-    expect(resultadoDoPreco(preco, 350_000, 0, comTaxa).margemPontosBase).toBe(3_000)
-    // Somar 9% no fim deixa a margem em 26,8%.
-    expect(resultadoDoPreco(545_000, 350_000, 0, comTaxa).margemPontosBase).toBe(2_678)
-  })
-
-  it('percentuais que somam 100% ou mais não têm preço', () => {
-    expect(() =>
-      precoSugerido(350_000, 0, {
-        margemPontosBase: 8_000,
-        tributosPontosBase: 1_600,
-        taxasPontosBase: 499,
-      }),
-    ).toThrow('percentuais_invalidos')
-    expect(() =>
-      precoSugerido(350_000, 0, {
-        margemPontosBase: 9_400,
-        tributosPontosBase: 600,
-        taxasPontosBase: 0,
-      }),
-    ).toThrow('percentuais_invalidos')
-  })
-})
-
-describe('resultado com o preço praticado', () => {
-  it('desconta custos, fixos por cobrança, tributos e taxas', () => {
-    expect(
-      resultadoDoPreco(890_000, 575_000, fixosPorCobranca, {
-        tributosPontosBase: 600,
-        taxasPontosBase: 0,
-      }),
-    ).toEqual({
-      tributosCentavos: 53_400,
-      taxasCentavos: 0,
-      resultadoCentavos: 260_603,
-      margemPontosBase: 2_928,
-    })
-  })
-
-  it('preço zero não tem margem; prejuízo aparece negativo', () => {
-    const semPercentuais = { tributosPontosBase: 0, taxasPontosBase: 0 }
-    expect(resultadoDoPreco(0, 0, 0, semPercentuais).margemPontosBase).toBeNull()
-    expect(resultadoDoPreco(100_000, 150_000, 0, semPercentuais)).toMatchObject({
-      resultadoCentavos: -50_000,
-      margemPontosBase: -5_000,
-    })
   })
 
   it('a margem mínima compara o total; sem preço fica pendente', () => {
@@ -363,5 +281,15 @@ describe('apresentação', () => {
     expect(lerReais('abc')).toBeNull()
     expect(lerReais('1,234')).toBeNull()
     expect(lerReais('-10')).toBeNull()
+  })
+})
+
+describe('dividirArredondando', () => {
+  it('arredonda o meio para longe do zero, como o round() do banco, também no negativo', () => {
+    expect(dividirArredondando(5n, 2n)).toBe(3)
+    expect(dividirArredondando(-5n, 2n)).toBe(-3)
+    // Divisão exata negativa fica exata (antes dava −20.999).
+    expect(dividirArredondando(-210_000_000n, 10_000n)).toBe(-21_000)
+    expect(dividirArredondando(-7n, 3n)).toBe(-2)
   })
 })

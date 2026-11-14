@@ -14,6 +14,9 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet'
 
+import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
+
+import { AvisoDeEmergenciaDoSuporte } from './AvisoDeEmergenciaDoSuporte'
 import { BotaoTema } from './BotaoTema'
 import { ConsultoriaAtual } from './ConsultoriaAtual'
 import { MenuConta } from './MenuConta'
@@ -26,9 +29,11 @@ import { NavegacaoPrincipal } from './NavegacaoPrincipal'
  */
 export function AppShell() {
   const [gavetaAberta, setGavetaAberta] = useState(false)
+  // Em modo suporte a faixa do suporte fica acima: o shell ocupa o resto da altura (ADR-0025).
+  const { suporte } = useConsultoria()
 
   return (
-    <div className="flex h-dvh flex-col">
+    <div className={suporte ? 'flex min-h-0 flex-1 flex-col' : 'flex h-dvh flex-col'}>
       <a
         href="#conteudo"
         className="sr-only focus:not-sr-only focus:absolute focus:top-(--space-100) focus:left-(--space-100) focus:z-50 focus:rounded-(--radius) focus:bg-(--surface-overlay) focus:px-(--space-150) focus:py-(--space-100) focus:shadow-sobreposicao"
@@ -92,6 +97,7 @@ export function AppShell() {
         </MenuLateral>
         <main id="conteudo" tabIndex={-1} className="min-w-0 flex-1 overflow-auto outline-none">
           <div className="w-full p-(--space-200) md:p-(--space-300)">
+            <AvisoDeEmergenciaDoSuporte />
             <Outlet />
           </div>
         </main>

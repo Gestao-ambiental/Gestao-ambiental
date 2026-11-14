@@ -17,13 +17,12 @@ import {
 } from '@gestao-ambiental/domain'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { Link, useBlocker, useNavigate, useParams, useSearchParams } from 'react-router'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Pagina } from '@/app/paginas/Pagina'
 import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
-import { Dialogo } from '@/components/ui/dialogo'
 import { BotaoIcone } from '@/components/ui/botao-icone'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { Trilha } from '@/components/ui/trilha'
@@ -66,8 +65,10 @@ import {
   classeCelula,
   lerQuantidade,
   numeroComRevisao,
+  reaisDigitados,
   textoDaQuantidade,
 } from './comum'
+import { AvisoDeSaida } from './AvisoDeSaida'
 import { DialogoModelo, type SelecaoDoModelo } from './DialogoModelo'
 import { DialogoDuplicar, DialogoSalvarModelo } from './DialogosDeCopia'
 import { SituacaoDoOrcamento } from './SituacaoDoOrcamento'
@@ -85,18 +86,21 @@ const ETAPAS = [
 ] as const
 type IdDaEtapa = (typeof ETAPAS)[number]['id']
 
+/** Valor da opção "Preço digitado" na lista da tabela de preços (nunca é id de linha da tabela). */
+const PRECO_DIGITADO = '__preco_digitado__'
+
 /** Atalhos de margem, de 5 em 5 (as mais usadas); o campo aceita qualquer outra. */
 const MARGENS_RAPIDAS = [10, 15, 20, 25, 30] as const
 
 const MENSAGEM_DA_PENDENCIA: Record<PendenciaDoPreco, string> = {
   sem_itens: 'Adicione os serviços para calcular o preço.',
-  sem_base: 'Custos e taxas ainda não configurados: sem eles não há custo nem preço.',
+  sem_base: 'Custos e taxas ainda não configurados: digite o preço de cada serviço.',
   despesa_a_cotar:
     'Há despesa incluída no preço ainda a cotar: o preço fica pendente até ela ter valor.',
   percentuais_impossiveis:
     'Margem, tributos e taxas somam 100% ou mais: não há preço possível. Reduza a margem.',
   valor_invalido: 'O preço passou do limite. Confira as horas e os valores.',
-  hora_sem_valor: 'Escolha um preço válido da tabela de preços para cada serviço.',
+  hora_sem_valor: 'Escolha um preço da tabela ou digite o preço de cada serviço.',
   quantidade_pendente:
     'Há serviço sem quantidade ou, no pacote, sem preço fechado: preencha para calcular o preço.',
 }
@@ -113,16 +117,34 @@ interface LinhaItem {
   extra: string
   /** Linha da tabela de hora de venda: preço (forma "tabela") e profissão do custo. */
   horaVendaId: string
+  /** Preço digitado (ADR-0023): sem linha da tabela; o preço fica em `precoFechado`. */
+  digitado: boolean
   /** Membro responsável ('' = sem responsável): o custo usa a hora dele. */
   responsavelId: string
   /** Mês previsto (aaaa-mm-01; '' = sem mês). */
   mesPrevisto: string
   /** Quantidade na unidade da linha de preço (m², ha, diárias, campanhas), como digitada. */
   quantidade: string
-  /** Preço fechado do pacote, como digitado. */
+  /** Preço fechado do pacote ou o preço digitado do serviço, como digitado. */
   precoFechado: string
   /** O serviço inclui ART ou RRT ('' = não informado). */
   responsabilidade: ResponsabilidadeTecnica | ''
+}
+/** Serviço novo: só nome, horas e linha da tabela (sem linha, preço digitado); o resto em branco. */
+function novoItem(id: string, descricao: string, horas: string, horaVendaId: string): LinhaItem {
+  return {
+    id,
+    descricao,
+    horas,
+    extra: '',
+    horaVendaId,
+    digitado: horaVendaId === '',
+    responsavelId: '',
+    mesPrevisto: '',
+    quantidade: '',
+    precoFechado: '',
+    responsabilidade: '',
+  }
 }
 interface LinhaDespesa {
   id: string
@@ -160,6 +182,10 @@ interface Rascunho {
 
 function rascunhoDe(o: Orcamento): Rascunho {
   const margem = o.margemPb ?? o.base?.margemDesejadaPb ?? null
+  // Sem tabela de preços, todo serviço é de preço digitado; com ela, o que não tem linha e tem preço.
+  const semTabela = (o.base?.horasVenda.length ?? 0) === 0
+  const digitado = (i: Orcamento['itens'][number]) =>
+    semTabela || (i.horaVendaId === null && i.precoFechadoCentavos !== null)
   return {
     objeto: o.objeto,
     destinatario: o.destinatario,
@@ -181,7 +207,8 @@ function rascunhoDe(o: Orcamento): Rascunho {
       descricao: i.descricao,
       horas: i.minutos ? formatarDuracao(i.minutos) : '',
       extra: i.custoDiretoExtraCentavos ? formatarCentavos(i.custoDiretoExtraCentavos) : '',
-      horaVendaId: i.horaVendaId ?? '',
+      horaVendaId: digitado(i) ? '' : (i.horaVendaId ?? ''),
+      digitado: digitado(i),
       responsavelId: i.responsavelId ?? '',
       mesPrevisto: i.mesPrevisto ?? '',
       quantidade:
@@ -260,13 +287,14 @@ function paraSalvar(r: Rascunho, deProspecto: boolean): DadosDoRascunho | string
     const precoFechado = lerEstimativa(i.precoFechado)
     if (quantidade === undefined)
       return `Item ${String(indice + 1)}: quantidade inválida. Use até 4 casas, como 12,5.`
-    if (precoFechado === undefined) return `Item ${String(indice + 1)}: preço fechado inválido.`
+    if (precoFechado === undefined)
+      return `Item ${String(indice + 1)}: ${i.digitado ? 'preço' : 'preço fechado'} inválido.`
     itens.push({
       id: i.id,
       descricao: i.descricao,
       minutos,
       custoDiretoExtraCentavos: extra,
-      horaVendaId: i.horaVendaId || null,
+      horaVendaId: i.digitado ? null : i.horaVendaId || null,
       responsavelId: i.responsavelId || null,
       mesPrevisto: i.mesPrevisto || null,
       quantidadeDezMilesimos: quantidade,
@@ -406,22 +434,6 @@ function Editor({
   const [r, setR] = useState<Rascunho>(() => rascunhoDe(orcamento))
   const [alterado, setAlterado] = useState(false)
   const [salvando, setSalvando] = useState(false)
-  // Sair do editor (outra página ou fechar a aba) com alteração não salva pede confirmação. Trocar
-  // de etapa fica na mesma página e não pergunta.
-  const bloqueio = useBlocker(
-    ({ currentLocation, nextLocation }) =>
-      alterado && currentLocation.pathname !== nextLocation.pathname,
-  )
-  useEffect(() => {
-    if (!alterado) return
-    const avisar = (evento: BeforeUnloadEvent) => {
-      evento.preventDefault()
-    }
-    window.addEventListener('beforeunload', avisar)
-    return () => {
-      window.removeEventListener('beforeunload', avisar)
-    }
-  }, [alterado])
   const [falha, setFalha] = useState<string | null>(null)
   const [catalogoAberto, setCatalogoAberto] = useState(false)
   const telaEstreita = useTelaEstreita()
@@ -476,7 +488,7 @@ function Editor({
     const linhas = r.itens.map((i) => ({
       minutos: lerDuracao(i.horas) ?? 0,
       custoDiretoExtraCentavos: lerReaisOuZero(i.extra) ?? 0,
-      horaVendaId: i.horaVendaId || null,
+      horaVendaId: i.digitado ? null : i.horaVendaId || null,
       responsavelId: i.responsavelId || null,
       quantidadeDezMilesimos: lerQuantidade(i.quantidade) ?? null,
       precoFechadoCentavos: lerEstimativa(i.precoFechado) ?? null,
@@ -558,27 +570,36 @@ function Editor({
   function mudarItem(id: string, alterar: (item: LinhaItem) => LinhaItem) {
     mudar((a) => ({ ...a, itens: a.itens.map((x) => (x.id === id ? alterar(x) : x)) }))
   }
+  function mudarDespesa(id: string, alterar: (d: LinhaDespesa) => LinhaDespesa) {
+    mudar((a) => ({ ...a, despesas: a.despesas.map((x) => (x.id === id ? alterar(x) : x)) }))
+  }
+  function mudarParcela(id: string, alterar: (p: LinhaParcela) => LinhaParcela) {
+    mudar((a) => ({ ...a, parcelas: a.parcelas.map((x) => (x.id === id ? alterar(x) : x)) }))
+  }
 
   function aplicarModelo(selecao: SelecaoDoModelo) {
     mudar((a) => ({
       ...a,
       itens: [
         ...a.itens,
-        ...selecao.etapas.map((e) => ({
-          id: crypto.randomUUID(),
-          descricao: e.nome,
-          horas:
-            e.horasSugeridas === null ? '' : formatarDuracao(Math.round(e.horasSugeridas * 60)),
-          extra: '',
+        ...selecao.etapas.map((e) => {
+          const horasDoModelo =
+            e.horasSugeridas === null ? '' : formatarDuracao(Math.round(e.horasSugeridas * 60))
+          // Modelo da consultoria com preço digitado: o mesmo preço, sem linha da tabela.
+          if (e.precoDigitadoCentavos != null) {
+            return {
+              ...novoItem(crypto.randomUUID(), e.nome, horasDoModelo, ''),
+              precoFechado: formatarCentavos(e.precoDigitadoCentavos),
+            }
+          }
           // Modelo da consultoria: a mesma linha da tabela, se ela ainda existir.
-          horaVendaId:
+          return novoItem(
+            crypto.randomUUID(),
+            e.nome,
+            horasDoModelo,
             e.horaVendaId && horas.some((h) => h.id === e.horaVendaId) ? e.horaVendaId : horaPadrao,
-          responsavelId: '',
-          mesPrevisto: '',
-          quantidade: '',
-          precoFechado: '',
-          responsabilidade: '' as const,
-        })),
+          )
+        }),
       ],
       despesas: [
         ...a.despesas,
@@ -697,6 +718,7 @@ function Editor({
       linha,
       custo,
       preco,
+      rotuloDoPreco: horas.length > 0 ? 'Tabela de preços' : 'Preço digitado (R$)',
       servico: (
         <textarea
           id={`servico-${item.id}`}
@@ -742,21 +764,34 @@ function Editor({
           }}
         />
       ),
-      tabela:
-        horas.length > 0 ? (
-          <div className="flex flex-col gap-(--space-050)">
+      tabela: (
+        <div className="flex flex-col gap-(--space-050)">
+          {horas.length > 0 ? (
             <select
               aria-label={`Preço do item ${n}`}
               className={classeCampo}
-              value={item.horaVendaId}
+              value={item.digitado ? PRECO_DIGITADO : item.horaVendaId}
               disabled={!editavel}
-              aria-invalid={!horas.some((h) => h.id === item.horaVendaId) || undefined}
+              aria-invalid={
+                (!item.digitado && !horas.some((h) => h.id === item.horaVendaId)) || undefined
+              }
               onChange={(e) => {
                 const valor = e.target.value
+                if (valor === PRECO_DIGITADO) {
+                  // O preço fechado do pacote, se havia, fica como ponto de partida.
+                  mudarItem(item.id, (x) => ({
+                    ...x,
+                    horaVendaId: '',
+                    digitado: true,
+                    quantidade: '',
+                  }))
+                  return
+                }
                 const linha = horas.find((h) => h.id === valor)
                 mudarItem(item.id, (x) => ({
                   ...x,
                   horaVendaId: valor,
+                  digitado: false,
                   // Só fica o campo que a unidade usa; o pacote já vem
                   // com o preço da tabela, que dá para mudar.
                   quantidade:
@@ -770,7 +805,7 @@ function Editor({
                 }))
               }}
             >
-              {horas.some((h) => h.id === item.horaVendaId) ? null : (
+              {item.digitado || horas.some((h) => h.id === item.horaVendaId) ? null : (
                 <option value={item.horaVendaId}>
                   {item.horaVendaId ? 'Preço que não existe mais' : 'Escolha o preço'}
                 </option>
@@ -792,18 +827,37 @@ function Editor({
                   ))}
                 </optgroup>
               ))}
+              <option value={PRECO_DIGITADO}>Preço digitado</option>
             </select>
+          ) : null}
+          {item.digitado ? (
+            <CampoNumero
+              rotulo={`Preço digitado do item ${n}`}
+              reais
+              milhar
+              valor={item.precoFechado}
+              placeholder="0,00"
+              invalido={
+                item.precoFechado.trim() === '' || lerEstimativa(item.precoFechado) === undefined
+              }
+              desabilitado={!editavel}
+              aoMudar={(valor) => {
+                mudarItem(item.id, (x) => ({ ...x, precoFechado: valor }))
+              }}
+            />
+          ) : (
             <CampoDaUnidade
               n={n}
-              linha={horas.find((h) => h.id === item.horaVendaId) ?? null}
+              linha={linha}
               item={item}
               desabilitado={!editavel}
               aoMudar={(alterar) => {
                 mudarItem(item.id, alterar)
               }}
             />
-          </div>
-        ) : null,
+          )}
+        </div>
+      ),
       responsavel: (
         <CelulaResponsavel
           n={n}
@@ -882,6 +936,7 @@ function Editor({
   const modoDasVisitas = base?.deslocamentoModo ?? null
   const temVisitas = calculo.valorVisitasCentavos > 0
   const d = calculo.divisao
+  const temDigitado = r.itens.some((i) => i.digitado && i.precoFechado.trim() !== '')
 
   return (
     <div className="flex flex-col gap-(--space-200)">
@@ -1029,7 +1084,7 @@ function Editor({
         <div className="grid gap-(--space-200) border-b p-(--space-200) sm:grid-cols-2">
           <Numero rotulo="Custo do orçamento">
             {calculo.custoTotalCentavos === null ? (
-              <span className="text-(--text-subtle)">pendente</span>
+              <span className="text-(--text-subtle)">{base ? 'pendente' : 'não calculado'}</span>
             ) : (
               formatarReais(calculo.custoTotalCentavos)
             )}
@@ -1037,7 +1092,7 @@ function Editor({
           <Numero
             rotulo="Preço"
             apoio={
-              precoTotal === null
+              precoTotal === null || !base
                 ? undefined
                 : pelaTabela
                   ? `pela tabela · sobra ${formatarPontosBase(calculo.margemResultantePb ?? 0)}`
@@ -1168,11 +1223,9 @@ function Editor({
                         <th scope="col" className={`${classeCabecalho} w-20 text-right`}>
                           Horas
                         </th>
-                        {horas.length > 0 ? (
-                          <th scope="col" className={`${classeCabecalho} w-44`}>
-                            Tabela de preços
-                          </th>
-                        ) : null}
+                        <th scope="col" className={`${classeCabecalho} w-44`}>
+                          {horas.length > 0 ? 'Tabela de preços' : 'Preço digitado (R$)'}
+                        </th>
                         <th scope="col" className={`${classeCabecalho} w-44`}>
                           Responsável
                         </th>
@@ -1198,7 +1251,7 @@ function Editor({
                       {r.itens.length === 0 ? (
                         <tr>
                           <td
-                            colSpan={6 + (horas.length > 0 ? 1 : 0) + (pelaTabela ? 1 : 0)}
+                            colSpan={7 + (pelaTabela ? 1 : 0)}
                             className={`${classeCelula} text-(--text-subtle)`}
                           >
                             Nenhum serviço ainda. Escolha um modelo ou adicione os itens.
@@ -1227,9 +1280,7 @@ function Editor({
                               </details>
                             </td>
                             <td className={classeCelula}>{campos.horas}</td>
-                            {campos.tabela ? (
-                              <td className={classeCelula}>{campos.tabela}</td>
-                            ) : null}
+                            <td className={classeCelula}>{campos.tabela}</td>
                             <td className={classeCelula}>{campos.responsavel}</td>
                             <td className={classeCelula}>{campos.mes}</td>
                             <td className={`${classeCelula} text-right tabular-nums`}>
@@ -1277,21 +1328,7 @@ function Editor({
                       }
                       mudar((a) => ({
                         ...a,
-                        itens: [
-                          ...a.itens,
-                          {
-                            id: novoId,
-                            descricao: '',
-                            horas: '',
-                            extra: '',
-                            horaVendaId: horaPadrao,
-                            responsavelId: '',
-                            mesPrevisto: '',
-                            quantidade: '',
-                            precoFechado: '',
-                            responsabilidade: '' as const,
-                          },
-                        ],
+                        itens: [...a.itens, novoItem(novoId, '', '', horaPadrao)],
                       }))
                     }}
                   >
@@ -1326,7 +1363,7 @@ function Editor({
                       }}
                     />
                   </CampoRotulado>
-                  {modoDasVisitas === 'visita' ? null : (
+                  {!base || modoDasVisitas === 'visita' ? null : (
                     <CampoRotulado id="visitas-km" rotulo="Km por visita, ida e volta">
                       <input
                         id="visitas-km"
@@ -1343,14 +1380,16 @@ function Editor({
                       />
                     </CampoRotulado>
                   )}
+                  {/* Sem custos e taxas, o valor de cada visita é digitado aqui (ADR-0023). */}
                   <CampoRotulado
                     id="visitas-outros"
-                    rotulo="Outros gastos por visita (R$)"
-                    apoio="Pedágio, estacionamento, alimentação"
+                    rotulo={base ? 'Outros gastos por visita (R$)' : 'Valor de cada visita (R$)'}
+                    apoio={base ? 'Pedágio, estacionamento, alimentação' : undefined}
                   >
                     <CampoNumero
                       id="visitas-outros"
                       reais
+                      milhar={!base}
                       valor={r.outrosPorVisita}
                       placeholder="0,00"
                       invalido={visitasLidas.outrosPorVisitaCentavos === null}
@@ -1443,12 +1482,7 @@ function Editor({
                               disabled={!editavel}
                               onChange={(e) => {
                                 const valor = e.target.value
-                                mudar((a) => ({
-                                  ...a,
-                                  despesas: a.despesas.map((x) =>
-                                    x.id === despesa.id ? { ...x, descricao: valor } : x,
-                                  ),
-                                }))
+                                mudarDespesa(despesa.id, (x) => ({ ...x, descricao: valor }))
                               }}
                             />
                           </td>
@@ -1460,12 +1494,7 @@ function Editor({
                               disabled={!editavel}
                               onChange={(e) => {
                                 const valor = e.target.value as TratamentoDespesa
-                                mudar((a) => ({
-                                  ...a,
-                                  despesas: a.despesas.map((x) =>
-                                    x.id === despesa.id ? { ...x, tratamento: valor } : x,
-                                  ),
-                                }))
+                                mudarDespesa(despesa.id, (x) => ({ ...x, tratamento: valor }))
                               }}
                             >
                               {(Object.keys(ROTULO_DO_TRATAMENTO) as TratamentoDespesa[]).map(
@@ -1486,12 +1515,7 @@ function Editor({
                               invalido={lerEstimativa(despesa.estimativa) === undefined}
                               desabilitado={!editavel}
                               aoMudar={(valor) => {
-                                mudar((a) => ({
-                                  ...a,
-                                  despesas: a.despesas.map((x) =>
-                                    x.id === despesa.id ? { ...x, estimativa: valor } : x,
-                                  ),
-                                }))
+                                mudarDespesa(despesa.id, (x) => ({ ...x, estimativa: valor }))
                               }}
                             />
                           </td>
@@ -1551,44 +1575,105 @@ function Editor({
             {/* Preço e margem: a margem entra só aqui, depois dos serviços */}
             <Secao titulo="Preço e margem">
               <div className="flex flex-col gap-(--space-200) px-(--space-150) pb-(--space-200)">
-                <fieldset className="flex flex-col gap-(--space-100)">
-                  <legend className="mb-(--space-050) rotulo">Como o preço é formado</legend>
-                  <div className="grid gap-(--space-100) sm:grid-cols-2">
-                    <OpcaoRadio
-                      name="forma-de-preco"
-                      rotulo="Pela tabela (hora de venda)"
-                      descricao="Horas × hora de venda do nível. A margem é o que sobra."
-                      checked={pelaTabela}
-                      disabled={!editavel}
-                      onChange={() => {
-                        mudar((a) => ({
-                          ...a,
-                          formaPreco: 'tabela',
-                          itens: a.itens.map((x) =>
-                            x.horaVendaId ? x : { ...x, horaVendaId: horaPadrao },
-                          ),
-                        }))
-                      }}
-                    />
-                    <OpcaoRadio
-                      name="forma-de-preco"
-                      rotulo="Pela margem"
-                      descricao="Acréscimo sobre as horas de venda e as contas da consultoria."
-                      checked={!pelaTabela}
-                      disabled={!editavel}
-                      onChange={() => {
-                        mudar((a) => ({ ...a, formaPreco: 'margem' }))
-                      }}
-                    />
-                  </div>
-                </fieldset>
-                {horas.length === 0 ? (
-                  <MensagemSecao tom="atencao">
-                    Nenhuma hora de venda cadastrada.{' '}
-                    <Link to="/configuracoes/custos">Cadastrar em Custos e taxas</Link>
-                  </MensagemSecao>
+                {base ? (
+                  <>
+                    <fieldset className="flex flex-col gap-(--space-100)">
+                      <legend className="mb-(--space-050) rotulo">Como o preço é formado</legend>
+                      <div className="grid gap-(--space-100) sm:grid-cols-2">
+                        <OpcaoRadio
+                          name="forma-de-preco"
+                          rotulo="Pela tabela (hora de venda)"
+                          descricao="Horas × hora de venda do nível. A margem é o que sobra."
+                          checked={pelaTabela}
+                          disabled={!editavel}
+                          onChange={() => {
+                            mudar((a) => ({
+                              ...a,
+                              formaPreco: 'tabela',
+                              itens: a.itens.map((x) =>
+                                x.horaVendaId || x.digitado ? x : { ...x, horaVendaId: horaPadrao },
+                              ),
+                            }))
+                          }}
+                        />
+                        <OpcaoRadio
+                          name="forma-de-preco"
+                          rotulo="Pela margem"
+                          descricao="Acréscimo sobre as horas de venda e as contas da consultoria."
+                          checked={!pelaTabela}
+                          disabled={!editavel}
+                          onChange={() => {
+                            mudar((a) => ({ ...a, formaPreco: 'margem' }))
+                          }}
+                        />
+                      </div>
+                    </fieldset>
+                    {horas.length === 0 ? (
+                      <MensagemSecao tom="atencao">
+                        Nenhuma hora de venda cadastrada.{' '}
+                        <Link to="/configuracoes/custos">Cadastrar em Custos e taxas</Link>
+                      </MensagemSecao>
+                    ) : null}
+                    {pelaTabela ? (
+                      <p className="corpo">
+                        Margem que sobra:{' '}
+                        <span className="corpo-medio tabular-nums">
+                          {calculo.margemResultantePb === null
+                            ? 'pendente'
+                            : formatarPontosBase(calculo.margemResultantePb)}
+                        </span>
+                        <span className="text-(--text-subtle)">
+                          {' '}
+                          · mínima {formatarPontosBase(base.margemMinimaPb)}
+                        </span>
+                      </p>
+                    ) : (
+                      <CampoRotulado
+                        id="orcamento-margem"
+                        rotulo="Acréscimo sobre horas de venda e contas (%)"
+                        apoio={`Sobre as horas de venda e as contas · referência ${formatarPontosBase(base.margemDesejadaPb)} · mínima ${formatarPontosBase(base.margemMinimaPb)}`}
+                      >
+                        <div className="flex flex-wrap items-center gap-(--space-100)">
+                          <input
+                            id="orcamento-margem"
+                            inputMode="decimal"
+                            aria-invalid={
+                              (r.margem.trim() !== '' && margemLida === null) || undefined
+                            }
+                            className={`${classeCampo} max-w-24 text-right tabular-nums`}
+                            value={r.margem}
+                            disabled={!editavel}
+                            onChange={(e) => {
+                              const valor = e.target.value
+                              mudar((a) => ({ ...a, margem: valor }))
+                            }}
+                          />
+                          <div
+                            role="group"
+                            aria-label="Margens mais usadas"
+                            className="flex flex-wrap gap-(--space-050)"
+                          >
+                            {MARGENS_RAPIDAS.map((m) => (
+                              <Botao
+                                key={m}
+                                tamanho="compacto"
+                                selecionado={margemLida === m * 100}
+                                aria-pressed={margemLida === m * 100}
+                                disabled={!editavel}
+                                onClick={() => {
+                                  mudar((a) => ({ ...a, margem: String(m) }))
+                                }}
+                              >
+                                {m}%
+                              </Botao>
+                            ))}
+                          </div>
+                        </div>
+                      </CampoRotulado>
+                    )}
+                  </>
                 ) : null}
-                {pelaTabela ? (
+                {base && !pelaTabela && temDigitado ? (
                   <p className="corpo">
                     Margem que sobra:{' '}
                     <span className="corpo-medio tabular-nums">
@@ -1596,67 +1681,38 @@ function Editor({
                         ? 'pendente'
                         : formatarPontosBase(calculo.margemResultantePb)}
                     </span>
-                    {base ? (
-                      <span className="text-(--text-subtle)">
-                        {' '}
-                        · mínima {formatarPontosBase(base.margemMinimaPb)}
-                      </span>
-                    ) : null}
                   </p>
-                ) : (
-                  <CampoRotulado
-                    id="orcamento-margem"
-                    rotulo="Acréscimo sobre horas de venda e contas (%)"
-                    apoio={
-                      base
-                        ? `Sobre as horas de venda e as contas · referência ${formatarPontosBase(base.margemDesejadaPb)} · mínima ${formatarPontosBase(base.margemMinimaPb)}`
-                        : 'Sobre as horas de venda e as contas da consultoria'
-                    }
-                  >
-                    <div className="flex flex-wrap items-center gap-(--space-100)">
-                      <input
-                        id="orcamento-margem"
-                        inputMode="decimal"
-                        aria-invalid={(r.margem.trim() !== '' && margemLida === null) || undefined}
-                        className={`${classeCampo} max-w-24 text-right tabular-nums`}
-                        value={r.margem}
-                        disabled={!editavel}
-                        onChange={(e) => {
-                          const valor = e.target.value
-                          mudar((a) => ({ ...a, margem: valor }))
-                        }}
-                      />
-                      <div
-                        role="group"
-                        aria-label="Margens mais usadas"
-                        className="flex flex-wrap gap-(--space-050)"
-                      >
-                        {MARGENS_RAPIDAS.map((m) => (
-                          <Botao
-                            key={m}
-                            tamanho="compacto"
-                            selecionado={margemLida === m * 100}
-                            aria-pressed={margemLida === m * 100}
-                            disabled={!editavel}
-                            onClick={() => {
-                              mudar((a) => ({ ...a, margem: String(m) }))
-                            }}
-                          >
-                            {m}%
-                          </Botao>
-                        ))}
-                      </div>
-                    </div>
-                  </CampoRotulado>
-                )}
-                {calculo.situacaoDaMargem === 'abaixo_da_minima' ? (
+                ) : null}
+                {d && d.lucroCentavos < 0 ? (
+                  <MensagemSecao role="status" tom="perigo">
+                    O preço não cobre o custo: faltam {formatarReais(-d.lucroCentavos)}.
+                  </MensagemSecao>
+                ) : calculo.situacaoDaMargem === 'abaixo_da_minima' ? (
                   <MensagemSecao role="status" tom="perigo">
                     A margem está abaixo da mínima da consultoria (
                     {base ? formatarPontosBase(base.margemMinimaPb) : ''}).
                   </MensagemSecao>
                 ) : null}
 
-                {d && precoTotal !== null ? (
+                {!base ? (
+                  <PrecoSemConfiguracao
+                    itens={r.itens.map((item, indice) => ({
+                      id: item.id,
+                      rotulo: item.descricao || `Item ${String(indice + 1)}`,
+                      precoCentavos: calculo.precosDosItens[indice] ?? 0,
+                    }))}
+                    visitas={
+                      temVisitas
+                        ? {
+                            rotulo: `Visitas técnicas (${String(quantidadeDeVisitas)})`,
+                            precoCentavos: calculo.precoVisitasCentavos,
+                          }
+                        : null
+                    }
+                    precoTotal={precoTotal}
+                    pendencia={calculo.pendencia ? MENSAGEM_DA_PENDENCIA[calculo.pendencia] : null}
+                  />
+                ) : d && precoTotal !== null ? (
                   <div className="grid gap-(--space-300) lg:grid-cols-2">
                     {!pelaTabela ? (
                       <p className="corpo lg:col-span-2">
@@ -1835,12 +1891,7 @@ function Editor({
                               disabled={!editavel}
                               onChange={(e) => {
                                 const texto = e.target.value
-                                mudar((a) => ({
-                                  ...a,
-                                  parcelas: a.parcelas.map((x) =>
-                                    x.id === p.id ? { ...x, descricao: texto } : x,
-                                  ),
-                                }))
+                                mudarParcela(p.id, (x) => ({ ...x, descricao: texto }))
                               }}
                             />
                           </td>
@@ -1852,12 +1903,7 @@ function Editor({
                               invalido={lerDias(p.dias) === null}
                               desabilitado={!editavel}
                               aoMudar={(texto) => {
-                                mudar((a) => ({
-                                  ...a,
-                                  parcelas: a.parcelas.map((x) =>
-                                    x.id === p.id ? { ...x, dias: texto } : x,
-                                  ),
-                                }))
+                                mudarParcela(p.id, (x) => ({ ...x, dias: texto }))
                               }}
                             />
                           </td>
@@ -1868,12 +1914,7 @@ function Editor({
                               invalido={lerPercentual(p.percentual) === null}
                               desabilitado={!editavel}
                               aoMudar={(texto) => {
-                                mudar((a) => ({
-                                  ...a,
-                                  parcelas: a.parcelas.map((x) =>
-                                    x.id === p.id ? { ...x, percentual: texto } : x,
-                                  ),
-                                }))
+                                mudarParcela(p.id, (x) => ({ ...x, percentual: texto }))
                               }}
                             />
                           </td>
@@ -2045,32 +2086,10 @@ function Editor({
         <NavegacaoDasEtapas etapa={etapa} aoIr={irPara} titulos={ETAPAS.map((e) => e.titulo)} />
       </div>
 
-      <Dialogo
-        aberto={bloqueio.state === 'blocked'}
-        aoMudar={(aberto) => {
-          if (!aberto && bloqueio.state === 'blocked') bloqueio.reset()
-        }}
-        titulo="Sair sem salvar?"
+      <AvisoDeSaida
+        bloquear={() => alterado}
+        sujo={alterado}
         descricao="As alterações deste orçamento ainda não foram salvas e se perdem se você sair."
-        acoes={
-          <>
-            <Botao
-              onClick={() => {
-                if (bloqueio.state === 'blocked') bloqueio.reset()
-              }}
-            >
-              Continuar aqui
-            </Botao>
-            <Botao
-              aparencia="perigo"
-              onClick={() => {
-                if (bloqueio.state === 'blocked') bloqueio.proceed()
-              }}
-            >
-              Sair sem salvar
-            </Botao>
-          </>
-        }
       />
 
       <DialogoModelo
@@ -2125,25 +2144,21 @@ function useTelaEstreita(): boolean {
   return estreita
 }
 
-type CamposDoItem = ReturnType<
-  (
-    item: LinhaItem,
-    indice: number,
-  ) => {
-    n: string
-    linha: HoraDeVenda | null
-    custo: number | null
-    preco: number | null
-    servico: ReactNode
-    art: ReactNode
-    horas: ReactNode
-    tabela: ReactNode
-    responsavel: ReactNode
-    mes: ReactNode
-    outros: ReactNode
-    remover: () => void
-  }
->
+interface CamposDoItem {
+  n: string
+  linha: HoraDeVenda | null
+  custo: number | null
+  preco: number | null
+  rotuloDoPreco: string
+  servico: ReactNode
+  art: ReactNode
+  horas: ReactNode
+  tabela: ReactNode
+  responsavel: ReactNode
+  mes: ReactNode
+  outros: ReactNode
+  remover: () => void
+}
 
 /** Resumo dos detalhes recolhidos do serviço, para ver sem abrir. */
 function resumoDosDetalhes(item: LinhaItem): string {
@@ -2157,6 +2172,7 @@ function resumoDosDetalhes(item: LinhaItem): string {
 /** O que falta no serviço, em texto (não só cor). */
 function estadoDoServico(item: LinhaItem, linha: HoraDeVenda | null): string {
   if (!(lerDuracao(item.horas) ?? 0)) return 'Faltam horas'
+  if (item.digitado) return item.precoFechado.trim() ? 'Completo' : 'Falta o preço'
   if (!linha) return 'Escolha o preço'
   if (linha.unidade === 'pacote')
     return item.precoFechado.trim() ? 'Completo' : 'Falta preço fechado'
@@ -2191,16 +2207,18 @@ function ServicosEmCartoes({
         const aberto = abertos.has(item.id)
         const idDetalhes = `detalhes-servico-${item.id}`
         const nome = item.descricao.trim() || 'Serviço sem nome'
-        const unidade = !campos.linha
-          ? 'sem preço escolhido'
-          : campos.linha.unidade === 'pacote'
-            ? 'Pacote'
-            : campos.linha.unidade === 'hora'
-              ? `${item.horas || '—'} de serviço`
-              : (() => {
-                  const q = lerQuantidade(item.quantidade)
-                  return q ? textoDaQuantidade(q, campos.linha.unidade) : 'sem quantidade'
-                })()
+        const unidade = item.digitado
+          ? 'Preço digitado'
+          : !campos.linha
+            ? 'sem preço escolhido'
+            : campos.linha.unidade === 'pacote'
+              ? 'Pacote'
+              : campos.linha.unidade === 'hora'
+                ? `${item.horas || '—'} de serviço`
+                : (() => {
+                    const q = lerQuantidade(item.quantidade)
+                    return q ? textoDaQuantidade(q, campos.linha.unidade) : 'sem quantidade'
+                  })()
         return (
           <li key={item.id} className="rounded-(--radius) border bg-(--surface)">
             <div className="flex items-start justify-between gap-(--space-100) p-(--space-150)">
@@ -2242,9 +2260,7 @@ function ServicosEmCartoes({
                 className="flex flex-col gap-(--space-150) border-t p-(--space-150)"
               >
                 <CampoDoCartao rotulo="Serviço">{campos.servico}</CampoDoCartao>
-                {campos.tabela ? (
-                  <CampoDoCartao rotulo="Tabela de preços">{campos.tabela}</CampoDoCartao>
-                ) : null}
+                <CampoDoCartao rotulo={campos.rotuloDoPreco}>{campos.tabela}</CampoDoCartao>
                 <CampoDoCartao rotulo="Horas estimadas">{campos.horas}</CampoDoCartao>
                 <CampoDoCartao rotulo="Responsável">{campos.responsavel}</CampoDoCartao>
                 <CampoDoCartao rotulo="Mês previsto">{campos.mes}</CampoDoCartao>
@@ -2404,9 +2420,9 @@ function CampoNumero({
   desabilitado,
   placeholder,
   reais = false,
+  milhar = false,
   duracao = false,
   aoMudar,
-  aoSair,
 }: {
   /** Com id, o nome vem do <label> ligado a ele; sem id, de `rotulo`. */
   id?: string
@@ -2417,10 +2433,11 @@ function CampoNumero({
   placeholder?: string
   /** Valor em reais: ao sair do campo, formata como "8.900,00". */
   reais?: boolean
+  /** Reais com o ponto de milhar já ao digitar (40000 → 40.000). */
+  milhar?: boolean
   /** Duração: ao sair do campo, formata como "1h30". */
   duracao?: boolean
   aoMudar: (valor: string) => void
-  aoSair?: () => void
 }) {
   return (
     <input
@@ -2433,7 +2450,7 @@ function CampoNumero({
       placeholder={placeholder}
       disabled={desabilitado}
       onChange={(e) => {
-        aoMudar(e.target.value)
+        aoMudar(milhar ? reaisDigitados(e) : e.target.value)
       }}
       onBlur={() => {
         // Valores digitados ficam no formato da tela ao sair do campo. Só muda se ficou diferente.
@@ -2446,7 +2463,6 @@ function CampoNumero({
           if (minutos !== null) formatado = formatarDuracao(minutos)
         }
         if (formatado !== null && formatado !== valor) aoMudar(formatado)
-        aoSair?.()
       }}
     />
   )
@@ -2491,6 +2507,51 @@ function CampoArea({
           aoMudar(e.target.value)
         }}
       />
+    </div>
+  )
+}
+
+/**
+ * Preço sem custos e taxas configurados (ADR-0023): preços digitados, despesas incluídas e visitas,
+ * sem tributo nem margem. Custo e lucro ficam "não calculados", nunca zero.
+ */
+function PrecoSemConfiguracao({
+  itens,
+  visitas,
+  precoTotal,
+  pendencia,
+}: {
+  itens: readonly { id: string; rotulo: string; precoCentavos: number }[]
+  visitas: { rotulo: string; precoCentavos: number } | null
+  precoTotal: number | null
+  pendencia: string | null
+}) {
+  return (
+    <div className="flex flex-col gap-(--space-150)">
+      {precoTotal === null ? (
+        <p>{pendencia}</p>
+      ) : (
+        <section aria-label="Preço na proposta">
+          <h3 className="mb-(--space-100) corpo-medio">Preço na proposta</h3>
+          <dl className="grid max-w-2xl grid-cols-[1fr_auto] gap-x-(--space-200) gap-y-(--space-075) corpo">
+            {itens.map((item) => (
+              <Valor key={item.id} rotulo={item.rotulo}>
+                {item.precoCentavos}
+              </Valor>
+            ))}
+            {visitas ? <Valor rotulo={visitas.rotulo}>{visitas.precoCentavos}</Valor> : null}
+            <dt className="border-t pt-(--space-075) corpo-medio">Preço</dt>
+            <dd className="border-t pt-(--space-075) text-right corpo-medio tabular-nums">
+              {formatarReais(precoTotal)}
+            </dd>
+            <dt className="text-(--text-subtle)">Lucro e margem</dt>
+            <dd className="text-right">não calculados</dd>
+          </dl>
+        </section>
+      )}
+      <Link to="/orcamentos/primeiros-passos" className="self-start">
+        Calcular preço pelos custos
+      </Link>
     </div>
   )
 }

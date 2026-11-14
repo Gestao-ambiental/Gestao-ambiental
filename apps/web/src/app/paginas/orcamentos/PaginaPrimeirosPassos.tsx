@@ -7,7 +7,6 @@ import {
   custoFixoPorHora,
   custoHoraPorProfissao,
   formatarCentavos,
-  formatarPontosBase,
   formatarReais,
   horasDaEquipe,
   linhasMensaisDaEquipe,
@@ -24,14 +23,13 @@ import {
 } from '@gestao-ambiental/domain'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { Link, useBlocker, useNavigate } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Pagina } from '@/app/paginas/Pagina'
 import { Carregando, EstadoErro, SemPermissao } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
 import { CaixaSelecao } from '@/components/ui/caixa-selecao'
-import { Dialogo } from '@/components/ui/dialogo'
 import { Icone } from '@/components/ui/icone'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import {
@@ -55,21 +53,17 @@ import { formatarInstanteComHora } from '@/lib/datas'
 import { codigoDoErro, mensagemDoErro } from '@/lib/erros'
 import { cn } from '@/lib/utils'
 
+import { AvisoDeSaida } from './AvisoDeSaida'
 import { lerEstimativa, lerHoras, lerPercentual, textoDasHoras, textoDoPercentual } from './calculo'
 import {
   camposDeDeslocamentoDe,
-  camposDeDeslocamentoDoRascunho,
   composicaoDe,
-  horasDe,
   lerDeslocamento,
   lerEquipe,
   lerHorasDeVenda,
-  linhasDe,
   linhasDeContaDe,
   linhasDePessoaDe,
   linhasDePrecoDe,
-  contasDe,
-  CONTAS_SUGERIDAS,
   novaPessoa,
   profissoesDosMembros,
   rotuloDaLinhaDePreco,
@@ -81,7 +75,7 @@ import {
 } from './campos-da-base'
 import { classeCampo, reaisDigitados } from './comum'
 import { DadosDaProposta } from './PaginaDadosDaProposta'
-import { ContasDoMes, Equipe, Linha } from './PecasDaBase'
+import { AvisoDeMargemBaixa, CartaoDoResultado, ContasDoMes, Equipe, Linha } from './PecasDaBase'
 import { Deslocamento, TabelaDePrecos } from './PecasDeCobranca'
 
 type Etapa = 1 | 2 | 3 | 4 | 5 | 6
@@ -219,7 +213,7 @@ function formEquipeDe(d: DadosDoRascunho, base: BaseDeCustosDaConsultoria | null
     const manual = base.equipe.length === 0
     return {
       modo: manual ? 'manual' : 'equipe',
-      linhas: manual ? [] : linhasDe(base),
+      linhas: manual ? [] : linhasDePessoaDe(base.equipe),
       horaTecnica: manual ? formatarCentavos(base.horaTecnicaCentavos) : '',
     }
   }
@@ -236,7 +230,7 @@ function formContasDe(d: DadosDoRascunho, base: BaseDeCustosDaConsultoria | null
   }
   if (base) {
     return {
-      contas: contasDe(base),
+      contas: linhasDeContaDe(base.contas),
       total: formatarCentavos(base.custosFixosMensaisCentavos),
       horas: base.equipe.length === 0 ? textoDasHoras(base.horasFaturaveisMes) : '',
     }
@@ -248,12 +242,12 @@ function formPrecosDe(d: DadosDoRascunho, base: BaseDeCustosDaConsultoria | null
   if (d.precos) {
     return {
       horas: linhasDePrecoDe(d.precos.horasVenda),
-      deslocamento: camposDeDeslocamentoDoRascunho(d.precos),
+      deslocamento: camposDeDeslocamentoDe(d.precos, { zeroEmBranco: false }),
     }
   }
   // Na base, visita e km 0 querem dizer "não cadastrado" (como em Custos e taxas).
   return {
-    horas: horasDe(base),
+    horas: linhasDePrecoDe(base?.horasVenda ?? []),
     deslocamento: camposDeDeslocamentoDe(base, { zeroEmBranco: true }),
   }
 }
@@ -460,21 +454,6 @@ function Fluxo({
   }, [falha])
 
   const algoNaoSalvo = alterados.size > 0 || propostaAlterada
-  const bloqueio = useBlocker(
-    ({ currentLocation, nextLocation }) =>
-      (alteradosAgora.current.size > 0 || propostaAlteradaAgora.current) &&
-      currentLocation.pathname !== nextLocation.pathname,
-  )
-  useEffect(() => {
-    if (!algoNaoSalvo) return
-    const avisar = (evento: BeforeUnloadEvent) => {
-      evento.preventDefault()
-    }
-    window.addEventListener('beforeunload', avisar)
-    return () => {
-      window.removeEventListener('beforeunload', avisar)
-    }
-  }, [algoNaoSalvo])
 
   function marcarAlterado(e: Etapa) {
     setAlterados((a) => (a.has(e) ? a : new Set([...a, e])))
@@ -836,32 +815,10 @@ function Fluxo({
         ) : null}
       </section>
 
-      <Dialogo
-        aberto={bloqueio.state === 'blocked'}
-        aoMudar={(aberto) => {
-          if (!aberto && bloqueio.state === 'blocked') bloqueio.reset()
-        }}
-        titulo="Sair sem salvar?"
+      <AvisoDeSaida
+        bloquear={() => alteradosAgora.current.size > 0 || propostaAlteradaAgora.current}
+        sujo={algoNaoSalvo}
         descricao="Há passos com mudanças que ainda não foram salvas. Se sair agora, elas se perdem; o que já foi salvo continua guardado."
-        acoes={
-          <>
-            <Botao
-              onClick={() => {
-                if (bloqueio.state === 'blocked') bloqueio.reset()
-              }}
-            >
-              Continuar aqui
-            </Botao>
-            <Botao
-              aparencia="perigo"
-              onClick={() => {
-                if (bloqueio.state === 'blocked') bloqueio.proceed()
-              }}
-            >
-              Sair sem salvar
-            </Botao>
-          </>
-        }
       />
     </div>
   )
@@ -1067,28 +1024,8 @@ function PassoDasContas({
       <ContasDoMes
         linhas={form.contas}
         total={total}
-        aoMudar={(id, alterar) => {
-          aoMudar((f) => ({ ...f, contas: f.contas.map((l) => (l.id === id ? alterar(l) : l)) }))
-        }}
-        aoAdicionar={(descricao) => {
-          aoMudar((f) => ({
-            ...f,
-            contas: [...f.contas, { id: crypto.randomUUID(), descricao, valor: '' }],
-          }))
-        }}
-        aoSugerir={() => {
-          aoMudar((f) => ({
-            ...f,
-            contas: [
-              ...f.contas,
-              ...CONTAS_SUGERIDAS.filter((nome) => !f.contas.some((l) => l.descricao === nome)).map(
-                (descricao) => ({ id: crypto.randomUUID(), descricao, valor: '' }),
-              ),
-            ],
-          }))
-        }}
-        aoRemover={(id) => {
-          aoMudar((f) => ({ ...f, contas: f.contas.filter((l) => l.id !== id) }))
+        aoMudarLinhas={(alterar) => {
+          aoMudar((f) => ({ ...f, contas: alterar(f.contas) }))
         }}
       >
         <Linha id="pp-total" rotulo="Total das contas por mês (R$)">
@@ -1264,13 +1201,7 @@ function PassoDosTributos({
             />
           </div>
         ) : null}
-        {desejada != null && minima != null && desejada < minima ? (
-          <MensagemSecao tom="atencao">
-            A margem desejada ({formatarPontosBase(desejada)}) está abaixo da mínima (
-            {formatarPontosBase(minima)}): os orçamentos calculados pela margem vão nascer com o
-            aviso de margem baixa.
-          </MensagemSecao>
-        ) : null}
+        <AvisoDeMargemBaixa desejada={desejada} minima={minima} />
         <Linha id="pp-desejada" rotulo="Margem desejada (%)">
           <input id="pp-desejada" {...campo('desejada', false)} />
         </Linha>
@@ -1319,7 +1250,7 @@ function PassoDoResumo({
         aria-label="Resumo da configuração"
         className="grid max-w-3xl gap-(--space-100) sm:grid-cols-2"
       >
-        <Cartao
+        <CartaoDoResultado
           rotulo={pelaEquipe ? 'Custo médio por hora da equipe' : 'Custo da hora técnica'}
           valor={
             resumo.horaTecnicaCentavos === null
@@ -1327,7 +1258,7 @@ function PassoDoResumo({
               : formatarReais(resumo.horaTecnicaCentavos)
           }
         />
-        <Cartao
+        <CartaoDoResultado
           rotulo="Horas faturáveis por mês"
           valor={
             resumo.horasFaturaveisMes === null
@@ -1335,7 +1266,7 @@ function PassoDoResumo({
               : `${textoDasHoras(resumo.horasFaturaveisMes)} h${horas !== null ? ', pela equipe' : ''}`
           }
         />
-        <Cartao
+        <CartaoDoResultado
           rotulo="Contas do mês por hora"
           valor={
             resumo.contasPorHoraCentavos === null
@@ -1343,7 +1274,7 @@ function PassoDoResumo({
               : `${formatarReais(resumo.contasPorHoraCentavos)} por hora`
           }
         />
-        <Cartao
+        <CartaoDoResultado
           rotulo="Preços cadastrados"
           valor={
             resumo.quantidadeDePrecos === 0
@@ -1432,15 +1363,6 @@ function PassoDoResumo({
       <Link to="/configuracoes/custos" className="self-start text-xs">
         Abrir Custos e taxas
       </Link>
-    </div>
-  )
-}
-
-function Cartao({ rotulo, valor }: { rotulo: string; valor: string }) {
-  return (
-    <div className="flex flex-col gap-(--space-025) rounded-(--radius) border p-(--space-150)">
-      <dt className="text-xs text-(--text-subtle)">{rotulo}</dt>
-      <dd className="titulo-secao tabular-nums text-(--text)">{valor}</dd>
     </div>
   )
 }

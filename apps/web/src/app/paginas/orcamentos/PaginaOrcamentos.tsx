@@ -1,8 +1,4 @@
-import {
-  exibirConviteDeConfiguracao,
-  formatarCentavos,
-  rotuloDoConviteDeConfiguracao,
-} from '@gestao-ambiental/domain'
+import { formatarCentavos } from '@gestao-ambiental/domain'
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useDeferredValue, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
@@ -28,8 +24,8 @@ import {
   type OrcamentoNaLista,
   type SituacaoOrcamento,
 } from '@/lib/api/orcamentos'
-import { dispensarConfiguracao, obterConfiguracao } from '@/lib/api/primeiros-passos'
-import { formatarInstanteComoData, formatarInstanteComHora } from '@/lib/datas'
+import { obterConfiguracao } from '@/lib/api/primeiros-passos'
+import { formatarInstanteComoData } from '@/lib/datas'
 import { mensagemDoErro } from '@/lib/erros'
 
 import { classeCabecalho, classeCelula, numeroComRevisao } from './comum'
@@ -44,9 +40,9 @@ import { DialogoNovoOrcamento } from './DialogoNovoOrcamento'
  * Lixeira (12/11/2026): excluir manda para a lixeira (exclusão lógica), menos o aprovado; na
  * lixeira dá para restaurar. ?lixeira=1 na URL mostra a lixeira.
  *
- * Primeiros passos (ADR-0020): sem base publicada, um convite para configurar em poucos passos. Só
- * convida: a lista e o novo orçamento continuam disponíveis. "Ver orçamentos mesmo assim" fica
- * guardado para a pessoa. ?novo=1 abre o diálogo de novo orçamento (fim dos primeiros passos).
+ * Primeiros passos (ADR-0020, ADR-0023): sem base publicada, só um link discreto "Calcular preço
+ * pelos custos". O orçamento rápido (preço digitado) não depende dela. ?novo=1 abre o diálogo de
+ * novo orçamento (fim dos primeiros passos).
  *
  * Filtros (Protótipo 19): abas por situação com a contagem de cada uma (seguem a busca), a aba em
  * ?situacao=…, busca também pelo número e indicadores do topo vindos do banco (resumo_dos_orcamentos).
@@ -108,31 +104,13 @@ function ListaDaGestao() {
     enabled: !lixeira,
   })
 
-  // Convite dos primeiros passos. Se a leitura falhar, simplesmente não aparece (não bloqueia).
+  // Link para os primeiros passos enquanto a base não foi publicada. Se a leitura falhar,
+  // simplesmente não aparece (não bloqueia).
   const configuracao = useQuery({
     queryKey: ['configuracao-orcamento', cid],
     queryFn: () => obterConfiguracao(cid),
   })
-  const [dispensando, setDispensando] = useState(false)
-  const estadoDoConvite = configuracao.data
-    ? {
-        baseConfigurada: configuracao.data.baseConfigurada,
-        conviteDispensado: configuracao.data.dispensado,
-        possuiRascunho: configuracao.data.rascunho !== null,
-      }
-    : null
-
-  async function dispensarConvite() {
-    setDispensando(true)
-    try {
-      await dispensarConfiguracao(cid)
-      await queryClient.invalidateQueries({ queryKey: ['configuracao-orcamento', cid] })
-    } catch (erro) {
-      setFalha(mensagemDoErro(erro))
-    } finally {
-      setDispensando(false)
-    }
-  }
+  const semConfiguracao = configuracao.data ? !configuracao.data.baseConfigurada : false
 
   const itens = consulta.data?.pages.flatMap((pagina) => pagina.itens) ?? []
   const total = consulta.data?.pages[0]?.total ?? 0
@@ -517,39 +495,14 @@ function ListaDaGestao() {
         </MensagemSecao>
       ) : null}
 
-      {!lixeira && estadoDoConvite && exibirConviteDeConfiguracao(estadoDoConvite) ? (
-        <section
-          aria-labelledby="convite-primeiros-passos"
-          className="flex flex-col gap-(--space-150) rounded-(--radius-large) border bg-(--surface) p-(--space-200) shadow-cartao"
+      {!lixeira && semConfiguracao ? (
+        <Link
+          to="/orcamentos/primeiros-passos"
+          className="inline-flex items-center gap-(--space-050) self-start corpo-medio text-(--text-link) no-underline hover:underline"
         >
-          <div className="flex flex-col gap-(--space-050)">
-            <h2 id="convite-primeiros-passos" className="titulo-secao text-(--text)">
-              Configure os preços em poucos passos
-            </h2>
-            <p className="max-w-3xl text-(--text-subtle)">
-              Equipe, contas do mês, preços, tributos e margens: com isso o Grama calcula o preço
-              sugerido dos orçamentos. Cada passo é salvo, então dá para parar e continuar depois.
-              Sem configurar, os orçamentos podem ser montados, mas ficam sem preço calculado.
-            </p>
-            {configuracao.data?.rascunho?.atualizadoPorNome &&
-            configuracao.data.rascunho.atualizadoEm ? (
-              <p className="text-xs text-(--text-subtle)">
-                Começada; última alteração por {configuracao.data.rascunho.atualizadoPorNome} em{' '}
-                {formatarInstanteComHora(configuracao.data.rascunho.atualizadoEm, atual.fuso)}.
-              </p>
-            ) : null}
-          </div>
-          <div className="flex flex-wrap gap-(--space-100)">
-            <Botao aparencia="primario" iconeDepois="arrow-right" asChild>
-              <Link to="/orcamentos/primeiros-passos">
-                {rotuloDoConviteDeConfiguracao(estadoDoConvite)}
-              </Link>
-            </Botao>
-            <Botao aparencia="sutil" disabled={dispensando} onClick={() => void dispensarConvite()}>
-              Ver orçamentos mesmo assim
-            </Botao>
-          </div>
-        </section>
+          Calcular preço pelos custos
+          <Icone nome="arrow-right" />
+        </Link>
       ) : null}
 
       {lixeira || semNenhum ? null : (

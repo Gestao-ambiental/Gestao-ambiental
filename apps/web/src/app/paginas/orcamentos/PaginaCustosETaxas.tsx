@@ -38,14 +38,13 @@ import {
 import {
   camposDeDeslocamentoDe,
   composicaoDe,
-  contasDe,
-  CONTAS_SUGERIDAS,
-  horasDe,
   lerContas,
   lerDeslocamento,
   lerEquipe,
   lerHorasDeVenda,
-  linhasDe,
+  linhasDeContaDe,
+  linhasDePessoaDe,
+  linhasDePrecoDe,
   novaPessoa,
   profissoesDosMembros,
   type CamposDeDeslocamento,
@@ -54,7 +53,7 @@ import {
   type LinhaPessoa,
 } from './campos-da-base'
 import { classeCampo, reaisDigitados } from './comum'
-import { ContasDoMes, Equipe, Grupo, Linha } from './PecasDaBase'
+import { AvisoDeMargemBaixa, ContasDoMes, Equipe, Grupo, Linha } from './PecasDaBase'
 import { Deslocamento, TabelaDePrecos } from './PecasDeCobranca'
 
 interface Campos {
@@ -235,9 +234,9 @@ function Formulario({
     queryFn: () => listarMembrosAtivos(consultoriaId),
   })
   const [c, setC] = useState<Campos>(() => camposDe(base))
-  const [equipe, setEquipe] = useState<LinhaPessoa[]>(() => linhasDe(base))
-  const [contas, setContas] = useState<LinhaConta[]>(() => contasDe(base))
-  const [horas, setHoras] = useState<LinhaHora[]>(() => horasDe(base))
+  const [equipe, setEquipe] = useState<LinhaPessoa[]>(() => linhasDePessoaDe(base?.equipe ?? []))
+  const [contas, setContas] = useState<LinhaConta[]>(() => linhasDeContaDe(base?.contas ?? []))
+  const [horas, setHoras] = useState<LinhaHora[]>(() => linhasDePrecoDe(base?.horasVenda ?? []))
   // Na base, visita e km 0 querem dizer "não cadastrado": o campo fica em branco.
   const [deslocamento, setDeslocamento] = useState<CamposDeDeslocamento>(() =>
     camposDeDeslocamentoDe(base, { zeroEmBranco: true }),
@@ -480,25 +479,8 @@ function Formulario({
           <ContasDoMes
             linhas={contas}
             total={totalDasContas}
-            aoMudar={(id, alterar) => {
-              setContas((a) => a.map((l) => (l.id === id ? alterar(l) : l)))
-              setAviso(null)
-            }}
-            aoAdicionar={(descricao) => {
-              setContas((a) => [...a, { id: crypto.randomUUID(), descricao, valor: '' }])
-              setAviso(null)
-            }}
-            aoSugerir={() => {
-              setContas((a) => [
-                ...a,
-                ...CONTAS_SUGERIDAS.filter((nome) => !a.some((l) => l.descricao === nome)).map(
-                  (descricao) => ({ id: crypto.randomUUID(), descricao, valor: '' }),
-                ),
-              ])
-              setAviso(null)
-            }}
-            aoRemover={(id) => {
-              setContas((a) => a.filter((l) => l.id !== id))
+            aoMudarLinhas={(alterar) => {
+              setContas(alterar)
               setAviso(null)
             }}
           >
@@ -610,13 +592,7 @@ function Formulario({
             Desejada: meta usada no cálculo pela margem. Mínima: referência de alerta, não bloqueia.
             Que sobra: resultado estimado de cada orçamento depois de custos, tributos e taxas.
           </p>
-          {margem !== null && minima !== null && margem < minima ? (
-            <MensagemSecao tom="atencao">
-              A margem desejada ({formatarPontosBase(margem)}) está abaixo da mínima (
-              {formatarPontosBase(minima)}): os orçamentos calculados pela margem vão nascer com o
-              aviso de margem baixa.
-            </MensagemSecao>
-          ) : null}
+          <AvisoDeMargemBaixa desejada={margem} minima={minima} />
           <Linha
             id="base-margem"
             rotulo="Margem desejada (%)"

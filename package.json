@@ -13,6 +13,7 @@
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
     "build": "pnpm -r build",
+    "verificar": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && node scripts/testar-banco.mjs",
     "db:types": "supabase gen types typescript --local --schema public > apps/web/src/lib/database.types.ts"
   },
   "devDependencies": {

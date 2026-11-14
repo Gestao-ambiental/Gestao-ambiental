@@ -87,7 +87,7 @@
   - O custo de cada serviço usa a profissão da hora escolhida.
   - Sem ninguém daquela profissão na equipe, vale a média da equipe.
   - Isso vale nas duas formas de preço: pela margem, a linha escolhida define só a profissão do custo.
-- **Piso por hora:** é informado pela consultoria, sem inventar o divisor legal do piso de engenheiro (Lei 4.950-A/66).
+- **Piso por hora** (substituído pelo ADR-0018 §11: saiu o "pelo piso"): é informado pela consultoria, sem inventar o divisor legal do piso de engenheiro (Lei 4.950-A/66).
   - Quem está "pelo piso" recebe horas no mês × piso por hora, e a remuneração acompanha a carga de cada mês.
 - **Onde vive:**
   - migration `20261112110000_preco_pela_tabela_e_piso.sql`, com `private.itens_do_preco` e `private.precificar_orcamento`;
@@ -102,14 +102,14 @@ Decisões do Eduardo: a consultoria paga o piso (ou o pró-labore) pela jornada,
   - Saíram o aproveitamento e a parte técnica em %. A hora de custo de cada pessoa é custo ÷ horas.
   - A hora técnica média (Σ custos ÷ Σ horas) vale para o serviço sem responsável. As contas do mês são rateadas pelas mesmas horas.
   - Quem ainda não tem conta precisa ser convidado antes de entrar na equipe.
-- **Piso por hora** só aparece, abaixo da equipe, quando alguém está pelo piso. Vazio com alguém pelo piso, a base não salva. "Como calcular" explica a conta dos 8,5 salários mínimos, sem fixar o valor do salário mínimo.
+- **Piso por hora** (substituído pelo ADR-0018 §11) só aparece, abaixo da equipe, quando alguém está pelo piso. Vazio com alguém pelo piso, a base não salva. "Como calcular" explica a conta dos 8,5 salários mínimos, sem fixar o valor do salário mínimo.
 - **Responsável por serviço (um por serviço).** O custo do serviço usa a hora do responsável. Sem responsável, a da profissão da hora de venda; sem ninguém dessa profissão, a média. Responsável de outra consultoria ou desligado é recusado (`responsavel_invalido`).
 - **Técnica ou administrativa muda só o preço**: vira uma linha da tabela de hora de venda (ex.: "Administrativo · Protocolo"). O custo é sempre a hora da pessoa.
 - **Mês previsto e carga.** Cada serviço tem o mês previsto (primeiro dia do mês, `DATE`). Ao escolher o responsável e o mês, a tela mostra as horas dele naquele mês (orçamentos aprovados + este) contra a jornada, e avisa por texto quando passa.
   - `public.carga_da_equipe` (só Gestão) devolve a jornada e as horas comprometidas por membro e mês, do mês atual no fuso da consultoria em diante.
   - Enquanto não houver o passo de aprovação no produto (ORC-04), só orçamentos marcados como aprovados contam.
 - **Depois da aprovação** (ADR-0016), cada serviço vira uma etapa da demanda com o responsável escolhido no orçamento, e a gestão pode trocar.
-- **Onde vive:** mesma migration `20261112110000_preco_pela_tabela_e_piso.sql` (nunca aplicada fora desta máquina); domínio em `carga-da-equipe.ts`, `custoHoraPorMembro` e `horaDeCustoDaPessoa`; testes em `supabase/tests/220_responsavel_e_carga.test.sql`.
+- **Onde vive:** mesma migration `20261112110000_preco_pela_tabela_e_piso.sql` (nunca aplicada fora desta máquina); domínio em `carga-da-equipe.ts`, `custoHoraPorMembro` (depois substituída por `horaDeCustoPorMembro`, em `remuneracao.ts`) e `horaDeCustoDaPessoa`; testes em `supabase/tests/220_responsavel_e_carga.test.sql`.
 
 ## Atualização de 12/11/2026 (3): lixeira e proposta pronta
 

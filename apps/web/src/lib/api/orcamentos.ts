@@ -6,21 +6,28 @@ import {
   FORMAS_DE_RECEBIMENTO,
   MODOS_DE_DESLOCAMENTO,
   UNIDADES_DE_COBRANCA,
+  type CustoDaProfissao,
+  type CustoDoMembro,
   type FaixaDePreco,
+  type FormaDePreco,
   type ModoDeDeslocamento,
+  type PessoaDoRascunho,
   type RemuneracaoDaPessoa,
   type UnidadeDeCobranca,
+  type VisitasDoOrcamento,
 } from '@gestao-ambiental/domain'
 
 import type { Json } from '@/lib/database.types'
 import { obterSupabase } from '@/lib/supabase'
 
+import { lista, objeto, texto, textoOuNulo, type Objeto } from './json'
+
+export type { CustoDaProfissao, CustoDoMembro, FormaDePreco, VisitasDoOrcamento }
+
 export const TAMANHO_PAGINA_ORCAMENTOS = 50
 
 export type SituacaoOrcamento = 'rascunho' | 'enviada' | 'negociacao' | 'aprovada' | 'recusada'
 export type TratamentoDespesa = 'incluida' | 'cliente_direto' | 'reembolsavel'
-/** "tabela": horas × hora de venda do nível; "margem": custo ÷ (1 − margem − tributos − taxas). */
-export type FormaDePreco = 'margem' | 'tabela'
 
 /**
  * Linha da tabela de preços. Hora de profissional (unidade hora): profissão e nível (Biólogo ·
@@ -45,12 +52,6 @@ export interface HoraDeVenda {
   minimoCentavos: number | null
 }
 
-/** Hora técnica (custo) de uma profissão, derivada da equipe. */
-export interface CustoDaProfissao {
-  profissao: string
-  horaTecnicaCentavos: number
-}
-
 export const ROTULO_DO_TRATAMENTO: Record<TratamentoDespesa, string> = {
   incluida: 'Incluída no preço',
   cliente_direto: 'Paga pelo cliente, direto',
@@ -69,17 +70,6 @@ export const ROTULO_DA_SITUACAO: Record<SituacaoOrcamento, string> = {
 // Leitura defensiva do JSON das funções
 // ---------------------------------------------------------------------------
 
-type Objeto = Record<string, Json | undefined>
-
-function objeto(valor: Json | undefined): Objeto | null {
-  return typeof valor === 'object' && valor !== null && !Array.isArray(valor) ? valor : null
-}
-function texto(valor: Json | undefined): string {
-  return typeof valor === 'string' ? valor : ''
-}
-function textoOuNulo(valor: Json | undefined): string | null {
-  return typeof valor === 'string' ? valor : null
-}
 function numeroOuNulo(valor: Json | undefined): number | null {
   if (typeof valor === 'number') return valor
   if (typeof valor === 'string' && valor.trim() !== '' && Number.isFinite(Number(valor)))
@@ -88,13 +78,6 @@ function numeroOuNulo(valor: Json | undefined): number | null {
 }
 function numero(valor: Json | undefined): number {
   return numeroOuNulo(valor) ?? 0
-}
-function lista(valor: Json | undefined): Objeto[] {
-  if (!Array.isArray(valor)) return []
-  return valor.flatMap((item): Objeto[] => {
-    const lido = objeto(item)
-    return lido ? [lido] : []
-  })
 }
 function textos(valor: Json | undefined): string[] {
   return Array.isArray(valor) ? valor.filter((item) => typeof item === 'string') : []
@@ -146,11 +129,6 @@ function duplicadoDe(d: Objeto | null): Orcamento['duplicadoDe'] {
       }
     : null
 }
-function situacaoDe(valor: Json | undefined): SituacaoOrcamento {
-  return (
-    (Object.keys(ROTULO_DA_SITUACAO) as SituacaoOrcamento[]).find((s) => s === valor) ?? 'rascunho'
-  )
-}
 function custosDeMembrosDe(valor: Json | undefined): CustoDoMembro[] {
   return lista(valor).map((c) => ({
     membroId: texto(c.membro_id),
@@ -173,14 +151,6 @@ function prospectoDe(valor: Json | undefined): Prospecto | null {
     email: textoOuNulo(p.email),
     telefone: textoOuNulo(p.telefone),
   }
-}
-function situacao(valor: Json | undefined): SituacaoOrcamento {
-  return valor === 'enviada' ||
-    valor === 'negociacao' ||
-    valor === 'aprovada' ||
-    valor === 'recusada'
-    ? valor
-    : 'rascunho'
 }
 
 // ---------------------------------------------------------------------------
@@ -351,7 +321,7 @@ export interface ItemDoOrcamento {
   mesPrevisto: string | null
   /** Quantidade na unidade da linha de preço (× 10.000); nula na hora e no pacote. */
   quantidadeDezMilesimos: number | null
-  /** Preço fechado do pacote. */
+  /** Preço fechado do pacote ou, sem linha da tabela, o preço digitado do serviço (ADR-0023). */
   precoFechadoCentavos: number | null
   /** O serviço inclui ART ou RRT (fatia 6); nulo = não informado. */
   responsabilidadeTecnica: ResponsabilidadeTecnica | null
@@ -390,14 +360,6 @@ export type ItemParaSalvar = Omit<ItemDoOrcamento, 'precoCentavos'>
 export interface ContaDoMes {
   descricao: string
   valorCentavos: number
-}
-
-export interface VisitasDoOrcamento {
-  quantidade: number
-  /** Km de ida e volta de cada visita. */
-  kmPorVisita: number
-  /** Pedágio, estacionamento, alimentação… por visita. */
-  outrosPorVisitaCentavos: number
 }
 
 export interface DespesaDoOrcamento {
@@ -440,12 +402,6 @@ export interface BaseDoOrcamento {
   custoHoraPorProfissao: CustoDaProfissao[]
   /** Hora de custo de cada membro da equipe (custo do mês ÷ horas no mês). */
   custoHoraPorMembro: CustoDoMembro[]
-}
-
-/** Hora de custo de um membro, derivada da equipe. */
-export interface CustoDoMembro {
-  membroId: string
-  horaCentavos: number
 }
 
 export interface Orcamento {
@@ -500,7 +456,7 @@ export async function obterOrcamento(id: string): Promise<Orcamento | null> {
     ano: numero(o.ano),
     sequencia: numero(o.sequencia),
     revisao: numero(o.revisao),
-    situacao: situacao(o.situacao),
+    situacao: situacaoOuNula(o.situacao) ?? 'rascunho',
     empreendimentoId: textoOuNulo(o.empreendimento_id),
     empreendimentoNome: texto(o.empreendimento_nome),
     prospecto: prospectoDe(o.prospecto),
@@ -512,8 +468,8 @@ export async function obterOrcamento(id: string): Promise<Orcamento | null> {
     exclusoes: textos(o.exclusoes),
     apresentacao: textoOuNulo(o.apresentacao) ?? '',
     historicoSituacao: lista(o.historico_situacao).map((h) => ({
-      de: situacaoDe(h.de),
-      para: situacaoDe(h.para),
+      de: situacaoOuNula(h.de) ?? 'rascunho',
+      para: situacaoOuNula(h.para) ?? 'rascunho',
       revisao: numero(h.revisao),
       membroNome: textoOuNulo(h.membro_nome),
       em: texto(h.em),
@@ -829,20 +785,7 @@ export async function salvarBaseDeCustos(
     p_taxas_pb: base.taxasPb,
     p_taxa_por_cobranca_centavos: base.taxaPorCobrancaCentavos,
     p_taxa_por_assinatura_centavos: base.taxaPorAssinaturaCentavos,
-    p_equipe: base.equipe.map((p) => ({
-      id: p.id,
-      membro_id: p.membroId,
-      socio: p.socio,
-      profissao: p.profissao,
-      tipo_recebimento: p.forma,
-      custo_mensal_centavos: p.custoMensalCentavos,
-      horas_disponiveis_mes: p.horasNoMes,
-      custo_diaria_centavos: p.custoDiariaCentavos,
-      horas_por_diaria: p.horasPorDiaria,
-      dias_no_mes: p.diasNoMes,
-      custo_projeto_centavos: p.custoProjetoCentavos,
-      horas_projeto: p.horasDoProjeto,
-    })),
+    p_equipe: base.equipe.map(pessoaDaEquipeParaOBanco),
     p_custos_fixos: base.contas.map((c) => ({
       descricao: c.descricao,
       valor_centavos: c.valorCentavos,
@@ -856,6 +799,24 @@ export async function salvarBaseDeCustos(
     p_horas_venda: horasDeVendaParaOBanco(base.horasVenda),
   })
   if (error) throw error
+}
+
+/** Pessoa da equipe como o banco espera (salvar_base_de_custos e o rascunho dos primeiros passos). */
+export function pessoaDaEquipeParaOBanco(p: PessoaDoRascunho) {
+  return {
+    id: p.id,
+    membro_id: p.membroId,
+    socio: p.socio,
+    profissao: p.profissao,
+    tipo_recebimento: p.forma,
+    custo_mensal_centavos: p.custoMensalCentavos,
+    horas_disponiveis_mes: p.horasNoMes,
+    custo_diaria_centavos: p.custoDiariaCentavos,
+    horas_por_diaria: p.horasPorDiaria,
+    dias_no_mes: p.diasNoMes,
+    custo_projeto_centavos: p.custoProjetoCentavos,
+    horas_projeto: p.horasDoProjeto,
+  }
 }
 
 /** Tabela de preços como o banco espera (salvar_base_de_custos e o rascunho dos primeiros passos). */
@@ -935,7 +896,10 @@ export function textoDaQuantidadeParaOBanco(dezMilesimos: number): string {
 
 export const TAMANHO_PAGINA_MODELOS = 50
 
-/** Modelo de serviço da consultoria: só escopo, unidade e horas; sem cliente nem preço. */
+/**
+ * Modelo de serviço da consultoria: escopo, unidade e horas; sem cliente. Só o preço digitado do
+ * serviço (sem linha da tabela) vai junto (ADR-0023).
+ */
 export interface ModeloDeOrcamento {
   id: string
   nome: string
@@ -946,6 +910,8 @@ export interface ModeloDeOrcamento {
     /** Linha da tabela de preços; o preço vale o da tabela no momento de aplicar. */
     horaVendaId: string | null
     unidade: UnidadeDeCobranca
+    /** Preço digitado do serviço, quando ele não usa a tabela. */
+    precoDigitadoCentavos: number | null
   }[]
   /** Entram a cotar. */
   despesas: { descricao: string; tratamento: TratamentoDespesa }[]
@@ -978,6 +944,7 @@ export async function listarModelosDeOrcamento(
         minutos: numero(i.minutos),
         horaVendaId: textoOuNulo(i.hora_venda_id),
         unidade: unidadeDe(i.unidade),
+        precoDigitadoCentavos: numeroOuNulo(i.preco_digitado_centavos),
       })),
       despesas: lista(m.despesas).map((d) => ({
         descricao: texto(d.descricao),

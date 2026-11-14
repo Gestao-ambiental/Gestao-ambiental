@@ -64,7 +64,7 @@ export function lerEstimativa(texto: string): number | null | undefined {
   return lerReais(texto) ?? undefined
 }
 
-export interface LinhaParaCalculo {
+interface LinhaParaCalculo {
   minutos: number
   custoDiretoExtraCentavos: number
   /** Linha da tabela de hora de venda (preço pela tabela e profissão do custo). */
@@ -73,11 +73,16 @@ export interface LinhaParaCalculo {
   responsavelId?: string | null
   /** Quantidade na unidade da linha de preço (× 10.000). */
   quantidadeDezMilesimos?: number | null
-  /** Preço fechado do pacote. */
+  /** Preço fechado do pacote; sem linha da tabela, o preço digitado (ADR-0023). */
   precoFechadoCentavos?: number | null
 }
 
-export interface CalculoDoOrcamento extends PrecoDoOrcamento {
+/** Serviço com preço digitado: sem linha da tabela, com o preço preenchido (ADR-0023). */
+export function temPrecoDigitado(linha: LinhaParaCalculo): boolean {
+  return !linha.horaVendaId && linha.precoFechadoCentavos != null
+}
+
+interface CalculoDoOrcamento extends PrecoDoOrcamento {
   /** A margem escolhida comparada à mínima da base (a margem mínima vale para o total). */
   situacaoDaMargem: SituacaoDaMargem
   /** Quanto o rateio deste orçamento cobre de cada conta do mês (prévia das contas). */
@@ -139,13 +144,15 @@ export function calcularOrcamento(
         ? distribuirPorMaiorResto(total, percentuaisDasParcelas)
         : percentuaisDasParcelas.map((pontos) => aplicarPontosBase(total, pontos))
 
+  // Pela tabela, compara a margem que sobra; pela margem, a escolhida. Com preço digitado, o
+  // acréscimo não vale para ele: compara a margem que sobra, para mostrar se o preço cobre o custo.
+  const pelaSobra = formaDePreco === 'tabela' || linhas.some(temPrecoDigitado)
   return {
     ...preco,
-    // Pela tabela, compara a margem que sobra; pela margem, a escolhida.
     situacaoDaMargem:
       base && preco.pendencia === null
         ? situacaoDaMargem(
-            formaDePreco === 'tabela' ? (preco.margemResultantePb ?? 0) : margemPb,
+            pelaSobra ? (preco.margemResultantePb ?? 0) : margemPb,
             base.margemMinimaPb,
           )
         : 'pendente',

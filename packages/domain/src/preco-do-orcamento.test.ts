@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 
 import {
   SEM_VISITAS,
-  custoHoraPorMembro,
   custoHoraPorProfissao,
   valorDasVisitas,
   precificarOrcamento,
@@ -393,36 +392,6 @@ describe('precificarOrcamento pela tabela (hora de venda) e custo por profissão
     })
     expect(p.pendencia).toBe('hora_sem_valor')
     expect(p.precoTotalCentavos).toBeNull()
-  })
-})
-
-describe('custoHoraPorMembro', () => {
-  it('hora de cada membro = custo ÷ horas; quem não tem horas fica de fora', () => {
-    expect(
-      custoHoraPorMembro([
-        {
-          membroId: 'm-eduardo',
-          custoMensalCentavos: 1_375_177,
-          horasDisponiveisMes: 173,
-          socio: true,
-        },
-        {
-          membroId: 'm-helena',
-          custoMensalCentavos: 500_000,
-          horasDisponiveisMes: 87,
-          socio: true,
-        },
-        {
-          membroId: 'm-sem-horas',
-          custoMensalCentavos: 100_000,
-          horasDisponiveisMes: 0,
-          socio: false,
-        },
-      ]),
-    ).toEqual([
-      { membroId: 'm-eduardo', horaCentavos: 7_949 },
-      { membroId: 'm-helena', horaCentavos: 5_747 },
-    ])
   })
 })
 

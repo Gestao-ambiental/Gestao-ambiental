@@ -46,6 +46,8 @@ import { definirProfissaoECargo } from '@/lib/api/perfil'
 import { formatarInstanteComoData } from '@/lib/datas'
 import { ehSemPermissao, mensagemDoErro } from '@/lib/erros'
 
+import { AcessosDoSuporte } from '@/app/suporte/AcessosDoSuporte'
+
 import { CamposProfissaoECargo } from './CamposProfissaoECargo'
 import { DialogoConvidar, type ResultadoConvite } from './DialogoConvidar'
 
@@ -107,7 +109,8 @@ export function PaginaEquipe() {
 }
 
 function EquipeDaGestao() {
-  const { atual } = useConsultoria()
+  // Em modo suporte (ADR-0025) as ações somem: o suporte só lê (o banco recusa de qualquer forma).
+  const { atual, suporte } = useConsultoria()
   const cid = atual.consultoriaId
   const queryClient = useQueryClient()
   const [convidarAberto, setConvidarAberto] = useState(false)
@@ -214,7 +217,7 @@ function EquipeDaGestao() {
     papel.isPending || desligamento.isPending || reenvio.isPending || cancelamento.isPending
 
   function acoesDoMembro(membro: Membro) {
-    if (membro.situacao === 'desligado') return null
+    if (membro.situacao === 'desligado' || suporte) return null
     const novo = membro.papel === 'gestao' ? 'equipe' : 'gestao'
     const impedimentoPapel = impedimentoDoVinculo(
       vinculos,
@@ -339,6 +342,7 @@ function EquipeDaGestao() {
   }
 
   function acoesDoConvite(convite: ConvitePendente) {
+    if (suporte) return null
     return (
       <span className="flex items-center justify-end gap-(--space-050)">
         <Botao
@@ -373,16 +377,18 @@ function EquipeDaGestao() {
     <div className="flex flex-col gap-(--space-300)">
       <div className="flex flex-wrap items-start justify-between gap-(--space-100)">
         <Pagina titulo="Equipe">{null}</Pagina>
-        <Botao
-          aparencia="primario"
-          iconeAntes="plus"
-          onClick={() => {
-            setAviso(null)
-            setConvidarAberto(true)
-          }}
-        >
-          Convidar pessoa
-        </Botao>
+        {suporte ? null : (
+          <Botao
+            aparencia="primario"
+            iconeAntes="plus"
+            onClick={() => {
+              setAviso(null)
+              setConvidarAberto(true)
+            }}
+          >
+            Convidar pessoa
+          </Botao>
+        )}
       </div>
 
       {aviso ? (
@@ -562,6 +568,8 @@ function EquipeDaGestao() {
           </>
         )}
       </section>
+
+      <AcessosDoSuporte />
 
       <DialogoConvidar
         aberto={convidarAberto}

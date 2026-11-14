@@ -2,7 +2,7 @@
 -- principal continua sendo a do orçamento. Quem é de outra consultoria não lê nem muda.
 begin;
 
-select plan(13);
+select plan(12);
 
 select testes.criar_dados_sinteticos();
 
@@ -90,18 +90,13 @@ select lives_ok(
   'a própria pessoa define as suas formações'
 );
 
--- Teste negativo: Gestão de outra consultoria não muda nem lê.
+-- Teste negativo: Gestão de outra consultoria não muda (a leitura, zero linhas, está em 030_isolamento).
 select testes.autenticar_como('helena@verdesul.test');
 select throws_ok(
   $$select public.definir_profissao_e_cargo('d0000000-0000-4000-8000-0000000000a2',
       'biologo', null, array['eng_civil'])$$,
   '42501', 'sem_permissao',
   'Gestão de outra consultoria não muda as formações'
-);
-select is(
-  (select count(*)::int from public.membro where id = 'd0000000-0000-4000-8000-0000000000a2'),
-  0,
-  'usuário de outra consultoria não lê o membro (zero linhas)'
 );
 
 select * from finish();

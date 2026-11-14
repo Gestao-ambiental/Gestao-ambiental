@@ -25,18 +25,12 @@ import {
   type FaixaDePreco,
   type FormaDeRecebimento,
   type ModoDeDeslocamento,
-  type PassoPrecos,
   type PessoaDoRascunho,
   type RemuneracaoDaPessoa,
   type UnidadeDeCobranca,
 } from '@gestao-ambiental/domain'
 
-import type {
-  BaseDeCustosDaConsultoria,
-  ContaDoMes,
-  HoraDeVenda,
-  PessoaDaBase,
-} from '@/lib/api/orcamentos'
+import type { ContaDoMes, HoraDeVenda, PessoaDaBase } from '@/lib/api/orcamentos'
 
 import { lerEstimativa, lerReaisOuZero } from './calculo'
 import { campoDaQuantidade, lerQuantidade } from './comum'
@@ -178,10 +172,6 @@ export const ROTULO_DA_FORMA: Record<FormaDeRecebimento, string> = {
   projeto: 'Por projeto',
 }
 
-export function horasDe(base: BaseDeCustosDaConsultoria | null): LinhaHora[] {
-  return linhasDePrecoDe(base?.horasVenda ?? [])
-}
-
 /** Linhas da tabela de preços a partir da lista (da base ou do rascunho). */
 export function linhasDePrecoDe(horasVenda: readonly HoraDeVenda[]): LinhaHora[] {
   return horasVenda.map((h) => ({
@@ -202,7 +192,7 @@ export function linhasDePrecoDe(horasVenda: readonly HoraDeVenda[]): LinhaHora[]
 }
 
 /** Lê as faixas da linha; devolve o problema em texto, se houver. `rotulo`: "Serviços, linha 2". */
-export function lerFaixas(l: LinhaHora, rotulo: string): FaixaDePreco[] | string {
+function lerFaixas(l: LinhaHora, rotulo: string): FaixaDePreco[] | string {
   if (!usaFaixas(l)) return []
   const faixas: FaixaDePreco[] = []
   for (const [i, f] of l.faixas.entries()) {
@@ -272,10 +262,6 @@ export function lerHorasDeVenda(linhas: readonly LinhaHora[]): HoraDeVenda[] | s
   return horas
 }
 
-export function contasDe(base: BaseDeCustosDaConsultoria | null): LinhaConta[] {
-  return linhasDeContaDe(base?.contas ?? [])
-}
-
 /** Linhas das contas do mês a partir da lista; conta sem valor (rascunho) fica em branco. */
 export function linhasDeContaDe(
   contas: readonly { descricao: string; valorCentavos: number | null }[],
@@ -298,10 +284,6 @@ export function lerContas(linhas: readonly LinhaConta[]): ContaDoMes[] | string 
     contas.push({ descricao: l.descricao.trim(), valorCentavos: valor })
   }
   return contas
-}
-
-export function linhasDe(base: BaseDeCustosDaConsultoria | null): LinhaPessoa[] {
-  return linhasDePessoaDe(base?.equipe ?? [])
 }
 
 /** Linhas da equipe a partir da lista (da base ou do rascunho); ausente fica em branco. */
@@ -341,9 +323,6 @@ export function novaPessoa(): LinhaPessoa {
   }
 }
 
-/** Reais digitados; vazio é nulo (desconhecido); inválido é undefined. */
-export const lerReaisOuNulo = lerEstimativa
-
 /** Inteiro digitado; vazio é nulo (desconhecido); inválido é undefined. */
 export function lerInteiroOuNulo(texto: string): number | null | undefined {
   const limpo = texto.trim()
@@ -354,12 +333,12 @@ export function lerInteiroOuNulo(texto: string): number | null | undefined {
 /** Os números da linha conforme a forma; só os campos da forma escolhida contam. */
 export function remuneracaoDaLinha(l: LinhaPessoa): RemuneracaoDaPessoa | string {
   const forma = l.forma === '' ? null : l.forma
-  const custo = lerReaisOuNulo(l.custo)
+  const custo = lerEstimativa(l.custo)
   const horas = lerInteiroOuNulo(l.horas)
-  const diaria = lerReaisOuNulo(l.diaria)
+  const diaria = lerEstimativa(l.diaria)
   const horasDiaria = lerInteiroOuNulo(l.horasDiaria)
   const dias = lerInteiroOuNulo(l.dias)
-  const projeto = lerReaisOuNulo(l.projeto)
+  const projeto = lerEstimativa(l.projeto)
   const horasProjeto = lerInteiroOuNulo(l.horasProjeto)
   const r: RemuneracaoDaPessoa = {
     forma,
@@ -475,7 +454,7 @@ export interface CamposDeDeslocamento {
 }
 
 /** O deslocamento lido: o que vai para a base ou para o rascunho. Ausente fica nulo. */
-export interface DeslocamentoLido {
+interface DeslocamentoLido {
   deslocamentoModo: ModoDeDeslocamento
   valorVisitaCentavos: number | null
   /** Derivado (o banco recalcula). */
@@ -534,11 +513,6 @@ export function camposDeDeslocamentoDe(
     combustivel: reais(combustivel),
     acrescimo: kmAntigo > 0 ? formatarCentavos(kmAntigo) : reais(d.acrescimoKmCentavos),
   }
-}
-
-/** Campos do passo 3 dos primeiros passos a partir do rascunho (nulo continua em branco). */
-export function camposDeDeslocamentoDoRascunho(p: PassoPrecos): CamposDeDeslocamento {
-  return camposDeDeslocamentoDe(p, { zeroEmBranco: false })
 }
 
 /**

@@ -131,6 +131,7 @@ Para cada problema, diga:
    - "Margem desejada/mínima/que sobra" (7).
 
    A palavra "acréscimo" vem do ADR-0018. Se propuser trocar, deixe como pergunta.
+
 4. **Tabela de itens do orçamento.** Está larga: Serviço, Horas, Hora de venda (com quantidade ou preço fechado embaixo), Responsável (com carga), Mês, Outros custos, Custo e Preço. No celular ela rola para o lado.
    - O ADR-0018 §2.4 já pedia **cartões por item a 375 px**. Especifique esses cartões: o que aparece fechado, o que expande e a ordem dos campos.
    - Diga também o que pode sair da linha no notebook. A coluna ainda se chama "Hora de venda", embora agora seja a linha da tabela de preços (hora, m², pacote…): proponha o nome.
@@ -146,24 +147,24 @@ Para cada problema, diga:
 
 Saíram do segundo teste e estão em `results.json`. Para cada um, diga se resolve agora e como; se não valer, diga por quê.
 
-| Pedido | Quem | Onde |
-|---|---|---|
-| "Detalhar contas do mês" parece "trabalho de contador": lançar conta por conta cansa | Ronaldo (também Tainá e Lívia, que travaram por não saber os valores) | Custos e taxas · Contas do mês |
-| Avisar a margem abaixo da mínima já em Custos e taxas, e não só depois de montar o orçamento inteiro | Paulo | Custos e taxas · Margens |
-| "Resultado da equipe" mais visual (barra ou gráfico), para confiar sem conferir na mão | Beatriz | Custos e taxas · Resultado da equipe |
-| Mostrar a memória de cálculo da hora de custo, com a fórmula aplicada ("sem isso não assino preço") | Marcos | Custos e taxas · Hora de custo |
-| Horas faturáveis de quem alterna campo e escritório variam de mês a mês | Patrícia | Custos e taxas · Horas no mês |
-| "Tempo por unidade" pede horas por hectare, mas no campo se pensa em dias | Gilmara | Tabela de preços · Tempo por unidade |
-| "Empreendimento" soa urbano: no rural se fala "propriedade" | Gilmara | Lista, novo orçamento, proposta |
-| "Revisão" soa "termo de escritório da cidade" | Gilmara | Mudar situação |
-| O objeto da proposta fica raso para estudo técnico; quer citar metodologia e legislação | Antônio | Parcelas · Objeto / proposta pronta |
-| Porte do empreendimento (ex.: número de matrizes) visível junto do serviço na proposta | Henrique | Proposta pronta |
-| Destacar mais o "Inclui ART", que é a primeira pergunta do cliente | Fernanda | Proposta pronta (junto com a seção 3) |
-| Letra maior no total e no "Objeto" | Edgar, Beatriz | Proposta pronta |
-| "Reabrir como revisão" mais visível | Tainá | Mudar situação |
-| Ao duplicar para outro mês, deixar claro que a carga da equipe é recalculada | Antônio | Duplicar |
-| Atalho de teclado para adicionar serviço | Wellington | Serviços |
-| Lançar 16 pessoas uma a uma é demorado (equipe grande) | Aline | Custos e taxas · Calcular pela equipe |
+| Pedido                                                                                               | Quem                                                                  | Onde                                  |
+| ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | ------------------------------------- |
+| "Detalhar contas do mês" parece "trabalho de contador": lançar conta por conta cansa                 | Ronaldo (também Tainá e Lívia, que travaram por não saber os valores) | Custos e taxas · Contas do mês        |
+| Avisar a margem abaixo da mínima já em Custos e taxas, e não só depois de montar o orçamento inteiro | Paulo                                                                 | Custos e taxas · Margens              |
+| "Resultado da equipe" mais visual (barra ou gráfico), para confiar sem conferir na mão               | Beatriz                                                               | Custos e taxas · Resultado da equipe  |
+| Mostrar a memória de cálculo da hora de custo, com a fórmula aplicada ("sem isso não assino preço")  | Marcos                                                                | Custos e taxas · Hora de custo        |
+| Horas faturáveis de quem alterna campo e escritório variam de mês a mês                              | Patrícia                                                              | Custos e taxas · Horas no mês         |
+| "Tempo por unidade" pede horas por hectare, mas no campo se pensa em dias                            | Gilmara                                                               | Tabela de preços · Tempo por unidade  |
+| "Empreendimento" soa urbano: no rural se fala "propriedade"                                          | Gilmara                                                               | Lista, novo orçamento, proposta       |
+| "Revisão" soa "termo de escritório da cidade"                                                        | Gilmara                                                               | Mudar situação                        |
+| O objeto da proposta fica raso para estudo técnico; quer citar metodologia e legislação              | Antônio                                                               | Parcelas · Objeto / proposta pronta   |
+| Porte do empreendimento (ex.: número de matrizes) visível junto do serviço na proposta               | Henrique                                                              | Proposta pronta                       |
+| Destacar mais o "Inclui ART", que é a primeira pergunta do cliente                                   | Fernanda                                                              | Proposta pronta (junto com a seção 3) |
+| Letra maior no total e no "Objeto"                                                                   | Edgar, Beatriz                                                        | Proposta pronta                       |
+| "Reabrir como revisão" mais visível                                                                  | Tainá                                                                 | Mudar situação                        |
+| Ao duplicar para outro mês, deixar claro que a carga da equipe é recalculada                         | Antônio                                                               | Duplicar                              |
+| Atalho de teclado para adicionar serviço                                                             | Wellington                                                            | Serviços                              |
+| Lançar 16 pessoas uma a uma é demorado (equipe grande)                                               | Aline                                                                 | Custos e taxas · Calcular pela equipe |
 
 Também vale olhar o primeiro teste (`pesquisa-personas/outputs/2026-11-12/teste-orcamentos-20/sintese.md`). A maior parte dele já foi resolvida no ADR-0018, mas confirme se sobrou algo de usabilidade.
 
@@ -171,26 +172,26 @@ Também vale olhar o primeiro teste (`pesquisa-personas/outputs/2026-11-12/teste
 
 O foco agora é usabilidade. Para cada item abaixo, diga só **agora, depois ou nunca**, com uma frase de motivo. Ligue com o ADR-0016 ou o ADR-0018 quando já estiver lá. Não especifique nenhum deles neste documento.
 
-| Função | Quem pediu (segundo teste) |
-|---|---|
-| Unidades de nicho: porte (matrizes, UA, cabeças), por amostra ou ponto de coleta, metro linear de rede, laudo ou parecer avulso, por propriedade ou módulo fiscal, por espécie ou armadilha. Avalie também uma unidade livre ("por ___", com o nome digitado pela consultoria). | Henrique, Thiago, Juliana, Marcos, Diego, Gilmara, Tainá |
-| Pacote único com várias profissões; hectare com pacote de relatório | Aline, Thiago, Paulo |
-| Custo real de quem recebe "Por projeto" separado do preço fechado do pacote, para ver a margem desse serviço | Juliana |
-| Exportar memória de cálculo e relatório de custo × preço (Excel ou PDF interno) | Marcos, Juliana, Diego, Tainá, Aline |
-| Enviar a proposta por e-mail ou WhatsApp, ou link para o cliente assinar | Juliana, Fernanda, Carolina |
-| Anexar a ART (PDF) à proposta e mostrar o número da ART/RRT | Juliana, Carolina, Marcos, Aline |
-| Contrato mensal recorrente com cobrança do mês seguinte | Patrícia |
-| Suporte, tutorial ou passo a passo guiado na primeira configuração | Edgar, Gilmara, Lívia, Renata, Tainá |
-| Funcionar sem internet no campo | Tainá, Wellington |
-| Permissões por usuário (quem vê custo e margem, quem muda preço) | Marcos, Paulo |
-| Desconto comercial explícito na proposta | Diego |
-| Lembrete de reajuste da tabela de preços | Carolina, Diego |
-| Importar a planilha de custos ou a tabela de preços | Wellington, Aline |
-| Painel de carga da equipe toda, com orçamentos em aprovação | Paulo |
-| Contingência para campanha de campo sujeita a clima | Antônio |
-| Personalizar cor e fonte da proposta | Thiago |
-| Integração com CRM ou CAR | Juliana, Gilmara |
-| Referência de piso dos conselhos ou de margem mínima do setor | Aline, Antônio. **Já decidido: não entra sem fonte real; não reabra**, só registre. |
+| Função                                                                                                                                                                                                                                                                          | Quem pediu (segundo teste)                                                          |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Unidades de nicho: porte (matrizes, UA, cabeças), por amostra ou ponto de coleta, metro linear de rede, laudo ou parecer avulso, por propriedade ou módulo fiscal, por espécie ou armadilha. Avalie também uma unidade livre ("por ___", com o nome digitado pela consultoria). | Henrique, Thiago, Juliana, Marcos, Diego, Gilmara, Tainá                            |
+| Pacote único com várias profissões; hectare com pacote de relatório                                                                                                                                                                                                             | Aline, Thiago, Paulo                                                                |
+| Custo real de quem recebe "Por projeto" separado do preço fechado do pacote, para ver a margem desse serviço                                                                                                                                                                    | Juliana                                                                             |
+| Exportar memória de cálculo e relatório de custo × preço (Excel ou PDF interno)                                                                                                                                                                                                 | Marcos, Juliana, Diego, Tainá, Aline                                                |
+| Enviar a proposta por e-mail ou WhatsApp, ou link para o cliente assinar                                                                                                                                                                                                        | Juliana, Fernanda, Carolina                                                         |
+| Anexar a ART (PDF) à proposta e mostrar o número da ART/RRT                                                                                                                                                                                                                     | Juliana, Carolina, Marcos, Aline                                                    |
+| Contrato mensal recorrente com cobrança do mês seguinte                                                                                                                                                                                                                         | Patrícia                                                                            |
+| Suporte, tutorial ou passo a passo guiado na primeira configuração                                                                                                                                                                                                              | Edgar, Gilmara, Lívia, Renata, Tainá                                                |
+| Funcionar sem internet no campo                                                                                                                                                                                                                                                 | Tainá, Wellington                                                                   |
+| Permissões por usuário (quem vê custo e margem, quem muda preço)                                                                                                                                                                                                                | Marcos, Paulo                                                                       |
+| Desconto comercial explícito na proposta                                                                                                                                                                                                                                        | Diego                                                                               |
+| Lembrete de reajuste da tabela de preços                                                                                                                                                                                                                                        | Carolina, Diego                                                                     |
+| Importar a planilha de custos ou a tabela de preços                                                                                                                                                                                                                             | Wellington, Aline                                                                   |
+| Painel de carga da equipe toda, com orçamentos em aprovação                                                                                                                                                                                                                     | Paulo                                                                               |
+| Contingência para campanha de campo sujeita a clima                                                                                                                                                                                                                             | Antônio                                                                             |
+| Personalizar cor e fonte da proposta                                                                                                                                                                                                                                            | Thiago                                                                              |
+| Integração com CRM ou CAR                                                                                                                                                                                                                                                       | Juliana, Gilmara                                                                    |
+| Referência de piso dos conselhos ou de margem mínima do setor                                                                                                                                                                                                                   | Aline, Antônio. **Já decidido: não entra sem fonte real; não reabra**, só registre. |
 
 ## 5. Restrições
 

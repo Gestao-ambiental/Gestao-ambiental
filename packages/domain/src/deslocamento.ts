@@ -3,6 +3,8 @@
 // visita não entra). O valor do km sai do combustível: preço do litro ÷ consumo do carro, mais um
 // acréscimo por km opcional. O banco calcula igual (private.valor_do_km).
 
+import { dividirArredondando, PRECO_MAXIMO_CENTAVOS } from './orcamento'
+
 /** Como a consultoria cobra a visita técnica. */
 export type ModoDeDeslocamento = 'visita' | 'km'
 
@@ -10,9 +12,6 @@ export const MODOS_DE_DESLOCAMENTO: readonly ModoDeDeslocamento[] = ['visita', '
 
 /** Consumo do carro em km por litro: até 999,99, com até duas casas (numeric(5,2) no banco). */
 export const CONSUMO_MAXIMO_KM_POR_LITRO = 999.99
-
-/** Teto dos valores em centavos da base de custos (igual ao banco). */
-const MAXIMO_CENTAVOS = 99_999_999_999
 
 /**
  * O modo da base. Bases antigas, sem modo, ficam com "km" quando só o km tem valor; senão, "visita".
@@ -45,7 +44,7 @@ function consumoEmCentesimos(consumo: number): number | null {
 }
 
 function centavosValidos(valor: number): boolean {
-  return Number.isSafeInteger(valor) && valor >= 0 && valor <= MAXIMO_CENTAVOS
+  return Number.isSafeInteger(valor) && valor >= 0 && valor <= PRECO_MAXIMO_CENTAVOS
 }
 
 /**
@@ -64,7 +63,7 @@ export function valorDoKm(c: CombustivelDoKm): number | null {
   // round(preço × 100 ÷ centésimos), metade para cima, em inteiros (igual ao round() do banco).
   const numerador = BigInt(c.precoCombustivelCentavos) * 100n
   const divisor = BigInt(centesimos)
-  const combustivel = Number((numerador * 2n + divisor) / (divisor * 2n))
+  const combustivel = dividirArredondando(numerador, divisor)
   const valor = combustivel + acrescimo
-  return valor <= MAXIMO_CENTAVOS ? valor : null
+  return valor <= PRECO_MAXIMO_CENTAVOS ? valor : null
 }

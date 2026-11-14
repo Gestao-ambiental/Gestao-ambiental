@@ -1137,7 +1137,7 @@ describe('orçamentos (onda 5)', () => {
     await usuario.click(await screen.findByRole('button', { name: 'Salvar como modelo' }))
     const nome = screen.getByLabelText('Nome do modelo')
     expect(nome).toHaveValue('Licenciamento (LO)')
-    expect(screen.getByText(/Sem cliente, preços, responsáveis nem meses/)).toBeInTheDocument()
+    expect(screen.getByText(/Sem cliente, responsáveis nem meses/)).toBeInTheDocument()
     await usuario.clear(nome)
     await usuario.type(nome, 'LO industrial')
     await usuario.click(screen.getByRole('button', { name: 'Salvar modelo' }))

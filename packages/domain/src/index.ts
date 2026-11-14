@@ -113,10 +113,8 @@ export {
   acrescimoEquivalente,
   aplicarPontosBase,
   composicaoDaEquipe,
-  custoDoItem,
   custoFixoPorHora,
   diferencaDasParcelas,
-  horaDeCustoDaPessoa,
   distribuirPorMaiorResto,
   formatarCentavos,
   formatarDuracao,
@@ -126,9 +124,6 @@ export {
   lerReais,
   formatarReaisDigitados,
   numeroDoOrcamento,
-  precoAutomaticoDoItem,
-  precoSugerido,
-  resultadoDoPreco,
   situacaoDaMargem,
 } from './orcamento'
 export type {
@@ -136,19 +131,10 @@ export type {
   ComposicaoDaEquipe,
   CustoDoItem,
   LinhaDaEquipe,
-  PercentuaisDoPreco,
-  ResultadoDoPreco,
   SituacaoDaMargem,
 } from './orcamento'
 
-export {
-  MESES_DE_EXECUCAO,
-  cargaDoMes,
-  ehMesDeExecucao,
-  inicioDoMes,
-  mesesDeExecucao,
-  rotuloDoMes,
-} from './carga-da-equipe'
+export { cargaDoMes, inicioDoMes, mesesDeExecucao, rotuloDoMes } from './carga-da-equipe'
 export type {
   CargaDoMes,
   HorasComprometidas,
@@ -169,22 +155,18 @@ export type { FormaDeRecebimento, RemuneracaoDaPessoa, ResumoDaPessoa } from './
 
 export {
   ESCALA_DA_QUANTIDADE,
-  MAXIMO_CONTAS_DO_MES,
   MAXIMO_DE_FAIXAS,
   MAXIMO_KM_POR_VISITA,
   MAXIMO_VISITAS,
   QUANTIDADE_MAXIMA,
-  SEM_VISITAS,
   UNIDADES_COM_FAIXAS,
   UNIDADES_DE_COBRANCA,
-  custoHoraPorMembro,
   custoHoraPorProfissao,
   mesmaProfissao,
   precificarOrcamento,
   problemaDasFaixas,
   profissaoObrigatoria,
   rateioPorConta,
-  valorDasVisitas,
   valorPorFaixas,
 } from './preco-do-orcamento'
 
@@ -214,22 +196,18 @@ export type {
 } from './preco-do-orcamento'
 
 export {
-  ETAPAS_DA_CONFIGURACAO,
   PASSO_DA_PENDENCIA,
   custosFixosDoRascunho,
-  etapaDaConfiguracao,
   exibirConviteDeConfiguracao,
   horasDaEquipe,
   pendenciasDaConfiguracao,
   resumoDaConfiguracao,
   rotuloDoConviteDeConfiguracao,
-  valorFoiInformado,
 } from './primeiros-passos-orcamento'
 export type {
   ContaDoRascunho,
   DadosDaConfiguracao,
   EstadoDoConvite,
-  EtapaDaConfiguracao,
   ModoDoCusto,
   PassoContas,
   PassoEquipe,
@@ -253,7 +231,6 @@ export {
   rotuloDaProfissaoDaPessoa,
   rotuloDaFormacaoDaPessoa,
   rotuloDaProfissaoNoCusto,
-  rotuloDoCurso,
   profissaoDoCodigo,
   rotuloDaProfissao,
   rotuloDoCargo,
@@ -269,3 +246,36 @@ export type {
   ItemDaLista,
   SugestaoDaLista,
 } from './profissao-e-cargo'
+
+export {
+  DIAS_SEM_USO_PARA_ALERTA,
+  INTERVALO_DE_REGISTRO_MINUTOS,
+  JANELA_DE_USO_DIAS,
+  MINUTOS_PARA_AGORA,
+  MODULOS_DE_USO,
+  ROTULO_DO_MODULO_DE_USO,
+  classificarUltimoUso,
+  diasDesde,
+  ehModuloDeUso,
+  moduloDaRota,
+  podeRegistrarUso,
+  precisaDeAlertaDeSemUso,
+  rotuloDoAlertaDeSemUso,
+  rotuloDoUltimoUso,
+  usandoAgora,
+} from './uso-da-plataforma'
+export type { ClasseDoUltimoUso, ConsultoriaParaAlerta, ModuloDeUso } from './uso-da-plataforma'
+
+export {
+  CATEGORIAS_DE_EMERGENCIA,
+  DURACAO_DA_EMERGENCIA_HORAS,
+  DURACOES_DE_SUPORTE_HORAS,
+  LIMITE_DO_MOTIVO_DE_SUPORTE,
+  ROTULO_DA_CATEGORIA_DE_EMERGENCIA,
+  ehCategoriaDeEmergencia,
+  ehDuracaoDeSuporte,
+  rotuloDaDuracaoDeSuporte,
+  rotuloDoFimDoSuporte,
+  suporteValendo,
+} from './acesso-de-suporte'
+export type { CategoriaDeEmergencia, DuracaoDeSuporte } from './acesso-de-suporte'

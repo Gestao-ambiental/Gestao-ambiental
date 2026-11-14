@@ -62,10 +62,12 @@ as $$
   select u.id from auth.users as u where u.email = email_usuario
 $$;
 
--- Simula a requisição de um usuário logado: role authenticated + claims do JWT (lidas por auth.uid()).
+-- Simula a requisição de um usuário logado: role authenticated + claims do JWT (lidas por auth.uid()
+-- e auth.jwt()). `aal` é o nível da sessão no Supabase Auth: aal1 = só senha (o padrão, como no
+-- login comum); aal2 = senha + segundo fator (TOTP).
 -- Volte para o superusuário do teste com: reset role;
 -- Sem cláusula SET de propósito: ela desfaria o set_config local ao sair da função.
-create or replace function testes.autenticar_como(email_usuario text)
+create or replace function testes.autenticar_como(email_usuario text, nivel text)
 returns void
 language plpgsql
 as $$
@@ -76,9 +78,32 @@ begin
   if usuario is null then
     raise exception 'usuário de teste % não existe', email_usuario;
   end if;
+  if nivel not in ('aal1', 'aal2') then
+    raise exception 'nível de sessão inválido: %', nivel;
+  end if;
   perform set_config('request.jwt.claims',
-    jsonb_build_object('sub', usuario, 'role', 'authenticated', 'email', email_usuario)::text, true);
+    jsonb_build_object('sub', usuario, 'role', 'authenticated', 'email', email_usuario, 'aal', nivel)::text,
+    true);
   perform set_config('role', 'authenticated', true);
+end;
+$$;
+
+create or replace function testes.autenticar_como(email_usuario text)
+returns void
+language plpgsql
+as $$
+begin
+  perform testes.autenticar_como(email_usuario, 'aal1');
+end;
+$$;
+
+-- Usuário logado que confirmou o segundo fator nesta sessão (aal2).
+create or replace function testes.autenticar_com_dois_fatores(email_usuario text)
+returns void
+language plpgsql
+as $$
+begin
+  perform testes.autenticar_como(email_usuario, 'aal2');
 end;
 $$;
 

@@ -6,11 +6,12 @@ import {
   aplicarPontosBase,
   custoDoItem,
   distribuirPorMaiorResto,
+  dividirArredondando as dividir,
+  exigirInteiro,
   ErroDeOrcamento,
   PONTOS_BASE_TOTAL,
   PRECO_MAXIMO_CENTAVOS,
   composicaoDaEquipe,
-  horaDeCustoDaPessoa,
   type CustoDoItem,
   type LinhaDaEquipe,
 } from './orcamento'
@@ -19,8 +20,6 @@ import type { ModoDeDeslocamento } from './deslocamento'
 /** Limites das visitas, conferidos também no banco. */
 export const MAXIMO_VISITAS = 100
 export const MAXIMO_KM_POR_VISITA = 10_000
-/** Contas do mês na base de custos (energia, água, internet…). */
-export const MAXIMO_CONTAS_DO_MES = 50
 
 /** Base de custos já copiada para o orçamento. */
 export interface BaseDoPreco {
@@ -202,12 +201,6 @@ export const SEM_VISITAS: VisitasDoOrcamento = {
   outrosPorVisitaCentavos: 0,
 }
 
-function exigirInteiro(valor: number, maximo: number): void {
-  if (!Number.isSafeInteger(valor) || valor < 0 || valor > maximo) {
-    throw new ErroDeOrcamento('valor_invalido')
-  }
-}
-
 /**
  * Preço fixo das visitas: quantidade × (valor da visita ou km × valor do km, conforme o modo, +
  * outros gastos). No modo "visita" o km não entra; no modo "km" o valor da visita não entra. Sem
@@ -219,9 +212,9 @@ export function valorDasVisitas(
 ): number {
   exigirInteiro(visitas.quantidade, MAXIMO_VISITAS)
   exigirInteiro(visitas.kmPorVisita, MAXIMO_KM_POR_VISITA)
-  exigirInteiro(visitas.outrosPorVisitaCentavos, 99_999_999_999)
-  exigirInteiro(base.valorVisitaCentavos, 99_999_999_999)
-  exigirInteiro(base.custoKmCentavos, 99_999_999_999)
+  exigirInteiro(visitas.outrosPorVisitaCentavos, PRECO_MAXIMO_CENTAVOS)
+  exigirInteiro(base.valorVisitaCentavos, PRECO_MAXIMO_CENTAVOS)
+  exigirInteiro(base.custoKmCentavos, PRECO_MAXIMO_CENTAVOS)
   const modo = base.deslocamentoModo ?? null
   const porVisita =
     (modo === 'km' ? 0 : base.valorVisitaCentavos) +
@@ -293,7 +286,7 @@ export interface EntradaDoPreco {
     responsavelId?: string | null
     /** Quantidade na unidade da linha (× 10.000); só fora da hora e do pacote. */
     quantidadeDezMilesimos?: number | null
-    /** Preço fechado do pacote. */
+    /** Preço fechado do pacote; sem linha da tabela, o preço digitado do serviço (ADR-0023). */
     precoFechadoCentavos?: number | null
   }[]
   visitas: VisitasDoOrcamento
@@ -305,11 +298,6 @@ export interface EntradaDoPreco {
   /** Padrão: "margem". */
   formaDePreco?: FormaDePreco
   base: BaseDoPreco | null
-}
-
-/** round(a ÷ b), metade para cima, em inteiros: igual ao round() em numeric do banco. */
-function dividir(numerador: bigint, divisor: bigint): number {
-  return Number((numerador * 2n + divisor) / (divisor * 2n))
 }
 
 /**
@@ -340,7 +328,7 @@ export function precificarOrcamento(entrada: EntradaDoPreco): PrecoDoOrcamento {
     ...parcial,
   })
 
-  if (!base) return pendente(itens.length === 0 ? 'sem_itens' : 'sem_base')
+  if (!base) return precoSemBase(entrada, pendente)
 
   // O custo de cada item usa a hora do responsável; sem responsável (ou fora da equipe), a da
   // profissão da hora escolhida; sem ninguém dessa profissão, a média (igual a private.itens_do_preco).
@@ -360,7 +348,14 @@ export function precificarOrcamento(entrada: EntradaDoPreco): PrecoDoOrcamento {
   const vendaDoItem = (
     item: (typeof itens)[number],
   ): { venda: number; fixo: boolean } | PendenciaDoPreco => {
-    const linha = item.horaVendaId ? horas.get(item.horaVendaId) : undefined
+    // Preço digitado (ADR-0023): sem linha da tabela, vale como preço fechado, igual ao pacote.
+    if (!item.horaVendaId) {
+      const preco = item.precoFechadoCentavos
+      if (preco === null || preco === undefined) return 'hora_sem_valor'
+      exigirInteiro(preco, PRECO_MAXIMO_CENTAVOS)
+      return { venda: preco, fixo: true }
+    }
+    const linha = horas.get(item.horaVendaId)
     if (!linha) return 'hora_sem_valor'
     const unidade = linha.unidade ?? 'hora'
     // Preço mínimo (P12): só sobre os honorários, antes dos outros custos e das despesas.
@@ -585,6 +580,68 @@ export function precificarOrcamento(entrada: EntradaDoPreco): PrecoDoOrcamento {
 }
 
 /**
+ * Orçamento rápido, sem custos e taxas configurados (ADR-0023): preço = preços digitados dos
+ * serviços + despesas incluídas (repartidas pelos serviços na proporção do preço, por maior resto)
+ * + visitas × valor de cada visita (sem km). Sem tributo, taxa ou margem; custo e lucro ficam não
+ * calculados (`null`), nunca zero. Serviço sem preço digitado ou ligado à tabela deixa pendente
+ * ("sem_base"), como a despesa incluída a cotar. Igual a private.precificar_orcamento sem base.
+ */
+function precoSemBase(
+  entrada: EntradaDoPreco,
+  pendente: (pendencia: PendenciaDoPreco, parcial?: Partial<PrecoDoOrcamento>) => PrecoDoOrcamento,
+): PrecoDoOrcamento {
+  const { itens } = entrada
+  // O valor de cada visita é o digitado em "outros por visita"; o km não entra sem a base.
+  const valorVisitasCentavos = valorDasVisitas(entrada.visitas, {
+    valorVisitaCentavos: 0,
+    custoKmCentavos: 0,
+    deslocamentoModo: 'visita',
+  })
+  const parcial = { valorVisitasCentavos }
+  if (itens.length === 0) return pendente('sem_itens', parcial)
+  if (entrada.despesasIncluidasCentavos.some((valor) => valor === null)) {
+    return pendente('despesa_a_cotar', parcial)
+  }
+  const digitados: number[] = []
+  for (const item of itens) {
+    const preco = item.precoFechadoCentavos
+    if (item.horaVendaId || preco === null || preco === undefined) {
+      return pendente('sem_base', parcial)
+    }
+    exigirInteiro(preco, PRECO_MAXIMO_CENTAVOS)
+    digitados.push(preco)
+  }
+  const despesas = entrada.despesasIncluidasCentavos.reduce<number>(
+    (soma, valor) => soma + (valor ?? 0),
+    0,
+  )
+  const somaDigitados = digitados.reduce((soma, v) => soma + v, 0)
+  const repartidas =
+    despesas === 0
+      ? digitados.map(() => 0)
+      : distribuirPorMaiorResto(despesas, somaDigitados > 0 ? digitados : digitados.map(() => 1))
+  const precosDosItens = digitados.map((v, i) => v + (repartidas[i] ?? 0))
+  const precoServicos = precosDosItens.reduce((soma, v) => soma + v, 0)
+  if (precoServicos + valorVisitasCentavos > PRECO_MAXIMO_CENTAVOS) {
+    return pendente('valor_invalido', parcial)
+  }
+  return {
+    custosDosItens: [],
+    valorVisitasCentavos,
+    custoTotalCentavos: null,
+    fixosPorCobrancaCentavos: 0,
+    precoTotalCentavos: precoServicos + valorVisitasCentavos,
+    precosDosItens,
+    precoVisitasCentavos: valorVisitasCentavos,
+    margemPb: entrada.margemPb,
+    formaDePreco: entrada.formaDePreco ?? 'margem',
+    margemResultantePb: null,
+    pendencia: null,
+    divisao: null,
+  }
+}
+
+/**
  * Quanto do rateio deste orçamento cobre cada conta do mês, na proporção do valor de cada uma.
  * A parte administrativa da equipe entra como última linha, se houver. Soma igual ao rateio.
  */
@@ -611,19 +668,6 @@ export function rateioPorConta(
     descricao: linha.descricao,
     valorCentavos: valores[indice] ?? 0,
   }))
-}
-
-/**
- * Hora de custo de cada membro: custo do mês ÷ horas no mês. Quem não tem horas fica de fora. O banco
- * grava o mesmo resultado (salvar_base_de_custos → custo_hora_membro).
- */
-export function custoHoraPorMembro(
-  linhas: readonly (LinhaDaEquipe & { membroId: string })[],
-): CustoDoMembro[] {
-  return linhas.flatMap((linha) => {
-    const hora = horaDeCustoDaPessoa(linha)
-    return hora === null ? [] : [{ membroId: linha.membroId, horaCentavos: hora }]
-  })
 }
 
 /**
