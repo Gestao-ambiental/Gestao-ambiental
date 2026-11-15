@@ -460,3 +460,5 @@ export type {
   SituacaoDaTarefa,
   TarefaDoRoteiro,
 } from './tarefas-de-servico'
+export { formatarContato, linkDoContato, normalizarContato } from './lista-de-espera'
+export type { ContatoNormalizado, TipoDeContato } from './lista-de-espera'

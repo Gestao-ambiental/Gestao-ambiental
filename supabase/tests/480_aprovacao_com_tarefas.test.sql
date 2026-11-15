@@ -4,6 +4,10 @@
 -- a tarefa cujo item saiu; outra consultoria lê zero e não escreve; regra do 020 nas tabelas.
 begin;
 
+-- current_date no fuso da consultoria (America/Sao_Paulo): as RPCs comparam com o dia de lá,
+-- e em UTC o dia vira às 21h, o que fazia o teste falhar à noite.
+set local timezone to 'America/Sao_Paulo';
+
 select plan(26);
 
 select testes.criar_dados_sinteticos();

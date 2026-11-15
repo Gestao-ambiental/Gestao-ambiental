@@ -1674,6 +1674,11 @@ isOneToOne: false
               "consultorias_com_dados": number,"consultorias_juntando": number,"estimado": boolean,"horas_acompanhamento": number,"horas_cadastro": number,"horas_total": number,"mes": string,"reais_centavos": number
             }[]
                            },
+"central_lista_de_espera":
+{ Args: { "p_deslocamento"?: number,"p_limite"?: number }; Returns: {
+              "contato": string,"criada_em": string,"id": string,"nome": string,"tipo_contato": string,"total": number
+            }[]
+                           },
 "central_listar_consultorias":
 { Args: { "p_busca"?: string,"p_deslocamento"?: number,"p_limite"?: number,"p_situacao"?: Database["public"]['Enums']["situacao_consultoria"] }; Returns: {
               "criada_em": string,"empreendimentos": number,"fuso": string,"gestao": Json,"id": string,"licencas": number,"nome": string,"orcamentos": number,"pessoas_ativas": number,"situacao": Database["public"]['Enums']["situacao_consultoria"],"situacao_alterada_em": string,"total": number,"ultimo_uso_em": string
@@ -1864,6 +1869,9 @@ isOneToOne: false
                            },
 "entrar_como_suporte":
 { Args: { "p_consultoria_id": string }; Returns: string
+                           },
+"entrar_lista_de_espera":
+{ Args: { "p_contato": string,"p_nome": string }; Returns: undefined
                            },
 "enviar_evidencia":
 { Args: { "p_caminho": string,"p_data_execucao": string,"p_evidencia_id": string,"p_nome_original": string,"p_ocorrencia_id": string,"p_sha256": string,"p_versao_id": string }; Returns: number

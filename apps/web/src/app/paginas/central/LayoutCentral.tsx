@@ -94,6 +94,7 @@ export function LayoutCentral() {
           <Link to="/admin/financeiro">Financeiro</Link>
           <Link to="/admin/valor">Valor</Link>
           <Link to="/admin/parametros">Parâmetros</Link>
+          <Link to="/admin/lista-de-espera">Lista de espera</Link>
         </nav>
         <Outlet />
       </ExigeDoisFatores>
