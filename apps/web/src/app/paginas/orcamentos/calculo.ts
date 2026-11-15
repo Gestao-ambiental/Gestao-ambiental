@@ -11,6 +11,7 @@ import {
   situacaoDaMargem,
   type PrecoDoOrcamento,
   type SituacaoDaMargem,
+  type TerceiroDoItem,
 } from '@gestao-ambiental/domain'
 
 import type { BaseDoOrcamento, FormaDePreco, VisitasDoOrcamento } from '@/lib/api/orcamentos'
@@ -75,6 +76,8 @@ interface LinhaParaCalculo {
   quantidadeDezMilesimos?: number | null
   /** Preço fechado do pacote; sem linha da tabela, o preço digitado (ADR-0023). */
   precoFechadoCentavos?: number | null
+  /** Terceirizado no lugar do responsável da equipe (ADR-0031). */
+  terceiro?: TerceiroDoItem | null
 }
 
 /** Serviço com preço digitado: sem linha da tabela, com o preço preenchido (ADR-0023). */

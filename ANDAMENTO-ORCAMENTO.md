@@ -2,7 +2,44 @@
 
 **Leia isto primeiro, depois `PASSAGEM-CHATGPT.md`.** Este arquivo diz o que já foi feito, o que está pela metade e o que falta. O Claude atualiza a cada passo; quem assumir continua atualizando do mesmo jeito.
 
-- **Última atualização:** 13/11/2026, pelo Claude, ao juntar os primeiros passos na `branch-do-duds` local.
+- **Última atualização:** 15/11/2026, pelo Claude: resumo de 14 e 15/11 na seção 0 (o resto do arquivo é de 12 e 13/11).
+
+## 0. Estado em 15/11/2026 (leia antes do resto)
+
+- **Branch:** `branch-do-duds` (último commit `63663c9`, 14/11, árvore limpa). Ela vai para produção no beta (Vercel, projeto `grama-envora`).
+- **PR:** existe o **PR nº 22** no `Gestao-ambiental/Gestao-ambiental`.
+  - **Base:** `revisao/branch-do-duds` (nunca a `main`); **head:** `branch-do-duds`.
+  - Push só quando o Eduardo pedir: rode antes o `corepack pnpm verificar` e envie com `--no-verify`, porque o gancho bloqueia o `origin`.
+  - O aviso "sem push e sem PR" mais abaixo é de 13/11 e **não vale mais**.
+- **Feito em 14 e 15/11** (cada item tem ADR próprio; todos protótipos que o Kadu revisa):
+
+  | ADR | Função |
+  |---|---|
+  | 0021 | Profissão e cargo do membro em listas fixas; a caixa "Sócio" saiu |
+  | 0022, 0024, 0025 | Central administrativa: operadores com dois fatores; acesso de suporte com autorização |
+  | 0023 | Orçamento rápido. **Mudou a ADR-0020 §2** (o convite grande da lista saiu) e **a ADR-0018 P7** (o modelo passa a guardar o preço digitado) |
+  | 0026, 0030 | Planos, limites, cobrança simulada (Asaas simulado), recursos por plano e plano por contrato; CNPJ ou CPF, com CPF nunca gravado |
+  | 0027 | Indicadores de horas poupadas e resumo do mês |
+  | 0028 | Resíduos, fase 1: MTR, CDF, conferência, painel e prazos |
+  | 0029 | Aprovação do orçamento com tarefas, fatia 1 |
+  | 0032 | Lista de espera do site, lida na central. O 0031 está reservado para o terceirizado |
+
+  Também: `docs/revisao-de-necessidade-2026-11-14.md` (revisão das 43 mil linhas) e `docs/juridico/` (termos de uso e acordo de dados).
+- **Regras novas desde 13/11** (estão no `CLAUDE.md` e valem para quem assumir):
+  - **testes de regressão sempre:** código novo com teste novo, e `corepack pnpm verificar` (lint, tipos, testes, build e pgTAP por `scripts/testar-banco.mjs`) antes de entregar;
+  - **interface sem texto explicativo:** nada de prosa cinza de ajuda; fica só rótulo, valor, estado, erro e o que falta. Dinheiro mostra o ponto de milhar ao digitar. **Vários textos de ajuda das fatias 1 e 2 do ADR-0019 descritos abaixo podem já ter saído:** confira no código antes de citar;
+  - **protótipo:** caminho mais curto e testes enxutos, mas RLS forçada, CPF nunca gravado e suíte inteira verde;
+  - responder sempre em português.
+- **PR 22 × local:** o PR tem 37 commits, até o `506dc02`, sem revisão do Kadu (só o comentário da Vercel). O commit local `63663c9` (lista de espera) ainda não foi enviado.
+- **Feito, mas FORA da `branch-do-duds` e do PR** (conferido em 15/11):
+  - **Terceirizado no orçamento: juntado em 15/11** por merge da `claude/terceirizado-orcamento` (`dd6c49c`), renumerado para ADR-0031, migration `20261115020000_terceirizado_no_orcamento.sql` e pgTAP `510`. Suíte inteira verde (`corepack pnpm verificar`).
+  - **`feature/86e3q96x1-vistoria-movel`** (`692d174`, 14/11), na pasta `.claude/worktrees/terceirizado-orcamento`: vistoria móvel no celular (CAMPO-01), primeiro incremento.
+    - **Também conflita em número:** usa ADR-0029, migration `20261114220000` e pgTAP `480`, que na branch são de aprovação com tarefas.
+    - As decisões do ADR dela estão marcadas "para o Eduardo confirmar".
+  - **De-para de profissão e cargo** (13/11): pela metade e **sem commit** nas pastas `.claude/worktrees/de-para-profissoes-a928f3` (`de-para-profissao-e-cargo.ts` + teste) e `.claude/worktrees/agent-a53d182acd7de6ca3` (mudanças em `profissao-e-cargo.ts`).
+  - **`feat/compartilhar-orcamentos`** e o repositório `teste-privado` (`grama-orcamentos-prototipo`): commits de 11/11 do protótipo antigo, anteriores ao módulo atual. Não há o que juntar.
+- **Ainda pendente do orçamento:** ADR-0019, fatias 4 (ART/RRT em seção única), 5 (situação mais leve) e 6 (salvamento automático, só depois); job `banco` do CI no Supabase real.
+
 - **Pasta:** `C:\Users\eduka\Documents\Codex\2026-11-06\https-github-com-gestao-ambiental-gestao\work\Gestao-ambiental-orcamentos`.
 - **Branch de trabalho:** `branch-do-duds`, só local. É a branch principal do Eduardo: as funções novas entram nela, nunca na `main`.
   - Foi criada a partir da `main` do `origin` (`c2813c1`), sem acompanhar a `main`, e recebeu a `feature/primeiros-passos-orcamento` por merge.
@@ -271,6 +308,21 @@ Ao mudar uma RPC, a demo (`apps/web/demo-local/supabase-demo.ts`) precisa imitar
   - não abrir a pasta irmã de pesquisa privada.
 
 ## 8. Registro do que foi feito (mais recente em cima)
+
+- **14/11/2026, Eduardo e Claude, profissional terceirizado no orçamento (ADR-0031 (era 0028), sem commit, branch `claude/terceirizado-orcamento` a partir da `branch-do-duds` em `5d88f1e`):**
+  - Eduardo decidiu: terceirizado sem login como opção do "Responsável"; cobra por hora ou valor fechado; leva o acréscimo pela margem; a proposta não o mostra;
+  - feito:
+    - migration `20261114210000` (hoje `20261115020000`);
+    - domínio `custoDoTerceiro`, com o terceirizado no `precificarOrcamento`;
+    - tela "Terceirizado" com nome, profissão, cobrança e valor;
+    - linha "Terceirizados" na divisão do valor;
+    - pgTAP `470`;
+  - verificado:
+    - ESLint e Prettier;
+    - tipos e build;
+    - 1.044 testes do domínio e 352 da web;
+    - pgTAP inteiro.
+  - **Para o Eduardo:** o serviço terceirizado não leva rateio das contas do mês (ADR-0031 (era 0028) §5).
 
 - **13/11/2026, Eduardo e Claude, profissão e cargo (ADR-0021, sem commit):**
   - Eduardo decidiu: a profissão fica no membro; a profissão vem de uma lista fixa do Grama; o cargo também vira lista; a caixa "Sócio" sai de tudo;

@@ -547,6 +547,45 @@ describe('orçamentos (onda 5)', () => {
     expect(dados.itens.map((i) => i.responsabilidade_tecnica)).toEqual([null, 'art', null])
   })
 
+  it('o responsável do serviço pode ser um terceirizado, sem login (ADR-0031)', async () => {
+    const usuario = userEvent.setup()
+    renderizarApp('/orcamentos/o1')
+    await usuario.selectOptions(
+      await screen.findByLabelText('Responsável pelo item 1'),
+      'Terceirizado',
+    )
+    // Sem nome, o salvar não vai ao banco e a tela diz o que falta.
+    await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
+    expect(await screen.findByText('Item 1: informe o nome do terceirizado.')).toBeInTheDocument()
+    expect(falso.cliente.rpc.mock.calls.some(([nome]) => nome === 'salvar_orcamento')).toBe(false)
+
+    await usuario.type(screen.getByLabelText('Nome do terceirizado do item 1'), 'João Topógrafo')
+    await usuario.selectOptions(
+      screen.getByLabelText('Profissão do terceirizado do item 1'),
+      'eng_cartografo_agrimensor',
+    )
+    await usuario.selectOptions(
+      screen.getByLabelText('Cobrança do terceirizado do item 1'),
+      'Valor fechado',
+    )
+    await digitarReais(
+      usuario,
+      screen.getByLabelText('Valor do terceirizado do item 1'),
+      '1.800,00',
+    )
+    await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
+    const chamada = falso.cliente.rpc.mock.calls.find(([nome]) => nome === 'salvar_orcamento')
+    const item = (chamada?.[1] as { p_dados: { itens: Record<string, unknown>[] } }).p_dados
+      .itens[0]
+    expect(item).toMatchObject({
+      responsavel_id: null,
+      terceiro_nome: 'João Topógrafo',
+      terceiro_profissao: 'eng_cartografo_agrimensor',
+      terceiro_cobranca: 'fechado',
+      terceiro_valor_centavos: 180_000,
+    })
+  })
+
   it('a proposta leva a identidade da consultoria, a apresentação e a ART do serviço', async () => {
     const base = orcamento()
     falso.reiniciar(

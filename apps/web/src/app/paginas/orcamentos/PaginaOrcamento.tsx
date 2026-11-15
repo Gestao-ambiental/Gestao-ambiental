@@ -12,6 +12,8 @@ import {
   lerReais,
   MAXIMO_KM_POR_VISITA,
   MAXIMO_VISITAS,
+  PROFISSOES,
+  type CodigoProfissao,
   type PendenciaDoPreco,
   type UnidadeDeCobranca,
 } from '@gestao-ambiental/domain'
@@ -48,6 +50,7 @@ import {
 import { mensagemDoErro } from '@/lib/erros'
 import { listarMembrosAtivos } from '@/lib/api/perfil'
 import { CHAVE_TAREFAS } from '@/lib/api/tarefas'
+import { SelecaoDaLista } from '@/components/selecao-da-lista'
 import { mascararDocumento } from '@gestao-ambiental/domain'
 
 import {
@@ -106,6 +109,18 @@ const MENSAGEM_DA_PENDENCIA: Record<PendenciaDoPreco, string> = {
   hora_sem_valor: 'Escolha um preço da tabela ou digite o preço de cada serviço.',
   quantidade_pendente:
     'Há serviço sem quantidade ou, no pacote, sem preço fechado: preencha para calcular o preço.',
+  terceiro_sem_valor: 'Informe o valor do terceirizado para calcular o preço.',
+}
+
+/** Valor do "Responsável" que escolhe um profissional terceirizado, sem login (ADR-0031). */
+const TERCEIRIZADO = '__terceirizado__'
+
+/** Terceirizado do serviço na tela: o valor fica como texto enquanto a pessoa digita. */
+interface TerceiroNaTela {
+  nome: string
+  profissao: CodigoProfissao | ''
+  cobranca: 'hora' | 'fechado'
+  valor: string
 }
 
 // ---------------------------------------------------------------------------
@@ -132,6 +147,8 @@ interface LinhaItem {
   precoFechado: string
   /** O serviço inclui ART ou RRT ('' = não informado). */
   responsabilidade: ResponsabilidadeTecnica | ''
+  /** Terceirizado no lugar do responsável da equipe; `null` = equipe. */
+  terceiro: TerceiroNaTela | null
 }
 /** Serviço novo: só nome, horas e linha da tabela (sem linha, preço digitado); o resto em branco. */
 function novoItem(id: string, descricao: string, horas: string, horaVendaId: string): LinhaItem {
@@ -147,6 +164,7 @@ function novoItem(id: string, descricao: string, horas: string, horaVendaId: str
     quantidade: '',
     precoFechado: '',
     responsabilidade: '',
+    terceiro: null,
   }
 }
 interface LinhaDespesa {
@@ -218,6 +236,15 @@ function rascunhoDe(o: Orcamento): Rascunho {
         i.quantidadeDezMilesimos === null ? '' : campoDaQuantidade(i.quantidadeDezMilesimos),
       precoFechado: i.precoFechadoCentavos === null ? '' : formatarCentavos(i.precoFechadoCentavos),
       responsabilidade: i.responsabilidadeTecnica ?? '',
+      terceiro: i.terceiro
+        ? {
+            nome: i.terceiro.nome,
+            profissao: i.terceiro.profissao ?? '',
+            cobranca: i.terceiro.cobranca,
+            valor:
+              i.terceiro.valorCentavos === null ? '' : formatarCentavos(i.terceiro.valorCentavos),
+          }
+        : null,
     })),
     despesas: o.despesas.map((d) => ({
       id: d.id,
@@ -292,17 +319,30 @@ function paraSalvar(r: Rascunho, deProspecto: boolean): DadosDoRascunho | string
       return `Item ${String(indice + 1)}: quantidade inválida. Use até 4 casas, como 12,5.`
     if (precoFechado === undefined)
       return `Item ${String(indice + 1)}: ${i.digitado ? 'preço' : 'preço fechado'} inválido.`
+    const valorTerceiro = i.terceiro ? lerEstimativa(i.terceiro.valor) : null
+    if (i.terceiro && !i.terceiro.nome.trim())
+      return `Item ${String(indice + 1)}: informe o nome do terceirizado.`
+    if (valorTerceiro === undefined)
+      return `Item ${String(indice + 1)}: valor do terceirizado inválido.`
     itens.push({
       id: i.id,
       descricao: i.descricao,
       minutos,
       custoDiretoExtraCentavos: extra,
       horaVendaId: i.digitado ? null : i.horaVendaId || null,
-      responsavelId: i.responsavelId || null,
+      responsavelId: i.terceiro ? null : i.responsavelId || null,
       mesPrevisto: i.mesPrevisto || null,
       quantidadeDezMilesimos: quantidade,
       precoFechadoCentavos: precoFechado,
       responsabilidadeTecnica: i.responsabilidade || null,
+      terceiro: i.terceiro
+        ? {
+            nome: i.terceiro.nome.trim(),
+            profissao: i.terceiro.profissao || null,
+            cobranca: i.terceiro.cobranca,
+            valorCentavos: valorTerceiro,
+          }
+        : null,
     })
   }
   const despesas: DadosDoRascunho['despesas'] = []
@@ -494,9 +534,12 @@ function Editor({
       minutos: lerDuracao(i.horas) ?? 0,
       custoDiretoExtraCentavos: lerReaisOuZero(i.extra) ?? 0,
       horaVendaId: i.digitado ? null : i.horaVendaId || null,
-      responsavelId: i.responsavelId || null,
+      responsavelId: i.terceiro ? null : i.responsavelId || null,
       quantidadeDezMilesimos: lerQuantidade(i.quantidade) ?? null,
       precoFechadoCentavos: lerEstimativa(i.precoFechado) ?? null,
+      terceiro: i.terceiro
+        ? { cobranca: i.terceiro.cobranca, valorCentavos: lerEstimativa(i.terceiro.valor) ?? null }
+        : null,
     }))
     const incluidas = r.despesas
       .filter((d) => d.tratamento === 'incluida')
@@ -567,7 +610,7 @@ function Editor({
   const nomeDoMembro = new Map((membros.data ?? []).map((m) => [m.id, m.nome]))
   const meses = mesesDeExecucao(hojeNoFuso(new Date(), atual.fuso))
   const servicosDoOrcamento = r.itens.map((i) => ({
-    responsavelId: i.responsavelId || null,
+    responsavelId: i.terceiro ? null : i.responsavelId || null,
     mesPrevisto: i.mesPrevisto || null,
     minutos: lerDuracao(i.horas) ?? 0,
   }))
@@ -866,7 +909,11 @@ function Editor({
       responsavel: (
         <CelulaResponsavel
           n={n}
-          valor={item.responsavelId}
+          valor={item.terceiro ? TERCEIRIZADO : item.responsavelId}
+          terceiro={item.terceiro}
+          aoMudarTerceiro={(terceiro) => {
+            mudarItem(item.id, (x) => ({ ...x, terceiro }))
+          }}
           opcoes={responsaveis.map((m) => ({
             id: m.id,
             rotulo: `${m.nome} · ${formatarCentavos(horaDoMembro.get(m.id) ?? 0)}/h`,
@@ -875,7 +922,7 @@ function Editor({
           carregando={membros.isPending && editavel}
           desabilitado={!editavel}
           carga={
-            editavel && item.responsavelId && item.mesPrevisto && carga.data
+            editavel && !item.terceiro && item.responsavelId && item.mesPrevisto && carga.data
               ? cargaDoMes(
                   item.responsavelId,
                   item.mesPrevisto,
@@ -887,7 +934,20 @@ function Editor({
           }
           mes={item.mesPrevisto}
           aoMudar={(valor) => {
-            mudarItem(item.id, (x) => ({ ...x, responsavelId: valor }))
+            mudarItem(item.id, (x) =>
+              valor === TERCEIRIZADO
+                ? {
+                    ...x,
+                    responsavelId: '',
+                    terceiro: x.terceiro ?? {
+                      nome: '',
+                      profissao: '',
+                      cobranca: 'hora',
+                      valor: '',
+                    },
+                  }
+                : { ...x, responsavelId: valor, terceiro: null },
+            )
           }}
         />
       ),
@@ -1751,6 +1811,9 @@ function Editor({
                         <Valor rotulo="Custo da equipe (horas × custo por hora)">
                           {d.trabalhoTecnicoCentavos}
                         </Valor>
+                        {d.terceirizadosCentavos > 0 ? (
+                          <Valor rotulo="Terceirizados">{d.terceirizadosCentavos}</Valor>
+                        ) : null}
                         {d.outrosCustosDiretosCentavos > 0 ? (
                           <Valor rotulo="Outros custos dos serviços">
                             {d.outrosCustosDiretosCentavos}
@@ -2674,6 +2737,8 @@ function NavegacaoDasEtapas({
 function CelulaResponsavel({
   n,
   valor,
+  terceiro,
+  aoMudarTerceiro,
   opcoes,
   nomeDoValor,
   carregando,
@@ -2684,6 +2749,8 @@ function CelulaResponsavel({
 }: {
   n: string
   valor: string
+  terceiro: TerceiroNaTela | null
+  aoMudarTerceiro: (terceiro: TerceiroNaTela) => void
   opcoes: { id: string; rotulo: string }[]
   nomeDoValor: string | null
   carregando: boolean
@@ -2693,7 +2760,7 @@ function CelulaResponsavel({
   aoMudar: (valor: string) => void
 }) {
   const idCarga = `carga-do-item-${n}`
-  const naLista = opcoes.some((o) => o.id === valor)
+  const naLista = valor === TERCEIRIZADO || opcoes.some((o) => o.id === valor)
   return (
     <div className="flex flex-col gap-(--space-025)">
       <select
@@ -2716,7 +2783,16 @@ function CelulaResponsavel({
             {o.rotulo}
           </option>
         ))}
+        <option value={TERCEIRIZADO}>Terceirizado</option>
       </select>
+      {terceiro ? (
+        <CamposDoTerceiro
+          n={n}
+          terceiro={terceiro}
+          desabilitado={desabilitado}
+          aoMudar={aoMudarTerceiro}
+        />
+      ) : null}
       {carga ? (
         <span
           id={idCarga}
@@ -2729,6 +2805,70 @@ function CelulaResponsavel({
           {carga.acimaDaJornada ? ', acima da jornada' : ''}
         </span>
       ) : null}
+    </div>
+  )
+}
+
+/** Nome, profissão, cobrança e valor do terceirizado do serviço (ADR-0031). */
+function CamposDoTerceiro({
+  n,
+  terceiro,
+  desabilitado,
+  aoMudar,
+}: {
+  n: string
+  terceiro: TerceiroNaTela
+  desabilitado: boolean
+  aoMudar: (terceiro: TerceiroNaTela) => void
+}) {
+  return (
+    <div className="flex flex-col gap-(--space-050)">
+      <input
+        aria-label={`Nome do terceirizado do item ${n}`}
+        className={classeCampo}
+        placeholder="Nome"
+        maxLength={120}
+        value={terceiro.nome}
+        aria-invalid={terceiro.nome.trim() === '' || undefined}
+        disabled={desabilitado}
+        onChange={(e) => {
+          aoMudar({ ...terceiro, nome: e.target.value })
+        }}
+      />
+      <SelecaoDaLista
+        aria-label={`Profissão do terceirizado do item ${n}`}
+        className={classeCampo}
+        lista={PROFISSOES}
+        valor={terceiro.profissao}
+        vazio="Profissão"
+        disabled={desabilitado}
+        aoMudar={(profissao) => {
+          aoMudar({ ...terceiro, profissao })
+        }}
+      />
+      <select
+        aria-label={`Cobrança do terceirizado do item ${n}`}
+        className={classeCampo}
+        value={terceiro.cobranca}
+        disabled={desabilitado}
+        onChange={(e) => {
+          aoMudar({ ...terceiro, cobranca: e.target.value === 'fechado' ? 'fechado' : 'hora' })
+        }}
+      >
+        <option value="hora">Por hora</option>
+        <option value="fechado">Valor fechado</option>
+      </select>
+      <CampoNumero
+        rotulo={`Valor do terceirizado do item ${n}`}
+        reais
+        valor={terceiro.valor}
+        placeholder={terceiro.cobranca === 'hora' ? 'Valor por hora' : 'Valor fechado'}
+        invalido={terceiro.valor.trim() === '' || lerEstimativa(terceiro.valor) === undefined}
+        desabilitado={desabilitado}
+        aoMudar={(valor) => {
+          aoMudar({ ...terceiro, valor })
+        }}
+      />
     </div>
   )
 }

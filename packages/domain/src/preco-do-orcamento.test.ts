@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   SEM_VISITAS,
+  custoDoTerceiro,
   custoHoraPorProfissao,
   valorDasVisitas,
   precificarOrcamento,
@@ -436,5 +437,97 @@ describe('rateioPorConta', () => {
   it('sem contas ou sem rateio não mostra nada', () => {
     expect(rateioPorConta(0, [{ descricao: 'Aluguel', valorCentavos: 1 }], 0)).toEqual([])
     expect(rateioPorConta(500, [], 0)).toEqual([])
+  })
+})
+
+describe('profissional terceirizado no serviço (ADR-0031)', () => {
+  const comTerceiro = (
+    terceiro: { cobranca: 'hora' | 'fechado'; valorCentavos: number | null },
+    horaVendaId: string | null = 'venda',
+  ) => [
+    { minutos: 120, custoDiretoExtraCentavos: 0, horaVendaId, terceiro },
+    { minutos: 60, custoDiretoExtraCentavos: 0, horaVendaId: 'venda' }, // equipe: 100 + 50 de rateio
+  ]
+
+  it('custo por hora arredonda como o banco; fechado é o próprio valor', () => {
+    expect(custoDoTerceiro(90, { cobranca: 'hora', valorCentavos: 10_001 })).toBe(15_002)
+    expect(custoDoTerceiro(90, { cobranca: 'fechado', valorCentavos: 50_000 })).toBe(50_000)
+    expect(custoDoTerceiro(90, { cobranca: 'hora', valorCentavos: null })).toBeNull()
+  })
+
+  it('pela margem: a venda é o custo do terceiro, sem rateio, e recebe o acréscimo', () => {
+    const p = precificarOrcamento({
+      itens: comTerceiro({ cobranca: 'hora', valorCentavos: 8_000 }, null),
+      visitas: SEM_VISITAS,
+      despesasIncluidasCentavos: [],
+      quantidadeDeParcelas: 1,
+      margemPb: 2_000,
+      base,
+    })
+    // Base do acréscimo: 160 (terceiro, 2h × 80) + 100 + 50 = 310; acréscimo 62; fixos 6.
+    // (310 + 62 + 6) ÷ 0,94 = 402,13.
+    expect(p.pendencia).toBeNull()
+    expect(p.precoTotalCentavos).toBe(40_213)
+    expect(p.custosDosItens[0]).toEqual({
+      diretoCentavos: 16_000,
+      rateioCentavos: 0,
+      totalCentavos: 16_000,
+    })
+    expect(p.divisao?.terceirizadosCentavos).toBe(16_000)
+    expect(p.divisao?.trabalhoTecnicoCentavos).toBe(10_000)
+    expect(p.divisao?.baseDoAcrescimoCentavos).toBe(31_000)
+    expect(p.precosDosItens).toEqual([20_755, 19_458])
+    const d = p.divisao
+    if (!d || p.precoTotalCentavos === null) throw new Error('sem divisão')
+    expect(
+      d.trabalhoTecnicoCentavos +
+        d.terceirizadosCentavos +
+        d.outrosCustosDiretosCentavos +
+        d.contasDaConsultoriaCentavos +
+        d.visitasCentavos +
+        d.despesasIncluidasCentavos +
+        d.tributosCentavos +
+        d.taxasCentavos +
+        d.lucroCentavos,
+    ).toBe(p.precoTotalCentavos)
+  })
+
+  it('pela tabela: o preço vem da tabela e o custo do terceiro só reduz a margem', () => {
+    const p = precificarOrcamento({
+      formaDePreco: 'tabela',
+      itens: [
+        {
+          minutos: 120,
+          custoDiretoExtraCentavos: 0,
+          horaVendaId: 'venda',
+          terceiro: { cobranca: 'fechado', valorCentavos: 30_000 },
+        },
+      ],
+      visitas: SEM_VISITAS,
+      despesasIncluidasCentavos: [],
+      quantidadeDeParcelas: 1,
+      margemPb: 0,
+      base,
+    })
+    expect(p.precoTotalCentavos).toBe(20_000)
+    expect(p.custoTotalCentavos).toBe(30_000)
+    // 200 − 300 − 12 de tributos − 6 de taxas fixas.
+    expect(p.divisao?.lucroCentavos).toBe(-11_800)
+  })
+
+  it('terceirizado sem valor deixa o preço pendente', () => {
+    for (const formaDePreco of ['margem', 'tabela'] as const) {
+      const p = precificarOrcamento({
+        formaDePreco,
+        itens: comTerceiro({ cobranca: 'hora', valorCentavos: null }),
+        visitas: SEM_VISITAS,
+        despesasIncluidasCentavos: [],
+        quantidadeDeParcelas: 1,
+        margemPb: 2_000,
+        base,
+      })
+      expect(p.pendencia).toBe('terceiro_sem_valor')
+      expect(p.precoTotalCentavos).toBeNull()
+    }
   })
 })
