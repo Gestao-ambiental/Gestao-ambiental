@@ -13,29 +13,29 @@
   - O aviso "sem push e sem PR" mais abaixo é de 13/11 e **não vale mais**.
 - **Feito em 14 e 15/11** (cada item tem ADR próprio; todos protótipos que o Kadu revisa):
 
-  | ADR | Função |
-  |---|---|
-  | 0021 | Profissão e cargo do membro em listas fixas; a caixa "Sócio" saiu |
-  | 0022, 0024, 0025 | Central administrativa: operadores com dois fatores; acesso de suporte com autorização |
-  | 0023 | Orçamento rápido. **Mudou a ADR-0020 §2** (o convite grande da lista saiu) e **a ADR-0018 P7** (o modelo passa a guardar o preço digitado) |
-  | 0026, 0030 | Planos, limites, cobrança simulada (Asaas simulado), recursos por plano e plano por contrato; CNPJ ou CPF, com CPF nunca gravado |
-  | 0027 | Indicadores de horas poupadas e resumo do mês |
-  | 0028 | Resíduos, fase 1: MTR, CDF, conferência, painel e prazos |
-  | 0029 | Aprovação do orçamento com tarefas, fatia 1 |
-  | 0032 | Lista de espera do site, lida na central. O 0031 está reservado para o terceirizado |
+  | ADR              | Função                                                                                                                                     |
+  | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+  | 0021             | Profissão e cargo do membro em listas fixas; a caixa "Sócio" saiu                                                                          |
+  | 0022, 0024, 0025 | Central administrativa: operadores com dois fatores; acesso de suporte com autorização                                                     |
+  | 0023             | Orçamento rápido. **Mudou a ADR-0020 §2** (o convite grande da lista saiu) e **a ADR-0018 P7** (o modelo passa a guardar o preço digitado) |
+  | 0026, 0030       | Planos, limites, cobrança simulada (Asaas simulado), recursos por plano e plano por contrato; CNPJ ou CPF, com CPF nunca gravado           |
+  | 0027             | Indicadores de horas poupadas e resumo do mês                                                                                              |
+  | 0028             | Resíduos, fase 1: MTR, CDF, conferência, painel e prazos                                                                                   |
+  | 0029             | Aprovação do orçamento com tarefas, fatia 1                                                                                                |
+  | 0032             | Lista de espera do site, lida na central. O 0031 está reservado para o terceirizado                                                        |
 
   Também: `docs/revisao-de-necessidade-2026-11-14.md` (revisão das 43 mil linhas) e `docs/juridico/` (termos de uso e acordo de dados).
+
 - **Regras novas desde 13/11** (estão no `CLAUDE.md` e valem para quem assumir):
   - **testes de regressão sempre:** código novo com teste novo, e `corepack pnpm verificar` (lint, tipos, testes, build e pgTAP por `scripts/testar-banco.mjs`) antes de entregar;
   - **interface sem texto explicativo:** nada de prosa cinza de ajuda; fica só rótulo, valor, estado, erro e o que falta. Dinheiro mostra o ponto de milhar ao digitar. **Vários textos de ajuda das fatias 1 e 2 do ADR-0019 descritos abaixo podem já ter saído:** confira no código antes de citar;
   - **protótipo:** caminho mais curto e testes enxutos, mas RLS forçada, CPF nunca gravado e suíte inteira verde;
   - responder sempre em português.
-- **PR 22 × local:** o PR tem 37 commits, até o `506dc02`, sem revisão do Kadu (só o comentário da Vercel). O commit local `63663c9` (lista de espera) ainda não foi enviado.
+- **PR 22 × local (15/11, depois dos merges):** os commits `63663c9` (lista de espera), `5ab26f6` (merge do terceirizado) e o merge da vistoria ainda **não foram enviados** ao PR. Antes, mais precisamente: o PR tem 37 commits, até o `506dc02`, sem revisão do Kadu (só o comentário da Vercel). O commit local `63663c9` (lista de espera) ainda não foi enviado.
 - **Feito, mas FORA da `branch-do-duds` e do PR** (conferido em 15/11):
   - **Terceirizado no orçamento: juntado em 15/11** por merge da `claude/terceirizado-orcamento` (`dd6c49c`), renumerado para ADR-0031, migration `20261115020000_terceirizado_no_orcamento.sql` e pgTAP `510`. Suíte inteira verde (`corepack pnpm verificar`).
-  - **`feature/86e3q96x1-vistoria-movel`** (`692d174`, 14/11), na pasta `.claude/worktrees/terceirizado-orcamento`: vistoria móvel no celular (CAMPO-01), primeiro incremento.
-    - **Também conflita em número:** usa ADR-0029, migration `20261114220000` e pgTAP `480`, que na branch são de aprovação com tarefas.
-    - As decisões do ADR dela estão marcadas "para o Eduardo confirmar".
+  - **Vistoria móvel: juntada em 15/11** por merge da `feature/86e3q96x1-vistoria-movel` (`692d174`). Renumerada para ADR-0033, migration `20261115030000_vistoria_movel.sql` e pgTAP `520`. No `database.types.ts` ficaram as funções e os enums das duas partes (tarefas e vistoria). As decisões do ADR-0033 (sem offline, checklist digitado ao agendar, revisão sempre obrigatória) **continuam para o Eduardo confirmar**.
+  - **Suíte depois dos dois merges:** `corepack pnpm verificar` verde, com 1.176 testes do domínio, 406 da web, build e todas as baterias pgTAP (inclusive 510 e 520).
   - **De-para de profissão e cargo** (13/11): pela metade e **sem commit** nas pastas `.claude/worktrees/de-para-profissoes-a928f3` (`de-para-profissao-e-cargo.ts` + teste) e `.claude/worktrees/agent-a53d182acd7de6ca3` (mudanças em `profissao-e-cargo.ts`).
   - **`feat/compartilhar-orcamentos`** e o repositório `teste-privado` (`grama-orcamentos-prototipo`): commits de 11/11 do protótipo antigo, anteriores ao módulo atual. Não há o que juntar.
 - **Ainda pendente do orçamento:** ADR-0019, fatias 4 (ART/RRT em seção única), 5 (situação mais leve) e 6 (salvamento automático, só depois); job `banco` do CI no Supabase real.

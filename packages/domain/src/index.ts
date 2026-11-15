@@ -464,3 +464,38 @@ export type {
 } from './tarefas-de-servico'
 export { formatarContato, linkDoContato, normalizarContato } from './lista-de-espera'
 export type { ContatoNormalizado, TipoDeContato } from './lista-de-espera'
+
+export {
+  GRUPOS_DA_VISTORIA,
+  ITENS_SUGERIDOS,
+  LIMITES_DA_VISTORIA,
+  RESULTADOS_DO_ITEM,
+  ROTULO_DA_PENDENCIA,
+  ROTULO_DA_SITUACAO_DA_VISTORIA,
+  ROTULO_DO_GRUPO,
+  ROTULO_DO_RESULTADO,
+  SEM_LOCAL,
+  aceitaRegistro,
+  conferirLocalizacao,
+  descreverLocal,
+  exigeComentario,
+  grupoDaVistoria,
+  localDoAparelho,
+  localManual,
+  pendenciasDoEnvio,
+  progressoDaVistoria,
+  rotuloDaPrecisao,
+  rotuloDoDiaDaVistoria,
+} from './vistoria'
+export type {
+  GrupoDaVistoria,
+  ItemDaVistoria,
+  LocalDaFoto,
+  MotivoDaPendencia,
+  OrigemDoLocal,
+  PendenciaDoEnvio,
+  ProblemaDoLocal,
+  ProgressoDaVistoria,
+  ResultadoDoItem,
+  SituacaoDaVistoria,
+} from './vistoria'

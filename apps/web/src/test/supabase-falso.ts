@@ -234,6 +234,7 @@ function criar() {
       eq: () => construtor,
       neq: () => construtor,
       in: () => construtor,
+      is: () => construtor,
       order: () => construtor,
       range: () => construtor,
       maybeSingle: () => {

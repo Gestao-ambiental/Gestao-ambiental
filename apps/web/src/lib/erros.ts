@@ -193,6 +193,44 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   quantidade_sem_unidade: 'Informe a quantidade junto com a unidade',
   entidade_invalida: 'Não foi possível anexar o PDF. Tente de novo.',
   tipo_de_obrigacao_invalido: 'Obrigação inválida.',
+  // Vistoria móvel (ADR-0033)
+  vistoria_existente: 'Não foi possível agendar a vistoria. Tente de novo.',
+  vistoria_nao_iniciada: 'Comece a vistoria antes de registrar.',
+  vistoria_fechada: 'Esta vistoria não aceita mais registros. Recarregue para ver a situação.',
+  itens_pendentes: 'Há itens sem resultado ou sem comentário.',
+  comentario_obrigatorio: 'Informe o comentário',
+  vistoria_ja_conferida: 'Esta vistoria já foi conferida. Recarregue para ver a decisão.',
+  vistoria_nao_enviada: 'Esta vistoria não está aguardando conferência.',
+  foto_existente: 'Não foi possível vincular a foto. Tente de novo.',
+  arquivo_ja_vinculado: 'Esta foto já foi vinculada.',
+  titulo_longo_demais: 'Use até 120 caracteres no título.',
+  objetivo_longo_demais: 'Use até 1.000 caracteres no objetivo.',
+  responsavel_obrigatorio: 'Escolha o responsável',
+  data_obrigatoria: 'Informe a data',
+  item_titulo_obrigatorio: 'Informe o título de cada item',
+  item_longo_demais: 'Item: título até 120 e descrição até 300 caracteres.',
+  resultado_obrigatorio: 'Escolha o resultado',
+  comentario_longo_demais: 'Use até 1.000 caracteres no comentário.',
+  observacao_longa_demais: 'Use até 2.000 caracteres na observação.',
+  arquivo_invalido: 'Não foi possível ler o arquivo. Tente de novo.',
+  captura_obrigatoria: 'Não foi possível ler a hora da foto. Tire de novo.',
+  captura_no_futuro: 'A hora da foto está no futuro. Confira o relógio do aparelho.',
+  legenda_longa_demais: 'Use até 200 caracteres na legenda.',
+  local_invalido: 'Confira a localização da foto.',
+}
+
+// Códigos que a vistoria (ADR-0033) reaproveita com outro sentido: a tela de Campo usa estas
+// mensagens no lugar das gerais (que falam de PDF, resíduo ou acesso de suporte).
+const MENSAGENS_DA_VISTORIA: Record<string, string> = {
+  duracao_invalida: 'Duração: de 5 a 1.440 minutos.',
+  itens_obrigatorios: 'Inclua ao menos um item no checklist.',
+  itens_demais: 'Use até 50 itens no checklist.',
+  caminho_invalido: 'Não foi possível vincular a foto. Tente de novo.',
+  arquivo_nao_encontrado: 'A foto não chegou ao armazenamento. Tente de novo.',
+  arquivo_tipo_invalido: 'Envie a foto em JPEG ou PNG.',
+  arquivo_grande_demais: 'A foto passa de 25 MB.',
+  conferencia_independente:
+    'Quem enviou a vistoria não pode conferi-la. Outra pessoa precisa conferir.',
 }
 
 const MENSAGENS_DO_AUTH: Record<string, string> = {
@@ -267,6 +305,14 @@ export function mensagemDoErro(erro: unknown, padrao = MENSAGEM_PADRAO): string 
   const codigo = codigoDoErro(erro)
   if (!codigo) return padrao
   return MENSAGENS_DO_BANCO[codigo] ?? MENSAGENS_DO_AUTH[codigo] ?? padrao
+}
+
+/** Como mensagemDoErro, com as mensagens próprias da vistoria para os códigos reaproveitados. */
+export function mensagemDoErroDaVistoria(erro: unknown, padrao = MENSAGEM_PADRAO): string {
+  const { message } = comoObjeto(erro)
+  if (typeof message === 'string' && Object.hasOwn(MENSAGENS_DA_VISTORIA, message))
+    return MENSAGENS_DA_VISTORIA[message] ?? padrao
+  return mensagemDoErro(erro, padrao)
 }
 
 /**
