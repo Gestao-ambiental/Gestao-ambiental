@@ -1570,18 +1570,6 @@ isOneToOne: false
       referencedRelation: "consultoria"
       referencedColumns: ["id"]
     },{
-      foreignKeyName: "vistoria_ocorrencia_fk"
-      columns: ["consultoria_id","ocorrencia_id"]
-isOneToOne: false
-      referencedRelation: "ocorrencia"
-      referencedColumns: ["consultoria_id","id"]
-    },{
-      foreignKeyName: "vistoria_responsavel_fk"
-      columns: ["consultoria_id","responsavel_id"]
-isOneToOne: false
-      referencedRelation: "membro"
-      referencedColumns: ["consultoria_id","id"]
-    },{
       foreignKeyName: "vistoria_criada_por_fk"
       columns: ["consultoria_id","criada_por"]
 isOneToOne: false
@@ -1590,6 +1578,18 @@ isOneToOne: false
     },{
       foreignKeyName: "vistoria_enviada_por_fk"
       columns: ["consultoria_id","enviada_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "vistoria_ocorrencia_fk"
+      columns: ["consultoria_id","ocorrencia_id"]
+isOneToOne: false
+      referencedRelation: "ocorrencia"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "vistoria_responsavel_fk"
+      columns: ["consultoria_id","responsavel_id"]
 isOneToOne: false
       referencedRelation: "membro"
       referencedColumns: ["consultoria_id","id"]
@@ -1608,16 +1608,22 @@ isOneToOne: false
                   }
                   Relationships: [
                     {
-      foreignKeyName: "vistoria_decisao_vistoria_fk"
-      columns: ["consultoria_id","vistoria_id"]
-isOneToOne: false
-      referencedRelation: "vistoria"
-      referencedColumns: ["consultoria_id","id"]
-    },{
       foreignKeyName: "vistoria_decisao_conferente_fk"
       columns: ["consultoria_id","conferente_id"]
 isOneToOne: false
       referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "vistoria_decisao_consultoria_id_fkey"
+      columns: ["consultoria_id"]
+isOneToOne: false
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "vistoria_decisao_vistoria_fk"
+      columns: ["consultoria_id","vistoria_id"]
+isOneToOne: false
+      referencedRelation: "vistoria"
       referencedColumns: ["consultoria_id","id"]
     }
                   ]
@@ -1634,22 +1640,34 @@ isOneToOne: false
                   }
                   Relationships: [
                     {
-      foreignKeyName: "vistoria_foto_vistoria_fk"
-      columns: ["consultoria_id","vistoria_id"]
-isOneToOne: false
-      referencedRelation: "vistoria"
-      referencedColumns: ["consultoria_id","id"]
-    },{
-      foreignKeyName: "vistoria_foto_item_fk"
-      columns: ["consultoria_id","item_id"]
-isOneToOne: false
-      referencedRelation: "vistoria_item"
-      referencedColumns: ["consultoria_id","id"]
-    },{
       foreignKeyName: "vistoria_foto_autor_fk"
       columns: ["consultoria_id","autor_id"]
 isOneToOne: false
       referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "vistoria_foto_consultoria_id_fkey"
+      columns: ["consultoria_id"]
+isOneToOne: false
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "vistoria_foto_excluida_por_fk"
+      columns: ["consultoria_id","excluida_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "vistoria_foto_item_fk"
+      columns: ["consultoria_id","vistoria_id","item_id"]
+isOneToOne: false
+      referencedRelation: "vistoria_item"
+      referencedColumns: ["consultoria_id","vistoria_id","id"]
+    },{
+      foreignKeyName: "vistoria_foto_vistoria_fk"
+      columns: ["consultoria_id","vistoria_id"]
+isOneToOne: false
+      referencedRelation: "vistoria"
       referencedColumns: ["consultoria_id","id"]
     }
                   ]
@@ -1666,16 +1684,22 @@ isOneToOne: false
                   }
                   Relationships: [
                     {
-      foreignKeyName: "vistoria_item_vistoria_fk"
-      columns: ["consultoria_id","vistoria_id"]
+      foreignKeyName: "vistoria_item_consultoria_id_fkey"
+      columns: ["consultoria_id"]
 isOneToOne: false
-      referencedRelation: "vistoria"
-      referencedColumns: ["consultoria_id","id"]
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
     },{
       foreignKeyName: "vistoria_item_registrado_por_fk"
       columns: ["consultoria_id","registrado_por"]
 isOneToOne: false
       referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "vistoria_item_vistoria_fk"
+      columns: ["consultoria_id","vistoria_id"]
+isOneToOne: false
+      referencedRelation: "vistoria"
       referencedColumns: ["consultoria_id","id"]
     }
                   ]
@@ -1691,45 +1715,11 @@ isOneToOne: false
 "aceitar_convite":
 { Args: { "p_token": string }; Returns: string
                            },
-"adicionar_tarefa_servico":
-{ Args: { "p_id": string,"p_minutos": number,"p_orcamento_id": string,"p_prazo_interno": string,"p_responsavel_id": string,"p_titulo": string }; Returns: string
-                           },
 "adicionar_foto_da_vistoria":
 { Args: { "p_caminho": string,"p_capturada_em": string,"p_foto_id": string,"p_item_id": string,"p_latitude": number,"p_legenda": string,"p_local_manual": string,"p_local_origem": string,"p_longitude": number,"p_nome_original": string,"p_precisao_m": number,"p_sha256": string }; Returns: string
                            },
-"cancelar_vistoria":
-{ Args: { "p_id": string,"p_motivo": string,"p_row_version": number }; Returns: number
-                           },
-"conferir_vistoria":
-{ Args: { "p_decisao": Database["public"]['Enums']["decisao_conferencia"],"p_id": string,"p_motivo": string,"p_row_version": number }; Returns: number
-                           },
-"criar_vistoria":
-{ Args: { "p_data": string,"p_duracao_minutos": number,"p_hora": string,"p_id": string,"p_itens": Json,"p_objetivo": string,"p_ocorrencia_id": string,"p_responsavel_id": string,"p_titulo": string }; Returns: string
-                           },
-"enviar_vistoria":
-{ Args: { "p_id": string,"p_row_version": number }; Returns: number
-                           },
-"excluir_foto_da_vistoria":
-{ Args: { "p_foto_id": string }; Returns: undefined
-                           },
-"iniciar_vistoria":
-{ Args: { "p_id": string }; Returns: number
-                           },
-"listar_vistorias":
-{ Args: { "p_deslocamento"?: number,"p_limite"?: number,"p_ocorrencia_id"?: string,"p_somente_minhas"?: boolean }; Returns: {
-              "condicionante_codigo": string,"condicionante_titulo": string,"consultoria_id": string,"data_planejada": string,"duracao_minutos": number,"empreendimento_id": string,"empreendimento_nome": string,"enviada_em": string,"hoje": string,"hora_planejada": string,"id": string,"iniciada_em": string,"itens_registrados": number,"licenca": string,"ocorrencia_id": string,"responsavel_id": string,"responsavel_nome": string,"row_version": number,"situacao": Database["public"]["Enums"]["situacao_vistoria"],"titulo": string,"total": number,"total_itens": number,"unidade_id": string,"unidade_nome": string
-            }[]
-                           },
-"obter_vistoria":
-{ Args: { "p_id": string }; Returns: {
-              "ciclo": number,"condicionante_codigo": string,"condicionante_titulo": string,"conferencia_independente": boolean,"conferente_nome": string,"consultoria_id": string,"criada_em": string,"criada_por_nome": string,"data_planejada": string,"duracao_minutos": number,"empreendimento_id": string,"empreendimento_nome": string,"enviada_em": string,"enviada_por_nome": string,"hoje": string,"hora_planejada": string,"id": string,"iniciada_em": string,"instrumento_id": string,"licenca": string,"meta_interna": string,"objetivo": string,"observacao": string,"ocorrencia_id": string,"ocorrencia_situacao": Database["public"]["Enums"]["situacao_ocorrencia"],"pode_conferir": boolean,"pode_registrar": boolean,"prazo_oficial_atual": string,"responsavel_id": string,"responsavel_nome": string,"row_version": number,"situacao": Database["public"]["Enums"]["situacao_vistoria"],"titulo": string,"ultima_decisao": Database["public"]["Enums"]["decisao_conferencia"],"ultima_decisao_conferente_nome": string,"ultima_decisao_em": string,"ultima_decisao_motivo": string,"unidade_endereco": string,"unidade_id": string,"unidade_nome": string
-            }[]
-                           },
-"registrar_item_da_vistoria":
-{ Args: { "p_comentario": string,"p_item_id": string,"p_resultado": Database["public"]['Enums']["resultado_item_vistoria"] }; Returns: undefined
-                           },
-"salvar_observacao_da_vistoria":
-{ Args: { "p_id": string,"p_observacao": string }; Returns: undefined
+"adicionar_tarefa_servico":
+{ Args: { "p_id": string,"p_minutos": number,"p_orcamento_id": string,"p_prazo_interno": string,"p_responsavel_id": string,"p_titulo": string }; Returns: string
                            },
 "alterar_papel":
 { Args: { "p_membro_id": string,"p_papel": Database["public"]['Enums']["papel_membro"] }; Returns: undefined
@@ -1770,6 +1760,9 @@ isOneToOne: false
                            },
 "cancelar_plano_simulado":
 { Args: { "p_consultoria_id": string }; Returns: string
+                           },
+"cancelar_vistoria":
+{ Args: { "p_id": string,"p_motivo": string,"p_row_version": number }; Returns: number
                            },
 "carga_da_equipe":
 { Args: { "p_consultoria_id": string }; Returns: Json
@@ -1919,6 +1912,9 @@ isOneToOne: false
 "conferir_evidencia":
 { Args: { "p_decisao": Database["public"]['Enums']["decisao_conferencia"],"p_evidencia_id": string,"p_motivo": string }; Returns: undefined
                            },
+"conferir_vistoria":
+{ Args: { "p_decisao": Database["public"]['Enums']["decisao_conferencia"],"p_id": string,"p_motivo": string,"p_row_version": number }; Returns: number
+                           },
 "confirmar_adicional":
 { Args: { "p_consultoria_id": string,"p_recurso": string }; Returns: {
               "adicionais_centavos": number,"limite": number,"quantidade": number,"recurso": string
@@ -1967,6 +1963,9 @@ isOneToOne: false
                            },
 "criar_unidade":
 { Args: { "p_empreendimento_id": string,"p_endereco"?: string,"p_id": string,"p_nome": string }; Returns: string
+                           },
+"criar_vistoria":
+{ Args: { "p_data": string,"p_duracao_minutos": number,"p_hora": string,"p_id": string,"p_itens": Json,"p_objetivo": string,"p_ocorrencia_id": string,"p_responsavel_id": string,"p_titulo": string }; Returns: string
                            },
 "dados_do_aviso_de_emergencia":
 { Args: { "p_acesso_id": string }; Returns: {
@@ -2041,8 +2040,14 @@ isOneToOne: false
 "enviar_evidencia":
 { Args: { "p_caminho": string,"p_data_execucao": string,"p_evidencia_id": string,"p_nome_original": string,"p_ocorrencia_id": string,"p_sha256": string,"p_versao_id": string }; Returns: number
                            },
+"enviar_vistoria":
+{ Args: { "p_id": string,"p_row_version": number }; Returns: number
+                           },
 "excluir_cdf":
 { Args: { "p_id": string,"p_row_version": number }; Returns: undefined
+                           },
+"excluir_foto_da_vistoria":
+{ Args: { "p_foto_id": string }; Returns: undefined
                            },
 "excluir_modelo_de_orcamento":
 { Args: { "p_id": string,"p_row_version": number }; Returns: undefined
@@ -2060,6 +2065,9 @@ isOneToOne: false
 { Args: { "p_id": string,"p_instrumento_id": string }; Returns: {
               "caminho": string,"itens_propostos": number,"mime": string,"motivo": string,"nova": boolean,"situacao": string,"tamanho_bytes": number,"tipos": (string)[]
             }[]
+                           },
+"iniciar_vistoria":
+{ Args: { "p_id": string }; Returns: number
                            },
 "listar_aceites_do_orcamento":
 { Args: { "p_orcamento_id": string }; Returns: {
@@ -2119,6 +2127,11 @@ isOneToOne: false
               "dias": number,"empreendimento_nome": string,"fora_da_revisao": boolean,"id": string,"minutos_estimados": number,"orcamento_ano": number,"orcamento_id": string,"orcamento_item_id": string,"orcamento_revisao": number,"orcamento_sequencia": number,"ordem": number,"prazo_interno": string,"responsavel_id": string,"responsavel_nome": string,"row_version": number,"situacao": Database["public"]['Enums']["situacao_tarefa_servico"],"titulo": string
             }[]
                            },
+"listar_vistorias":
+{ Args: { "p_deslocamento"?: number,"p_limite"?: number,"p_ocorrencia_id"?: string,"p_somente_minhas"?: boolean }; Returns: {
+              "condicionante_codigo": string,"condicionante_titulo": string,"consultoria_id": string,"data_planejada": string,"duracao_minutos": number,"empreendimento_id": string,"empreendimento_nome": string,"enviada_em": string,"hoje": string,"hora_planejada": string,"id": string,"iniciada_em": string,"itens_registrados": number,"licenca": string,"ocorrencia_id": string,"responsavel_id": string,"responsavel_nome": string,"row_version": number,"situacao": Database["public"]['Enums']["situacao_vistoria"],"titulo": string,"total": number,"total_itens": number,"unidade_id": string,"unidade_nome": string
+            }[]
+                           },
 "marcar_aviso_de_suporte_visto":
 { Args: { "p_acesso_id": string }; Returns: undefined
                            },
@@ -2171,6 +2184,11 @@ isOneToOne: false
 "obter_rascunho_configuracao_orcamento":
 { Args: { "p_consultoria_id": string }; Returns: Json
                            },
+"obter_vistoria":
+{ Args: { "p_id": string }; Returns: {
+              "ciclo": number,"condicionante_codigo": string,"condicionante_titulo": string,"conferencia_independente": boolean,"conferente_nome": string,"consultoria_id": string,"criada_em": string,"criada_por_nome": string,"data_planejada": string,"duracao_minutos": number,"empreendimento_id": string,"empreendimento_nome": string,"enviada_em": string,"enviada_por_nome": string,"hoje": string,"hora_planejada": string,"id": string,"iniciada_em": string,"instrumento_id": string,"licenca": string,"meta_interna": string,"objetivo": string,"observacao": string,"ocorrencia_id": string,"ocorrencia_situacao": Database["public"]['Enums']["situacao_ocorrencia"],"pode_conferir": boolean,"pode_registrar": boolean,"prazo_oficial_atual": string,"responsavel_id": string,"responsavel_nome": string,"row_version": number,"situacao": Database["public"]['Enums']["situacao_vistoria"],"titulo": string,"ultima_decisao": Database["public"]['Enums']["decisao_conferencia"],"ultima_decisao_conferente_nome": string,"ultima_decisao_em": string,"ultima_decisao_motivo": string,"unidade_endereco": string,"unidade_id": string,"unidade_nome": string
+            }[]
+                           },
 "pagar_cobranca_simulada":
 { Args: { "p_cobranca_id": string }; Returns: undefined
                            },
@@ -2201,6 +2219,9 @@ isOneToOne: false
                            },
 "registrar_foto_membro":
 { Args: { "p_caminho": string,"p_membro_id": string,"p_nome_original": string,"p_sha256": string,"p_versao_id": string }; Returns: string
+                           },
+"registrar_item_da_vistoria":
+{ Args: { "p_comentario": string,"p_item_id": string,"p_resultado": Database["public"]['Enums']["resultado_item_vistoria"] }; Returns: undefined
                            },
 "registrar_logo_da_consultoria":
 { Args: { "p_caminho": string,"p_consultoria_id": string,"p_nome_original": string,"p_sha256": string,"p_versao_id": string }; Returns: string
@@ -2267,6 +2288,9 @@ isOneToOne: false
                            },
 "salvar_modelo_de_orcamento":
 { Args: { "p_modelo_id": string,"p_nome": string,"p_orcamento_id": string }; Returns: string
+                           },
+"salvar_observacao_da_vistoria":
+{ Args: { "p_id": string,"p_observacao": string }; Returns: undefined
                            },
 "salvar_orcamento":
 { Args: { "p_dados": Json,"p_id": string,"p_row_version": number }; Returns: number

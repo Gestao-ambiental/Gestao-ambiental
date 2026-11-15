@@ -31,7 +31,7 @@
   - **interface sem texto explicativo:** nada de prosa cinza de ajuda; fica só rótulo, valor, estado, erro e o que falta. Dinheiro mostra o ponto de milhar ao digitar. **Vários textos de ajuda das fatias 1 e 2 do ADR-0019 descritos abaixo podem já ter saído:** confira no código antes de citar;
   - **protótipo:** caminho mais curto e testes enxutos, mas RLS forçada, CPF nunca gravado e suíte inteira verde;
   - responder sempre em português.
-- **PR 22 × local (15/11, depois dos merges):** os commits `63663c9` (lista de espera), `5ab26f6` (merge do terceirizado) e o merge da vistoria ainda **não foram enviados** ao PR. Antes, mais precisamente: o PR tem 37 commits, até o `506dc02`, sem revisão do Kadu (só o comentário da Vercel). O commit local `63663c9` (lista de espera) ainda não foi enviado.
+- **PR 22 (15/11):** a `branch-do-duds` foi enviada até o `281e6a5` (lista de espera e os merges do terceirizado e da vistoria); o PR tem 42 commits e o CI rodou. Antes do envio, mais precisamente:
 - **Feito, mas FORA da `branch-do-duds` e do PR** (conferido em 15/11):
   - **Terceirizado no orçamento: juntado em 15/11** por merge da `claude/terceirizado-orcamento` (`dd6c49c`), renumerado para ADR-0031, migration `20261115020000_terceirizado_no_orcamento.sql` e pgTAP `510`. Suíte inteira verde (`corepack pnpm verificar`).
   - **Vistoria móvel: juntada em 15/11** por merge da `feature/86e3q96x1-vistoria-movel` (`692d174`). Renumerada para ADR-0033, migration `20261115030000_vistoria_movel.sql` e pgTAP `520`. No `database.types.ts` ficaram as funções e os enums das duas partes (tarefas e vistoria). As decisões do ADR-0033 (sem offline, checklist digitado ao agendar, revisão sempre obrigatória) **continuam para o Eduardo confirmar**.
