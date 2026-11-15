@@ -36,3 +36,16 @@ export function formatarContato(contato: ContatoNormalizado): string {
 export function linkDoContato(contato: ContatoNormalizado): string {
   return contato.tipo === 'email' ? `mailto:${contato.valor}` : `https://wa.me/${contato.valor}`
 }
+
+/**
+ * Convite para o beta por WhatsApp (ADR-0034): wa.me com a mensagem pronta e o link de criar conta.
+ */
+export function linkDoConviteNoWhatsapp(
+  numero: string,
+  nome: string,
+  linkDeCriarConta: string,
+): string {
+  const primeiroNome = nome.trim().split(/\s+/)[0] ?? nome
+  const mensagem = `Olá, ${primeiroNome}! Aqui é do Grama. Você se inscreveu na lista de espera e o beta está aberto para você. Crie sua conta: ${linkDeCriarConta}`
+  return `https://wa.me/${numero}?text=${encodeURIComponent(mensagem)}`
+}

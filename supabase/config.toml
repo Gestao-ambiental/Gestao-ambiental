@@ -391,6 +391,9 @@ deno_version = 2
 [functions.enviar-resumo-do-mes]
 verify_jwt = false
 
+[functions.avisar-lista-de-espera]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

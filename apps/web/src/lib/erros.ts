@@ -166,6 +166,8 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   valores_invalidos:
     'Confira os valores: preço, pessoas e empreendimentos acima de zero; anual de 1 a 12 mensalidades.',
   plano_inexistente: 'Este plano não existe.',
+  // Lista de espera (ADR-0034)
+  cadastro_inexistente: 'Este cadastro não está mais na lista de espera.',
   catalogo_incompleto: 'Não foi possível carregar os planos. Tente de novo.',
   // Resíduos, fase 1 (MTR e CDF)
   numero_documento_obrigatorio: 'Informe o número',

@@ -24,7 +24,9 @@
   | 0029             | Aprovação do orçamento com tarefas, fatia 1                                                                                                |
   | 0032             | Lista de espera do site, lida na central. O 0031 está reservado para o terceirizado                                                        |
 
-  Também: `docs/revisao-de-necessidade-2026-11-14.md` (revisão das 43 mil linhas) e `docs/juridico/` (termos de uso e acordo de dados).
+| 0034 | Lista de espera: contatado, convite para o beta e aviso de cadastro novo aos operadores |
+
+Também: `docs/revisao-de-necessidade-2026-11-14.md` (revisão das 43 mil linhas) e `docs/juridico/` (termos de uso e acordo de dados).
 
 - **Regras novas desde 13/11** (estão no `CLAUDE.md` e valem para quem assumir):
   - **testes de regressão sempre:** código novo com teste novo, e `corepack pnpm verificar` (lint, tipos, testes, build e pgTAP por `scripts/testar-banco.mjs`) antes de entregar;
@@ -38,6 +40,18 @@
   - **Suíte depois dos dois merges:** `corepack pnpm verificar` verde, com 1.176 testes do domínio, 406 da web, build e todas as baterias pgTAP (inclusive 510 e 520).
   - **De-para de profissão e cargo** (13/11): pela metade e **sem commit** nas pastas `.claude/worktrees/de-para-profissoes-a928f3` (`de-para-profissao-e-cargo.ts` + teste) e `.claude/worktrees/agent-a53d182acd7de6ca3` (mudanças em `profissao-e-cargo.ts`).
   - **`feat/compartilhar-orcamentos`** e o repositório `teste-privado` (`grama-orcamentos-prototipo`): commits de 11/11 do protótipo antigo, anteriores ao módulo atual. Não há o que juntar.
+- **Central, lista de espera, parte 2 (ADR-0034, 15/11, sem commit):** marcar contatado, convidar para o beta (e-mail pelo Resend; WhatsApp abre `wa.me` com a mensagem) e e-mail aos operadores a cada cadastro novo (gatilho com `pg_net` e Vault).
+  - **Arquivos:**
+    - migration `20261115040000`;
+    - pgTAP `530`;
+    - funções `avisar-lista-de-espera` e `convidar-da-lista-de-espera`, com `_shared/lista-de-espera.ts` e testes Deno, ambas no `deno check` do CI;
+    - `verify_jwt = false` só no aviso.
+  - **Deno:** não está instalado; rode com `npx -y deno@2 test --config deno.json _shared/` dentro de `supabase/functions`.
+  - **Falta ligar no beta:** veja a seção "Para ligar no beta" do ADR-0034 (`pg_net`, migration, deploy das funções, segredo `LISTA_AVISO_TOKEN` e os dois segredos do Vault).
+  - **Próximos da central** (sugestão, nada decidido):
+    - remover da lista;
+    - anotações por pessoa;
+    - o resto da central (ADR-0022 a 0026).
 - **Ainda pendente do orçamento:** ADR-0019, fatias 4 (ART/RRT em seção única), 5 (situação mais leve) e 6 (salvamento automático, só depois); job `banco` do CI no Supabase real.
 
 - **Pasta:** `C:\Users\eduka\Documents\Codex\2026-11-06\https-github-com-gestao-ambiental-gestao\work\Gestao-ambiental-orcamentos`.

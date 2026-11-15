@@ -1833,8 +1833,8 @@ isOneToOne: false
             }[]
                            },
 "central_lista_de_espera":
-{ Args: { "p_deslocamento"?: number,"p_limite"?: number }; Returns: {
-              "contato": string,"criada_em": string,"id": string,"nome": string,"tipo_contato": string,"total": number
+{ Args: { "p_deslocamento"?: number,"p_limite"?: number,"p_so_pendentes"?: boolean }; Returns: {
+              "contatado_em": string,"contato": string,"convidado_em": string,"criada_em": string,"id": string,"nome": string,"tipo_contato": string,"total": number
             }[]
                            },
 "central_listar_consultorias":
@@ -1850,6 +1850,9 @@ isOneToOne: false
 "central_marcar_conta_interna":
 { Args: { "p_consultoria_id": string,"p_interna": boolean,"p_motivo": string,"p_row_version": number }; Returns: number
                            },
+"central_marcar_contatado":
+{ Args: { "p_contatado": boolean,"p_id": string }; Returns: undefined
+                           },
 "central_metricas_de_valor":
 { Args: { "p_consultoria_id"?: string,"p_meses"?: number }; Returns: {
               "antecedencia_media": number,"atrasadas": number,"carga_celulas": number,"carga_entregas": number,"carga_pico": number,"concluidas": number,"concluidas_com_evidencia": number,"condicionantes_ativas": number,"condicionantes_com_responsavel": number,"criadas": number,"dias_ate_decisao": number,"dias_ate_envio": number,"dias_de_atraso": number,"mes": string,"meta_cumpridas": number,"meta_previstas": number,"nao_planejadas": number,"orcamentos_aprovados": number,"orcamentos_criados": number,"orcamentos_decididos": number,"orcamentos_enviados": number,"orcamentos_pelos_custos": number,"orcamentos_preco_digitado": number,"prazo_cumpridas": number,"prazo_previstas": number,"renovacoes_protegidas": number,"renovacoes_vencendo": number,"ticket_medio_aprovado_centavos": number,"urgencias": number
@@ -1861,6 +1864,11 @@ isOneToOne: false
 "central_plano_da_consultoria":
 { Args: { "p_consultoria_id": string }; Returns: {
               "bloqueio_em": string,"ciclo": string,"ciclo_agendado": string,"condicao_row_version": number,"contrato_ate": string,"convites_pendentes": number,"criada_em": string,"dias_de_teste": number,"em_atraso_desde": string,"empreendimentos": number,"fim_do_beta": string,"forma": string,"hoje": string,"interna": boolean,"mudanca_em": string,"pessoas": number,"plano": string,"plano_agendado": string,"plano_contrato": string,"proximo_vencimento": string,"situacao": string,"situacao_asaas": string,"somente_leitura": boolean,"teste_ate": string,"valida_ate": string,"vencimentos_em_aberto": Json
+            }[]
+                           },
+"central_registrar_convite":
+{ Args: { "p_id": string }; Returns: {
+              "contato": string,"nome": string,"tipo_contato": string
             }[]
                            },
 "central_resumo_de_uso":
@@ -2068,6 +2076,12 @@ isOneToOne: false
                            },
 "iniciar_vistoria":
 { Args: { "p_id": string }; Returns: number
+                           },
+"lista_de_espera_marcar_avisados":
+{ Args: { "p_ids": (string)[] }; Returns: number
+                           },
+"lista_de_espera_pendente_de_aviso":
+{ Args: Record<PropertyKey, never>; Returns: Json
                            },
 "listar_aceites_do_orcamento":
 { Args: { "p_orcamento_id": string }; Returns: {

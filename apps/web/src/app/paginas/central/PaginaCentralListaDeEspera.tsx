@@ -1,13 +1,22 @@
-import { formatarContato, linkDoContato } from '@gestao-ambiental/domain'
-import { useInfiniteQuery } from '@tanstack/react-query'
+import { formatarContato, linkDoContato, linkDoConviteNoWhatsapp } from '@gestao-ambiental/domain'
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
 
 import { Pagina } from '@/app/paginas/Pagina'
 import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
+import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { TAMANHO_PAGINA_CENTRAL } from '@/lib/api/central'
-import { listarListaDeEspera } from '@/lib/api/lista-de-espera'
-import { formatarInstanteComHora } from '@/lib/datas'
-import { ehDoisFatoresNecessarios, ehSemPermissao } from '@/lib/erros'
+import {
+  convidarPorEmail,
+  ErroDoConvite,
+  listarListaDeEspera,
+  marcarContatado,
+  registrarConviteNoWhatsapp,
+  type PessoaNaListaDeEspera,
+} from '@/lib/api/lista-de-espera'
+import { formatarInstanteComHora, formatarInstanteComoData } from '@/lib/datas'
+import { ehDoisFatoresNecessarios, ehSemPermissao, mensagemDoErro } from '@/lib/erros'
 
 import { RelerDoisFatores } from './ExigeDoisFatores'
 import { classeCabecalho, classeCelula, plural } from './comum'
@@ -16,14 +25,21 @@ const FUSO_DA_CENTRAL = 'America/Sao_Paulo'
 
 const ROTULO_DO_TIPO = { email: 'E-mail', whatsapp: 'WhatsApp' } as const
 
+type Aviso = { tom: 'sucesso' | 'perigo'; texto: string } | null
+
 /**
- * /admin/lista-de-espera (ADR-0032): quem se cadastrou pelo site, mais recentes primeiro, com o
- * link para responder por e-mail ou WhatsApp. Paginada (50).
+ * /admin/lista-de-espera (ADR-0032, ADR-0034): quem se cadastrou pelo site, mais recentes primeiro,
+ * com o link para responder, a marcação de contatado e o convite para o beta (e-mail pelo Grama;
+ * WhatsApp abre a conversa com a mensagem pronta). Paginada (50).
  */
 export function PaginaCentralListaDeEspera() {
+  const cliente = useQueryClient()
+  const [soPendentes, setSoPendentes] = useState(false)
+  const [aviso, setAviso] = useState<Aviso>(null)
+
   const consulta = useInfiniteQuery({
-    queryKey: ['central', 'lista-de-espera'],
-    queryFn: ({ pageParam }) => listarListaDeEspera(pageParam),
+    queryKey: ['central', 'lista-de-espera', soPendentes],
+    queryFn: ({ pageParam }) => listarListaDeEspera(pageParam, soPendentes),
     initialPageParam: 0,
     getNextPageParam: (ultima, todas) => {
       const carregados = todas.reduce((soma, pagina) => soma + pagina.itens.length, 0)
@@ -32,6 +48,62 @@ export function PaginaCentralListaDeEspera() {
         : undefined
     },
   })
+
+  function recarregar() {
+    void cliente.invalidateQueries({ queryKey: ['central', 'lista-de-espera'] })
+  }
+
+  const contatado = useMutation({
+    mutationFn: ({ id, valor }: { id: string; valor: boolean }) => marcarContatado(id, valor),
+    onSuccess: () => {
+      setAviso(null)
+      recarregar()
+    },
+    onError: (erro) => {
+      setAviso({ tom: 'perigo', texto: mensagemDoErro(erro) })
+    },
+  })
+
+  const convite = useMutation({
+    mutationFn: async (pessoa: PessoaNaListaDeEspera) => {
+      if (pessoa.contato.tipo === 'email') await convidarPorEmail(pessoa.id)
+      else await registrarConviteNoWhatsapp(pessoa.id)
+      return pessoa
+    },
+    onSuccess: (pessoa) => {
+      setAviso({
+        tom: 'sucesso',
+        texto:
+          pessoa.contato.tipo === 'email'
+            ? `Convite enviado para ${pessoa.contato.valor}.`
+            : `Convite de ${pessoa.nome} registrado.`,
+      })
+      recarregar()
+    },
+    onError: (erro) => {
+      setAviso({
+        tom: 'perigo',
+        texto: erro instanceof ErroDoConvite ? erro.message : mensagemDoErro(erro),
+      })
+    },
+  })
+
+  function convidar(pessoa: PessoaNaListaDeEspera) {
+    setAviso(null)
+    if (pessoa.contato.tipo === 'whatsapp') {
+      // Abre no clique (antes de qualquer espera), senão o navegador bloqueia a janela.
+      window.open(
+        linkDoConviteNoWhatsapp(
+          pessoa.contato.valor,
+          pessoa.nome,
+          `${window.location.origin}/criar-conta`,
+        ),
+        '_blank',
+        'noopener,noreferrer',
+      )
+    }
+    convite.mutate(pessoa)
+  }
 
   const itens = consulta.data?.pages.flatMap((pagina) => pagina.itens) ?? []
   const total = consulta.data?.pages[0]?.total ?? 0
@@ -52,7 +124,12 @@ export function PaginaCentralListaDeEspera() {
       />
     )
   } else if (itens.length === 0) {
-    conteudo = <EstadoVazio icone="users" titulo="Ninguém na lista de espera ainda" />
+    conteudo = (
+      <EstadoVazio
+        icone="users"
+        titulo={soPendentes ? 'Ninguém falta contatar' : 'Ninguém na lista de espera ainda'}
+      />
+    )
   } else {
     conteudo = (
       <div className="flex flex-col gap-(--space-100)">
@@ -69,25 +146,82 @@ export function PaginaCentralListaDeEspera() {
                 <th scope="col" className={classeCabecalho}>
                   Cadastro
                 </th>
+                <th scope="col" className={classeCabecalho}>
+                  Contatado
+                </th>
+                <th scope="col" className={classeCabecalho}>
+                  Convite
+                </th>
               </tr>
             </thead>
             <tbody>
-              {itens.map((item) => (
-                <tr key={item.id} className="last:[&>td]:border-b-0">
-                  <td className={`${classeCelula} corpo-medio text-(--text)`}>{item.nome}</td>
-                  <td className={`${classeCelula} whitespace-nowrap`}>
-                    <span className="rotulo mr-(--space-075)">
-                      {ROTULO_DO_TIPO[item.contato.tipo]}
-                    </span>
-                    <a href={linkDoContato(item.contato)} target="_blank" rel="noopener noreferrer">
-                      {formatarContato(item.contato)}
-                    </a>
-                  </td>
-                  <td className={`${classeCelula} whitespace-nowrap`}>
-                    {formatarInstanteComHora(item.criadaEm, FUSO_DA_CENTRAL)}
-                  </td>
-                </tr>
-              ))}
+              {itens.map((item) => {
+                const convidando = convite.isPending && convite.variables.id === item.id
+                return (
+                  <tr key={item.id} className="last:[&>td]:border-b-0">
+                    <td className={`${classeCelula} corpo-medio text-(--text)`}>{item.nome}</td>
+                    <td className={`${classeCelula} whitespace-nowrap`}>
+                      <span className="rotulo mr-(--space-075)">
+                        {ROTULO_DO_TIPO[item.contato.tipo]}
+                      </span>
+                      <a
+                        href={linkDoContato(item.contato)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {formatarContato(item.contato)}
+                      </a>
+                    </td>
+                    <td className={`${classeCelula} whitespace-nowrap`}>
+                      {formatarInstanteComHora(item.criadaEm, FUSO_DA_CENTRAL)}
+                    </td>
+                    <td className={`${classeCelula} whitespace-nowrap`}>
+                      <label className="flex items-center gap-(--space-075)">
+                        <input
+                          type="checkbox"
+                          className="accent-(--brand)"
+                          checked={item.contatadoEm !== null}
+                          disabled={contatado.isPending}
+                          aria-label={`Contatado: ${item.nome}`}
+                          onChange={(e) => {
+                            contatado.mutate({ id: item.id, valor: e.target.checked })
+                          }}
+                        />
+                        <span aria-hidden="true">
+                          {item.contatadoEm
+                            ? formatarInstanteComoData(item.contatadoEm, FUSO_DA_CENTRAL)
+                            : 'Não'}
+                        </span>
+                      </label>
+                    </td>
+                    <td className={`${classeCelula} whitespace-nowrap`}>
+                      <div className="flex items-center gap-(--space-100)">
+                        {item.convidadoEm ? (
+                          <span>
+                            Convidado em{' '}
+                            {formatarInstanteComoData(item.convidadoEm, FUSO_DA_CENTRAL)}
+                          </span>
+                        ) : null}
+                        <Botao
+                          tamanho="compacto"
+                          disabled={convite.isPending}
+                          aria-busy={convidando || undefined}
+                          aria-label={`${item.convidadoEm ? 'Convidar de novo' : 'Convidar'}: ${item.nome}`}
+                          onClick={() => {
+                            convidar(item)
+                          }}
+                        >
+                          {convidando
+                            ? 'Enviando…'
+                            : item.convidadoEm
+                              ? 'Convidar de novo'
+                              : 'Convidar'}
+                        </Botao>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
           <p className="border-t px-(--space-150) py-(--space-100) text-xs text-(--text-subtle)">
@@ -110,6 +244,22 @@ export function PaginaCentralListaDeEspera() {
   return (
     <div className="flex flex-col gap-(--space-300)">
       <Pagina titulo="Lista de espera">{null}</Pagina>
+      <label className="flex items-center gap-(--space-075) self-start">
+        <input
+          type="checkbox"
+          className="accent-(--brand)"
+          checked={soPendentes}
+          onChange={(e) => {
+            setSoPendentes(e.target.checked)
+          }}
+        />
+        <span>Só quem falta contatar</span>
+      </label>
+      {aviso ? (
+        <MensagemSecao role={aviso.tom === 'perigo' ? 'alert' : 'status'} tom={aviso.tom}>
+          {aviso.texto}
+        </MensagemSecao>
+      ) : null}
       {conteudo}
     </div>
   )

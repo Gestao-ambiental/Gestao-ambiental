@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { formatarContato, linkDoContato, normalizarContato } from './lista-de-espera'
+import {
+  formatarContato,
+  linkDoContato,
+  linkDoConviteNoWhatsapp,
+  normalizarContato,
+} from './lista-de-espera'
 
 describe('Lista de espera: contato', () => {
   it('e-mail fica em minúsculas, sem espaços', () => {
@@ -32,5 +37,17 @@ describe('Lista de espera: contato', () => {
     const email = { tipo: 'email', valor: 'marina@exemplo.test' } as const
     expect(formatarContato(email)).toBe('marina@exemplo.test')
     expect(linkDoContato(email)).toBe('mailto:marina@exemplo.test')
+  })
+
+  it('convite por WhatsApp leva o primeiro nome e o link de criar conta', () => {
+    const link = linkDoConviteNoWhatsapp(
+      '5547999991234',
+      '  João  Lima ',
+      'https://beta.exemplo.test/criar-conta',
+    )
+    expect(link.startsWith('https://wa.me/5547999991234?text=')).toBe(true)
+    const texto = decodeURIComponent(link.split('?text=')[1] ?? '')
+    expect(texto).toMatch(/^Olá, João! /)
+    expect(texto).toMatch(/Crie sua conta: https:\/\/beta\.exemplo\.test\/criar-conta$/)
   })
 })
