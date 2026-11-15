@@ -386,6 +386,14 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# Resumo do mês (ADR-0027): chamada pelo GitHub Actions sem JWT de usuário; quem protege é o
+# segredo CRON_TOKEN no header x-cron-token (e, no teste da central, o banco com o JWT do operador).
+[functions.enviar-resumo-do-mes]
+verify_jwt = false
+
+[functions.avisar-lista-de-espera]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

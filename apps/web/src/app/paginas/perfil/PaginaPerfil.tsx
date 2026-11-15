@@ -1,26 +1,28 @@
+import type { CodigoCargo, CodigoProfissao, GeneroDaPessoa } from '@gestao-ambiental/domain'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 
-import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
+import { CHAVE_MEU_CADASTRO, useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { NOMES_PAPEL } from '@/app/papeis'
 import { useSessao, usuarioDaSessao } from '@/app/sessao/contexto-sessao'
+import { CampoGenero } from '@/components/campos-da-pessoa'
 import { Carregando, EstadoErro, SemPermissao } from '@/components/estados'
 import { Avatar } from '@/components/ui/avatar'
 import { Botao } from '@/components/ui/botao'
-import { CampoTexto } from '@/components/ui/campo-texto'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import {
   conferirFoto,
-  definirCargo,
+  definirMeuGenero,
+  definirProfissaoECargo,
   enviarFoto,
   meuPerfil,
   removerFoto,
-  TAMANHO_MAXIMO_CARGO,
   type MembroAtivo,
   type ProblemaDaFoto,
 } from '@/lib/api/perfil'
 import { ehSemPermissao, mensagemDoErro } from '@/lib/erros'
 
+import { CamposProfissaoECargo } from '../equipe/CamposProfissaoECargo'
 import { Pagina } from '../Pagina'
 
 const PROBLEMAS_DA_FOTO: Record<ProblemaDaFoto, string> = {
@@ -30,8 +32,10 @@ const PROBLEMAS_DA_FOTO: Record<ProblemaDaFoto, string> = {
 }
 
 /**
- * /perfil: foto e cargo da pessoa nesta consultoria. Aparecem no seletor de responsável (foto e,
- * embaixo do nome, o cargo). Cada consultoria tem o seu: o perfil é do vínculo.
+ * /perfil: foto, gênero, profissão e cargo da pessoa nesta consultoria. Aparecem no seletor de
+ * responsável (foto e, embaixo do nome, o cargo). Cada consultoria tem o seu: o perfil é do vínculo.
+ * Profissão e cargo vêm das listas fixas do Grama (ADR-0021). O gênero é só da própria pessoa, vale
+ * em todos os vínculos e muda como a profissão é escrita.
  */
 export function PaginaPerfil() {
   const { atual } = useConsultoria()
@@ -66,8 +70,13 @@ function Perfil({ perfil }: { perfil: MembroAtivo }) {
   const queryClient = useQueryClient()
   const entrada = useRef<HTMLInputElement>(null)
   const [problema, setProblema] = useState<string | null>(null)
-  const [cargo, setCargo] = useState(perfil.cargo ?? '')
-  const [cargoSalvo, setCargoSalvo] = useState(false)
+  const [profissao, setProfissao] = useState<CodigoProfissao | ''>(perfil.profissao ?? '')
+  const [emCurso, setEmCurso] = useState(perfil.profissaoEmCurso)
+  const [outras, setOutras] = useState<CodigoProfissao[]>(perfil.outrasProfissoes)
+  const [cargo, setCargo] = useState<CodigoCargo | ''>(perfil.cargoCodigo ?? '')
+  const [genero, setGenero] = useState<GeneroDaPessoa | ''>(perfil.genero ?? '')
+  const [salvo, setSalvo] = useState(false)
+  const [generoSalvo, setGeneroSalvo] = useState(false)
   const email = sessao ? usuarioDaSessao(sessao).email : ''
 
   async function atualizar() {
@@ -77,16 +86,30 @@ function Perfil({ perfil }: { perfil: MembroAtivo }) {
     ])
   }
 
+  const salvarGenero = useMutation({
+    mutationFn: (escolhido: GeneroDaPessoa) => definirMeuGenero(escolhido),
+    onSuccess: async () => {
+      setGeneroSalvo(true)
+      await Promise.all([
+        atualizar(),
+        queryClient.invalidateQueries({ queryKey: [CHAVE_MEU_CADASTRO] }),
+        queryClient.invalidateQueries({ queryKey: ['membros', atual.consultoriaId] }),
+      ])
+    },
+  })
+  const generoMudou = genero !== (perfil.genero ?? '')
+
   const foto = useMutation({
     mutationFn: (arquivo: File) =>
       enviarFoto({ id: perfil.id, consultoriaId: atual.consultoriaId }, arquivo),
     onSuccess: atualizar,
   })
   const tirar = useMutation({ mutationFn: () => removerFoto(perfil.id), onSuccess: atualizar })
-  const salvarCargo = useMutation({
-    mutationFn: () => definirCargo(perfil.id, cargo),
+  const salvar = useMutation({
+    mutationFn: () =>
+      definirProfissaoECargo(perfil.id, profissao || null, cargo || null, outras, emCurso),
     onSuccess: async () => {
-      setCargoSalvo(true)
+      setSalvo(true)
       await atualizar()
     },
   })
@@ -94,7 +117,11 @@ function Perfil({ perfil }: { perfil: MembroAtivo }) {
   const erroDaFoto =
     problema ?? ((foto.error ?? tirar.error) ? mensagemDoErro(foto.error ?? tirar.error) : null)
   const ocupado = foto.isPending || tirar.isPending
-  const mudouCargo = cargo.trim() !== (perfil.cargo ?? '')
+  const mudou =
+    profissao !== (perfil.profissao ?? '') ||
+    emCurso !== perfil.profissaoEmCurso ||
+    cargo !== (perfil.cargoCodigo ?? '') ||
+    outras.join() !== perfil.outrasProfissoes.join()
 
   return (
     <div className="flex max-w-[560px] flex-col gap-(--space-300)">
@@ -160,40 +187,95 @@ function Perfil({ perfil }: { perfil: MembroAtivo }) {
         ) : null}
       </section>
 
-      <section aria-labelledby="titulo-cargo" className="flex flex-col gap-(--space-150)">
-        <h2 id="titulo-cargo" className="titulo-secao">
-          Cargo
+      <section aria-labelledby="titulo-genero" className="flex flex-col gap-(--space-150)">
+        <h2 id="titulo-genero" className="titulo-secao">
+          Gênero
         </h2>
         <form
           className="flex flex-col gap-(--space-150)"
           onSubmit={(evento) => {
             evento.preventDefault()
-            if (mudouCargo) salvarCargo.mutate()
+            if (genero && generoMudou) salvarGenero.mutate(genero)
           }}
         >
-          <CampoTexto
-            rotulo="Cargo"
-            value={cargo}
-            maxLength={TAMANHO_MAXIMO_CARGO}
-            placeholder="Ex.: Analista ambiental"
-            ajuda="Aparece embaixo do seu nome quando alguém escolhe o responsável."
-            erro={salvarCargo.error ? mensagemDoErro(salvarCargo.error) : undefined}
-            onChange={(evento) => {
-              setCargo(evento.target.value)
-              setCargoSalvo(false)
+          <CampoGenero
+            valor={genero}
+            aoMudar={(escolhido) => {
+              setGenero(escolhido)
+              setGeneroSalvo(false)
             }}
+            desabilitado={salvarGenero.isPending}
           />
+          {salvarGenero.error ? (
+            <MensagemSecao role="alert" tom="perigo">
+              {mensagemDoErro(salvarGenero.error)}
+            </MensagemSecao>
+          ) : null}
           <div className="flex items-center gap-(--space-150)">
             <Botao
               type="submit"
               aparencia="primario"
-              disabled={!mudouCargo || salvarCargo.isPending}
+              disabled={!genero || !generoMudou || salvarGenero.isPending}
             >
-              {salvarCargo.isPending ? 'Salvando…' : 'Salvar cargo'}
+              {salvarGenero.isPending ? 'Salvando…' : 'Salvar gênero'}
             </Botao>
-            {cargoSalvo && !mudouCargo ? (
+            {generoSalvo && !generoMudou ? (
               <span role="status" className="rotulo">
-                Cargo salvo.
+                Gênero salvo.
+              </span>
+            ) : null}
+          </div>
+        </form>
+      </section>
+
+      <section aria-labelledby="titulo-cargo" className="flex flex-col gap-(--space-150)">
+        <h2 id="titulo-cargo" className="titulo-secao">
+          Profissão e cargo
+        </h2>
+        <form
+          className="flex flex-col gap-(--space-150)"
+          onSubmit={(evento) => {
+            evento.preventDefault()
+            if (mudou) salvar.mutate()
+          }}
+        >
+          <CamposProfissaoECargo
+            profissao={profissao}
+            outras={outras}
+            cargo={cargo}
+            cargoAntigo={perfil.cargoAntigo}
+            genero={genero || null}
+            desabilitado={salvar.isPending}
+            emCurso={emCurso}
+            aoMudarProfissao={(codigo) => {
+              setProfissao(codigo)
+              setSalvo(false)
+            }}
+            aoMudarEmCurso={(marcado) => {
+              setEmCurso(marcado)
+              setSalvo(false)
+            }}
+            aoMudarOutras={(codigos) => {
+              setOutras(codigos)
+              setSalvo(false)
+            }}
+            aoMudarCargo={(codigo) => {
+              setCargo(codigo)
+              setSalvo(false)
+            }}
+          />
+          {salvar.error ? (
+            <MensagemSecao role="alert" tom="perigo">
+              {mensagemDoErro(salvar.error)}
+            </MensagemSecao>
+          ) : null}
+          <div className="flex items-center gap-(--space-150)">
+            <Botao type="submit" aparencia="primario" disabled={!mudou || salvar.isPending}>
+              {salvar.isPending ? 'Salvando…' : 'Salvar profissão e cargo'}
+            </Botao>
+            {salvo && !mudou ? (
+              <span role="status" className="rotulo">
+                Profissão e cargo salvos.
               </span>
             ) : null}
           </div>

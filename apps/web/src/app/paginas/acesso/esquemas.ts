@@ -1,3 +1,4 @@
+import { generoDoCodigo, profissaoDoCodigo } from '@gestao-ambiental/domain'
 import { z } from 'zod'
 
 // Validação de formulário (apresentação). O Supabase Auth e as RPCs validam de novo no servidor.
@@ -24,3 +25,20 @@ export const esquemaSenhaNova = z
   })
 
 export const campoNome = z.string().trim().min(1, 'Informe o nome')
+
+/** Gênero da pessoa (rádio): um dos códigos de GENEROS. */
+export const campoGenero = z.string().refine((valor) => generoDoCodigo(valor) !== null, {
+  message: 'Escolha o gênero',
+})
+
+/** Formação (profissão principal): um código da lista fixa do Grama. */
+export const campoFormacao = z.string().refine((valor) => profissaoDoCodigo(valor) !== null, {
+  message: 'Escolha a formação',
+})
+
+/** Gênero e formação (e se ainda está cursando), pedidos ao criar a conta e no "Complete seu cadastro". */
+export const esquemaGeneroEFormacao = z.object({
+  genero: campoGenero,
+  profissao: campoFormacao,
+  emCurso: z.boolean(),
+})

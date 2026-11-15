@@ -10,6 +10,7 @@ import {
 } from 'react'
 import { useNavigate, useParams } from 'react-router'
 
+import { usePrenderTarefa, useTarefas } from '@/app/consultoria/tempo-ativo'
 import { Carregando, EstadoErro, EstadoVazio } from '@/components/estados'
 import type { PedidoDePagina } from '@/components/pdf/VisualizadorPdf'
 import { Botao } from '@/components/ui/botao'
@@ -112,11 +113,11 @@ function useLarguraLembrada(chave: string, padrao: number, minimo: number, maxim
 }
 
 const classeCampo =
-  'w-full rounded-(--radius) border border-(--border-input) bg-(--surface-input) px-(--space-100) corpo text-(--text) outline-none focus:border-(--border-focus) focus:bg-(--surface-input-focus)'
+  'w-full rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) px-(--space-100) corpo text-(--text) outline-none focus:border-b-(--border-input-active) focus:shadow-[inset_0_-1px_0_0_var(--border-input-active)] focus:bg-(--surface-input-focus)'
 
 /** Texto fora de edição: caixa cinza de leitura, como no Protótipo 12. */
 const classeLeitura =
-  'read-only:border-transparent read-only:bg-(--surface-sunken) read-only:focus:border-(--border-focus)'
+  'read-only:border-transparent read-only:bg-(--surface-sunken) read-only:focus:border-b-(--border-input-active) focus:shadow-[inset_0_-1px_0_0_var(--border-input-active)]'
 
 type Edicao =
   | { tipo: 'existente'; id: string }
@@ -199,7 +200,7 @@ function LinhaNova({
             }
           }}
           onBlur={confirmar}
-          className="h-7 min-w-0 flex-1 rounded-(--radius) border border-(--border-focus) bg-(--surface-input) px-(--space-075) corpo text-(--text) outline-none"
+          className="h-7 min-w-0 flex-1 rounded-(--radius) border border-(--brand-stroke) bg-(--surface-input) px-(--space-075) corpo text-(--text) outline-none"
         />
       ) : (
         <span className="flex min-w-0 flex-1 items-center gap-(--space-100)">
@@ -421,7 +422,7 @@ function Editor({
           {NATUREZAS.map((n) => (
             <label
               key={n.chave}
-              className="flex cursor-pointer flex-col gap-0.5 rounded-(--radius) border bg-(--surface) px-(--space-150) py-(--space-100) transicao-estado has-checked:border-(--border-focus) has-checked:bg-(--surface-selected) hover:bg-(--surface-hover) has-disabled:cursor-not-allowed has-disabled:opacity-80"
+              className="flex cursor-pointer flex-col gap-0.5 rounded-(--radius-large) border bg-(--surface) shadow-cartao px-(--space-150) py-(--space-100) transicao-estado has-checked:border-(--brand-stroke) has-checked:bg-(--surface-selected) hover:bg-(--surface-hover) has-disabled:cursor-not-allowed has-disabled:opacity-80"
             >
               <span className="inline-flex items-center gap-(--space-100) corpo-medio">
                 <input
@@ -435,7 +436,7 @@ function Editor({
                 />
                 <span
                   aria-hidden="true"
-                  className="inline-flex size-4 shrink-0 items-center justify-center rounded-(--radius-circle) border border-(--border-input) bg-(--surface-input) transicao-estado peer-checked:border-(--brand) peer-checked:bg-(--brand) peer-focus-visible:shadow-[0_0_0_2px_var(--border-focus)] after:size-1.5 after:rounded-(--radius-circle) after:bg-(--text-inverse) after:opacity-0 peer-checked:after:opacity-100"
+                  className="inline-flex size-4 shrink-0 items-center justify-center rounded-(--radius-circle) border border-(--border-input-accessible) bg-(--surface-input) transicao-estado peer-checked:border-(--brand-stroke) peer-checked:bg-(--brand) peer-focus-visible:shadow-[0_0_0_2px_var(--border-focus)] after:size-1.5 after:rounded-(--radius-circle) after:bg-(--text-inverse) after:opacity-0 peer-checked:after:opacity-100"
                 />
                 {n.rotulo}
               </span>
@@ -561,6 +562,11 @@ function Condicionantes({
   // Item novo ainda na linha da árvore, esperando o título (antes de abrir no centro).
   const [nomeando, setNomeando] = useState(false)
   const dicaMoverId = useId()
+  // Tempo ativo (ADR-0027): cada condicionante digitada, do clique em Obrigação/Agrupador até
+  // Adicionar; e o cadastro com IA termina ao confirmar as condicionantes (Continuar).
+  const tarefas = useTarefas()
+  const chaveManual = `manual:${instrumento.id}`
+  usePrenderTarefa(chaveManual)
 
   const itens = consulta.data ?? []
   const porId = new Map(itens.map((item) => [item.id, item]))
@@ -586,6 +592,8 @@ function Condicionantes({
   const recolhiveis = agrupadoresComFilhos(arvore)
 
   function nova(natureza: Natureza) {
+    tarefas.descartar(chaveManual)
+    tarefas.iniciar(chaveManual)
     if (destino) {
       setRecolhidos((atual) => {
         const proximo = new Set(atual)
@@ -622,6 +630,7 @@ function Condicionantes({
   }
 
   function selecionar(item: Condicionante) {
+    tarefas.descartar(chaveManual)
     setNomeando(false)
     setEdicao({ tipo: 'existente', id: item.id })
     mostrarNoPdf(item)
@@ -643,6 +652,7 @@ function Condicionantes({
           setNomeando(false)
         }}
         aoCancelar={() => {
+          tarefas.descartar(chaveManual)
           setEdicao(null)
           setNomeando(false)
         }}
@@ -805,7 +815,14 @@ function Condicionantes({
                 : undefined
           }
           voltarPara={`/licencas/${instrumento.id}/identificacao`}
-          aoContinuar={() => void navegar(`/licencas/${instrumento.id}/prazos`)}
+          aoContinuar={() => {
+            tarefas.concluir(
+              `ia:${instrumento.id}`,
+              'cadastro_licenca_ia',
+              itens.filter((i) => i.origem === 'ia' && i.revisao === 'aceita').length,
+            )
+            void navegar(`/licencas/${instrumento.id}/prazos`)
+          }}
           podeContinuar={podeContinuar}
         />
       }
@@ -865,7 +882,7 @@ function Condicionantes({
               aria-hidden="true"
             >
               <div
-                className="h-full bg-(--brand)"
+                className="h-full bg-(--progress-brand)"
                 style={{
                   width: `${String(itens.length ? (revisados / itens.length) * 100 : 0)}%`,
                 }}
@@ -894,7 +911,7 @@ function Condicionantes({
                   className={cn(
                     'inline-flex h-(--size-control-sm) cursor-pointer items-center gap-(--space-050) rounded-(--radius) border px-(--space-100) text-xs transicao-estado',
                     filtro === chave
-                      ? 'border-(--border-focus) bg-(--surface-selected) text-(--text-link)'
+                      ? 'border-(--brand-stroke) bg-(--surface-selected) text-(--text-link)'
                       : 'hover:bg-(--surface-hover)',
                   )}
                 >
@@ -1072,7 +1089,7 @@ function Condicionantes({
                 className={cn(
                   'm-(--space-150) flex min-h-14 w-[calc(100%-var(--space-150)*2)] items-center justify-center gap-(--space-075) rounded-(--radius) border border-dashed px-(--space-150) text-xs text-(--text-subtle) transicao-estado outline-none enabled:cursor-pointer focus-visible:shadow-[0_0_0_2px_var(--border-focus)]',
                   alvo === null &&
-                    'border-(--border-focus) bg-(--surface-selected) text-(--text-link)',
+                    'border-(--brand-stroke) bg-(--surface-selected) text-(--text-link)',
                 )}
               >
                 <Icone nome="arrow-left" tamanho={12} />
@@ -1115,6 +1132,9 @@ function Condicionantes({
               item={selecionado}
               pdfFechado={!pdfAberto}
               aoSalvar={async (salvoId) => {
+                if (edicao.tipo === 'nova') {
+                  tarefas.concluir(chaveManual, 'cadastro_condicionante_manual', 1)
+                }
                 await registrar()
                 setEdicao({ tipo: 'existente', id: salvoId })
               }}

@@ -87,7 +87,7 @@ function Cartao<T>({
   return (
     <section
       aria-labelledby={id}
-      className="flex min-w-0 flex-col overflow-hidden rounded-(--radius) border bg-(--surface)"
+      className="flex min-w-0 flex-col overflow-hidden rounded-(--radius-large) border bg-(--surface) shadow-cartao"
     >
       <header className="flex items-center justify-between gap-(--space-100) border-b px-(--space-150) py-(--space-150)">
         <h2 id={id} className="titulo-secao">

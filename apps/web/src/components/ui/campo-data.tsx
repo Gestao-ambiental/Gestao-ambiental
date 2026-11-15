@@ -202,7 +202,7 @@ export function CampoData({
       className={cn(
         'absolute inset-y-px right-px inline-flex w-9 cursor-pointer items-center justify-center rounded-r-(--radius) text-(--icon) transicao-estado outline-none',
         'hover:bg-(--neutral-subtle-hover) focus-visible:shadow-[inset_0_0_0_2px_var(--border-focus)] disabled:cursor-not-allowed disabled:text-(--text-disabled) disabled:hover:bg-transparent',
-        aberto && 'bg-(--surface-selected) text-(--brand) hover:bg-(--surface-selected)',
+        aberto && 'bg-(--surface-selected) text-(--icon-brand) hover:bg-(--surface-selected)',
       )}
     >
       <Icone nome="calendar" />
@@ -348,10 +348,10 @@ function EntradaData({
       onBlur={aoSair}
       className={cn(
         'h-(--size-control) w-full rounded-(--radius) border bg-(--surface-input) pr-10 pl-(--space-100) corpo text-(--text) tabular-nums transicao-estado outline-none placeholder:text-(--text-subtlest)',
-        'border-(--border-input) hover:bg-(--surface-hover) focus:border-(--border-focus) focus:bg-(--surface-input-focus) focus:shadow-[0_0_0_1px_var(--border-focus)]',
+        'border-(--border-input) border-b-(--border-input-accessible) hover:bg-(--surface-hover) focus:border-b-(--border-input-active) focus:bg-(--surface-input-focus) focus:shadow-[inset_0_-1px_0_0_var(--border-input-active)]',
         'disabled:cursor-not-allowed disabled:bg-(--surface-disabled) disabled:text-(--text-disabled) disabled:hover:bg-(--surface-disabled)',
         aberto &&
-          'border-(--border-focus) bg-(--surface-input-focus) shadow-[0_0_0_1px_var(--border-focus)]',
+          'border-b-(--border-input-active) bg-(--surface-input-focus) shadow-[inset_0_-1px_0_0_var(--border-input-active)]',
         invalido &&
           'border-(--border-danger) focus:border-(--border-danger) focus:shadow-[0_0_0_1px_var(--border-danger)]',
       )}
@@ -558,7 +558,7 @@ export function PainelCalendario({
                       {ehHoje && !escolhido ? (
                         <span
                           aria-hidden="true"
-                          className="absolute bottom-0.5 left-1/2 h-0.5 w-3 -translate-x-1/2 rounded-full bg-(--brand)"
+                          className="absolute bottom-0.5 left-1/2 h-0.5 w-3 -translate-x-1/2 rounded-full bg-(--brand-stroke)"
                         />
                       ) : null}
                     </button>
@@ -685,7 +685,7 @@ function BotaoGrade({
       {atual && !escolhido ? (
         <span
           aria-hidden="true"
-          className="absolute bottom-1 left-1/2 h-0.5 w-4 -translate-x-1/2 rounded-full bg-(--brand)"
+          className="absolute bottom-1 left-1/2 h-0.5 w-4 -translate-x-1/2 rounded-full bg-(--brand-stroke)"
         />
       ) : null}
     </button>

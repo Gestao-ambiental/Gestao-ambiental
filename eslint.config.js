@@ -16,6 +16,10 @@ export default defineConfig(
     'apps/web/src/lib/database.types.ts',
     // Material exportado do design system (referência, não código do app)
     'docs/design-system/**',
+    // Ferramentas só desta máquina (fora do git): não fazem parte do app
+    'ferramentas-locais/**',
+    'apps/web/demo-local/**',
+    'pesquisa-personas/**',
   ]),
 
   js.configs.recommended,

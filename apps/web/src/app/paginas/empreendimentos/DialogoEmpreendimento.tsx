@@ -1,4 +1,4 @@
-import { mascararCnpj, situacaoDoCnpj } from '@gestao-ambiental/domain'
+import { mascararDocumento, situacaoDoDocumentoDoTitular } from '@gestao-ambiental/domain'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -21,7 +21,12 @@ import { mensagemDoErro } from '@/lib/erros'
 const esquema = z.object({
   nome: z.string().trim().min(1, 'Informe o nome do empreendimento'),
   cliente: z.string(),
-  cnpj: z.string().refine((valor) => situacaoDoCnpj(valor) !== 'incompleto', 'CNPJ incompleto'),
+  cnpj: z.string().superRefine((valor, contexto) => {
+    const situacao = situacaoDoDocumentoDoTitular(valor)
+    if (situacao === 'incompleto')
+      contexto.addIssue({ code: 'custom', message: 'CNPJ ou CPF incompleto' })
+    if (situacao === 'cpf_invalido') contexto.addIssue({ code: 'custom', message: 'CPF inválido' })
+  }),
   primeiraUnidade: z.string(),
 })
 type Dados = z.infer<typeof esquema>
@@ -29,9 +34,9 @@ type Dados = z.infer<typeof esquema>
 function textoDoAviso(parecido: Parecido): string {
   const motivo =
     parecido.mesmoNome && parecido.mesmoCnpj
-      ? 'com este nome e este CNPJ'
+      ? 'com este nome e este documento'
       : parecido.mesmoCnpj
-        ? 'com este CNPJ'
+        ? 'com este documento'
         : 'com este nome'
   return `Já existe ${parecido.nome} ${motivo}.`
 }
@@ -65,7 +70,7 @@ export function DialogoEmpreendimento({
   const valoresIniciais: Dados = {
     nome: existente?.nome ?? '',
     cliente: existente?.clienteNome ?? '',
-    cnpj: mascararCnpj(existente?.cnpj ?? ''),
+    cnpj: mascararDocumento(existente?.cnpj ?? ''),
     primeiraUnidade: '',
   }
 
@@ -131,7 +136,7 @@ export function DialogoEmpreendimento({
 
   const campoCnpj = register('cnpj', {
     onChange: (evento: { target: { value: string } }) => {
-      setValue('cnpj', mascararCnpj(evento.target.value))
+      setValue('cnpj', mascararDocumento(evento.target.value))
     },
   })
   const campoNome = register('nome', {
@@ -220,8 +225,7 @@ export function DialogoEmpreendimento({
             {...register('cliente')}
           />
           <CampoTexto
-            rotulo="CNPJ"
-            placeholder="00.000.000/0000-00"
+            rotulo="CNPJ ou CPF"
             disabled={salvando}
             autoComplete="off"
             erro={errors.cnpj?.message}

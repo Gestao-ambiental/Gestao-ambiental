@@ -1,34 +1,37 @@
-/* Stack de sistema, como o Jira. Sem face display, sem peso 900, sem webfont. */
+/* Tipografia do Fluent 2 (ADR-0015): pilha de sistema com Segoe UI Variable, sem fonte baixada.
+   Tamanhos e alturas vêm de fluent.css (caption1 12/16, body1 14/20, subtitle2 16/22,
+   subtitle1 20/28, title3 24/32). Corpo de 14px, como pede o CLAUDE.md. */
 :root{
-  --font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
-  --font-mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --font-family:"Segoe UI Variable Text","Segoe UI Variable","Segoe UI",-apple-system,BlinkMacSystemFont,Roboto,"Helvetica Neue",sans-serif;
+  --font-family-display:"Segoe UI Variable Display","Segoe UI Variable","Segoe UI",-apple-system,BlinkMacSystemFont,Roboto,"Helvetica Neue",sans-serif;
+  --font-mono:var(--fontFamilyMonospace);
 
-  --font-size-050:11px;  /* uppercase label */
-  --font-size-075:12px;  /* label, metadata */
-  --font-size-100:14px;  /* body, table */
-  --font-size-200:16px;  /* section title */
-  --font-size-300:20px;  /* screen title */
-  --font-size-400:24px;  /* empty-state headline, the largest type in the product */
+  --font-size-050:var(--fontSizeBase100);  /* 10px: só contador */
+  --font-size-075:var(--fontSizeBase200);  /* 12px: caption, rótulo, metadado */
+  --font-size-100:var(--fontSizeBase300);  /* 14px: corpo, tabela */
+  --font-size-200:var(--fontSizeBase400);  /* 16px: título de seção (subtitle2) */
+  --font-size-300:var(--fontSizeBase500);  /* 20px: título de tela (subtitle1) */
+  --font-size-400:var(--fontSizeBase600);  /* 24px: título de estado vazio (title3) */
 
-  --line-height-050:16px;
-  --line-height-075:16px;
-  --line-height-100:20px;
-  --line-height-200:20px;
-  --line-height-300:24px;
-  --line-height-400:28px;
+  --line-height-050:var(--lineHeightBase100);
+  --line-height-075:var(--lineHeightBase200);
+  --line-height-100:var(--lineHeightBase300);
+  --line-height-200:var(--lineHeightBase400);
+  --line-height-300:var(--lineHeightBase500);
+  --line-height-400:var(--lineHeightBase600);
 
-  --font-weight-regular:400;
-  --font-weight-medium:500;
-  --font-weight-semibold:600;
-  --font-weight-bold:700;
+  --font-weight-regular:var(--fontWeightRegular);
+  --font-weight-medium:var(--fontWeightMedium);
+  --font-weight-semibold:var(--fontWeightSemibold);
+  --font-weight-bold:var(--fontWeightBold);
 
   --tracking-uppercase:0.04em;
 
-  /* Composed roles */
-  --text-screen-title:var(--font-weight-semibold) var(--font-size-300)/var(--line-height-300) var(--font-family);
+  /* Papéis compostos (rampa de tipo do Fluent) */
+  --text-screen-title:var(--font-weight-semibold) var(--font-size-300)/var(--line-height-300) var(--font-family-display);
   --text-section-title:var(--font-weight-semibold) var(--font-size-200)/var(--line-height-200) var(--font-family);
   --text-body:var(--font-weight-regular) var(--font-size-100)/var(--line-height-100) var(--font-family);
-  --text-body-medium:var(--font-weight-medium) var(--font-size-100)/var(--line-height-100) var(--font-family);
+  --text-body-medium:var(--font-weight-semibold) var(--font-size-100)/var(--line-height-100) var(--font-family);
   --text-label:var(--font-weight-semibold) var(--font-size-075)/var(--line-height-075) var(--font-family);
-  --text-uppercase:var(--font-weight-bold) var(--font-size-050)/var(--line-height-050) var(--font-family);
+  --text-uppercase:var(--font-weight-semibold) var(--font-size-075)/var(--line-height-075) var(--font-family);
 }

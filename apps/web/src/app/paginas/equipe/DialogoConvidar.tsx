@@ -1,17 +1,20 @@
 import { VALIDADE_CONVITE_DIAS } from '@gestao-ambiental/domain'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from '@tanstack/react-query'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
 import { campoEmail } from '@/app/paginas/acesso/esquemas'
 import { DESCRICAO_PAPEL } from '@/app/papeis'
+import { DialogoAdicional } from '@/app/plano/DialogoAdicional'
 import { Botao } from '@/components/ui/botao'
 import { OpcaoRadio } from '@/components/ui/caixa-selecao'
 import { CampoTexto } from '@/components/ui/campo-texto'
 import { Dialogo } from '@/components/ui/dialogo'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { criarConvite, enviarEmailDoConvite } from '@/lib/api/acesso'
+import { ehAdicionalNaoConfirmado } from '@/lib/api/plano'
 import { mensagemDoErro } from '@/lib/erros'
 
 const esquema = z.object({ email: campoEmail, papel: z.enum(['equipe', 'gestao']) })
@@ -42,6 +45,9 @@ export function DialogoConvidar({
     defaultValues: { email: '', papel: 'equipe' },
   })
 
+  // Convite além do limite do plano (ADR-0026): o banco recusa até a Gestão confirmar o adicional.
+  const [pedeAdicional, setPedeAdicional] = useState<Dados | null>(null)
+
   const convite = useMutation({
     mutationFn: async ({ email, papel }: Dados): Promise<ResultadoConvite> => {
       const token = await criarConvite(consultoriaId, email, papel)
@@ -57,6 +63,9 @@ export function DialogoConvidar({
       aoConvidar(resultado)
       reset()
       aoMudar(false)
+    },
+    onError: (erro, dados) => {
+      if (ehAdicionalNaoConfirmado(erro)) setPedeAdicional(dados)
     },
   })
 
@@ -101,7 +110,7 @@ export function DialogoConvidar({
         }
         className="flex flex-col gap-(--space-200)"
       >
-        {convite.isError ? (
+        {convite.isError && !ehAdicionalNaoConfirmado(convite.error) ? (
           <MensagemSecao role="alert" tom="perigo">
             {mensagemDoErro(convite.error)}
           </MensagemSecao>
@@ -130,6 +139,16 @@ export function DialogoConvidar({
           />
         </fieldset>
       </form>
+      <DialogoAdicional
+        recurso="pessoas"
+        aberto={pedeAdicional !== null}
+        aoMudar={(valor) => {
+          if (!valor) setPedeAdicional(null)
+        }}
+        aoConfirmado={() => {
+          if (pedeAdicional) convite.mutate(pedeAdicional)
+        }}
+      />
     </Dialogo>
   )
 }

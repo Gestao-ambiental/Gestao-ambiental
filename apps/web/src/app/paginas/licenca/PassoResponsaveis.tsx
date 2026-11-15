@@ -11,6 +11,7 @@ import { Link, useParams } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { NOMES_PAPEL } from '@/app/papeis'
+import { DialogoAdicional } from '@/app/plano/DialogoAdicional'
 import { useSessao, usuarioDaSessao } from '@/app/sessao/contexto-sessao'
 import { Carregando, EstadoErro, EstadoVazio } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
@@ -28,6 +29,7 @@ import {
   type Instrumento,
   type MembroAtivo,
 } from '@/lib/api/licencas'
+import { ehAdicionalNaoConfirmado } from '@/lib/api/plano'
 import { mensagemDoErro } from '@/lib/erros'
 
 import { GuardaRascunho } from './GuardaCadastro'
@@ -224,6 +226,8 @@ function Responsaveis({
   const [chave] = useState(() => crypto.randomUUID())
   const [confirmarTodos, setConfirmarTodos] = useState(false)
   const [escolhidoTodos, setEscolhidoTodos] = useState('')
+  // Primeira licença de um empreendimento além do limite do plano (ADR-0026): confirmar o adicional.
+  const [pedeAdicional, setPedeAdicional] = useState(false)
 
   const itens = (consulta.data ?? []).filter(
     (i) => i.revisao !== 'descartada' && i.natureza !== 'agrupador',
@@ -256,6 +260,9 @@ function Responsaveis({
   })
   const ativacao = useMutation({
     mutationFn: () => ativarPlano(instrumento.id, instrumento.rowVersion, chave),
+    onError: (erro) => {
+      if (ehAdicionalNaoConfirmado(erro)) setPedeAdicional(true)
+    },
     onSuccess: async (total) => {
       aoAtivar({ total, instante: new Date() })
       await queryClient.invalidateQueries({ queryKey: ['empreendimentos'] })
@@ -263,7 +270,10 @@ function Responsaveis({
     },
   })
 
-  const erro = definir.error ?? todos.error ?? ativacao.error
+  const erro =
+    definir.error ??
+    todos.error ??
+    (ehAdicionalNaoConfirmado(ativacao.error) ? null : ativacao.error)
 
   return (
     <MolduraCadastro
@@ -329,7 +339,7 @@ function Responsaveis({
             descricao="Volte ao passo 3 para cadastrar."
           />
         ) : (
-          <div className="overflow-x-auto rounded-(--radius) border bg-(--surface)">
+          <div className="overflow-x-auto rounded-(--radius-large) border bg-(--surface) shadow-cartao">
             <table className="w-full border-collapse corpo">
               <thead>
                 <tr>
@@ -444,6 +454,14 @@ function Responsaveis({
           />
         </div>
       </Dialogo>
+      <DialogoAdicional
+        recurso="empreendimentos"
+        aberto={pedeAdicional}
+        aoMudar={setPedeAdicional}
+        aoConfirmado={() => {
+          ativacao.mutate()
+        }}
+      />
     </MolduraCadastro>
   )
 }

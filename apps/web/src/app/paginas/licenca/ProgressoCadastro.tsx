@@ -18,15 +18,15 @@ export function ProgressoCadastro({ passo }: { passo: number }) {
               <span
                 className={cn(
                   'h-0.5 w-3',
-                  indice <= passo ? 'bg-(--brand)' : 'bg-(--border-strong)',
+                  indice <= passo ? 'bg-(--brand-stroke)' : 'bg-(--border-strong)',
                 )}
               />
             ) : null}
             <span
               className={cn(
                 'size-2.5 shrink-0 rounded-full border-2',
-                indice < passo && 'border-(--brand) bg-(--brand)',
-                indice === passo && 'border-(--brand) bg-(--surface)',
+                indice < passo && 'border-(--brand-stroke) bg-(--brand-stroke)',
+                indice === passo && 'border-(--brand-stroke) bg-(--surface)',
                 indice > passo && 'border-(--border-strong) bg-(--surface)',
               )}
             />

@@ -2,9 +2,19 @@
 // autorização é do banco (RLS e checagens nas funções). Erros sobem como vieram: a tela traduz
 // com lib/erros.
 
-import type { PapelMembro, SituacaoConviteGravada, SituacaoMembro } from '@gestao-ambiental/domain'
+import {
+  generoDoCodigo,
+  type CodigoCargo,
+  type CodigoProfissao,
+  type GeneroDaPessoa,
+  type PapelMembro,
+  type SituacaoConviteGravada,
+  type SituacaoMembro,
+} from '@gestao-ambiental/domain'
 
 import { obterSupabase } from '@/lib/supabase'
+
+import { profissaoECargo } from './perfil'
 
 export const TAMANHO_PAGINA = 50
 
@@ -172,6 +182,16 @@ export interface Membro {
   id: string
   nome: string
   email: string
+  /** Profissão e cargo das listas fixas do Grama (ADR-0021); cargo antigo até o de-para. */
+  profissao: CodigoProfissao | null
+  /** A principal ainda em curso: junto do nome aparece "Estudante de …". */
+  profissaoEmCurso: boolean
+  outrasProfissoes: CodigoProfissao[]
+  cargo: string | null
+  cargoCodigo: CodigoCargo | null
+  cargoAntigo: string | null
+  /** Gênero que a pessoa informou: a profissão aparece na forma dela. Nulo: não informado. */
+  genero: GeneroDaPessoa | null
   papel: PapelMembro
   situacao: SituacaoMembro
   criadoEm: string
@@ -186,7 +206,12 @@ export async function listarMembros(
   const inicio = pagina * TAMANHO_PAGINA
   const { data, error, count } = await obterSupabase()
     .from('membro')
-    .select('id, nome, email, papel, situacao, criado_em, desligado_em', { count: 'exact' })
+    .select(
+      'id, nome, email, papel, situacao, criado_em, desligado_em, profissao, outras_profissoes, profissao_em_curso, genero, cargo, cargo_antigo',
+      {
+        count: 'exact',
+      },
+    )
     .eq('consultoria_id', consultoriaId)
     .order('situacao', { ascending: true })
     .order('nome', { ascending: true })
@@ -197,6 +222,8 @@ export async function listarMembros(
       id: linha.id,
       nome: linha.nome,
       email: linha.email,
+      ...profissaoECargo(linha),
+      genero: generoDoCodigo(linha.genero),
       papel: linha.papel,
       situacao: linha.situacao,
       criadoEm: linha.criado_em,

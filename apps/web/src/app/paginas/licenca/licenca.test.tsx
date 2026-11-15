@@ -112,7 +112,8 @@ function cenario(extra: Partial<Cenario> = {}, papel: 'gestao' | 'equipe' = 'ges
           id: 'm-bruno',
           nome: 'Bruno Kist',
           papel: 'equipe',
-          cargo: 'Analista ambiental',
+          // Cargo digitado antes da lista fixa (ADR-0021): continua aparecendo até o de-para.
+          cargo_antigo: 'Analista ambiental',
           foto: { excluido_em: null, versao: { caminho: 'c-Filtroville/membro/f1.png' } },
         },
         { id: 'm-elisa', nome: 'Elisa Prado', papel: 'equipe', cargo: null, foto: null },

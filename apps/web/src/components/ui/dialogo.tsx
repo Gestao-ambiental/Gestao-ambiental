@@ -34,7 +34,7 @@ export function Dialogo({
         <div className="pointer-events-none fixed inset-0 z-50 flex items-start justify-center overflow-y-auto px-(--space-200) py-(--space-800)">
           <Primitivo.Content
             style={{ maxWidth: largura }}
-            className="pointer-events-auto w-full rounded-(--radius) bg-(--surface-overlay) text-(--text) shadow-sobreposicao outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0"
+            className="pointer-events-auto w-full rounded-(--radius-large) bg-(--surface-overlay) text-(--text) shadow-dialogo outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0"
           >
             <div className="flex items-start gap-(--space-100) px-(--space-300) pt-(--space-300) pb-(--space-100)">
               <Primitivo.Title className="flex-1 titulo-tela">{titulo}</Primitivo.Title>

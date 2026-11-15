@@ -11,11 +11,11 @@ import {
 import { Icone } from '@/components/ui/icone'
 import type { Vinculo } from '@/lib/api/acesso'
 
-function Identificacao({ vinculo }: { vinculo: Vinculo }) {
+function Identificacao({ vinculo, papel }: { vinculo: Vinculo; papel?: string }) {
   return (
     <span className="flex min-w-0 flex-col text-left">
       <span className="truncate corpo-medio text-(--text)">{vinculo.consultoriaNome}</span>
-      <span className="rotulo">{NOMES_PAPEL[vinculo.papel]}</span>
+      <span className="rotulo">{papel ?? NOMES_PAPEL[vinculo.papel]}</span>
     </span>
   )
 }
@@ -25,17 +25,18 @@ function Identificacao({ vinculo }: { vinculo: Vinculo }) {
  * um, vira seletor (ACC-04). A consultoria escolhida é filtro de tela; o acesso é do banco.
  */
 export function ConsultoriaAtual() {
-  const { atual, vinculos, trocar } = useConsultoria()
+  const { atual, vinculos, trocar, suporte } = useConsultoria()
   const ativos = vinculos.filter((v) => v.situacao === 'ativo')
 
-  if (ativos.length <= 1) {
+  // Modo suporte (ADR-0025): a consultoria fica fixa; sair é pela faixa do suporte.
+  if (ativos.length <= 1 || suporte) {
     return (
       <div
         className="px-(--space-050)"
         aria-label={`Consultoria: ${atual.consultoriaNome}`}
         role="group"
       >
-        <Identificacao vinculo={atual} />
+        <Identificacao vinculo={atual} papel={suporte ? 'Suporte' : undefined} />
       </div>
     )
   }

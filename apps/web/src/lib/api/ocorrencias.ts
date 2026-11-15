@@ -8,6 +8,7 @@ import type {
 } from '@gestao-ambiental/domain'
 
 import { conferirPdf, type ProblemaDoPdf } from '@/lib/api/licencas'
+import { aceitaNulo } from '@/lib/api/nulo'
 import { obterSupabase } from '@/lib/supabase'
 
 // O gerador de tipos não marca colunas de função como anuláveis; estas podem vir nulas.
@@ -121,11 +122,6 @@ export interface DadosEtapa {
   responsavelExterno: string
   meta: DataCivil | null
   horas: number | null
-}
-
-/** O gerador marca todo argumento de RPC como não nulo; o banco aceita nulo. */
-function aceitaNulo<T>(valor: T | null): T {
-  return valor as unknown as T
 }
 
 export async function criarEtapa(

@@ -53,7 +53,7 @@ Nunca regra de negócio só no front. O front esconde coisas por apresentação,
 - Papel (`gestao | equipe`) vive no **vínculo** (`membro`), nunca no usuário nem em claim editável.
 - Responsável, autor e ator são sempre `membro_id`, nunca nome.
 - Service role só em Edge Functions, migrations e CI. O front usa sempre a chave anônima + JWT.
-- Sem CPF em lugar nenhum. Convite guarda só o hash do token.
+- Sem CPF no nosso banco, no front (armazenamento), em log ou no repositório. Única exceção (decisão do Eduardo, 14/11/2026): na assinatura do plano, quem não tem CNPJ digita o CPF, que vai direto pela Edge Function para o Asaas e não é gravado. Convite guarda só o hash do token.
 - Segredos nunca no front, no repositório ou em log.
 
 ## Dados
@@ -82,6 +82,17 @@ Nunca regra de negócio só no front. O front esconde coisas por apresentação,
 - Nada entra na `main` sem PR. PR cita o card e os IDs de requisito (ex.: `ACC-02`).
 - Migrations só pela CLI (`supabase migration new`), nunca pelo painel. Migration que cria tabela vem com RLS, políticas e teste pgTAP negativo **no mesmo PR**.
 - Antes de dizer que terminou: `pnpm lint`, `pnpm typecheck`, `pnpm test` e build verdes localmente, e o job `banco` do CI (migrations, seed e pgTAP) verde. Não há Supabase local (sem Docker): o desenvolvimento usa staging.
+
+## Testes de regressão (regra permanente)
+
+Toda mudança testa o que já existia, sem ninguém precisar pedir:
+
+- **Código novo vem com teste novo no mesmo commit:** regra de cálculo em `packages/domain`, tela em Vitest + Testing Library (incluindo o caminho de erro), RPC ou tabela em pgTAP (incluindo o teste negativo de outra consultoria).
+- **Bug corrigido ganha um teste que falhava antes da correção**, para não voltar.
+- **A suíte inteira roda antes de entregar:** `corepack pnpm verificar` (lint, tipos, testes, build e pgTAP). Rodar só os testes do arquivo mexido não basta.
+- **Teste antigo que quebrou é sinal de regressão:** corrija o código. Só mude o teste quando a regra mudou de propósito, e diga isso no commit.
+- **Gancho de push** (`.githooks/pre-push`, ativo com `git config --worktree core.hooksPath .githooks`): roda `verificar` e cancela o push se algo falhar; também bloqueia push para o repositório do Kadu.
+- **CI** roda em todo push na `main` e na `branch-do-duds`, e em todo PR.
 
 ## Definition of Done (itens que você verifica)
 

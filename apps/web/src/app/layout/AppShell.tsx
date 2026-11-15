@@ -3,6 +3,7 @@ import { Link, Outlet } from 'react-router'
 
 import { BarraSuperior } from '@/components/ui/barra-superior'
 import { BotaoIcone } from '@/components/ui/botao-icone'
+import { MarcaGrama } from '@/components/ui/marca-grama'
 import { MenuLateral } from '@/components/ui/menu-lateral'
 import {
   Sheet,
@@ -13,21 +14,28 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet'
 
+import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
+import { DialogoLinhaDeBase } from '@/app/indicadores/DialogoLinhaDeBase'
+import { FaixaComercial } from '@/app/plano/FaixaComercial'
+
+import { AvisoDeEmergenciaDoSuporte } from './AvisoDeEmergenciaDoSuporte'
 import { BotaoTema } from './BotaoTema'
 import { ConsultoriaAtual } from './ConsultoriaAtual'
 import { MenuConta } from './MenuConta'
 import { NavegacaoPrincipal } from './NavegacaoPrincipal'
 
 /**
- * Shell fixo do design system: topbar de 56px com o nome do produto em texto, rail de 240px com a
+ * Shell fixo do design system: topbar de 56px com a logo do produto, rail de 240px com a
  * consultoria no topo e só a área principal rolando; conteúdo até 1440px. No celular o rail vira
  * gaveta aberta por um botão com nome acessível.
  */
 export function AppShell() {
   const [gavetaAberta, setGavetaAberta] = useState(false)
+  // Em modo suporte a faixa do suporte fica acima: o shell ocupa o resto da altura (ADR-0025).
+  const { suporte } = useConsultoria()
 
   return (
-    <div className="flex h-dvh flex-col">
+    <div className={suporte ? 'flex min-h-0 flex-1 flex-col' : 'flex h-dvh flex-col'}>
       <a
         href="#conteudo"
         className="sr-only focus:not-sr-only focus:absolute focus:top-(--space-100) focus:left-(--space-100) focus:z-50 focus:rounded-(--radius) focus:bg-(--surface-overlay) focus:px-(--space-150) focus:py-(--space-100) focus:shadow-sobreposicao"
@@ -44,7 +52,9 @@ export function AppShell() {
               </SheetTrigger>
               <SheetContent aria-describedby="descricao-gaveta">
                 <SheetHeader>
-                  <SheetTitle className="text-(--text-brand)">Grama</SheetTitle>
+                  <SheetTitle>
+                    <MarcaGrama />
+                  </SheetTitle>
                   <SheetDescription id="descricao-gaveta" className="sr-only">
                     Menu principal e consultoria
                   </SheetDescription>
@@ -65,9 +75,9 @@ export function AppShell() {
             <Link
               to="/"
               aria-label="Grama, ir para a Visão da equipe"
-              className="titulo-secao text-(--text-brand) no-underline hover:text-(--text-brand) hover:no-underline"
+              className="inline-flex rounded-(--radius) no-underline hover:no-underline"
             >
-              Grama
+              <MarcaGrama />
             </Link>
           </>
         }
@@ -89,7 +99,10 @@ export function AppShell() {
         </MenuLateral>
         <main id="conteudo" tabIndex={-1} className="min-w-0 flex-1 overflow-auto outline-none">
           <div className="w-full p-(--space-200) md:p-(--space-300)">
+            <AvisoDeEmergenciaDoSuporte />
+            <FaixaComercial />
             <Outlet />
+            <DialogoLinhaDeBase />
           </div>
         </main>
       </div>

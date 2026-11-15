@@ -1,0 +1,20 @@
+#!/bin/sh
+# Antes de qualquer push: nunca no GitHub do Kadu, e só com todos os testes passando.
+# Ativar nesta cópia: git config --worktree core.hooksPath .githooks
+
+remoto="$1"
+url="$2"
+
+case "$url" in
+  *github.com/Gestao-ambiental/Gestao-ambiental*)
+    echo "Push bloqueado: $remoto aponta para o repositório do Kadu, que não pode ser alterado daqui."
+    exit 1
+    ;;
+esac
+
+echo "Rodando lint, tipos, testes, build e banco antes do push..."
+if ! corepack pnpm verificar; then
+  echo ""
+  echo "Push cancelado: algo que já funcionava quebrou. Corrija e tente de novo."
+  exit 1
+fi

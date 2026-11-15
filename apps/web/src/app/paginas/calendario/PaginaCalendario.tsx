@@ -14,6 +14,12 @@ import { Link } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Pagina } from '@/app/paginas/Pagina'
+import { EventoPrazoDeResiduo } from '@/app/paginas/residuos/prazos/EventoPrazoDeResiduo'
+import {
+  CHAVE_PRAZOS_RESIDUO,
+  agruparPrazosDeResiduoPorDia,
+  descricaoDoPrazoDeResiduo,
+} from '@/app/paginas/residuos/prazos/prazos-de-residuos'
 import { EstadoErro, EstadoVazio } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
 import { BotaoIcone } from '@/components/ui/botao-icone'
@@ -21,6 +27,7 @@ import { CaixaSelecao } from '@/components/ui/caixa-selecao'
 import { Dialogo } from '@/components/ui/dialogo'
 import { Icone } from '@/components/ui/icone'
 import { EsqueletoLinhas } from '@/components/ui/esqueleto'
+import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { listarMembrosAtivos } from '@/lib/api/licencas'
 import {
   listarCalendario,
@@ -28,6 +35,8 @@ import {
   type EventoDoCalendario,
   type FiltrosDoCalendario,
 } from '@/lib/api/prazos'
+import { prazosDasObrigacoesDeResiduo, type PrazoDeObrigacaoNoCalendario } from '@/lib/api/residuos'
+import { CHAVE_TAREFAS, listarTarefasDeServico } from '@/lib/api/tarefas'
 import { nomeDoMes } from '@/lib/datas'
 import { cn } from '@/lib/utils'
 
@@ -35,7 +44,7 @@ const DIAS_DA_SEMANA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 const VISIVEIS_POR_DIA = 3
 
 const classeSelect =
-  'h-(--size-control) max-w-[200px] rounded-(--radius) border border-(--border-input) bg-(--surface-input) px-(--space-100) corpo text-(--text) outline-none focus:border-(--border-focus)'
+  'h-(--size-control) max-w-[200px] rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) px-(--space-100) corpo text-(--text) outline-none focus:border-b-(--border-input-active) focus:shadow-[inset_0_-1px_0_0_var(--border-input-active)]'
 
 type Modo = 'mes' | 'semana'
 
@@ -84,9 +93,11 @@ function descricaoDoEvento(evento: EventoDoCalendario): string {
         ? 'Limite de protocolo'
         : evento.tipo === 'validade'
           ? 'Validade'
-          : 'Prazo oficial'
+          : evento.tipo === 'tarefa'
+            ? 'Tarefa de serviço'
+            : 'Prazo oficial'
   const quem =
-    evento.tipo === 'prazo' || evento.tipo === 'meta'
+    evento.tipo === 'prazo' || evento.tipo === 'meta' || evento.tipo === 'tarefa'
       ? (evento.responsavelNome ?? 'sem responsável')
       : null
   return [tipo, textoDoEvento(evento), evento.empreendimentoNome, evento.unidadeNome, quem]
@@ -98,31 +109,44 @@ function descricaoDoEvento(evento: EventoDoCalendario): string {
  * Prazo oficial, meta interna, validade e limite com marcas distintas (não só cor). Prazo e meta
  * são de uma ocorrência e abrem o detalhe; o limite de protocolo abre o plano de renovação.
  */
-function Evento({ evento, inteiro = false }: { evento: EventoDoCalendario; inteiro?: boolean }) {
+function Evento({
+  evento,
+  inteiro = false,
+  linkDoOrcamento = true,
+}: {
+  evento: EventoDoCalendario
+  inteiro?: boolean
+  /** Tarefa de serviço só abre o orçamento para a Gestão. */
+  linkDoOrcamento?: boolean
+}) {
   const classes = cn(
     'flex min-w-0 items-center gap-(--space-050) rounded-(--radius) px-(--space-075) py-0.5 text-xs',
     evento.tipo === 'prazo' && 'bg-(--lozenge-default-bg) text-(--text)',
     evento.tipo === 'meta' && 'border border-dashed border-(--border-strong) text-(--text-subtle)',
     evento.tipo === 'limite_protocolo' && 'bg-(--lozenge-warning-bg) text-(--lozenge-warning-text)',
     evento.tipo === 'validade' && 'bg-(--lozenge-inprogress-bg) text-(--lozenge-inprogress-text)',
+    evento.tipo === 'tarefa' && 'border border-(--border-strong) text-(--text)',
   )
   const conteudo = (
     <>
       {evento.tipo === 'limite_protocolo' ? <Icone nome="clock" tamanho={12} /> : null}
       {evento.tipo === 'meta' ? <span className="font-semibold">Meta</span> : null}
+      {evento.tipo === 'tarefa' ? <span className="font-semibold">Serviço</span> : null}
       <span className={inteiro ? 'break-words' : 'truncate'}>{textoDoEvento(evento)}</span>
       {evento.semResponsavel ? (
         <span className="shrink-0 text-(--text-subtle)">sem resp.</span>
       ) : null}
     </>
   )
-  if (evento.tipo !== 'validade') {
+  if (evento.tipo !== 'validade' && (evento.tipo !== 'tarefa' || linkDoOrcamento)) {
     return (
       <Link
         to={
           evento.tipo === 'limite_protocolo'
             ? `/renovacoes/${evento.id}`
-            : `/ocorrencias/${evento.id}`
+            : evento.tipo === 'tarefa'
+              ? `/orcamentos/${evento.orcamentoId ?? ''}`
+              : `/ocorrencias/${evento.id}`
         }
         title={descricaoDoEvento(evento)}
         className={cn(classes, 'no-underline hover:underline')}
@@ -162,6 +186,33 @@ export function PaginaCalendario() {
     placeholderData: keepPreviousData,
     refetchInterval: 60_000,
   })
+  // Prazos das obrigações de resíduos (ADR-0028): não têm responsável nem unidade, então somem
+  // quando o filtro é por pessoa, unidade ou "sem responsável". Falhar aqui não derruba o calendário.
+  const semFiltroDePessoa = !filtros.responsavelId && !filtros.unidadeId && !filtros.semResponsavel
+  const residuos = useQuery({
+    queryKey: [CHAVE_PRAZOS_RESIDUO, cid, null, inicio, fim],
+    queryFn: () => prazosDasObrigacoesDeResiduo(cid, { de: inicio, ate: fim }),
+    placeholderData: keepPreviousData,
+    enabled: semFiltroDePessoa,
+  })
+  const residuosPorDia: Map<DataCivil, PrazoDeObrigacaoNoCalendario[]> = semFiltroDePessoa
+    ? agruparPrazosDeResiduoPorDia(residuos.data ?? [])
+    : new Map<DataCivil, PrazoDeObrigacaoNoCalendario[]>()
+  // Tarefas de serviço abertas (ADR-0029), pelo prazo interno. Não têm unidade: somem com esse filtro.
+  const ehGestao = atual.papel === 'gestao'
+  const tarefas = useQuery({
+    queryKey: [CHAVE_TAREFAS, cid, 'calendario', inicio, fim, filtros],
+    queryFn: () =>
+      listarTarefasDeServico(cid, {
+        abertas: true,
+        de: inicio,
+        ate: fim,
+        responsavelId: filtros.responsavelId,
+        semResponsavel: filtros.semResponsavel,
+      }),
+    placeholderData: keepPreviousData,
+    enabled: !filtros.unidadeId,
+  })
   const membros = useQuery({
     queryKey: ['membros-ativos', cid],
     queryFn: () => listarMembrosAtivos(cid),
@@ -172,7 +223,28 @@ export function PaginaCalendario() {
   })
 
   const porDia = new Map<string, EventoDoCalendario[]>()
-  for (const evento of eventos.data ?? []) {
+  const eventosDeTarefa: EventoDoCalendario[] = filtros.unidadeId
+    ? []
+    : (tarefas.data ?? []).flatMap((t) =>
+        t.prazoInterno
+          ? [
+              {
+                tipo: 'tarefa' as const,
+                data: t.prazoInterno,
+                id: t.id,
+                codigo: null,
+                titulo: t.titulo,
+                empreendimentoNome: t.empreendimentoNome,
+                unidadeNome: '',
+                licenca: null,
+                responsavelNome: t.responsavelNome,
+                semResponsavel: t.responsavelId === null,
+                orcamentoId: t.orcamentoId,
+              },
+            ]
+          : [],
+      )
+  for (const evento of [...(eventos.data ?? []), ...eventosDeTarefa]) {
     porDia.set(evento.data, [...(porDia.get(evento.data) ?? []), evento])
   }
 
@@ -191,7 +263,9 @@ export function PaginaCalendario() {
   const diasVisiveis = dias(inicio, fim)
   const semanas: DataCivil[][] = []
   for (let i = 0; i < diasVisiveis.length; i += 7) semanas.push(diasVisiveis.slice(i, i + 7))
-  const agenda = diasVisiveis.filter((d) => d >= hoje && (porDia.get(d)?.length ?? 0) > 0)
+  const quantosNoDia = (d: DataCivil) =>
+    (porDia.get(d)?.length ?? 0) + (residuosPorDia.get(d)?.length ?? 0)
+  const agenda = diasVisiveis.filter((d) => d >= hoje && quantosNoDia(d) > 0)
 
   return (
     <div className="flex flex-col gap-(--space-200)">
@@ -288,7 +362,14 @@ export function PaginaCalendario() {
         <span>Tracejado “Meta”: meta interna</span>
         <span>Âmbar com relógio: limite de protocolo</span>
         <span>Azul: validade da licença</span>
+        <span>Verde com “Resíduos”: obrigação de resíduos</span>
       </p>
+
+      {semFiltroDePessoa && residuos.isError ? (
+        <MensagemSecao role="alert" tom="atencao">
+          Não foi possível carregar os prazos de resíduos.
+        </MensagemSecao>
+      ) : null}
 
       {eventos.isError ? (
         <EstadoErro
@@ -296,13 +377,13 @@ export function PaginaCalendario() {
           aoTentarDeNovo={() => void eventos.refetch()}
         />
       ) : eventos.isPending ? (
-        <div role="status" className="rounded-(--radius) border bg-(--surface)">
+        <div role="status" className="rounded-(--radius-large) border bg-(--surface) shadow-cartao">
           <span className="sr-only">Carregando o calendário</span>
           <EsqueletoLinhas linhas={6} />
         </div>
       ) : (
         <>
-          <div className="hidden overflow-x-auto rounded-(--radius) border bg-(--surface) md:block">
+          <div className="hidden overflow-x-auto rounded-(--radius-large) border bg-(--surface) shadow-cartao md:block">
             <table
               className="w-full table-fixed border-collapse"
               aria-label={`Calendário de ${titulo}`}
@@ -325,10 +406,12 @@ export function PaginaCalendario() {
                   <tr key={semana[0]}>
                     {semana.map((dia) => {
                       const doDia = porDia.get(dia) ?? []
+                      const residuosDoDia = residuosPorDia.get(dia) ?? []
+                      const totalDoDia = doDia.length + residuosDoDia.length
                       const foraDoMes = modo === 'mes' && partes(dia)[1] !== mesRef
                       const ehHoje = dia === hoje
-                      const limite = modo === 'semana' ? doDia.length : VISIVEIS_POR_DIA
-                      const restantes = doDia.length - limite
+                      const limite = modo === 'semana' ? totalDoDia : VISIVEIS_POR_DIA
+                      const restantes = totalDoDia - limite
                       return (
                         <td
                           key={dia}
@@ -344,7 +427,7 @@ export function PaginaCalendario() {
                               onClick={() => {
                                 setDiaAberto(dia)
                               }}
-                              aria-label={`${formatarDataCivil(dia)}, ${String(doDia.length)} ${doDia.length === 1 ? 'evento' : 'eventos'}`}
+                              aria-label={`${formatarDataCivil(dia)}, ${String(totalDoDia)} ${totalDoDia === 1 ? 'evento' : 'eventos'}`}
                               className={cn(
                                 'inline-flex w-fit cursor-pointer items-center gap-(--space-050) rounded-(--radius) text-xs transicao-estado hover:underline',
                                 foraDoMes ? 'text-(--text-subtle)' : 'text-(--text)',
@@ -363,7 +446,17 @@ export function PaginaCalendario() {
                               ) : null}
                             </button>
                             {doDia.slice(0, limite).map((evento) => (
-                              <Evento key={`${evento.tipo}:${evento.id}`} evento={evento} />
+                              <Evento
+                                key={`${evento.tipo}:${evento.id}`}
+                                evento={evento}
+                                linkDoOrcamento={ehGestao}
+                              />
+                            ))}
+                            {residuosDoDia.slice(0, Math.max(0, limite - doDia.length)).map((p) => (
+                              <EventoPrazoDeResiduo
+                                key={`residuo:${p.obrigacaoId}:${p.prazo}`}
+                                prazo={p}
+                              />
                             ))}
                             {restantes > 0 ? (
                               <button
@@ -401,7 +494,19 @@ export function PaginaCalendario() {
                     {nomeDoDiaDaSemana(dia)}, {formatarDataCivil(dia)}
                   </h3>
                   {(porDia.get(dia) ?? []).map((evento) => (
-                    <Evento key={`${evento.tipo}:${evento.id}`} evento={evento} inteiro />
+                    <Evento
+                      key={`${evento.tipo}:${evento.id}`}
+                      evento={evento}
+                      inteiro
+                      linkDoOrcamento={ehGestao}
+                    />
+                  ))}
+                  {(residuosPorDia.get(dia) ?? []).map((p) => (
+                    <EventoPrazoDeResiduo
+                      key={`residuo:${p.obrigacaoId}:${p.prazo}`}
+                      prazo={p}
+                      inteiro
+                    />
                   ))}
                 </div>
               ))
@@ -419,12 +524,21 @@ export function PaginaCalendario() {
           diaAberto ? `${nomeDoDiaDaSemana(diaAberto)}, ${formatarDataCivil(diaAberto)}` : 'Dia'
         }
       >
-        {diaAberto && (porDia.get(diaAberto)?.length ?? 0) > 0 ? (
+        {diaAberto && quantosNoDia(diaAberto) > 0 ? (
           <ul className="flex flex-col gap-(--space-100)" aria-label="Eventos do dia">
             {(porDia.get(diaAberto) ?? []).map((evento) => (
               <li key={`${evento.tipo}:${evento.id}`} className="flex flex-col gap-(--space-025)">
-                <Evento evento={evento} inteiro />
+                <Evento evento={evento} inteiro linkDoOrcamento={ehGestao} />
                 <span className="text-xs text-(--text-subtle)">{descricaoDoEvento(evento)}</span>
+              </li>
+            ))}
+            {(residuosPorDia.get(diaAberto) ?? []).map((p) => (
+              <li
+                key={`residuo:${p.obrigacaoId}:${p.prazo}`}
+                className="flex flex-col gap-(--space-025)"
+              >
+                <EventoPrazoDeResiduo prazo={p} inteiro />
+                <span className="text-xs text-(--text-subtle)">{descricaoDoPrazoDeResiduo(p)}</span>
               </li>
             ))}
           </ul>

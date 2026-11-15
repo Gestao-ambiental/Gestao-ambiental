@@ -9,8 +9,61 @@ interface Resposta {
   error?: unknown
   count?: number
 }
-type Evento = 'SIGNED_IN' | 'SIGNED_OUT' | 'PASSWORD_RECOVERY' | 'USER_UPDATED'
+type Evento =
+  'SIGNED_IN' | 'SIGNED_OUT' | 'PASSWORD_RECOVERY' | 'USER_UPDATED' | 'MFA_CHALLENGE_VERIFIED'
 type Ouvinte = (evento: Evento, sessao: Session | null) => void
+
+/** Fator de dois fatores (TOTP) da conta, como o Auth devolve em listFactors().all. */
+export interface FatorFalso {
+  id: string
+  status: 'verified' | 'unverified'
+}
+
+export interface CenarioDoisFatores {
+  /** Nível da sessão atual. Padrão: aal1 (entrou só com senha). */
+  nivel?: 'aal1' | 'aal2'
+  /** Fatores da conta. Padrão: nenhum. */
+  fatores?: FatorFalso[]
+  /** Resposta de challengeAndVerify; padrão: código aceito (sessão vira aal2). */
+  verificar?: Resposta
+  /** Resposta de enroll; padrão: cria o fator 'fator-novo' com QR code e chave falsos. */
+  cadastrar?: Resposta
+  /** Resposta de unenroll; padrão: remove o fator. */
+  remover?: Resposta
+  /** Erro ao ler o nível da sessão (getAuthenticatorAssuranceLevel). */
+  erroAoLer?: unknown
+}
+
+/**
+ * Linhas da RPC catalogo_comercial iguais às da migration (o padrão do domínio). Usadas quando o
+ * cenário não define `catalogo_comercial`, para as telas de preço e limite não pararem no erro.
+ */
+export const CATALOGO_COMERCIAL_FALSO = [
+  ['essencial', 'Essencial', 99000, 3, 10, false, false, 1],
+  ['equipe', 'Equipe', 129000, 10, 30, true, true, 2],
+  ['escala', 'Escala', 299000, 25, 100, true, true, 3],
+].map(([codigo, nome, mensal, pessoas, empreendimentos, orcamentos, ia, ordem]) => ({
+  codigo,
+  nome,
+  mensal_centavos: mensal,
+  pessoas,
+  empreendimentos,
+  orcamentos,
+  ia,
+  ordem,
+  adicional_mensal_centavos: 2000,
+  mensalidades_no_anual: 10,
+  dias_de_teste_padrao: 10,
+  dias_uteis_de_tolerancia: 2,
+  fim_do_beta: '2027-01-31',
+  moeda: 'BRL',
+  recursos:
+    codigo === 'escala'
+      ? ['capacidade', 'integracao_ima', 'financeiro', 'analise_lotes']
+      : codigo === 'equipe'
+        ? ['capacidade']
+        : [],
+}))
 
 export interface Cenario {
   sessao?: Session | null
@@ -20,10 +73,25 @@ export interface Cenario {
   funcoes?: Record<string, Resposta | ((corpo: Record<string, unknown>) => Resposta)>
   /** Linhas devolvidas por from(tabela).select()… (sem filtrar: o teste monta o que quer ver). */
   tabelas?: Record<string, unknown[]>
+  /**
+   * Formação e gênero do vínculo atual, lidos antes do sistema (RequerCadastroCompleto). Padrão:
+   * cadastro completo, para os testes das outras telas não pararem em "Complete seu cadastro".
+   */
+  cadastro?: {
+    profissao: string | null
+    genero: string | null
+    profissao_em_curso?: boolean
+  } | null
   /** Resposta de signInWithPassword; padrão: entra com `sessaoAoEntrar`. */
   entrar?: Resposta
   sessaoAoEntrar?: Session
+  /** Dois fatores (supabase.auth.mfa). */
+  doisFatores?: CenarioDoisFatores
 }
+
+/** Chave e QR code falsos devolvidos pelo cadastro de dois fatores. */
+export const SEGREDO_FALSO = 'JBSWY3DPEHPK3PXP'
+export const QR_CODE_FALSO = '<svg xmlns="http://www.w3.org/2000/svg"></svg>'
 
 export function sessaoDe(email: string, nome: string, id = `u-${email}`): Session {
   return {
@@ -42,16 +110,84 @@ export function sessaoDe(email: string, nome: string, id = `u-${email}`): Sessio
   }
 }
 
+const CADASTRO_COMPLETO = { profissao: 'eng_ambiental', genero: 'masculino' }
+
 function criar() {
   let cenario: Cenario = {}
   let sessao: Session | null = null
+  let nivel: 'aal1' | 'aal2' = 'aal1'
+  let fatores: FatorFalso[] = []
   const ouvintes = new Set<Ouvinte>()
 
   const emitir = (evento: Evento) => {
     for (const ouvinte of ouvintes) ouvinte(evento, sessao)
   }
 
-  const auth = {
+  const comoFator = (f: FatorFalso) => ({
+    id: f.id,
+    status: f.status,
+    factor_type: 'totp',
+    friendly_name: '',
+    created_at: '2026-11-01T00:00:00Z',
+    updated_at: '2026-11-01T00:00:00Z',
+  })
+
+  const mfa = {
+    getAuthenticatorAssuranceLevel: vi.fn(() =>
+      cenario.doisFatores?.erroAoLer
+        ? Promise.resolve({ data: null, error: cenario.doisFatores.erroAoLer })
+        : Promise.resolve({
+            data: {
+              currentLevel: nivel,
+              nextLevel: fatores.some((f) => f.status === 'verified') ? 'aal2' : 'aal1',
+              currentAuthenticationMethods: [],
+            },
+            error: null,
+          }),
+    ),
+    listFactors: vi.fn(() =>
+      Promise.resolve({
+        data: {
+          all: fatores.map(comoFator),
+          totp: fatores.filter((f) => f.status === 'verified').map(comoFator),
+          phone: [],
+        },
+        error: null,
+      }),
+    ),
+    enroll: vi.fn(() => {
+      const resposta = cenario.doisFatores?.cadastrar
+      if (resposta?.error) return Promise.resolve({ data: null, error: resposta.error })
+      fatores = [...fatores, { id: 'fator-novo', status: 'unverified' }]
+      return Promise.resolve({
+        data: {
+          id: 'fator-novo',
+          type: 'totp',
+          friendly_name: '',
+          totp: { qr_code: QR_CODE_FALSO, secret: SEGREDO_FALSO, uri: 'otpauth://totp/Grama' },
+        },
+        error: null,
+      })
+    }),
+    challengeAndVerify: vi.fn(({ factorId }: { factorId: string; code: string }) => {
+      const resposta = cenario.doisFatores?.verificar
+      if (resposta?.error) return Promise.resolve({ data: null, error: resposta.error })
+      fatores = fatores.map((f): FatorFalso =>
+        f.id === factorId ? { ...f, status: 'verified' } : f,
+      )
+      nivel = 'aal2'
+      emitir('MFA_CHALLENGE_VERIFIED')
+      return Promise.resolve({ data: {}, error: null })
+    }),
+    unenroll: vi.fn(({ factorId }: { factorId: string }) => {
+      const resposta = cenario.doisFatores?.remover
+      if (resposta?.error) return Promise.resolve({ data: null, error: resposta.error })
+      fatores = fatores.filter((f) => f.id !== factorId)
+      return Promise.resolve({ data: { id: factorId }, error: null })
+    }),
+  }
+
+  const funcoesDoAuth = {
     getSession: vi.fn(() => Promise.resolve({ data: { session: sessao }, error: null })),
     onAuthStateChange: vi.fn((ouvinte: Ouvinte) => {
       ouvintes.add(ouvinte)
@@ -77,23 +213,42 @@ function criar() {
     updateUser: vi.fn(() => Promise.resolve({ data: { user: sessao?.user }, error: null })),
     signInWithOtp: vi.fn(() => Promise.resolve({ data: {}, error: null })),
   }
+  const auth = { ...funcoesDoAuth, mfa }
 
   const rpc = vi.fn((nome: string, args: Record<string, unknown> = {}) => {
-    const definida = cenario.rpc?.[nome]
+    const definida =
+      cenario.rpc?.[nome] ??
+      (nome === 'catalogo_comercial' ? { data: CATALOGO_COMERCIAL_FALSO } : undefined)
     const resposta = typeof definida === 'function' ? definida(args) : definida
     return Promise.resolve({ data: resposta?.data ?? null, error: resposta?.error ?? null })
   })
 
   function consulta(tabela: string) {
     const linhas = () => cenario.tabelas?.[tabela] ?? []
+    let colunas = ''
     const construtor = {
-      select: () => construtor,
+      select: (lidas = '') => {
+        colunas = lidas
+        return construtor
+      },
       eq: () => construtor,
       neq: () => construtor,
       in: () => construtor,
+      is: () => construtor,
       order: () => construtor,
       range: () => construtor,
-      maybeSingle: () => Promise.resolve({ data: linhas()[0] ?? null, error: null }),
+      maybeSingle: () => {
+        // A leitura do cadastro (lib/api/perfil: COLUNAS_CADASTRO) vem do cenário, não da tabela.
+        if (tabela === 'membro' && colunas === 'profissao, profissao_em_curso, genero') {
+          const cadastro = cenario.cadastro === undefined ? CADASTRO_COMPLETO : cenario.cadastro
+          // Como no banco, "em curso" nunca é nulo: falso quando o cenário não diz.
+          return Promise.resolve({
+            data: cadastro ? { profissao_em_curso: false, ...cadastro } : null,
+            error: null,
+          })
+        }
+        return Promise.resolve({ data: linhas()[0] ?? null, error: null })
+      },
       then: (resolver: (valor: unknown) => unknown, rejeitar?: (erro: unknown) => unknown) =>
         Promise.resolve({ data: linhas(), error: null, count: linhas().length }).then(
           resolver,
@@ -136,9 +291,12 @@ function criar() {
     reiniciar(novo: Cenario) {
       cenario = novo
       sessao = novo.sessao ?? null
+      nivel = novo.doisFatores?.nivel ?? 'aal1'
+      fatores = novo.doisFatores?.fatores ?? []
       ouvintes.clear()
       for (const funcao of [
-        ...Object.values(auth),
+        ...Object.values(funcoesDoAuth),
+        ...Object.values(mfa),
         ...Object.values(armazenamento),
         rpc,
         functions.invoke,

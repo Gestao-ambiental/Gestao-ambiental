@@ -33,6 +33,7 @@ import { SecaoConclusao } from './SecaoConclusao'
 import { SecaoEtapas } from './SecaoEtapas'
 import { SecaoEvidencia } from './SecaoEvidencia'
 import { SecaoHistorico } from './SecaoHistorico'
+import { SecaoVistorias } from './SecaoVistorias'
 
 const SITUACAO: Record<SituacaoExibida, { texto: string; tom: TomSelo }> = {
   a_fazer: { texto: 'A fazer', tom: 'padrao' },
@@ -43,7 +44,7 @@ const SITUACAO: Record<SituacaoExibida, { texto: string; tom: TomSelo }> = {
 }
 
 const classeSelect =
-  'h-(--size-control) w-full rounded-(--radius) border border-(--border-input) bg-(--surface-input) px-(--space-100) corpo text-(--text)'
+  'h-(--size-control) w-full rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) px-(--space-100) corpo text-(--text)'
 
 function Voltar() {
   return (
@@ -356,6 +357,11 @@ export function PaginaOcorrencia() {
                 membros={membros.data ?? []}
                 podeEditar={dados.situacao !== 'concluida'}
                 aoMudar={recarregar}
+              />
+              <SecaoVistorias
+                ocorrenciaId={dados.id}
+                membros={membros.data ?? []}
+                podeAgendar={dados.situacao !== 'concluida'}
               />
               <SecaoEvidencia
                 ocorrencia={dados}

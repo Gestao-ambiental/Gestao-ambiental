@@ -1,8 +1,8 @@
--- Perfil do membro (cargo e foto, para o seletor de responsável): cargo pela própria pessoa ou pela
+-- Perfil do membro (profissão, cargo e foto, para o seletor de responsável): profissão e cargo pela própria pessoa ou pela
 -- Gestão; foto só pela própria pessoa, PNG ou JPEG até 2 MiB, versionada; nada atravessa consultorias.
 begin;
 
-select plan(21);
+select plan(23);
 
 select testes.criar_dados_sinteticos();
 
@@ -19,57 +19,68 @@ insert into storage.objects (bucket_id, name, metadata) values
    '{"mimetype": "image/png", "size": 40960}');
 
 -- ---------------------------------------------------------------------------
--- Cargo
+-- Profissão e cargo (ADR-0021): códigos das listas fixas, pela própria pessoa ou pela Gestão
 -- ---------------------------------------------------------------------------
 select testes.autenticar_como('ana@filtroville.test');
 
 select lives_ok(
-  $$select public.definir_cargo('d0000000-0000-4000-8000-0000000000a2', '  Analista ambiental ')$$,
-  'Equipe (Ana) define o próprio cargo'
+  $$select public.definir_profissao_e_cargo('d0000000-0000-4000-8000-0000000000a2', 'biologo', '  analista_pleno ')$$,
+  'Equipe (Ana) define a própria profissão e o próprio cargo'
 );
 
 select is(
-  (select cargo from public.membro where id = 'd0000000-0000-4000-8000-0000000000a2'),
-  'Analista ambiental',
-  'cargo é gravado sem espaços nas pontas'
+  (select profissao || '/' || cargo from public.membro where id = 'd0000000-0000-4000-8000-0000000000a2'),
+  'biologo/analista_pleno',
+  'grava os códigos, sem espaços nas pontas'
 );
 
 select throws_ok(
-  $$select public.definir_cargo('d0000000-0000-4000-8000-0000000000a3', 'Diretor')$$,
+  $$select public.definir_profissao_e_cargo('d0000000-0000-4000-8000-0000000000a3', 'biologo', 'diretor')$$,
   '42501', 'sem_permissao',
-  'Equipe (Ana) não muda o cargo de outra pessoa (Bruno)'
+  'Equipe (Ana) não muda a profissão nem o cargo de outra pessoa (Bruno)'
 );
 
 select throws_ok(
-  $$select public.definir_cargo('d0000000-0000-4000-8000-0000000000a2', repeat('a', 81))$$,
-  '22023', 'cargo_longo_demais',
-  'cargo com mais de 80 caracteres é recusado'
+  $$select public.definir_profissao_e_cargo('d0000000-0000-4000-8000-0000000000a2', 'biologo', 'Analista ambiental')$$,
+  '22023', 'cargo_invalido',
+  'cargo fora da lista é recusado'
+);
+
+select throws_ok(
+  $$select public.definir_profissao_e_cargo('d0000000-0000-4000-8000-0000000000a2', 'Eng Ambiental', null)$$,
+  '22023', 'profissao_invalida',
+  'profissão fora da lista é recusada (nada de texto livre)'
 );
 
 select testes.autenticar_como('eduardo@filtroville.test');
 
 select lives_ok(
-  $$select public.definir_cargo('d0000000-0000-4000-8000-0000000000a3', 'Técnico de campo')$$,
-  'Gestão (Eduardo) define o cargo de Bruno'
+  $$select public.definir_profissao_e_cargo('d0000000-0000-4000-8000-0000000000a3', 'eng_ambiental', 'estagiario')$$,
+  'Gestão (Eduardo) define profissão e cargo de Bruno'
+);
+
+select throws_ok(
+  $$select public.definir_profissao_e_cargo('d0000000-0000-4000-8000-0000000000a3', '', '   ')$$,
+  '22023', 'profissao_nao_pode_ficar_vazia',
+  'profissão preenchida não volta a ficar vazia (só troca)'
 );
 
 select lives_ok(
-  $$select public.definir_cargo('d0000000-0000-4000-8000-0000000000a3', '   ')$$,
-  'cargo vazio limpa'
+  $$select public.definir_profissao_e_cargo('d0000000-0000-4000-8000-0000000000a3', 'eng_ambiental', '   ')$$,
+  'cargo vazio limpa o cargo'
 );
 
-select is(
-  (select cargo from public.membro where id = 'd0000000-0000-4000-8000-0000000000a3'),
-  null,
-  'cargo vazio fica nulo'
+select ok(
+  (select profissao = 'eng_ambiental' and cargo is null from public.membro where id = 'd0000000-0000-4000-8000-0000000000a3'),
+  'a profissão fica e o cargo vazio fica nulo'
 );
 
 select testes.autenticar_como('gustavo@verdesul.test');
 
 select throws_ok(
-  $$select public.definir_cargo('d0000000-0000-4000-8000-0000000000a2', 'Estagiária')$$,
+  $$select public.definir_profissao_e_cargo('d0000000-0000-4000-8000-0000000000a2', 'geologo', 'estagiario')$$,
   '42501', 'sem_permissao',
-  'Gestão de outra consultoria (Gustavo) não muda o cargo de Ana, mesmo sabendo o id'
+  'Gestão de outra consultoria (Gustavo) não muda Ana, mesmo sabendo o id'
 );
 
 reset role;
@@ -77,9 +88,9 @@ reset role;
 select is(
   (select count(*) from public.auditoria
    where entidade = 'membro' and entidade_id = 'd0000000-0000-4000-8000-0000000000a2' and acao = 'update'
-     and depois ->> 'cargo' = 'Analista ambiental'),
+     and depois ->> 'profissao' = 'biologo'),
   1::bigint,
-  'mudança de cargo fica na auditoria'
+  'mudança de profissão e cargo fica na auditoria'
 );
 
 -- ---------------------------------------------------------------------------

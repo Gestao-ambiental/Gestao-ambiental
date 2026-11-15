@@ -1,4 +1,11 @@
-import { impedimentoDoVinculo, situacaoDoConvite } from '@gestao-ambiental/domain'
+import {
+  impedimentoDoVinculo,
+  rotuloDaFormacaoDaPessoa,
+  rotuloDaProfissaoDaPessoa,
+  situacaoDoConvite,
+  type CodigoCargo,
+  type CodigoProfissao,
+} from '@gestao-ambiental/domain'
 import {
   useInfiniteQuery,
   useMutation,
@@ -35,9 +42,13 @@ import {
   type ConvitePendente,
   type Membro,
 } from '@/lib/api/acesso'
+import { definirProfissaoECargo } from '@/lib/api/perfil'
 import { formatarInstanteComoData } from '@/lib/datas'
 import { ehSemPermissao, mensagemDoErro } from '@/lib/erros'
 
+import { AcessosDoSuporte } from '@/app/suporte/AcessosDoSuporte'
+
+import { CamposProfissaoECargo } from './CamposProfissaoECargo'
 import { DialogoConvidar, type ResultadoConvite } from './DialogoConvidar'
 
 const MOTIVO_ULTIMA_GESTAO = 'A consultoria precisa de pelo menos uma pessoa na Gestão.'
@@ -98,11 +109,13 @@ export function PaginaEquipe() {
 }
 
 function EquipeDaGestao() {
-  const { atual } = useConsultoria()
+  // Em modo suporte (ADR-0025) as ações somem: o suporte só lê (o banco recusa de qualquer forma).
+  const { atual, suporte } = useConsultoria()
   const cid = atual.consultoriaId
   const queryClient = useQueryClient()
   const [convidarAberto, setConvidarAberto] = useState(false)
   const [desligando, setDesligando] = useState<Membro | null>(null)
+  const [editando, setEditando] = useState<Membro | null>(null)
   const [aviso, setAviso] = useState<Aviso>(null)
 
   const membros = useInfiniteQuery({
@@ -204,7 +217,7 @@ function EquipeDaGestao() {
     papel.isPending || desligamento.isPending || reenvio.isPending || cancelamento.isPending
 
   function acoesDoMembro(membro: Membro) {
-    if (membro.situacao === 'desligado') return null
+    if (membro.situacao === 'desligado' || suporte) return null
     const novo = membro.papel === 'gestao' ? 'equipe' : 'gestao'
     const impedimentoPapel = impedimentoDoVinculo(
       vinculos,
@@ -237,6 +250,14 @@ function EquipeDaGestao() {
             </span>
           </DropdownMenuItem>
           <DropdownMenuItem
+            onSelect={() => {
+              setAviso(null)
+              setEditando(membro)
+            }}
+          >
+            Profissão e cargo
+          </DropdownMenuItem>
+          <DropdownMenuItem
             disabled={impedimentoDesligar !== null}
             onSelect={() => {
               setAviso(null)
@@ -262,6 +283,34 @@ function EquipeDaGestao() {
       <Selo tom={membro.papel === 'gestao' ? 'sucesso' : 'padrao'}>
         {NOMES_PAPEL[membro.papel]}
       </Selo>
+    )
+  }
+
+  /**
+   * Profissão (no gênero da pessoa; em curso, "Estudante de …") e cargo em texto; o que falta
+   * aparece como "não informado".
+   */
+  function profissaoECargoDoMembro(membro: Membro) {
+    return (
+      <span className="flex min-w-0 flex-col">
+        <span className="truncate">
+          {membro.profissao
+            ? [
+                rotuloDaFormacaoDaPessoa(membro.profissao, membro.genero, membro.profissaoEmCurso),
+                ...membro.outrasProfissoes.map((codigo) =>
+                  rotuloDaProfissaoDaPessoa(codigo, membro.genero),
+                ),
+              ].join(' · ')
+            : 'Profissão não informada'}
+        </span>
+        <span className="truncate text-xs text-(--text-subtle)">
+          {membro.cargoCodigo
+            ? membro.cargo
+            : membro.cargoAntigo
+              ? `${membro.cargoAntigo} (cargo antigo)`
+              : 'Cargo não informado'}
+        </span>
+      </span>
     )
   }
 
@@ -293,6 +342,7 @@ function EquipeDaGestao() {
   }
 
   function acoesDoConvite(convite: ConvitePendente) {
+    if (suporte) return null
     return (
       <span className="flex items-center justify-end gap-(--space-050)">
         <Botao
@@ -327,16 +377,18 @@ function EquipeDaGestao() {
     <div className="flex flex-col gap-(--space-300)">
       <div className="flex flex-wrap items-start justify-between gap-(--space-100)">
         <Pagina titulo="Equipe">{null}</Pagina>
-        <Botao
-          aparencia="primario"
-          iconeAntes="plus"
-          onClick={() => {
-            setAviso(null)
-            setConvidarAberto(true)
-          }}
-        >
-          Convidar pessoa
-        </Botao>
+        {suporte ? null : (
+          <Botao
+            aparencia="primario"
+            iconeAntes="plus"
+            onClick={() => {
+              setAviso(null)
+              setConvidarAberto(true)
+            }}
+          >
+            Convidar pessoa
+          </Botao>
+        )}
       </div>
 
       {aviso ? (
@@ -355,7 +407,7 @@ function EquipeDaGestao() {
           <EstadoErro aoTentarDeNovo={() => void membros.refetch()} />
         ) : (
           <>
-            <div className="hidden overflow-x-auto rounded-(--radius) border bg-(--surface) md:block">
+            <div className="hidden overflow-x-auto rounded-(--radius-large) border bg-(--surface) shadow-cartao md:block">
               <table className={classeTabela}>
                 <thead>
                   <tr>
@@ -364,6 +416,9 @@ function EquipeDaGestao() {
                     </th>
                     <th scope="col" className={classeCabecalho}>
                       E-mail
+                    </th>
+                    <th scope="col" className={classeCabecalho}>
+                      Profissão e cargo
                     </th>
                     <th scope="col" className={classeCabecalho}>
                       Papel
@@ -381,6 +436,9 @@ function EquipeDaGestao() {
                     <tr key={membro.id} className="last:[&>td]:border-b-0">
                       <td className={classeCelula}>{nomeDoMembro(membro)}</td>
                       <td className={`${classeCelula} text-(--text-subtle)`}>{membro.email}</td>
+                      <td className={`${classeCelula} max-w-56`}>
+                        {profissaoECargoDoMembro(membro)}
+                      </td>
                       <td className={classeCelula}>{seloPapel(membro)}</td>
                       <td className={`${classeCelula} whitespace-nowrap text-(--text-subtle)`}>
                         {formatarInstanteComoData(membro.criadoEm, atual.fuso)}
@@ -392,7 +450,7 @@ function EquipeDaGestao() {
               </table>
             </div>
             <ul
-              className="flex flex-col rounded-(--radius) border bg-(--surface) md:hidden"
+              className="flex flex-col rounded-(--radius-large) border bg-(--surface) shadow-cartao md:hidden"
               aria-label="Membros"
             >
               {listaMembros.itens.map((membro) => (
@@ -403,6 +461,7 @@ function EquipeDaGestao() {
                   <span className="flex min-w-0 flex-1 flex-col gap-(--space-025)">
                     {nomeDoMembro(membro)}
                     <span className="truncate text-xs text-(--text-subtle)">{membro.email}</span>
+                    {profissaoECargoDoMembro(membro)}
                     <span>{seloPapel(membro)}</span>
                   </span>
                   {acoesDoMembro(membro)}
@@ -439,7 +498,7 @@ function EquipeDaGestao() {
           </p>
         ) : (
           <>
-            <div className="hidden overflow-x-auto rounded-(--radius) border bg-(--surface) md:block">
+            <div className="hidden overflow-x-auto rounded-(--radius-large) border bg-(--surface) shadow-cartao md:block">
               <table className={classeTabela}>
                 <thead>
                   <tr>
@@ -480,7 +539,7 @@ function EquipeDaGestao() {
               </table>
             </div>
             <ul
-              className="flex flex-col rounded-(--radius) border bg-(--surface) md:hidden"
+              className="flex flex-col rounded-(--radius-large) border bg-(--surface) shadow-cartao md:hidden"
               aria-label="Convites pendentes"
             >
               {listaConvites.itens.map((convite) => (
@@ -510,12 +569,32 @@ function EquipeDaGestao() {
         )}
       </section>
 
+      <AcessosDoSuporte />
+
       <DialogoConvidar
         aberto={convidarAberto}
         aoMudar={setConvidarAberto}
         consultoriaId={cid}
         aoConvidar={aoConvidar}
       />
+
+      {editando ? (
+        <DialogoProfissaoECargo
+          key={editando.id}
+          membro={editando}
+          aoFechar={() => {
+            setEditando(null)
+          }}
+          aoSalvar={(membro) => {
+            setEditando(null)
+            setAviso({ tom: 'sucesso', texto: `Profissão e cargo de ${membro.nome} salvos.` })
+            void Promise.all([
+              atualizar(),
+              queryClient.invalidateQueries({ queryKey: ['membros-ativos', cid] }),
+            ])
+          }}
+        />
+      ) : null}
 
       <Dialogo
         aberto={desligando !== null}
@@ -552,5 +631,74 @@ function EquipeDaGestao() {
         <p className="text-(--text-subtle)">Nada é apagado nem cancelado.</p>
       </Dialogo>
     </div>
+  )
+}
+
+/** Profissão e cargo de um membro, pela Gestão (ADR-0021). */
+function DialogoProfissaoECargo({
+  membro,
+  aoFechar,
+  aoSalvar,
+}: {
+  membro: Membro
+  aoFechar: () => void
+  aoSalvar: (membro: Membro) => void
+}) {
+  const [profissao, setProfissao] = useState<CodigoProfissao | ''>(membro.profissao ?? '')
+  const [emCurso, setEmCurso] = useState(membro.profissaoEmCurso)
+  const [outras, setOutras] = useState<CodigoProfissao[]>(membro.outrasProfissoes)
+  const [cargo, setCargo] = useState<CodigoCargo | ''>(membro.cargoCodigo ?? '')
+  const salvar = useMutation({
+    mutationFn: () =>
+      definirProfissaoECargo(membro.id, profissao || null, cargo || null, outras, emCurso),
+    onSuccess: () => {
+      aoSalvar(membro)
+    },
+  })
+  return (
+    <Dialogo
+      aberto
+      aoMudar={(aberto) => {
+        if (!aberto) aoFechar()
+      }}
+      titulo={`Profissão e cargo de ${membro.nome}`}
+      acoes={
+        <>
+          <Botao onClick={aoFechar}>Cancelar</Botao>
+          <Botao
+            aparencia="primario"
+            disabled={salvar.isPending}
+            aria-busy={salvar.isPending || undefined}
+            onClick={() => {
+              salvar.mutate()
+            }}
+          >
+            {salvar.isPending ? 'Salvando…' : 'Salvar'}
+          </Botao>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-(--space-150)">
+        <CamposProfissaoECargo
+          profissao={profissao}
+          outras={outras}
+          cargo={cargo}
+          cargoAntigo={membro.cargoAntigo}
+          genero={membro.genero}
+          emCurso={emCurso}
+          rotuloEmCurso="Ainda está cursando"
+          desabilitado={salvar.isPending}
+          aoMudarProfissao={setProfissao}
+          aoMudarEmCurso={setEmCurso}
+          aoMudarOutras={setOutras}
+          aoMudarCargo={setCargo}
+        />
+        {salvar.error ? (
+          <MensagemSecao role="alert" tom="perigo">
+            {mensagemDoErro(salvar.error)}
+          </MensagemSecao>
+        ) : null}
+      </div>
+    </Dialogo>
   )
 }

@@ -1,15 +1,26 @@
-// Perfil do membro: cargo e foto (o seletor de responsável mostra quem é quem). Cargo e foto vivem
+// Perfil do membro: profissão, cargo e foto (o seletor de responsável mostra quem é quem). Profissão
+// e cargo são códigos das listas fixas do Grama (ADR-0021). Cargo e foto vivem
 // no vínculo (membro). A foto vai direto para o Storage como objeto novo em
 // consultoria_id/membro/<uuid>.<ext> e vira versão pela RPC, que confere caminho, MIME e tamanho.
 
-import type { PapelMembro } from '@gestao-ambiental/domain'
+import {
+  cargoDoCodigo,
+  generoDoCodigo,
+  outrasProfissoes,
+  profissaoDoCodigo,
+  rotuloDoCargo,
+  type CodigoCargo,
+  type CodigoProfissao,
+  type GeneroDaPessoa,
+  type PapelMembro,
+} from '@gestao-ambiental/domain'
 
+import { aceitaNulo } from '@/lib/api/nulo'
 import { obterSupabase } from '@/lib/supabase'
 
 import { sha256 } from './ocorrencias'
 
 export const TAMANHO_MAXIMO_FOTO = 2 * 1024 * 1024
-export const TAMANHO_MAXIMO_CARGO = 80
 export const TIPOS_DE_FOTO = ['image/png', 'image/jpeg'] as const
 const EXTENSOES: Record<(typeof TIPOS_DE_FOTO)[number], string> = {
   'image/png': 'png',
@@ -22,7 +33,19 @@ export interface MembroAtivo {
   id: string
   nome: string
   papel: PapelMembro | null
+  /** Para exibir: o cargo da lista ou, sem ele, o cargo digitado antes. */
   cargo: string | null
+  cargoCodigo: CodigoCargo | null
+  /** Cargo digitado antes da lista fixa (ADR-0021), até o de-para. */
+  cargoAntigo: string | null
+  /** Profissão principal: a que aparece no orçamento e na Equipe. */
+  profissao: CodigoProfissao | null
+  /** A principal ainda em curso (estudante): junto do nome vira "Estudante de …". */
+  profissaoEmCurso: boolean
+  /** Outras formações concluídas, além da principal (ADR-0021 §6). */
+  outrasProfissoes: CodigoProfissao[]
+  /** Gênero da própria pessoa: só muda a forma da profissão junto do nome. Nulo: não informado. */
+  genero: GeneroDaPessoa | null
   /** URL assinada da foto; null mostra as iniciais. */
   fotoUrl: string | null
 }
@@ -32,10 +55,16 @@ interface LinhaMembro {
   nome: string
   papel?: PapelMembro | null
   cargo?: string | null
+  cargo_antigo?: string | null
+  profissao?: string | null
+  /** O gerador tipa a lista de enum como unknown[]; o domínio filtra os códigos válidos. */
+  outras_profissoes?: readonly unknown[] | null
+  profissao_em_curso?: boolean | null
+  genero?: string | null
   foto?: { excluido_em: string | null; versao: { caminho: string } | null } | null
 }
 
-const COLUNAS_MEMBRO = `id, nome, papel, cargo,
+const COLUNAS_MEMBRO = `id, nome, papel, cargo, cargo_antigo, profissao, outras_profissoes, profissao_em_curso, genero,
   foto:documento!membro_foto_fk(excluido_em, versao:documento_versao!documento_versao_vigente_fk(caminho))`
 
 function caminhoDaFoto(linha: LinhaMembro): string | null {
@@ -65,7 +94,8 @@ async function comFotos(linhas: readonly LinhaMembro[]): Promise<MembroAtivo[]> 
       id: linha.id,
       nome: linha.nome,
       papel: linha.papel ?? null,
-      cargo: linha.cargo ?? null,
+      ...profissaoECargo(linha),
+      genero: generoDoCodigo(linha.genero),
       fotoUrl: caminho ? (urls.get(caminho) ?? null) : null,
     }
   })
@@ -96,10 +126,106 @@ export async function meuPerfil(membroId: string): Promise<MembroAtivo> {
   return membro
 }
 
-export async function definirCargo(membroId: string, cargo: string): Promise<void> {
-  const { error } = await obterSupabase().rpc('definir_cargo', {
+/** Profissão e cargo do membro, lidos das colunas; código desconhecido fica nulo. */
+export function profissaoECargo(linha: {
+  cargo?: string | null
+  cargo_antigo?: string | null
+  profissao?: string | null
+  outras_profissoes?: readonly unknown[] | null
+  profissao_em_curso?: boolean | null
+}): Pick<
+  MembroAtivo,
+  'cargo' | 'cargoCodigo' | 'cargoAntigo' | 'profissao' | 'profissaoEmCurso' | 'outrasProfissoes'
+> {
+  const cargoCodigo = cargoDoCodigo(linha.cargo)
+  const cargoAntigo = linha.cargo_antigo ?? null
+  const profissao = profissaoDoCodigo(linha.profissao)
+  return {
+    cargo: cargoCodigo ? rotuloDoCargo(cargoCodigo) : cargoAntigo,
+    cargoCodigo,
+    cargoAntigo,
+    profissao,
+    // Sem profissão não há o que estar cursando.
+    profissaoEmCurso: profissao !== null && linha.profissao_em_curso === true,
+    outrasProfissoes: outrasProfissoes(profissao, linha.outras_profissoes ?? []),
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Cadastro da pessoa: formação (profissão principal) e gênero
+// ---------------------------------------------------------------------------
+
+/** O que a conta precisa ter no vínculo atual antes de usar o sistema. */
+export interface CadastroDaPessoa {
+  profissao: CodigoProfissao | null
+  /** A formação ainda em curso. Não conta para o cadastro estar completo. */
+  emCurso: boolean
+  genero: GeneroDaPessoa | null
+}
+
+/** Colunas lidas para saber se o cadastro está completo (o cliente falso dos testes as reconhece). */
+export const COLUNAS_CADASTRO = 'profissao, profissao_em_curso, genero'
+
+/** Formação e gênero do próprio vínculo. */
+export async function meuCadastro(membroId: string): Promise<CadastroDaPessoa> {
+  const { data, error } = await obterSupabase()
+    .from('membro')
+    .select(COLUNAS_CADASTRO)
+    .eq('id', membroId)
+    .maybeSingle()
+  if (error) throw error
+  if (!data) throw new Error('sem_permissao')
+  return {
+    profissao: profissaoDoCodigo(data.profissao),
+    emCurso: data.profissao_em_curso,
+    genero: generoDoCodigo(data.genero),
+  }
+}
+
+export function cadastroCompleto(cadastro: CadastroDaPessoa): boolean {
+  return cadastro.profissao !== null && cadastro.genero !== null
+}
+
+/**
+ * Grava a formação principal (e se ainda está cursando) e o gênero em todos os vínculos ativos da
+ * pessoa logada.
+ */
+export async function completarCadastro(
+  profissao: CodigoProfissao,
+  genero: GeneroDaPessoa,
+  emCurso: boolean,
+): Promise<void> {
+  const { error } = await obterSupabase().rpc('completar_cadastro', {
+    p_profissao: profissao,
+    p_genero: genero,
+    p_em_curso: emCurso,
+  })
+  if (error) throw error
+}
+
+/** Só o gênero, em todos os vínculos ativos da pessoa logada (ninguém muda o gênero de outra). */
+export async function definirMeuGenero(genero: GeneroDaPessoa): Promise<void> {
+  const { error } = await obterSupabase().rpc('definir_meu_genero', { p_genero: genero })
+  if (error) throw error
+}
+
+/**
+ * A própria pessoa ou a Gestão. Nulo na principal ou no cargo limpa; sem `outras` ou sem `emCurso`,
+ * as outras formações e o "ainda cursando" ficam como estão.
+ */
+export async function definirProfissaoECargo(
+  membroId: string,
+  profissao: CodigoProfissao | null,
+  cargo: CodigoCargo | null,
+  outras?: readonly CodigoProfissao[],
+  emCurso?: boolean,
+): Promise<void> {
+  const { error } = await obterSupabase().rpc('definir_profissao_e_cargo', {
     p_membro_id: membroId,
-    p_cargo: cargo,
+    p_profissao: aceitaNulo(profissao),
+    p_cargo: aceitaNulo(cargo),
+    ...(outras ? { p_outras_profissoes: [...outras] } : {}),
+    ...(emCurso === undefined ? {} : { p_profissao_em_curso: emCurso }),
   })
   if (error) throw error
 }

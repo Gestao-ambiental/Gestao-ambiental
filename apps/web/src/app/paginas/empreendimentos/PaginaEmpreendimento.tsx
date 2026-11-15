@@ -1,9 +1,14 @@
-import { formatarCnpj, hojeNoFuso } from '@gestao-ambiental/domain'
+import {
+  formatarDocumentoDoTitular,
+  hojeNoFuso,
+  rotuloDoDocumentoDoTitular,
+} from '@gestao-ambiental/domain'
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
+import { SecaoResiduosDoEmpreendimento } from '@/app/paginas/residuos/registro'
 import { Carregando, EstadoErro, EstadoVazio } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
 import { Icone } from '@/components/ui/icone'
@@ -53,7 +58,7 @@ function Cabecalho({
   /** Só a Gestão cadastra licença; sem destino, o botão não aparece. */
   cadastrarPara: string | null
 }) {
-  const cnpj = formatarCnpj(empreendimento.cnpj)
+  const cnpj = formatarDocumentoDoTitular(empreendimento.cnpj)
   return (
     <div className="flex flex-wrap items-start gap-(--space-150)">
       <SiglaEmpreendimento nome={empreendimento.nome} grande />
@@ -65,7 +70,7 @@ function Cabecalho({
           </span>
           <span aria-hidden="true">·</span>
           <span>
-            CNPJ{' '}
+            {rotuloDoDocumentoDoTitular(empreendimento.cnpj)}{' '}
             {cnpj ? (
               <span className="font-mono text-(--text)">{cnpj}</span>
             ) : (
@@ -236,7 +241,7 @@ export function PaginaEmpreendimento() {
             onChange={(evento) => {
               setBusca(evento.target.value)
             }}
-            className="h-(--size-control) w-[260px] max-w-full rounded-(--radius) border border-(--border-input) bg-(--surface-input) pr-(--space-100) pl-(--space-400) corpo text-(--text) outline-none transicao-estado focus:border-(--border-focus) focus:bg-(--surface-input-focus)"
+            className="h-(--size-control) w-[260px] max-w-full rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) pr-(--space-100) pl-(--space-400) corpo text-(--text) outline-none transicao-estado focus:border-b-(--border-input-active) focus:shadow-[inset_0_-1px_0_0_var(--border-input-active)] focus:bg-(--surface-input-focus)"
           />
         </label>
         <div
@@ -260,7 +265,7 @@ export function PaginaEmpreendimento() {
                     className={cn(
                       'inline-flex h-(--size-control) shrink-0 cursor-pointer items-center gap-(--space-050) rounded-(--radius) border px-(--space-100) corpo whitespace-nowrap transicao-estado',
                       ligado
-                        ? 'border-(--border-focus) bg-(--surface-selected) text-(--text-link)'
+                        ? 'border-(--brand-stroke) bg-(--surface-selected) text-(--text-link)'
                         : 'border-(--border) hover:bg-(--surface-hover)',
                     )}
                   >
@@ -291,7 +296,7 @@ export function PaginaEmpreendimento() {
 
       <section
         aria-label="Licenças"
-        className="flex flex-col overflow-hidden rounded-(--radius) border bg-(--surface)"
+        className="flex flex-col overflow-hidden rounded-(--radius-large) border bg-(--surface) shadow-cartao"
       >
         {licencas.isPending ? (
           <Carregando rotulo="Carregando licenças" linhas={3} className="border-0" />
@@ -337,6 +342,8 @@ export function PaginaEmpreendimento() {
           ) : null}
         </div>
       </section>
+
+      <SecaoResiduosDoEmpreendimento empreendimentoId={id} />
 
       <DialogoEmpreendimento
         aberto={editarAberto}

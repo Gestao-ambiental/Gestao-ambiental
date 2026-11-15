@@ -14,5 +14,10 @@ export const ITENS_NAVEGACAO: readonly ItemNavegacao[] = [
   { para: '/calendario', rotulo: 'Calendário', icone: 'calendar' },
   { para: '/empreendimentos', rotulo: 'Empreendimentos', icone: 'briefcase' },
   { para: '/acompanhamentos', rotulo: 'Acompanhamentos', icone: 'inbox' },
+  { para: '/campo', rotulo: 'Campo', icone: 'image' },
+  { para: '/residuos', rotulo: 'Resíduos', icone: 'file-check' },
+  { para: '/orcamentos', rotulo: 'Orçamentos', icone: 'file-text', somenteGestao: true },
+  { para: '/resumo-do-mes', rotulo: 'Resumo do mês', icone: 'chart-column', somenteGestao: true },
   { para: '/configuracoes/equipe', rotulo: 'Equipe', icone: 'users', somenteGestao: true },
+  { para: '/configuracoes/plano', rotulo: 'Plano e cobrança', icone: 'tag', somenteGestao: true },
 ]

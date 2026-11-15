@@ -1,0 +1,41 @@
+name: Resumo do mês
+
+# E-mail mensal do resumo do mês para a Gestão (ADR-0027). Dia 1 às 11:00 UTC (08:00 de Brasília)
+# ou à mão (Actions -> Resumo do mês -> Run workflow). A Edge Function enviar-resumo-do-mes manda o
+# resumo do mês anterior de cada consultoria não arquivada e grava o envio: rodar de novo no mesmo
+# mês só manda para quem ficou de fora.
+# Secrets do repositório: SUPABASE_FUNCTIONS_URL (https://<projeto>.supabase.co/functions/v1) e
+# CRON_TOKEN (o mesmo valor do segredo CRON_TOKEN da função no Supabase).
+on:
+  schedule:
+    - cron: '0 11 1 * *'
+  workflow_dispatch:
+
+concurrency:
+  group: resumo-do-mes
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  enviar:
+    name: Pedir o envio do resumo do mês
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Chamar a Edge Function
+        env:
+          SUPABASE_FUNCTIONS_URL: ${{ secrets.SUPABASE_FUNCTIONS_URL }}
+          CRON_TOKEN: ${{ secrets.CRON_TOKEN }}
+        run: |
+          if [ -z "$SUPABASE_FUNCTIONS_URL" ] || [ -z "$CRON_TOKEN" ]; then
+            echo "::error::Configure os secrets SUPABASE_FUNCTIONS_URL e CRON_TOKEN do repositório."
+            exit 1
+          fi
+          # A resposta traz só contagens (consultorias, enviados, sem destinatários, falhas).
+          curl --fail-with-body --silent --show-error --max-time 300 \
+            --request POST "$SUPABASE_FUNCTIONS_URL/enviar-resumo-do-mes" \
+            --header "x-cron-token: $CRON_TOKEN" \
+            --header "Content-Type: application/json" \
+            --data '{}'

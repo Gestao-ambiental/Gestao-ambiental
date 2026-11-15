@@ -1,8 +1,12 @@
-import { useEffect, type ReactNode } from 'react'
+import { useContext, useEffect, type ReactNode } from 'react'
 import { Link } from 'react-router'
+
+import { ContextoConsultoria } from '@/app/consultoria/contexto-consultoria'
+import { usePrenderTarefa } from '@/app/consultoria/tempo-ativo'
 
 import { Botao } from '@/components/ui/botao'
 import { Icone } from '@/components/ui/icone'
+import { MarcaGrama } from '@/components/ui/marca-grama'
 import { cn } from '@/lib/utils'
 
 import { PASSOS, type ChavePasso } from './passos'
@@ -42,6 +46,10 @@ export function MolduraCadastro({
   larga = false,
   children,
 }: Props) {
+  // Em modo suporte a faixa do suporte fica acima: a moldura ocupa o resto da altura (ADR-0025).
+  const suporte = useContext(ContextoConsultoria)?.suporte ?? null
+  // Cadastro com IA (ADR-0027): o tempo ativo conta em todos os passos desta licença.
+  usePrenderTarefa(instrumentoId ? `ia:${instrumentoId}` : null)
   const indiceAtual = PASSOS.findIndex((p) => p.chave === passo)
   const titulo = identificacao ? `Cadastrar licença · ${identificacao}` : 'Cadastrar licença'
 
@@ -50,7 +58,9 @@ export function MolduraCadastro({
   }, [titulo])
 
   return (
-    <div className="flex h-dvh flex-col bg-(--surface-sunken)">
+    <div
+      className={cn('flex flex-col bg-(--surface-sunken)', suporte ? 'min-h-0 flex-1' : 'h-dvh')}
+    >
       <a
         href="#conteudo"
         className="sr-only focus:not-sr-only focus:absolute focus:top-(--space-100) focus:left-(--space-100) focus:z-50 focus:rounded-(--radius) focus:bg-(--surface-overlay) focus:px-(--space-150) focus:py-(--space-100)"
@@ -58,7 +68,7 @@ export function MolduraCadastro({
         Pular para o conteúdo
       </a>
       <header className="flex min-h-14 shrink-0 flex-wrap items-center gap-(--space-150) border-b bg-(--surface) px-(--space-200) py-(--space-100) md:px-(--space-300)">
-        <span className="titulo-secao text-(--text-brand)">Grama</span>
+        <MarcaGrama compactaNoCelular />
         <span aria-hidden="true" className="h-6 border-l" />
         <div className="flex min-w-0 flex-1 flex-col">
           <h1 className="truncate corpo-medio text-(--text)">{titulo}</h1>

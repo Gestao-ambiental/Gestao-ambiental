@@ -121,7 +121,7 @@ export function PaginaEmpreendimentos() {
   } else {
     conteudo = (
       <div className="flex flex-col gap-(--space-100)">
-        <div className="hidden overflow-x-auto rounded-(--radius) border bg-(--surface) md:block">
+        <div className="hidden overflow-x-auto rounded-(--radius-large) border bg-(--surface) shadow-cartao md:block">
           <table className="w-full border-collapse corpo">
             <thead>
               <tr>
@@ -195,7 +195,7 @@ export function PaginaEmpreendimentos() {
             <li key={item.id}>
               <Link
                 to={`/empreendimentos/${item.id}`}
-                className="flex flex-col gap-(--space-050) rounded-(--radius) border bg-(--surface) p-(--space-150) text-(--text) no-underline hover:bg-(--surface-hover) hover:text-(--text) hover:no-underline"
+                className="flex flex-col gap-(--space-050) rounded-(--radius-large) border bg-(--surface) shadow-cartao p-(--space-150) text-(--text) no-underline hover:bg-(--surface-hover) hover:text-(--text) hover:no-underline"
               >
                 <span className="flex items-center justify-between gap-(--space-100)">
                   <Situacao item={item} hoje={hoje} />
@@ -251,7 +251,7 @@ export function PaginaEmpreendimentos() {
               onChange={(evento) => {
                 setBusca(evento.target.value)
               }}
-              className="h-(--size-control) w-[280px] max-w-full rounded-(--radius) border border-(--border-input) bg-(--surface-input) pr-(--space-100) pl-(--space-400) corpo text-(--text) outline-none transicao-estado focus:border-(--border-focus) focus:bg-(--surface-input-focus)"
+              className="h-(--size-control) w-[280px] max-w-full rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) pr-(--space-100) pl-(--space-400) corpo text-(--text) outline-none transicao-estado focus:border-b-(--border-input-active) focus:shadow-[inset_0_-1px_0_0_var(--border-input-active)] focus:bg-(--surface-input-focus)"
             />
           </label>
           <Botao

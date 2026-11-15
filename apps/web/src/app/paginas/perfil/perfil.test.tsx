@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import axe from 'axe-core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -15,7 +15,8 @@ function cenario(membro: Record<string, unknown> = {}): Cenario {
     sessao: ana,
     rpc: {
       meus_vinculos: { data: [vinculoFalso('Filtroville', 'equipe', { membro_id: 'm-ana' })] },
-      definir_cargo: { data: null },
+      definir_profissao_e_cargo: { data: null },
+      definir_meu_genero: { data: null },
       registrar_foto_membro: (args) => ({ data: args.p_versao_id }),
       remover_foto_membro: { data: null },
     },
@@ -27,7 +28,7 @@ function cenario(membro: Record<string, unknown> = {}): Cenario {
   }
 }
 
-describe('meu perfil: foto e cargo', () => {
+describe('meu perfil: foto, profissão e cargo', () => {
   beforeEach(() => {
     falso.reiniciar(cenario())
   })
@@ -42,19 +43,152 @@ describe('meu perfil: foto e cargo', () => {
     })
   })
 
-  it('salva o cargo da própria pessoa', async () => {
+  it('escolhe profissão e cargo nas listas, sem digitar (ADR-0021)', async () => {
     const usuario = userEvent.setup()
     renderizarApp('/perfil')
 
-    const campo = await screen.findByRole('textbox', { name: 'Cargo' })
-    const salvar = screen.getByRole('button', { name: 'Salvar cargo' })
+    const profissao = await screen.findByRole('combobox', { name: 'Profissão' })
+    const salvar = screen.getByRole('button', { name: 'Salvar profissão e cargo' })
     expect(salvar).toBeDisabled()
-    await usuario.type(campo, 'Analista ambiental')
+    expect(screen.queryByRole('textbox', { name: 'Cargo' })).not.toBeInTheDocument()
+    await usuario.selectOptions(profissao, 'Engenheiro ambiental')
+    await usuario.selectOptions(screen.getByRole('combobox', { name: 'Cargo' }), 'Estagiário')
     await usuario.click(salvar)
-    expect(falso.cliente.rpc).toHaveBeenCalledWith('definir_cargo', {
+    expect(falso.cliente.rpc).toHaveBeenCalledWith('definir_profissao_e_cargo', {
       p_membro_id: 'm-ana',
-      p_cargo: 'Analista ambiental',
+      p_profissao: 'eng_ambiental',
+      p_cargo: 'estagiario',
+      p_outras_profissoes: [],
+      p_profissao_em_curso: false,
     })
+  })
+
+  it('"Ainda estou cursando" fica junto da profissão e vai para o banco', async () => {
+    falso.reiniciar(cenario({ profissao: 'eng_ambiental', cargo: 'estagiario' }))
+    const usuario = userEvent.setup()
+    renderizarApp('/perfil')
+
+    const cursando = await screen.findByRole('checkbox', { name: 'Ainda estou cursando' })
+    expect(cursando).not.toBeChecked()
+    const salvar = screen.getByRole('button', { name: 'Salvar profissão e cargo' })
+    expect(salvar).toBeDisabled()
+    await usuario.click(cursando)
+    expect(salvar).toBeEnabled()
+    await usuario.click(salvar)
+    expect(falso.cliente.rpc).toHaveBeenCalledWith('definir_profissao_e_cargo', {
+      p_membro_id: 'm-ana',
+      p_profissao: 'eng_ambiental',
+      p_cargo: 'estagiario',
+      p_outras_profissoes: [],
+      p_profissao_em_curso: true,
+    })
+  })
+
+  it('sem profissão, a caixa de "em curso" fica desabilitada', async () => {
+    renderizarApp('/perfil')
+    expect(await screen.findByRole('checkbox', { name: 'Ainda estou cursando' })).toBeDisabled()
+  })
+
+  it('formatura: desmarcar a caixa manda em curso falso', async () => {
+    falso.reiniciar(cenario({ profissao: 'biologo', profissao_em_curso: true }))
+    const usuario = userEvent.setup()
+    renderizarApp('/perfil')
+
+    const cursando = await screen.findByRole('checkbox', { name: 'Ainda estou cursando' })
+    expect(cursando).toBeChecked()
+    await usuario.click(cursando)
+    await usuario.click(screen.getByRole('button', { name: 'Salvar profissão e cargo' }))
+    expect(falso.cliente.rpc).toHaveBeenCalledWith(
+      'definir_profissao_e_cargo',
+      expect.objectContaining({ p_profissao: 'biologo', p_profissao_em_curso: false }),
+    )
+  })
+
+  it('sem a profissão principal, não deixa adicionar outra formação', async () => {
+    renderizarApp('/perfil')
+    const adicionar = await screen.findByRole('combobox', { name: 'Adicionar outra formação' })
+    expect(adicionar).toBeDisabled()
+    expect(adicionar).toHaveDisplayValue('Escolha a profissão primeiro')
+    // As ajudas cinza dos campos saíram.
+    expect(screen.queryByText('No que a pessoa é formada.')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Para o que foi contratada/)).not.toBeInTheDocument()
+  })
+
+  it('adiciona e tira outras formações concluídas e salva com a principal (ADR-0021)', async () => {
+    falso.reiniciar(
+      cenario({
+        profissao: 'eng_ambiental',
+        cargo: 'analista_pleno',
+        outras_profissoes: ['biologo'],
+      }),
+    )
+    const usuario = userEvent.setup()
+    renderizarApp('/perfil')
+
+    const grupo = await screen.findByRole('group', { name: 'Outras formações concluídas' })
+    const itens = () =>
+      within(grupo)
+        .queryAllByRole('listitem')
+        .map((item) => item.textContent)
+    expect(itens()).toEqual(['Biólogo'])
+    const salvar = screen.getByRole('button', { name: 'Salvar profissão e cargo' })
+    expect(salvar).toBeDisabled()
+
+    const adicionar = within(grupo).getByRole('combobox', { name: 'Adicionar outra formação' })
+    expect(adicionar).toBeEnabled()
+    // A principal e as já escolhidas não aparecem de novo.
+    expect(
+      within(adicionar).queryByRole('option', { name: 'Engenheiro ambiental' }),
+    ).not.toBeInTheDocument()
+    expect(within(adicionar).queryByRole('option', { name: 'Biólogo' })).not.toBeInTheDocument()
+    await usuario.selectOptions(adicionar, 'Geólogo')
+    expect(itens()).toEqual(['Biólogo', 'Geólogo'])
+    expect(adicionar).toHaveDisplayValue('Adicionar outra formação')
+    expect(salvar).toBeEnabled()
+
+    await usuario.click(within(grupo).getByRole('button', { name: 'Tirar Biólogo' }))
+    expect(itens()).toEqual(['Geólogo'])
+    // A que saiu volta a poder ser adicionada.
+    expect(within(adicionar).getByRole('option', { name: 'Biólogo' })).toBeInTheDocument()
+
+    await usuario.click(salvar)
+    expect(falso.cliente.rpc).toHaveBeenCalledWith('definir_profissao_e_cargo', {
+      p_membro_id: 'm-ana',
+      p_profissao: 'eng_ambiental',
+      p_cargo: 'analista_pleno',
+      p_outras_profissoes: ['geologo'],
+      p_profissao_em_curso: false,
+    })
+  })
+
+  it('a própria pessoa escolhe o gênero e a profissão passa a ser escrita nele (ADR-0021)', async () => {
+    falso.reiniciar(cenario({ profissao: 'eng_ambiental', genero: 'masculino' }))
+    const usuario = userEvent.setup()
+    renderizarApp('/perfil')
+
+    const grupo = await screen.findByRole('group', { name: 'Gênero' })
+    expect(within(grupo).getByRole('radio', { name: 'Masculino' })).toBeChecked()
+    const salvar = screen.getByRole('button', { name: 'Salvar gênero' })
+    expect(salvar).toBeDisabled()
+    const profissao = screen.getByRole('combobox', { name: 'Profissão' })
+    expect(profissao).toHaveDisplayValue('Engenheiro ambiental')
+
+    await usuario.click(within(grupo).getByRole('radio', { name: 'Feminino' }))
+    expect(profissao).toHaveDisplayValue('Engenheira ambiental')
+    await usuario.click(salvar)
+    expect(falso.cliente.rpc).toHaveBeenCalledWith('definir_meu_genero', { p_genero: 'feminino' })
+    // Gênero não vai junto da profissão e do cargo.
+    expect(falso.cliente.rpc).not.toHaveBeenCalledWith(
+      'definir_profissao_e_cargo',
+      expect.anything(),
+    )
+  })
+
+  it('cargo digitado antes aparece como antigo até escolher um da lista', async () => {
+    falso.reiniciar(cenario({ cargo_antigo: 'Analista ambiental' }))
+    renderizarApp('/perfil')
+    const cargo = await screen.findByRole('combobox', { name: 'Cargo' })
+    expect(cargo).toHaveDisplayValue('Analista ambiental (antigo, escolha na lista)')
   })
 
   it('envia a foto como objeto novo e registra a versão', async () => {
@@ -99,7 +233,7 @@ describe('meu perfil: foto e cargo', () => {
   it('com foto: mostra a imagem e permite tirar', async () => {
     falso.reiniciar(
       cenario({
-        cargo: 'Analista ambiental',
+        cargo: 'analista_pleno',
         foto: { excluido_em: null, versao: { caminho: 'c-Filtroville/membro/f1.png' } },
       }),
     )
@@ -116,7 +250,7 @@ describe('meu perfil: foto e cargo', () => {
 
   it('não tem violações de acessibilidade detectáveis pelo axe', async () => {
     const { container } = renderizarApp('/perfil')
-    await screen.findByRole('textbox', { name: 'Cargo' })
+    await screen.findByRole('combobox', { name: 'Cargo' })
     const resultado = await axe.run(container, { rules: { 'color-contrast': { enabled: false } } })
     expect(resultado.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([])
   })

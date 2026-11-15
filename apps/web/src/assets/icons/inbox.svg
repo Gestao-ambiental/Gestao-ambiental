@@ -1,4 +1,1 @@
-<svg class="lucide lucide-inbox" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline>
-  <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><path d="M6 3a3 3 0 0 0-3 3v8a3 3 0 0 0 3 3h8a3 3 0 0 0 3-3V6a3 3 0 0 0-3-3zm10 7h-3.5a.5.5 0 0 0-.5.5v.01l-.03.3q-.05.31-.23.72-.18.39-.57.66-.37.29-1.17.31c-.54 0-.9-.13-1.17-.3a2 2 0 0 1-.57-.67A3 3 0 0 1 8 10.5v-.01a.5.5 0 0 0-.5-.5H4V6c0-1.1.9-2 2-2h8a2 2 0 0 1 2 2zM4 11h3.05c.05.26.14.62.32.97q.26.59.9 1.06.67.45 1.73.47 1.06-.02 1.72-.47.65-.47.91-1.06c.18-.35.27-.7.32-.97H16v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg>

@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 
 import { Icone, type NomeIcone } from './icone'
 
-/** Referência: docs/design-system/referencia-componentes/core/Button.jsx. */
+/** Botão do Fluent 2 (ADR-0015): 32px (24 compacto), raio 4px, rótulo semibold; padrão com contorno. */
 export const variantesBotao = cva(
   [
     'inline-flex items-center justify-center gap-(--space-050) whitespace-nowrap',
@@ -20,11 +20,11 @@ export const variantesBotao = cva(
         primario:
           'border-transparent bg-(--brand) text-(--text-inverse) hover:bg-(--brand-hover) active:bg-(--brand-pressed) disabled:bg-(--surface-disabled)',
         padrao:
-          'border-(--border) bg-transparent text-(--text) hover:bg-(--neutral-subtle-hover) active:bg-(--neutral-subtle-pressed) disabled:bg-transparent',
+          'border-(--border-strong) bg-(--surface) text-(--text) hover:bg-(--surface-hover) active:bg-(--surface-pressed) disabled:border-(--border) disabled:bg-(--surface-disabled)',
         sutil:
           'border-transparent bg-transparent text-(--text) hover:bg-(--neutral-subtle-hover) active:bg-(--neutral-subtle-pressed) disabled:bg-transparent',
         perigo:
-          'border-transparent bg-(--danger) text-(--text-inverse) hover:bg-(--danger-hover) active:bg-(--danger-pressed) disabled:bg-(--surface-disabled)',
+          'border-transparent bg-(--danger) text-(--text-on-danger) hover:bg-(--danger-hover) active:bg-(--danger-pressed) disabled:bg-(--surface-disabled)',
         link: 'border-transparent bg-transparent px-(--space-025) text-(--text-link) hover:underline disabled:no-underline',
       },
       tamanho: {

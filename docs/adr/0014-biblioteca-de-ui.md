@@ -1,6 +1,7 @@
 # ADR-0014: Biblioteca de UI e design system
 
 - **Situação:** aceito (épico 1, tarefa 1.5), 17/10/2026. Revisado no mesmo dia, com a chegada do design system aprovado.
+- **Visual substituído** pela [ADR-0015](0015-fluent-2-como-design-system.md) (Fluent 2). Continuam valendo as regras de comportamento: Tailwind restrito aos tokens, Radix/shadcn só como base e componentes em português.
 - **Resolve:** "Biblioteca de UI e estratégia de componentes", pendente em 05 · Stack e ADRs
 
 ## Contexto
