@@ -76,6 +76,23 @@ describe.each(SEMENTES)('carteira sintética %i', (semente) => {
     for (const item of d.itens) expect(item.inicioRecomendado).toBe(item.inicioLimite)
   })
 
+  it('com teto de capacidade, o nivelamento nunca piora pico nem excesso, e nunca atrasa', () => {
+    const comTeto = { ...PARAMETROS, capacidadeMensalHoras: 150 }
+    const nivelado = planoDe(atividades, 'metodo_completo', comTeto)
+    const original = planoDe(atividades, 'metodo_sem_antecipacao', comTeto)
+    expect(nivelado.metricas.picoHoras).toBeLessThanOrEqual(original.metricas.picoHoras)
+    expect(nivelado.metricas.horasAcimaDaCapacidade ?? 0).toBeLessThanOrEqual(
+      (original.metricas.horasAcimaDaCapacidade ?? 0) + 1e-6,
+    )
+    for (const a of atividades) {
+      expect(dia(itemDe(nivelado, a.id).inicioPlanejado)).toBeLessThanOrEqual(
+        dia(itemDe(original, a.id).inicioPlanejado),
+      )
+    }
+    const horas = nivelado.cargaMensal.reduce((soma, m) => soma + m.horas, 0)
+    expect(horas + nivelado.metricas.horasForaDoHorizonte).toBeCloseTo(totalDeHoras, 3)
+  })
+
   it('a ordem das atividades na carteira não muda o resultado', () => {
     const invertida = planoDe([...atividades].reverse(), 'metodo_completo')
     const semItens = (plano: Plano) => ({ ...plano, itens: [] })

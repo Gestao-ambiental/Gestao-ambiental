@@ -84,6 +84,7 @@ describe('validação', () => {
     ['passo zero', { passoNivelamentoDias: 0 }],
     ['horizonte zero', { horizonteMeses: 0 }],
     ['versão vazia', { versao: '' }],
+    ['capacidade zero', { capacidadeMensalHoras: 0 }],
   ])('recusa parâmetros com %s', (_, mudanca) => {
     expect(codigos([valida], { ...PARAMETROS, ...mudanca })).toContain('parametro_invalido')
   })

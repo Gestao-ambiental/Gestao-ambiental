@@ -73,6 +73,11 @@ export interface Parametros {
   passoNivelamentoDias: number
   /** Meses a partir do mês de hoje. Padrão: até o mês do último prazo. */
   horizonteMeses?: number | null
+  /**
+   * Horas que a equipe entrega por mês. Com ela, a estratégia (c) nivela só os meses acima do
+   * teto e antecipa o mínimo necessário; sem ela, achata o quanto der.
+   */
+  capacidadeMensalHoras?: number | null
 }
 
 export type Estado = 'planejada' | 'iniciar_ja' | 'inviavel'
@@ -138,6 +143,30 @@ export interface Metricas {
   antecedenciaGravesMediana: number | null
   antecedenciaGravesMinima: number | null
   horasForaDoHorizonte: number
+  /** Meses com carga acima da capacidade; `null` quando a capacidade não foi informada. */
+  mesesAcimaDaCapacidade: number | null
+  /** Horas que passam da capacidade, somadas no horizonte; `null` sem capacidade. */
+  horasAcimaDaCapacidade: number | null
+}
+
+/**
+ * Alerta de aglomeração: um mês que, na posição recomendada, passa da capacidade. Só existe quando
+ * `capacidadeMensalHoras` foi informada. É igual em todas as estratégias.
+ */
+export interface Aglomeracao {
+  /** `AAAA-MM`. */
+  mes: string
+  /** Carga do mês com todas as atividades na posição recomendada. */
+  horasPrevistas: number
+  horasAcima: number
+  /** Quanto ainda passa da capacidade depois de antecipar tudo o que dá, a partir de hoje. */
+  horasAcimaAposAntecipar: number
+  /** O mês cabe na capacidade se a antecipação começar até `comecarAte`. */
+  resolvida: boolean
+  /** Início mais cedo entre as atividades deste mês que precisam ser adiantadas. */
+  comecarAte: Data | null
+  /** Atividades deste mês que o nivelamento adianta. */
+  atividadesAAntecipar: number
 }
 
 export interface Plano {
@@ -150,6 +179,8 @@ export interface Plano {
   triagem: string[]
   cargaMensal: CargaDoMes[]
   metricas: Metricas
+  /** Meses acima da capacidade, em ordem; vazio sem `capacidadeMensalHoras`. */
+  aglomeracoes: Aglomeracao[]
   avisos: CodigoDeAvisoGeral[]
 }
 

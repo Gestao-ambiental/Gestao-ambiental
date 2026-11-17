@@ -42,6 +42,7 @@ export interface ParametrosValidos {
   alertaDias: number
   passoNivelamentoDias: number
   horizonteMeses: number | null
+  capacidadeMensalHoras: number | null
 }
 
 export interface EntradaValida {
@@ -122,6 +123,13 @@ function validarParametros(
   }
 
   const { margemUnicaDias, alertaDias, passoNivelamentoDias, horizonteMeses } = bruto
+  const capacidade = bruto.capacidadeMensalHoras
+  if (
+    !ausente(capacidade) &&
+    (typeof capacidade !== 'number' || !Number.isFinite(capacidade) || capacidade <= 0)
+  ) {
+    falha('capacidadeMensalHoras', 'número maior que zero, ou ausente')
+  }
   if (!ehInteiroNaoNegativo(margemUnicaDias)) {
     falha('margemUnicaDias', 'inteiro maior ou igual a zero')
   }
@@ -144,6 +152,7 @@ function validarParametros(
       alertaDias: alertaDias as number,
       passoNivelamentoDias: passoNivelamentoDias as number,
       horizonteMeses: ausente(horizonteMeses) ? null : (horizonteMeses as number),
+      capacidadeMensalHoras: ausente(capacidade) ? null : (capacidade as number),
     },
   }
 }

@@ -1,6 +1,7 @@
 // Apoio dos testes: parâmetros provisórios, atalhos e um gerador de carteiras com semente fixa.
 
 import provisorios from '../exemplos/parametros-provisorios.json'
+import { sorteador } from './cenario'
 import { planejar } from './planejar'
 import type { Atividade, Carteira, Estrategia, ItemDoPlano, Parametros, Plano } from './tipos'
 
@@ -33,17 +34,6 @@ export function itemDe(plano: Plano, id: string): ItemDoPlano {
   const item = plano.itens.find((i) => i.atividadeId === id)
   if (!item) throw new Error(`Sem item para ${id}`)
   return item
-}
-
-/** Gerador pseudoaleatório com semente (mulberry32): os testes são reproduzíveis. */
-function sorteador(semente: number): () => number {
-  let estado = semente
-  return () => {
-    estado = (estado + 0x6d2b79f5) | 0
-    let t = Math.imul(estado ^ (estado >>> 15), 1 | estado)
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
-  }
 }
 
 const DIAS_POR_MES = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]

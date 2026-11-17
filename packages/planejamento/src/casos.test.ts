@@ -19,6 +19,7 @@ describe('casos de referência', () => {
       avisos: [],
     })
     expect(plano.triagem).toEqual([])
+    expect(plano.aglomeracoes).toEqual([])
   })
 
   it('caso 2: a mesma atividade, crítica, começa mais cedo', () => {

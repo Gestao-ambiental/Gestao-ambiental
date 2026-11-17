@@ -14,6 +14,7 @@ import { cargaDaRede, horasPorMes } from './carga'
 import { mesDoDia, paraData, rotuloDoMes } from './datas'
 import { nivelar } from './nivelamento'
 import type {
+  Aglomeracao,
   Carteira,
   CodigoDeAviso,
   CodigoDeAvisoGeral,
@@ -78,21 +79,60 @@ export function planejar(
     p.horizonteMeses === null ? mesDoDia(ultimoPrazo) : primeiroMes + p.horizonteMeses - 1
 
   const avisosGerais: CodigoDeAvisoGeral[] = []
-  let inicio = semNivelamento
-  if (e === 'metodo_completo') {
-    const nivelado = nivelar({
+  const nivelarDe = (partida: readonly number[]) =>
+    nivelar({
       rede,
-      inicio: semNivelamento,
+      inicio: partida,
       hoje: hojeDia,
       passoDias: p.passoNivelamentoDias,
+      capacidade: p.capacidadeMensalHoras,
       primeiroMes,
       ultimoMes,
       planejada: estados.map((estado) => estado === 'planejada'),
       gravidade: atividades.map((a) => a.gravidade),
       prazoEfetivo: atividades.map((_, i) => em(limite.fim, em(rede.ultimo, i))),
     })
-    inicio = nivelado.inicio
-    if (nivelado.interrompido) avisosGerais.push('nivelamento_interrompido')
+
+  // Referência do método: todas na posição recomendada, e essa posição nivelada. A estratégia (c)
+  // usa a nivelada; os alertas de aglomeração comparam as duas, em qualquer estratégia.
+  const capacidade = p.capacidadeMensalHoras
+  const doMetodo = e === 'metodo_completo' || e === 'metodo_sem_antecipacao'
+  const recomendada = doMetodo ? semNivelamento : avancar(rede, recomendado.inicio, hojeDia)
+  const nivelada = e === 'metodo_completo' || capacidade !== null ? nivelarDe(recomendada) : null
+  let inicio = semNivelamento
+  if (e === 'metodo_completo' && nivelada) {
+    inicio = nivelada.inicio
+    if (nivelada.interrompido) avisosGerais.push('nivelamento_interrompido')
+  }
+
+  const aglomeracoes: Aglomeracao[] = []
+  if (capacidade !== null && nivelada) {
+    const antes = cargaDaRede(rede, recomendada)
+    const depois = cargaDaRede(rede, nivelada.inicio)
+    for (let m = primeiroMes; m <= ultimoMes; m++) {
+      const horasPrevistas = antes.get(m) ?? 0
+      if (horasPrevistas <= capacidade + EPS) continue
+      // Nós que tinham horas neste mês e foram adiantados.
+      let comecarAte = Infinity
+      const adiantadas = new Set<number>()
+      rede.nos.forEach((no, n) => {
+        const novo = em(nivelada.inicio, n)
+        if (novo >= em(recomendada, n)) return
+        if (!horasPorMes(em(recomendada, n), no.duracao, no.horas).has(m)) return
+        adiantadas.add(no.atividade)
+        comecarAte = Math.min(comecarAte, novo)
+      })
+      const sobra = Math.max(0, (depois.get(m) ?? 0) - capacidade)
+      aglomeracoes.push({
+        mes: rotuloDoMes(m),
+        horasPrevistas: arredondar(horasPrevistas),
+        horasAcima: arredondar(horasPrevistas - capacidade),
+        horasAcimaAposAntecipar: arredondar(sobra),
+        resolvida: sobra <= EPS,
+        comecarAte: adiantadas.size === 0 ? null : paraData(comecarAte),
+        atividadesAAntecipar: adiantadas.size,
+      })
+    }
   }
 
   // Itens, na ordem da carteira de entrada.
@@ -178,6 +218,7 @@ export function planejar(
   })
   const mediaHoras = horas.reduce((soma, h) => soma + h, 0) / horas.length
   const variancia = horas.reduce((soma, h) => soma + (h - mediaHoras) ** 2, 0) / horas.length
+  const acima = capacidade === null ? null : horas.map((h) => Math.max(0, h - capacidade))
   let horasForaDoHorizonte = 0
   for (const [m, h] of carga) if (m > ultimoMes) horasForaDoHorizonte += h
 
@@ -203,6 +244,9 @@ export function planejar(
     antecedenciaGravesMinima:
       antecedenciaGraves.length === 0 ? null : Math.min(...antecedenciaGraves),
     horasForaDoHorizonte: arredondar(horasForaDoHorizonte),
+    mesesAcimaDaCapacidade: acima === null ? null : acima.filter((h) => h > EPS).length,
+    horasAcimaDaCapacidade:
+      acima === null ? null : arredondar(acima.reduce((soma, h) => soma + h, 0)),
   }
 
   return {
@@ -220,6 +264,7 @@ export function planejar(
         horasSemNivelamento: arredondar(cargaSemNivelamento.get(m) ?? 0),
       })),
       metricas,
+      aglomeracoes,
       avisos: avisosGerais,
     },
   }
