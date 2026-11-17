@@ -50,6 +50,7 @@ import { AcessosDoSuporte } from '@/app/suporte/AcessosDoSuporte'
 
 import { CamposProfissaoECargo } from './CamposProfissaoECargo'
 import { DialogoConvidar, type ResultadoConvite } from './DialogoConvidar'
+import { RegistrosAConfirmar } from './RegistrosAConfirmar'
 
 const MOTIVO_ULTIMA_GESTAO = 'A consultoria precisa de pelo menos uma pessoa na Gestão.'
 
@@ -480,6 +481,8 @@ function EquipeDaGestao() {
           </>
         )}
       </section>
+
+      <RegistrosAConfirmar />
 
       <section aria-labelledby="titulo-convites" className="flex flex-col gap-(--space-100)">
         <TituloSecao

@@ -250,6 +250,20 @@ export type {
 } from './profissao-e-cargo'
 
 export {
+  CONSELHOS,
+  UFS,
+  conselhoDoCodigo,
+  conselhoSugerido,
+  descreverRegistro,
+  ehUf,
+  profissoesComRegistro,
+  rotuloDaSituacaoDoRegistro,
+  rotuloDoConselho,
+  situacaoDoRegistro,
+} from './registro-profissional'
+export type { CodigoConselho, SituacaoDoRegistro, Uf } from './registro-profissional'
+
+export {
   DIAS_SEM_USO_PARA_ALERTA,
   INTERVALO_DE_REGISTRO_MINUTOS,
   JANELA_DE_USO_DIAS,

@@ -803,14 +803,14 @@ isOneToOne: false
                   ]
                 },"membro": {
                   Row: {
-                    "cargo": string | null,"cargo_antigo": string | null,"consultoria_id": string,"criado_em": string,"desligado_em": string | null,"email": string,"foto_documento_id": string | null,"genero": string | null,"id": string,"nome": string,"outras_profissoes": (unknown)[],"papel": Database["public"]['Enums']["papel_membro"],"profissao": string | null,"profissao_em_curso": boolean,"situacao": Database["public"]['Enums']["situacao_membro"],"usuario_id": string
+                    "cargo": string | null,"cargo_antigo": string | null,"consultoria_id": string,"criado_em": string,"ctf_numero": string | null,"ctf_valido_ate": string | null,"desligado_em": string | null,"email": string,"foto_documento_id": string | null,"genero": string | null,"id": string,"nome": string,"outras_profissoes": (unknown)[],"papel": Database["public"]['Enums']["papel_membro"],"profissao": string | null,"profissao_em_curso": boolean,"situacao": Database["public"]['Enums']["situacao_membro"],"usuario_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "cargo"?: string | null,"cargo_antigo"?: string | null,"consultoria_id": string,"criado_em"?: string,"desligado_em"?: string | null,"email": string,"foto_documento_id"?: string | null,"genero"?: string | null,"id"?: string,"nome": string,"outras_profissoes"?: (unknown)[],"papel": Database["public"]['Enums']["papel_membro"],"profissao"?: string | null,"profissao_em_curso"?: boolean,"situacao"?: Database["public"]['Enums']["situacao_membro"],"usuario_id": string
+                    "cargo"?: string | null,"cargo_antigo"?: string | null,"consultoria_id": string,"criado_em"?: string,"ctf_numero"?: string | null,"ctf_valido_ate"?: string | null,"desligado_em"?: string | null,"email": string,"foto_documento_id"?: string | null,"genero"?: string | null,"id"?: string,"nome": string,"outras_profissoes"?: (unknown)[],"papel": Database["public"]['Enums']["papel_membro"],"profissao"?: string | null,"profissao_em_curso"?: boolean,"situacao"?: Database["public"]['Enums']["situacao_membro"],"usuario_id": string
                   }
                   Update: {
-                    "cargo"?: string | null,"cargo_antigo"?: string | null,"consultoria_id"?: string,"criado_em"?: string,"desligado_em"?: string | null,"email"?: string,"foto_documento_id"?: string | null,"genero"?: string | null,"id"?: string,"nome"?: string,"outras_profissoes"?: (unknown)[],"papel"?: Database["public"]['Enums']["papel_membro"],"profissao"?: string | null,"profissao_em_curso"?: boolean,"situacao"?: Database["public"]['Enums']["situacao_membro"],"usuario_id"?: string
+                    "cargo"?: string | null,"cargo_antigo"?: string | null,"consultoria_id"?: string,"criado_em"?: string,"ctf_numero"?: string | null,"ctf_valido_ate"?: string | null,"desligado_em"?: string | null,"email"?: string,"foto_documento_id"?: string | null,"genero"?: string | null,"id"?: string,"nome"?: string,"outras_profissoes"?: (unknown)[],"papel"?: Database["public"]['Enums']["papel_membro"],"profissao"?: string | null,"profissao_em_curso"?: boolean,"situacao"?: Database["public"]['Enums']["situacao_membro"],"usuario_id"?: string
                   }
                   Relationships: [
                     {
@@ -1383,6 +1383,50 @@ isOneToOne: false
       referencedColumns: ["consultoria_id","id"]
     }
                   ]
+                },"registro_profissional": {
+                  Row: {
+                    "confirmado_em": string | null,"confirmado_por": string | null,"conselho": string,"consultoria_id": string,"declarado_em": string,"declarado_por": string,"id": string,"membro_id": string,"numero": string,"profissao": string,"removido_em": string | null,"removido_por": string | null,"row_version": number,"uf": string | null,"valido_ate": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "confirmado_em"?: string | null,"confirmado_por"?: string | null,"conselho": string,"consultoria_id": string,"declarado_em"?: string,"declarado_por": string,"id"?: string,"membro_id": string,"numero": string,"profissao": string,"removido_em"?: string | null,"removido_por"?: string | null,"row_version"?: number,"uf"?: string | null,"valido_ate"?: string | null
+                  }
+                  Update: {
+                    "confirmado_em"?: string | null,"confirmado_por"?: string | null,"conselho"?: string,"consultoria_id"?: string,"declarado_em"?: string,"declarado_por"?: string,"id"?: string,"membro_id"?: string,"numero"?: string,"profissao"?: string,"removido_em"?: string | null,"removido_por"?: string | null,"row_version"?: number,"uf"?: string | null,"valido_ate"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "registro_profissional_confirmado_por_fk"
+      columns: ["consultoria_id","confirmado_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "registro_profissional_consultoria_id_fkey"
+      columns: ["consultoria_id"]
+isOneToOne: false
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "registro_profissional_declarado_por_fk"
+      columns: ["consultoria_id","declarado_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "registro_profissional_membro_fk"
+      columns: ["consultoria_id","membro_id"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "registro_profissional_removido_por_fk"
+      columns: ["consultoria_id","removido_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    }
+                  ]
                 },"resumo_do_mes_envio": {
                   Row: {
                     "consultoria_id": string,"destinatarios": number,"enviado_em": string,"mes": string
@@ -1931,6 +1975,9 @@ isOneToOne: false
 "confirmar_prazo":
 { Args: { "p_condicionante_id": string,"p_contagem": Database["public"]['Enums']["contagem_prazo"],"p_data_referencia": string,"p_fonte_regra": string,"p_intervalo": number,"p_primeira_data": string,"p_recorrencia": Database["public"]['Enums']["recorrencia_prazo"],"p_unidade": Database["public"]['Enums']["unidade_ciclo"] }; Returns: undefined
                            },
+"confirmar_registro_profissional":
+{ Args: { "p_registro_id": string,"p_row_version": number }; Returns: number
+                           },
 "consultar_convite":
 { Args: { "p_token": string }; Returns: {
               "consultoria_fuso": string,"consultoria_nome": string,"conta_com_senha": boolean,"convidado_por_nome": string,"email": string,"expira_em": string,"papel": Database["public"]['Enums']["papel_membro"],"situacao": string
@@ -1980,11 +2027,17 @@ isOneToOne: false
               "acesso_id": string,"categoria": string,"consultoria_fuso": string,"consultoria_id": string,"consultoria_nome": string,"fim_previsto": string,"inicio": string,"motivo": string,"operador_nome": string
             }[]
                            },
+"declarar_registro_profissional":
+{ Args: { "p_conselho": string,"p_membro_id": string,"p_numero": string,"p_profissao": string,"p_uf"?: string,"p_valido_ate"?: string }; Returns: string
+                           },
 "definir_acompanhamento":
 { Args: { "p_dias": number,"p_plano_id": string,"p_row_version": number }; Returns: number
                            },
 "definir_antecedencia_renovacao":
 { Args: { "p_antecedencia": number,"p_plano_id": string,"p_row_version": number }; Returns: number
+                           },
+"definir_cadastro_federal":
+{ Args: { "p_membro_id": string,"p_numero"?: string,"p_valido_ate"?: string }; Returns: undefined
                            },
 "definir_meu_genero":
 { Args: { "p_genero": string }; Returns: undefined
@@ -2257,6 +2310,9 @@ isOneToOne: false
                            },
 "remover_foto_membro":
 { Args: { "p_membro_id": string }; Returns: undefined
+                           },
+"remover_registro_profissional":
+{ Args: { "p_registro_id": string,"p_row_version": number }; Returns: undefined
                            },
 "remover_logo_da_consultoria":
 { Args: { "p_consultoria_id": string }; Returns: undefined
