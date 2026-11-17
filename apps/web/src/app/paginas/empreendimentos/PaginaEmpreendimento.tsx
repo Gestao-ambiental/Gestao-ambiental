@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils'
 
 import { DialogoEmpreendimento } from './DialogoEmpreendimento'
 import { DialogoUnidades } from './DialogoUnidades'
+import { SecaoAlvaras } from './SecaoAlvaras'
 import { SiglaEmpreendimento } from './SiglaEmpreendimento'
 import { TabelaLicencas } from './TabelaLicencas'
 
@@ -342,6 +343,13 @@ export function PaginaEmpreendimento() {
           ) : null}
         </div>
       </section>
+
+      <SecaoAlvaras
+        empreendimentoId={id}
+        unidades={listaUnidades}
+        hoje={hoje}
+        ehGestao={ehGestao}
+      />
 
       <SecaoResiduosDoEmpreendimento empreendimentoId={id} />
 

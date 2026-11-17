@@ -138,6 +138,12 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   uf_invalida: 'Escolha a UF na lista.',
   registro_removido: 'Este registro foi removido. Recarregue a página.',
   ctf_invalido: 'O número do Cadastro Técnico Federal tem só dígitos.',
+  // Alvará (ALV-01 e 02)
+  validade_do_alvara_obrigatoria: 'Informe a validade do alvará.',
+  alvara_anterior_invalido:
+    'O alvará a renovar não foi encontrado nesta unidade. Recarregue a página.',
+  alvara_ja_renovado: 'Este alvará já foi renovado. Recarregue a página.',
+  alvara_excluido: 'Este alvará foi excluído. Recarregue a página.',
   horas_de_venda_invalidas:
     'Confira a tabela de preços: profissão, serviço, unidade, preço e faixas de cada linha.',
   deslocamento_invalido:

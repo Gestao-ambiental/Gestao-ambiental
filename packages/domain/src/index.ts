@@ -518,3 +518,6 @@ export type {
   ResultadoDoItem,
   SituacaoDaVistoria,
 } from './vistoria'
+
+export { idsRenovados, rotuloDaSituacaoDoAlvara, situacaoDoAlvara } from './alvara'
+export type { SituacaoDoAlvara } from './alvara'
