@@ -87,12 +87,31 @@ describe('entrar e sair (ACC-01)', () => {
     const { router } = renderizarApp('/')
 
     await usuario.click(await screen.findByRole('button', { name: 'Conta de Eduardo Karnopp' }))
+    expect(screen.queryByRole('menuitem', { name: /Bloquear tela/ })).not.toBeInTheDocument()
     await usuario.click(await screen.findByRole('menuitem', { name: 'Sair' }))
 
     await screen.findByRole('heading', { level: 1, name: 'Entrar no Grama' })
     expect(router.state.location.pathname).toBe('/entrar')
-    expect(falso.cliente.auth.signOut).toHaveBeenCalled()
+    expect(falso.cliente.auth.signOut).toHaveBeenCalledWith({ scope: 'local' })
     expect(screen.queryByText('Sua sessão terminou. Entre de novo para continuar.')).toBeNull()
+  })
+
+  it('uma falha ao sair é informada sem apresentar a sessão como encerrada', async () => {
+    falso.reiniciar({
+      sessao: eduardo,
+      rpc: { meus_vinculos: { data: [vinculoFalso('Filtroville', 'gestao')] } },
+    })
+    falso.cliente.auth.signOut.mockRejectedValueOnce(new Error('rede indisponível'))
+    const usuario = userEvent.setup()
+    const { router } = renderizarApp('/')
+
+    await usuario.click(await screen.findByRole('button', { name: 'Conta de Eduardo Karnopp' }))
+    await usuario.click(await screen.findByRole('menuitem', { name: 'Sair' }))
+
+    expect(
+      await screen.findByText('Não foi possível sair da conta. Tente novamente.'),
+    ).toBeVisible()
+    expect(router.state.location.pathname).toBe('/')
   })
 
   it('sessão que acaba sem pedir mostra o aviso no login', async () => {

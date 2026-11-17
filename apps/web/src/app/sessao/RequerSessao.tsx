@@ -1,6 +1,5 @@
 import { Navigate, Outlet, useLocation } from 'react-router'
 
-import { ProvedorBloqueio } from '@/app/bloqueio/ProvedorBloqueio'
 import { Carregando, EstadoErro } from '@/components/estados'
 
 import { useSessao } from './contexto-sessao'
@@ -28,10 +27,7 @@ export function TelaDeEspera({
   )
 }
 
-/**
- * Rotas que exigem login. Sem sessão, vai para /entrar e volta para cá depois. Com sessão, a tela
- * pode ser bloqueada (ACC-05) em qualquer uma delas.
- */
+/** Rotas que exigem login. Sem sessão, vai para /entrar e volta para cá depois. */
 export function RequerSessao() {
   const { carregando, sessao, erroConfiguracao } = useSessao()
   const local = useLocation()
@@ -53,9 +49,5 @@ export function RequerSessao() {
     const busca = para === '/' ? '' : `?para=${encodeURIComponent(para)}`
     return <Navigate to={`/entrar${busca}`} replace />
   }
-  return (
-    <ProvedorBloqueio>
-      <Outlet />
-    </ProvedorBloqueio>
-  )
+  return <Outlet />
 }

@@ -12,7 +12,7 @@ As regras da seção 1 foram **confirmadas pelo Eduardo no pacote do protótipo 
 *   **Conferente** é designação por ocorrência. Com a política de **conferência independente** ativa, quem produziu a evidência não pode conferi-la (§3.5, §5.5).
 *   Financeiro, exportação integral e outras capacidades sensíveis são **concessões** explícitas no vínculo, não item de menu escondido (§3.5).
 *   Desligar um membro impede novas ações e **preserva a autoria histórica**; mudança de responsável não reescreve autoria de evidência anterior (§4.5).
-*   **Bloquear tela** não é logout nem troca de pessoa: esconde conteúdo, exige senha, preserva contexto (§1.4, §6.6).
+*   Para proteger uma sessão em um dispositivo compartilhado, use **Sair** e autentique novamente. O bloqueio com restauração de contexto fica pendente (ACC-05).
 ### Empreendimento e unidade
 *   Empreendimento exige **só o nome**; cliente contratante, CNPJ e contatos são opcionais. Duplicidade é sinalizada, não proibida (§2.4).
 *   Unidade é endereço/filial do empreendimento; instrumento, alvará e processo pertencem a uma **unidade** (§3.3).

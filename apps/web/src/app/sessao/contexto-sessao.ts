@@ -13,7 +13,7 @@ export interface EstadoSessao {
   sessaoExpirou: boolean
   /** Motivo de uma saída forçada pelo app (ex.: acesso encerrado pela gestão), para o login. */
   avisoDeSaida: string | null
-  sair: (aviso?: string) => Promise<void>
+  sair: (aviso?: string) => Promise<boolean>
 }
 
 export const ContextoSessao = createContext<EstadoSessao | null>(null)

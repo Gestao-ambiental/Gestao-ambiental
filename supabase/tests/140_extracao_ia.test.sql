@@ -4,7 +4,7 @@
 -- consultorias.
 begin;
 
-select plan(23);
+select plan(31);
 
 select testes.criar_dados_sinteticos();
 
@@ -65,6 +65,25 @@ select results_eq(
             'application/pdf', 1258291::bigint, true)$$,
   'Gestão inicia e recebe o caminho do PDF e os tipos da consultoria'
 );
+
+select throws_ok(
+  $$select public.reservar_extracao_ia('30000000-0000-4000-8000-000000000001')$$,
+  '42501', 'permission denied for function reservar_extracao_ia',
+  'O JWT do usuário não reserva cota de IA diretamente'
+);
+
+reset role;
+set local role service_role;
+select is(
+  public.reservar_extracao_ia('30000000-0000-4000-8000-000000000001'), true,
+  'A função pode reservar uma chamada paga'
+);
+select is(
+  public.reservar_extracao_ia('30000000-0000-4000-8000-000000000001'), false,
+  'Repetir a reserva nunca autoriza nova chamada'
+);
+reset role;
+select testes.autenticar_como('eduardo@filtroville.test');
 
 select results_eq(
   $$select nova, situacao
@@ -276,6 +295,49 @@ select throws_ok(
   '42501', 'sem_permissao',
   'Gestão de B não inicia extração em rascunho de A'
 );
+
+-- O primeiro documento já foi concluído. A segunda reserva é para outro instrumento.
+reset role;
+update private.limite_extracao_ia set por_conta = 1;
+set local role service_role;
+select is(
+  public.reservar_extracao_ia('30000000-0000-4000-8000-000000000004'), false,
+  'A cota da conta vale também para outro instrumento'
+);
+reset role;
+
+update private.limite_extracao_ia set por_conta = 10, por_consultoria = 1;
+set local role service_role;
+select is(
+  public.reservar_extracao_ia('30000000-0000-4000-8000-000000000004'), false,
+  'A consultoria possui cota independente'
+);
+reset role;
+
+update private.limite_extracao_ia set por_consultoria = 25, por_projeto = 1;
+set local role service_role;
+select is(
+  public.reservar_extracao_ia('30000000-0000-4000-8000-000000000004'), false,
+  'A cota do projeto vale mesmo com saldo para a conta e a consultoria'
+);
+reset role;
+
+update private.limite_extracao_ia set por_projeto = 100, simultaneas = 0;
+set local role service_role;
+select is(
+  public.reservar_extracao_ia('30000000-0000-4000-8000-000000000004'), false,
+  'O limite de simultâneas também permite suspender novas chamadas'
+);
+reset role;
+
+update private.limite_extracao_ia set simultaneas = 1, por_projeto = 1;
+update private.reserva_extracao_ia set reservada_em = now() - interval '25 hours';
+set local role service_role;
+select is(
+  public.reservar_extracao_ia('30000000-0000-4000-8000-000000000004'), true,
+  'Uma reserva antiga não ocupa a cota da janela atual'
+);
+reset role;
 
 select * from finish();
 rollback;

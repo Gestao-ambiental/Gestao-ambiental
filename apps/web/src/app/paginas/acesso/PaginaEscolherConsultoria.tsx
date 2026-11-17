@@ -28,7 +28,11 @@ export function RodapeDaConta() {
       <Botao
         aparencia="link"
         className="h-auto"
-        onClick={() => void sair().then(() => navegar('/entrar', { replace: true }))}
+        onClick={() =>
+          void sair().then((terminou) => {
+            if (terminou) void navegar('/entrar', { replace: true })
+          })
+        }
       >
         Sair
       </Botao>
