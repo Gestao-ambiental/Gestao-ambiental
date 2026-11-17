@@ -1,7 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
-import { gravarBloqueio } from '@/app/bloqueio/contexto-bloqueio'
 import { obterSupabase } from '@/lib/supabase'
 
 import { ContextoSessao, type EstadoSessao } from './contexto-sessao'
@@ -51,8 +50,6 @@ export function ProvedorSessao({ children }: { children: ReactNode }) {
       }))
       if (evento === 'SIGNED_OUT') {
         queryClient.clear()
-        // Sessão encerrada (saída ou revogação): o próximo login não começa bloqueado.
-        gravarBloqueio(null)
       }
     })
     return () => {
@@ -65,8 +62,18 @@ export function ProvedorSessao({ children }: { children: ReactNode }) {
     async (aviso?: string) => {
       saidaPedida.current = true
       setEstado((anterior) => ({ ...anterior, avisoDeSaida: aviso ?? null }))
-      await obterSupabase().auth.signOut({ scope: 'local' })
+      const terminou = await obterSupabase()
+        .auth.signOut({ scope: 'local' })
+        .then(
+          ({ error }) => !error,
+          () => false,
+        )
+      if (!terminou) {
+        saidaPedida.current = false
+        return false
+      }
       queryClient.clear()
+      return true
     },
     [queryClient],
   )

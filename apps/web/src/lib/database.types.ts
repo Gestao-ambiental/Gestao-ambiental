@@ -842,6 +842,9 @@ isOneToOne: false
 "remover_foto_membro":
 { Args: { "p_membro_id": string }; Returns: undefined
                            },
+"reservar_extracao_ia":
+{ Args: { "p_id": string }; Returns: boolean
+                           },
 "revisar_condicionante":
 { Args: { "p_id": string,"p_revisao": Database["public"]['Enums']["revisao_condicionante"] }; Returns: undefined
                            },

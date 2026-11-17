@@ -3,6 +3,23 @@
 // próximo login. Toda leitura e escrita é protegida: o armazenamento pode estar bloqueado.
 
 const CHAVE_LEMBRAR = 'grama:lembrar-sessao'
+const CHAVE_BLOQUEIO_LEGADO = 'gestao-ambiental.tela-bloqueada'
+
+function marcaDeSessaoNova(chave: string): string {
+  return `${chave}-apos-bloqueio-legado`
+}
+
+function lerItem(armazenamento: Storage | null, chave: string, contaBloqueada: string | null) {
+  const valor = armazenamento?.getItem(chave) ?? null
+  if (!armazenamento || !valor || !contaBloqueada || !chave.endsWith('-auth-token')) return valor
+  if (armazenamento.getItem(marcaDeSessaoNova(chave))) return valor
+
+  // Uma sessão escondida pela versão antiga deve pedir login no primeiro acesso à versão nova.
+  const dados = JSON.parse(valor) as { user?: { id?: string } } | null
+  if (dados?.user?.id !== contaBloqueada) return valor
+  armazenamento.removeItem(chave)
+  return null
+}
 
 function local(): Storage | null {
   try {
@@ -40,7 +57,11 @@ function deveLembrar(): boolean {
 export const armazenamentoSessao = {
   getItem(chave: string): string | null {
     try {
-      return local()?.getItem(chave) ?? sessao()?.getItem(chave) ?? null
+      const localStorage = local()
+      const contaBloqueada = localStorage?.getItem(CHAVE_BLOQUEIO_LEGADO) ?? null
+      return (
+        lerItem(localStorage, chave, contaBloqueada) ?? lerItem(sessao(), chave, contaBloqueada)
+      )
     } catch {
       return null
     }
@@ -50,6 +71,10 @@ export const armazenamentoSessao = {
       const [destino, outro] = deveLembrar() ? [local(), sessao()] : [sessao(), local()]
       destino?.setItem(chave, valor)
       outro?.removeItem(chave)
+      if (chave.endsWith('-auth-token') && local()?.getItem(CHAVE_BLOQUEIO_LEGADO)) {
+        destino?.setItem(marcaDeSessaoNova(chave), '1')
+        outro?.removeItem(marcaDeSessaoNova(chave))
+      }
     } catch {
       // sem armazenamento: a sessão vive só na memória desta aba
     }
@@ -58,6 +83,10 @@ export const armazenamentoSessao = {
     try {
       local()?.removeItem(chave)
       sessao()?.removeItem(chave)
+      if (chave.endsWith('-auth-token')) {
+        local()?.removeItem(marcaDeSessaoNova(chave))
+        sessao()?.removeItem(marcaDeSessaoNova(chave))
+      }
     } catch {
       // nada a remover
     }

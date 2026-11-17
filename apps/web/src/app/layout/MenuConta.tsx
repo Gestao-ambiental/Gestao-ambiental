@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
 import { useNavigate } from 'react-router'
 
-import { useBloqueio } from '@/app/bloqueio/contexto-bloqueio'
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { NOMES_PAPEL } from '@/app/papeis'
 import { useSessao, usuarioDaSessao } from '@/app/sessao/contexto-sessao'
@@ -20,13 +20,12 @@ import { Icone } from '@/components/ui/icone'
 import { meuPerfil } from '@/lib/api/perfil'
 
 /**
- * Menu da conta (Protótipo 04): nome e e-mail, Meu perfil (foto e cargo), troca de consultoria,
- * Bloquear tela e Sair.
+ * Menu da conta (Protótipo 04): nome e e-mail, Meu perfil, troca de consultoria e Sair.
  */
 export function MenuConta() {
   const { sessao, sair } = useSessao()
   const { atual, vinculos, trocar } = useConsultoria()
-  const { bloquear } = useBloqueio()
+  const [falhaAoSair, setFalhaAoSair] = useState(false)
   const navegar = useNavigate()
   // Só para a foto no avatar: sem ela (ou com erro), ficam as iniciais.
   const perfil = useQuery({
@@ -73,20 +72,24 @@ export function MenuConta() {
           ))}
         </DropdownMenuRadioGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={bloquear}>
-          <Icone nome="lock" />
-          <span className="flex-1">Bloquear tela</span>
-          <kbd className="text-xs text-(--text-subtle)">Ctrl+Shift+L</kbd>
-        </DropdownMenuItem>
         <DropdownMenuItem
           onSelect={() => {
-            void sair().then(() => navegar('/entrar', { replace: true }))
+            setFalhaAoSair(false)
+            void sair().then((terminou) => {
+              if (terminou) void navegar('/entrar', { replace: true })
+              else setFalhaAoSair(true)
+            })
           }}
         >
           <Icone nome="log-out" />
           Sair
         </DropdownMenuItem>
       </DropdownMenuContent>
+      {falhaAoSair && (
+        <p role="alert" className="corpo text-(--text-danger)">
+          Não foi possível sair da conta. Tente novamente.
+        </p>
+      )}
     </DropdownMenu>
   )
 }

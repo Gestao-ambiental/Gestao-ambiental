@@ -168,6 +168,10 @@ Deno.serve(async (pedido) => {
     }
     if (!pdfTemTexto(textos)) return await falhar('pdf_sem_texto')
 
+    const reserva = await admin.rpc('reservar_extracao_ia', { p_id: extracaoId })
+    if (reserva.error) return await falhar('erro_interno')
+    if (reserva.data !== true) return await falhar('limite_atingido')
+
     const extrator = criarExtratorOpenRouter(chave, modelo)
     let resultado
     try {

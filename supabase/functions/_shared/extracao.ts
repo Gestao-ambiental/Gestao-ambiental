@@ -61,6 +61,7 @@ export type MotivoDeFalha =
   | 'tempo_esgotado'
   | 'resposta_invalida'
   | 'configuracao_ausente'
+  | 'limite_atingido'
   | 'erro_interno'
 
 /**
