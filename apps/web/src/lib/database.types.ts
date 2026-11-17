@@ -2275,6 +2275,9 @@ isOneToOne: false
 "reabrir_ocorrencia":
 { Args: { "p_motivo": string,"p_ocorrencia_id": string,"p_row_version": number }; Returns: number
                            },
+"recurso_liberado":
+{ Args: { "p_consultoria_id": string,"p_recurso": string }; Returns: boolean
+                           },
 "reenviar_convite":
 { Args: { "p_convite_id": string }; Returns: string
                            },

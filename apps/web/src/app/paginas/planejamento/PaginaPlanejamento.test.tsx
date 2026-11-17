@@ -14,18 +14,41 @@ describe('planejamento', () => {
     vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-07-01T15:00:00Z') })
     falso.reiniciar({
       sessao: sessaoDe('eduardo@filtroville.test', 'Eduardo Karnopp'),
-      rpc: { meus_vinculos: { data: [vinculoFalso('Filtroville', 'gestao')] } },
+      rpc: {
+        meus_vinculos: { data: [vinculoFalso('Filtroville', 'gestao')] },
+        recurso_liberado: (args) => ({ data: args.p_recurso === 'capacidade' }),
+      },
     })
   })
   afterEach(() => {
     vi.useRealTimers()
   })
 
+  it('fora do plano com capacidade: sem item no menu e a tela diz que é de outro plano', async () => {
+    falso.reiniciar({
+      sessao: sessaoDe('eduardo@filtroville.test', 'Eduardo Karnopp'),
+      rpc: {
+        meus_vinculos: { data: [vinculoFalso('Filtroville', 'gestao')] },
+        recurso_liberado: { data: false },
+      },
+    })
+    renderizarApp('/planejamento')
+
+    expect(await screen.findByText('Fora do plano atual')).toBeInTheDocument()
+    expect(screen.queryByText('Cenário simulado')).not.toBeInTheDocument()
+    const menu = screen.getByRole('navigation', { name: 'Menu principal' })
+    expect(within(menu).queryByRole('link', { name: 'Planejamento' })).not.toBeInTheDocument()
+    expect(falso.cliente.rpc).toHaveBeenCalledWith('recurso_liberado', {
+      p_consultoria_id: 'c-Filtroville',
+      p_recurso: 'capacidade',
+    })
+  })
+
   it('abre pelo menu e mostra o cenário simulado com carga, alertas e triagem', async () => {
     const usuario = userEvent.setup()
     renderizarApp('/')
     const menu = await screen.findByRole('navigation', { name: 'Menu principal' })
-    await usuario.click(within(menu).getByRole('link', { name: 'Planejamento' }))
+    await usuario.click(await within(menu).findByRole('link', { name: 'Planejamento' }))
 
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Planejamento' }),

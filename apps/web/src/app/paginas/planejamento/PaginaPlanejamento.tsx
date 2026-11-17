@@ -14,7 +14,8 @@ import temasProvisorios from '@gestao-ambiental/planejamento/exemplos/temas-prov
 import { useMemo, useState } from 'react'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
-import { EstadoErro, EstadoVazio, SemPermissao } from '@/components/estados'
+import { useRecursoLiberado } from '@/app/consultoria/recurso-liberado'
+import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
 import { CampoData } from '@/components/ui/campo-data'
 import { CampoTexto } from '@/components/ui/campo-texto'
@@ -168,7 +169,47 @@ const classeCelula = 'h-10 border-b px-(--space-100) whitespace-nowrap'
  * constantes por mês e um pico em março). Nenhum dado da consultoria entra aqui; a tela existe
  * para experimentar as regras antes de ligá-las às licenças.
  */
+/** /planejamento: só para a Gestão e só nos planos com o recurso "capacidade" (ADR-0030). */
 export function PaginaPlanejamento() {
+  const { atual } = useConsultoria()
+  const capacidade = useRecursoLiberado('capacidade')
+
+  if (atual.papel !== 'gestao') {
+    return (
+      <Pagina titulo="Planejamento">
+        <SemPermissao />
+      </Pagina>
+    )
+  }
+  if (capacidade.isPending) {
+    return (
+      <Pagina titulo="Planejamento">
+        <Carregando rotulo="Carregando planejamento" linhas={3} />
+      </Pagina>
+    )
+  }
+  if (capacidade.isError) {
+    return (
+      <Pagina titulo="Planejamento">
+        <EstadoErro aoTentarDeNovo={() => void capacidade.refetch()} />
+      </Pagina>
+    )
+  }
+  if (!capacidade.data) {
+    return (
+      <Pagina titulo="Planejamento">
+        <EstadoVazio
+          icone="lock"
+          titulo="Fora do plano atual"
+          descricao="O planejamento faz parte dos planos Equipe e Escala."
+        />
+      </Pagina>
+    )
+  }
+  return <PlanejamentoDaGestao />
+}
+
+function PlanejamentoDaGestao() {
   const { atual } = useConsultoria()
   const hojeReal = hojeNoFuso(new Date(), atual.fuso)
   const ano = Number(hojeReal.slice(0, 4)) + 1
@@ -195,14 +236,6 @@ export function PaginaPlanejamento() {
   const mudar = (definir: (valor: string) => void) => (valor: string) => {
     definir(valor)
     setPagina(0)
-  }
-
-  if (atual.papel !== 'gestao') {
-    return (
-      <Pagina titulo="Planejamento">
-        <SemPermissao />
-      </Pagina>
-    )
   }
 
   return (
