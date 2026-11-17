@@ -42,6 +42,7 @@ import { PaginaPrimeirosPassos } from './paginas/orcamentos/PaginaPrimeirosPasso
 import { PaginaProposta } from './paginas/orcamentos/PaginaProposta'
 import { PaginaOrcamentos } from './paginas/orcamentos/PaginaOrcamentos'
 import { PaginaNaoEncontrada } from './paginas/paginas'
+import { PaginaPlanejamento } from './paginas/planejamento/PaginaPlanejamento'
 import { PaginaPerfil } from './paginas/perfil/PaginaPerfil'
 import { LayoutResiduos } from './paginas/residuos/LayoutResiduos'
 import { PaginaResiduosPorEmpreendimento } from './paginas/residuos/PaginaResiduosPorEmpreendimento'
@@ -139,6 +140,7 @@ export const rotas: RouteObject[] = [
               { path: 'orcamentos/primeiros-passos', element: <PaginaPrimeirosPassos /> },
               { path: 'orcamentos/:id', element: <PaginaOrcamento /> },
               { path: 'resumo-do-mes', element: <PaginaResumoDoMes /> },
+              { path: 'planejamento', element: <PaginaPlanejamento /> },
               { path: 'configuracoes/equipe', element: <PaginaEquipe /> },
               { path: 'configuracoes/custos', element: <PaginaCustosETaxas /> },
               { path: 'configuracoes/proposta', element: <PaginaDadosDaProposta /> },
