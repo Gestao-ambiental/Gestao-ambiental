@@ -6,6 +6,7 @@ import {
   gravarConsultoriaPreferida,
 } from '@/app/consultoria/contexto-consultoria'
 import type { AvisoDeAcesso } from '@/app/consultoria/RequerConsultoria'
+import { useSouOperador } from '@/app/paginas/central/operador'
 import { NOMES_PAPEL } from '@/app/papeis'
 import { useSessao, usuarioDaSessao } from '@/app/sessao/contexto-sessao'
 import { Carregando, EstadoErro } from '@/components/estados'
@@ -47,6 +48,7 @@ export function PaginaEscolherConsultoria() {
   const navegar = useNavigate()
   const queryClient = useQueryClient()
   const aviso = (local.state as AvisoDeAcesso | null)?.aviso
+  const operador = useSouOperador()
 
   const consulta = useQuery({
     queryKey: [CHAVE_MEUS_VINCULOS, usuarioId],
@@ -134,6 +136,11 @@ export function PaginaEscolherConsultoria() {
             )
           })}
         </ul>
+      ) : null}
+      {operador.data === true ? (
+        <Botao asChild larguraTotal className="min-h-11">
+          <Link to="/admin">Abrir central administrativa</Link>
+        </Botao>
       ) : null}
       <RodapeDaConta />
     </div>

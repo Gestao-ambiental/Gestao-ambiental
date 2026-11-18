@@ -318,6 +318,17 @@ describe('criar conta e consultoria (ACC-01, ACC-02)', () => {
     expect(screen.getByRole('group', { name: 'Consultoria: Ecossis' })).toBeInTheDocument()
   })
 
+  it('operador sem consultoria pode abrir a central a partir do início do app', async () => {
+    falso.reiniciar({
+      sessao: sessaoDe('operador@exemplo.test', 'Operador'),
+      rpc: { meus_vinculos: { data: [] }, sou_operador: { data: true } },
+    })
+    const pessoa = userEvent.setup()
+    const { router } = renderizarApp('/')
+    await pessoa.click(await screen.findByRole('link', { name: 'Abrir central administrativa' }))
+    expect(router.state.location.pathname).toBe('/admin')
+  })
+
   it('criar consultoria com logo grava a razão social e envia o logo para as propostas', async () => {
     let vinculos: unknown[] = []
     falso.reiniciar({
