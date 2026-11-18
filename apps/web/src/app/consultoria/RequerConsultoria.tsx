@@ -1,11 +1,13 @@
 import { consultoriaInicial } from '@gestao-ambiental/domain'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Navigate, Outlet, useNavigate } from 'react-router'
+import { Navigate, Outlet, useLocation, useNavigate } from 'react-router'
 
 import { TelaDeEspera } from '@/app/sessao/RequerSessao'
 import { useSessao } from '@/app/sessao/contexto-sessao'
 import { listarMeusVinculos } from '@/lib/api/acesso'
+import { usuarioDaSessaoLocal } from '@/lib/supabase'
+import { lerVinculoOffline, useConectado } from '@/lib/vistoria/dispositivo'
 
 import {
   CHAVE_MEUS_VINCULOS,
@@ -26,7 +28,10 @@ export interface AvisoDeAcesso {
  */
 export function RequerConsultoria() {
   const { sessao, sair } = useSessao()
-  const usuarioId = sessao?.user.id ?? ''
+  const { pathname } = useLocation()
+  const conectado = useConectado()
+  const campoOffline = pathname === '/vistorias' && !conectado
+  const usuarioId = sessao?.user.id ?? (campoOffline ? usuarioDaSessaoLocal() : undefined) ?? ''
   const queryClient = useQueryClient()
   const navegar = useNavigate()
   const [preferida, setPreferida] = useState(() => lerConsultoriaPreferida(usuarioId))
@@ -36,6 +41,7 @@ export function RequerConsultoria() {
     queryFn: listarMeusVinculos,
     refetchInterval: 60_000,
     refetchOnWindowFocus: true,
+    enabled: Boolean(sessao),
   })
 
   const vinculos = consulta.data
@@ -76,6 +82,25 @@ export function RequerConsultoria() {
     () => (atual && vinculos ? { atual, vinculos, trocar } : null),
     [atual, vinculos, trocar],
   )
+
+  if (campoOffline) {
+    const guardado = lerVinculoOffline(usuarioId, preferida)
+    if (!guardado) {
+      return (
+        <TelaDeEspera
+          erro={{
+            titulo: 'Vistorias offline indisponíveis',
+            descricao: 'Conecte-se e prepare as ocorrências neste aparelho antes de ir a campo.',
+          }}
+        />
+      )
+    }
+    return (
+      <ContextoConsultoria.Provider value={{ atual: guardado, vinculos: [guardado], trocar }}>
+        <Outlet key={guardado.consultoriaId} />
+      </ContextoConsultoria.Provider>
+    )
+  }
 
   if (consulta.isPending) return <TelaDeEspera />
   if (consulta.isError) {

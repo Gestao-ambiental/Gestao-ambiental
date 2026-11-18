@@ -2,6 +2,8 @@ import { Navigate, Outlet, useLocation } from 'react-router'
 
 import { ProvedorBloqueio } from '@/app/bloqueio/ProvedorBloqueio'
 import { Carregando, EstadoErro } from '@/components/estados'
+import { usuarioDaSessaoLocal } from '@/lib/supabase'
+import { useConectado } from '@/lib/vistoria/dispositivo'
 
 import { useSessao } from './contexto-sessao'
 
@@ -35,6 +37,9 @@ export function TelaDeEspera({
 export function RequerSessao() {
   const { carregando, sessao, erroConfiguracao } = useSessao()
   const local = useLocation()
+  const conectado = useConectado()
+  const usuarioOffline =
+    !conectado && local.pathname === '/vistorias' && !sessao ? usuarioDaSessaoLocal() : undefined
 
   if (erroConfiguracao) {
     return (
@@ -47,14 +52,14 @@ export function RequerSessao() {
       />
     )
   }
-  if (carregando) return <TelaDeEspera />
-  if (!sessao) {
+  if (carregando && !usuarioOffline) return <TelaDeEspera />
+  if (!sessao && !usuarioOffline) {
     const para = `${local.pathname}${local.search}`
     const busca = para === '/' ? '' : `?para=${encodeURIComponent(para)}`
     return <Navigate to={`/entrar${busca}`} replace />
   }
   return (
-    <ProvedorBloqueio>
+    <ProvedorBloqueio usuarioOffline={usuarioOffline}>
       <Outlet />
     </ProvedorBloqueio>
   )

@@ -59,6 +59,12 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   etapa_existente: 'Não foi possível salvar a etapa. Tente de novo.',
   evidencia_existente: 'Não foi possível enviar a evidência. Tente de novo.',
   aguardando_conferencia: 'Já há uma evidência aguardando conferência.',
+  vistoria_nao_atribuida:
+    'A ocorrência deixou de estar atribuída a você. O registro continua salvo neste aparelho.',
+  vistoria_invalida: 'O registro da vistoria está incompleto ou contém dados inválidos.',
+  localizacao_invalida: 'A localização registrada está fora dos limites aceitos.',
+  foto_da_vistoria_indisponivel:
+    'Não foi possível confirmar a foto no armazenamento. Tente novamente.',
   data_execucao_obrigatoria: 'Informe a data real de execução',
   data_execucao_futura: 'A data real de execução não pode estar no futuro',
   arquivo_tipo_invalido: 'Envie PDF, PNG ou JPEG.',

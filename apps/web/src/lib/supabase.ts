@@ -6,6 +6,25 @@ import { lerAmbiente } from './env'
 
 let cliente: SupabaseClient<Database> | undefined
 
+function chaveDaSessao(url: string): string {
+  // Mesmo formato original do SDK para manter as sessões existentes.
+  const { hostname } = new URL(url)
+  return `sb-${hostname.split('.')[0] ?? hostname}-auth-token`
+}
+
+/** Acesso exclusivamente aos rascunhos offline, nunca a APIs com sessão expirada. */
+export function usuarioDaSessaoLocal(): string | undefined {
+  try {
+    const chave = chaveDaSessao(lerAmbiente().VITE_SUPABASE_URL)
+    const texto = armazenamentoSessao.getItem(chave)
+    if (!texto) return
+    const salvo = JSON.parse(texto) as { user?: { id?: unknown } }
+    return typeof salvo.user?.id === 'string' ? salvo.user.id : undefined
+  } catch {
+    return undefined
+  }
+}
+
 /**
  * Cliente supabase-js tipado, criado na primeira chamada. Usa sempre a chave anônima + o JWT do
  * usuário logado; a autorização é a RLS. Tipos gerados por `corepack pnpm db:types` (ou pelo job
@@ -22,6 +41,7 @@ export function obterSupabase(): SupabaseClient<Database> {
       auth: {
         flowType: 'implicit',
         storage: armazenamentoSessao,
+        storageKey: chaveDaSessao(VITE_SUPABASE_URL),
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,

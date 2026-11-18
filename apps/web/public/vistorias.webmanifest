@@ -1,0 +1,16 @@
+{
+  "id": "/vistorias",
+  "name": "Vistorias · Grama",
+  "short_name": "Grama Campo",
+  "description": "Registre vistorias de condicionantes no Grama, inclusive sem sinal.",
+  "lang": "pt-BR",
+  "start_url": "/vistorias",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#142720",
+  "background_color": "#f7f8f6",
+  "icons": [
+    { "src": "/campo-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/campo-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

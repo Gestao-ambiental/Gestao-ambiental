@@ -9,6 +9,7 @@ import type {
 
 import { conferirPdf, type ProblemaDoPdf } from '@/lib/api/licencas'
 import { obterSupabase } from '@/lib/supabase'
+import { registroVistoria, type RegistroVistoria } from '@/lib/vistoria/registro'
 
 // O gerador de tipos não marca colunas de função como anuláveis; estas podem vir nulas.
 function anulavel<T>(valor: T): T | null {
@@ -34,6 +35,7 @@ export interface Ocorrencia {
   hoje: DataCivil
   situacao: SituacaoGravadaDaOcorrencia
   responsavelNome: string | null
+  responsavelId?: string | null
   conferenteId: string | null
   conferenteNome: string | null
   concluidaEm: string | null
@@ -67,6 +69,7 @@ export async function obterOcorrencia(id: string): Promise<Ocorrencia | null> {
     hoje: o.hoje as DataCivil,
     situacao: o.situacao,
     responsavelNome: anulavel(o.responsavel_nome),
+    responsavelId: anulavel(o.responsavel_id),
     conferenteId: anulavel(o.conferente_id),
     conferenteNome: anulavel(o.conferente_nome),
     concluidaEm: anulavel(o.concluida_em),
@@ -163,6 +166,7 @@ export interface Evidencia {
   enviadaEm: string
   enviadaPorId: string
   enviadaPorNome: string
+  vistoria?: RegistroVistoria
   arquivo: { caminho: string; nome: string; tamanho: number }
   conferencia: {
     decisao: 'aprovada' | 'devolvida'
@@ -176,7 +180,7 @@ export async function listarEvidencias(ocorrenciaId: string): Promise<Evidencia[
   const { data, error } = await obterSupabase()
     .from('evidencia')
     .select(
-      `id, numero, situacao, data_execucao, enviada_em, enviada_por,
+      `id, numero, situacao, data_execucao, enviada_em, enviada_por, vistoria,
        autor:membro!evidencia_enviada_por_fk(nome),
        versao:documento_versao!evidencia_versao_fk(caminho, nome_original, tamanho_bytes),
        conferencia(decisao, motivo, decidida_em, conferente:membro!conferencia_conferente_fk(nome))`,
@@ -196,6 +200,7 @@ export async function listarEvidencias(ocorrenciaId: string): Promise<Evidencia[
       enviadaEm: e.enviada_em,
       enviadaPorId: e.enviada_por,
       enviadaPorNome: e.autor.nome,
+      vistoria: registroVistoria.safeParse(e.vistoria).data,
       arquivo: {
         caminho: e.versao.caminho,
         nome: e.versao.nome_original,
