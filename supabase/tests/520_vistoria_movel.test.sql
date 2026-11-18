@@ -5,7 +5,7 @@
 -- consultoria lê zero e não registra; regra do 020 nas tabelas novas.
 begin;
 
-select plan(51);
+select plan(58);
 
 select testes.criar_dados_sinteticos();
 select set_config('testes.hoje',
@@ -453,6 +453,52 @@ select throws_ok(
   '42501', 'sem_permissao',
   'outra consultoria não agenda na ocorrência alheia'
 );
+
+-- Trabalho offline: a cópia anterior permanece válida até que outra escrita mude o checklist.
+select testes.autenticar_como('eduardo@filtroville.test');
+select public.criar_vistoria('e4850000-0000-4000-8000-000000000003', current_setting('testes.o1')::uuid,
+  'Vistoria offline', null, 'd0000000-0000-4000-8000-0000000000a3',
+  current_setting('testes.hoje')::date, null, null, '[{"titulo":"Item de campo"}]');
+
+reset role;
+insert into storage.objects (bucket_id, name, metadata, owner_id)
+values ('arquivos', 'c0000000-0000-4000-8000-00000000000a/vistoria/e4840000-0000-4000-8000-000000000003.jpg',
+  '{"mimetype":"image/jpeg","size":1024}', 'a0000000-0000-4000-8000-000000000003');
+
+select set_config('testes.offline_item', (
+  select id::text from public.vistoria_item where vistoria_id = 'e4850000-0000-4000-8000-000000000003'
+), true);
+
+create function pg_temp.enviar_offline(p_original text default 'pendente', p_foto uuid default 'e4840000-0000-4000-8000-000000000003')
+returns integer language sql as $$
+  select public.sincronizar_vistoria_offline(
+    'e4850000-0000-4000-8000-000000000003', 'e4860000-0000-4000-8000-000000000001', 1,
+    '{"original":null,"atual":"Abrigo identificado"}',
+    jsonb_build_array(jsonb_build_object('id', current_setting('testes.offline_item'),
+      'resultado_original', p_original, 'comentario_original', null, 'resultado', 'conforme', 'comentario', 'Identificado')),
+    jsonb_build_array(jsonb_build_object('id', p_foto, 'item_id', current_setting('testes.offline_item'),
+      'caminho', 'c0000000-0000-4000-8000-00000000000a/vistoria/' || p_foto::text || '.jpg',
+      'nome_original', 'abrigo.jpg', 'sha256', repeat('a', 64), 'local_origem', 'nenhum', 'capturada_em', now()))
+  )
+$$;
+
+select testes.autenticar_como('gustavo@verdesul.test');
+select throws_ok($$select pg_temp.enviar_offline()$$, '42501', 'sem_permissao', 'outra consultoria não sincroniza');
+select testes.autenticar_como('ana@filtroville.test');
+select throws_ok($$select pg_temp.enviar_offline()$$, '42501', 'sem_permissao', 'Equipe que não é responsável não sincroniza');
+select testes.autenticar_como('bruno@filtroville.test');
+select throws_ok($$select pg_temp.enviar_offline('conforme')$$,
+  'P0001', 'conflito_vistoria_offline', 'mudança desde a preparação não é sobrescrita');
+select throws_ok($$select pg_temp.enviar_offline(p_foto => gen_random_uuid())$$,
+  '22023', 'foto_offline_indisponivel', 'foto ausente é recusada');
+select results_eq(
+  $$select v.situacao, v.observacao, i.resultado from public.vistoria v
+    join public.vistoria_item i on i.vistoria_id = v.id where i.id = current_setting('testes.offline_item')::uuid$$,
+  $$values ('planejada'::public.situacao_vistoria, null::text, 'pendente'::public.resultado_item_vistoria)$$,
+  'uma falha reverte início, checklist e observação'
+);
+select is(pg_temp.enviar_offline(), 3, 'sincroniza e envia para conferência');
+select is(pg_temp.enviar_offline(), 3, 'outra tentativa confirma o mesmo envio');
 
 select * from finish();
 

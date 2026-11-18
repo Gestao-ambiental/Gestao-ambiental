@@ -6,8 +6,35 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 
 import { renderizarApp, vinculoFalso } from '@/test/renderizar'
 import { falso, sessaoDe, type Cenario } from '@/test/supabase-falso'
+import { lerRascunhos, type RascunhoOffline } from '@/lib/vistoria-offline/rascunho'
 
 vi.mock('@/lib/supabase', () => import('@/test/supabase-falso'))
+
+const dispositivo = vi.hoisted(() => ({
+  rascunhos: new Map<string, RascunhoOffline>(),
+}))
+
+vi.mock('@/lib/vistoria-offline/app', async (importar) => ({
+  ...(await importar<typeof import('@/lib/vistoria-offline/app')>()),
+  prepararAplicativo: vi.fn().mockResolvedValue({}),
+}))
+
+vi.mock('@/lib/vistoria-offline/rascunho', async (importar) => ({
+  ...(await importar<typeof import('@/lib/vistoria-offline/rascunho')>()),
+  lerRascunhos: vi.fn((usuario: string, consultoria: string) =>
+    Promise.resolve(
+      Array.from(dispositivo.rascunhos.values()).filter(
+        (r) => r.chave[0] === usuario && r.chave[1] === consultoria,
+      ),
+    ),
+  ),
+  gravarRascunho: vi.fn((r: RascunhoOffline, remover = false) => {
+    const salvo = { ...r, versaoLocal: r.versaoLocal + 1 }
+    if (remover) dispositivo.rascunhos.delete(r.visita.id)
+    else dispositivo.rascunhos.set(r.visita.id, salvo)
+    return Promise.resolve(salvo)
+  }),
+}))
 
 const hoje = hojeNoFuso(new Date(), 'America/Sao_Paulo')
 
@@ -125,6 +152,50 @@ function cenario(
 beforeAll(() => {
   // jsdom não rola: a lista de pendências leva ao item por âncora.
   Element.prototype.scrollIntoView = vi.fn()
+})
+
+describe('vistoria preparada no aparelho', () => {
+  beforeEach(() => {
+    dispositivo.rascunhos.clear()
+    falso.reiniciar(
+      cenario({
+        rpc: {
+          sincronizar_vistoria_offline: {
+            error: { code: 'P0001', message: 'conflito_vistoria_offline' },
+          },
+        },
+      }),
+    )
+  })
+
+  it('guarda o checklist original, preserva edição e mantém o rascunho quando o servidor acusa conflito', async () => {
+    const pessoa = userEvent.setup()
+    const { router } = renderizarApp('/campo/v1')
+    await pessoa.click(await screen.findByRole('button', { name: 'Preparar para usar sem sinal' }))
+    await screen.findByRole('heading', { name: 'Checklist' })
+    expect(router.state.location.pathname).toBe('/campo/offline/v1')
+    expect(lerRascunhos).toHaveBeenCalled()
+    await pessoa.selectOptions(
+      screen.getByLabelText('Resultado de Registrar área visitada'),
+      'conforme',
+    )
+    await pessoa.selectOptions(
+      screen.getByLabelText('Resultado de Identificar acompanhante'),
+      'nao_aplicavel',
+    )
+    await pessoa.type(screen.getByLabelText('Observação geral'), 'Abrigo limpo.')
+    await pessoa.click(screen.getByRole('button', { name: 'Revisar envio' }))
+    expect(await screen.findByRole('heading', { name: 'Conferir envio' })).toBeVisible()
+    await pessoa.click(screen.getByRole('button', { name: 'Enviar para conferência' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'O rascunho continua salvo neste aparelho',
+    )
+    expect(dispositivo.rascunhos.get('v1')).toMatchObject({
+      observacao: 'Abrigo limpo.',
+      revisado: true,
+      base: { itens: [{ resultado: 'pendente' }, { resultado: 'pendente' }] },
+    })
+  })
 })
 
 describe('Minhas vistorias (/campo)', () => {

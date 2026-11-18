@@ -198,6 +198,11 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   // Vistoria móvel (ADR-0033)
   vistoria_existente: 'Não foi possível agendar a vistoria. Tente de novo.',
   vistoria_nao_iniciada: 'Comece a vistoria antes de registrar.',
+  conflito_vistoria_offline:
+    'A vistoria mudou no Grama depois que você a preparou. O rascunho continua salvo neste aparelho.',
+  vistoria_offline_invalida: 'O registro offline contém dados que o Grama não conseguiu validar.',
+  foto_offline_indisponivel:
+    'Não foi possível confirmar o upload de uma das fotos. Tente enviar novamente.',
   vistoria_fechada: 'Esta vistoria não aceita mais registros. Recarregue para ver a situação.',
   itens_pendentes: 'Há itens sem resultado ou sem comentário.',
   comentario_obrigatorio: 'Informe o comentário',

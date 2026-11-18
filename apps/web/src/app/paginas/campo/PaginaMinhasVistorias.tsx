@@ -156,6 +156,10 @@ export function PaginaMinhasVistorias() {
         ) : null}
       </header>
 
+      <Botao asChild iconeAntes="download" className="min-h-11 self-start">
+        <Link to="/campo/offline">Vistorias salvas no aparelho</Link>
+      </Botao>
+
       <div role="group" aria-label="Quais vistorias" className="flex gap-(--space-100)">
         <Botao
           className={`${classeAlvo} flex-1`}

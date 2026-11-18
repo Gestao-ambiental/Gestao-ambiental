@@ -15,6 +15,7 @@ import { mensagemDoErroDaVistoria } from '@/lib/erros'
 import { useItensDaVistoria, useRecarregarVistoria, useVistoria } from './consultas'
 import { classeAlvo, classeAreaTexto, classeCartao } from './estilos'
 import { BarraDeAcao, ColunaCampo, ComVistoria, SeloDaVistoria, VoltarPara } from './pecas'
+import { PreparacaoOffline } from './PreparacaoOffline'
 
 function Linha({ rotulo, children }: { rotulo: string; children: ReactNode }) {
   return (
@@ -219,6 +220,7 @@ function Detalhe({ vistoria }: { vistoria: Vistoria }) {
           </span>
           <Icone nome="chevron-right" className="text-(--icon)" />
         </Link>
+        {vistoria.podeRegistrar ? <PreparacaoOffline id={vistoria.id} /> : null}
       </section>
 
       {vistoria.objetivo ? (

@@ -2,6 +2,8 @@ import { Navigate, Outlet, useLocation } from 'react-router'
 
 import { ProvedorBloqueio } from '@/app/bloqueio/ProvedorBloqueio'
 import { Carregando, EstadoErro } from '@/components/estados'
+import { usuarioDaSessaoLocal } from '@/lib/supabase'
+import { useConectado } from '@/lib/vistoria-offline/app'
 
 import { useSessao } from './contexto-sessao'
 
@@ -35,6 +37,10 @@ export function TelaDeEspera({
 export function RequerSessao() {
   const { carregando, sessao, erroConfiguracao } = useSessao()
   const local = useLocation()
+  const conectado = useConectado()
+  const campoOffline =
+    local.pathname === '/campo/offline' || local.pathname.startsWith('/campo/offline/')
+  const lembrado = !conectado && !sessao ? usuarioDaSessaoLocal() : undefined
 
   if (erroConfiguracao) {
     return (
@@ -47,14 +53,28 @@ export function RequerSessao() {
       />
     )
   }
-  if (carregando) return <TelaDeEspera />
-  if (!sessao) {
+  if (!conectado && !sessao && !campoOffline && lembrado) {
+    return <Navigate to="/campo/offline" replace />
+  }
+  if (!conectado && !sessao && !lembrado) {
+    return (
+      <TelaDeEspera
+        erro={{
+          titulo: 'Você está sem conexão',
+          descricao: 'Entre no Grama com internet para preparar vistorias neste aparelho.',
+        }}
+      />
+    )
+  }
+  const usuarioOffline = campoOffline ? lembrado : undefined
+  if (carregando && !usuarioOffline) return <TelaDeEspera />
+  if (!sessao && !usuarioOffline) {
     const para = `${local.pathname}${local.search}`
     const busca = para === '/' ? '' : `?para=${encodeURIComponent(para)}`
     return <Navigate to={`/entrar${busca}`} replace />
   }
   return (
-    <ProvedorBloqueio>
+    <ProvedorBloqueio usuarioOffline={usuarioOffline}>
       <Outlet />
     </ProvedorBloqueio>
   )
