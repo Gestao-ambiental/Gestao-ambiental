@@ -758,13 +758,14 @@ describe('orçamentos (onda 5)', () => {
     await usuario.clear(percentual)
     await usuario.type(percentual, '25')
 
-    await usuario.click(screen.getByRole('link', { name: 'Calendário' }))
+    const atalhos = within(screen.getByRole('navigation', { name: 'Atalhos do celular' }))
+    await usuario.click(atalhos.getByRole('link', { name: 'Calendário' }))
     const dialogo = await screen.findByRole('dialog', { name: 'Sair sem salvar?' })
     await usuario.click(within(dialogo).getByRole('button', { name: 'Continuar aqui' }))
     expect(screen.queryByRole('dialog', { name: 'Sair sem salvar?' })).not.toBeInTheDocument()
     expect(screen.getByLabelText('Percentual da parcela 3')).toHaveValue('25')
 
-    await usuario.click(screen.getByRole('link', { name: 'Calendário' }))
+    await usuario.click(atalhos.getByRole('link', { name: 'Calendário' }))
     await usuario.click(
       within(await screen.findByRole('dialog', { name: 'Sair sem salvar?' })).getByRole('button', {
         name: 'Sair sem salvar',

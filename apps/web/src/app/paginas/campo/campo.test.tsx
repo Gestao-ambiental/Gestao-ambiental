@@ -1,5 +1,5 @@
 import { adicionarDias, hojeNoFuso } from '@gestao-ambiental/domain'
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import axe from 'axe-core'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -527,7 +527,9 @@ describe('foto e localização (/campo/:id/itens/:itemId/foto)', () => {
 
     falhar = false
     await usuario.click(screen.getByRole('button', { name: 'Tentar de novo' }))
-    expect(await screen.findByRole('heading', { level: 1, name: 'Checklist' })).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { level: 1, name: 'Checklist' })).toBeInTheDocument()
+    })
     const chamadas = falso.cliente.rpc.mock.calls.filter(
       ([nome]) => nome === 'adicionar_foto_da_vistoria',
     )

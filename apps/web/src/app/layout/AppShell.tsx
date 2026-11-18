@@ -136,7 +136,7 @@ export function AppShell() {
             <MenuLateral
               rotulo="Menu principal"
               cabecalho={<ConsultoriaAtual />}
-              className="min-h-0 w-full flex-1 overflow-y-auto border-r-0 pb-[env(safe-area-inset-bottom)]"
+              className="min-h-0 w-full flex-1 overflow-y-auto border-r-0 pb-[env(safe-area-inset-bottom)] [&_a]:min-h-11"
             >
               <NavegacaoPrincipal
                 aoNavegar={() => {
