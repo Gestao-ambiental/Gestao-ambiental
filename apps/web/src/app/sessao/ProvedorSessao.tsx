@@ -35,9 +35,14 @@ export function ProvedorSessao({ children }: { children: ReactNode }) {
     if (!configurado) return
     const supabase = obterSupabase()
     let ativo = true
-    void supabase.auth.getSession().then(({ data }) => {
-      if (ativo) setEstado((anterior) => ({ ...anterior, carregando: false, sessao: data.session }))
-    })
+    function carregarSessao() {
+      void supabase.auth.getSession().then(({ data }) => {
+        if (ativo)
+          setEstado((anterior) => ({ ...anterior, carregando: false, sessao: data.session }))
+      })
+    }
+    carregarSessao()
+    window.addEventListener('online', carregarSessao)
     const { data } = supabase.auth.onAuthStateChange((evento, sessao) => {
       const expirou = evento === 'SIGNED_OUT' && !saidaPedida.current
       if (evento === 'SIGNED_OUT') saidaPedida.current = false
@@ -57,6 +62,7 @@ export function ProvedorSessao({ children }: { children: ReactNode }) {
     })
     return () => {
       ativo = false
+      window.removeEventListener('online', carregarSessao)
       data.subscription.unsubscribe()
     }
   }, [configurado, queryClient])

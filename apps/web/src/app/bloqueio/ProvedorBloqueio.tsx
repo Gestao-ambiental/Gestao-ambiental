@@ -16,9 +16,15 @@ import { TelaBloqueada } from './TelaBloqueada'
  * (rota, formulários e modais abertos continuam como estavam); a tela bloqueada fica por cima e
  * só sai com a senha da mesma conta. Sessão revogada leva ao login pelo caminho normal.
  */
-export function ProvedorBloqueio({ children }: { children: ReactNode }) {
+export function ProvedorBloqueio({
+  children,
+  usuarioOffline,
+}: {
+  children: ReactNode
+  usuarioOffline?: string
+}) {
   const { sessao } = useSessao()
-  const usuarioId = sessao?.user.id ?? ''
+  const usuarioId = sessao?.user.id ?? usuarioOffline ?? ''
   const [bloqueadaPor, setBloqueadaPor] = useState<string | null>(lerBloqueio)
   const bloqueada = usuarioId !== '' && bloqueadaPor === usuarioId
 
@@ -73,7 +79,14 @@ export function ProvedorBloqueio({ children }: { children: ReactNode }) {
 
   return (
     <ContextoBloqueio.Provider value={valor}>
-      {children}
+      {bloqueada && !sessao ? (
+        <main className="mx-auto max-w-md space-y-2 p-6">
+          <h1 className="titulo-tela">Tela bloqueada</h1>
+          <p>Conecte-se à internet para desbloquear com sua senha.</p>
+        </main>
+      ) : (
+        children
+      )}
       {bloqueada && sessao ? <TelaBloqueada sessao={sessao} aoDesbloquear={desbloquear} /> : null}
     </ContextoBloqueio.Provider>
   )

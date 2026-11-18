@@ -12,6 +12,7 @@ export interface ItemNavegacao {
 export const ITENS_NAVEGACAO: readonly ItemNavegacao[] = [
   { para: '/', rotulo: 'Visão da equipe', icone: 'list' },
   { para: '/calendario', rotulo: 'Calendário', icone: 'calendar' },
+  { para: '/vistorias', rotulo: 'Vistorias', icone: 'file-check' },
   { para: '/empreendimentos', rotulo: 'Empreendimentos', icone: 'briefcase' },
   { para: '/acompanhamentos', rotulo: 'Acompanhamentos', icone: 'inbox' },
   { para: '/configuracoes/equipe', rotulo: 'Equipe', icone: 'users', somenteGestao: true },

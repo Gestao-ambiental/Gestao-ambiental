@@ -8,6 +8,7 @@ import {
 import { useMutation } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 
+import { ResumoDoRegistro } from '@/app/paginas/vistorias/ResumoDoRegistro'
 import { Botao } from '@/components/ui/botao'
 import { CampoData } from '@/components/ui/campo-data'
 import { CampoTexto } from '@/components/ui/campo-texto'
@@ -304,6 +305,7 @@ export function SecaoEvidencia({
                 {ev.enviadaPorNome} · {formatarInstanteComHora(ev.enviadaEm, fuso)} · execução{' '}
                 {formatarDataCivil(ev.dataExecucao)} · {tamanhoLegivel(ev.arquivo.tamanho)}
               </span>
+              {ev.vistoria ? <ResumoDoRegistro registro={ev.vistoria} fuso={fuso} /> : null}
               {ev.conferencia ? (
                 <span className="text-xs text-(--text-subtle)">
                   {ev.conferencia.decisao === 'aprovada' ? 'Aprovada' : 'Devolvida'} por{' '}

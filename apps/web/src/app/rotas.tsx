@@ -26,6 +26,7 @@ import { PaginaOcorrencia } from './paginas/ocorrencia/PaginaOcorrencia'
 import { PaginaNaoEncontrada } from './paginas/paginas'
 import { PaginaPerfil } from './paginas/perfil/PaginaPerfil'
 import { PaginaVisaoEquipe } from './paginas/visao/PaginaVisaoEquipe'
+import { PaginaVistorias } from './paginas/vistorias/PaginaVistorias'
 import { RequerSessao } from './sessao/RequerSessao'
 
 /**
@@ -71,6 +72,7 @@ export const rotas: RouteObject[] = [
             children: [
               { index: true, element: <PaginaVisaoEquipe /> },
               { path: 'calendario', element: <PaginaCalendario /> },
+              { path: 'vistorias', element: <PaginaVistorias /> },
               { path: 'empreendimentos', element: <PaginaEmpreendimentos /> },
               { path: 'empreendimentos/:id', element: <PaginaEmpreendimento /> },
               { path: 'ocorrencias/:id', element: <PaginaOcorrencia /> },

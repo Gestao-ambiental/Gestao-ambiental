@@ -347,14 +347,14 @@ isOneToOne: false
                   ]
                 },"evidencia": {
                   Row: {
-                    "consultoria_id": string,"data_execucao": string,"documento_versao_id": string,"enviada_em": string,"enviada_por": string,"id": string,"numero": number,"ocorrencia_id": string,"situacao": Database["public"]['Enums']["situacao_evidencia"]
+                    "consultoria_id": string,"data_execucao": string,"documento_versao_id": string,"enviada_em": string,"enviada_por": string,"id": string,"numero": number,"ocorrencia_id": string,"situacao": Database["public"]['Enums']["situacao_evidencia"],"vistoria": Json | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "consultoria_id": string,"data_execucao": string,"documento_versao_id": string,"enviada_em"?: string,"enviada_por": string,"id"?: string,"numero": number,"ocorrencia_id": string,"situacao"?: Database["public"]['Enums']["situacao_evidencia"]
+                    "consultoria_id": string,"data_execucao": string,"documento_versao_id": string,"enviada_em"?: string,"enviada_por": string,"id"?: string,"numero": number,"ocorrencia_id": string,"situacao"?: Database["public"]['Enums']["situacao_evidencia"],"vistoria"?: Json | null
                   }
                   Update: {
-                    "consultoria_id"?: string,"data_execucao"?: string,"documento_versao_id"?: string,"enviada_em"?: string,"enviada_por"?: string,"id"?: string,"numero"?: number,"ocorrencia_id"?: string,"situacao"?: Database["public"]['Enums']["situacao_evidencia"]
+                    "consultoria_id"?: string,"data_execucao"?: string,"documento_versao_id"?: string,"enviada_em"?: string,"enviada_por"?: string,"id"?: string,"numero"?: number,"ocorrencia_id"?: string,"situacao"?: Database["public"]['Enums']["situacao_evidencia"],"vistoria"?: Json | null
                   }
                   Relationships: [
                     {
@@ -772,6 +772,9 @@ isOneToOne: false
                            },
 "enviar_evidencia":
 { Args: { "p_caminho": string,"p_data_execucao": string,"p_evidencia_id": string,"p_nome_original": string,"p_ocorrencia_id": string,"p_sha256": string,"p_versao_id": string }; Returns: number
+                           },
+"enviar_vistoria":
+{ Args: { "p_caminho": string,"p_data_execucao": string,"p_evidencia_id": string,"p_nome_original": string,"p_ocorrencia_id": string,"p_sha256": string,"p_versao_id": string,"p_vistoria": Json }; Returns: number
                            },
 "falhar_extracao_ia":
 { Args: { "p_custo_micros": number,"p_detalhe": string,"p_duracao_ms": number,"p_id": string,"p_modelo": string,"p_motivo": string,"p_paginas": number,"p_tokens_entrada": number,"p_tokens_saida": number,"p_versao_prompt": string }; Returns: undefined
