@@ -1,4 +1,4 @@
-import { Link, Outlet, useNavigate } from 'react-router'
+import { Link, NavLink, Outlet, useNavigate } from 'react-router'
 
 import { BotaoTema } from '@/app/layout/BotaoTema'
 import { Pagina } from '@/app/paginas/Pagina'
@@ -18,6 +18,14 @@ import { MarcaGrama } from '@/components/ui/marca-grama'
 
 import { ExigeDoisFatores } from './ExigeDoisFatores'
 import { useSouOperador } from './operador'
+
+const areasDaCentral = [
+  ['/admin', 'Consultorias'],
+  ['/admin/financeiro', 'Financeiro'],
+  ['/admin/valor', 'Valor'],
+  ['/admin/parametros', 'Parâmetros'],
+  ['/admin/lista-de-espera', 'Lista de espera'],
+] as const
 
 function MenuContaCentral() {
   const { sessao, sair } = useSessao()
@@ -89,12 +97,18 @@ export function LayoutCentral() {
   } else {
     conteudo = (
       <ExigeDoisFatores>
-        <nav aria-label="Central" className="mb-(--space-200) flex flex-wrap gap-(--space-100)">
-          <Link to="/admin">Consultorias</Link>
-          <Link to="/admin/financeiro">Financeiro</Link>
-          <Link to="/admin/valor">Valor</Link>
-          <Link to="/admin/parametros">Parâmetros</Link>
-          <Link to="/admin/lista-de-espera">Lista de espera</Link>
+        <nav aria-label="Central" className="mb-4 flex flex-wrap gap-2">
+          {areasDaCentral.map(([url, rotulo]) => (
+            <NavLink
+              key={url}
+              to={url}
+              end={url === '/admin'}
+              className="inline-flex min-h-11 items-center rounded-(--radius) border px-3 no-underline
+                hover:no-underline aria-[current=page]:bg-(--surface-selected) aria-[current=page]:font-semibold"
+            >
+              {rotulo}
+            </NavLink>
+          ))}
         </nav>
         <Outlet />
       </ExigeDoisFatores>

@@ -1553,14 +1553,14 @@ isOneToOne: false
                   ]
                 },"vistoria": {
                   Row: {
-                    "consultoria_id": string,"criada_em": string,"criada_por": string,"data_planejada": string,"duracao_minutos": number | null,"enviada_em": string | null,"enviada_por": string | null,"hora_planejada": string | null,"id": string,"iniciada_em": string | null,"objetivo": string | null,"observacao": string | null,"ocorrencia_id": string,"responsavel_id": string,"row_version": number,"situacao": Database["public"]['Enums']["situacao_vistoria"],"titulo": string
+                    "consultoria_id": string,"criada_em": string,"criada_por": string,"data_planejada": string,"duracao_minutos": number | null,"enviada_em": string | null,"enviada_por": string | null,"envio_offline_id": string | null,"hora_planejada": string | null,"id": string,"iniciada_em": string | null,"objetivo": string | null,"observacao": string | null,"ocorrencia_id": string,"responsavel_id": string,"row_version": number,"situacao": Database["public"]['Enums']["situacao_vistoria"],"titulo": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "consultoria_id": string,"criada_em"?: string,"criada_por": string,"data_planejada": string,"duracao_minutos"?: number | null,"enviada_em"?: string | null,"enviada_por"?: string | null,"hora_planejada"?: string | null,"id": string,"iniciada_em"?: string | null,"objetivo"?: string | null,"observacao"?: string | null,"ocorrencia_id": string,"responsavel_id": string,"row_version"?: number,"situacao"?: Database["public"]['Enums']["situacao_vistoria"],"titulo": string
+                    "consultoria_id": string,"criada_em"?: string,"criada_por": string,"data_planejada": string,"duracao_minutos"?: number | null,"enviada_em"?: string | null,"enviada_por"?: string | null,"envio_offline_id"?: string | null,"hora_planejada"?: string | null,"id": string,"iniciada_em"?: string | null,"objetivo"?: string | null,"observacao"?: string | null,"ocorrencia_id": string,"responsavel_id": string,"row_version"?: number,"situacao"?: Database["public"]['Enums']["situacao_vistoria"],"titulo": string
                   }
                   Update: {
-                    "consultoria_id"?: string,"criada_em"?: string,"criada_por"?: string,"data_planejada"?: string,"duracao_minutos"?: number | null,"enviada_em"?: string | null,"enviada_por"?: string | null,"hora_planejada"?: string | null,"id"?: string,"iniciada_em"?: string | null,"objetivo"?: string | null,"observacao"?: string | null,"ocorrencia_id"?: string,"responsavel_id"?: string,"row_version"?: number,"situacao"?: Database["public"]['Enums']["situacao_vistoria"],"titulo"?: string
+                    "consultoria_id"?: string,"criada_em"?: string,"criada_por"?: string,"data_planejada"?: string,"duracao_minutos"?: number | null,"enviada_em"?: string | null,"enviada_por"?: string | null,"envio_offline_id"?: string | null,"hora_planejada"?: string | null,"id"?: string,"iniciada_em"?: string | null,"objetivo"?: string | null,"observacao"?: string | null,"ocorrencia_id"?: string,"responsavel_id"?: string,"row_version"?: number,"situacao"?: Database["public"]['Enums']["situacao_vistoria"],"titulo"?: string
                   }
                   Relationships: [
                     {
@@ -2311,6 +2311,9 @@ isOneToOne: false
                            },
 "salvar_passo_configuracao_orcamento":
 { Args: { "p_base_row_version": number,"p_consultoria_id": string,"p_dados": Json,"p_etapa": number,"p_operacao"?: string,"p_proxima_etapa": number,"p_row_version": number }; Returns: Json
+                           },
+"sincronizar_vistoria_offline":
+{ Args: { "p_envio_id": string,"p_fotos": Json,"p_id": string,"p_itens": Json,"p_observacao": Json,"p_row_version": number }; Returns: number
                            },
 "situacao_comercial":
 { Args: { "p_consultoria_id": string }; Returns: {

@@ -74,12 +74,25 @@ describe('shell do app', () => {
 
     const gaveta = await screen.findByRole('dialog')
     const menuGaveta = within(gaveta).getByRole('navigation', { name: 'Menu principal' })
+    expect(within(menuGaveta).getByRole('link', { name: 'Orçamentos' })).toBeVisible()
+    expect(within(menuGaveta).getByRole('link', { name: 'Resíduos' })).toBeVisible()
     await usuario.click(within(menuGaveta).getByRole('link', { name: 'Empreendimentos' }))
 
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Empreendimentos' }),
     ).toBeInTheDocument()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('abre a visão principal e mantém Vistorias como atalho do celular', async () => {
+    const usuario = userEvent.setup()
+    const { router } = renderizarApp('/')
+    await screen.findByRole('heading', { level: 1, name: 'Visão da equipe' })
+    const atalhos = within(screen.getByRole('navigation', { name: 'Atalhos do celular' }))
+    expect(atalhos.getByRole('link', { name: 'Início' })).toHaveAttribute('aria-current', 'page')
+    await usuario.click(atalhos.getByRole('link', { name: 'Vistorias' }))
+    expect(await screen.findByRole('heading', { level: 1, name: 'Minhas vistorias' })).toBeVisible()
+    expect(router.state.location.pathname).toBe('/campo')
   })
 
   it('/entrar abre o layout público sem o menu do app', async () => {

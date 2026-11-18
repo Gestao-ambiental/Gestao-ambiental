@@ -379,15 +379,21 @@ export function caminhoDaFoto(consultoriaId: string, fotoId: string, tipo: strin
   return `${consultoriaId}/vistoria/${fotoId}.${extensao}`
 }
 
-export async function adicionarFotoDaVistoria(foto: NovaFoto): Promise<void> {
-  const supabase = obterSupabase()
+export async function subirFotoDaVistoria(
+  foto: Pick<NovaFoto, 'consultoriaId' | 'fotoId' | 'arquivo'>,
+) {
   const caminho = caminhoDaFoto(foto.consultoriaId, foto.fotoId, foto.arquivo.type)
   const hash = await sha256(foto.arquivo)
-  const envio = await supabase.storage
-    .from('arquivos')
+  const envio = await obterSupabase()
+    .storage.from('arquivos')
     .upload(caminho, foto.arquivo, { contentType: foto.arquivo.type, upsert: false })
   if (envio.error && !objetoJaExiste(envio.error)) throw envio.error
-  const { error } = await supabase.rpc('adicionar_foto_da_vistoria', {
+  return { caminho, hash }
+}
+
+export async function adicionarFotoDaVistoria(foto: NovaFoto): Promise<void> {
+  const { caminho, hash } = await subirFotoDaVistoria(foto)
+  const { error } = await obterSupabase().rpc('adicionar_foto_da_vistoria', {
     p_foto_id: foto.fotoId,
     p_item_id: foto.itemId,
     p_caminho: caminho,

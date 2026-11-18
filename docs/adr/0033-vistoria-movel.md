@@ -176,3 +176,11 @@ As oito decisões do §2, principalmente:
 - **Ocorrência concluída** recusa agendar, iniciar, registrar, fotografar e enviar. Conferir e cancelar continuam possíveis.
 - **Vistoria cancelada** não aparece em "Minhas vistorias", só na seção da ocorrência.
 - **Na tela:** `manual` com coordenada é recusado, mas o banco aceita.
+
+## Incremento offline no app instalado
+
+O Grama instalado abre a Visão da equipe. Para trabalhar sem sinal, a pessoa abre uma vistoria agendada e seleciona **Preparar para usar sem sinal**. O checklist, as alterações e as fotos ficam no IndexedDB, vinculados à conta, à consultoria e ao vínculo que preparou a vistoria. O acesso sem sinal vale por 24 horas. Com conexão, a pessoa pode retomar os rascunhos do vínculo ativo.
+
+A pessoa revisa e confirma o envio com internet. `sincronizar_vistoria_offline` confere a versão e o estado do checklist antes de gravar os itens, a observação, as referências de fotos e o envio para conferência na mesma transação. Objetos de foto usam a mesma chave em todas as tentativas. Uma mudança no servidor mantém o rascunho local para consulta.
+
+O cache de instalação guarda apenas os recursos estáticos do aplicativo. O cadastro de vistorias, a conferência e os outros módulos consultam o servidor.

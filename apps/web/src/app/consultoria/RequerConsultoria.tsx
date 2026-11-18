@@ -141,6 +141,7 @@ function ConsultoriaDoVinculo({
   // Tempo ativo na área de licenças e prazos (ADR-0027): só com vínculo, nunca no suporte.
   useTempoDeAcompanhamento(valor ? valor.atual.consultoriaId : null)
 
+  if (consulta.isPending && consulta.isPaused) return <Navigate to="/campo/offline" replace />
   if (consulta.isPending) return <TelaDeEspera />
   if (consulta.isError) {
     return (

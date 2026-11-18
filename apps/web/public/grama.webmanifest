@@ -1,0 +1,15 @@
+{
+  "id": "/",
+  "name": "Grama",
+  "short_name": "Grama",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "lang": "pt-BR",
+  "theme_color": "#142720",
+  "background_color": "#f7f8f6",
+  "icons": [
+    { "src": "/grama-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/grama-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

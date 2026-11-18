@@ -27,6 +27,7 @@ import { PaginaDetalheVistoria } from './paginas/campo/PaginaDetalheVistoria'
 import { PaginaEnvio } from './paginas/campo/PaginaEnvio'
 import { PaginaFoto } from './paginas/campo/PaginaFoto'
 import { PaginaMinhasVistorias } from './paginas/campo/PaginaMinhasVistorias'
+import { PaginaCampoOffline } from './paginas/campo/PaginaCampoOffline'
 import { LayoutCentral } from './paginas/central/LayoutCentral'
 import { PaginaCentral } from './paginas/central/PaginaCentral'
 import { PaginaCentralFinanceiro } from './paginas/central/PaginaCentralFinanceiro'
@@ -83,6 +84,8 @@ export const rotas: RouteObject[] = [
     element: <RequerSessao />,
     errorElement: <ErroDeRota />,
     children: [
+      { path: 'campo/offline', element: <PaginaCampoOffline /> },
+      { path: 'campo/offline/:id', element: <PaginaCampoOffline /> },
       {
         path: 'admin',
         element: <LayoutCentral />,
