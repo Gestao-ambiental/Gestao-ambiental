@@ -397,6 +397,38 @@ isOneToOne: false
       referencedColumns: ["consultoria_id","id"]
     }
                   ]
+                },"conferencia_ia": {
+                  Row: {
+                    "apontamentos": NonNullable<Json>,"concluida_em": string | null,"consultoria_id": string,"custo_micros": number | null,"detalhe": string | null,"duracao_ms": number | null,"evidencia_id": string,"ia_liberada": boolean,"id": string,"iniciada_em": string,"modelo": string | null,"motivo": string | null,"resumo": string | null,"situacao": string,"solicitada_por": string,"tokens_entrada": number | null,"tokens_saida": number | null,"versao_prompt": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "apontamentos"?: NonNullable<Json>,"concluida_em"?: string | null,"consultoria_id": string,"custo_micros"?: number | null,"detalhe"?: string | null,"duracao_ms"?: number | null,"evidencia_id": string,"ia_liberada": boolean,"id": string,"iniciada_em"?: string,"modelo"?: string | null,"motivo"?: string | null,"resumo"?: string | null,"situacao"?: string,"solicitada_por": string,"tokens_entrada"?: number | null,"tokens_saida"?: number | null,"versao_prompt"?: string | null
+                  }
+                  Update: {
+                    "apontamentos"?: NonNullable<Json>,"concluida_em"?: string | null,"consultoria_id"?: string,"custo_micros"?: number | null,"detalhe"?: string | null,"duracao_ms"?: number | null,"evidencia_id"?: string,"ia_liberada"?: boolean,"id"?: string,"iniciada_em"?: string,"modelo"?: string | null,"motivo"?: string | null,"resumo"?: string | null,"situacao"?: string,"solicitada_por"?: string,"tokens_entrada"?: number | null,"tokens_saida"?: number | null,"versao_prompt"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "conferencia_ia_consultoria_id_fkey"
+      columns: ["consultoria_id"]
+isOneToOne: false
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "conferencia_ia_evidencia_fk"
+      columns: ["consultoria_id","evidencia_id"]
+isOneToOne: false
+      referencedRelation: "evidencia"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "conferencia_ia_solicitada_por_fk"
+      columns: ["consultoria_id","solicitada_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    }
+                  ]
                 },"consultoria": {
                   Row: {
                     "conferencia_independente": boolean,"criada_em": string,"fuso": string,"id": string,"nome": string,"row_version": number,"situacao": Database["public"]['Enums']["situacao_consultoria"],"situacao_alterada_em": string | null,"situacao_alterada_por": string | null,"situacao_motivo": string | null
@@ -1900,6 +1932,9 @@ isOneToOne: false
 "completar_cadastro":
 { Args: { "p_em_curso"?: boolean,"p_genero": string,"p_profissao": string }; Returns: undefined
                            },
+"concluir_conferencia_ia":
+{ Args: { "p_apontamentos": Json,"p_custo_micros": number,"p_duracao_ms": number,"p_id": string,"p_modelo": string,"p_resumo": string,"p_tokens_entrada": number,"p_tokens_saida": number,"p_versao_prompt": string }; Returns: number
+                           },
 "concluir_etapa":
 { Args: { "p_etapa_id": string }; Returns: undefined
                            },
@@ -2069,8 +2104,16 @@ isOneToOne: false
 "excluir_orcamento":
 { Args: { "p_id": string,"p_row_version": number }; Returns: number
                            },
+"falhar_conferencia_ia":
+{ Args: { "p_apontamentos": Json,"p_custo_micros": number,"p_duracao_ms": number,"p_detalhe": string,"p_id": string,"p_modelo": string,"p_motivo": string,"p_tokens_entrada": number,"p_tokens_saida": number,"p_versao_prompt": string }; Returns: undefined
+                           },
 "falhar_extracao_ia":
 { Args: { "p_custo_micros": number,"p_detalhe": string,"p_duracao_ms": number,"p_id": string,"p_modelo": string,"p_motivo": string,"p_paginas": number,"p_tokens_entrada": number,"p_tokens_saida": number,"p_versao_prompt": string }; Returns: undefined
+                           },
+"iniciar_conferencia_ia":
+{ Args: { "p_evidencia_id": string,"p_id": string }; Returns: {
+              "caminho": string,"conferencia_id": string,"contexto": Json,"ia_liberada": boolean,"mime": string,"motivo": string,"nova": boolean,"situacao": string,"tamanho_bytes": number
+            }[]
                            },
 "iniciar_extracao_ia":
 { Args: { "p_id": string,"p_instrumento_id": string }; Returns: {
@@ -2287,6 +2330,9 @@ isOneToOne: false
 { Args: { "p_acesso_id": string }; Returns: {
               "acesso_id": string,"categoria": string,"consultoria_fuso": string,"consultoria_id": string,"consultoria_nome": string,"fim_previsto": string,"inicio": string,"motivo": string,"operador_nome": string
             }[]
+                           },
+"reservar_conferencia_ia":
+{ Args: { "p_id": string }; Returns: boolean
                            },
 "reservar_envio_do_resumo":
 { Args: { "p_consultoria_id": string,"p_mes": string }; Returns: boolean

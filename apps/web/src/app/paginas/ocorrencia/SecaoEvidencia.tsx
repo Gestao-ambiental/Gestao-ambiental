@@ -26,6 +26,8 @@ import {
 } from '@/lib/api/ocorrencias'
 import { formatarInstanteComHora } from '@/lib/datas'
 import { mensagemDoErro } from '@/lib/erros'
+
+import { ConferenciaDaIa } from './ConferenciaDaIa'
 import { tamanhoLegivel } from '@/lib/texto'
 
 const SITUACAO: Record<Evidencia['situacao'], { texto: string; tom: TomSelo }> = {
@@ -38,7 +40,8 @@ const PROBLEMAS: Record<ProblemaDaEvidencia, string> = {
   nao_pdf: 'Este arquivo não é um PDF válido.',
   grande_demais: 'O arquivo passa de 25 MB.',
   vazio: 'O arquivo está vazio.',
-  tipo: 'Envie PDF, PNG ou JPEG.',
+  tipo: 'Envie PDF, PNG, JPEG ou DOCX.',
+  nao_docx: 'Este arquivo não é um .docx válido.',
 }
 
 function dataDe(valor: string): DataCivil | null {
@@ -132,7 +135,7 @@ function EnvioDeEvidencia({
         <input
           ref={entrada}
           type="file"
-          accept="application/pdf,image/png,image/jpeg"
+          accept="application/pdf,image/png,image/jpeg,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
           className="sr-only"
           tabIndex={-1}
           aria-hidden="true"
@@ -312,6 +315,16 @@ export function SecaoEvidencia({
         </ul>
       ) : !possoEnviar ? (
         <p className="text-xs text-(--text-subtle)">Nenhuma evidência enviada.</p>
+      ) : null}
+
+      {ultima ? (
+        <ConferenciaDaIa
+          key={ultima.id}
+          ocorrenciaId={ocorrencia.id}
+          evidencia={ultima}
+          enviei={enviei}
+          possoPedir={enviei || possoConferirPorPapel}
+        />
       ) : null}
 
       {possoConferir ? (

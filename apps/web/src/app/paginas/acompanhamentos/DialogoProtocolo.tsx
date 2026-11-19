@@ -18,6 +18,7 @@ const PROBLEMAS: Record<ProblemaDaEvidencia, string> = {
   grande_demais: 'O arquivo passa de 25 MB.',
   vazio: 'O arquivo está vazio.',
   tipo: 'Envie PDF, PNG ou JPEG.',
+  nao_docx: 'Envie PDF, PNG ou JPEG.',
 }
 
 /** Modal "Registrar protocolo" (Protótipo 17, artboard 04; REN-02): número, data e comprovante. */
@@ -50,7 +51,7 @@ export function DialogoProtocolo({
 
   async function escolher(escolhido: File | undefined) {
     if (!escolhido) return
-    const problema = await conferirArquivoDeEvidencia(escolhido)
+    const problema = await conferirArquivoDeEvidencia(escolhido, { docx: false })
     if (problema) {
       setErros((e) => ({ ...e, arquivo: PROBLEMAS[problema] }))
       return

@@ -157,6 +157,7 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
     'Já há acesso de suporte valendo nesta consultoria. Use “Entrar como suporte”.',
   sem_acesso_de_emergencia: 'Não há acesso de emergência valendo.',
   // Planos e cobrança (ADR-0026)
+  ia_indisponivel: 'A conferência por IA não respondeu. Tente de novo em alguns minutos.',
   consultoria_somente_leitura: 'Somente leitura até o pagamento: ninguém cria nem edita.',
   orcamentos_fora_do_plano: 'Orçamentos fazem parte dos planos Equipe e Escala.',
   adicional_nao_confirmado: 'Isso passa do limite do plano. Confirme o valor adicional antes.',

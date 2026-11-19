@@ -24,8 +24,9 @@ select is(
 
 select is(
   (select allowed_mime_types from storage.buckets where id = 'arquivos'),
-  array['application/pdf', 'image/png', 'image/jpeg']::text[],
-  'bucket arquivos aceita só PDF, PNG e JPEG'
+  array['application/pdf', 'image/png', 'image/jpeg',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document']::text[],
+  'bucket arquivos aceita só PDF, PNG, JPEG e DOCX'
 );
 
 select * from finish();

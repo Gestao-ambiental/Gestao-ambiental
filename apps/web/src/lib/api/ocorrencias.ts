@@ -159,7 +159,7 @@ export interface Evidencia {
   enviadaEm: string
   enviadaPorId: string
   enviadaPorNome: string
-  arquivo: { caminho: string; nome: string; tamanho: number }
+  arquivo: { caminho: string; nome: string; tamanho: number; mime: string }
   conferencia: {
     decisao: 'aprovada' | 'devolvida'
     motivo: string | null
@@ -174,7 +174,7 @@ export async function listarEvidencias(ocorrenciaId: string): Promise<Evidencia[
     .select(
       `id, numero, situacao, data_execucao, enviada_em, enviada_por,
        autor:membro!evidencia_enviada_por_fk(nome),
-       versao:documento_versao!evidencia_versao_fk(caminho, nome_original, tamanho_bytes),
+       versao:documento_versao!evidencia_versao_fk(caminho, nome_original, tamanho_bytes, mime),
        conferencia(decisao, motivo, decidida_em, conferente:membro!conferencia_conferente_fk(nome))`,
     )
     .eq('ocorrencia_id', ocorrenciaId)
@@ -196,6 +196,7 @@ export async function listarEvidencias(ocorrenciaId: string): Promise<Evidencia[
         caminho: e.versao.caminho,
         nome: e.versao.nome_original,
         tamanho: e.versao.tamanho_bytes,
+        mime: e.versao.mime,
       },
       conferencia: conferencia
         ? {
@@ -214,23 +215,54 @@ function primeiro<T>(valor: T[] | T | null): T | null {
   return valor
 }
 
-export const TIPOS_DE_EVIDENCIA = ['application/pdf', 'image/png', 'image/jpeg'] as const
-export const EXTENSOES: Record<(typeof TIPOS_DE_EVIDENCIA)[number], string> = {
+export const MIME_DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+export const TIPOS_DE_EVIDENCIA = ['application/pdf', 'image/png', 'image/jpeg', MIME_DOCX] as const
+export type TipoDeEvidencia = (typeof TIPOS_DE_EVIDENCIA)[number]
+export const EXTENSOES: Record<TipoDeEvidencia, string> = {
   'application/pdf': 'pdf',
   'image/png': 'png',
   'image/jpeg': 'jpg',
+  [MIME_DOCX]: 'docx',
 }
 
-export type ProblemaDaEvidencia = ProblemaDoPdf | 'tipo'
+/** Tipos que têm texto para a conferência por IA (ADR-0036). */
+export function temTextoParaConferir(mime: string): boolean {
+  return mime === 'application/pdf' || mime === MIME_DOCX
+}
 
-/** PDF (com assinatura conferida), PNG ou JPEG, até 25 MB. */
+/** Tipo do arquivo; o .docx às vezes chega sem tipo do navegador, então vale a extensão. */
+export function tipoDaEvidencia(arquivo: File): TipoDeEvidencia | null {
+  if ((TIPOS_DE_EVIDENCIA as readonly string[]).includes(arquivo.type))
+    return arquivo.type as TipoDeEvidencia
+  if (
+    /\.docx$/i.test(arquivo.name) &&
+    ['', 'application/octet-stream', 'application/zip'].includes(arquivo.type)
+  )
+    return MIME_DOCX
+  return null
+}
+
+export type ProblemaDaEvidencia = ProblemaDoPdf | 'tipo' | 'nao_docx'
+
+/**
+ * PDF (com assinatura conferida), PNG, JPEG ou DOCX (zip conferido), até 25 MB. O comprovante de
+ * protocolo não aceita DOCX (docx: false).
+ */
 export async function conferirArquivoDeEvidencia(
   arquivo: File,
+  { docx = true }: { docx?: boolean } = {},
 ): Promise<ProblemaDaEvidencia | null> {
-  if (arquivo.type === 'application/pdf') return conferirPdf(arquivo)
-  if (!(TIPOS_DE_EVIDENCIA as readonly string[]).includes(arquivo.type)) return 'tipo'
+  const tipo = tipoDaEvidencia(arquivo)
+  if (tipo === 'application/pdf') return conferirPdf(arquivo)
+  if (!tipo || (tipo === MIME_DOCX && !docx)) return 'tipo'
   if (arquivo.size === 0) return 'vazio'
-  return arquivo.size > 25 * 1024 * 1024 ? 'grande_demais' : null
+  if (arquivo.size > 25 * 1024 * 1024) return 'grande_demais'
+  if (tipo === MIME_DOCX) {
+    const inicio = new Uint8Array(await arquivo.slice(0, 4).arrayBuffer())
+    const assinatura = [0x50, 0x4b, 0x03, 0x04]
+    if (assinatura.some((byte, i) => inicio[i] !== byte)) return 'nao_docx'
+  }
+  return null
 }
 
 export async function sha256(arquivo: File): Promise<string> {
@@ -249,7 +281,8 @@ export async function enviarEvidencia(
   dataExecucao: DataCivil,
 ): Promise<number> {
   const supabase = obterSupabase()
-  const tipo = arquivo.type as (typeof TIPOS_DE_EVIDENCIA)[number]
+  const tipo = tipoDaEvidencia(arquivo)
+  if (!tipo) throw new Error('arquivo_tipo_invalido')
   const versaoId = crypto.randomUUID()
   const caminho = `${ocorrencia.consultoriaId}/evidencia/${versaoId}.${EXTENSOES[tipo]}`
   const hash = await sha256(arquivo)
