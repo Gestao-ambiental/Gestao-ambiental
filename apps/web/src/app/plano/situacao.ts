@@ -17,6 +17,9 @@ import { opcoesDoCatalogo } from './catalogo'
 export const CHAVE_SITUACAO_COMERCIAL = 'situacao-comercial'
 export const CHAVE_COBRANCAS = 'cobrancas'
 
+/** Até a integração com o Asaas, a Gestão não paga pelo Grama: o suporte confirma o pagamento. */
+export const PAGAMENTO_PELO_SUPORTE = 'O pagamento é confirmado pelo suporte do Grama.'
+
 /** Situação comercial da consultoria atual, relida a cada 5 minutos e ao voltar para a aba. */
 export function useDadosComerciais() {
   const { atual } = useConsultoria()
