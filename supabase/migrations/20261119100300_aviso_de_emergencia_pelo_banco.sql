@@ -18,8 +18,10 @@
 --   liberar_aviso_de_emergencia(id)           service role; desfaz a reserva quando o envio
 --                                             falha, para uma nova tentativa.
 
+-- Sem chave estrangeira para acesso_suporte: o registro de acesso nunca é apagado nem truncado
+-- (trigger de só-inclusão), e uma FK faria o TRUNCATE falhar antes desse trigger (teste 400).
 create table private.aviso_de_emergencia (
-  id uuid primary key references public.acesso_suporte (id) on delete restrict,
+  id uuid primary key,
   reservado_em timestamptz not null default now()
 );
 
