@@ -257,6 +257,13 @@ describe('apresentação', () => {
     expect(formatarPontosBase(-5_000)).toBe('−50,0%')
   })
 
+  it('arredonda percentual negativo como o positivo, sem "−0,0%"', () => {
+    expect(formatarPontosBase(25)).toBe('0,3%')
+    expect(formatarPontosBase(-25)).toBe('−0,3%')
+    expect(formatarPontosBase(-2_925)).toBe('−29,3%')
+    expect(formatarPontosBase(-4)).toBe('0,0%')
+  })
+
   it('põe o ponto de milhar enquanto a pessoa digita reais', () => {
     expect(formatarReaisDigitados('40000')).toBe('40.000')
     expect(formatarReaisDigitados('4000')).toBe('4.000')
