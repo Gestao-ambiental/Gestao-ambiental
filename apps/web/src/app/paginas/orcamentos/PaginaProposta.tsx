@@ -466,7 +466,11 @@ function Proposta({ orcamento: o }: { orcamento: Orcamento }) {
                 </thead>
                 <tbody>
                   {o.itens.map((i, indice) => {
-                    const colunas = colunasDoItem(i, linhas)
+                    const colunas = colunasDoItem(
+                      i,
+                      linhas,
+                      o.formaPreco === 'margem' && o.base !== null && i.terceiro !== null,
+                    )
                     return (
                       <tr key={i.id}>
                         <td className="text-center tabular-nums">{doisDigitos(indice + 1)}</td>
@@ -704,12 +708,16 @@ function Assinatura({ titulo, nome }: { titulo: string; nome: string }) {
  * horas são internas (ADR-0018) e assim toda linha fecha Qtd. × Valor unit. = Total. Pacote:
  * "1 pacote". m², ha, diária e campanha: a quantidade e a tarifa; por faixas, a quantidade com as
  * faixas na linha de apoio (nunca uma média como tarifa). Quando o preço mínimo valeu, diz isso.
+ * Terceirizado "pela margem": o banco precifica pelo custo dele (private.itens_do_preco), sem a
+ * linha da tabela nem o mínimo dela; então "1 serviço" e o preço gravado, sem tarifa nem mínimo.
  */
 function colunasDoItem(
   item: Orcamento['itens'][number],
   linhas: readonly HoraDeVenda[],
+  pelaMargemDoTerceiro: boolean,
 ): { quantidade: string; unitario: string; apoio: string[] } {
   const preco = `R$ ${formatarCentavos(item.precoCentavos)}`
+  if (pelaMargemDoTerceiro) return { quantidade: '1 serviço', unitario: preco, apoio: [] }
   const linha = linhas.find((h) => h.id === item.horaVendaId)
   if (!linha || linha.unidade === 'hora') {
     return { quantidade: '1 serviço', unitario: preco, apoio: apoioDoMinimo(item, linha) }

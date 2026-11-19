@@ -485,6 +485,72 @@ describe('Proposta', () => {
     expect(linhas[2]).not.toHaveTextContent('Preço mínimo')
   })
 
+  it('terceirizado pela margem ligado a uma linha: sem tarifa nem mínimo da tabela', async () => {
+    const horasVenda = [
+      {
+        id: 'hora',
+        profissao: 'Biólogo',
+        atividade: 'Campo',
+        valor_centavos: 10_000,
+        minimo_centavos: 50_000,
+      },
+      {
+        id: 'area',
+        profissao: '',
+        atividade: 'Levantamento',
+        valor_centavos: 200,
+        unidade: 'm2',
+        minimo_centavos: 100_000,
+      },
+    ]
+    const terceiro = {
+      preco_automatico: true,
+      custo_direto_extra_centavos: 0,
+      terceiro_nome: 'Ana Bióloga',
+      terceiro_cobranca: 'fechado',
+      terceiro_valor_centavos: 30_000,
+    }
+    const itens = [
+      {
+        id: 'i1',
+        hora_venda_id: 'hora',
+        descricao: 'Fauna',
+        minutos: 120,
+        preco_centavos: 42_000,
+        ...terceiro,
+      },
+      {
+        id: 'i2',
+        hora_venda_id: 'area',
+        descricao: 'Flora',
+        minutos: 60,
+        preco_centavos: 42_000,
+        ...terceiro,
+      },
+    ]
+    falso.reiniciar(
+      cenario({
+        rpc: {
+          obter_orcamento: {
+            data: orcamento({
+              forma_preco: 'margem',
+              base: { ...base, horas_venda: horasVenda },
+              itens,
+            }),
+          },
+        },
+      }),
+    )
+    const proposta = await abrirProposta()
+    const linhas = within(
+      within(proposta).getByRole('region', { name: 'Tabela do investimento' }),
+    ).getAllByRole('row')
+    // 2 h × 100,00 = 200,00 < 500,00 pela tabela, mas o banco não usa a linha para o terceirizado.
+    expect(proposta).not.toHaveTextContent('Preço mínimo')
+    expect(celulas(linhas[1]).slice(2)).toEqual(['1 serviço', 'R$ 420,00', 'R$ 420,00'])
+    expect(celulas(linhas[2]).slice(2)).toEqual(['1 serviço', 'R$ 420,00', 'R$ 420,00'])
+  })
+
   it('seções numeradas: escopo com prazo, condições, premissas e aceite com assinaturas', async () => {
     const proposta = await abrirProposta()
     await within(proposta).findByText('Grupo Horizonte S.A.')
