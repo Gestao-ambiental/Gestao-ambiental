@@ -1,0 +1,25 @@
+{
+  "displayFieldName": "iq",
+  "fieldAliases": {
+    "iq": "Inscrição Imobiliária",
+    "quadra": "Quadra",
+    "lote": "Lote",
+    "st_area(shape)": "Área (m²)"
+  },
+  "fields": [
+    { "name": "iq", "type": "esriFieldTypeString", "alias": "Inscrição Imobiliária", "length": 16 },
+    { "name": "quadra", "type": "esriFieldTypeString", "alias": "Quadra", "length": 11 },
+    { "name": "lote", "type": "esriFieldTypeInteger", "alias": "Lote" },
+    { "name": "st_area(shape)", "type": "esriFieldTypeDouble", "alias": "Área (m²)" }
+  ],
+  "features": [
+    {
+      "attributes": {
+        "iq": "13-20-23-7-239",
+        "quadra": " ",
+        "lote": 239,
+        "st_area(shape)": 2312.2588791421822
+      }
+    }
+  ]
+}

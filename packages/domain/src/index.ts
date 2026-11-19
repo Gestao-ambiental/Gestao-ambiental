@@ -538,3 +538,10 @@ export type {
   Potencial,
   ResultadoDoEnquadramento,
 } from './triagem-licenciamento'
+export {
+  dentroDeSantaCatarina,
+  formatarCoordenadas,
+  lerCoordenadas,
+  metrosQuadradosParaHectares,
+} from './local-do-empreendimento'
+export type { Coordenadas } from './local-do-empreendimento'

@@ -1,0 +1,8 @@
+{
+  "displayFieldName": "nome_bairr",
+  "fieldAliases": { "nome_bairr": "Nome do Bairro" },
+  "fields": [
+    { "name": "nome_bairr", "type": "esriFieldTypeString", "alias": "Nome do Bairro", "length": 50 }
+  ],
+  "features": [{ "attributes": { "nome_bairr": "CENTRO" } }]
+}

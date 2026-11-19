@@ -1,0 +1,9 @@
+{
+  "displayFieldName": "CD_MUN",
+  "fieldAliases": { "CD_MUN": "CD_MUN", "NM_MUN": "NM_MUN" },
+  "fields": [
+    { "name": "CD_MUN", "type": "esriFieldTypeString", "alias": "CD_MUN", "length": 7 },
+    { "name": "NM_MUN", "type": "esriFieldTypeString", "alias": "NM_MUN", "length": 50 }
+  ],
+  "features": [{ "attributes": { "CD_MUN": "4209102", "NM_MUN": "Joinville" } }]
+}

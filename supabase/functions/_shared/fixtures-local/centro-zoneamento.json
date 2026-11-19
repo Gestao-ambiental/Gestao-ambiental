@@ -1,0 +1,9 @@
+{
+  "displayFieldName": "sigla_z",
+  "fieldAliases": { "sigla_z": "Setor", "legenda_m": "Macrozona" },
+  "fields": [
+    { "name": "sigla_z", "type": "esriFieldTypeString", "alias": "Setor", "length": 50 },
+    { "name": "legenda_m", "type": "esriFieldTypeString", "alias": "Macrozona", "length": 50 }
+  ],
+  "features": [{ "attributes": { "sigla_z": "SA-01", "legenda_m": "AUAP" } }]
+}

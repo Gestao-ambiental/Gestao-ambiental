@@ -1,0 +1,6 @@
+{
+  "displayFieldName": "created_user",
+  "fieldAliases": { "objectid": "objectid" },
+  "fields": [{ "name": "objectid", "type": "esriFieldTypeOID", "alias": "objectid" }],
+  "features": [{ "attributes": { "objectid": 2 } }]
+}

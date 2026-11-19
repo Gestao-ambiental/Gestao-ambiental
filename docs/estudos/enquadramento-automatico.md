@@ -88,9 +88,17 @@ Vale também pedir ao IMA e à SAMA, por LAI ou parceria, acesso aos dados de li
 ## Fatias sugeridas
 
 1. **Feito neste PR.** Competência pela 251/2024, com o nível do município escolhido à mão na tela.
-2. **Consulta de lote** (Edge Function `consultar-lote` + mapa na triagem):
-   - município pelo ponto, lote/IQ, zoneamento, APP e áreas protegidas;
-   - testes Deno com respostas gravadas.
+2. **Feito.** Consulta do local (Edge Function `consultar-local` + mapa na triagem):
+   - O mapa (Leaflet, blocos do OpenStreetMap) ou as coordenadas digitadas levam à função.
+   - A função consulta, em SC inteira: município, UC, zona de amortecimento, terra indígena e
+     quilombola. Em Joinville: lote/IQ e área, bairro, setor do zoneamento, APP/FNE num raio de
+     30 m, mancha de inundação e risco geológico.
+   - Uma camada que falha aparece como "consulta incompleta" e não derruba as outras.
+   - A área do lote preenche o AU(3) das atividades como ponto de partida.
+   - Testes Deno com respostas gravadas em 19/11/2026 (`_shared/fixtures-local/`). A consulta real
+     foi conferida no Centro (lote 13-20-23-7-239, SA-01, mancha de inundação), na APA Serra Dona
+     Francisca (UC e APP) e em Florianópolis (só camadas do IMA).
+   - O CSP do site passa a aceitar imagens de `tile.openstreetmap.org`.
 3. **Consulta de CNPJ** (Edge Function `consultar-cnpj`):
    - CNAEs, situação e endereço;
    - lista de dispensa do IMA;

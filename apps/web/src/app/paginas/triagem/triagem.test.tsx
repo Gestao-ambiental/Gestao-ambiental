@@ -1,17 +1,64 @@
+import { FunctionsHttpError } from '@supabase/supabase-js'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import axe from 'axe-core'
 import { MemoryRouter } from 'react-router'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import type { ResultadoDoLocal } from '@/lib/api/consulta-de-local'
+import { falso } from '@/test/supabase-falso'
 
 import { PaginaTriagem } from './PaginaTriagem'
 
+vi.mock('@/lib/supabase', () => import('@/test/supabase-falso'))
+// O Leaflet não desenha no jsdom: o mapa vira um botão que marca o Centro de Joinville.
+vi.mock('./MapaDoLocal', () => ({
+  default: ({
+    aoEscolher,
+  }: {
+    aoEscolher: (c: { latitude: number; longitude: number }) => void
+  }) => (
+    <button
+      type="button"
+      onClick={() => {
+        aoEscolher({ latitude: -26.3044, longitude: -48.8487 })
+      }}
+    >
+      Marcar no mapa
+    </button>
+  ),
+}))
+
+const CENTRO: ResultadoDoLocal = {
+  municipio: { codigoIbge: '4209102', nome: 'Joinville' },
+  lote: { inscricaoImobiliaria: '13-20-23-7-239', quadra: null, lote: '239', areaM2: 2312.2588 },
+  bairro: 'CENTRO',
+  zoneamento: { setor: 'SA-01', macrozona: 'AUAP' },
+  restricoes: [
+    {
+      tipo: 'inundacao',
+      descricao: 'Dentro da mancha de inundação',
+      fonte: 'SIMGeo Joinville, Mancha de inundação',
+    },
+  ],
+  falhas: [],
+  fontes: [],
+}
+
+beforeEach(() => {
+  falso.reiniciar({ funcoes: { 'consultar-local': { data: CENTRO } } })
+})
+
 function montar() {
   const usuario = userEvent.setup()
+  const cliente = new QueryClient({ defaultOptions: { mutations: { retry: false } } })
   const tela = render(
-    <MemoryRouter>
-      <PaginaTriagem />
-    </MemoryRouter>,
+    <QueryClientProvider client={cliente}>
+      <MemoryRouter>
+        <PaginaTriagem />
+      </MemoryRouter>
+    </QueryClientProvider>,
   )
   return { usuario, ...tela }
 }
@@ -22,6 +69,91 @@ async function incluir(usuario: ReturnType<typeof userEvent.setup>, termo: strin
   await usuario.type(busca, termo)
   await usuario.click(screen.getByRole('button', { name: `Incluir ${codigo}` }))
 }
+
+describe('local do empreendimento na triagem', () => {
+  it('marcar no mapa consulta o local e mostra município, inscrição, zoneamento e restrições', async () => {
+    const { usuario } = montar()
+    await usuario.click(await screen.findByRole('button', { name: 'Marcar no mapa' }))
+    expect(screen.getByRole('textbox', { name: /Coordenadas/ })).toHaveValue('-26.30440, -48.84870')
+    expect(await screen.findByText('Joinville (IBGE 4209102)')).toBeInTheDocument()
+    expect(screen.getByText(/13-20-23-7-239 · lote de 2\.312 m² \(0,2312 ha\)/)).toBeInTheDocument()
+    expect(screen.getByText('Setor SA-01, AUAP · bairro CENTRO')).toBeInTheDocument()
+    expect(screen.getByText('Dentro da mancha de inundação')).toBeInTheDocument()
+    expect(falso.cliente.functions.invoke).toHaveBeenCalledWith('consultar-local', {
+      body: { latitude: -26.3044, longitude: -48.8487 },
+    })
+  })
+
+  it('a área do lote preenche o AU(3) das atividades incluídas e das que vierem depois', async () => {
+    const { usuario } = montar()
+    await incluir(usuario, '12.80.10', '12.80.10')
+    await usuario.type(screen.getByRole('textbox', { name: /Coordenadas/ }), '-26.3044, -48.8487')
+    await usuario.click(screen.getByRole('button', { name: 'Consultar local' }))
+    await usuario.click(
+      await screen.findByRole('button', { name: 'Usar a área do lote como AU(3)' }),
+    )
+    const cartao = screen.getByRole('article', { name: /^12\.80\.10/ })
+    expect(within(cartao).getByRole('textbox', { name: /AU\(3\)/ })).toHaveValue('0,2312')
+    expect(within(cartao).getByText('Médio')).toBeInTheDocument()
+
+    await incluir(usuario, '17.21.00', '17.21.00')
+    const papel = screen.getByRole('article', { name: /^17\.21\.00/ })
+    expect(within(papel).getByRole('textbox', { name: /AU\(3\)/ })).toHaveValue('0,2312')
+  })
+
+  it('coordenadas inválidas ou fora de SC avisam sem chamar a função', async () => {
+    const { usuario } = montar()
+    const campo = screen.getByRole('textbox', { name: /Coordenadas/ })
+    await usuario.type(campo, 'Joinville')
+    await usuario.click(screen.getByRole('button', { name: 'Consultar local' }))
+    expect(screen.getByText(/Use latitude e longitude em graus/)).toBeInTheDocument()
+    await usuario.clear(campo)
+    await usuario.type(campo, '-23.55, -46.63')
+    await usuario.click(screen.getByRole('button', { name: 'Consultar local' }))
+    expect(screen.getByText('O ponto está fora de Santa Catarina.')).toBeInTheDocument()
+    expect(falso.cliente.functions.invoke).not.toHaveBeenCalled()
+  })
+
+  it('erro da função aparece como alerta', async () => {
+    falso.reiniciar({
+      funcoes: {
+        'consultar-local': {
+          error: new FunctionsHttpError(
+            new Response(JSON.stringify({ erro: 'sem_permissao' }), { status: 401 }),
+          ),
+        },
+      },
+    })
+    const { usuario } = montar()
+    await usuario.type(screen.getByRole('textbox', { name: /Coordenadas/ }), '-26.3044, -48.8487')
+    await usuario.click(screen.getByRole('button', { name: 'Consultar local' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Sua sessão expirou. Entre de novo.')
+  })
+
+  it('camada que falhou aparece como consulta incompleta; fora de Joinville avisa do SIMGeo', async () => {
+    falso.reiniciar({
+      funcoes: {
+        'consultar-local': {
+          data: {
+            ...CENTRO,
+            municipio: { codigoIbge: '4205407', nome: 'Florianópolis' },
+            lote: null,
+            bairro: null,
+            zoneamento: null,
+            restricoes: [],
+            falhas: ['IMA/SC, Terra Indígena (FUNAI)'],
+          },
+        },
+      },
+    })
+    const { usuario } = montar()
+    await usuario.type(screen.getByRole('textbox', { name: /Coordenadas/ }), '-27.5969, -48.5482')
+    await usuario.click(screen.getByRole('button', { name: 'Consultar local' }))
+    expect(await screen.findByText('Consulta incompleta')).toBeInTheDocument()
+    expect(screen.getByText(/Nenhuma restrição encontrada/)).toBeInTheDocument()
+    expect(screen.getByText(/só em Joinville \(SIMGeo\)/)).toBeInTheDocument()
+  })
+})
 
 describe('triagem de licenciamento (/triagem)', () => {
   it('começa vazia, com o aviso de que é triagem e não enquadramento oficial', () => {

@@ -1,0 +1,12 @@
+{
+  "displayFieldName": "restricao",
+  "fieldAliases": { "restricao": "restricao", "faixa": "faixa" },
+  "fields": [
+    { "name": "restricao", "type": "esriFieldTypeString", "alias": "restricao", "length": 50 },
+    { "name": "faixa", "type": "esriFieldTypeDouble", "alias": "faixa" }
+  ],
+  "features": [
+    { "attributes": { "restricao": "APP", "faixa": 30 } },
+    { "attributes": { "restricao": "APP", "faixa": 50 } }
+  ]
+}

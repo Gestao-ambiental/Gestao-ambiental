@@ -1,8 +1,9 @@
 // Triagem de licenciamento (enquadramento) pela Resolução CONSEMA 250/2024 consolidada.
 // docs/estudos/triagem-licenciamento-consema-250.md. Protótipo para revisão.
 //
-// Tudo é cálculo local sobre o catálogo do domínio: sem banco nem rede, então não há estados de
-// carregando, erro ou sem permissão. O resultado orienta a proposta; quem enquadra é o órgão.
+// O enquadramento é cálculo local sobre o catálogo do domínio. Só a consulta do local (mapa) vai à
+// rede, pela Edge Function consultar-local, com seus estados de carregando e erro. O resultado
+// orienta a proposta; quem enquadra é o órgão.
 
 import {
   CATALOGO_CONSEMA_250,
@@ -34,8 +35,12 @@ import { CampoTexto } from '@/components/ui/campo-texto'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { Selo, type TomSelo } from '@/components/ui/selo'
 
+import { LocalDoEmpreendimento } from './LocalDoEmpreendimento'
+
 const { atividades: CATALOGO, parametros: PARAMETROS, fonte: FONTE } = CATALOGO_CONSEMA_250
 const POR_CODIGO = new Map(CATALOGO.map((a) => [a.codigo, a]))
+/** Área útil geral (ha), o parâmetro que a área do lote ajuda a preencher. */
+const AREA_UTIL = 'AU(3)'
 
 const TOM_DO_POTENCIAL: Record<'P' | 'M' | 'G', TomSelo> = {
   P: 'sucesso',
@@ -441,7 +446,16 @@ function SeletorDoNivel({
 export function PaginaTriagem() {
   const [itens, setItens] = useState<ItemEmEdicao[]>([])
   const [nivel, setNivel] = useState<NivelMunicipal | null>(null)
+  /** Área do lote em ha, já no formato do campo, para preencher o AU(3) das atividades. */
+  const [areaDoLote, setAreaDoLote] = useState<string | null>(null)
   const jaIncluidas = useMemo(() => new Set(itens.map((i) => i.codigo)), [itens])
+
+  const comAreaDoLote = (item: ItemEmEdicao, area: string | null): ItemEmEdicao => {
+    const atividade = POR_CODIGO.get(item.codigo)
+    if (!area || !atividade || !parametrosDaAtividade(atividade).includes(AREA_UTIL)) return item
+    if (item.medidas[AREA_UTIL]?.trim()) return item
+    return { ...item, medidas: { ...item.medidas, [AREA_UTIL]: area } }
+  }
 
   const calculados = itens.flatMap((item) => {
     const c = calcular(item, nivel)
@@ -470,13 +484,23 @@ export function PaginaTriagem() {
         ainda não entram aqui.
       </MensagemSecao>
 
+      <LocalDoEmpreendimento
+        aoUsarArea={(hectares) => {
+          const area = hectares.toLocaleString('pt-BR', { maximumFractionDigits: 4 })
+          setAreaDoLote(area)
+          setItens((atual) => atual.map((i) => comAreaDoLote(i, area)))
+        }}
+      />
+
       <SeletorDoNivel nivel={nivel} aoMudar={setNivel} />
 
       <BuscaDeAtividade
         jaIncluidas={jaIncluidas}
         aoIncluir={(codigo) => {
           setItens((atual) =>
-            atual.some((i) => i.codigo === codigo) ? atual : [...atual, { codigo, medidas: {} }],
+            atual.some((i) => i.codigo === codigo)
+              ? atual
+              : [...atual, comAreaDoLote({ codigo, medidas: {} }, areaDoLote)],
           )
         }}
       />
