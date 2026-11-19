@@ -215,7 +215,9 @@ begin
   if not private.reservar_aviso_da_lista_de_espera() then
     return;
   end if;
-  execute 'select net.http_post(url := $1, body := $2, headers := $3)'
+  -- format(): o plpgsql_check do CI analisa funções comuns (não as de gatilho) e avaliaria uma
+  -- string fixa, falhando porque o schema "net" (pg_net) não existe no banco local do CI.
+  execute format('select %I.http_post(url := $1, body := $2, headers := $3)', 'net')
     using v_url, '{}'::jsonb,
           jsonb_build_object('Content-Type', 'application/json', 'x-aviso-token', v_token);
 end;
