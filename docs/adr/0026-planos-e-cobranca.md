@@ -34,9 +34,9 @@
 
 ## 4. Cobrança simulada (protótipo)
 
-- `assinar_plano_simulado` (Gestão de verdade): sem plano ativo, grava a assinatura e a primeira cobrança pendente (vencimento: hoje, ou o dia seguinte ao fim do teste/beta, ou ao período já pago); com plano ativo, troca a partir do próximo vencimento (`plano_agendado`, `ciclo_agendado`, `mudanca_em`). Conta interna recusa (`conta_interna_sem_cobranca`).
+- `assinar_plano_simulado` (Gestão de verdade): sem plano ativo, grava a assinatura e a primeira cobrança pendente (vencimento: hoje, ou o dia seguinte ao fim do teste/beta, ou ao período já pago); com plano ativo, troca a partir do próximo vencimento (`plano_agendado`, `ciclo_agendado`, `mudanca_em`). Conta interna recusa (`conta_interna_sem_cobranca`). Assinatura nova com cobrança em aberto já vencida recusa (`cobranca_em_atraso`, desde 19/11/2026).
 - `pagar_cobranca_simulada`: **só o operador com dois fatores** (`private.exigir_operador`), por cobrança; funciona mesmo em só leitura. Até 19/11/2026 era o "Confirmar pagamento" de um diálogo da Gestão, o que deixava a Gestão marcar a própria cobrança como paga e sair do só leitura sem pagar (migration `20261119100000_pagamento_simulado_so_pelo_operador.sql`, teste `600`). Sem o Asaas, quem confirma o pagamento é a central.
-- `cancelar_plano_simulado`: o plano vale até o fim do período pago (`valida_ate`); depois, só leitura.
+- `cancelar_plano_simulado`: o plano vale até o fim do período pago (`valida_ate`); depois, só leitura. Só saem (`removida`) as cobranças pendentes que ainda não venceram (vencimento a partir de hoje, no fuso da consultoria); as vencidas continuam devidas. Até 19/11/2026 saíam todas, e cancelar e assinar de novo apagava a dívida (migration `20261119100100_cancelar_plano_mantem_cobranca_vencida.sql`, teste `601`).
 - Central: `central_simular_atraso` (cobrança vencida com vencimento retroativo, padrão 5 dias) e `central_simular_pagamento`.
 - O formulário de cobrança (nome, e-mail, CNPJ ou CPF com máscara) só valida (`documento.ts`) e descarta: nada é gravado nem enviado.
 - As colunas `asaas_cliente_id`, `asaas_assinatura_id`, `asaas_cobranca_id`, `invoice_url` e `situacao_asaas` existem e ficam nulas/padrão até a integração real.
