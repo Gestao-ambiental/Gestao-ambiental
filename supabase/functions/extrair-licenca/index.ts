@@ -126,7 +126,7 @@ Deno.serve(async (pedido) => {
   ): Promise<Response> {
     // Log da função (Supabase → Edge Functions → Logs): só ids, motivo e o detalhe do provedor.
     console.error(JSON.stringify({ extracaoId, instrumentoId, motivo, detalhe, modelo }))
-    await admin.rpc('falhar_extracao_ia', {
+    const registro = await admin.rpc('falhar_extracao_ia', {
       p_id: extracaoId,
       p_motivo: motivo,
       p_modelo: consumo?.modelo ?? modelo,
@@ -138,6 +138,17 @@ Deno.serve(async (pedido) => {
       p_duracao_ms: Date.now() - inicio,
       p_detalhe: detalhe,
     })
+    // Sem o registro, a linha fica "em andamento" (409 por 3 min): não diga à tela que falhou.
+    if (registro.error) {
+      console.error(
+        JSON.stringify({
+          extracaoId,
+          etapa: 'registrar_falha',
+          erro: registro.error.message.slice(0, 200),
+        }),
+      )
+      return responder({ erro: 'erro_interno' }, 500)
+    }
     return responder({ situacao: 'falhou', motivo, detalhe })
   }
 
