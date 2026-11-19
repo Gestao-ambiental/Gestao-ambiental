@@ -2,7 +2,7 @@ import { hojeNoFuso, inicioDoMes, rotuloDoMes } from '@gestao-ambiental/domain'
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import axe from 'axe-core'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { digitarReais } from '@/test/digitar'
 import { renderizarApp, vinculoFalso } from '@/test/renderizar'
@@ -834,6 +834,100 @@ describe('orçamentos (onda 5)', () => {
     expect(screen.getByLabelText('Percentual da parcela 3')).toHaveValue('10')
     expect(screen.queryByText(/Este orçamento foi alterado em outro lugar/)).not.toBeInTheDocument()
     expect(screen.queryByText('Alterações não salvas')).not.toBeInTheDocument()
+  })
+
+  it('o que é digitado enquanto o salvar corre fica no rascunho, sem aviso de "outro lugar"', async () => {
+    let versao = 3
+    falso.reiniciar(
+      cenario('gestao', {
+        rpc: {
+          obter_orcamento: () => ({
+            data: orcamento({
+              row_version: versao,
+              parcelas: [
+                { id: 'p1', descricao: 'Assinatura do contrato', dias: 3, percentual_pb: 4_000 },
+                { id: 'p2', descricao: 'Protocolo no órgão', dias: 5, percentual_pb: 3_000 },
+                { id: 'p3', descricao: 'Emissão da licença', dias: 0, percentual_pb: 3_000 },
+              ],
+            }),
+          }),
+        },
+      }),
+    )
+    // O salvar e a releitura seguinte ficam presos até o teste soltar cada um.
+    const padrao = falso.cliente.rpc.getMockImplementation()
+    if (!padrao) throw new Error('rpc falso sem implementação')
+    onTestFinished(() => {
+      falso.cliente.rpc.mockImplementation(padrao)
+    })
+    const soltar: { salvar?: () => void; releitura?: () => void } = {}
+    let prenderReleitura = false
+    falso.cliente.rpc.mockImplementation((nome: string, args?: Record<string, unknown>) => {
+      if (nome === 'salvar_orcamento') {
+        return new Promise((resolver) => {
+          soltar.salvar = () => {
+            versao += 1
+            resolver({ data: versao, error: null })
+          }
+        })
+      }
+      const resposta = padrao(nome, args)
+      if (nome === 'obter_orcamento' && prenderReleitura) {
+        return new Promise((resolver) => {
+          soltar.releitura = () => {
+            resolver(resposta)
+          }
+        })
+      }
+      return resposta
+    })
+    const usuario = userEvent.setup()
+    renderizarApp('/orcamentos/o1?etapa=parcelas')
+    const terceira = await screen.findByLabelText('Percentual da parcela 3')
+
+    // (a) Digita durante a gravação: a versão nova não apaga o que veio depois do clique.
+    await usuario.clear(terceira)
+    await usuario.type(terceira, '25')
+    await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
+    await usuario.clear(screen.getByLabelText('Percentual da parcela 2'))
+    await usuario.type(screen.getByLabelText('Percentual da parcela 2'), '35')
+    soltar.salvar?.()
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Salvar' })).toBeEnabled()
+    })
+    await waitFor(() => {
+      expect(falso.cliente.rpc.mock.calls.filter(([n]) => n === 'obter_orcamento')).toHaveLength(2)
+    })
+    expect(screen.getByLabelText('Percentual da parcela 2')).toHaveValue('35')
+    expect(screen.getByText('Alterações não salvas')).toBeInTheDocument()
+    expect(screen.queryByText(/Este orçamento foi alterado em outro lugar/)).not.toBeInTheDocument()
+
+    // (b) Digita depois da gravação e antes da releitura: também sem aviso falso.
+    prenderReleitura = true
+    await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
+    expect(falso.cliente.rpc).toHaveBeenLastCalledWith(
+      'salvar_orcamento',
+      expect.objectContaining({ p_row_version: 4 }),
+    )
+    soltar.salvar?.()
+    await waitFor(() => {
+      expect(soltar.releitura).toBeDefined()
+    })
+    await usuario.clear(screen.getByLabelText('Percentual da parcela 1'))
+    await usuario.type(screen.getByLabelText('Percentual da parcela 1'), '45')
+    soltar.releitura?.()
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Salvar' })).toBeEnabled()
+    })
+    expect(screen.getByLabelText('Percentual da parcela 1')).toHaveValue('45')
+    expect(screen.getByText('Alterações não salvas')).toBeInTheDocument()
+    expect(screen.queryByText(/Este orçamento foi alterado em outro lugar/)).not.toBeInTheDocument()
+    prenderReleitura = false
+    await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
+    expect(falso.cliente.rpc).toHaveBeenLastCalledWith(
+      'salvar_orcamento',
+      expect.objectContaining({ p_row_version: 5 }),
+    )
   })
 
   it('horas aceitam 1h30, o item mostra o custo e a margem do fim muda o preço', async () => {
