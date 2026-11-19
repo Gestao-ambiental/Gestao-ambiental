@@ -11,11 +11,15 @@ import {
   ROTULO_DA_MODALIDADE,
   ROTULO_DO_ESTUDO,
   ROTULO_DO_PORTE,
+  FONTE_DA_TAXA_IMA,
   buscarAtividades,
+  calcularTaxaDoIma,
   concluirTriagem,
   definirCompetencia,
   descreverCondicao,
   enquadrarAtividade,
+  formatarReais,
+  informacoesDoIma,
   lerNumeroDigitado,
   parametrosDaAtividade,
   type AtividadeLicenciavel,
@@ -24,6 +28,7 @@ import {
   type Medidas,
   type NivelMunicipal,
   type ResultadoDoEnquadramento,
+  type TaxaDoIma,
 } from '@gestao-ambiental/domain'
 import { useId, useMemo, useState } from 'react'
 
@@ -267,6 +272,106 @@ function DescricaoDoResultado({
   }
 }
 
+function ValorDaTaxa({ taxa }: { taxa: TaxaDoIma }) {
+  if (taxa.tipo === 'autorizacao') {
+    return (
+      <p className="corpo text-(--text)">
+        <span className="corpo-medio">Taxa da AuA: {formatarReais(taxa.centavos)}</span> (item{' '}
+        {taxa.item} do anexo)
+      </p>
+    )
+  }
+  if (taxa.tipo === 'sem_valor') {
+    return (
+      <p className="corpo text-(--text-subtle)">
+        {taxa.motivo === 'falta_medida'
+          ? `Informe ${taxa.parametro ?? 'o parâmetro'} para calcular a taxa.`
+          : 'O decreto não traz valor de taxa para esta atividade: consulte o IMA.'}
+      </p>
+    )
+  }
+  return (
+    <div className="flex flex-col gap-(--space-050)">
+      <dl className="grid grid-cols-2 gap-x-(--space-200) gap-y-(--space-050) sm:grid-cols-4">
+        {taxa.fases.map((v) => (
+          <div key={v.fase}>
+            <dt className="rotulo text-(--text-subtle)">{v.fase}</dt>
+            <dd className="corpo-medio text-(--text)">{formatarReais(v.centavos)}</dd>
+          </div>
+        ))}
+        {taxa.fases.length > 1 ? (
+          <div>
+            <dt className="rotulo text-(--text-subtle)">Total</dt>
+            <dd className="corpo-medio text-(--text)">{formatarReais(taxa.totalCentavos)}</dd>
+          </div>
+        ) : null}
+      </dl>
+      <p className="corpo text-(--text-subtle)">
+        {taxa.formula
+          ? `Fórmula: ${taxa.formula}, com fator 1 (LAP), 1,5 (LAI) e 1,25 (LAO).`
+          : `Classe ${taxa.classe ?? ''} (porte, potencial). Na renovação, paga-se de novo a LAO.`}
+      </p>
+      {taxa.avisos.map((aviso) => (
+        <p key={aviso} className="corpo text-(--text)">
+          {aviso}
+        </p>
+      ))}
+    </div>
+  )
+}
+
+/** O que o Simulador de Licenciamento do IMA mostra para a atividade: taxa, IN e TFASC. */
+function NoIma({
+  atividade,
+  resultado,
+  medidas,
+  municipal,
+}: {
+  atividade: AtividadeLicenciavel
+  resultado: ResultadoDoEnquadramento
+  medidas: Medidas
+  municipal: boolean
+}) {
+  const info = informacoesDoIma(atividade)
+  const instrucao = info.instrucaoNormativa
+  return (
+    <section
+      aria-label={`No IMA: ${atividade.codigo}`}
+      className="flex flex-col gap-(--space-075) border-t pt-(--space-100)"
+    >
+      <h4 className="rotulo text-(--text)">No IMA</h4>
+      {resultado.tipo === 'enquadrada' ? (
+        municipal ? (
+          <p className="corpo text-(--text-subtle)">
+            Licenciamento no município: a taxa é a do município.
+          </p>
+        ) : (
+          <ValorDaTaxa taxa={calcularTaxaDoIma(atividade, resultado.faixa, medidas)} />
+        )
+      ) : null}
+      {instrucao ? (
+        <p className="flex flex-wrap items-center gap-(--space-050) corpo text-(--text)">
+          <a href={instrucao.url} target="_blank" rel="noopener noreferrer">
+            IN {String(instrucao.numero).padStart(2, '0')} · {instrucao.titulo}
+          </a>
+          {instrucao.revogada ? <Selo tom="atencao">Revogada no site do IMA</Selo> : null}
+        </p>
+      ) : null}
+      {info.tfasc !== null ? (
+        <p className="corpo text-(--text)">
+          {info.tfasc ? 'Paga TFASC (taxa anual de fiscalização ambiental).' : 'Não paga TFASC.'}
+        </p>
+      ) : null}
+      {info.potencialDivergente ? (
+        <p className="corpo text-(--text)">
+          O simulador do IMA ainda usa potencial poluidor {info.potencialDivergente}; a resolução
+          vigente diz {atividade.potencial.geral}.
+        </p>
+      ) : null}
+    </section>
+  )
+}
+
 function CartaoDaAtividade({
   calculado,
   aoMudarMedida,
@@ -333,6 +438,12 @@ function CartaoDaAtividade({
         <p className="corpo text-(--text)">{competencia.avisos.join(' ')}</p>
       ) : null}
       <DescricaoDoResultado atividade={atividade} resultado={resultado} />
+      <NoIma
+        atividade={atividade}
+        resultado={resultado}
+        medidas={medidasLidas(item)}
+        municipal={competencia.orgao === 'municipal'}
+      />
     </article>
   )
 }
@@ -480,8 +591,8 @@ export function PaginaTriagem() {
 
       <MensagemSecao tom="atencao" titulo="Triagem, não enquadramento oficial">
         Resultado calculado pela {FONTE} (estadual) e pela {CATALOGO_CONSEMA_251.fonte} (impacto
-        local), em Santa Catarina. Confira no Simulador do IMA e com o órgão licenciador. Taxas
-        ainda não entram aqui.
+        local), em Santa Catarina, com as taxas do IMA pela {FONTE_DA_TAXA_IMA}. Confira com o órgão
+        licenciador.
       </MensagemSecao>
 
       <LocalDoEmpreendimento

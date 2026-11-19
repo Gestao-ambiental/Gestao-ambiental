@@ -155,6 +155,72 @@ describe('local do empreendimento na triagem', () => {
   })
 })
 
+describe('o que o simulador do IMA mostra: taxa, IN e TFASC', () => {
+  it('trifásica no IMA mostra LAP, LAI, LAO e total pela classe porte,potencial', async () => {
+    const { usuario } = montar()
+    await incluir(usuario, '12.80.10', '12.80.10')
+    const cartao = screen.getByRole('article', { name: /^12\.80\.10/ })
+    const noIma = within(cartao).getByRole('region', { name: 'No IMA: 12.80.10' })
+    // Antes de enquadrar, já mostra a IN e a TFASC, sem taxa.
+    expect(within(noIma).queryByText('LAP')).not.toBeInTheDocument()
+    expect(
+      within(noIma).getByRole('link', {
+        name: 'IN 19 · SERVIÇO INDUSTRIAL DE USINAGEM, SOLDAS E SEMELHANTES',
+      }),
+    ).toHaveAttribute('href', 'https://in.ima.sc.gov.br/instrucaoNormativa/visualizar/189')
+    expect(within(noIma).getByText('Revogada no site do IMA')).toBeInTheDocument()
+    expect(within(noIma).getByText(/^Paga TFASC/)).toBeInTheDocument()
+
+    await usuario.type(within(cartao).getByRole('textbox', { name: /AU\(3\)/ }), '0,5')
+    expect(within(noIma).getByText('R$ 1.129,72')).toBeInTheDocument()
+    expect(within(noIma).getByText('R$ 2.810,36')).toBeInTheDocument()
+    expect(within(noIma).getByText('R$ 5.620,79')).toBeInTheDocument()
+    expect(within(noIma).getByText('R$ 9.560,87')).toBeInTheDocument()
+    expect(within(noIma).getByText(/Classe M,M \(porte, potencial\)/)).toBeInTheDocument()
+  })
+
+  it('AuA mostra a taxa fixa; suinocultura usa a fórmula e pede o parâmetro', async () => {
+    const { usuario } = montar()
+    await incluir(usuario, '12.80.10', '12.80.10')
+    await usuario.type(
+      within(screen.getByRole('article', { name: /^12\.80\.10/ })).getByRole('textbox', {
+        name: /AU\(3\)/,
+      }),
+      '0,01',
+    )
+    expect(screen.getByText('Taxa da AuA: R$ 68,56')).toBeInTheDocument()
+
+    await incluir(usuario, '01.54.00', '01.54.00')
+    const suinos = screen.getByRole('article', { name: /^01\.54\.00/ })
+    await usuario.type(within(suinos).getByRole('textbox', { name: /CmáxC/ }), '1.000')
+    const noIma = within(suinos).getByRole('region', { name: 'No IMA: 01.54.00' })
+    expect(within(noIma).getByText('R$ 134,93')).toBeInTheDocument()
+    expect(within(noIma).getByText(/Fórmula: Pr = 24,93 \+ 0,11 × NC/)).toBeInTheDocument()
+  })
+
+  it('no município não mostra taxa do IMA; potencial divergente do simulador é avisado', async () => {
+    const { usuario } = montar()
+    await usuario.selectOptions(
+      screen.getByRole('combobox', { name: /Habilitação do município/ }),
+      '1',
+    )
+    await incluir(usuario, '12.80.00', '12.80.00')
+    const cartao = screen.getByRole('article', { name: /^12\.80\.00/ })
+    await usuario.type(within(cartao).getByRole('textbox', { name: /AU\(3\)/ }), '0,15')
+    expect(
+      within(cartao).getByText('Licenciamento no município: a taxa é a do município.'),
+    ).toBeInTheDocument()
+    expect(within(cartao).queryByText('LAP')).not.toBeInTheDocument()
+
+    await incluir(usuario, '17.21.00', '17.21.00')
+    expect(
+      within(screen.getByRole('article', { name: /^17\.21\.00/ })).getByText(
+        /O simulador do IMA ainda usa potencial poluidor G; a resolução vigente diz M\./,
+      ),
+    ).toBeInTheDocument()
+  })
+})
+
 describe('triagem de licenciamento (/triagem)', () => {
   it('começa vazia, com o aviso de que é triagem e não enquadramento oficial', () => {
     montar()

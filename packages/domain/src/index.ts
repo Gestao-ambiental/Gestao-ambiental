@@ -545,3 +545,15 @@ export {
   metrosQuadradosParaHectares,
 } from './local-do-empreendimento'
 export type { Coordenadas } from './local-do-empreendimento'
+export {
+  FONTE_DA_TAXA_IMA,
+  INSTRUCAO_NORMATIVA_GERAL,
+  TAXA_DA_AUA,
+  TAXA_DA_AUA_SUINOCULTURA,
+  calcularTaxaDoIma,
+  informacoesDoIma,
+  urlDaInstrucaoNormativa,
+} from './taxa-do-ima'
+export type { FaseDaLicenca, InformacoesDoIma, TaxaDoIma, ValorDaFase } from './taxa-do-ima'
+export { DADOS_DO_SIMULADOR_IMA, INSTRUCOES_NORMATIVAS_IMA } from './dados-simulador-ima'
+export type { DadosDoSimuladorIma, InstrucaoNormativaIma } from './dados-simulador-ima'
