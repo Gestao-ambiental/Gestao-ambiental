@@ -47,7 +47,7 @@
 
 ## 6. E-mail mensal
 
-1. **Edge Function `enviar-resumo-do-mes`** (verify_jwt = false em `supabase/config.toml`). Caminho agendado: header `x-cron-token` comparado com o segredo `CRON_TOKEN` em tempo constante; com a service role, `resumos_do_mes_pendentes` (só service role) lista o mês anterior (no fuso de cada consultoria) das consultorias **não arquivadas** que ainda não receberam; envia pelo Resend para os e-mails da Gestão ativa e grava em `public.resumo_do_mes_envio` (`registrar_envio_do_resumo`, só service role; chave consultoria + mês). **Idempotente:** rodar de novo só manda para quem ficou de fora. Falha de envio devolve 502 (o workflow fica vermelho e pode ser rodado de novo).
+1. **Edge Function `enviar-resumo-do-mes`** (verify_jwt = false em `supabase/config.toml`). Caminho agendado: header `x-cron-token` comparado com o segredo `CRON_TOKEN` em tempo constante; com a service role, `resumos_do_mes_pendentes` (só service role) lista o mês anterior (no fuso de cada consultoria) das consultorias **não arquivadas** que ainda não receberam; envia pelo Resend para os e-mails da Gestão ativa e grava em `public.resumo_do_mes_envio` (`registrar_envio_do_resumo`, só service role; chave consultoria + mês). **Idempotente:** rodar de novo só manda para quem ficou de fora. Antes de mandar, a função reserva consultoria + mês (`reservar_envio_do_resumo`, migration `20261119300000_reserva_do_resumo_do_mes.sql`, tabela `private.resumo_do_mes_reserva`): duas execuções ao mesmo tempo não mandam duas vezes. Recusa do Resend libera a reserva (`liberar_reserva_do_resumo`); sem resposta do Resend ou falha ao gravar o envio, a reserva fica e só é retomada depois de 60 minutos (19/11/2026). Falha de envio devolve 502 (o workflow fica vermelho e pode ser rodado de novo).
 2. **Teste pela central:** botão "Enviar resumo de teste para mim" (Valor com uma consultoria escolhida e seção Valor do detalhe). A função chama `central_resumo_do_mes` com o JWT de quem clicou (operador com dois fatores) e manda só para o e-mail dessa conta; nada é gravado.
 3. **Agendamento:** `.github/workflows/resumo-do-mes.yml`, `cron: "0 11 1 * *"` (dia 1, 08:00 de Brasília) e `workflow_dispatch`.
 4. Log: só ids, etapa e código. Nunca e-mails, chave, token nem números das consultorias.
@@ -59,7 +59,7 @@
 3. Aplicar as migrations (`supabase db push`, pelo fluxo normal) e publicar a função: `supabase functions deploy enviar-resumo-do-mes --project-ref <ref> --use-api` (o `verify_jwt = false` vem do `config.toml`; se publicar sem ele, use `--no-verify-jwt`).
 4. GitHub → Settings → Secrets and variables → Actions: `SUPABASE_FUNCTIONS_URL` = `https://<ref>.supabase.co/functions/v1` e `CRON_TOKEN` = o mesmo token do passo 1.
 5. Testar: na central, "Enviar resumo de teste para mim"; depois Actions → Resumo do mês → Run workflow (manda de verdade para a Gestão de cada consultoria pendente do mês anterior).
-6. O `deploy-producao.yml` publica só a `extrair-licenca`; incluir a `enviar-resumo-do-mes` lá quando o Kadu aprovar.
+6. Os workflows `migrations.yml` (staging) e `deploy-producao.yml` publicam todas as Edge Functions, inclusive a `enviar-resumo-do-mes` (19/11/2026: antes só a `extrair-licenca` saía, e correções no `_shared` nunca chegavam às outras). Publicar a função não manda nada: o envio só acontece com o `CRON_TOKEN` cadastrado e o workflow do resumo chamando.
 
 ## 7. Termos
 

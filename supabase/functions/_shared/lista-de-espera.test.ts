@@ -141,8 +141,13 @@ Deno.test('aviso: sem pendentes, não envia', async () => {
   assert.equal(chamadas.length, 0)
 })
 
-Deno.test('aviso: assunto no singular com o nome', () => {
-  assert.equal(montarEmailDoAviso([ANA]).assunto, 'Grama: Ana Prado entrou na lista de espera')
+Deno.test('aviso: o nome de quem se cadastrou nunca vai no assunto, só no corpo', () => {
+  const golpe: CadastroNaLista = { ...ANA, nome: 'Pague o boleto em golpe.test <b>já</b>' }
+  const email = montarEmailDoAviso([golpe])
+  assert.equal(email.assunto, 'Grama: 1 pessoa entrou na lista de espera')
+  assert.doesNotMatch(email.assunto, /boleto|golpe/)
+  assert.match(email.texto, /- Pague o boleto em golpe\.test <b>já<\/b>: ana@exemplo\.test/)
+  assert.doesNotMatch(montarEmailDoAviso([golpe, BRUNO]).assunto, /boleto|golpe/)
   assert.equal(formatarWhatsapp('5547999991234'), '(47) 99999-1234')
   assert.equal(formatarWhatsapp('351912345678'), '+351912345678')
 })

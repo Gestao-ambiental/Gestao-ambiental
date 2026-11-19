@@ -2080,6 +2080,9 @@ isOneToOne: false
 "liberar_aviso_de_emergencia":
 { Args: { "p_acesso_id": string }; Returns: undefined
                            },
+"liberar_reserva_do_resumo":
+{ Args: { "p_consultoria_id": string,"p_mes": string }; Returns: undefined
+                           },
 "lista_de_espera_marcar_avisados":
 { Args: { "p_ids": (string)[] }; Returns: number
                            },
@@ -2268,6 +2271,9 @@ isOneToOne: false
 { Args: { "p_acesso_id": string }; Returns: {
               "acesso_id": string,"categoria": string,"consultoria_fuso": string,"consultoria_id": string,"consultoria_nome": string,"fim_previsto": string,"inicio": string,"motivo": string,"operador_nome": string
             }[]
+                           },
+"reservar_envio_do_resumo":
+{ Args: { "p_consultoria_id": string,"p_mes": string }; Returns: boolean
                            },
 "reservar_extracao_ia":
 { Args: { "p_id": string }; Returns: boolean
