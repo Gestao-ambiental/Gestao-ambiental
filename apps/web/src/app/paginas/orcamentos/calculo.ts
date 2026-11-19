@@ -80,6 +80,37 @@ interface LinhaParaCalculo {
   terceiro?: TerceiroDoItem | null
 }
 
+/** Serviço já lido (do rascunho do editor ou do orçamento gravado), antes do cálculo. */
+export interface ServicoParaCalculo {
+  minutos: number
+  custoDiretoExtraCentavos: number
+  horaVendaId: string | null
+  responsavelId: string | null
+  quantidadeDezMilesimos: number | null
+  precoFechadoCentavos: number | null
+  terceiro: { cobranca: TerceiroDoItem['cobranca']; valorCentavos: number | null } | null
+}
+
+/**
+ * Linha do cálculo de um serviço, a mesma no editor e na proposta. Com terceirizado (ADR-0031) o
+ * custo é o dele, sem o responsável da equipe, e o valor a informar deixa o preço pendente, como
+ * em private.precificar_orcamento.
+ */
+export function linhaParaCalculo(servico: ServicoParaCalculo): LinhaParaCalculo {
+  const { terceiro } = servico
+  return {
+    minutos: servico.minutos,
+    custoDiretoExtraCentavos: servico.custoDiretoExtraCentavos,
+    horaVendaId: servico.horaVendaId,
+    responsavelId: terceiro ? null : servico.responsavelId,
+    quantidadeDezMilesimos: servico.quantidadeDezMilesimos,
+    precoFechadoCentavos: servico.precoFechadoCentavos,
+    terceiro: terceiro
+      ? { cobranca: terceiro.cobranca, valorCentavos: terceiro.valorCentavos }
+      : null,
+  }
+}
+
 /** Serviço com preço digitado: sem linha da tabela, com o preço preenchido (ADR-0023). */
 export function temPrecoDigitado(linha: LinhaParaCalculo): boolean {
   return !linha.horaVendaId && linha.precoFechadoCentavos != null

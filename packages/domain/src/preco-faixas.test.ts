@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   SEM_VISITAS,
+  honorariosPelaTabela,
   precificarOrcamento,
   problemaDasFaixas,
   valorPorFaixas,
@@ -184,5 +185,27 @@ describe('preço mínimo (ADR-0018, P12)', () => {
     })
     expect(p.divisao?.baseDoAcrescimoCentavos).toBe(51_200)
     expect(p.precoTotalCentavos).toBe(56_320)
+  })
+
+  it('honorariosPelaTabela mostra a tabela e o mínimo, sem nada no pacote', () => {
+    const [m2, h, ha] = base.horasVenda ?? []
+    if (!m2 || !h || !ha) throw new Error('sem linhas')
+    expect(honorariosPelaTabela(h, { minutos: 60 })).toEqual({
+      pelaTabelaCentavos: 16_000,
+      comMinimoCentavos: 50_000,
+    })
+    expect(honorariosPelaTabela(ha, { minutos: 0, quantidadeDezMilesimos: 125_000 })).toEqual({
+      pelaTabelaCentavos: 100_000,
+      comMinimoCentavos: 100_000,
+    })
+    // 600 m²: 500 × 2,00 + 100 × 1,50 = 1.150,00, sem mínimo.
+    expect(honorariosPelaTabela(m2, { minutos: 0, quantidadeDezMilesimos: 600 * M })).toEqual({
+      pelaTabelaCentavos: 115_000,
+      comMinimoCentavos: 115_000,
+    })
+    expect(honorariosPelaTabela(ha, { minutos: 0, quantidadeDezMilesimos: null })).toBeNull()
+    expect(
+      honorariosPelaTabela({ ...h, unidade: 'pacote' }, { minutos: 60, quantidadeDezMilesimos: 1 }),
+    ).toBeNull()
   })
 })

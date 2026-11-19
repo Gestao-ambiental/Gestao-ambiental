@@ -163,6 +163,7 @@ export {
   UNIDADES_DE_COBRANCA,
   custoDoTerceiro,
   custoHoraPorProfissao,
+  honorariosPelaTabela,
   mesmaProfissao,
   precificarOrcamento,
   problemaDasFaixas,
