@@ -1,7 +1,8 @@
 -- Limite do plano sem corrida (ADR-0026, atualização de 19/11/2026): as duas triggers de limite
 -- travam a linha da consultoria antes de contar e continuam exigindo a confirmação do adicional.
 -- A corrida em si (duas sessões) não cabe num teste pgTAP de uma sessão; aqui ficam a trava na
--- definição das funções e a regra de sempre.
+-- definição das funções (for no key update: não conflita com o key share da chave estrangeira de
+-- uma linha filha gravada antes, que dava deadlock entre ativações) e a regra de sempre.
 begin;
 
 select plan(7);
@@ -10,11 +11,11 @@ select testes.criar_dados_sinteticos();
 
 select ok(
   pg_get_functiondef('private.conferir_limite_do_convite()'::regprocedure)
-    ~* 'from public\.consultoria as c where c\.id = new\.consultoria_id for update',
+    ~* 'from public\.consultoria as c where c\.id = new\.consultoria_id for no key update',
   'o limite do convite trava a consultoria antes de contar');
 select ok(
   pg_get_functiondef('private.conferir_limite_do_empreendimento()'::regprocedure)
-    ~* 'from public\.consultoria as c where c\.id = new\.consultoria_id for update',
+    ~* 'from public\.consultoria as c where c\.id = new\.consultoria_id for no key update',
   'o limite do empreendimento trava a consultoria antes de contar');
 
 -- Teste acabado; a Gestão assina o Essencial (3 pessoas; a Filtroville tem 6). Empreendimentos
