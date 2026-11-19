@@ -11,18 +11,13 @@ import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { conferirArquivoDeEvidencia, type ProblemaDaEvidencia } from '@/lib/api/ocorrencias'
 import { registrarProtocolo, type PlanoRenovacao } from '@/lib/api/renovacoes'
 import { mensagemDoErro } from '@/lib/erros'
+import { tamanhoLegivel } from '@/lib/texto'
 
 const PROBLEMAS: Record<ProblemaDaEvidencia, string> = {
   nao_pdf: 'Este arquivo não é um PDF válido.',
   grande_demais: 'O arquivo passa de 25 MB.',
   vazio: 'O arquivo está vazio.',
   tipo: 'Envie PDF, PNG ou JPEG.',
-}
-
-function tamanhoLegivel(bytes: number): string {
-  return bytes >= 1024 * 1024
-    ? `${(bytes / (1024 * 1024)).toFixed(1).replace('.', ',')} MB`
-    : `${String(Math.max(1, Math.round(bytes / 1024)))} KB`
 }
 
 /** Modal "Registrar protocolo" (Protótipo 17, artboard 04; REN-02): número, data e comprovante. */

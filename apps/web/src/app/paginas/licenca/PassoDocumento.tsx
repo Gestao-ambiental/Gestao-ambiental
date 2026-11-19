@@ -22,6 +22,7 @@ import {
   type ProblemaDoPdf,
 } from '@/lib/api/licencas'
 import { mensagemDoErro } from '@/lib/erros'
+import { tamanhoLegivel } from '@/lib/texto'
 import { cn } from '@/lib/utils'
 
 import { ComoCadastrar, PainelExtracao, type Metodo } from './ExtracaoIa'
@@ -36,12 +37,6 @@ const PROBLEMAS: Record<ProblemaDoPdf, string> = {
 
 const classeSelect =
   'h-(--size-control) w-full rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) px-(--space-100) corpo text-(--text) outline-none focus:border-b-(--border-input-active) focus:shadow-[inset_0_-1px_0_0_var(--border-input-active)]'
-
-function tamanhoLegivel(bytes: number): string {
-  return bytes >= 1024 * 1024
-    ? `${(bytes / (1024 * 1024)).toFixed(1).replace('.', ',')} MB`
-    : `${String(Math.max(1, Math.round(bytes / 1024)))} KB`
-}
 
 /** Área de envio: arrastar ou escolher. Confere assinatura, tipo e tamanho antes de aceitar. */
 function EnvioPdf({
