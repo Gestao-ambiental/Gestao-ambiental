@@ -9,8 +9,10 @@ import {
   ehDataCivil,
   type DataCivil,
 } from './data-civil'
-import { MAXIMO_OCORRENCIAS } from './recorrencia'
 import { datasRenovacaoLao } from './renovacao'
+
+/** Limite de segurança: uma série maior que isso indica erro de cadastro (o banco usa 1200). */
+export const MAXIMO_OCORRENCIAS = 1200
 
 export type Recorrencia =
   | 'anual'
