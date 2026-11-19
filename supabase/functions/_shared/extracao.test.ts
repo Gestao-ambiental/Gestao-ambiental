@@ -121,12 +121,15 @@ Deno.test('PDF escaneado (sem texto) é reconhecido', () => {
 Deno.test('PDF com páginas ou texto demais não vai à IA', () => {
   assert.equal(excessoDoPdf(['texto'.repeat(100)]), null)
   assert.equal(excessoDoPdf(Array.from({ length: LIMITE_PAGINAS }, () => 'x')), null)
-  assert.equal(
-    excessoDoPdf(Array.from({ length: LIMITE_PAGINAS + 1 }, () => 'x')),
-    `${String(LIMITE_PAGINAS + 1)} páginas (limite ${String(LIMITE_PAGINAS)})`,
-  )
+  assert.deepEqual(excessoDoPdf(Array.from({ length: LIMITE_PAGINAS + 1 }, () => 'x')), {
+    motivo: 'pdf_grande_demais',
+    detalhe: `${String(LIMITE_PAGINAS + 1)} páginas (limite ${String(LIMITE_PAGINAS)})`,
+  })
   assert.equal(excessoDoPdf(['x'.repeat(LIMITE_CARACTERES), '   ']), null)
-  assert.match(excessoDoPdf(['x'.repeat(LIMITE_CARACTERES), 'y']) ?? '', /^400001 caracteres/)
+  // Cabe em bytes e em páginas, mas o texto passa do limite: motivo próprio, não "10 MB/300 páginas".
+  const texto = excessoDoPdf(['x'.repeat(LIMITE_CARACTERES), 'y'])
+  assert.equal(texto?.motivo, 'pdf_texto_longo_demais')
+  assert.match(texto?.detalhe ?? '', /^400001 caracteres/)
 })
 
 Deno.test('mensagem marca cada página e lista as siglas', () => {

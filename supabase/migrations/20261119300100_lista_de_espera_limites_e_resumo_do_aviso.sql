@@ -3,9 +3,10 @@
 -- 1. Teto por origem. entrar_lista_de_espera é aberta para anon. O único limite era um teto
 --    global de 200 cadastros por hora, e um robô sozinho o enchia e travava os visitantes de
 --    verdade. Agora cada origem (o IP de quem chama, lido dos headers da requisição que o
---    PostgREST expõe em request.headers) tem até 10 tentativas por hora. O teto global sobe para
---    1000 cadastros por hora e só fica como proteção final. Contato repetido continua sem gravar
---    de novo (unique no contato normalizado).
+--    PostgREST expõe em request.headers) tem até 10 tentativas por hora. IPv6 conta pelo prefixo
+--    /64 (quem tem um /64 troca de endereço à vontade); IPv4 pelo endereço exato. O teto global
+--    sobe só para 300 cadastros por hora e fica como proteção final. Contato repetido continua sem
+--    gravar de novo (unique no contato normalizado).
 --    O IP nunca é gravado: só um hash, e as tentativas com mais de 1 hora são apagadas.
 --    Sem header de IP (ex.: chamada interna), vale só o teto global.
 -- 2. Aviso agrupado. O gatilho chamava a Edge Function avisar-lista-de-espera a cada cadastro, e
@@ -13,6 +14,10 @@
 --    nos últimos 10 minutos (no máximo 6 e-mails por hora). A reserva é uma atualização atômica
 --    de uma linha só: dois cadastros simultâneos não disparam juntos. Os cadastros desse intervalo
 --    continuam pendentes e vão juntos no próximo aviso; a central sempre mostra a lista inteira.
+--    O próximo aviso não depende de outro cadastro: um job do pg_cron a cada 5 minutos chama o
+--    mesmo disparo, que só sai se há cadastro sem aviso e já passaram os 10 minutos. Assim o
+--    último cadastro de um intervalo, o resto de um pico (a função manda 50 por vez) e um envio
+--    que falhou saem em até ~15 minutos. Sem pg_cron (ex.: PGlite local), só o gatilho dispara.
 
 -- ---------------------------------------------------------------------------
 -- 1. Teto por origem
@@ -34,7 +39,8 @@ alter table private.lista_de_espera_tentativa force row level security;
 revoke all on table private.lista_de_espera_tentativa from public, anon, authenticated;
 
 -- Hash da origem da requisição, ou nulo sem header de IP. cf-connecting-ip e x-real-ip vêm do
--- proxy; x-forwarded-for fica por último (o primeiro item pode vir do próprio cliente).
+-- proxy; x-forwarded-for fica por último (o primeiro item pode vir do próprio cliente). IPv6 vira o
+-- prefixo /64 antes do hash; IPv4 fica com o endereço exato; texto que não é IP fica como veio.
 create function private.origem_da_requisicao()
 returns text
 language plpgsql
@@ -44,6 +50,7 @@ as $$
 declare
   v_cabecalhos jsonb;
   v_ip text;
+  v_inet inet;
 begin
   begin
     v_cabecalhos := nullif(current_setting('request.headers', true), '')::jsonb;
@@ -61,6 +68,17 @@ begin
   if v_ip = '' then
     return null;
   end if;
+  begin
+    v_inet := v_ip::inet;
+    -- IPv4 mapeado (::ffff:a.b.c.d) é um IPv4: endereço exato, não o /64 de todos eles.
+    if family(v_inet) = 6 and not v_inet <<= '::ffff:0:0/96'::inet then
+      v_ip := network(set_masklen(v_inet, 64))::text;
+    else
+      v_ip := host(v_inet);
+    end if;
+  exception when others then
+    null;
+  end;
   return md5('lista_de_espera:' || v_ip);
 end;
 $$;
@@ -118,7 +136,7 @@ begin
   end if;
 
   -- Teto global, só como proteção final.
-  if (select count(*) from private.lista_de_espera where criada_em > now() - interval '1 hour') >= 1000 then
+  if (select count(*) from private.lista_de_espera where criada_em > now() - interval '1 hour') >= 300 then
     raise exception 'muitas_tentativas' using errcode = 'P0001';
   end if;
 
@@ -146,8 +164,9 @@ alter table private.lista_de_espera_aviso enable row level security;
 alter table private.lista_de_espera_aviso force row level security;
 revoke all on table private.lista_de_espera_aviso from public, anon, authenticated;
 
--- Verdadeiro para quem pode disparar agora. Atualização atômica: o segundo cadastro simultâneo
--- espera o primeiro e, já com o instante novo, não atualiza.
+-- Verdadeiro para quem pode disparar agora: há cadastro sem aviso e o último disparo tem mais de
+-- 10 minutos. Atualização atômica: o segundo cadastro simultâneo espera o primeiro e, já com o
+-- instante novo, não atualiza. Sem pendente, não gasta a janela (o job periódico não dispara à toa).
 create function private.reservar_aviso_da_lista_de_espera()
 returns boolean
 language plpgsql
@@ -158,18 +177,20 @@ as $$
 begin
   update private.lista_de_espera_aviso
   set disparado_em = now()
-  where id and disparado_em < now() - interval '10 minutes';
+  where id and disparado_em < now() - interval '10 minutes'
+    and exists (select 1 from private.lista_de_espera where avisado_em is null);
   return found;
 end;
 $$;
 
 revoke all on function private.reservar_aviso_da_lista_de_espera() from public, anon, authenticated;
 
--- Mesmo gatilho de 20261115040000_lista_de_espera_contato_e_convite.sql, com a reserva antes do
--- pg_net.
-create or replace function private.chamar_aviso_da_lista_de_espera()
-returns trigger
+-- Disparo do aviso: o mesmo de 20261115040000_lista_de_espera_contato_e_convite.sql, com a reserva
+-- antes do pg_net. Chamado pelo gatilho de cadastro e pelo job periódico do pg_cron.
+create function private.disparar_aviso_da_lista_de_espera()
+returns void
 language plpgsql
+volatile
 security definer
 set search_path = ''
 as $$
@@ -181,22 +202,35 @@ begin
     select 1 from pg_proc as p join pg_namespace as n on n.oid = p.pronamespace
     where n.nspname = 'net' and p.proname = 'http_post'
   ) then
-    return null;
+    return;
   end if;
   execute 'select decrypted_secret from vault.decrypted_secrets where name = $1'
     into v_url using 'lista_espera_aviso_url';
   execute 'select decrypted_secret from vault.decrypted_secrets where name = $1'
     into v_token using 'lista_espera_aviso_token';
   if v_url is null or v_token is null then
-    return null;
+    return;
   end if;
-  -- Avisou há menos de 10 minutos: os cadastros novos ficam pendentes para o próximo aviso.
+  -- Nada pendente ou avisou há menos de 10 minutos: os pendentes saem no próximo disparo.
   if not private.reservar_aviso_da_lista_de_espera() then
-    return null;
+    return;
   end if;
   execute 'select net.http_post(url := $1, body := $2, headers := $3)'
     using v_url, '{}'::jsonb,
           jsonb_build_object('Content-Type', 'application/json', 'x-aviso-token', v_token);
+end;
+$$;
+
+revoke all on function private.disparar_aviso_da_lista_de_espera() from public, anon, authenticated;
+
+create or replace function private.chamar_aviso_da_lista_de_espera()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  perform private.disparar_aviso_da_lista_de_espera();
   return null;
 exception when others then
   -- O aviso nunca impede o cadastro.
@@ -205,3 +239,15 @@ end;
 $$;
 
 revoke all on function private.chamar_aviso_da_lista_de_espera() from public, anon, authenticated;
+
+-- Job periódico: leva os pendentes que nenhum cadastro posterior levaria. Só onde há pg_cron
+-- (Supabase); cron.schedule com o mesmo nome substitui o job.
+do $$
+begin
+  if exists (select 1 from pg_available_extensions where name = 'pg_cron') then
+    create extension if not exists pg_cron;
+    perform cron.schedule('aviso-da-lista-de-espera', '*/5 * * * *',
+                          'select private.disparar_aviso_da_lista_de_espera()');
+  end if;
+end;
+$$;

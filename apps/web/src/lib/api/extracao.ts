@@ -13,6 +13,7 @@ export const EXTRACAO_ABANDONADA_MS = 3 * 60 * 1000
 export type MotivoDaFalha =
   | 'pdf_sem_texto'
   | 'pdf_grande_demais'
+  | 'pdf_texto_longo_demais'
   | 'provedor_indisponivel'
   | 'provedor_recusou'
   | 'tempo_esgotado'
@@ -25,6 +26,8 @@ export const MENSAGEM_DA_FALHA: Record<MotivoDaFalha, string> = {
   pdf_sem_texto: 'Este PDF é uma imagem e a IA só lê PDF com texto. Siga pelo cadastro manual.',
   pdf_grande_demais:
     'A IA lê PDF com texto até 10 MB e 300 páginas. Este passa do limite: siga pelo cadastro manual.',
+  pdf_texto_longo_demais:
+    'Este PDF tem texto demais para a IA ler de uma vez (até cerca de 400 mil caracteres). Siga pelo cadastro manual.',
   provedor_indisponivel: 'A IA não respondeu agora. Tente de novo ou siga pelo manual.',
   provedor_recusou:
     'O provedor de IA recusou o pedido (chave, créditos ou modelo). Avise quem cuida da configuração e siga pelo manual.',
@@ -41,6 +44,7 @@ export const MENSAGEM_DA_FALHA: Record<MotivoDaFalha, string> = {
 export const FALHA_DEFINITIVA: ReadonlySet<MotivoDaFalha> = new Set([
   'pdf_sem_texto',
   'pdf_grande_demais',
+  'pdf_texto_longo_demais',
   'provedor_recusou',
   'configuracao_ausente',
 ])

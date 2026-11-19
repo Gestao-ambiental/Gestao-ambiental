@@ -79,11 +79,11 @@ select is(
 -- ---------------------------------------------------------------- teto por hora
 reset role;
 insert into private.lista_de_espera (nome, contato, tipo_contato)
-select 'Robô ' || g, 'robo' || g || '@exemplo.test', 'email' from generate_series(1, 998) as g;
+select 'Robô ' || g, 'robo' || g || '@exemplo.test', 'email' from generate_series(1, 298) as g;
 select testes.autenticar_como_anonimo();
 select throws_ok(
   $$select public.entrar_lista_de_espera('Mais um', 'mais@exemplo.test')$$,
-  'P0001', 'muitas_tentativas', 'passou de 1000 na última hora (teto global): recusa');
+  'P0001', 'muitas_tentativas', 'passou de 300 na última hora (teto global): recusa');
 reset role;
 select is(
   (select count(*)::integer from private.lista_de_espera where contato = 'mais@exemplo.test'),

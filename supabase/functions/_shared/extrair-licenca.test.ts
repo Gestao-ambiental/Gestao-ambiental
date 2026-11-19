@@ -8,7 +8,7 @@ import {
   type RegistroDaExtracao,
   type RespostaDoBanco,
 } from './extrair-licenca.ts'
-import { LIMITE_PAGINAS } from './extracao.ts'
+import { LIMITE_CARACTERES, LIMITE_PAGINAS } from './extracao.ts'
 
 const EXTRACAO = '30000000-0000-4000-8000-000000000001'
 const INSTRUMENTO = '10000000-0000-4000-8000-000000000001'
@@ -183,6 +183,18 @@ Deno.test('extração: PDF com páginas demais falha antes de reservar a cota', 
   assert.equal(chamadas.extrair, 0)
   assert.equal(chamadas.falhar[0]?.registro.paginas, LIMITE_PAGINAS + 1)
 })
+
+Deno.test(
+  'extração: texto longo demais (dentro de 10 MB e 300 páginas) tem motivo próprio',
+  async () => {
+    const { tratar, chamadas } = montar({ textos: ['x'.repeat(LIMITE_CARACTERES), 'y'] })
+    const corpo = (await (await tratar(pedido())).json()) as Record<string, unknown>
+    assert.equal(corpo.motivo, 'pdf_texto_longo_demais')
+    assert.match(String(corpo.detalhe), /^400001 caracteres/)
+    assert.equal(chamadas.reservar, 0)
+    assert.equal(chamadas.extrair, 0)
+  },
+)
 
 Deno.test('extração: falha do provedor registra o consumo; a reserva já contou', async () => {
   const { tratar, chamadas } = montar({

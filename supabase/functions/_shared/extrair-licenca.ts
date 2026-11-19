@@ -234,7 +234,7 @@ export function criarTratadorDaExtracao(deps: DependenciasDaExtracao) {
         return await falhar('pdf_sem_texto')
       }
       const excesso = excessoDoPdf(textos)
-      if (excesso) return await falhar('pdf_grande_demais', undefined, excesso)
+      if (excesso) return await falhar(excesso.motivo, undefined, excesso.detalhe)
       if (!pdfTemTexto(textos)) return await falhar('pdf_sem_texto')
 
       // Cota (porte do PR #24): uma reserva por extração, antes da chamada paga. Conta mesmo se o
