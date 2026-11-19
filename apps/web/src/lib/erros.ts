@@ -101,6 +101,8 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   transicao_invalida: 'Essa mudança de situação não é permitida a partir da situação atual.',
   identidade_nao_salva: 'Salve os dados da consultoria antes de enviar a logo.',
   modelo_com_mesmo_nome: 'Já existe um modelo com esse nome. Escolha outro nome.',
+  modelo_arquivado: 'Este modelo foi arquivado. Crie um novo ou duplique outro.',
+  conteudo_invalido: 'O texto do modelo não pôde ser salvo. Recarregue a página e tente de novo.',
   modelo_sem_itens: 'Salve ao menos um serviço antes de guardar como modelo.',
   nome_invalido: 'Informe um nome de até 120 caracteres.',
   orcamento_aprovado_nao_exclui:

@@ -504,3 +504,28 @@ export type {
   ResultadoDoItem,
   SituacaoDaVistoria,
 } from './vistoria'
+
+export {
+  CAMPOS_DO_MODELO,
+  GRUPOS_DE_CAMPO,
+  LIMITE_DO_CONTEUDO,
+  camposUsados,
+  documentoVazio,
+  ehChaveDoCampo,
+  marcadorSemValor,
+  nomeDoArquivoDoRelatorio,
+  preencherModelo,
+  problemaDoConteudo,
+  rotuloDoCampo,
+  valoresDoRelatorio,
+} from './modelo-documento'
+export type {
+  ChaveDoCampo,
+  DadosParaRelatorio,
+  GrupoDeCampo,
+  MarcaDoTexto,
+  ModeloPreenchido,
+  NoDoDocumento,
+  ProblemaDoConteudo,
+  ValoresDosCampos,
+} from './modelo-documento'

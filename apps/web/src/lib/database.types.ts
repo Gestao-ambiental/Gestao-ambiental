@@ -827,6 +827,44 @@ isOneToOne: false
       referencedColumns: ["consultoria_id","id"]
     }
                   ]
+                },"modelo_documento": {
+                  Row: {
+                    "arquivado_em": string | null,"arquivado_por": string | null,"atualizado_em": string,"atualizado_por": string,"consultoria_id": string,"conteudo": NonNullable<Json>,"criado_em": string,"criado_por": string,"id": string,"nome": string,"row_version": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "arquivado_em"?: string | null,"arquivado_por"?: string | null,"atualizado_em"?: string,"atualizado_por": string,"consultoria_id": string,"conteudo": NonNullable<Json>,"criado_em"?: string,"criado_por": string,"id": string,"nome": string,"row_version"?: number
+                  }
+                  Update: {
+                    "arquivado_em"?: string | null,"arquivado_por"?: string | null,"atualizado_em"?: string,"atualizado_por"?: string,"consultoria_id"?: string,"conteudo"?: NonNullable<Json>,"criado_em"?: string,"criado_por"?: string,"id"?: string,"nome"?: string,"row_version"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "modelo_documento_arquivado_por_fk"
+      columns: ["consultoria_id","arquivado_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "modelo_documento_atualizado_por_fk"
+      columns: ["consultoria_id","atualizado_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "modelo_documento_consultoria_id_fkey"
+      columns: ["consultoria_id"]
+isOneToOne: false
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "modelo_documento_criado_por_fk"
+      columns: ["consultoria_id","criado_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    }
+                  ]
                 },"mtr": {
                   Row: {
                     "atualizado_em": string,"consultoria_id": string,"criado_em": string,"criado_por": string,"destinador_cnpj": string | null,"destinador_nome": string,"documento_id": string | null,"emitido_em": string,"empreendimento_id": string,"excluido_em": string | null,"excluido_por": string | null,"id": string,"numero": string,"observacao": string | null,"row_version": number,"situacao": string,"transportador_cnpj": string | null,"transportador_nome": string
@@ -1730,6 +1768,9 @@ isOneToOne: false
 "aprovar_orcamento":
 { Args: { "p_aprovado_por": string,"p_data_aceite": string,"p_gerar_tarefas"?: boolean,"p_id": string,"p_metodo"?: string,"p_referencia": string,"p_row_version": number,"p_tarefas"?: Json }; Returns: number
                            },
+"arquivar_modelo_documento":
+{ Args: { "p_id": string,"p_row_version": number }; Returns: undefined
+                           },
 "assinar_plano_simulado":
 { Args: { "p_ciclo": string,"p_consultoria_id": string,"p_forma": string,"p_plano": string }; Returns: {
               "cobranca_id": string,"mudanca_em": string
@@ -2302,6 +2343,9 @@ isOneToOne: false
                            },
 "salvar_modelo_de_orcamento":
 { Args: { "p_modelo_id": string,"p_nome": string,"p_orcamento_id": string }; Returns: string
+                           },
+"salvar_modelo_documento":
+{ Args: { "p_consultoria_id": string,"p_conteudo": Json,"p_id": string,"p_nome": string,"p_row_version"?: number }; Returns: number
                            },
 "salvar_observacao_da_vistoria":
 { Args: { "p_id": string,"p_observacao": string }; Returns: undefined
