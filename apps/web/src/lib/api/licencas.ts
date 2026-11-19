@@ -224,18 +224,17 @@ export async function salvarIdentificacao(
   return data
 }
 
-/** Órgãos já usados pela consultoria, para sugerir no campo (texto livre). */
+/**
+ * Órgãos já usados pela consultoria, para sugerir no campo (texto livre). O banco tira as
+ * repetições: ler as licenças e deduplicar aqui perdia órgãos além do limite de linhas.
+ */
 export async function listarOrgaos(consultoriaId: string): Promise<string[]> {
-  const { data, error } = await obterSupabase()
-    .from('instrumento')
-    .select('orgao')
-    .eq('consultoria_id', consultoriaId)
-    .not('orgao', 'is', null)
-    .range(0, 499)
+  const { data, error } = await obterSupabase().rpc('listar_orgaos_em_uso', {
+    p_consultoria_id: consultoriaId,
+  })
   if (error) throw error
-  return [
-    ...new Set(data.map((linha) => linha.orgao).filter((o): o is string => Boolean(o))),
-  ].sort()
+  // A RPC sem linhas pode chegar nula.
+  return ((data as typeof data | null) ?? []).map((linha) => linha.orgao).sort()
 }
 
 // ---------------------------------------------------------------------------

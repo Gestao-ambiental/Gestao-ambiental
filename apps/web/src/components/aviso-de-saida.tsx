@@ -1,6 +1,6 @@
-// Aviso "Sair sem salvar?" do editor do orçamento e dos Primeiros passos: com alteração não salva,
-// sair para outra página pede confirmação e fechar a aba pede a confirmação do navegador. Trocar de
-// etapa fica na mesma página e não pergunta.
+// Aviso "Sair sem salvar?" (editor do orçamento, Primeiros passos, checklist do Campo): com
+// alteração não salva, sair para outra página pede confirmação e fechar a aba pede a confirmação do
+// navegador. Trocar de etapa fica na mesma página e não pergunta.
 
 import { useEffect } from 'react'
 import { useBlocker } from 'react-router'

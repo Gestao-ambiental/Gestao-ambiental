@@ -172,6 +172,27 @@ describe('cadastro de licença: permissão e passo 1 (LIC-01)', () => {
 })
 
 describe('passo 2: identificação (LIC-01)', () => {
+  it('sugere os órgãos em uso que o banco devolve, sem repetir', async () => {
+    falso.reiniciar(
+      cenario({
+        rpc: { listar_orgaos_em_uso: { data: [{ orgao: 'IMA' }, { orgao: 'FATMA' }] } },
+      }),
+    )
+    renderizarApp('/licencas/i1/identificacao')
+    await screen.findByRole('button', { name: 'Continuar' })
+    const sugestoes = document.getElementById('orgaos-usados')
+    if (!sugestoes) throw new Error('lista de órgãos ausente')
+    await waitFor(() => {
+      expect([...sugestoes.querySelectorAll('option')].map((o) => o.value)).toEqual([
+        'FATMA',
+        'IMA',
+      ])
+    })
+    expect(falso.cliente.rpc).toHaveBeenCalledWith('listar_orgaos_em_uso', {
+      p_consultoria_id: 'c-Filtroville',
+    })
+  })
+
   it('Continuar diz o que falta (tipo, marco e validade); salva com a versão do rascunho', async () => {
     falso.reiniciar(
       cenario({
@@ -220,7 +241,10 @@ describe('passo 2: identificação (LIC-01)', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
 
     await usuario.click(continuar)
-    expect(router.state.location.pathname).toBe('/licencas/i1/condicionantes')
+    // O passo seguinte é carregado sob demanda (rota lazy): a URL muda quando ele chega.
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/licencas/i1/condicionantes')
+    })
     expect(falso.cliente.rpc).toHaveBeenCalledWith(
       'salvar_identificacao',
       expect.objectContaining({

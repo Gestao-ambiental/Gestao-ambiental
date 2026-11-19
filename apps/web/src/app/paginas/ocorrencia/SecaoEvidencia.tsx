@@ -26,6 +26,7 @@ import {
 } from '@/lib/api/ocorrencias'
 import { formatarInstanteComHora } from '@/lib/datas'
 import { mensagemDoErro } from '@/lib/erros'
+import { tamanhoLegivel } from '@/lib/texto'
 
 const SITUACAO: Record<Evidencia['situacao'], { texto: string; tom: TomSelo }> = {
   em_conferencia: { texto: 'Em conferência', tom: 'revisao' },
@@ -38,12 +39,6 @@ const PROBLEMAS: Record<ProblemaDaEvidencia, string> = {
   grande_demais: 'O arquivo passa de 25 MB.',
   vazio: 'O arquivo está vazio.',
   tipo: 'Envie PDF, PNG ou JPEG.',
-}
-
-function tamanhoLegivel(bytes: number): string {
-  return bytes >= 1024 * 1024
-    ? `${(bytes / (1024 * 1024)).toFixed(1).replace('.', ',')} MB`
-    : `${String(Math.max(1, Math.round(bytes / 1024)))} KB`
 }
 
 function dataDe(valor: string): DataCivil | null {

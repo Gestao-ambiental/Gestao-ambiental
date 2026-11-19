@@ -8,6 +8,7 @@ import { Icone } from '@/components/ui/icone'
 import { Selo, type TomSelo } from '@/components/ui/selo'
 import { conferirPdf, type ProblemaDoPdf } from '@/lib/api/licencas'
 import type { ArquivoPdf } from '@/lib/api/residuos'
+import { tamanhoLegivel } from '@/lib/texto'
 import { cn } from '@/lib/utils'
 
 import { classeControle } from './comum'
@@ -87,12 +88,6 @@ const PROBLEMAS_DO_PDF: Record<ProblemaDoPdf, string> = {
   nao_pdf: 'Este arquivo não é um PDF válido.',
   grande_demais: 'O arquivo passa de 25 MB.',
   vazio: 'O arquivo está vazio.',
-}
-
-function tamanhoLegivel(bytes: number): string {
-  return bytes >= 1024 * 1024
-    ? `${(bytes / (1024 * 1024)).toFixed(1).replace('.', ',')} MB`
-    : `${String(Math.max(1, Math.round(bytes / 1024)))} KB`
 }
 
 /**

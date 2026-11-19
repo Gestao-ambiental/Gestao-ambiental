@@ -290,7 +290,12 @@ export function SecaoVistorias({
   const consulta = useInfiniteQuery({
     queryKey: ['vistorias', atual.consultoriaId, 'ocorrencia', ocorrenciaId],
     queryFn: ({ pageParam }) =>
-      listarVistorias({ ocorrenciaId, somenteMinhas: false, deslocamento: pageParam }),
+      listarVistorias({
+        consultoriaId: atual.consultoriaId,
+        ocorrenciaId,
+        somenteMinhas: false,
+        deslocamento: pageParam,
+      }),
     initialPageParam: 0,
     getNextPageParam: (pagina) => pagina.proxima,
   })

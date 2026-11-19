@@ -1,5 +1,5 @@
 import { adicionarDias, hojeNoFuso } from '@gestao-ambiental/domain'
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import axe from 'axe-core'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -177,7 +177,38 @@ describe('Minhas vistorias (/campo)', () => {
     expect(screen.queryByText('Cancelada')).not.toBeInTheDocument()
     expect(falso.cliente.rpc).toHaveBeenCalledWith(
       'listar_vistorias',
-      expect.objectContaining({ p_somente_minhas: true, p_deslocamento: 0 }),
+      expect.objectContaining({
+        p_consultoria_id: 'c-Filtroville',
+        p_somente_minhas: true,
+        p_deslocamento: 0,
+      }),
+    )
+  })
+
+  it('com dois vínculos pede só as vistorias da consultoria selecionada', async () => {
+    const sessao = sessaoDe('ana@filtroville.test', 'Ana Ribeiro')
+    window.localStorage.setItem(`grama:consultoria:${sessao.user.id}`, 'c-Verdeplan')
+    falso.reiniciar(
+      cenario({
+        rpc: {
+          meus_vinculos: {
+            data: [vinculoFalso('Filtroville', 'equipe'), vinculoFalso('Verdeplan', 'equipe')],
+          },
+        },
+      }),
+    )
+    renderizarApp('/campo')
+
+    expect(
+      await screen.findByRole('link', { name: 'Abrir vistoria Inspeção do abrigo de resíduos' }),
+    ).toBeInTheDocument()
+    expect(falso.cliente.rpc).toHaveBeenCalledWith(
+      'listar_vistorias',
+      expect.objectContaining({ p_consultoria_id: 'c-Verdeplan' }),
+    )
+    expect(falso.cliente.rpc).not.toHaveBeenCalledWith(
+      'listar_vistorias',
+      expect.objectContaining({ p_consultoria_id: 'c-Filtroville' }),
     )
   })
 
@@ -329,6 +360,43 @@ describe('checklist (/campo/:id/checklist)', () => {
     await usuario.click(area.getByRole('button', { name: 'Tentar de novo' }))
     expect(await area.findByText('Salvo')).toBeInTheDocument()
     expect(screen.getByText('1 de 2 itens')).toBeInTheDocument()
+  })
+
+  it('comentário que não salvou pede confirmação antes de sair para a foto', async () => {
+    let falhar = true
+    falso.reiniciar(
+      cenario({
+        rpc: {
+          registrar_item_da_vistoria: () =>
+            falhar ? { error: { message: 'erro de rede' } } : { data: null },
+        },
+      }),
+    )
+    const usuario = userEvent.setup()
+    const { router } = renderizarApp('/campo/v1/checklist')
+
+    await screen.findByText('0 de 2 itens')
+    const area = areaDoItem('i1')
+    const grupo = screen.getByRole('group', { name: 'Registrar área visitada' })
+    await usuario.type(area.getByLabelText('Comentário'), 'Abrigo sem cobertura')
+    await usuario.click(within(grupo).getByRole('button', { name: 'Requer avaliação' }))
+    expect(await area.findByText(/Não salvou/)).toBeInTheDocument()
+
+    await usuario.click(area.getByRole('link', { name: 'Tirar foto: Registrar área visitada' }))
+    const dialogo = await screen.findByRole('dialog', { name: 'Sair sem salvar?' })
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Continuar aqui' }))
+    expect(router.state.location.pathname).toBe('/campo/v1/checklist')
+    expect(area.getByLabelText(/Comentário/)).toHaveValue('Abrigo sem cobertura')
+
+    // Depois de salvar, sai sem perguntar.
+    falhar = false
+    await usuario.click(area.getByRole('button', { name: 'Tentar de novo' }))
+    expect(await area.findByText('Salvo')).toBeInTheDocument()
+    await usuario.click(area.getByRole('link', { name: 'Tirar foto: Registrar área visitada' }))
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/campo/v1/itens/i1/foto')
+    })
+    expect(screen.queryByRole('dialog', { name: 'Sair sem salvar?' })).not.toBeInTheDocument()
   })
 
   it('não tem violações de acessibilidade detectáveis pelo axe', async () => {
