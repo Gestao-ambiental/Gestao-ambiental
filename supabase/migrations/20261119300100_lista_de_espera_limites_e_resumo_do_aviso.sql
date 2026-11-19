@@ -13,6 +13,10 @@
 --    nos últimos 10 minutos (no máximo 6 e-mails por hora). A reserva é uma atualização atômica
 --    de uma linha só: dois cadastros simultâneos não disparam juntos. Os cadastros desse intervalo
 --    continuam pendentes e vão juntos no próximo aviso; a central sempre mostra a lista inteira.
+--    O próximo aviso não depende de outro cadastro: um job do pg_cron a cada 5 minutos chama o
+--    mesmo disparo, que só sai se há cadastro sem aviso e já passaram os 10 minutos. Assim o
+--    último cadastro de um intervalo, o resto de um pico (a função manda 50 por vez) e um envio
+--    que falhou saem em até ~15 minutos. Sem pg_cron (ex.: PGlite local), só o gatilho dispara.
 
 -- ---------------------------------------------------------------------------
 -- 1. Teto por origem
@@ -146,8 +150,9 @@ alter table private.lista_de_espera_aviso enable row level security;
 alter table private.lista_de_espera_aviso force row level security;
 revoke all on table private.lista_de_espera_aviso from public, anon, authenticated;
 
--- Verdadeiro para quem pode disparar agora. Atualização atômica: o segundo cadastro simultâneo
--- espera o primeiro e, já com o instante novo, não atualiza.
+-- Verdadeiro para quem pode disparar agora: há cadastro sem aviso e o último disparo tem mais de
+-- 10 minutos. Atualização atômica: o segundo cadastro simultâneo espera o primeiro e, já com o
+-- instante novo, não atualiza. Sem pendente, não gasta a janela (o job periódico não dispara à toa).
 create function private.reservar_aviso_da_lista_de_espera()
 returns boolean
 language plpgsql
@@ -158,18 +163,20 @@ as $$
 begin
   update private.lista_de_espera_aviso
   set disparado_em = now()
-  where id and disparado_em < now() - interval '10 minutes';
+  where id and disparado_em < now() - interval '10 minutes'
+    and exists (select 1 from private.lista_de_espera where avisado_em is null);
   return found;
 end;
 $$;
 
 revoke all on function private.reservar_aviso_da_lista_de_espera() from public, anon, authenticated;
 
--- Mesmo gatilho de 20261115040000_lista_de_espera_contato_e_convite.sql, com a reserva antes do
--- pg_net.
-create or replace function private.chamar_aviso_da_lista_de_espera()
-returns trigger
+-- Disparo do aviso: o mesmo de 20261115040000_lista_de_espera_contato_e_convite.sql, com a reserva
+-- antes do pg_net. Chamado pelo gatilho de cadastro e pelo job periódico do pg_cron.
+create function private.disparar_aviso_da_lista_de_espera()
+returns void
 language plpgsql
+volatile
 security definer
 set search_path = ''
 as $$
@@ -181,22 +188,35 @@ begin
     select 1 from pg_proc as p join pg_namespace as n on n.oid = p.pronamespace
     where n.nspname = 'net' and p.proname = 'http_post'
   ) then
-    return null;
+    return;
   end if;
   execute 'select decrypted_secret from vault.decrypted_secrets where name = $1'
     into v_url using 'lista_espera_aviso_url';
   execute 'select decrypted_secret from vault.decrypted_secrets where name = $1'
     into v_token using 'lista_espera_aviso_token';
   if v_url is null or v_token is null then
-    return null;
+    return;
   end if;
-  -- Avisou há menos de 10 minutos: os cadastros novos ficam pendentes para o próximo aviso.
+  -- Nada pendente ou avisou há menos de 10 minutos: os pendentes saem no próximo disparo.
   if not private.reservar_aviso_da_lista_de_espera() then
-    return null;
+    return;
   end if;
   execute 'select net.http_post(url := $1, body := $2, headers := $3)'
     using v_url, '{}'::jsonb,
           jsonb_build_object('Content-Type', 'application/json', 'x-aviso-token', v_token);
+end;
+$$;
+
+revoke all on function private.disparar_aviso_da_lista_de_espera() from public, anon, authenticated;
+
+create or replace function private.chamar_aviso_da_lista_de_espera()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  perform private.disparar_aviso_da_lista_de_espera();
   return null;
 exception when others then
   -- O aviso nunca impede o cadastro.
@@ -205,3 +225,15 @@ end;
 $$;
 
 revoke all on function private.chamar_aviso_da_lista_de_espera() from public, anon, authenticated;
+
+-- Job periódico: leva os pendentes que nenhum cadastro posterior levaria. Só onde há pg_cron
+-- (Supabase); cron.schedule com o mesmo nome substitui o job.
+do $$
+begin
+  if exists (select 1 from pg_available_extensions where name = 'pg_cron') then
+    create extension if not exists pg_cron;
+    perform cron.schedule('aviso-da-lista-de-espera', '*/5 * * * *',
+                          'select private.disparar_aviso_da_lista_de_espera()');
+  end if;
+end;
+$$;
