@@ -3,9 +3,10 @@
 -- 1. Teto por origem. entrar_lista_de_espera é aberta para anon. O único limite era um teto
 --    global de 200 cadastros por hora, e um robô sozinho o enchia e travava os visitantes de
 --    verdade. Agora cada origem (o IP de quem chama, lido dos headers da requisição que o
---    PostgREST expõe em request.headers) tem até 10 tentativas por hora. O teto global sobe para
---    1000 cadastros por hora e só fica como proteção final. Contato repetido continua sem gravar
---    de novo (unique no contato normalizado).
+--    PostgREST expõe em request.headers) tem até 10 tentativas por hora. IPv6 conta pelo prefixo
+--    /64 (quem tem um /64 troca de endereço à vontade); IPv4 pelo endereço exato. O teto global
+--    sobe só para 300 cadastros por hora e fica como proteção final. Contato repetido continua sem
+--    gravar de novo (unique no contato normalizado).
 --    O IP nunca é gravado: só um hash, e as tentativas com mais de 1 hora são apagadas.
 --    Sem header de IP (ex.: chamada interna), vale só o teto global.
 -- 2. Aviso agrupado. O gatilho chamava a Edge Function avisar-lista-de-espera a cada cadastro, e
@@ -38,7 +39,8 @@ alter table private.lista_de_espera_tentativa force row level security;
 revoke all on table private.lista_de_espera_tentativa from public, anon, authenticated;
 
 -- Hash da origem da requisição, ou nulo sem header de IP. cf-connecting-ip e x-real-ip vêm do
--- proxy; x-forwarded-for fica por último (o primeiro item pode vir do próprio cliente).
+-- proxy; x-forwarded-for fica por último (o primeiro item pode vir do próprio cliente). IPv6 vira o
+-- prefixo /64 antes do hash; IPv4 fica com o endereço exato; texto que não é IP fica como veio.
 create function private.origem_da_requisicao()
 returns text
 language plpgsql
@@ -48,6 +50,7 @@ as $$
 declare
   v_cabecalhos jsonb;
   v_ip text;
+  v_inet inet;
 begin
   begin
     v_cabecalhos := nullif(current_setting('request.headers', true), '')::jsonb;
@@ -65,6 +68,17 @@ begin
   if v_ip = '' then
     return null;
   end if;
+  begin
+    v_inet := v_ip::inet;
+    -- IPv4 mapeado (::ffff:a.b.c.d) é um IPv4: endereço exato, não o /64 de todos eles.
+    if family(v_inet) = 6 and not v_inet <<= '::ffff:0:0/96'::inet then
+      v_ip := network(set_masklen(v_inet, 64))::text;
+    else
+      v_ip := host(v_inet);
+    end if;
+  exception when others then
+    null;
+  end;
   return md5('lista_de_espera:' || v_ip);
 end;
 $$;
@@ -122,7 +136,7 @@ begin
   end if;
 
   -- Teto global, só como proteção final.
-  if (select count(*) from private.lista_de_espera where criada_em > now() - interval '1 hour') >= 1000 then
+  if (select count(*) from private.lista_de_espera where criada_em > now() - interval '1 hour') >= 300 then
     raise exception 'muitas_tentativas' using errcode = 'P0001';
   end if;
 
