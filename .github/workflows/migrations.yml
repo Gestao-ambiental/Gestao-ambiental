@@ -79,4 +79,4 @@ jobs:
         run: pnpm exec supabase db push
       # O segredo OPENROUTER_API_KEY é cadastrado uma vez no projeto (docs/setup.md), nunca aqui.
       - name: Publicar Edge Functions
-        run: pnpm exec supabase functions deploy extrair-licenca --project-ref "$SUPABASE_PROJECT_ID" --use-api
+        run: pnpm exec supabase functions deploy extrair-licenca consultar-local --project-ref "$SUPABASE_PROJECT_ID" --use-api
