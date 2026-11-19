@@ -9,7 +9,6 @@ import {
   formatarDataCivil,
   formatarReais,
   mascararDocumento,
-  primeiroVencimento,
   tipoDoDocumento,
   valorDoCiclo,
   type CatalogoComercial,
@@ -41,11 +40,6 @@ import { ehSemPermissao, mensagemDoErro } from '@/lib/erros'
 import { cn } from '@/lib/utils'
 
 import { useCatalogoComercial } from './catalogo'
-import {
-  BotaoPagarSimulado,
-  DialogoPagamentoSimulado,
-  type CobrancaParaPagar,
-} from './DialogoPagamentoSimulado'
 import {
   CHAVE_COBRANCAS,
   CHAVE_SITUACAO_COMERCIAL,
@@ -235,7 +229,6 @@ function EscolhaDePlano({
   // o banco, para o armazenamento do navegador nem para o log.
   const [documento, setDocumento] = useState('')
   const [erros, setErros] = useState<{ nome?: string; email?: string; documento?: string }>({})
-  const [aPagar, setAPagar] = useState<CobrancaParaPagar | null>(null)
   const [confirmarCancelamento, setConfirmarCancelamento] = useState(false)
   const nomeDoGrupo = useId()
   const nomeDaForma = useId()
@@ -248,16 +241,9 @@ function EscolhaDePlano({
 
   const assinar = useMutation({
     mutationFn: () => assinarPlanoSimulado(atual.consultoriaId, plano, ciclo, forma),
-    onSuccess: async (resultado) => {
+    onSuccess: async () => {
       setDocumento('')
       await atualizar()
-      if (resultado.cobrancaId) {
-        setAPagar({
-          id: resultado.cobrancaId,
-          valorCentavos: valorDoCiclo(plano, ciclo, catalogo),
-          vencimento: primeiroVencimento(dados.hoje, dados.situacao.testeAte),
-        })
-      }
     },
   })
   const trocar = useMutation({
@@ -397,7 +383,7 @@ function EscolhaDePlano({
 
         <div className="flex flex-wrap gap-(--space-100)">
           <Botao type="submit" aparencia="primario" disabled={ocupado}>
-            {ativa ? 'Trocar plano' : 'Assinar e pagar'}
+            {ativa ? 'Trocar plano' : 'Assinar'}
           </Botao>
           {ativa ? (
             <Botao
@@ -448,18 +434,12 @@ function EscolhaDePlano({
           </p>
         ) : null}
       </Dialogo>
-      <DialogoPagamentoSimulado
-        cobranca={aPagar}
-        aoFechar={() => {
-          setAPagar(null)
-        }}
-      />
     </Secao>
   )
 }
 
 function Cobrancas() {
-  const { atual, suporte } = useConsultoria()
+  const { atual } = useConsultoria()
   const consulta = useInfiniteQuery({
     queryKey: [CHAVE_COBRANCAS, atual.consultoriaId],
     queryFn: ({ pageParam }) => listarCobrancas(atual.consultoriaId, pageParam),
@@ -511,9 +491,6 @@ function Cobrancas() {
                 <th scope="col" className={classeCabecalho}>
                   Pago em
                 </th>
-                <th scope="col" className={classeCabecalho}>
-                  <span className="sr-only">Ações</span>
-                </th>
               </tr>
             </thead>
             <tbody>
@@ -543,11 +520,6 @@ function Cobrancas() {
                   </td>
                   <td className={classeCelula}>
                     {c.pagoEm ? formatarDataCivil(c.pagoEm as DataCivil) : '—'}
-                  </td>
-                  <td className={classeCelula}>
-                    {!suporte && (c.situacao === 'pendente' || c.situacao === 'vencida') ? (
-                      <BotaoPagarSimulado cobranca={c} />
-                    ) : null}
                   </td>
                 </tr>
               ))}

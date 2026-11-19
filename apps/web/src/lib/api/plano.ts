@@ -290,7 +290,8 @@ export function ehAdicionalNaoConfirmado(erro: unknown): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// Cobrança simulada (protótipo): assinar, pagar e cancelar sem Asaas real
+// Cobrança simulada (protótipo): assinar e cancelar sem Asaas real; o pagamento é confirmado
+// pela central (operador com dois fatores)
 // ---------------------------------------------------------------------------
 
 /**
@@ -312,14 +313,6 @@ export async function assinarPlanoSimulado(
   if (error) throw error
   const linha = linhas[0]
   return { cobrancaId: linha?.cobranca_id ?? null, mudancaEm: linha?.mudanca_em ?? null }
-}
-
-/** "Confirmar pagamento" do diálogo de pagamento simulado. */
-export async function pagarCobrancaSimulada(cobrancaId: string): Promise<void> {
-  const { error } = await obterSupabase().rpc('pagar_cobranca_simulada', {
-    p_cobranca_id: cobrancaId,
-  })
-  if (error) throw error
 }
 
 /** Cancela: o plano vale até o fim do período pago. */

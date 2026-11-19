@@ -1,5 +1,5 @@
--- Cobrança simulada do protótipo (ADR-0026): assinar, pagar, simular atraso (só leitura) e
--- pagamento na central; quem não pode, não faz; tabelas da condição comercial isoladas.
+-- Cobrança simulada do protótipo (ADR-0026): assinar, simular atraso (só leitura) e pagamento pelo
+-- operador; quem não pode, não faz; tabelas da condição comercial isoladas.
 begin;
 
 select plan(14);
@@ -47,10 +47,15 @@ select throws_ok(
   $$select public.criar_empreendimento('e0000000-0000-4000-8000-000000004202',
       'c0000000-0000-4000-8000-00000000000a', 'Em atraso')$$,
   '42501', 'consultoria_somente_leitura', 'atraso de 10 dias: só leitura');
+-- Desde 19/11/2026 a Gestão não marca a própria cobrança como paga (ver 600): só o operador.
+select set_config('testes.cobranca_aberta',
+  (select s.cobranca_aberta_id::text from public.situacao_comercial('c0000000-0000-4000-8000-00000000000a') as s),
+  true);
+select testes.autenticar_com_dois_fatores('operador42@grama.test');
 select lives_ok(
-  $$select public.pagar_cobranca_simulada(s.cobranca_aberta_id)
-    from public.situacao_comercial('c0000000-0000-4000-8000-00000000000a') as s$$,
-  'a Gestão paga mesmo em só leitura');
+  $$select public.pagar_cobranca_simulada(current_setting('testes.cobranca_aberta')::uuid)$$,
+  'o operador paga a cobrança da consultoria em só leitura');
+select testes.autenticar_como('eduardo@filtroville.test');
 select lives_ok(
   $$select public.criar_empreendimento('e0000000-0000-4000-8000-000000004202',
       'c0000000-0000-4000-8000-00000000000a', 'Depois de pagar')$$,

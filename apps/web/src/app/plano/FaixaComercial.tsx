@@ -5,7 +5,6 @@ import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Botao } from '@/components/ui/botao'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 
-import { BotaoPagarSimulado } from './DialogoPagamentoSimulado'
 import { useDadosComerciais } from './situacao'
 
 function BotaoPlano() {
@@ -39,14 +38,7 @@ export function FaixaComercial() {
         role="status"
         titulo="Somente leitura até o pagamento"
         className="mb-(--space-200)"
-        acoes={
-          gestao ? (
-            <>
-              <BotaoPagarSimulado cobranca={aberta} />
-              <BotaoPlano />
-            </>
-          ) : undefined
-        }
+        acoes={gestao ? <BotaoPlano /> : undefined}
       >
         {s.situacao === 'teste_encerrado'
           ? 'O teste acabou. Ninguém cria nem edita até a Gestão escolher um plano.'
@@ -64,7 +56,7 @@ export function FaixaComercial() {
         role="status"
         titulo="Cobrança vencida"
         className="mb-(--space-200)"
-        acoes={<BotaoPagarSimulado cobranca={aberta} />}
+        acoes={<BotaoPlano />}
       >
         {aberta ? `${formatarReais(aberta.valorCentavos)} · ` : ''}
         Venceu em {formatarDataCivil(s.emAtrasoDesde)}. Sem pagamento, a consultoria fica somente
@@ -80,7 +72,7 @@ export function FaixaComercial() {
         role="status"
         titulo="A cobrança do Grama vence hoje"
         className="mb-(--space-200)"
-        acoes={<BotaoPagarSimulado cobranca={aberta} />}
+        acoes={<BotaoPlano />}
       >
         {aberta ? formatarReais(aberta.valorCentavos) : null}
       </MensagemSecao>
