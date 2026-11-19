@@ -45,6 +45,8 @@ const ERROS_DO_INICIO: Record<string, number> = {
   pdf_obrigatorio: 409,
   condicionantes_existentes: 409,
   extracao_em_andamento: 409,
+  ia_fora_do_plano: 403,
+  consultoria_somente_leitura: 403,
 }
 
 Deno.serve(async (pedido) => {

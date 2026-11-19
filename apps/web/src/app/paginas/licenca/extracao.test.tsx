@@ -250,6 +250,30 @@ describe('extrair com IA: passo 1 (IA-01, IA-04)', () => {
       ),
     ).toBeInTheDocument()
   })
+
+  it('plano sem IA: a recusa explica e leva ao cadastro manual', async () => {
+    const usuario = userEvent.setup()
+    falso.reiniciar(
+      cenario({
+        funcoes: {
+          'extrair-licenca': {
+            error: new FunctionsHttpError(
+              new Response(JSON.stringify({ erro: 'ia_fora_do_plano' }), { status: 403 }),
+            ),
+          },
+        },
+      }),
+    )
+    renderizarApp('/licencas/i1/documento')
+    await usuario.click(await screen.findByRole('radio', { name: 'Extrair com IA' }))
+    await usuario.click(screen.getByRole('button', { name: 'Continuar' }))
+    expect(
+      await screen.findByText(
+        'A extração por IA não faz parte do plano desta consultoria. Siga pelo cadastro manual.',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Cadastrar manualmente' })).toBeInTheDocument()
+  })
 })
 
 const propostaConcluida = {
