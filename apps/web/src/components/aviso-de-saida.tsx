@@ -23,6 +23,10 @@ export function AvisoDeSaida({
     ({ currentLocation, nextLocation }) =>
       bloquear() && currentLocation.pathname !== nextLocation.pathname,
   )
+  // Saída barrada por uma gravação ainda em curso: se ela termina bem, a saída segue sem perguntar.
+  useEffect(() => {
+    if (bloqueio.state === 'blocked' && !sujo) bloqueio.proceed()
+  }, [bloqueio, sujo])
   useEffect(() => {
     if (!sujo) return
     const avisar = (evento: BeforeUnloadEvent) => {
