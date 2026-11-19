@@ -2077,6 +2077,9 @@ isOneToOne: false
 "iniciar_vistoria":
 { Args: { "p_id": string }; Returns: number
                            },
+"liberar_aviso_de_emergencia":
+{ Args: { "p_acesso_id": string }; Returns: undefined
+                           },
 "lista_de_espera_marcar_avisados":
 { Args: { "p_ids": (string)[] }; Returns: number
                            },
@@ -2260,6 +2263,11 @@ isOneToOne: false
                            },
 "remover_logo_da_consultoria":
 { Args: { "p_consultoria_id": string }; Returns: undefined
+                           },
+"reservar_aviso_de_emergencia":
+{ Args: { "p_acesso_id": string }; Returns: {
+              "acesso_id": string,"categoria": string,"consultoria_fuso": string,"consultoria_id": string,"consultoria_nome": string,"fim_previsto": string,"inicio": string,"motivo": string,"operador_nome": string
+            }[]
                            },
 "responder_linha_de_base":
 { Args: { "p_consultoria_id": string,"p_horas_semana_conferindo": number,"p_licencas_ativas": number,"p_minutos_por_condicionante": number,"p_surpresas_por_mes": number }; Returns: string

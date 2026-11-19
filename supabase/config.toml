@@ -394,6 +394,11 @@ verify_jwt = false
 [functions.avisar-lista-de-espera]
 verify_jwt = false
 
+# Aviso do acesso de emergência (ADR-0025): chamada pelo gatilho do banco (pg_net, header
+# x-aviso-token) e pelo front da central (JWT do operador, conferido pelo banco na RPC).
+[functions.avisar-acesso-de-suporte]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327
