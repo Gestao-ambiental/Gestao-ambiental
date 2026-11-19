@@ -67,6 +67,8 @@ function ItemDoChecklist({
   const idComentario = useId()
   const [resultado, setResultado] = useState<ResultadoDoItem>(item.resultado)
   const [comentario, setComentario] = useState(item.comentario ?? '')
+  // O texto da caixa agora, para a gravação que termina saber se ele já mudou de novo.
+  const comentarioDigitado = useRef(comentario)
   const [erroComentario, setErroComentario] = useState<string | null>(null)
 
   const salvar = useMutation({
@@ -88,6 +90,8 @@ function ItemDoChecklist({
           ),
       )
       void queryClient.invalidateQueries({ queryKey: ['vistorias'] })
+      // Só agora o comentário está no banco; o que foi digitado depois continua pendente.
+      aoMudarNaoSalvo(item.id, comentarioDigitado.current.trim() !== registro.comentario.trim())
     },
     // O texto só existe nesta tela: sair agora o perderia.
     onError: () => {
@@ -95,8 +99,9 @@ function ItemDoChecklist({
     },
   })
 
+  // O item segue "não salvo" até o banco confirmar: sair com a gravação em curso pede
+  // confirmação, e o aviso se fecha sozinho quando ela termina bem.
   function enviar(registro: Registro) {
-    aoMudarNaoSalvo(item.id, false)
     salvar.mutate(registro)
   }
 
@@ -185,6 +190,7 @@ function ItemDoChecklist({
             className={classeAreaTexto}
             onChange={(evento) => {
               setComentario(evento.target.value)
+              comentarioDigitado.current = evento.target.value
               if (evento.target.value.trim()) setErroComentario(null)
               aoMudarNaoSalvo(
                 item.id,

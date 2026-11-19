@@ -1,5 +1,6 @@
 import type { RouteObject } from 'react-router'
 
+import { carregarRota } from './carregar-rota'
 import { RequerConsultoria } from './consultoria/RequerConsultoria'
 import { AppShell } from './layout/AppShell'
 import { LayoutPublico } from './layout/LayoutPublico'
@@ -39,6 +40,7 @@ import { RequerSessao } from './sessao/RequerSessao'
  *
  * Central administrativa, cadastro de licença, orçamentos e resíduos usam `lazy`: o código só é
  * baixado quando a rota abre, e o pacote inicial fica menor. Campo, login e o shell vêm direto.
+ * `carregarRota` recarrega a página uma vez se o arquivo da rota sumiu num deploy novo.
  */
 export const rotas: RouteObject[] = [
   {
@@ -65,50 +67,57 @@ export const rotas: RouteObject[] = [
     children: [
       {
         path: 'admin',
-        lazy: () =>
+        lazy: carregarRota(() =>
           import('./paginas/central/LayoutCentral').then((m) => ({ Component: m.LayoutCentral })),
+        ),
         children: [
           {
             index: true,
-            lazy: () =>
+            lazy: carregarRota(() =>
               import('./paginas/central/PaginaCentral').then((m) => ({
                 Component: m.PaginaCentral,
               })),
+            ),
           },
           {
             path: 'consultorias/:id',
-            lazy: () =>
+            lazy: carregarRota(() =>
               import('./paginas/central/PaginaCentralConsultoria').then((m) => ({
                 Component: m.PaginaCentralConsultoria,
               })),
+            ),
           },
           {
             path: 'financeiro',
-            lazy: () =>
+            lazy: carregarRota(() =>
               import('./paginas/central/PaginaCentralFinanceiro').then((m) => ({
                 Component: m.PaginaCentralFinanceiro,
               })),
+            ),
           },
           {
             path: 'valor',
-            lazy: () =>
+            lazy: carregarRota(() =>
               import('./paginas/central/PaginaCentralValor').then((m) => ({
                 Component: m.PaginaCentralValor,
               })),
+            ),
           },
           {
             path: 'parametros',
-            lazy: () =>
+            lazy: carregarRota(() =>
               import('./paginas/central/PaginaCentralParametros').then((m) => ({
                 Component: m.PaginaCentralParametros,
               })),
+            ),
           },
           {
             path: 'lista-de-espera',
-            lazy: () =>
+            lazy: carregarRota(() =>
               import('./paginas/central/PaginaCentralListaDeEspera').then((m) => ({
                 Component: m.PaginaCentralListaDeEspera,
               })),
+            ),
           },
         ],
       },
@@ -118,51 +127,58 @@ export const rotas: RouteObject[] = [
           // Cadastro de licença: tela cheia, fora do shell (Protótipos 10 a 14).
           {
             path: 'licencas/nova',
-            lazy: () =>
+            lazy: carregarRota(() =>
               import('./paginas/licenca/PassoDocumento').then((m) => ({
                 Component: m.PassoDocumentoNovo,
               })),
+            ),
           },
           {
             path: 'licencas/:id/documento',
-            lazy: () =>
+            lazy: carregarRota(() =>
               import('./paginas/licenca/PassoDocumento').then((m) => ({
                 Component: m.PassoDocumento,
               })),
+            ),
           },
           {
             path: 'licencas/:id/identificacao',
-            lazy: () =>
+            lazy: carregarRota(() =>
               import('./paginas/licenca/PassoIdentificacao').then((m) => ({
                 Component: m.PassoIdentificacao,
               })),
+            ),
           },
           {
             path: 'licencas/:id/condicionantes',
-            lazy: () =>
+            lazy: carregarRota(() =>
               import('./paginas/licenca/PassoCondicionantes').then((m) => ({
                 Component: m.PassoCondicionantes,
               })),
+            ),
           },
           {
             path: 'licencas/:id/prazos',
-            lazy: () =>
+            lazy: carregarRota(() =>
               import('./paginas/licenca/PassoPrazos').then((m) => ({ Component: m.PassoPrazos })),
+            ),
           },
           {
             path: 'licencas/:id/responsaveis',
-            lazy: () =>
+            lazy: carregarRota(() =>
               import('./paginas/licenca/PassoResponsaveis').then((m) => ({
                 Component: m.PassoResponsaveis,
               })),
+            ),
           },
           // Proposta pronta (ORC-05): tela cheia, para imprimir ou salvar PDF sem o menu.
           {
             path: 'orcamentos/:id/proposta',
-            lazy: () =>
+            lazy: carregarRota(() =>
               import('./paginas/orcamentos/PaginaProposta').then((m) => ({
                 Component: m.PaginaProposta,
               })),
+            ),
           },
           {
             element: <AppShell />,
@@ -173,10 +189,11 @@ export const rotas: RouteObject[] = [
               { path: 'empreendimentos/:id', element: <PaginaEmpreendimento /> },
               {
                 path: 'empreendimentos/:id/residuos',
-                lazy: () =>
+                lazy: carregarRota(() =>
                   import('./paginas/residuos/registro/PaginaMtrs').then((m) => ({
                     Component: m.PaginaMtrs,
                   })),
+                ),
               },
               { path: 'ocorrencias/:id', element: <PaginaOcorrencia /> },
               // Vistoria móvel (ADR-0033): celular primeiro.
@@ -190,77 +207,87 @@ export const rotas: RouteObject[] = [
               // Resíduos, fase 1 (sem integração com o IMA; ADR-0028): abas da área.
               {
                 path: 'residuos',
-                lazy: () =>
+                lazy: carregarRota(() =>
                   import('./paginas/residuos/LayoutResiduos').then((m) => ({
                     Component: m.LayoutResiduos,
                   })),
+                ),
                 children: [
                   {
                     index: true,
-                    lazy: () =>
+                    lazy: carregarRota(() =>
                       import('./paginas/residuos/PaginaResiduosPorEmpreendimento').then((m) => ({
                         Component: m.PaginaResiduosPorEmpreendimento,
                       })),
+                    ),
                   },
                   {
                     path: 'conferencia',
-                    lazy: () =>
+                    lazy: carregarRota(() =>
                       import('./paginas/residuos/painel').then((m) => ({
                         Component: m.PaginaConferenciaResiduos,
                       })),
+                    ),
                   },
                   {
                     path: 'painel',
-                    lazy: () =>
+                    lazy: carregarRota(() =>
                       import('./paginas/residuos/painel').then((m) => ({
                         Component: m.PaginaPainelResiduos,
                       })),
+                    ),
                   },
                   {
                     path: 'prazos',
-                    lazy: () =>
+                    lazy: carregarRota(() =>
                       import('./paginas/residuos/prazos/PaginaObrigacoesResiduos').then((m) => ({
                         Component: m.PaginaObrigacoesResiduos,
                       })),
+                    ),
                   },
                 ],
               },
               {
                 path: 'orcamentos',
-                lazy: () =>
+                lazy: carregarRota(() =>
                   import('./paginas/orcamentos/PaginaOrcamentos').then((m) => ({
                     Component: m.PaginaOrcamentos,
                   })),
+                ),
               },
               {
                 path: 'orcamentos/primeiros-passos',
-                lazy: () =>
+                lazy: carregarRota(() =>
                   import('./paginas/orcamentos/PaginaPrimeirosPassos').then((m) => ({
                     Component: m.PaginaPrimeirosPassos,
                   })),
+                ),
               },
               {
                 path: 'orcamentos/:id',
-                lazy: () =>
+                lazy: carregarRota(() =>
                   import('./paginas/orcamentos/PaginaOrcamento').then((m) => ({
                     Component: m.PaginaOrcamento,
                   })),
+                ),
               },
               { path: 'resumo-do-mes', element: <PaginaResumoDoMes /> },
               { path: 'configuracoes/equipe', element: <PaginaEquipe /> },
               {
                 path: 'configuracoes/custos',
-                lazy: () =>
+                lazy: carregarRota(() =>
                   import('./paginas/orcamentos/PaginaCustosETaxas').then((m) => ({
                     Component: m.PaginaCustosETaxas,
                   })),
+                ),
               },
               {
                 path: 'configuracoes/proposta',
-                lazy: () =>
+                lazy: carregarRota(() =>
                   import('./paginas/orcamentos/PaginaDadosDaProposta').then((m) => ({
                     Component: m.PaginaDadosDaProposta,
                   })),
+                ),
               },
               { path: 'configuracoes/plano', element: <PaginaPlano /> },
               { path: 'perfil', element: <PaginaPerfil /> },

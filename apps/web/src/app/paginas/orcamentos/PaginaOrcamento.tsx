@@ -486,13 +486,25 @@ function Editor({
   // pendente: adota os dados do servidor. Com mudanças pendentes, mantém o rascunho e avisa; o
   // salvar então esbarra no conflito de versão.
   const [versaoDoRascunho, setVersaoDoRascunho] = useState(orcamento.rowVersion)
+  // O que o próprio salvar gravou e a versão que ele gerou. Só fica salvo se o rascunho ainda é o
+  // que foi enviado: o que se digita durante a gravação continua pendente. E a versão gerada pelo
+  // próprio salvar não é "alterado em outro lugar": o rascunho passa a partir dela.
+  const [meuSalvar, setMeuSalvar] = useState<{ rascunho: Rascunho; versao: number } | null>(null)
+  if (alterado && meuSalvar?.rascunho === r) setAlterado(false)
   const [aplicado, setAplicado] = useState<string | null>(null)
-  if (orcamento.rowVersion !== versaoDoRascunho && !alterado) {
-    setVersaoDoRascunho(orcamento.rowVersion)
-    setR(rascunhoDe(orcamento))
-    setAplicado(null)
+  if (orcamento.rowVersion !== versaoDoRascunho) {
+    if (!alterado) {
+      setVersaoDoRascunho(orcamento.rowVersion)
+      setR(rascunhoDe(orcamento))
+      setAplicado(null)
+    } else if (orcamento.rowVersion === meuSalvar?.versao) {
+      setVersaoDoRascunho(orcamento.rowVersion)
+    }
   }
-  const alteradoEmOutroLugar = alterado && orcamento.rowVersion !== versaoDoRascunho
+  const alteradoEmOutroLugar =
+    alterado &&
+    orcamento.rowVersion !== versaoDoRascunho &&
+    orcamento.rowVersion !== meuSalvar?.versao
 
   function recarregar() {
     setVersaoDoRascunho(orcamento.rowVersion)
@@ -730,11 +742,12 @@ function Editor({
       setFalha(dados)
       return
     }
+    const enviado = r
     setFalha(null)
     setSalvando(true)
     try {
-      await salvarOrcamento(orcamento.id, versaoDoRascunho, dados)
-      setAlterado(false)
+      const versao = await salvarOrcamento(orcamento.id, versaoDoRascunho, dados)
+      setMeuSalvar({ rascunho: enviado, versao })
       await queryClient.invalidateQueries({ queryKey: ['orcamento', orcamento.id] })
       await queryClient.invalidateQueries({ queryKey: ['orcamentos'] })
     } catch (erro) {
