@@ -401,7 +401,7 @@ function paraSalvar(r: Rascunho, deProspecto: boolean): DadosDoRascunho | string
 export function PaginaOrcamento() {
   const { atual } = useConsultoria()
   const { id = '' } = useParams()
-  // O editor remonta quando chega versão nova; o aviso de sucesso mora aqui para não sumir.
+  // O editor remonta ao trocar de orçamento; o aviso de sucesso mora aqui para não sumir.
   const [aviso, setAviso] = useState<Aviso | null>(null)
   // Tempo ativo do orçamento aberto em Novo orçamento (ADR-0027).
   usePrenderTarefa(chaveDoOrcamento(id))
@@ -441,10 +441,11 @@ export function PaginaOrcamento() {
       </Pagina>
     )
   }
-  // A chave remonta o editor quando outra versão chega do servidor.
+  // A chave remonta o editor só ao trocar de orçamento: versão nova do servidor (por exemplo, ao
+  // voltar para a aba) não pode apagar o que ainda não foi salvo. O editor decide se a adota.
   return (
     <Editor
-      key={`${consulta.data.id}:${String(consulta.data.rowVersion)}`}
+      key={consulta.data.id}
       orcamento={consulta.data}
       aviso={aviso}
       aoAvisar={(texto, comLinkDoEmpreendimento = false) => {
@@ -480,6 +481,25 @@ function Editor({
   const [alterado, setAlterado] = useState(false)
   const [salvando, setSalvando] = useState(false)
   const [falha, setFalha] = useState<string | null>(null)
+  // Versão do servidor de onde o rascunho partiu; é ela que vai no salvar. Versão nova sem nada
+  // pendente: adota os dados do servidor. Com mudanças pendentes, mantém o rascunho e avisa; o
+  // salvar então esbarra no conflito de versão.
+  const [versaoDoRascunho, setVersaoDoRascunho] = useState(orcamento.rowVersion)
+  const [aplicado, setAplicado] = useState<string | null>(null)
+  if (orcamento.rowVersion !== versaoDoRascunho && !alterado) {
+    setVersaoDoRascunho(orcamento.rowVersion)
+    setR(rascunhoDe(orcamento))
+    setAplicado(null)
+  }
+  const alteradoEmOutroLugar = alterado && orcamento.rowVersion !== versaoDoRascunho
+
+  function recarregar() {
+    setVersaoDoRascunho(orcamento.rowVersion)
+    setR(rascunhoDe(orcamento))
+    setAlterado(false)
+    setFalha(null)
+    setAplicado(null)
+  }
   const [catalogoAberto, setCatalogoAberto] = useState(false)
   const telaEstreita = useTelaEstreita()
   const [servicosAbertos, setServicosAbertos] = useState<Set<string>>(() => new Set())
@@ -520,7 +540,6 @@ function Editor({
     trocouDeEtapa.current = false
     areaDaEtapa.current?.focus()
   }, [etapa])
-  const [aplicado, setAplicado] = useState<string | null>(null)
 
   function mudar(alterar: (anterior: Rascunho) => Rascunho) {
     setR(alterar)
@@ -708,7 +727,7 @@ function Editor({
     setFalha(null)
     setSalvando(true)
     try {
-      await salvarOrcamento(orcamento.id, orcamento.rowVersion, dados)
+      await salvarOrcamento(orcamento.id, versaoDoRascunho, dados)
       setAlterado(false)
       await queryClient.invalidateQueries({ queryKey: ['orcamento', orcamento.id] })
       await queryClient.invalidateQueries({ queryKey: ['orcamentos'] })
@@ -1107,6 +1126,19 @@ function Editor({
         </MensagemSecao>
       ) : null}
 
+      {alteradoEmOutroLugar ? (
+        <MensagemSecao role="status" tom="atencao">
+          <span className="flex flex-wrap items-center justify-between gap-(--space-100)">
+            <span>
+              Este orçamento foi alterado em outro lugar. Suas mudanças continuam aqui; recarregue
+              para ver a versão nova (o que não foi salvo se perde).
+            </span>
+            <Botao tamanho="compacto" onClick={recarregar}>
+              Recarregar
+            </Botao>
+          </span>
+        </MensagemSecao>
+      ) : null}
       {falha ? (
         <MensagemSecao role="alert" tom="perigo">
           {falha}
