@@ -587,6 +587,8 @@ export function precificarOrcamento(entrada: EntradaDoPreco): PrecoDoOrcamento {
     (soma, i) => soma + (itens[i]?.custoDiretoExtraCentavos ?? 0),
     0,
   )
+  // Acima do teto, aplicarPontosBase lançaria: pendente, como a forma "tabela".
+  if (baseDoAcrescimo > PRECO_MAXIMO_CENTAVOS) return pendente('valor_invalido', parcial)
   const acrescimo = aplicarPontosBase(baseDoAcrescimo, margemPb)
   const percentuais = base.tributosPb + base.taxasPb
   const divisor = BigInt(PONTOS_BASE_TOTAL - percentuais)
