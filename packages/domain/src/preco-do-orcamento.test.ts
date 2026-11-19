@@ -440,6 +440,27 @@ describe('rateioPorConta', () => {
   })
 })
 
+describe('precificarOrcamento acima do teto', () => {
+  it('pela margem, base do acréscimo acima de R$ 999.999.999,99 fica pendente em vez de lançar', () => {
+    const terceiroNoTeto = {
+      minutos: 60,
+      custoDiretoExtraCentavos: 0,
+      horaVendaId: null,
+      terceiro: { cobranca: 'fechado' as const, valorCentavos: 99_999_999_999 },
+    }
+    const p = precificarOrcamento({
+      itens: [terceiroNoTeto, terceiroNoTeto],
+      visitas: SEM_VISITAS,
+      despesasIncluidasCentavos: [],
+      quantidadeDeParcelas: 1,
+      margemPb: 2_000,
+      base,
+    })
+    expect(p.pendencia).toBe('valor_invalido')
+    expect(p.precoTotalCentavos).toBeNull()
+  })
+})
+
 describe('profissional terceirizado no serviço (ADR-0031)', () => {
   const comTerceiro = (
     terceiro: { cobranca: 'hora' | 'fechado'; valorCentavos: number | null },

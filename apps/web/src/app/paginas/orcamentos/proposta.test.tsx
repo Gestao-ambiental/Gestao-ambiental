@@ -375,6 +375,116 @@ describe('Proposta', () => {
     expect(within(proposta).queryByText(/\b8h\b|480|custo|margem|responsável/i)).toBeNull()
   })
 
+  it('terceirizado sem valor (orçamento duplicado) deixa o preço pendente, como no banco', async () => {
+    const semValor = {
+      id: 'i1',
+      hora_venda_id: 'hora',
+      descricao: 'Inventário de fauna',
+      minutos: 480,
+      preco_automatico: true,
+      preco_centavos: 0,
+      custo_direto_extra_centavos: 0,
+      terceiro_nome: 'Ana Bióloga',
+      terceiro_cobranca: 'hora',
+      terceiro_valor_centavos: null,
+    }
+    falso.reiniciar(
+      cenario({ rpc: { obter_orcamento: { data: orcamento({ itens: [semValor] }) } } }),
+    )
+    const proposta = await abrirProposta()
+    const destaque = within(proposta).getByRole('region', { name: 'Valor total' })
+    expect(destaque).toHaveTextContent('A definir')
+    expect(destaque).not.toHaveTextContent('R$ 0,00')
+    expect(
+      screen.getByText('O preço ainda está pendente: complete o orçamento antes de enviar.'),
+    ).toBeInTheDocument()
+  })
+
+  it('terceirizado pela margem, sem linha da tabela, tem o preço gravado pelo banco', async () => {
+    const terceirizado = {
+      id: 'i1',
+      hora_venda_id: null,
+      descricao: 'Inventário de fauna',
+      minutos: 480,
+      preco_automatico: true,
+      preco_centavos: 70_000,
+      custo_direto_extra_centavos: 0,
+      terceiro_nome: 'Ana Bióloga',
+      terceiro_cobranca: 'fechado',
+      terceiro_valor_centavos: 50_000,
+    }
+    falso.reiniciar(
+      cenario({
+        rpc: {
+          obter_orcamento: {
+            data: orcamento({ forma_preco: 'margem', itens: [terceirizado] }),
+          },
+        },
+      }),
+    )
+    const proposta = await abrirProposta()
+    const destaque = within(proposta).getByRole('region', { name: 'Valor total' })
+    expect(destaque).toHaveTextContent('R$ 700,00')
+    expect(destaque).not.toHaveTextContent('A definir')
+  })
+
+  it('diz quando o preço mínimo do serviço valeu, e só quando valeu', async () => {
+    const horasVenda = [
+      {
+        id: 'hora',
+        profissao: 'Engenheiro',
+        atividade: 'Consulta',
+        valor_centavos: 9_500,
+        minimo_centavos: 50_000,
+      },
+      {
+        id: 'area',
+        profissao: '',
+        atividade: 'Levantamento',
+        valor_centavos: 200,
+        unidade: 'm2',
+        minimo_centavos: 100_000,
+      },
+    ]
+    const itens = [
+      {
+        id: 'i1',
+        hora_venda_id: 'hora',
+        descricao: 'Consulta',
+        minutos: 60,
+        preco_automatico: true,
+        preco_centavos: 50_000,
+        custo_direto_extra_centavos: 0,
+      },
+      {
+        id: 'i2',
+        hora_venda_id: 'area',
+        descricao: 'Levantamento',
+        minutos: 60,
+        quantidade: '1250',
+        preco_automatico: true,
+        preco_centavos: 250_000,
+        custo_direto_extra_centavos: 0,
+      },
+    ]
+    falso.reiniciar(
+      cenario({
+        rpc: {
+          obter_orcamento: {
+            data: orcamento({ base: { ...base, horas_venda: horasVenda }, itens }),
+          },
+        },
+      }),
+    )
+    const proposta = await abrirProposta()
+    const linhas = within(
+      within(proposta).getByRole('region', { name: 'Tabela do investimento' }),
+    ).getAllByRole('row')
+    // 1 h × 95,00 < 500,00: o mínimo valeu. 1.250 m² × 2,00 = 2.500,00 > 1.000,00: não.
+    expect(linhas[1]).toHaveTextContent('Preço mínimo do serviço: R$ 500,00')
+    expect(linhas[2]).not.toHaveTextContent('Preço mínimo')
+  })
+
   it('seções numeradas: escopo com prazo, condições, premissas e aceite com assinaturas', async () => {
     const proposta = await abrirProposta()
     await within(proposta).findByText('Grupo Horizonte S.A.')

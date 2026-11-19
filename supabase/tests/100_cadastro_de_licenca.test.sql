@@ -17,7 +17,7 @@ values ('f0000000-0000-4000-8000-0000000000f1', 'c0000000-0000-4000-8000-0000000
         'e0000000-0000-4000-8000-0000000000e1', 'Filial');
 
 -- ---------------------------------------------------------------------------
--- Datas do prazo: os mesmos casos de packages/domain/src/recorrencia.test.ts
+-- Datas do prazo: os mesmos casos de packages/domain/src/prazo.test.ts
 -- ---------------------------------------------------------------------------
 select results_eq(
   $$select prazo from private.datas_do_prazo('mensal', null, null, '2024-01-31', '2024-05-31')$$,

@@ -60,6 +60,7 @@ import {
   lerEstimativa,
   lerPercentual,
   lerReaisOuZero,
+  linhaParaCalculo,
   textoDoPercentual,
 } from './calculo'
 import {
@@ -549,17 +550,22 @@ function Editor({
   const margemLida = r.margem.trim() === '' ? null : lerPercentual(r.margem)
   const visitasLidas = lerVisitas(r)
   const calculo = useMemo(() => {
-    const linhas = r.itens.map((i) => ({
-      minutos: lerDuracao(i.horas) ?? 0,
-      custoDiretoExtraCentavos: lerReaisOuZero(i.extra) ?? 0,
-      horaVendaId: i.digitado ? null : i.horaVendaId || null,
-      responsavelId: i.terceiro ? null : i.responsavelId || null,
-      quantidadeDezMilesimos: lerQuantidade(i.quantidade) ?? null,
-      precoFechadoCentavos: lerEstimativa(i.precoFechado) ?? null,
-      terceiro: i.terceiro
-        ? { cobranca: i.terceiro.cobranca, valorCentavos: lerEstimativa(i.terceiro.valor) ?? null }
-        : null,
-    }))
+    const linhas = r.itens.map((i) =>
+      linhaParaCalculo({
+        minutos: lerDuracao(i.horas) ?? 0,
+        custoDiretoExtraCentavos: lerReaisOuZero(i.extra) ?? 0,
+        horaVendaId: i.digitado ? null : i.horaVendaId || null,
+        responsavelId: i.responsavelId || null,
+        quantidadeDezMilesimos: lerQuantidade(i.quantidade) ?? null,
+        precoFechadoCentavos: lerEstimativa(i.precoFechado) ?? null,
+        terceiro: i.terceiro
+          ? {
+              cobranca: i.terceiro.cobranca,
+              valorCentavos: lerEstimativa(i.terceiro.valor) ?? null,
+            }
+          : null,
+      }),
+    )
     const incluidas = r.despesas
       .filter((d) => d.tratamento === 'incluida')
       .map((d) => {

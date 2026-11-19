@@ -283,9 +283,9 @@ export function formatarReais(centavos: number): string {
 
 /** 2928 → "29,3%" (uma casa). */
 export function formatarPontosBase(pontosBase: number): string {
-  const decimos = Math.round(pontosBase / 10)
-  const negativo = decimos < 0
-  const absoluto = Math.abs(decimos)
+  // Arredonda o valor absoluto: Math.round(-2,5) daria -2 ("−0,2%") e +2,5 daria 3 ("0,3%").
+  const absoluto = Math.round(Math.abs(pontosBase) / 10)
+  const negativo = pontosBase < 0 && absoluto > 0
   return `${negativo ? '−' : ''}${String(Math.floor(absoluto / 10))},${String(absoluto % 10)}%`
 }
 

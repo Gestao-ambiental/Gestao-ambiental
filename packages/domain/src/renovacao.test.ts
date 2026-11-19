@@ -127,7 +127,14 @@ describe('situação da renovação no radar (EQ-05)', () => {
   it('limite passado, licença vencida e protocolada', () => {
     expect(rotulo('2026-11-09')).toBe('Prazo de protocolo vencido há 1 dia')
     expect(rotulo('2027-03-10')).toBe('Vencida há 2 dias')
-    expect(rotulo('2027-03-10', { protocoladoEm: '2026-10-30' })).toBe('Sem retorno do órgão')
+    // Protocolar não prorroga a licença (doc 09, §4.6): vencida continua escrito no selo.
+    expect(rotulo('2027-03-10', { protocoladoEm: '2026-10-30' })).toBe(
+      'Sem retorno do órgão · vencida há 2 dias',
+    )
+    expect(rotulo('2027-03-08', { protocoladoEm: '2026-10-30' })).toBe('Sem retorno do órgão')
+    expect(rotulo('2027-03-09', { protocoladoEm: '2026-11-20' })).toBe(
+      'Sem retorno do órgão · protocolo após o limite · vencida há 1 dia',
+    )
     expect(rotulo('2026-12-01', { protocoladoEm: '2026-11-20' })).toBe(
       'Sem retorno do órgão · protocolo após o limite',
     )
@@ -170,6 +177,10 @@ describe('acompanhamento do órgão depois do protocolo (decisão de 19/10/2026)
     )
     expect(rotuloDaSituacaoDaRenovacao(situacao('2026-11-15'), '2026-11-15')).toBe(
       'Sem retorno do órgão',
+    )
+    // Licença vencida (validade 08/03/2027) com a renovação protocolada: o vencimento aparece.
+    expect(rotuloDaSituacaoDaRenovacao(situacao('2027-03-14'), '2027-03-14')).toBe(
+      'Acompanhar o órgão hoje · vencida há 6 dias',
     )
   })
 })
