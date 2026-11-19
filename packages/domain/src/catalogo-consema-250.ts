@@ -1685,6 +1685,22 @@ export const CATALOGO_CONSEMA_250: CatalogoDeAtividades = {
       },
       faixas: [
         {
+          porte: 'pequeno',
+          condicoes: [
+            {
+              parametro: 'CmáxC',
+              min: 12000,
+              minIncl: true,
+              max: 36000,
+              maxIncl: true,
+            },
+          ],
+          estudo: 'RAP',
+          ressalvaDoEstudo: null,
+          modalidade: 'trifasica',
+          textoOriginal: 'Porte Pequeno: 12.000 ≤ CmáxC ≤ 36.000 (RAP)',
+        },
+        {
           porte: 'medio',
           condicoes: [
             {
@@ -1719,7 +1735,6 @@ export const CATALOGO_CONSEMA_250: CatalogoDeAtividades = {
       ],
       observacoes: [
         'Esta atividade poderá ser licenciada por meio da expedição de Licença Ambiental por Compromisso – LAC, desde que não dependa de supressão de vegetação. (§4° do Art. 36 da Lei 14.675/2009.)',
-        'Porte Pequeno 12.000 ≤ CmáxC ≤ 36.000 (RAP)',
       ],
       redacaoDada: null,
     },
@@ -6777,8 +6792,7 @@ export const CATALOGO_CONSEMA_250: CatalogoDeAtividades = {
           estudo: 'EAS',
           ressalvaDoEstudo: null,
           modalidade: 'trifasica',
-          textoOriginal:
-            'Porte Grande: AU(3) ≥ 1 (EAS) 13 - INDÚSTRIA DE MATERIAL ELÉTRICO E COMUNICAÇÕES.',
+          textoOriginal: 'Porte Grande: AU(3) ≥ 1 (EAS)',
         },
       ],
       observacoes: [],
@@ -6786,7 +6800,7 @@ export const CATALOGO_CONSEMA_250: CatalogoDeAtividades = {
     },
     {
       codigo: '13.10.00',
-      grupo: '12 · Indústria mecânica',
+      grupo: '13 · Indústria de material elétrico e comunicações',
       descricao: 'Fabricação ou recondicionamento de pilhas, baterias e acumuladores.',
       potencial: {
         ar: 'G',
@@ -6849,7 +6863,7 @@ export const CATALOGO_CONSEMA_250: CatalogoDeAtividades = {
     },
     {
       codigo: '13.20.00',
-      grupo: '12 · Indústria mecânica',
+      grupo: '13 · Indústria de material elétrico e comunicações',
       descricao: 'Fabricação ou montagem de equipamentos, aparelhos e materiais elétricos.',
       potencial: {
         ar: 'P',
@@ -6912,7 +6926,7 @@ export const CATALOGO_CONSEMA_250: CatalogoDeAtividades = {
     },
     {
       codigo: '13.60.00',
-      grupo: '12 · Indústria mecânica',
+      grupo: '13 · Indústria de material elétrico e comunicações',
       descricao: 'Fabricação de máquinas, aparelhos, componentes e equipamentos eletrônicos.',
       potencial: {
         ar: 'P',
@@ -6975,7 +6989,7 @@ export const CATALOGO_CONSEMA_250: CatalogoDeAtividades = {
     },
     {
       codigo: '13.70.00',
-      grupo: '12 · Indústria mecânica',
+      grupo: '13 · Indústria de material elétrico e comunicações',
       descricao: 'Fabricação de instrumentos ópticos, peças e acessórios.',
       potencial: {
         ar: 'P',
@@ -7038,7 +7052,7 @@ export const CATALOGO_CONSEMA_250: CatalogoDeAtividades = {
     },
     {
       codigo: '13.90.00',
-      grupo: '12 · Indústria mecânica',
+      grupo: '13 · Indústria de material elétrico e comunicações',
       descricao:
         'Reparação ou manutenção de máquinas, aparelhos e equipamentos industriais e comerciais, e elétricos e eletrônicos.',
       potencial: {
@@ -8380,8 +8394,7 @@ export const CATALOGO_CONSEMA_250: CatalogoDeAtividades = {
           estudo: 'EAS',
           ressalvaDoEstudo: null,
           modalidade: 'trifasica',
-          textoOriginal:
-            'Porte Grande: AU(3) ≥ 1 (EAS) 19 - INDÚSTRIA DE COUROS E PELES E PRODUTOS SIMILARES.',
+          textoOriginal: 'Porte Grande: AU(3) ≥ 1 (EAS)',
         },
       ],
       observacoes: [],
@@ -8389,7 +8402,7 @@ export const CATALOGO_CONSEMA_250: CatalogoDeAtividades = {
     },
     {
       codigo: '19.11.00',
-      grupo: '18 · Indústria da borracha',
+      grupo: '19 · Indústria de couros e peles e produtos similares',
       descricao: 'Secagem e salga de couros e peles.',
       potencial: {
         ar: 'P',
@@ -8452,7 +8465,7 @@ export const CATALOGO_CONSEMA_250: CatalogoDeAtividades = {
     },
     {
       codigo: '19.12.00',
-      grupo: '18 · Indústria da borracha',
+      grupo: '19 · Indústria de couros e peles e produtos similares',
       descricao: 'Curtimento e outras preparações de couros e peles.',
       potencial: {
         ar: 'M',
@@ -8515,7 +8528,7 @@ export const CATALOGO_CONSEMA_250: CatalogoDeAtividades = {
     },
     {
       codigo: '19.90.00',
-      grupo: '18 · Indústria da borracha',
+      grupo: '19 · Indústria de couros e peles e produtos similares',
       descricao: 'Fabricação de calçados ou outros artigos de couros e peles.',
       potencial: {
         ar: 'P',
@@ -17368,6 +17381,22 @@ export const CATALOGO_CONSEMA_250: CatalogoDeAtividades = {
       },
       faixas: [
         {
+          porte: 'pequeno',
+          condicoes: [
+            {
+              parametro: 'AU(3)',
+              min: 0.05,
+              minIncl: true,
+              max: 0.1,
+              maxIncl: true,
+            },
+          ],
+          estudo: 'RAP',
+          ressalvaDoEstudo: null,
+          modalidade: 'trifasica',
+          textoOriginal: 'Porte Pequeno: 0,05 ≤ AU(3) ≤ 0,1 (RAP)',
+        },
+        {
           porte: 'medio',
           condicoes: [
             {
@@ -17400,7 +17429,7 @@ export const CATALOGO_CONSEMA_250: CatalogoDeAtividades = {
           textoOriginal: 'Porte Grande: AU(3) ≥ 0,2 (RAP)',
         },
       ],
-      observacoes: ['Porte Pequeno 0,05 ≤ AU(3) ≤ 0,1 (RAP)'],
+      observacoes: [],
       redacaoDada: null,
     },
     {

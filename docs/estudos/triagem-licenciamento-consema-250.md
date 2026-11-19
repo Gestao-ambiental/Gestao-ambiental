@@ -21,8 +21,9 @@ qual é o porte, a modalidade e o estudo ambiental.
 
 - **CONSEMA 250/2024**, consolidada até a 314/2026 (DOE/SC 08/06/2026). Traz a listagem estadual
   (Anexo VI) e os parâmetros técnicos (Anexo VII). PDF: https://www.semae.sc.gov.br/?wpdmdl=3480
-- **CONSEMA 251/2024**: atividades de impacto local, licenciadas pelo município, em três níveis.
-  Ainda não entra na triagem.
+- **CONSEMA 251/2024**, consolidada até a 300/2025: atividades de impacto local, licenciadas pelo
+  município, em três níveis (Anexo I, catálogo em `catalogo-consema-251.ts`, 404 entradas, 207
+  atividades). PDF: https://www.semae.sc.gov.br/?wpdmdl=3481
 - **LC 140/2011**: competência entre União, Estado e Município.
 
 Regras da 250/2024 usadas no código:
@@ -45,8 +46,9 @@ poluidor é informativo e pesa na taxa e na audiência pública.
 `packages/domain/src/catalogo-consema-250.ts`:
 
 ```
-node scripts/consema-250/gerar-catalogo.mjs scripts/consema-250/r250-consolidada-314-2026.txt packages/domain/src/catalogo-consema-250.ts
-corepack pnpm exec prettier --write packages/domain/src/catalogo-consema-250.ts
+node scripts/consema-250/gerar-catalogo.mjs 250 scripts/consema-250/r250-consolidada-314-2026.txt packages/domain/src/catalogo-consema-250.ts
+node scripts/consema-250/gerar-catalogo.mjs 251 scripts/consema-250/r251-consolidada-300-2025.txt packages/domain/src/catalogo-consema-251.ts
+corepack pnpm exec prettier --write packages/domain/src/catalogo-consema-25*.ts
 ```
 
 O gerador falha se alguma faixa não for interpretada. Ele também trata as particularidades do texto:
@@ -74,7 +76,7 @@ Quando sair nova resolução que altere a 250, baixe o PDF consolidado, extraia 
 
 ## O que ainda não entra
 
-- Licenciamento municipal (CONSEMA 251/2024 e a habilitação de cada município).
+- A habilitação de cada município (a tela pede o nível; ver docs/estudos/enquadramento-automatico.md).
 - Taxas (Lei SC 14.262/2007) e o custo estimado.
 - Ligação com orçamento e empreendimento. A triagem ainda não é gravada, então não há tabela, RLS
   nem pgTAP.

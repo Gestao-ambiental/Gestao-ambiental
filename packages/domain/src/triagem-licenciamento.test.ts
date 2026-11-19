@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
 import { CATALOGO_CONSEMA_250 } from './catalogo-consema-250'
+import { CATALOGO_CONSEMA_251 } from './catalogo-consema-251'
 import {
   atendeCondicao,
   buscarAtividades,
   concluirTriagem,
+  definirCompetencia,
   descreverCondicao,
   enquadrarAtividade,
   lerNumeroDigitado,
@@ -291,5 +293,129 @@ describe('condições', () => {
     expect(
       descreverCondicao({ parametro: 'QMR', min: 1500, minIncl: true, max: null, maxIncl: false }),
     ).toBe('QMR ≥ 1.500')
+  })
+})
+
+describe('catálogo da CONSEMA 251/2024 (impacto local)', () => {
+  const local = CATALOGO_CONSEMA_251.atividades
+
+  it('o nível III traz todas as atividades; o II deixa de fora três que estão no I', () => {
+    const porNivel = (n: number) => new Set(local.filter((a) => a.nivel === n).map((a) => a.codigo))
+    expect(porNivel(3).size).toBe(new Set(local.map((a) => a.codigo)).size)
+    expect([...porNivel(1)].filter((c) => !porNivel(2).has(c))).toEqual([
+      '17.21.00',
+      '71.11.02',
+      '71.11.03',
+    ])
+    for (const c of porNivel(2)) expect(porNivel(3).has(c), c).toBe(true)
+  })
+
+  it('toda atividade local existe na 250/2024 e usa parâmetros do Anexo II', () => {
+    const estaduais = new Set(atividades.map((a) => a.codigo))
+    for (const a of local) {
+      expect(estaduais.has(a.codigo), a.codigo).toBe(true)
+      for (const p of parametrosDaAtividade(a)) {
+        expect(CATALOGO_CONSEMA_251.parametros[p], `${a.codigo} ${p}`).toBeTruthy()
+      }
+    }
+  })
+
+  it('faixas contíguas, menos a sobreposição que está no próprio texto (nível II, 11.30.02 e 11.40.02)', () => {
+    const sobreposicoesDoTexto = new Set(['2|11.30.02', '2|11.40.02'])
+    for (const a of local) {
+      if (sobreposicoesDoTexto.has(`${String(a.nivel)}|${a.codigo}`)) continue
+      for (const p of parametrosDaAtividade(a)) {
+        const conds = a.faixas
+          .flatMap((f) => f.condicoes)
+          .filter((c) => c.parametro === p)
+          .sort((x, y) => (x.min ?? -1) - (y.min ?? -1))
+        for (let i = 1; i < conds.length; i++) {
+          const antes = conds[i - 1]
+          const depois = conds[i]
+          if (!antes || !depois) continue
+          expect(antes.max, `${String(a.nivel)} ${a.codigo} ${p}`).toBe(depois.min)
+          expect(antes.maxIncl, `${String(a.nivel)} ${a.codigo} ${p}`).not.toBe(depois.minIncl)
+        }
+      }
+    }
+  })
+
+  it('na sobreposição do texto, vale o maior porte com aviso', () => {
+    const a = local.find((x) => x.codigo === '11.30.02' && x.nivel === 2)
+    if (!a) throw new Error('11.30.02 nível II fora do catálogo')
+    const r = enquadrada(enquadrarAtividade(a, { 'AU(3)': 0.1 }))
+    expect(r.faixa.porte).toBe('pequeno')
+    expect(r.avisos[0]).toMatch(/dois portes/)
+  })
+})
+
+describe('definirCompetencia', () => {
+  const competencia = (codigo: string, medidas: Record<string, number>, nivel: 1 | 2 | 3 | null) =>
+    definirCompetencia(codigo, medidas, nivel, CATALOGO_CONSEMA_250, CATALOGO_CONSEMA_251)
+
+  it('usinagem (12.80.00) pequena num município nível I: municipal, pela faixa da 251', () => {
+    const c = competencia('12.80.00', { 'AU(3)': 0.15 }, 1)
+    expect(c.orgao).toBe('municipal')
+    if (c.orgao !== 'municipal') return
+    expect(c.nivel).toBe(1)
+    expect(enquadrada(c.resultado).faixa).toMatchObject({ porte: 'pequeno', estudo: 'RAP' })
+  })
+
+  it('acima da maior faixa do nível do município vai para o Estado; no nível III fica no município', () => {
+    const n1 = competencia('12.80.00', { 'AU(3)': 2 }, 1)
+    expect(n1).toMatchObject({ orgao: 'estadual', motivo: 'fora_das_faixas_locais' })
+    const n3 = competencia('12.80.00', { 'AU(3)': 2 }, 3)
+    expect(n3.orgao).toBe('municipal')
+    if (n3.orgao === 'municipal') expect(enquadrada(n3.resultado).faixa.estudo).toBe('EAS')
+  })
+
+  it('níveis cumulativos: município II licencia 17.21.00 pela lista do nível I', () => {
+    expect(competencia('17.21.00', { 'AU(3)': 0.5 }, 2)).toMatchObject({
+      orgao: 'municipal',
+      nivel: 1,
+    })
+  })
+
+  it('acima da maior faixa da lista local, o enquadramento diz o limite', () => {
+    const a = CATALOGO_CONSEMA_251.atividades.find((x) => x.codigo === '12.80.00' && x.nivel === 1)
+    if (!a) throw new Error('12.80.00 nível I fora do catálogo')
+    expect(enquadrarAtividade(a, { 'AU(3)': 2 })).toEqual({
+      tipo: 'acima_do_limite',
+      parametro: 'AU(3)',
+      limite: 1,
+    })
+  })
+
+  it('município não habilitado: Estado', () => {
+    expect(competencia('12.80.00', { 'AU(3)': 0.15 }, null)).toMatchObject({
+      orgao: 'estadual',
+      motivo: 'municipio_nao_habilitado',
+    })
+  })
+
+  it('atividade fora da lista local (aterro sanitário 34.41.10): Estado', () => {
+    expect(competencia('34.41.10', { QMR: 100 }, 3)).toMatchObject({
+      orgao: 'estadual',
+      motivo: 'fora_da_lista_local',
+    })
+  })
+
+  it('antenas (34.16.00) vão sempre para o Estado (251/2024, Art. 3º, §6º)', () => {
+    expect(competencia('34.16.00', { FR: 0.5 }, 3)).toMatchObject({
+      orgao: 'estadual',
+      motivo: 'sempre_estadual',
+    })
+  })
+
+  it('PCH em divisa de municípios (34.11.06) ganha o aviso do §7º', () => {
+    const c = competencia('34.11.06', { P: 0.1 }, 3)
+    expect(c.orgao).toBe('municipal')
+    if (c.orgao === 'municipal') expect(c.avisos[0]).toMatch(/divisa entre municípios/)
+  })
+
+  it('sem medida: diz o que falta; código inexistente: fora da lista', () => {
+    const c = competencia('12.80.00', {}, 1)
+    expect(c).toMatchObject({ orgao: 'estadual', motivo: 'falta_medida' })
+    expect(competencia('99.99.99', {}, 1)).toEqual({ orgao: 'fora_da_lista', codigo: '99.99.99' })
   })
 })

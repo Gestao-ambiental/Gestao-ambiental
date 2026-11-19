@@ -139,6 +139,24 @@ export type ResultadoDoEnquadramento =
     }
   | { tipo: 'falta_medida'; parametros: string[] }
   | { tipo: 'medida_invalida'; parametro: string }
+  /** Acima da maior faixa da lista (só nas listas municipais da 251). */
+  | { tipo: 'acima_do_limite'; parametro: string; limite: number }
+
+/** Maior valor da lista para o parâmetro, quando a última faixa é fechada. */
+function limiteSuperior(
+  atividade: AtividadeLicenciavel,
+  parametro: string,
+): { valor: number; incluso: boolean } | null {
+  let maior: { valor: number; incluso: boolean } | null = null
+  for (const faixa of atividade.faixas) {
+    for (const c of faixa.condicoes) {
+      if (c.parametro !== parametro) continue
+      if (c.max === null) return null
+      if (maior === null || c.max > maior.valor) maior = { valor: c.max, incluso: c.maxIncl }
+    }
+  }
+  return maior
+}
 
 function avisosDaAtividade(atividade: AtividadeLicenciavel, faixa: FaixaDePorte | null): string[] {
   const avisos: string[] = []
@@ -182,11 +200,16 @@ export function enquadrarAtividade(
 
   const encontrados: { faixa: FaixaDePorte; parametro: string }[] = []
   const abaixo: { parametro: string; limite: number }[] = []
+  let sobreposicao = false
   for (const { parametro: p, valor } of informados) {
-    const faixa = atividade.faixas.find((f) =>
-      f.condicoes.some((c) => c.parametro === p && atendeCondicao(c, valor)),
-    )
+    // O texto às vezes sobrepõe faixas num valor (251, nível II, 11.30.02: "≤ 0,1" e "0,1 ≤"):
+    // vale o maior porte, como na leitura conservadora dos parâmetros alternativos.
+    const faixas = atividade.faixas
+      .filter((f) => f.condicoes.some((c) => c.parametro === p && atendeCondicao(c, valor)))
+      .sort((a, b) => PESO_DO_PORTE[b.porte] - PESO_DO_PORTE[a.porte])
+    const faixa = faixas[0]
     if (faixa) {
+      if (faixas.length > 1) sobreposicao = true
       encontrados.push({ faixa, parametro: p })
       continue
     }
@@ -206,8 +229,26 @@ export function enquadrarAtividade(
         avisos: [],
       }
     }
-    // Sem faixa nem limite inferior: o texto da resolução tem um buraco nesse valor.
-    return { tipo: 'medida_invalida', parametro: informados[0]?.parametro ?? '' }
+    // Acima da maior faixa: só acontece nas listas de impacto local (251), em que o porte
+    // maior fica com o Estado. Na 250 a última faixa é sempre aberta.
+    const primeiroInformado = informados[0]
+    if (primeiroInformado) {
+      const maior = limiteSuperior(atividade, primeiroInformado.parametro)
+      if (
+        maior &&
+        (maior.incluso
+          ? primeiroInformado.valor > maior.valor
+          : primeiroInformado.valor >= maior.valor)
+      ) {
+        return {
+          tipo: 'acima_do_limite',
+          parametro: primeiroInformado.parametro,
+          limite: maior.valor,
+        }
+      }
+    }
+    // Sem faixa nem limite: o texto da resolução tem um buraco nesse valor.
+    return { tipo: 'medida_invalida', parametro: primeiroInformado?.parametro ?? '' }
   }
 
   encontrados.sort((a, b) => PESO_DO_PORTE[b.faixa.porte] - PESO_DO_PORTE[a.faixa.porte])
@@ -219,7 +260,125 @@ export function enquadrarAtividade(
       'Os parâmetros informados caem em portes diferentes. A triagem considerou o maior; confirme com o órgão licenciador.',
     )
   }
+  if (sobreposicao) {
+    avisos.unshift(
+      'Neste valor o texto da resolução encaixa a atividade em dois portes. A triagem considerou o maior; confirme com o órgão licenciador.',
+    )
+  }
   return { tipo: 'enquadrada', faixa: escolhido.faixa, parametro: escolhido.parametro, avisos }
+}
+
+// ---------------------------------------------------------------------------
+// Competência: municipal (CONSEMA 251/2024) ou estadual (CONSEMA 250/2024)
+// ---------------------------------------------------------------------------
+
+/** Nível de complexidade em que o município está habilitado (251/2024, Art. 1º). */
+export type NivelMunicipal = 1 | 2 | 3
+
+export interface AtividadeDeImpactoLocal extends AtividadeLicenciavel {
+  nivel: NivelMunicipal
+}
+
+export interface CatalogoDeImpactoLocal {
+  fonte: string
+  /** Uma entrada por atividade e nível (o nível da lista em que a entrada aparece). */
+  atividades: readonly AtividadeDeImpactoLocal[]
+  parametros: Readonly<Record<string, string>>
+}
+
+/**
+ * 251/2024, Art. 3º, §6º: licenciamento municipal das antenas suspenso pelo termo com a ACAERT;
+ * vão sempre para o Estado.
+ */
+export const SEMPRE_ESTADUAIS: readonly string[] = ['34.16.00', '34.16.10']
+
+export type Competencia =
+  | {
+      orgao: 'municipal'
+      nivel: NivelMunicipal
+      atividade: AtividadeDeImpactoLocal
+      resultado: ResultadoDoEnquadramento
+      avisos: string[]
+    }
+  | {
+      orgao: 'estadual'
+      atividade: AtividadeLicenciavel
+      resultado: ResultadoDoEnquadramento
+      /** Por que não ficou no município. */
+      motivo:
+        | 'municipio_nao_habilitado'
+        | 'fora_da_lista_local'
+        | 'fora_das_faixas_locais'
+        | 'sempre_estadual'
+        | 'falta_medida'
+      avisos: string[]
+    }
+  | { orgao: 'fora_da_lista'; codigo: string }
+
+/**
+ * Decide quem licencia: o município, se está habilitado num nível cuja lista (251/2024) traz a
+ * atividade e o porte informado cabe nas faixas dela; senão o Estado (250/2024).
+ * O resultado é triagem: a habilitação do município e os casos do Art. 3º se confirmam com o órgão.
+ */
+export function definirCompetencia(
+  codigo: string,
+  medidas: Medidas,
+  nivelDoMunicipio: NivelMunicipal | null,
+  estadual: CatalogoDeAtividades,
+  local: CatalogoDeImpactoLocal,
+): Competencia {
+  const atividadeEstadual = estadual.atividades.find((a) => a.codigo === codigo)
+  // Os níveis são cumulativos ("em ordem crescente de complexidade"): o município no nível N
+  // licencia o que está listado até o nível N, pela entrada do maior nível. O nível II não traz
+  // 17.21.00, 71.11.02 e 71.11.03, que estão no I e no III; assim o município II usa a do I.
+  const naLocal =
+    nivelDoMunicipio === null
+      ? undefined
+      : local.atividades
+          .filter((a) => a.codigo === codigo && a.nivel <= nivelDoMunicipio)
+          .sort((a, b) => b.nivel - a.nivel)[0]
+
+  const avisos: string[] = []
+  if (codigo === '34.11.06') {
+    avisos.push(
+      'Se o empreendimento estiver em curso d’água que faz divisa entre municípios, o licenciamento é estadual (251/2024, Art. 3º, §7º).',
+    )
+  }
+
+  const estadualCom = (
+    motivo: Extract<Competencia, { orgao: 'estadual' }>['motivo'],
+  ): Competencia => {
+    if (!atividadeEstadual) return { orgao: 'fora_da_lista', codigo }
+    return {
+      orgao: 'estadual',
+      atividade: atividadeEstadual,
+      resultado: enquadrarAtividade(atividadeEstadual, medidas),
+      motivo,
+      avisos,
+    }
+  }
+
+  if (SEMPRE_ESTADUAIS.includes(codigo)) return estadualCom('sempre_estadual')
+  if (nivelDoMunicipio === null) return estadualCom('municipio_nao_habilitado')
+  if (!naLocal) return estadualCom('fora_da_lista_local')
+
+  const resultadoLocal = enquadrarAtividade(naLocal, medidas)
+  if (resultadoLocal.tipo === 'falta_medida' || resultadoLocal.tipo === 'medida_invalida') {
+    // Sem a medida não dá para saber se cabe no município.
+    return estadualCom('falta_medida')
+  }
+  if (resultadoLocal.tipo === 'enquadrada') {
+    return {
+      orgao: 'municipal',
+      nivel: naLocal.nivel,
+      atividade: naLocal,
+      resultado: resultadoLocal,
+      avisos,
+    }
+  }
+  // Fora das faixas da lista local (acima da maior ou abaixo da menor): vale a 250/2024. Abaixo
+  // do limite estadual também, cabe a CCA (250/2024, Art. 14).
+  return estadualCom('fora_das_faixas_locais')
 }
 
 export interface ItemDaTriagem {
@@ -258,7 +417,12 @@ export function concluirTriagem(itens: readonly ItemDaTriagem[]): ConclusaoDaTri
     .filter((i) => i.resultado.tipo === 'abaixo_do_limite')
     .map((i) => i.atividade.codigo)
   const pendentes = itens
-    .filter((i) => i.resultado.tipo === 'falta_medida' || i.resultado.tipo === 'medida_invalida')
+    .filter(
+      (i) =>
+        i.resultado.tipo === 'falta_medida' ||
+        i.resultado.tipo === 'medida_invalida' ||
+        i.resultado.tipo === 'acima_do_limite',
+    )
     .map((i) => i.atividade.codigo)
 
   let estudo: EstudoAmbiental | null = null

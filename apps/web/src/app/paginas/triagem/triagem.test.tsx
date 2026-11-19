@@ -70,7 +70,7 @@ describe('triagem de licenciamento (/triagem)', () => {
     await usuario.type(campo, '10')
     expect(within(cartao).getByText('Abaixo do limite de licenciamento')).toBeInTheDocument()
     expect(
-      within(cartao).getByText(/Certidão de Conformidade Ambiental \(Art\. 14\)/),
+      within(cartao).getByText(/Certidão de Conformidade Ambiental, a CCA \(Art\. 14\)/),
     ).toBeInTheDocument()
   })
 
@@ -103,6 +103,33 @@ describe('triagem de licenciamento (/triagem)', () => {
     expect(
       within(conclusao).getByText(/RAP \(Relatório Ambiental Prévio\), pela atividade 12\.80\.10/),
     ).toBeInTheDocument()
+  })
+
+  it('com o nível do município, diz quem licencia: município dentro das faixas da 251, Estado acima', async () => {
+    const { usuario } = montar()
+    expect(screen.getByRole('combobox', { name: /Habilitação do município/ })).toHaveValue('')
+    await incluir(usuario, '12.80.00', '12.80.00')
+    const cartao = screen.getByRole('article', { name: /^12\.80\.00/ })
+    const campo = within(cartao).getByRole('textbox', { name: /AU\(3\)/ })
+    await usuario.type(campo, '0,15')
+    expect(within(cartao).getByText('Quem licencia: Estado (IMA)')).toBeInTheDocument()
+    expect(within(cartao).getByText(/município sem habilitação informada/)).toBeInTheDocument()
+
+    await usuario.selectOptions(
+      screen.getByRole('combobox', { name: /Habilitação do município/ }),
+      '1',
+    )
+    expect(within(cartao).getByText(/Quem licencia: município/)).toBeInTheDocument()
+    const conclusao = screen.getByRole('region', { name: 'Conclusão da triagem' })
+    expect(within(conclusao).getByText('Órgão licenciador: município')).toBeInTheDocument()
+
+    await usuario.clear(campo)
+    await usuario.type(campo, '2')
+    expect(within(cartao).getByText('Quem licencia: Estado (IMA)')).toBeInTheDocument()
+    expect(
+      within(cartao).getByText(/porte fora das faixas que o município pode licenciar/),
+    ).toBeInTheDocument()
+    expect(within(conclusao).getByText('Órgão licenciador: Estado (IMA)')).toBeInTheDocument()
   })
 
   it('não inclui a mesma atividade duas vezes', async () => {

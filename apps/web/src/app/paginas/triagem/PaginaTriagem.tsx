@@ -6,18 +6,22 @@
 
 import {
   CATALOGO_CONSEMA_250,
+  CATALOGO_CONSEMA_251,
   ROTULO_DA_MODALIDADE,
   ROTULO_DO_ESTUDO,
   ROTULO_DO_PORTE,
   buscarAtividades,
   concluirTriagem,
+  definirCompetencia,
   descreverCondicao,
   enquadrarAtividade,
   lerNumeroDigitado,
   parametrosDaAtividade,
   type AtividadeLicenciavel,
+  type Competencia,
   type ConclusaoDaTriagem,
   type Medidas,
+  type NivelMunicipal,
   type ResultadoDoEnquadramento,
 } from '@gestao-ambiental/domain'
 import { useId, useMemo, useState } from 'react'
@@ -50,6 +54,63 @@ function medidasLidas(item: ItemEmEdicao): Medidas {
   const lidas: Record<string, number | null> = {}
   for (const [sigla, texto] of Object.entries(item.medidas)) lidas[sigla] = lerNumeroDigitado(texto)
   return lidas
+}
+
+interface ItemCalculado {
+  item: ItemEmEdicao
+  /** A atividade da 250/2024 (descrição, parâmetros e potencial). */
+  atividade: AtividadeLicenciavel
+  competencia: Competencia
+  /** O enquadramento pela lista do órgão competente. */
+  resultado: ResultadoDoEnquadramento
+}
+
+function calcular(item: ItemEmEdicao, nivel: NivelMunicipal | null): ItemCalculado | null {
+  const atividade = POR_CODIGO.get(item.codigo)
+  if (!atividade) return null
+  const medidas = medidasLidas(item)
+  const competencia = definirCompetencia(
+    item.codigo,
+    medidas,
+    nivel,
+    CATALOGO_CONSEMA_250,
+    CATALOGO_CONSEMA_251,
+  )
+  const resultado =
+    competencia.orgao === 'fora_da_lista'
+      ? enquadrarAtividade(atividade, medidas)
+      : competencia.resultado
+  return { item, atividade, competencia, resultado }
+}
+
+const ROTULO_DO_NIVEL: Record<NivelMunicipal, string> = { 1: 'I', 2: 'II', 3: 'III' }
+
+const MOTIVO_ESTADUAL: Record<Extract<Competencia, { orgao: 'estadual' }>['motivo'], string> = {
+  municipio_nao_habilitado: 'município sem habilitação informada',
+  fora_da_lista_local: 'atividade fora da lista de impacto local (CONSEMA 251/2024)',
+  fora_das_faixas_locais: 'porte fora das faixas que o município pode licenciar',
+  sempre_estadual: 'licenciamento municipal suspenso para antenas (251/2024, Art. 3º, §6º)',
+  falta_medida: 'informe o parâmetro para saber se cabe no município',
+}
+
+function QuemLicencia({ competencia }: { competencia: Competencia }) {
+  if (competencia.orgao === 'municipal') {
+    return (
+      <p className="corpo text-(--text)">
+        <span className="corpo-medio">Quem licencia: município</span>, pela lista do nível{' '}
+        {ROTULO_DO_NIVEL[competencia.nivel]} da CONSEMA 251/2024.
+      </p>
+    )
+  }
+  if (competencia.orgao === 'estadual') {
+    return (
+      <p className="corpo text-(--text)">
+        <span className="corpo-medio">Quem licencia: Estado (IMA)</span>:{' '}
+        {MOTIVO_ESTADUAL[competencia.motivo]}.
+      </p>
+    )
+  }
+  return null
 }
 
 function BuscaDeAtividade({
@@ -147,8 +208,16 @@ function DescricaoDoResultado({
           Com {resultado.parametro} abaixo de{' '}
           {resultado.limite.toLocaleString('pt-BR', { maximumFractionDigits: 3 })}, a atividade não
           é licenciável pelo Estado. Se o município também não licencia, cabe cadastro com
-          Declaração e Certidão de Conformidade Ambiental (Art. 14).
+          Declaração e Certidão de Conformidade Ambiental, a CCA (Art. 14).
         </MensagemSecao>
+      )
+    case 'acima_do_limite':
+      return (
+        <p className="corpo text-(--text-subtle)">
+          {resultado.parametro} acima de{' '}
+          {resultado.limite.toLocaleString('pt-BR', { maximumFractionDigits: 3 })}: fora das faixas
+          desta lista.
+        </p>
       )
     case 'enquadrada': {
       const { faixa } = resultado
@@ -194,18 +263,16 @@ function DescricaoDoResultado({
 }
 
 function CartaoDaAtividade({
-  item,
+  calculado,
   aoMudarMedida,
   aoRemover,
 }: {
-  item: ItemEmEdicao
+  calculado: ItemCalculado
   aoMudarMedida: (sigla: string, texto: string) => void
   aoRemover: () => void
 }) {
-  const atividade = POR_CODIGO.get(item.codigo)
-  if (!atividade) return null
+  const { item, atividade, competencia, resultado } = calculado
   const parametros = parametrosDaAtividade(atividade)
-  const resultado = enquadrarAtividade(atividade, medidasLidas(item))
   const faixasPorParametro = (sigla: string) =>
     atividade.faixas
       .flatMap((f) => f.condicoes)
@@ -256,12 +323,22 @@ function CartaoDaAtividade({
         </div>
       ) : null}
 
+      <QuemLicencia competencia={competencia} />
+      {competencia.orgao !== 'fora_da_lista' && competencia.avisos.length > 0 ? (
+        <p className="corpo text-(--text)">{competencia.avisos.join(' ')}</p>
+      ) : null}
       <DescricaoDoResultado atividade={atividade} resultado={resultado} />
     </article>
   )
 }
 
-function Conclusao({ conclusao }: { conclusao: ConclusaoDaTriagem }) {
+function Conclusao({
+  conclusao,
+  orgao,
+}: {
+  conclusao: ConclusaoDaTriagem
+  orgao: 'municipal' | 'estadual' | null
+}) {
   if (conclusao.modalidade === null && conclusao.abaixoDoLimite.length === 0) {
     return (
       <p className="corpo text-(--text-subtle)">
@@ -271,6 +348,16 @@ function Conclusao({ conclusao }: { conclusao: ConclusaoDaTriagem }) {
   }
   return (
     <div className="flex flex-col gap-(--space-100)">
+      {orgao ? (
+        <p className="corpo text-(--text)">
+          <span className="corpo-medio">
+            Órgão licenciador: {orgao === 'municipal' ? 'município' : 'Estado (IMA)'}
+          </span>
+          {orgao === 'estadual'
+            ? '. Pelo menos uma atividade é estadual, e o licenciamento do empreendimento fica num órgão só.'
+            : '. Todas as atividades cabem na lista de impacto local do município.'}
+        </p>
+      ) : null}
       {conclusao.modalidade ? (
         <dl className="grid grid-cols-1 gap-x-(--space-200) gap-y-(--space-050) sm:grid-cols-3">
           <div>
@@ -313,29 +400,77 @@ function Conclusao({ conclusao }: { conclusao: ConclusaoDaTriagem }) {
   )
 }
 
-/** /triagem: enquadramento das atividades de um empreendimento pela CONSEMA 250/2024. */
+function SeletorDoNivel({
+  nivel,
+  aoMudar,
+}: {
+  nivel: NivelMunicipal | null
+  aoMudar: (nivel: NivelMunicipal | null) => void
+}) {
+  const id = useId()
+  const idAjuda = `${id}-ajuda`
+  return (
+    <div className="flex flex-col gap-(--space-050)">
+      <label htmlFor={id} className="rotulo text-(--text)">
+        Habilitação do município para licenciar (CONSEMA 251/2024)
+      </label>
+      <select
+        id={id}
+        aria-describedby={idAjuda}
+        className="h-(--size-control) w-full max-w-[320px] rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) px-(--space-100) corpo text-(--text) outline-none focus:border-b-(--border-input-active) focus:shadow-[inset_0_-1px_0_0_var(--border-input-active)]"
+        value={nivel ?? ''}
+        onChange={(e) => {
+          const v = e.target.value
+          aoMudar(v === '1' || v === '2' || v === '3' ? (Number(v) as NivelMunicipal) : null)
+        }}
+      >
+        <option value="">Não habilitado ou não sei</option>
+        <option value="1">Nível I</option>
+        <option value="2">Nível II</option>
+        <option value="3">Nível III</option>
+      </select>
+      <p id={idAjuda} className="corpo text-(--text-subtle)">
+        O nível em que o município do empreendimento está habilitado define o que ele licencia.
+        Confirme na resolução CONSEMA de habilitação do município.
+      </p>
+    </div>
+  )
+}
+
+/** /triagem: enquadramento das atividades de um empreendimento pelas CONSEMA 250 e 251/2024. */
 export function PaginaTriagem() {
   const [itens, setItens] = useState<ItemEmEdicao[]>([])
+  const [nivel, setNivel] = useState<NivelMunicipal | null>(null)
   const jaIncluidas = useMemo(() => new Set(itens.map((i) => i.codigo)), [itens])
 
+  const calculados = itens.flatMap((item) => {
+    const c = calcular(item, nivel)
+    return c ? [c] : []
+  })
   const conclusao = concluirTriagem(
-    itens.flatMap((item) => {
-      const atividade = POR_CODIGO.get(item.codigo)
-      return atividade
-        ? [{ atividade, resultado: enquadrarAtividade(atividade, medidasLidas(item)) }]
-        : []
-    }),
+    calculados.map((c) => ({ atividade: c.atividade, resultado: c.resultado })),
   )
+  const orgaos = calculados
+    .map((c) => c.competencia.orgao)
+    .filter((o): o is 'municipal' | 'estadual' => o !== 'fora_da_lista')
+  const orgao =
+    conclusao.modalidade === null || orgaos.length === 0
+      ? null
+      : orgaos.includes('estadual')
+        ? 'estadual'
+        : 'municipal'
 
   return (
     <div className="flex flex-col gap-(--space-200)">
       <Pagina titulo="Triagem de licenciamento">{null}</Pagina>
 
       <MensagemSecao tom="atencao" titulo="Triagem, não enquadramento oficial">
-        Resultado calculado pelo Anexo VI da {FONTE}, só para o licenciamento estadual em Santa
-        Catarina. Confira no Simulador do IMA e com o órgão licenciador. Atividades de impacto local
-        (CONSEMA 251/2024) e taxas ainda não entram aqui.
+        Resultado calculado pela {FONTE} (estadual) e pela {CATALOGO_CONSEMA_251.fonte} (impacto
+        local), em Santa Catarina. Confira no Simulador do IMA e com o órgão licenciador. Taxas
+        ainda não entram aqui.
       </MensagemSecao>
+
+      <SeletorDoNivel nivel={nivel} aoMudar={setNivel} />
 
       <BuscaDeAtividade
         jaIncluidas={jaIncluidas}
@@ -358,21 +493,21 @@ export function PaginaTriagem() {
             descricao="Busque e inclua todas as atividades licenciáveis do empreendimento (Art. 10)."
           />
         ) : (
-          itens.map((item) => (
+          calculados.map((calculado) => (
             <CartaoDaAtividade
-              key={item.codigo}
-              item={item}
+              key={calculado.item.codigo}
+              calculado={calculado}
               aoMudarMedida={(sigla, texto) => {
                 setItens((atual) =>
                   atual.map((i) =>
-                    i.codigo === item.codigo
+                    i.codigo === calculado.item.codigo
                       ? { ...i, medidas: { ...i.medidas, [sigla]: texto } }
                       : i,
                   ),
                 )
               }}
               aoRemover={() => {
-                setItens((atual) => atual.filter((i) => i.codigo !== item.codigo))
+                setItens((atual) => atual.filter((i) => i.codigo !== calculado.item.codigo))
               }}
             />
           ))
@@ -382,7 +517,7 @@ export function PaginaTriagem() {
       {itens.length > 0 ? (
         <section aria-label="Conclusão da triagem" className="flex flex-col gap-(--space-100)">
           <h2 className="titulo-secao text-(--text)">Conclusão</h2>
-          <Conclusao conclusao={conclusao} />
+          <Conclusao conclusao={conclusao} orgao={orgao} />
         </section>
       ) : null}
     </div>

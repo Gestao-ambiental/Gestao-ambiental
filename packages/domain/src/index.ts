@@ -505,21 +505,27 @@ export type {
   SituacaoDaVistoria,
 } from './vistoria'
 export { CATALOGO_CONSEMA_250 } from './catalogo-consema-250'
+export { CATALOGO_CONSEMA_251 } from './catalogo-consema-251'
 export {
   ROTULO_DA_MODALIDADE,
   ROTULO_DO_ESTUDO,
   ROTULO_DO_PORTE,
+  SEMPRE_ESTADUAIS,
   atendeCondicao,
   buscarAtividades,
   concluirTriagem,
+  definirCompetencia,
   descreverCondicao,
   enquadrarAtividade,
   lerNumeroDigitado,
   parametrosDaAtividade,
 } from './triagem-licenciamento'
 export type {
+  AtividadeDeImpactoLocal,
   AtividadeLicenciavel,
   CatalogoDeAtividades,
+  CatalogoDeImpactoLocal,
+  Competencia,
   ConclusaoDaTriagem,
   CondicaoDePorte,
   EstudoAmbiental,
@@ -527,6 +533,7 @@ export type {
   ItemDaTriagem,
   Medidas,
   Modalidade,
+  NivelMunicipal,
   Porte,
   Potencial,
   ResultadoDoEnquadramento,

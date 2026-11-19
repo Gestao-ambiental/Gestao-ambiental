@@ -1,13 +1,29 @@
-// Parser do Anexo VI (e VII) da Resolução CONSEMA 250/2024 consolidada.
-// Uso: node parse250.mjs <r250c.txt> <saida.json>
+// Gera o catálogo de atividades a partir do texto consolidado das Resoluções CONSEMA:
+// - 250/2024 (estadual): listagem no Anexo VI, parâmetros no Anexo VII;
+// - 251/2024 (impacto local, municipal): listagem no Anexo I, em três níveis de complexidade,
+//   parâmetros no Anexo II.
+// Uso: node gerar-catalogo.mjs <250|251> <texto.txt> <saida.ts|saida.json>
 import { readFileSync, writeFileSync } from 'node:fs'
 
-const [, , entrada, saida] = process.argv
+const [, , resolucao, entrada, saida] = process.argv
+if (resolucao !== '250' && resolucao !== '251') {
+  console.error('Uso: node gerar-catalogo.mjs <250|251> <texto.txt> <saida.ts|saida.json>')
+  process.exit(2)
+}
 const bruto = readFileSync(entrada, 'utf8').split(/\r?\n/)
 
-const ini = bruto.findIndex((l) => /^ANEXO VI\s*$/.test(l.trim()))
-const fimVI = bruto.findIndex((l, i) => i > ini && /^ANEXO VII\s*$/.test(l.trim()))
-const fimVII = bruto.findIndex((l, i) => i > fimVI && /^ANEXO VIII\s*$/.test(l.trim()))
+const [ANEXO_LISTA, ANEXO_PARAMETROS, ANEXO_SEGUINTE] =
+  resolucao === '250' ? ['ANEXO VI', 'ANEXO VII', 'ANEXO VIII'] : ['ANEXO I', 'ANEXO II', null]
+const ehAnexo = (nome) => (l) => l.trim() === nome
+const ini = bruto.findIndex(ehAnexo(ANEXO_LISTA))
+const fimVI = bruto.findIndex((l, i) => i > ini && ehAnexo(ANEXO_PARAMETROS)(l))
+const fimVII = ANEXO_SEGUINTE
+  ? bruto.findIndex((l, i) => i > fimVI && ehAnexo(ANEXO_SEGUINTE)(l))
+  : bruto.length
+if (ini < 0 || fimVI < 0 || fimVII < 0) {
+  console.error(`Não achei ${ANEXO_LISTA}/${ANEXO_PARAMETROS} no texto.`)
+  process.exit(1)
+}
 
 const ruido = (l) =>
   /^\s*$/.test(l) ||
@@ -53,11 +69,25 @@ for (const k of Object.keys(parametros))
 // Cabeçalho do item: "17.22.00 - Descrição", "17.40.00 Descrição", "34.41.11: Descrição" ou o
 // código sozinho na linha (a descrição vem na seguinte).
 const reCodigo = /^(\d{2}\.\d{2}\.\d{2})(?:\s*[-–:]\s*|\s+(?=[A-ZÁÉÍÓÚ])|\s*$)(.*)$/
-const reGrupo = /^(\d{2})\s*[-–]\s*([A-ZÁÉÍÓÚÂÊÔÃÕÇ ,/E-]+)$/
+const reGrupo = /^(\d{2})\s*[-–]\s*([A-ZÁÉÍÓÚÂÊÔÃÕÇ ,/E-]+?)\.?$/
+const reNivel = /^DO NÍVEL (?:DE COMPLEXIDADE )?(I{1,3})\b/
 const itens = []
 let grupo = null
 let atual = null
+let nivel = null
 for (const l of linhas) {
+  // 251: "CAPÍTULO II / DO NÍVEL II DE COMPLEXIDADE" abre um nível.
+  if (/^CAPÍTULO\s+[IVX]+\s*$/.test(l)) {
+    atual = null
+    continue
+  }
+  const n = l.match(reNivel)
+  if (n) {
+    nivel = n[1].length
+    atual = null
+    continue
+  }
+  if (!atual && /^\(Reda[çc][ãa]o dada pela Resolu[çc][ãa]o CONSEMA/.test(l)) continue
   const g = l.match(reGrupo)
   if (g && !reCodigo.test(l)) {
     grupo = { codigo: g[1], nome: g[2].trim() }
@@ -66,7 +96,7 @@ for (const l of linhas) {
   }
   const c = l.match(reCodigo)
   if (c) {
-    atual = { codigo: c[1], grupo, texto: [c[2]] }
+    atual = { codigo: c[1], grupo, nivel, texto: [c[2]] }
     itens.push(atual)
     continue
   }
@@ -77,6 +107,13 @@ const num = (s) => Number(s.replace(/\./g, '').replace(',', '.'))
 const NUM = '(\\d[\\d.]*(?:,\\d+)?)'
 const SIG = '([A-Za-zá]{1,5}\\s?(?:\\(\\d\\))?)'
 
+// Sigla do parâmetro sem espaços. "AI" (área inundada, 33.13.00 na 251) é a AIN do Anexo II; o
+// simulador do IMA também usa AI para ela.
+const sigla = (x) => {
+  const s = x.replace(/\s/g, '')
+  return s === 'AI' ? 'AIN' : s
+}
+
 /** Interpreta uma condição de uma variável: "a < X ≤ b", "X ≥ a", "X < a". */
 function condicao(t) {
   t = t.replace(/\s+/g, ' ').trim()
@@ -84,7 +121,7 @@ function condicao(t) {
   const op = (s) => s.replace('<=', '≤').replace('>=', '≥')
   if ((m = t.match(new RegExp(`^${NUM}\\s*(<|≤|<=)\\s*${SIG}\\s*(<|≤|<=)\\s*${NUM}$`)))) {
     return {
-      parametro: m[3].replace(/\s/g, ''),
+      parametro: sigla(m[3]),
       min: num(m[1]),
       minIncl: op(m[2]) === '≤',
       max: num(m[5]),
@@ -93,14 +130,14 @@ function condicao(t) {
   }
   if ((m = t.match(new RegExp(`^${SIG}\\s*(<|≤|<=|>|≥|>=)\\s*${NUM}$`)))) {
     const o = op(m[2])
-    const p = m[1].replace(/\s/g, '')
+    const p = sigla(m[1])
     if (o === '<' || o === '≤')
       return { parametro: p, min: null, minIncl: false, max: num(m[3]), maxIncl: o === '≤' }
     return { parametro: p, min: num(m[3]), minIncl: o === '≥', max: null, maxIncl: false }
   }
   if ((m = t.match(new RegExp(`^${NUM}\\s*(<|≤)\\s*${SIG}$`)))) {
     return {
-      parametro: m[3].replace(/\s/g, ''),
+      parametro: sigla(m[3]),
       min: num(m[1]),
       minIncl: m[2] === '≤',
       max: null,
@@ -121,6 +158,11 @@ function normalizar(t) {
       // Erro de digitação no original (03.34.00 e 03.34.02): "40.000.00 < CP" é 40.000.000.
       .replace(/\b40\.000\.00 </g, '40.000.000 <')
       .replace(/Porte Média:/g, 'Porte Médio:')
+      // "Porte Pequeno 0,05 ≤ AU(3)" sem os dois-pontos (56.20.00 na 251).
+      .replace(
+        /\bPorte (Mínimo|Pequeno|Médio|Grande) (?=\d|[A-Z][A-Za-z]{0,4}\s*[(<≤>≥])/g,
+        'Porte $1: ',
+      )
       .replace(/<\s*=/g, '≤')
       .replace(/>\s*=/g, '≥')
       .replace(/:\s*(pequeno|médio|grande)\s*(?=\()/gi, ' ')
@@ -133,6 +175,7 @@ const PORTES = { Mínimo: 'minimo', Pequeno: 'pequeno', Médio: 'medio', Grande:
 const saidaItens = []
 const problemas = []
 for (const it of itens) {
+  const problemasAntes = problemas.length
   const tudo = normalizar(it.texto.join(' '))
   const iPot = tudo.search(/(?:Pot\.?\s*|Potencial\s*)?Poluidor\s*\/?\s*Degradador/i)
   const descricao = (iPot >= 0 ? tudo.slice(0, iPot) : tudo).trim().replace(/\s*\.$/, '.')
@@ -269,6 +312,9 @@ for (const it of itens) {
 
   saidaItens.push({
     codigo: it.codigo,
+    nivel: it.nivel,
+    // Problemas só contam se esta redação for a que vale (a última com o mesmo código).
+    problemas: problemas.splice(problemasAntes),
     grupo: it.grupo,
     descricao,
     potencial: pot,
@@ -280,9 +326,11 @@ for (const it of itens) {
 }
 
 // O texto consolidado mantém a redação antiga seguida da nova com o mesmo código: vale a última.
+// Se a última está revogada, o item saiu da listagem. Na 251 o código se repete entre níveis.
 const porCodigo = new Map()
-for (const i of saidaItens) porCodigo.set(i.codigo, i)
+for (const i of saidaItens) porCodigo.set(`${i.nivel ?? ''}|${i.codigo}`, i)
 const unicos = [...porCodigo.values()].filter((i) => !i.revogado)
+for (const i of unicos) problemas.push(...i.problemas)
 
 const porMotivo = {}
 for (const p of problemas) porMotivo[p.motivo] = (porMotivo[p.motivo] ?? 0) + 1
@@ -300,6 +348,7 @@ const nomeDoGrupo = (g) =>
 
 const atividades = unicos.map((i) => ({
   codigo: i.codigo,
+  ...(resolucao === '251' ? { nivel: i.nivel } : {}),
   grupo: nomeDoGrupo(i.grupo),
   descricao: i.descricao,
   potencial: i.potencial,
@@ -317,7 +366,7 @@ const atividades = unicos.map((i) => ({
 
 if (saida.endsWith('.json')) {
   writeFileSync(saida, JSON.stringify({ parametros, atividades }, null, 2))
-} else {
+} else if (resolucao === '250') {
   const ts = `// GERADO por scripts/consema-250/gerar-catalogo.mjs: não editar à mão.
 // Fonte: Resolução CONSEMA 250/2024, Anexos VI e VII, texto consolidado até a 314/2026
 // (https://www.semae.sc.gov.br/?wpdmdl=3480). Ver docs/estudos/triagem-licenciamento-consema-250.md.
@@ -327,6 +376,24 @@ import type { CatalogoDeAtividades } from './triagem-licenciamento'
 export const CATALOGO_CONSEMA_250: CatalogoDeAtividades = ${JSON.stringify(
     {
       fonte: 'Resolução CONSEMA 250/2024, consolidada até a Resolução CONSEMA 314/2026',
+      atividades,
+      parametros,
+    },
+    null,
+    2,
+  )}
+`
+  writeFileSync(saida, ts)
+} else {
+  const ts = `// GERADO por scripts/consema-250/gerar-catalogo.mjs: não editar à mão.
+// Fonte: Resolução CONSEMA 251/2024 (impacto local), Anexos I e II, texto consolidado até a
+// 300/2025 (https://www.semae.sc.gov.br/?wpdmdl=3481). Ver docs/estudos/triagem-licenciamento-consema-250.md.
+
+import type { CatalogoDeImpactoLocal } from './triagem-licenciamento'
+
+export const CATALOGO_CONSEMA_251: CatalogoDeImpactoLocal = ${JSON.stringify(
+    {
+      fonte: 'Resolução CONSEMA 251/2024, consolidada até a Resolução CONSEMA 300/2025',
       atividades,
       parametros,
     },
