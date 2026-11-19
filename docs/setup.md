@@ -79,7 +79,7 @@ O `supabase/config.toml` vale só para o ambiente local; os projetos remotos sã
 
 Com isso, o workflow **Migrations** (`.github/workflows/migrations.yml`):
 
-- em todo push na `main`, liga no staging, roda `supabase db push` e publica a Edge Function `extrair-licenca`;
+- em todo push na `main`, liga no staging, roda `supabase db push` e publica **todas** as Edge Functions de `supabase/functions/` (`supabase functions deploy` sem nome; o `verify_jwt` de cada uma vem do `supabase/config.toml`, e as pastas que começam com `_`, como `_shared`, não são funções);
 - em PR que mexe em `supabase/migrations/`, roda `supabase db push --dry-run` contra staging, só para mostrar o que seria aplicado.
 
 ### 3.1 Segredo da extração por IA (Edge Function)

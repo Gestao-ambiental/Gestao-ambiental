@@ -59,7 +59,7 @@
 3. Aplicar as migrations (`supabase db push`, pelo fluxo normal) e publicar a função: `supabase functions deploy enviar-resumo-do-mes --project-ref <ref> --use-api` (o `verify_jwt = false` vem do `config.toml`; se publicar sem ele, use `--no-verify-jwt`).
 4. GitHub → Settings → Secrets and variables → Actions: `SUPABASE_FUNCTIONS_URL` = `https://<ref>.supabase.co/functions/v1` e `CRON_TOKEN` = o mesmo token do passo 1.
 5. Testar: na central, "Enviar resumo de teste para mim"; depois Actions → Resumo do mês → Run workflow (manda de verdade para a Gestão de cada consultoria pendente do mês anterior).
-6. O `deploy-producao.yml` publica só a `extrair-licenca`; incluir a `enviar-resumo-do-mes` lá quando o Kadu aprovar.
+6. Os workflows `migrations.yml` (staging) e `deploy-producao.yml` publicam todas as Edge Functions, inclusive a `enviar-resumo-do-mes` (19/11/2026: antes só a `extrair-licenca` saía, e correções no `_shared` nunca chegavam às outras). Publicar a função não manda nada: o envio só acontece com o `CRON_TOKEN` cadastrado e o workflow do resumo chamando.
 
 ## 7. Termos
 
