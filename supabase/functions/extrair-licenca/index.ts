@@ -170,6 +170,18 @@ Deno.serve(async (pedido) => {
     }
     if (!pdfTemTexto(textos)) return await falhar('pdf_sem_texto')
 
+    // Cota (porte do PR #24): uma reserva por extração, antes da chamada paga. Conta mesmo se o
+    // provedor falhar ou se os itens forem descartados depois.
+    const reserva = await admin.rpc('reservar_extracao_ia', { p_id: extracaoId })
+    if (reserva.error) {
+      return await falhar(
+        'erro_interno',
+        undefined,
+        `reserva: ${reserva.error.message.slice(0, 200)}`,
+      )
+    }
+    if (reserva.data !== true) return await falhar('limite_atingido')
+
     const extrator = criarExtratorOpenRouter(chave, modelo)
     let resultado
     try {

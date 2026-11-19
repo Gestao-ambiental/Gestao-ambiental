@@ -18,6 +18,7 @@ export type MotivoDaFalha =
   | 'tempo_esgotado'
   | 'resposta_invalida'
   | 'configuracao_ausente'
+  | 'limite_atingido'
   | 'erro_interno'
 
 export const MENSAGEM_DA_FALHA: Record<MotivoDaFalha, string> = {
@@ -30,6 +31,8 @@ export const MENSAGEM_DA_FALHA: Record<MotivoDaFalha, string> = {
   resposta_invalida:
     'A IA devolveu algo fora do formato esperado. Tente de novo ou siga pelo manual.',
   configuracao_ausente: 'A extração por IA não está configurada neste ambiente. Siga pelo manual.',
+  limite_atingido:
+    'A extração por IA atingiu o limite de uso. Tente mais tarde ou continue pelo cadastro manual.',
   erro_interno: 'Não foi possível concluir a extração. Tente de novo ou siga pelo manual.',
 }
 
