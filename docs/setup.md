@@ -52,7 +52,9 @@ O `supabase/config.toml` vale só para o ambiente local; os projetos remotos sã
 2. **Authentication → URL Configuration**:
    - **Staging:**
      - **Site URL:** a URL de qualquer preview da Vercel que você vai receber no passo 4. O app manda o endereço de retorno em cada e-mail; a Site URL é só o padrão. Pode voltar aqui depois do passo 4.
-     - **Redirect URLs:** adicione `https://*-<time>.vercel.app/**` (troque `<time>` pelo slug do seu time na Vercel, que aparece nas URLs de preview) e `http://localhost:5173/**`. É esse curinga que libera os previews de todos os PRs.
+     - **Redirect URLs:** adicione `https://gestao-ambiental-git-*-<time>.vercel.app/**` (troque `<time>` pelo slug do seu time na Vercel; `gestao-ambiental` é o nome do projeto no passo 4) e `http://localhost:5173/**`. Esse curinga libera a URL de branch de cada PR (`<projeto>-git-<branch>-<time>.vercel.app`, a que a Vercel comenta no PR); abra o preview por ela.
+
+       > **Nunca** use `https://*-<time>.vercel.app/**` nem `https://*.vercel.app/**`: o `*` casa com qualquer projeto de qualquer conta da Vercel cuja URL termine assim, e o Supabase mandaria o link de login, convite ou senha (com a sessão) para o site de outra pessoa. Se o painel tiver esse curinga largo, troque-o pelo de cima. Mesmo o curinga estreito ainda casa com um projeto alheio chamado `gestao-ambiental` num time cujo slug termine em `-<time>`; quando houver domínio próprio para os previews, troque pelo domínio.
    - **Produção:**
      - **Site URL:** a URL de produção da Vercel (ex.: `https://gestao-ambiental.vercel.app`) ou o domínio próprio, quando existir.
      - **Redirect URLs:** a mesma URL com `/**` no final.
