@@ -10,6 +10,7 @@ import { Link, useLocation, useParams } from 'react-router'
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { SecaoResiduosDoEmpreendimento } from '@/app/paginas/residuos/registro'
 import { Carregando, EstadoErro, EstadoVazio } from '@/components/estados'
+import { BotaoGerarRelatorio } from '@/app/paginas/modelos/GerarRelatorio'
 import { Botao } from '@/components/ui/botao'
 import { Icone } from '@/components/ui/icone'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
@@ -80,6 +81,10 @@ function Cabecalho({
         </p>
       </div>
       <div className="flex flex-wrap gap-(--space-100)">
+        <BotaoGerarRelatorio
+          empreendimentoId={empreendimento.id}
+          empreendimentoNome={empreendimento.nome}
+        />
         <Botao iconeAntes="settings" onClick={aoEditar}>
           Editar
         </Botao>

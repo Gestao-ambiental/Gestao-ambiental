@@ -2021,6 +2021,9 @@ isOneToOne: false
               "acesso_id": string,"categoria": string,"consultoria_fuso": string,"consultoria_id": string,"consultoria_nome": string,"fim_previsto": string,"inicio": string,"motivo": string,"operador_nome": string
             }[]
                            },
+"dados_para_relatorio":
+{ Args: { "p_empreendimento_id": string,"p_ocorrencia_id"?: string }; Returns: Json
+                           },
 "definir_acompanhamento":
 { Args: { "p_dias": number,"p_plano_id": string,"p_row_version": number }; Returns: number
                            },

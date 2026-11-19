@@ -1,7 +1,7 @@
 // Modelos de documento (ADR-0036, fatia 1): texto padrão da consultoria com campos a preencher.
 // Todo membro lê; a Gestão salva e arquiva pelas RPCs (o banco recusa a Equipe).
 
-import type { NoDoDocumento } from '@gestao-ambiental/domain'
+import type { DadosParaRelatorio, NoDoDocumento } from '@gestao-ambiental/domain'
 
 import type { Json } from '@/lib/database.types'
 import { obterSupabase } from '@/lib/supabase'
@@ -85,4 +85,17 @@ export async function arquivarModeloDeDocumento(id: string, rowVersion: number):
     p_row_version: rowVersion,
   })
   if (error) throw error
+}
+
+/** Dados do cadastro para preencher o modelo (dados_para_relatorio; a RLS decide o acesso). */
+export async function dadosParaRelatorio(
+  empreendimentoId: string,
+  ocorrenciaId: string | null,
+): Promise<DadosParaRelatorio> {
+  const { data, error } = await obterSupabase().rpc('dados_para_relatorio', {
+    p_empreendimento_id: empreendimentoId,
+    ...(ocorrenciaId ? { p_ocorrencia_id: ocorrenciaId } : {}),
+  })
+  if (error) throw error
+  return data as unknown as DadosParaRelatorio
 }
