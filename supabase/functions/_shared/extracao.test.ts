@@ -4,6 +4,9 @@ import {
   custoEmMicros,
   detalheDoProvedor,
   dataValida,
+  excessoDoPdf,
+  LIMITE_CARACTERES,
+  LIMITE_PAGINAS,
   mensagemDoUsuario,
   motivoDoStatus,
   pdfTemTexto,
@@ -113,6 +116,17 @@ Deno.test('PDF escaneado (sem texto) é reconhecido', () => {
   assert.equal(pdfTemTexto([]), false)
   assert.equal(pdfTemTexto(['', '  ', '\n']), false)
   assert.equal(pdfTemTexto(['x'.repeat(500), '']), true)
+})
+
+Deno.test('PDF com páginas ou texto demais não vai à IA', () => {
+  assert.equal(excessoDoPdf(['texto'.repeat(100)]), null)
+  assert.equal(excessoDoPdf(Array.from({ length: LIMITE_PAGINAS }, () => 'x')), null)
+  assert.equal(
+    excessoDoPdf(Array.from({ length: LIMITE_PAGINAS + 1 }, () => 'x')),
+    `${String(LIMITE_PAGINAS + 1)} páginas (limite ${String(LIMITE_PAGINAS)})`,
+  )
+  assert.equal(excessoDoPdf(['x'.repeat(LIMITE_CARACTERES), '   ']), null)
+  assert.match(excessoDoPdf(['x'.repeat(LIMITE_CARACTERES), 'y']) ?? '', /^400001 caracteres/)
 })
 
 Deno.test('mensagem marca cada página e lista as siglas', () => {

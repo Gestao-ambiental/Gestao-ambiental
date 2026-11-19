@@ -3,7 +3,8 @@
 // 1. Com o JWT de quem pediu: inicia a extração (o banco confere Gestão, rascunho, PDF e se ainda
 //    não há condicionantes) e baixa o PDF do Storage. O navegador nunca envia o PDF à IA.
 //    Extração repetida (mesmo id) não chama a IA de novo: devolve a situação atual.
-// 2. Extrai o texto por página aqui; PDF sem texto (escaneado) ou acima de 10 MB não vai à IA.
+// 2. Extrai o texto por página aqui; PDF sem texto (escaneado), acima de 10 MB, de 300 páginas ou
+//    de 400 mil caracteres de texto não vai à IA.
 // 3. Chama o provedor pelo adapter, com tempo limite, e valida a resposta por schema.
 // 4. Com a service role: grava a proposta como rascunho ou registra a falha, com modelo, prompt,
 //    tokens, custo e duração. Se a pessoa sair da tela, a gravação acontece do mesmo jeito.
@@ -13,6 +14,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2.118.0'
 import { extractText, getDocumentProxy } from 'npm:unpdf@1.8.1'
 
 import {
+  excessoDoPdf,
   LIMITE_PDF_BYTES,
   LIMITE_TEMPO_MS,
   MODELO_PADRAO,
@@ -168,6 +170,8 @@ Deno.serve(async (pedido) => {
     } catch {
       return await falhar('pdf_sem_texto')
     }
+    const excesso = excessoDoPdf(textos)
+    if (excesso) return await falhar('pdf_grande_demais', undefined, excesso)
     if (!pdfTemTexto(textos)) return await falhar('pdf_sem_texto')
 
     // Cota (porte do PR #24): uma reserva por extração, antes da chamada paga. Conta mesmo se o

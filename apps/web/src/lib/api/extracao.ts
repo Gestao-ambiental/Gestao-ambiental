@@ -23,7 +23,8 @@ export type MotivoDaFalha =
 
 export const MENSAGEM_DA_FALHA: Record<MotivoDaFalha, string> = {
   pdf_sem_texto: 'Este PDF é uma imagem e a IA só lê PDF com texto. Siga pelo cadastro manual.',
-  pdf_grande_demais: 'A IA lê PDF com texto até 10 MB. Siga pelo cadastro manual.',
+  pdf_grande_demais:
+    'A IA lê PDF com texto até 10 MB e 300 páginas. Este passa do limite: siga pelo cadastro manual.',
   provedor_indisponivel: 'A IA não respondeu agora. Tente de novo ou siga pelo manual.',
   provedor_recusou:
     'O provedor de IA recusou o pedido (chave, créditos ou modelo). Avise quem cuida da configuração e siga pelo manual.',
