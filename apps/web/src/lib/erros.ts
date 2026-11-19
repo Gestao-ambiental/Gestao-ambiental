@@ -160,6 +160,8 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   consultoria_somente_leitura: 'Somente leitura até o pagamento: ninguém cria nem edita.',
   orcamentos_fora_do_plano: 'Orçamentos fazem parte dos planos Equipe e Escala.',
   adicional_nao_confirmado: 'Isso passa do limite do plano. Confirme o valor adicional antes.',
+  cobranca_em_atraso:
+    'Há cobrança vencida em aberto. Fale com o suporte do Grama para pagar e assinar de novo.',
   recurso_invalido: 'Não foi possível concluir. Tente de novo.',
   dias_de_teste_invalidos: 'Use de 0 a 365 dias úteis.',
   valor_obrigatorio: 'Escolha marcar ou desmarcar.',

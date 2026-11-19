@@ -5,7 +5,7 @@ import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Botao } from '@/components/ui/botao'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 
-import { useDadosComerciais } from './situacao'
+import { PAGAMENTO_PELO_SUPORTE, useDadosComerciais } from './situacao'
 
 function BotaoPlano() {
   return (
@@ -20,6 +20,8 @@ function BotaoPlano() {
  * - todos: "Somente leitura até o pagamento" (atraso de mais de 2 dias úteis, teste acabado sem
  *   plano ou assinatura cancelada depois do período pago);
  * - Gestão: cobrança vencida (com o dia em que fica somente leitura) e cobrança que vence hoje.
+ * Com cobrança em aberto, a Gestão lê que o pagamento é confirmado pelo suporte do Grama: até a
+ * integração com o Asaas, ela não paga pelo Grama.
  * Se a leitura falhar, a faixa não aparece; o banco continua decidindo a escrita.
  */
 export function FaixaComercial() {
@@ -43,6 +45,7 @@ export function FaixaComercial() {
         {s.situacao === 'teste_encerrado'
           ? 'O teste acabou. Ninguém cria nem edita até a Gestão escolher um plano.'
           : 'Ninguém cria nem edita até o pagamento.'}
+        {gestao && aberta ? ` ${PAGAMENTO_PELO_SUPORTE}` : null}
       </MensagemSecao>
     )
   }
@@ -60,7 +63,7 @@ export function FaixaComercial() {
       >
         {aberta ? `${formatarReais(aberta.valorCentavos)} · ` : ''}
         Venceu em {formatarDataCivil(s.emAtrasoDesde)}. Sem pagamento, a consultoria fica somente
-        leitura a partir de {formatarDataCivil(s.bloqueioEm)}.
+        leitura a partir de {formatarDataCivil(s.bloqueioEm)}. {PAGAMENTO_PELO_SUPORTE}
       </MensagemSecao>
     )
   }
@@ -74,7 +77,8 @@ export function FaixaComercial() {
         className="mb-(--space-200)"
         acoes={<BotaoPlano />}
       >
-        {aberta ? formatarReais(aberta.valorCentavos) : null}
+        {aberta ? `${formatarReais(aberta.valorCentavos)} · ` : ''}
+        {PAGAMENTO_PELO_SUPORTE}
       </MensagemSecao>
     )
   }

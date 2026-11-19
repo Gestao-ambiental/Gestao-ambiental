@@ -112,6 +112,44 @@ describe('Plano e cobrança (ADR-0026)', () => {
     expect(chamadas('pagar_cobranca_simulada')).toHaveLength(0)
   })
 
+  it('cancelada com cobrança vencida: assinar diz o motivo e que o pagamento é pelo suporte', async () => {
+    falso.reiniciar({
+      sessao: eduardo,
+      rpc: {
+        meus_vinculos: { data: [vinculoFalso('Filtroville', 'gestao')] },
+        situacao_comercial: {
+          data: [
+            {
+              ...bloqueada,
+              valida_ate: '2027-05-06',
+              cobranca_aberta_id: 'cob-1',
+              cobranca_aberta_valor_centavos: 19900,
+              cobranca_aberta_vencimento: '2027-05-07',
+            },
+          ],
+        },
+        assinar_plano_simulado: { error: { message: 'cobranca_em_atraso', code: 'P0001' } },
+      },
+    })
+    const usuario = userEvent.setup()
+    renderizarApp('/configuracoes/plano')
+
+    expect(
+      await screen.findByText(/Ninguém cria nem edita até o pagamento\. O pagamento é confirmado/),
+    ).toBeInTheDocument()
+    await usuario.click(screen.getByRole('radio', { name: /Escala/ }))
+    await usuario.type(screen.getByLabelText('Nome de quem paga'), 'Filtroville Consultoria')
+    await usuario.type(screen.getByLabelText('E-mail de cobrança'), 'financeiro@filtroville.test')
+    await usuario.type(screen.getByLabelText('CNPJ ou CPF'), '52998224725')
+    await usuario.click(screen.getByRole('button', { name: 'Assinar' }))
+    expect(
+      await screen.findByText(
+        'Há cobrança vencida em aberto. Fale com o suporte do Grama para pagar e assinar de novo.',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/Verifique a conexão/)).not.toBeInTheDocument()
+  })
+
   it('só leitura: todos veem a faixa; a Equipe não vê a página de plano', async () => {
     falso.reiniciar({
       sessao: ana,

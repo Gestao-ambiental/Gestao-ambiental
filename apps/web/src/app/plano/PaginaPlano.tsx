@@ -43,6 +43,7 @@ import { useCatalogoComercial } from './catalogo'
 import {
   CHAVE_COBRANCAS,
   CHAVE_SITUACAO_COMERCIAL,
+  PAGAMENTO_PELO_SUPORTE,
   TOM_DA_SITUACAO_COMERCIAL,
   rotuloDaSituacao,
   useDadosComerciais,
@@ -526,6 +527,9 @@ function Cobrancas() {
             </tbody>
           </table>
         </div>
+        {itens.some((c) => c.situacao === 'pendente' || c.situacao === 'vencida') ? (
+          <p className="text-(--text-subtle)">{PAGAMENTO_PELO_SUPORTE}</p>
+        ) : null}
         {consulta.hasNextPage ? (
           <Botao
             className="self-start"
