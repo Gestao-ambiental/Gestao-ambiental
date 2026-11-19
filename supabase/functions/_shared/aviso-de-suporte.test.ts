@@ -4,7 +4,10 @@ import {
   criarTratadorDoAviso,
   type DadosDoAviso,
   type DependenciasDoAviso,
+  ESPERA_PELO_OUTRO_ENVIO_MS,
+  type EstadoDoAviso,
   formatarNoFuso,
+  INTERVALO_DA_ESPERA_MS,
   montarEmail,
   URL_DO_RESEND,
 } from './aviso-de-suporte.ts'
@@ -33,14 +36,25 @@ interface Chamada {
 
 const TOKEN = 'token-do-gatilho-de-teste'
 
-function montar(extra: Partial<DependenciasDoAviso> & { variaveis?: Record<string, string> } = {}) {
+type Extra = Partial<DependenciasDoAviso> & {
+  variaveis?: Record<string, string>
+  /** Estado da reserva antes do pedido (ex.: 'em_andamento': o outro chamador reservou antes). */
+  estadoInicial?: EstadoDoAviso
+  /** Roda a cada pausa da espera (simula o outro chamador terminando). */
+  aoEsperar?: (estado: { atual: EstadoDoAviso }) => void
+}
+
+function montar(extra: Extra = {}) {
+  const { variaveis: definidas, estadoInicial, aoEsperar, ...sobrescritas } = extra
+  const estado = { atual: estadoInicial ?? ('livre' as EstadoDoAviso) }
+  const esperas: number[] = []
   const chamadas: Chamada[] = []
   const log: string[] = []
   const pedidosDeEmail: string[] = []
   const reservas: string[] = []
   const liberacoes: string[] = []
   const conferencias: string[] = []
-  const variaveis = extra.variaveis ?? {
+  const variaveis = definidas ?? {
     RESEND_API_KEY: CHAVE,
     AVISO_REMETENTE: 'Grama <avisos@exemplo.test>',
     SUPORTE_AVISO_TOKEN: TOKEN,
@@ -53,10 +67,23 @@ function montar(extra: Partial<DependenciasDoAviso> & { variaveis?: Record<strin
     },
     reservarAviso: (acessoId) => {
       reservas.push(acessoId)
-      return Promise.resolve(reservas.length - liberacoes.length === 1 ? dados : null)
+      if (estado.atual !== 'livre') return Promise.resolve(null)
+      estado.atual = 'em_andamento'
+      return Promise.resolve(dados)
     },
     liberarAviso: (acessoId) => {
       liberacoes.push(acessoId)
+      estado.atual = 'livre'
+      return Promise.resolve()
+    },
+    marcarEnviado: () => {
+      estado.atual = 'enviado'
+      return Promise.resolve()
+    },
+    estadoDoAviso: () => Promise.resolve(estado.atual),
+    esperar: (ms) => {
+      esperas.push(ms)
+      aoEsperar?.(estado)
       return Promise.resolve()
     },
     emailsDaGestao: (consultoriaId) => {
@@ -68,7 +95,7 @@ function montar(extra: Partial<DependenciasDoAviso> & { variaveis?: Record<strin
       return Promise.resolve(new Response('{"id":"x"}', { status: 200 }))
     }) as typeof fetch,
     registrar: (linha) => log.push(linha),
-    ...extra,
+    ...sobrescritas,
   }
   return {
     tratar: criarTratadorDoAviso(deps),
@@ -78,6 +105,8 @@ function montar(extra: Partial<DependenciasDoAviso> & { variaveis?: Record<strin
     reservas,
     liberacoes,
     conferencias,
+    estado,
+    esperas,
   }
 }
 
@@ -143,9 +172,55 @@ Deno.test('gatilho e front chamam: um e-mail só', async () => {
   const peloFront = await tratar(pedido())
   assert.deepEqual(await peloGatilho.json(), { enviados: 2 })
   assert.equal(peloFront.status, 200)
-  assert.deepEqual(await peloFront.json(), { enviados: 0 })
+  assert.deepEqual(await peloFront.json(), { enviados: 0, jaEnviado: true })
   assert.equal(chamadas.length, 1)
 })
+
+Deno.test(
+  'o gatilho reservou e o envio dele falha: o front espera e vira a nova tentativa',
+  async () => {
+    const { tratar, chamadas, reservas } = montar({
+      estadoInicial: 'em_andamento',
+      // Na primeira pausa, o gatilho falha e libera a reserva.
+      aoEsperar: (estado) => {
+        if (estado.atual === 'em_andamento') estado.atual = 'livre'
+      },
+    })
+    const resposta = await tratar(pedido())
+    assert.equal(resposta.status, 200)
+    assert.deepEqual(await resposta.json(), { enviados: 2 })
+    assert.equal(chamadas.length, 1)
+    assert.equal(reservas.length, 2)
+  },
+)
+
+Deno.test(
+  'o gatilho reservou e não termina a tempo: 409, sem dizer que o e-mail saiu',
+  async () => {
+    const { tratar, chamadas, esperas } = montar({ estadoInicial: 'em_andamento' })
+    const resposta = await tratar(pedido())
+    assert.equal(resposta.status, 409)
+    assert.deepEqual(await resposta.json(), { erro: 'envio_em_andamento' })
+    assert.equal(chamadas.length, 0)
+    assert.equal(esperas.length, ESPERA_PELO_OUTRO_ENVIO_MS / INTERVALO_DA_ESPERA_MS)
+  },
+)
+
+Deno.test(
+  'o gatilho reservou e envia enquanto o front espera: já enviado, sem e-mail em dobro',
+  async () => {
+    const { tratar, chamadas } = montar({
+      estadoInicial: 'em_andamento',
+      aoEsperar: (estado) => {
+        estado.atual = 'enviado'
+      },
+    })
+    const resposta = await tratar(pedido())
+    assert.equal(resposta.status, 200)
+    assert.deepEqual(await resposta.json(), { enviados: 0, jaEnviado: true })
+    assert.equal(chamadas.length, 0)
+  },
+)
 
 Deno.test('sem a chave do Resend: erro tratado, nenhum envio nem reserva', async () => {
   const { tratar, chamadas, log, reservas } = montar({

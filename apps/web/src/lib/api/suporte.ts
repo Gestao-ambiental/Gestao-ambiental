@@ -264,6 +264,7 @@ const MOTIVOS_DO_EMAIL: Record<string, string> = {
   configuracao_ausente: 'o envio de e-mail não está configurado',
   sem_destinatarios: 'a Gestão não tem e-mail cadastrado',
   falha_no_envio: 'o serviço de e-mail recusou o envio',
+  envio_em_andamento: 'o envio não foi confirmado a tempo',
   sem_acesso_de_emergencia: 'o acesso de emergência não está valendo',
   dois_fatores_necessarios: 'a sessão precisa dos dois fatores',
   sem_permissao: 'sem permissão',
@@ -282,7 +283,13 @@ export async function avisarGestaoPorEmail(acessoId: string): Promise<ResultadoD
       body: { acessoId },
     })
     const erro: unknown = resposta.error
-    if (!erro) return { enviado: true }
+    if (!erro) {
+      // Só conta como enviado o que a função confirma: enviou agora ou o outro chamador já enviou.
+      const corpo = resposta.data as { enviados?: unknown; jaEnviado?: unknown } | null
+      const enviados = typeof corpo?.enviados === 'number' ? corpo.enviados : 0
+      if (enviados > 0 || corpo?.jaEnviado === true) return { enviado: true }
+      return { enviado: false, motivo: 'erro no envio' }
+    }
     if (erro instanceof FunctionsHttpError) {
       const corpo = (await (erro.context as Response).json().catch(() => ({}))) as {
         erro?: string

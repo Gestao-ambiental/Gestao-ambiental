@@ -3,15 +3,20 @@
 // Chamada pelo gatilho do banco (pg_net, header x-aviso-token) a cada acesso de emergência aberto
 // e pelo front da central logo depois de abrir (JWT do operador, conferido pelo banco). A reserva
 // no banco garante um e-mail só por acesso. Com a service role, lê os e-mails da Gestão ativa e
-// envia o aviso pelo Resend. Falhar aqui nunca desfaz o acesso: a faixa de aviso aparece para a
-// Gestão no Grama do mesmo jeito. verify_jwt = false no config.toml: o gatilho não tem JWT; o JWT do
-// front é conferido pelo banco na RPC dados_do_aviso_de_emergencia.
+// envia o aviso pelo Resend. Quem perde a reserva espera o resultado do outro chamador. Falhar
+// aqui nunca desfaz o acesso: a faixa de aviso aparece para a Gestão no Grama do mesmo jeito.
+// verify_jwt = false no config.toml: o gatilho não tem JWT; o JWT do front é conferido pelo banco
+// na RPC dados_do_aviso_de_emergencia.
 // Segredos: SUPORTE_AVISO_TOKEN, RESEND_API_KEY e AVISO_REMETENTE (ex.: "Grama <avisos@dominio>").
 // Nunca em log, nem os e-mails, o token e o motivo.
 
 import { createClient } from 'npm:@supabase/supabase-js@2.118.0'
 
-import { criarTratadorDoAviso, type DadosDoAviso } from '../_shared/aviso-de-suporte.ts'
+import {
+  criarTratadorDoAviso,
+  type DadosDoAviso,
+  type EstadoDoAviso,
+} from '../_shared/aviso-de-suporte.ts'
 
 const url = Deno.env.get('SUPABASE_URL') ?? ''
 const anonima = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
@@ -73,6 +78,19 @@ Deno.serve(
     async liberarAviso(acessoId) {
       const { error } = await admin.rpc('liberar_aviso_de_emergencia', { p_acesso_id: acessoId })
       if (error) throw new Error('liberar')
+    },
+    async marcarEnviado(acessoId) {
+      const { error } = await admin.rpc('marcar_aviso_de_emergencia_enviado', {
+        p_acesso_id: acessoId,
+      })
+      if (error) throw new Error('marcar')
+    },
+    async estadoDoAviso(acessoId) {
+      const { data, error } = await admin.rpc('estado_do_aviso_de_emergencia', {
+        p_acesso_id: acessoId,
+      })
+      if (error) throw new Error('estado')
+      return data as EstadoDoAviso
     },
     async emailsDaGestao(consultoriaId) {
       const { data, error } = await admin
