@@ -91,7 +91,7 @@ describe('Plano e cobrança com recursos e contrato (ADR-0030)', () => {
     expect(await screen.findAllByText('Plano por contrato')).not.toHaveLength(0)
     expect(screen.getByText('Escala por contrato · até 31/12/2027')).toBeInTheDocument()
     expect(screen.getByText('4 de 25')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Assinar e pagar' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Assinar' })).not.toBeInTheDocument()
   })
 })
 
