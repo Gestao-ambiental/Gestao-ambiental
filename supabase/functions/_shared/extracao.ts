@@ -5,6 +5,9 @@
 export const VERSAO_PROMPT = 'licenca-v1'
 export const MODELO_PADRAO = 'openai/gpt-4.1-mini'
 export const LIMITE_PDF_BYTES = 10 * 1024 * 1024
+/** Páginas e caracteres de texto que vão ao modelo (~100 mil tokens): acima disso, não vai à IA. */
+export const LIMITE_PAGINAS = 300
+export const LIMITE_CARACTERES = 400_000
 export const LIMITE_ITENS = 300
 export const LIMITE_TEMPO_MS = 110_000
 
@@ -61,6 +64,7 @@ export type MotivoDeFalha =
   | 'tempo_esgotado'
   | 'resposta_invalida'
   | 'configuracao_ausente'
+  | 'limite_atingido'
   | 'erro_interno'
 
 /**
@@ -121,6 +125,22 @@ export function pdfTemTexto(paginas: readonly string[]): boolean {
   if (paginas.length === 0) return false
   const visiveis = paginas.reduce((soma, texto) => soma + texto.replace(/\s/g, '').length, 0)
   return visiveis / paginas.length >= 40
+}
+
+/**
+ * Texto grande demais para mandar ao modelo: mais de LIMITE_PAGINAS páginas ou de
+ * LIMITE_CARACTERES caracteres (o texto aparado, como vai na mensagem). Devolve o detalhe curto
+ * para o registro (só contagens, nunca conteúdo) ou nulo quando cabe.
+ */
+export function excessoDoPdf(paginas: readonly string[]): string | null {
+  if (paginas.length > LIMITE_PAGINAS) {
+    return `${String(paginas.length)} páginas (limite ${String(LIMITE_PAGINAS)})`
+  }
+  const caracteres = paginas.reduce((soma, texto) => soma + texto.trim().length, 0)
+  if (caracteres > LIMITE_CARACTERES) {
+    return `${String(caracteres)} caracteres (limite ${String(LIMITE_CARACTERES)})`
+  }
+  return null
 }
 
 /** Custo em dólares (frações de centavo) para milionésimos inteiros; ausente fica nulo. */

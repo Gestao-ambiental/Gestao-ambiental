@@ -85,6 +85,8 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   condicionantes_existentes:
     'Este rascunho já tem condicionantes: a IA só preenche rascunho sem itens. Siga pelo manual.',
   extracao_em_andamento: 'Já há uma extração em andamento para este rascunho. Aguarde.',
+  ia_fora_do_plano:
+    'A extração por IA não faz parte do plano desta consultoria. Siga pelo cadastro manual.',
   cargo_longo_demais: 'O cargo pode ter até 80 caracteres.',
   // Orçamentos (onda 5)
   orcamento_existente: 'Não foi possível criar o orçamento. Tente de novo.',
@@ -329,8 +331,13 @@ export function ehDoisFatoresNecessarios(erro: unknown): boolean {
 export function ehSemPermissao(erro: unknown): boolean {
   if (ehDoisFatoresNecessarios(erro)) return false
   const { code, message } = comoObjeto(erro)
-  // Só leitura por atraso e orçamento fora do plano usam 42501, mas têm mensagem própria (ADR-0026).
-  if (message === 'consultoria_somente_leitura' || message === 'orcamentos_fora_do_plano')
+  // Só leitura por atraso e orçamento ou IA fora do plano usam 42501, mas têm mensagem própria
+  // (ADR-0026).
+  if (
+    message === 'consultoria_somente_leitura' ||
+    message === 'orcamentos_fora_do_plano' ||
+    message === 'ia_fora_do_plano'
+  )
     return false
   return code === '42501' || message === 'sem_permissao'
 }

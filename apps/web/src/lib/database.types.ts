@@ -2269,6 +2269,9 @@ isOneToOne: false
               "acesso_id": string,"categoria": string,"consultoria_fuso": string,"consultoria_id": string,"consultoria_nome": string,"fim_previsto": string,"inicio": string,"motivo": string,"operador_nome": string
             }[]
                            },
+"reservar_extracao_ia":
+{ Args: { "p_id": string }; Returns: boolean
+                           },
 "responder_linha_de_base":
 { Args: { "p_consultoria_id": string,"p_horas_semana_conferindo": number,"p_licencas_ativas": number,"p_minutos_por_condicionante": number,"p_surpresas_por_mes": number }; Returns: string
                            },

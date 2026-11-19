@@ -18,11 +18,13 @@ export type MotivoDaFalha =
   | 'tempo_esgotado'
   | 'resposta_invalida'
   | 'configuracao_ausente'
+  | 'limite_atingido'
   | 'erro_interno'
 
 export const MENSAGEM_DA_FALHA: Record<MotivoDaFalha, string> = {
   pdf_sem_texto: 'Este PDF é uma imagem e a IA só lê PDF com texto. Siga pelo cadastro manual.',
-  pdf_grande_demais: 'A IA lê PDF com texto até 10 MB. Siga pelo cadastro manual.',
+  pdf_grande_demais:
+    'A IA lê PDF com texto até 10 MB e 300 páginas. Este passa do limite: siga pelo cadastro manual.',
   provedor_indisponivel: 'A IA não respondeu agora. Tente de novo ou siga pelo manual.',
   provedor_recusou:
     'O provedor de IA recusou o pedido (chave, créditos ou modelo). Avise quem cuida da configuração e siga pelo manual.',
@@ -30,6 +32,8 @@ export const MENSAGEM_DA_FALHA: Record<MotivoDaFalha, string> = {
   resposta_invalida:
     'A IA devolveu algo fora do formato esperado. Tente de novo ou siga pelo manual.',
   configuracao_ausente: 'A extração por IA não está configurada neste ambiente. Siga pelo manual.',
+  limite_atingido:
+    'A extração por IA atingiu o limite de uso. Tente mais tarde ou continue pelo cadastro manual.',
   erro_interno: 'Não foi possível concluir a extração. Tente de novo ou siga pelo manual.',
 }
 
