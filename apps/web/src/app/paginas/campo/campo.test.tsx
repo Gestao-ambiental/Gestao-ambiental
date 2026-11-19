@@ -122,6 +122,15 @@ function cenario(
   }
 }
 
+/**
+ * O checklist tem um h1 "Checklist" enquanto carrega e outro depois: esperar só pelo título
+ * pode pegar o do carregamento, que sai do DOM logo em seguida. A lista só existe carregada.
+ */
+async function esperarChecklistCarregado() {
+  await screen.findByRole('list', { name: 'Itens do checklist' })
+  expect(screen.getByRole('heading', { level: 1, name: 'Checklist' })).toBeInTheDocument()
+}
+
 beforeAll(() => {
   // jsdom não rola: a lista de pendências leva ao item por âncora.
   Element.prototype.scrollIntoView = vi.fn()
@@ -226,7 +235,7 @@ describe('detalhe da visita (/campo/:id)', () => {
     expect(screen.getByText('Rua das Palmeiras, 100')).toBeInTheDocument()
     await usuario.click(screen.getByRole('button', { name: 'Começar vistoria' }))
     expect(falso.cliente.rpc).toHaveBeenCalledWith('iniciar_vistoria', { p_id: 'v1' })
-    expect(await screen.findByRole('heading', { level: 1, name: 'Checklist' })).toBeInTheDocument()
+    await esperarChecklistCarregado()
   })
 
   it('quem confere devolve só com motivo', async () => {
@@ -407,7 +416,7 @@ describe('foto e localização (/campo/:id/itens/:itemId/foto)', () => {
     await usuario.type(screen.getByLabelText('Legenda (opcional)'), 'Vista geral')
     await usuario.click(screen.getByRole('button', { name: 'Vincular foto' }))
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Checklist' })).toBeInTheDocument()
+    await esperarChecklistCarregado()
     const upload = falso.cliente.storage.from().upload
     expect(upload).toHaveBeenCalledTimes(1)
     const caminho = upload.mock.calls[0]?.[0] ?? ''
@@ -456,7 +465,7 @@ describe('foto e localização (/campo/:id/itens/:itemId/foto)', () => {
 
     falhar = false
     await usuario.click(screen.getByRole('button', { name: 'Tentar de novo' }))
-    expect(await screen.findByRole('heading', { level: 1, name: 'Checklist' })).toBeInTheDocument()
+    await esperarChecklistCarregado()
     const chamadas = falso.cliente.rpc.mock.calls.filter(
       ([nome]) => nome === 'adicionar_foto_da_vistoria',
     )
