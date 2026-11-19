@@ -4,7 +4,9 @@
 // Aviso: o gatilho do banco chama a função pelo pg_net com o header x-aviso-token (conferido em
 // tempo constante contra LISTA_AVISO_TOKEN). Com a service role ela lê os cadastros ainda sem aviso
 // e os e-mails dos operadores, manda um e-mail só pelo Resend e marca os cadastros como avisados.
-// Se o envio falhar, nada é marcado: o próximo cadastro leva os pendentes junto.
+// Se o envio falhar, nada é marcado: o próximo cadastro leva os pendentes junto. O gatilho só chama
+// a função uma vez a cada 10 minutos (migration 20261119300100): os cadastros do intervalo vão
+// juntos no próximo aviso.
 //
 // Convite: o operador (JWT, dois fatores) pede; o banco registra o convite e devolve o contato. Para
 // e-mail, a função manda o convite com o link de criar conta do beta (LINK_DO_BETA). WhatsApp não
@@ -70,14 +72,17 @@ export function formatarWhatsapp(digitos: string): string {
   return m ? `(${m[1]}) ${m[2]}-${m[3]}` : `+${digitos}`
 }
 
-/** Assunto e texto do aviso aos operadores. Texto puro. */
+/**
+ * Assunto e texto do aviso aos operadores. Texto puro (sem HTML, nada a escapar). O nome vem de
+ * quem se cadastrou no site, sem login: fica só no corpo, nunca no assunto.
+ */
 export function montarEmailDoAviso(cadastros: readonly CadastroNaLista[]): {
   assunto: string
   texto: string
 } {
   const assunto =
     cadastros.length === 1
-      ? `Grama: ${cadastros[0]?.nome ?? ''} entrou na lista de espera`
+      ? 'Grama: 1 pessoa entrou na lista de espera'
       : `Grama: ${String(cadastros.length)} pessoas entraram na lista de espera`
   const linhas = cadastros.map(
     (c) =>
