@@ -197,6 +197,7 @@ as $$
 declare
   v_url text;
   v_token text;
+  v_schema_net text;
 begin
   if to_regclass('vault.decrypted_secrets') is null or not exists (
     select 1 from pg_proc as p join pg_namespace as n on n.oid = p.pronamespace
@@ -211,13 +212,20 @@ begin
   if v_url is null or v_token is null then
     return;
   end if;
+  -- O schema do pg_net vem do catálogo: sem a extensão (banco local, CI) não há o que chamar. O
+  -- plpgsql_check do CI analisa funções comuns (não as de gatilho) e falharia com um nome fixo.
+  select n.nspname into v_schema_net
+  from pg_catalog.pg_extension as e
+  join pg_catalog.pg_namespace as n on n.oid = e.extnamespace
+  where e.extname = 'pg_net';
+  if v_schema_net is null then
+    return;
+  end if;
   -- Nada pendente ou avisou há menos de 10 minutos: os pendentes saem no próximo disparo.
   if not private.reservar_aviso_da_lista_de_espera() then
     return;
   end if;
-  -- format(): o plpgsql_check do CI analisa funções comuns (não as de gatilho) e avaliaria uma
-  -- string fixa, falhando porque o schema "net" (pg_net) não existe no banco local do CI.
-  execute format('select %I.http_post(url := $1, body := $2, headers := $3)', 'net')
+  execute format('select %I.http_post(url := $1, body := $2, headers := $3)', v_schema_net)
     using v_url, '{}'::jsonb,
           jsonb_build_object('Content-Type', 'application/json', 'x-aviso-token', v_token);
 end;
