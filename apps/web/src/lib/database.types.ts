@@ -2126,6 +2126,11 @@ isOneToOne: false
               "ano": number,"atualizado_em": string,"empreendimento_id": string,"empreendimento_nome": string,"excluido_em": string,"id": string,"objeto": string,"revisao": number,"row_version": number,"sequencia": number,"situacao": Database["public"]['Enums']["situacao_orcamento"],"total": number,"total_centavos": number
             }[]
                            },
+"listar_orgaos_em_uso":
+{ Args: { "p_consultoria_id": string }; Returns: {
+              "orgao": string
+            }[]
+                           },
 "listar_prazos":
 { Args: { "p_aba"?: string,"p_consultoria_id": string,"p_deslocamento"?: number,"p_empreendimento_id"?: string,"p_faixa"?: string,"p_limite"?: number,"p_ordem"?: string,"p_responsavel_id"?: string,"p_sem_responsavel"?: boolean,"p_tipo_id"?: string }; Returns: {
               "codigo": string,"dias": number,"empreendimento_id": string,"empreendimento_nome": string,"id": string,"instrumento_id": string,"licenca": string,"prazo": string,"responsavel_id": string,"responsavel_nome": string,"row_version": number,"situacao_ocorrencia": Database["public"]['Enums']["situacao_ocorrencia"],"tipo_linha": string,"titulo": string,"total": number,"unidade_nome": string
@@ -2139,6 +2144,11 @@ isOneToOne: false
 "listar_tarefas_servico":
 { Args: { "p_abertas"?: boolean,"p_ate"?: string,"p_consultoria_id": string,"p_de"?: string,"p_orcamento_id"?: string,"p_responsavel_id"?: string,"p_sem_responsavel"?: boolean }; Returns: {
               "dias": number,"empreendimento_nome": string,"fora_da_revisao": boolean,"id": string,"minutos_estimados": number,"orcamento_ano": number,"orcamento_id": string,"orcamento_item_id": string,"orcamento_revisao": number,"orcamento_sequencia": number,"ordem": number,"prazo_interno": string,"responsavel_id": string,"responsavel_nome": string,"row_version": number,"situacao": Database["public"]['Enums']["situacao_tarefa_servico"],"titulo": string
+            }[]
+                           },
+"listar_tipos_em_uso":
+{ Args: { "p_consultoria_id": string }; Returns: {
+              "id": string,"sigla": string
             }[]
                            },
 "listar_vistorias":

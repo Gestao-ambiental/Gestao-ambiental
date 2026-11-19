@@ -136,21 +136,20 @@ export async function atribuirOcorrencia(
   if (error) throw error
 }
 
-/** Tipos de instrumento realmente cadastrados (EQ-02: nunca lista fixa). */
+/**
+ * Tipos de instrumento realmente cadastrados (EQ-02: nunca lista fixa). O banco tira as repetições:
+ * ler as licenças e deduplicar aqui perdia tipos além do limite de linhas.
+ */
 export async function listarTiposEmUso(
   consultoriaId: string,
 ): Promise<{ id: string; sigla: string }[]> {
-  const { data, error } = await obterSupabase()
-    .from('instrumento')
-    .select('tipo:tipo_instrumento!instrumento_tipo_fk(id, sigla)')
-    .eq('consultoria_id', consultoriaId)
-    .not('tipo_id', 'is', null)
-    .range(0, 999)
+  const { data, error } = await obterSupabase().rpc('listar_tipos_em_uso', {
+    p_consultoria_id: consultoriaId,
+  })
   if (error) throw error
-  const porId = new Map<string, string>()
-  for (const linha of data) if (linha.tipo) porId.set(linha.tipo.id, linha.tipo.sigla)
-  return [...porId]
-    .map(([id, sigla]) => ({ id, sigla }))
+  // A RPC sem linhas pode chegar nula.
+  return ((data as typeof data | null) ?? [])
+    .map((t) => ({ id: t.id, sigla: t.sigla }))
     .sort((a, b) => a.sigla.localeCompare(b.sigla))
 }
 
