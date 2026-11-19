@@ -5,8 +5,11 @@
 // Dois caminhos, ambos POST:
 // 1. Agendado (GitHub Actions, dia 1 às 08:00 de Brasília): header x-cron-token conferido contra o
 //    segredo CRON_TOKEN em tempo constante. Com a service role, lista o resumo do mês anterior de
-//    cada consultoria não arquivada que ainda não recebeu (resumos_do_mes_pendentes), manda para
-//    os e-mails da Gestão ativa e grava o envio (registrar_envio_do_resumo). Repetir não reenvia.
+//    cada consultoria não arquivada que ainda não recebeu (resumos_do_mes_pendentes), reserva o
+//    envio (reservar_envio_do_resumo), manda para os e-mails da Gestão ativa e grava o envio
+//    (registrar_envio_do_resumo). Repetir, mesmo ao mesmo tempo, não reenvia: sem a reserva, não
+//    manda. Recusa do Resend libera a reserva (liberar_reserva_do_resumo); sem resposta ou com
+//    falha ao gravar, a reserva fica (o e-mail pode ter saído) e só é retomada após 60 minutos.
 // 2. Teste pela central ({ teste: true, consultoriaId }): com o JWT de quem chama, o banco confere
 //    operador com dois fatores (central_resumo_do_mes); o e-mail vai só para quem está logado e
 //    nada é gravado.
@@ -65,6 +68,13 @@ export interface DependenciasDoResumo {
   resumosPendentes: () => Promise<LinhaDoResumo[]>
   /** Service role: e-mails da Gestão ativa da consultoria. */
   emailsDaGestao: (consultoriaId: string) => Promise<string[]>
+  /**
+   * Service role: reserva o envio antes de mandar; falso quando outra execução reservou há pouco
+   * ou o envio já foi gravado.
+   */
+  reservarEnvio: (consultoriaId: string, mes: string) => Promise<boolean>
+  /** Service role: desfaz a reserva depois de uma falha no envio. */
+  liberarReserva: (consultoriaId: string, mes: string) => Promise<void>
   /** Service role: grava o envio; falso quando já estava gravado. */
   registrarEnvio: (consultoriaId: string, mes: string, destinatarios: number) => Promise<boolean>
   /** Com o JWT de quem chama: confere operador com dois fatores e lê o resumo e o e-mail dele. */
@@ -320,33 +330,55 @@ export function criarTratadorDoResumo(deps: DependenciasDoResumo) {
 
     let enviados = 0
     let semDestinatarios = 0
+    let emAndamento = 0
     let falhas = 0
     for (const resumo of resumos) {
       const consultoriaId = resumo.consultoriaId
+      let etapa = 'destinatarios'
       try {
         const destinatarios = await deps.emailsDaGestao(consultoriaId)
         if (destinatarios.length === 0) {
           semDestinatarios++
           continue
         }
+        etapa = 'reserva'
+        if (!(await deps.reservarEnvio(consultoriaId, resumo.mes))) {
+          emAndamento++
+          continue
+        }
+        etapa = 'envio'
         const status = await enviar(chave, remetente, destinatarios, montarEmailDoResumo(resumo))
         if (status !== 200) {
           falhas++
           registrar(
             JSON.stringify({ consultoriaId, etapa: 'envio', motivo: 'falha_no_envio', status }),
           )
+          // Sem resposta (status 0, ex.: tempo esgotado) o e-mail pode ter saído: a reserva fica e
+          // só é retomada depois de 60 minutos. Com recusa do Resend, nada saiu: libera já.
+          if (status !== 0) {
+            etapa = 'liberar'
+            await deps.liberarReserva(consultoriaId, resumo.mes)
+          }
           continue
         }
+        // O e-mail saiu: daqui em diante, nenhuma falha libera a reserva.
+        etapa = 'registro'
         await deps.registrarEnvio(consultoriaId, resumo.mes, destinatarios.length)
         enviados++
       } catch {
-        falhas++
-        registrar(JSON.stringify({ consultoriaId, etapa: 'envio', motivo: 'erro_interno' }))
+        if (etapa !== 'liberar') falhas++
+        registrar(JSON.stringify({ consultoriaId, etapa, motivo: 'erro_interno' }))
       }
     }
 
     return responder(
-      { consultorias: resumos.length, enviados, sem_destinatarios: semDestinatarios, falhas },
+      {
+        consultorias: resumos.length,
+        enviados,
+        sem_destinatarios: semDestinatarios,
+        em_andamento: emAndamento,
+        falhas,
+      },
       falhas > 0 ? 502 : 200,
     )
   }

@@ -2077,6 +2077,9 @@ isOneToOne: false
 "iniciar_vistoria":
 { Args: { "p_id": string }; Returns: number
                            },
+"liberar_reserva_do_resumo":
+{ Args: { "p_consultoria_id": string,"p_mes": string }; Returns: undefined
+                           },
 "lista_de_espera_marcar_avisados":
 { Args: { "p_ids": (string)[] }; Returns: number
                            },
@@ -2260,6 +2263,9 @@ isOneToOne: false
                            },
 "remover_logo_da_consultoria":
 { Args: { "p_consultoria_id": string }; Returns: undefined
+                           },
+"reservar_envio_do_resumo":
+{ Args: { "p_consultoria_id": string,"p_mes": string }; Returns: boolean
                            },
 "responder_linha_de_base":
 { Args: { "p_consultoria_id": string,"p_horas_semana_conferindo": number,"p_licencas_ativas": number,"p_minutos_por_condicionante": number,"p_surpresas_por_mes": number }; Returns: string

@@ -66,6 +66,21 @@ Deno.serve(
       if (error) throw new Error('membro')
       return (data as { email: string }[]).map((m) => m.email).filter((e) => e.includes('@'))
     },
+    async reservarEnvio(consultoriaId, mes) {
+      const { data, error } = await admin().rpc('reservar_envio_do_resumo', {
+        p_consultoria_id: consultoriaId,
+        p_mes: mes,
+      })
+      if (error) throw new Error('reservar')
+      return data === true
+    },
+    async liberarReserva(consultoriaId, mes) {
+      const { error } = await admin().rpc('liberar_reserva_do_resumo', {
+        p_consultoria_id: consultoriaId,
+        p_mes: mes,
+      })
+      if (error) throw new Error('liberar')
+    },
     async registrarEnvio(consultoriaId, mes, destinatarios) {
       const { data, error } = await admin().rpc('registrar_envio_do_resumo', {
         p_consultoria_id: consultoriaId,
