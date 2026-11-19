@@ -24,6 +24,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { chaveDoOrcamento, usePrenderTarefa } from '@/app/consultoria/tempo-ativo'
 import { Pagina } from '@/app/paginas/Pagina'
+import { AvisoDeSaida } from '@/components/aviso-de-saida'
 import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
 import { BotaoIcone } from '@/components/ui/botao-icone'
@@ -73,7 +74,6 @@ import {
   reaisDigitados,
   textoDaQuantidade,
 } from './comum'
-import { AvisoDeSaida } from './AvisoDeSaida'
 import { DialogoModelo, type SelecaoDoModelo } from './DialogoModelo'
 import { DialogoDuplicar, DialogoSalvarModelo } from './DialogosDeCopia'
 import { SituacaoDoOrcamento } from './SituacaoDoOrcamento'

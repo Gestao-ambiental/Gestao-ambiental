@@ -27,6 +27,7 @@ import { Link, useNavigate } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Pagina } from '@/app/paginas/Pagina'
+import { AvisoDeSaida } from '@/components/aviso-de-saida'
 import { Carregando, EstadoErro, SemPermissao } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
 import { CaixaSelecao } from '@/components/ui/caixa-selecao'
@@ -53,7 +54,6 @@ import { formatarInstanteComHora } from '@/lib/datas'
 import { codigoDoErro, mensagemDoErro } from '@/lib/erros'
 import { cn } from '@/lib/utils'
 
-import { AvisoDeSaida } from './AvisoDeSaida'
 import { lerEstimativa, lerHoras, lerPercentual, textoDasHoras, textoDoPercentual } from './calculo'
 import {
   camposDeDeslocamentoDe,
