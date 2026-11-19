@@ -147,6 +147,8 @@ export type SituacaoDaRenovacao =
       noPrazo: boolean
       /** Próxima data de acompanhar o órgão; nula sem intervalo definido. */
       proximoAcompanhamento: DataCivil | null
+      /** Dias desde o vencimento da licença; nulo enquanto ela vale (o protocolo não prorroga). */
+      vencidaHaDias: number | null
     }
   | { tipo: 'vencida'; dias: number }
   | { tipo: 'protocolo_atrasado'; dias: number }
@@ -155,9 +157,10 @@ export type SituacaoDaRenovacao =
   | { tipo: 'preparacao_futura'; inicio: DataCivil }
 
 /**
- * Protocolada vale mais que tudo (e diz se foi até o limite e quando acompanhar o órgão). Sem
- * protocolo: licença vencida, limite passado, limite em até 7 dias, preparação em curso ou ainda
- * por começar. Protocolar não prorroga a licença: "protocolada" não muda a validade.
+ * Protocolada vale mais que tudo (e diz se foi até o limite, quando acompanhar o órgão e, se a
+ * licença já venceu, há quantos dias). Sem protocolo: licença vencida, limite passado, limite em
+ * até 7 dias, preparação em curso ou ainda por começar. Protocolar não prorroga a licença
+ * (doc 09, §4.6): "protocolada" não muda a validade nem esconde o vencimento.
  */
 export function situacaoDaRenovacao(entrada: {
   vencimento: DataCivil
@@ -182,6 +185,10 @@ export function situacaoDaRenovacao(entrada: {
         entrada.acompanhamentoDias,
         entrada.hoje,
       ),
+      vencidaHaDias:
+        entrada.hoje > entrada.vencimento
+          ? diferencaEmDias(entrada.hoje, entrada.vencimento)
+          : null,
     }
   }
   if (entrada.hoje > entrada.vencimento) {
@@ -198,7 +205,7 @@ export function situacaoDaRenovacao(entrada: {
 /**
  * Texto do selo (Protótipo 17): o número de dias ou a data vão escritos, nunca só a cor.
  * Protocolada sem resposta registrada é "Sem retorno do órgão"; o dia de acompanhar o órgão vira
- * aviso. "Prazo de protocolo vencido" é perder o limite (decisão de 19/10/2026).
+ * aviso; licença já vencida ganha "· vencida há N dias". "Prazo de protocolo vencido" é perder o limite (decisão de 19/10/2026).
  */
 export function rotuloDaSituacaoDaRenovacao(
   situacao: SituacaoDaRenovacao,
@@ -207,11 +214,16 @@ export function rotuloDaSituacaoDaRenovacao(
   const dias = (n: number) => (n === 1 ? '1 dia' : `${String(n)} dias`)
   const diaMes = (data: DataCivil) => formatarDataCivil(data).slice(0, 5)
   switch (situacao.tipo) {
-    case 'protocolada':
-      if (hoje && situacao.proximoAcompanhamento === hoje) return 'Acompanhar o órgão hoje'
+    case 'protocolada': {
+      const vencida =
+        situacao.vencidaHaDias === null ? '' : ` · vencida há ${dias(situacao.vencidaHaDias)}`
+      if (hoje && situacao.proximoAcompanhamento === hoje) {
+        return `Acompanhar o órgão hoje${vencida}`
+      }
       return situacao.noPrazo
-        ? 'Sem retorno do órgão'
-        : 'Sem retorno do órgão · protocolo após o limite'
+        ? `Sem retorno do órgão${vencida}`
+        : `Sem retorno do órgão · protocolo após o limite${vencida}`
+    }
     case 'vencida':
       return `Vencida há ${dias(situacao.dias)}`
     case 'protocolo_atrasado':

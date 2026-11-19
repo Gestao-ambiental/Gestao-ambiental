@@ -10,6 +10,8 @@ function tomDe(situacao: SituacaoDaRenovacao, hoje: DataCivil): TomSelo {
   switch (situacao.tipo) {
     case 'protocolada':
       // Aguardando o órgão: em andamento; dia de acompanhar ou protocolo fora do prazo, atenção.
+      // Licença já vencida: perigo, como a vencida sem protocolo (o protocolo não prorroga).
+      if (situacao.vencidaHaDias !== null) return 'perigoForte'
       return situacao.proximoAcompanhamento === hoje || !situacao.noPrazo ? 'atencao' : 'andamento'
     case 'vencida':
     case 'protocolo_atrasado':
