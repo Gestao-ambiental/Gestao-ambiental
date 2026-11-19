@@ -52,6 +52,8 @@ export interface Prazo {
   unidade?: UnidadeCiclo | null
   /** Só na personalizada: a cada N meses ou dias corridos. */
   intervalo?: number | null
+  /** Data de referência (marco) de onde a primeira data foi sugerida. */
+  dataReferencia?: DataCivil | null
   primeiraData?: DataCivil | null
 }
 
@@ -84,7 +86,9 @@ function cicloDe(prazo: Prazo): { unidade: UnidadeCiclo; intervalo: number } | n
 /**
  * Entregas de um prazo até a validade (inclusive). Única e na renovação: uma, na primeira data.
  * Contínua: nenhuma (não vira entrega periódica). Periódica: primeira data + i × intervalo, em
- * meses (sempre a partir da base, fim de mês sem derivar) ou dias corridos.
+ * meses (sempre a partir da base, fim de mês sem derivar) ou dias corridos. Em meses, quando a
+ * primeira data é a sugerida (referência + um intervalo), a base é a referência: referência +
+ * (i + 1) × intervalo, para 31/01 mensal dar 28/02, 31/03, 30/04 e não ficar preso no dia 28.
  */
 export function datasDoPrazo(
   prazo: Prazo,
@@ -101,12 +105,20 @@ export function datasDoPrazo(
   if (!validade || !ehDataCivil(validade)) throw new ErroDePrazo('validade_obrigatoria')
   if (primeira > validade) throw new ErroDePrazo('primeira_data_apos_validade')
 
+  const referencia = prazo.dataReferencia
+  const daReferencia =
+    ciclo.unidade === 'mes' &&
+    !!referencia &&
+    ehDataCivil(referencia) &&
+    adicionarMeses(referencia, ciclo.intervalo) === primeira
   const datas: { ciclo: number; prazo: DataCivil }[] = []
   for (let i = 0; i <= MAXIMO_OCORRENCIAS; i++) {
     const data =
-      ciclo.unidade === 'mes'
-        ? adicionarMeses(primeira, i * ciclo.intervalo)
-        : adicionarDias(primeira, i * ciclo.intervalo)
+      ciclo.unidade === 'dia'
+        ? adicionarDias(primeira, i * ciclo.intervalo)
+        : daReferencia
+          ? adicionarMeses(referencia, (i + 1) * ciclo.intervalo)
+          : adicionarMeses(primeira, i * ciclo.intervalo)
     if (data > validade) return datas
     if (i === MAXIMO_OCORRENCIAS) break
     datas.push({ ciclo: i + 1, prazo: data })

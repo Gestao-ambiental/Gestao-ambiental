@@ -85,7 +85,10 @@ function prazoProposto(
   if (!continua && !primeira) return null
   if (!continua) {
     try {
-      datasDoPrazo({ ...base, primeiraData: primeira }, instrumento.validade)
+      datasDoPrazo(
+        { ...base, dataReferencia: referencia, primeiraData: primeira },
+        instrumento.validade,
+      )
     } catch {
       return null
     }
@@ -141,6 +144,7 @@ function PainelPrazo({
         recorrencia,
         unidade: recorrencia === 'personalizada' ? unidade : null,
         intervalo: recorrencia === 'personalizada' ? Number(intervalo) || null : null,
+        dataReferencia: referencia,
         primeiraData: primeira,
       }
     : null

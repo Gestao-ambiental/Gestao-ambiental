@@ -336,6 +336,28 @@ describe('passo 4: prazos (LIC-03)', () => {
     })
   })
 
+  it('mensal a partir de 31/01: a simulação volta ao fim de mês, sem ficar no dia 28', async () => {
+    falso.reiniciar(
+      cenario({
+        tabelas: {
+          instrumento: [rascunho({ assinado_em: '2023-01-31' })],
+          condicionante: [condicionante('c1', '4.2', 'Relatório mensal')],
+        },
+      }),
+    )
+    const usuario = userEvent.setup()
+    renderizarApp('/licencas/i1/prazos')
+
+    await usuario.click(await screen.findByRole('button', { name: 'Relatório mensal' }))
+    const painel = await screen.findByRole('region', { name: 'Prazo de 4.2' })
+    await usuario.click(within(painel).getByRole('button', { name: 'Mensal' }))
+    expect(within(painel).getByText('Sugerida: 28/02/2023.')).toBeInTheDocument()
+    const proximas = within(painel).getByRole('list', { name: 'Próximas datas' })
+    expect(within(proximas).getByText('31/03/2023')).toBeInTheDocument()
+    expect(within(proximas).getByText('30/04/2023')).toBeInTheDocument()
+    expect(within(proximas).queryByText('28/03/2023')).toBeNull()
+  })
+
   it('confirmar no painel segue para o próximo prazo pendente, pulando os já confirmados', async () => {
     falso.reiniciar(
       cenario({

@@ -31,6 +31,60 @@ describe('datasDoPrazo (espelho do banco)', () => {
     ).toEqual(['2024-01-31', '2024-02-29', '2024-03-31', '2024-04-30', '2024-05-31'])
   })
 
+  it('primeira data sugerida no fim de mês conta da referência: 31/01 mensal não fica no dia 28', () => {
+    // Referência 31/01/2026 + 1 mês = 28/02 (sugerida); depois 31/03 e 30/04, nunca 28/03 e 28/04.
+    const primeira = sugerirPrimeiraData(
+      { recorrencia: 'mensal' },
+      '2026-01-31',
+      '2026-05-31',
+      null,
+    )
+    expect(primeira).toBe('2026-02-28')
+    expect(
+      prazos(
+        datasDoPrazo(
+          { recorrencia: 'mensal', dataReferencia: '2026-01-31', primeiraData: primeira },
+          '2026-05-31',
+        ),
+      ),
+    ).toEqual(['2026-02-28', '2026-03-31', '2026-04-30', '2026-05-31'])
+    // Trimestral de 30/11/2025: 28/02 (clampado), 30/05, 30/08.
+    expect(
+      prazos(
+        datasDoPrazo(
+          { recorrencia: 'trimestral', dataReferencia: '2025-11-30', primeiraData: '2026-02-28' },
+          '2026-08-30',
+        ),
+      ),
+    ).toEqual(['2026-02-28', '2026-05-30', '2026-08-30'])
+  })
+
+  it('primeira data escolhida à mão (não é a sugerida) segue contando dela', () => {
+    expect(
+      prazos(
+        datasDoPrazo(
+          { recorrencia: 'mensal', dataReferencia: '2026-01-31', primeiraData: '2026-02-27' },
+          '2026-04-30',
+        ),
+      ),
+    ).toEqual(['2026-02-27', '2026-03-27', '2026-04-27'])
+    // Em dias corridos não há fim de mês: a referência não muda nada.
+    expect(
+      prazos(
+        datasDoPrazo(
+          {
+            recorrencia: 'personalizada',
+            unidade: 'dia',
+            intervalo: 30,
+            dataReferencia: '2026-01-31',
+            primeiraData: '2026-03-02',
+          },
+          '2026-04-01',
+        ),
+      ),
+    ).toEqual(['2026-03-02', '2026-04-01'])
+  })
+
   it('29/02 anual só repete 29/02 em ano bissexto', () => {
     expect(
       prazos(datasDoPrazo({ recorrencia: 'anual', primeiraData: '2024-02-29' }, '2028-03-01')),
