@@ -51,6 +51,7 @@ import { PaginaMtrs } from './paginas/residuos/registro'
 import { PaginaSeguranca } from './paginas/perfil/PaginaSeguranca'
 import { PaginaVisaoEquipe } from './paginas/visao/PaginaVisaoEquipe'
 import { PaginaResumoDoMes } from './indicadores/PaginaResumoDoMes'
+import { PaginaTriagem } from './paginas/triagem/PaginaTriagem'
 import { PaginaPlano } from './plano/PaginaPlano'
 import { RequerSessao } from './sessao/RequerSessao'
 
@@ -135,6 +136,8 @@ export const rotas: RouteObject[] = [
                   { path: 'prazos', element: <PaginaObrigacoesResiduos /> },
                 ],
               },
+              // Triagem de licenciamento pela CONSEMA 250/2024: cálculo local, sem banco.
+              { path: 'triagem', element: <PaginaTriagem /> },
               { path: 'orcamentos', element: <PaginaOrcamentos /> },
               { path: 'orcamentos/primeiros-passos', element: <PaginaPrimeirosPassos /> },
               { path: 'orcamentos/:id', element: <PaginaOrcamento /> },

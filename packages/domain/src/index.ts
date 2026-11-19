@@ -504,3 +504,30 @@ export type {
   ResultadoDoItem,
   SituacaoDaVistoria,
 } from './vistoria'
+export { CATALOGO_CONSEMA_250 } from './catalogo-consema-250'
+export {
+  ROTULO_DA_MODALIDADE,
+  ROTULO_DO_ESTUDO,
+  ROTULO_DO_PORTE,
+  atendeCondicao,
+  buscarAtividades,
+  concluirTriagem,
+  descreverCondicao,
+  enquadrarAtividade,
+  lerNumeroDigitado,
+  parametrosDaAtividade,
+} from './triagem-licenciamento'
+export type {
+  AtividadeLicenciavel,
+  CatalogoDeAtividades,
+  ConclusaoDaTriagem,
+  CondicaoDePorte,
+  EstudoAmbiental,
+  FaixaDePorte,
+  ItemDaTriagem,
+  Medidas,
+  Modalidade,
+  Porte,
+  Potencial,
+  ResultadoDoEnquadramento,
+} from './triagem-licenciamento'
