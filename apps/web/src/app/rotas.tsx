@@ -13,11 +13,6 @@ import { PaginaRedefinirSenha } from './paginas/acesso/PaginaRedefinirSenha'
 import { PaginaEmpreendimento } from './paginas/empreendimentos/PaginaEmpreendimento'
 import { PaginaEmpreendimentos } from './paginas/empreendimentos/PaginaEmpreendimentos'
 import { PaginaEquipe } from './paginas/equipe/PaginaEquipe'
-import { PassoCondicionantes } from './paginas/licenca/PassoCondicionantes'
-import { PassoDocumento, PassoDocumentoNovo } from './paginas/licenca/PassoDocumento'
-import { PassoIdentificacao } from './paginas/licenca/PassoIdentificacao'
-import { PassoPrazos } from './paginas/licenca/PassoPrazos'
-import { PassoResponsaveis } from './paginas/licenca/PassoResponsaveis'
 import { ErroDeRota } from './paginas/ErroDeRota'
 import { PaginaAcompanhamentos } from './paginas/acompanhamentos/PaginaAcompanhamentos'
 import { PaginaPlanoRenovacao } from './paginas/acompanhamentos/PaginaPlanoRenovacao'
@@ -27,27 +22,9 @@ import { PaginaDetalheVistoria } from './paginas/campo/PaginaDetalheVistoria'
 import { PaginaEnvio } from './paginas/campo/PaginaEnvio'
 import { PaginaFoto } from './paginas/campo/PaginaFoto'
 import { PaginaMinhasVistorias } from './paginas/campo/PaginaMinhasVistorias'
-import { LayoutCentral } from './paginas/central/LayoutCentral'
-import { PaginaCentral } from './paginas/central/PaginaCentral'
-import { PaginaCentralFinanceiro } from './paginas/central/PaginaCentralFinanceiro'
-import { PaginaCentralListaDeEspera } from './paginas/central/PaginaCentralListaDeEspera'
-import { PaginaCentralParametros } from './paginas/central/PaginaCentralParametros'
-import { PaginaCentralValor } from './paginas/central/PaginaCentralValor'
-import { PaginaCentralConsultoria } from './paginas/central/PaginaCentralConsultoria'
 import { PaginaOcorrencia } from './paginas/ocorrencia/PaginaOcorrencia'
-import { PaginaCustosETaxas } from './paginas/orcamentos/PaginaCustosETaxas'
-import { PaginaDadosDaProposta } from './paginas/orcamentos/PaginaDadosDaProposta'
-import { PaginaOrcamento } from './paginas/orcamentos/PaginaOrcamento'
-import { PaginaPrimeirosPassos } from './paginas/orcamentos/PaginaPrimeirosPassos'
-import { PaginaProposta } from './paginas/orcamentos/PaginaProposta'
-import { PaginaOrcamentos } from './paginas/orcamentos/PaginaOrcamentos'
 import { PaginaNaoEncontrada } from './paginas/paginas'
 import { PaginaPerfil } from './paginas/perfil/PaginaPerfil'
-import { LayoutResiduos } from './paginas/residuos/LayoutResiduos'
-import { PaginaResiduosPorEmpreendimento } from './paginas/residuos/PaginaResiduosPorEmpreendimento'
-import { PaginaConferenciaResiduos, PaginaPainelResiduos } from './paginas/residuos/painel'
-import { PaginaObrigacoesResiduos } from './paginas/residuos/prazos/PaginaObrigacoesResiduos'
-import { PaginaMtrs } from './paginas/residuos/registro'
 import { PaginaSeguranca } from './paginas/perfil/PaginaSeguranca'
 import { PaginaVisaoEquipe } from './paginas/visao/PaginaVisaoEquipe'
 import { PaginaResumoDoMes } from './indicadores/PaginaResumoDoMes'
@@ -59,6 +36,9 @@ import { RequerSessao } from './sessao/RequerSessao'
  * escolher e criar consultoria e a central administrativa (/admin, ADM-01: o operador pode não ser
  * membro de nenhuma consultoria). O resto exige login e um vínculo ativo escolhido (ACC-04).
  * Proteger rota é apresentação: quem decide o acesso aos dados é a RLS.
+ *
+ * Central administrativa, cadastro de licença, orçamentos e resíduos usam `lazy`: o código só é
+ * baixado quando a rota abre, e o pacote inicial fica menor. Campo, login e o shell vêm direto.
  */
 export const rotas: RouteObject[] = [
   {
@@ -85,28 +65,105 @@ export const rotas: RouteObject[] = [
     children: [
       {
         path: 'admin',
-        element: <LayoutCentral />,
+        lazy: () =>
+          import('./paginas/central/LayoutCentral').then((m) => ({ Component: m.LayoutCentral })),
         children: [
-          { index: true, element: <PaginaCentral /> },
-          { path: 'consultorias/:id', element: <PaginaCentralConsultoria /> },
-          { path: 'financeiro', element: <PaginaCentralFinanceiro /> },
-          { path: 'valor', element: <PaginaCentralValor /> },
-          { path: 'parametros', element: <PaginaCentralParametros /> },
-          { path: 'lista-de-espera', element: <PaginaCentralListaDeEspera /> },
+          {
+            index: true,
+            lazy: () =>
+              import('./paginas/central/PaginaCentral').then((m) => ({
+                Component: m.PaginaCentral,
+              })),
+          },
+          {
+            path: 'consultorias/:id',
+            lazy: () =>
+              import('./paginas/central/PaginaCentralConsultoria').then((m) => ({
+                Component: m.PaginaCentralConsultoria,
+              })),
+          },
+          {
+            path: 'financeiro',
+            lazy: () =>
+              import('./paginas/central/PaginaCentralFinanceiro').then((m) => ({
+                Component: m.PaginaCentralFinanceiro,
+              })),
+          },
+          {
+            path: 'valor',
+            lazy: () =>
+              import('./paginas/central/PaginaCentralValor').then((m) => ({
+                Component: m.PaginaCentralValor,
+              })),
+          },
+          {
+            path: 'parametros',
+            lazy: () =>
+              import('./paginas/central/PaginaCentralParametros').then((m) => ({
+                Component: m.PaginaCentralParametros,
+              })),
+          },
+          {
+            path: 'lista-de-espera',
+            lazy: () =>
+              import('./paginas/central/PaginaCentralListaDeEspera').then((m) => ({
+                Component: m.PaginaCentralListaDeEspera,
+              })),
+          },
         ],
       },
       {
         element: <RequerConsultoria />,
         children: [
           // Cadastro de licença: tela cheia, fora do shell (Protótipos 10 a 14).
-          { path: 'licencas/nova', element: <PassoDocumentoNovo /> },
-          { path: 'licencas/:id/documento', element: <PassoDocumento /> },
-          { path: 'licencas/:id/identificacao', element: <PassoIdentificacao /> },
-          { path: 'licencas/:id/condicionantes', element: <PassoCondicionantes /> },
-          { path: 'licencas/:id/prazos', element: <PassoPrazos /> },
-          { path: 'licencas/:id/responsaveis', element: <PassoResponsaveis /> },
+          {
+            path: 'licencas/nova',
+            lazy: () =>
+              import('./paginas/licenca/PassoDocumento').then((m) => ({
+                Component: m.PassoDocumentoNovo,
+              })),
+          },
+          {
+            path: 'licencas/:id/documento',
+            lazy: () =>
+              import('./paginas/licenca/PassoDocumento').then((m) => ({
+                Component: m.PassoDocumento,
+              })),
+          },
+          {
+            path: 'licencas/:id/identificacao',
+            lazy: () =>
+              import('./paginas/licenca/PassoIdentificacao').then((m) => ({
+                Component: m.PassoIdentificacao,
+              })),
+          },
+          {
+            path: 'licencas/:id/condicionantes',
+            lazy: () =>
+              import('./paginas/licenca/PassoCondicionantes').then((m) => ({
+                Component: m.PassoCondicionantes,
+              })),
+          },
+          {
+            path: 'licencas/:id/prazos',
+            lazy: () =>
+              import('./paginas/licenca/PassoPrazos').then((m) => ({ Component: m.PassoPrazos })),
+          },
+          {
+            path: 'licencas/:id/responsaveis',
+            lazy: () =>
+              import('./paginas/licenca/PassoResponsaveis').then((m) => ({
+                Component: m.PassoResponsaveis,
+              })),
+          },
           // Proposta pronta (ORC-05): tela cheia, para imprimir ou salvar PDF sem o menu.
-          { path: 'orcamentos/:id/proposta', element: <PaginaProposta /> },
+          {
+            path: 'orcamentos/:id/proposta',
+            lazy: () =>
+              import('./paginas/orcamentos/PaginaProposta').then((m) => ({
+                Component: m.PaginaProposta,
+              })),
+          },
           {
             element: <AppShell />,
             children: [
@@ -114,7 +171,13 @@ export const rotas: RouteObject[] = [
               { path: 'calendario', element: <PaginaCalendario /> },
               { path: 'empreendimentos', element: <PaginaEmpreendimentos /> },
               { path: 'empreendimentos/:id', element: <PaginaEmpreendimento /> },
-              { path: 'empreendimentos/:id/residuos', element: <PaginaMtrs /> },
+              {
+                path: 'empreendimentos/:id/residuos',
+                lazy: () =>
+                  import('./paginas/residuos/registro/PaginaMtrs').then((m) => ({
+                    Component: m.PaginaMtrs,
+                  })),
+              },
               { path: 'ocorrencias/:id', element: <PaginaOcorrencia /> },
               // Vistoria móvel (ADR-0033): celular primeiro.
               { path: 'campo', element: <PaginaMinhasVistorias /> },
@@ -127,21 +190,78 @@ export const rotas: RouteObject[] = [
               // Resíduos, fase 1 (sem integração com o IMA; ADR-0028): abas da área.
               {
                 path: 'residuos',
-                element: <LayoutResiduos />,
+                lazy: () =>
+                  import('./paginas/residuos/LayoutResiduos').then((m) => ({
+                    Component: m.LayoutResiduos,
+                  })),
                 children: [
-                  { index: true, element: <PaginaResiduosPorEmpreendimento /> },
-                  { path: 'conferencia', element: <PaginaConferenciaResiduos /> },
-                  { path: 'painel', element: <PaginaPainelResiduos /> },
-                  { path: 'prazos', element: <PaginaObrigacoesResiduos /> },
+                  {
+                    index: true,
+                    lazy: () =>
+                      import('./paginas/residuos/PaginaResiduosPorEmpreendimento').then((m) => ({
+                        Component: m.PaginaResiduosPorEmpreendimento,
+                      })),
+                  },
+                  {
+                    path: 'conferencia',
+                    lazy: () =>
+                      import('./paginas/residuos/painel').then((m) => ({
+                        Component: m.PaginaConferenciaResiduos,
+                      })),
+                  },
+                  {
+                    path: 'painel',
+                    lazy: () =>
+                      import('./paginas/residuos/painel').then((m) => ({
+                        Component: m.PaginaPainelResiduos,
+                      })),
+                  },
+                  {
+                    path: 'prazos',
+                    lazy: () =>
+                      import('./paginas/residuos/prazos/PaginaObrigacoesResiduos').then((m) => ({
+                        Component: m.PaginaObrigacoesResiduos,
+                      })),
+                  },
                 ],
               },
-              { path: 'orcamentos', element: <PaginaOrcamentos /> },
-              { path: 'orcamentos/primeiros-passos', element: <PaginaPrimeirosPassos /> },
-              { path: 'orcamentos/:id', element: <PaginaOrcamento /> },
+              {
+                path: 'orcamentos',
+                lazy: () =>
+                  import('./paginas/orcamentos/PaginaOrcamentos').then((m) => ({
+                    Component: m.PaginaOrcamentos,
+                  })),
+              },
+              {
+                path: 'orcamentos/primeiros-passos',
+                lazy: () =>
+                  import('./paginas/orcamentos/PaginaPrimeirosPassos').then((m) => ({
+                    Component: m.PaginaPrimeirosPassos,
+                  })),
+              },
+              {
+                path: 'orcamentos/:id',
+                lazy: () =>
+                  import('./paginas/orcamentos/PaginaOrcamento').then((m) => ({
+                    Component: m.PaginaOrcamento,
+                  })),
+              },
               { path: 'resumo-do-mes', element: <PaginaResumoDoMes /> },
               { path: 'configuracoes/equipe', element: <PaginaEquipe /> },
-              { path: 'configuracoes/custos', element: <PaginaCustosETaxas /> },
-              { path: 'configuracoes/proposta', element: <PaginaDadosDaProposta /> },
+              {
+                path: 'configuracoes/custos',
+                lazy: () =>
+                  import('./paginas/orcamentos/PaginaCustosETaxas').then((m) => ({
+                    Component: m.PaginaCustosETaxas,
+                  })),
+              },
+              {
+                path: 'configuracoes/proposta',
+                lazy: () =>
+                  import('./paginas/orcamentos/PaginaDadosDaProposta').then((m) => ({
+                    Component: m.PaginaDadosDaProposta,
+                  })),
+              },
               { path: 'configuracoes/plano', element: <PaginaPlano /> },
               { path: 'perfil', element: <PaginaPerfil /> },
               { path: 'seguranca', element: <PaginaSeguranca /> },

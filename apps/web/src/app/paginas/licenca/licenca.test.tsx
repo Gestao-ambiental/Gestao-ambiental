@@ -220,7 +220,10 @@ describe('passo 2: identificação (LIC-01)', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
 
     await usuario.click(continuar)
-    expect(router.state.location.pathname).toBe('/licencas/i1/condicionantes')
+    // O passo seguinte é carregado sob demanda (rota lazy): a URL muda quando ele chega.
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/licencas/i1/condicionantes')
+    })
     expect(falso.cliente.rpc).toHaveBeenCalledWith(
       'salvar_identificacao',
       expect.objectContaining({
