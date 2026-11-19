@@ -124,7 +124,12 @@ export function PaginaMinhasVistorias() {
   const consulta = useInfiniteQuery({
     queryKey: ['vistorias', atual.consultoriaId, 'campo', somenteMinhas],
     queryFn: ({ pageParam }) =>
-      listarVistorias({ ocorrenciaId: null, somenteMinhas, deslocamento: pageParam }),
+      listarVistorias({
+        consultoriaId: atual.consultoriaId,
+        ocorrenciaId: null,
+        somenteMinhas,
+        deslocamento: pageParam,
+      }),
     initialPageParam: 0,
     getNextPageParam: (pagina) => pagina.proxima,
   })

@@ -59,8 +59,9 @@ export interface PaginaDeVistorias {
   proxima: number | null
 }
 
-/** Ordenada pelo banco por data e hora planejadas. */
+/** Só as da consultoria selecionada, ordenadas pelo banco por data e hora planejadas. */
 export async function listarVistorias(filtro: {
+  consultoriaId: string
   ocorrenciaId: string | null
   somenteMinhas: boolean
   deslocamento: number
@@ -68,6 +69,7 @@ export async function listarVistorias(filtro: {
 }): Promise<PaginaDeVistorias> {
   const limite = filtro.limite ?? TAMANHO_PAGINA_VISTORIAS
   const { data, error } = await obterSupabase().rpc('listar_vistorias', {
+    p_consultoria_id: filtro.consultoriaId,
     p_ocorrencia_id: aceitaNulo(filtro.ocorrenciaId),
     p_somente_minhas: filtro.somenteMinhas,
     p_limite: limite,

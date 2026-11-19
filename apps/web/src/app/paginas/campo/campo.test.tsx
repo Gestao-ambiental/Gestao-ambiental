@@ -177,7 +177,38 @@ describe('Minhas vistorias (/campo)', () => {
     expect(screen.queryByText('Cancelada')).not.toBeInTheDocument()
     expect(falso.cliente.rpc).toHaveBeenCalledWith(
       'listar_vistorias',
-      expect.objectContaining({ p_somente_minhas: true, p_deslocamento: 0 }),
+      expect.objectContaining({
+        p_consultoria_id: 'c-Filtroville',
+        p_somente_minhas: true,
+        p_deslocamento: 0,
+      }),
+    )
+  })
+
+  it('com dois vínculos pede só as vistorias da consultoria selecionada', async () => {
+    const sessao = sessaoDe('ana@filtroville.test', 'Ana Ribeiro')
+    window.localStorage.setItem(`grama:consultoria:${sessao.user.id}`, 'c-Verdeplan')
+    falso.reiniciar(
+      cenario({
+        rpc: {
+          meus_vinculos: {
+            data: [vinculoFalso('Filtroville', 'equipe'), vinculoFalso('Verdeplan', 'equipe')],
+          },
+        },
+      }),
+    )
+    renderizarApp('/campo')
+
+    expect(
+      await screen.findByRole('link', { name: 'Abrir vistoria Inspeção do abrigo de resíduos' }),
+    ).toBeInTheDocument()
+    expect(falso.cliente.rpc).toHaveBeenCalledWith(
+      'listar_vistorias',
+      expect.objectContaining({ p_consultoria_id: 'c-Verdeplan' }),
+    )
+    expect(falso.cliente.rpc).not.toHaveBeenCalledWith(
+      'listar_vistorias',
+      expect.objectContaining({ p_consultoria_id: 'c-Filtroville' }),
     )
   })
 

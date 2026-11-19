@@ -104,7 +104,11 @@ describe('vistorias na ocorrência (ADR-0033)', () => {
     expect(within(secao).getByText('Em andamento')).toBeInTheDocument()
     expect(falso.cliente.rpc).toHaveBeenCalledWith(
       'listar_vistorias',
-      expect.objectContaining({ p_ocorrencia_id: 'o1', p_somente_minhas: false }),
+      expect.objectContaining({
+        p_consultoria_id: 'c-Filtroville',
+        p_ocorrencia_id: 'o1',
+        p_somente_minhas: false,
+      }),
     )
   })
 
