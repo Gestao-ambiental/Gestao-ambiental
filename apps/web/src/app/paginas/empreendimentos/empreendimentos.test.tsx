@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import axe from 'axe-core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -231,12 +231,17 @@ describe('tela do empreendimento (EMP-02)', () => {
     const { router } = renderizarApp('/empreendimentos/e1')
     await usuario.click(await screen.findByRole('button', { name: 'Mais ações do empreendimento' }))
     await usuario.click(await screen.findByRole('menuitem', { name: 'Novo orçamento' }))
-    expect(router.state.location.pathname).toBe('/orcamentos/novo')
+    // A rota pode carregar sob demanda: espera a navegação terminar.
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/orcamentos/novo')
+    })
     expect(router.state.location.search).toBe('?empreendimento=e1')
-    expect(falso.cliente.rpc).toHaveBeenCalledWith(
-      'criar_orcamento',
-      expect.objectContaining({ p_empreendimento_id: 'e1' }) as unknown,
-    )
+    await waitFor(() => {
+      expect(falso.cliente.rpc).toHaveBeenCalledWith(
+        'criar_orcamento',
+        expect.objectContaining({ p_empreendimento_id: 'e1' }) as unknown,
+      )
+    })
   })
 
   it('equipe não vê o menu de orçamento no empreendimento', async () => {
