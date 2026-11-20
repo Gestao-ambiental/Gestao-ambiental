@@ -96,7 +96,7 @@ function CompletarCadastro({ cadastro }: { cadastro: CadastroDaPessoa }) {
 
   return (
     <LayoutPublico>
-      <div className="flex flex-col gap-(--space-300)">
+      <div className="flex flex-col gap-(--e-6)">
         <CabecalhoAcesso titulo="Complete seu cadastro" />
         {salvar.isError ? (
           <MensagemSecao role="alert" tom="perigo">
@@ -106,9 +106,9 @@ function CompletarCadastro({ cadastro }: { cadastro: CadastroDaPessoa }) {
         <form
           noValidate
           onSubmit={(evento) => void enviar(evento)}
-          className="flex flex-col gap-(--space-200)"
+          className="flex flex-col gap-(--e-4)"
         >
-          <fieldset disabled={salvar.isPending} className="flex min-w-0 flex-col gap-(--space-200)">
+          <fieldset disabled={salvar.isPending} className="flex min-w-0 flex-col gap-(--e-4)">
             <CamposGeneroEFormacao control={control} />
           </fieldset>
           <Botao type="submit" aparencia="primario" larguraTotal disabled={salvar.isPending}>

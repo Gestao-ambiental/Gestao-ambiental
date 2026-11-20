@@ -10,9 +10,10 @@ export interface PassoDaTrilha {
 }
 
 /**
- * Trilha de etapas no padrão Fluent 2 (ADR-0015): passos numerados ligados por linha. O atual tem
- * aria-current="step" e texto em semibold; os anteriores levam um check. A cor nunca é o único
- * sinal. Com `aoEscolher`, cada passo é um botão e a pessoa pode ir e voltar à vontade.
+ * Trilha como linha de trajeto: estações ligadas por uma linha de 3px. Feito = estação cheia com
+ * check e linha contínua; atual = estação verde-lima com aro e rótulo forte (aria-current="step");
+ * futuro = estação vazada e linha tracejada. A forma da linha também diz o estado, não só a cor.
+ * Com `aoEscolher`, cada passo é um botão e a pessoa pode ir e voltar à vontade.
  */
 export function Trilha({
   rotulo,
@@ -30,7 +31,7 @@ export function Trilha({
 }) {
   return (
     <nav aria-label={rotulo} className={className}>
-      <ol className="flex items-center gap-(--space-100)">
+      <ol className="flex items-center gap-(--e-2)">
         {passos.map((passo, indice) => {
           const estado = indice === atual ? 'atual' : indice < atual ? 'feito' : 'futuro'
           // Nome falado de uma vez ("Serviços, concluída, 3 serviços"): o visual fica aria-hidden.
@@ -42,10 +43,12 @@ export function Trilha({
               <span
                 aria-hidden
                 className={cn(
-                  'inline-flex size-7 shrink-0 items-center justify-center rounded-(--radius-pill) text-xs font-semibold tabular-nums',
-                  estado === 'atual' && 'bg-(--brand) text-(--text-inverse)',
-                  estado === 'feito' && 'bg-(--brand-subtle) text-(--text-brand)',
-                  estado === 'futuro' && 'border border-(--border-strong) text-(--text-subtle)',
+                  'inline-flex size-7 shrink-0 items-center justify-center rounded-(--raio-redondo) text-xs font-[800] numero',
+                  estado === 'atual' &&
+                    'bg-(--sinal) text-(--sinal-texto) shadow-[0_0_0_2px_var(--folha),0_0_0_4px_var(--marca-linha)]',
+                  estado === 'feito' && 'bg-(--marca-linha) text-(--folha)',
+                  estado === 'futuro' &&
+                    'border-2 border-(--regra-forte) bg-(--folha) text-(--tinta-2)',
                 )}
               >
                 {estado === 'feito' ? <Icone nome="check" tamanho={12} /> : indice + 1}
@@ -54,13 +57,14 @@ export function Trilha({
                 <span
                   className={cn(
                     'truncate',
-                    estado === 'atual' ? 'corpo-medio text-(--text)' : 'corpo text-(--text-subtle)',
+                    estado === 'atual' ? 'corpo-medio text-(--tinta)' : 'corpo text-(--tinta-2)',
+                    estado === 'feito' && 'text-(--tinta)',
                   )}
                 >
                   {passo.titulo}
                 </span>
                 {passo.detalhe ? (
-                  <span className="hidden truncate text-xs text-(--text-subtle) sm:block">
+                  <span className="hidden truncate text-xs text-(--tinta-2) sm:block">
                     {passo.detalhe}
                   </span>
                 ) : null}
@@ -68,13 +72,13 @@ export function Trilha({
             </>
           )
           return (
-            <li key={passo.id} className="flex min-w-0 flex-1 items-center gap-(--space-100)">
+            <li key={passo.id} className="flex min-w-0 flex-1 items-center gap-(--e-2)">
               {aoEscolher ? (
                 <button
                   type="button"
                   aria-current={estado === 'atual' ? 'step' : undefined}
                   aria-label={nome}
-                  className="flex min-w-0 cursor-pointer items-center gap-(--space-100) rounded-(--radius) px-(--space-050) py-(--space-050) transicao-estado hover:bg-(--neutral-subtle-hover) focus-visible:outline-2 focus-visible:outline-(--border-focus)"
+                  className="flex min-w-0 cursor-pointer items-center gap-(--e-2) rounded-(--raio) px-(--e-1) py-(--e-1) transicao-estado hover:bg-(--toque) focus-visible:outline-2 focus-visible:outline-(--foco)"
                   onClick={() => {
                     aoEscolher(indice)
                   }}
@@ -84,7 +88,7 @@ export function Trilha({
               ) : (
                 <span
                   aria-current={estado === 'atual' ? 'step' : undefined}
-                  className="flex min-w-0 items-center gap-(--space-100) px-(--space-050) py-(--space-050)"
+                  className="flex min-w-0 items-center gap-(--e-2) px-(--e-1) py-(--e-1)"
                 >
                   <span className="sr-only">{nome}</span>
                   {conteudo}
@@ -93,7 +97,12 @@ export function Trilha({
               {indice < passos.length - 1 ? (
                 <span
                   aria-hidden
-                  className="h-px min-w-(--space-200) flex-1 bg-(--border-strong)"
+                  className={cn(
+                    'h-[3px] min-w-(--e-4) flex-1 rounded-full',
+                    estado === 'feito'
+                      ? 'bg-(--marca-linha)'
+                      : 'bg-[repeating-linear-gradient(90deg,var(--regra-forte)_0_6px,transparent_6px_10px)]',
+                  )}
                 />
               ) : null}
             </li>

@@ -30,4 +30,4 @@ export function cnpjDoCampo(texto: string): string | null {
 }
 
 export const classeControle =
-  'h-(--size-control) w-full rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) px-(--space-100) corpo text-(--text) outline-none transicao-estado focus:border-b-(--border-input-active) focus:bg-(--surface-input-focus) focus:shadow-[inset_0_-1px_0_0_var(--border-input-active)]'
+  'h-(--controle) w-full rounded-(--raio) border border-(--campo-borda) border-b-(--campo-borda) bg-(--campo) px-(--e-2) corpo text-(--tinta) outline-none transicao-estado focus:border-b-(--campo-borda-ativa) focus:bg-(--campo-foco) focus:shadow-[inset_0_-1px_0_0_var(--campo-borda-ativa)]'

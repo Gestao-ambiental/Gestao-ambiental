@@ -23,7 +23,7 @@ export function FiltroEmpreendimento({
     queryFn: () => listarEmpreendimentos(consultoriaId, '', 0),
   })
   return (
-    <label className="flex min-w-0 flex-col gap-(--space-050)">
+    <label className="flex min-w-0 flex-col gap-(--e-1)">
       <span className="rotulo">Empreendimento</span>
       <select
         className={classeSelect}
@@ -58,8 +58,8 @@ export function Paginacao({
   const inicio = pagina * tamanho
   const fim = Math.min(total, inicio + tamanho)
   return (
-    <div className="flex items-center gap-(--space-100) border-t px-(--space-150) py-(--space-100)">
-      <span className="flex-1 corpo text-(--text)" aria-live="polite">
+    <div className="flex items-center gap-(--e-2) border-t px-(--e-3) py-(--e-2)">
+      <span className="flex-1 corpo text-(--tinta)" aria-live="polite">
         {inicio + 1}–{fim} de {total}
       </span>
       <BotaoIcone

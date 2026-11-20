@@ -77,19 +77,19 @@ function achatar<T>(dados: InfiniteData<PaginaDeDados<T>> | undefined): {
 
 function TituloSecao({ id, children, total }: { id: string; children: ReactNode; total?: number }) {
   return (
-    <div className="flex items-baseline gap-(--space-100)">
-      <h2 id={id} className="titulo-secao text-(--text)">
+    <div className="flex items-baseline gap-(--e-2)">
+      <h2 id={id} className="titulo-secao text-(--tinta)">
         {children}
       </h2>
-      {total === undefined ? null : <span className="text-xs text-(--text-subtle)">{total}</span>}
+      {total === undefined ? null : <span className="text-xs text-(--tinta-2)">{total}</span>}
     </div>
   )
 }
 
 const classeTabela = 'w-full border-collapse corpo'
 const classeCabecalho =
-  'h-10 border-b px-(--space-100) text-left rotulo whitespace-nowrap first:pl-(--space-150)'
-const classeCelula = 'h-10 border-b px-(--space-100) align-middle first:pl-(--space-150)'
+  'h-10 border-b px-(--e-2) text-left rotulo whitespace-nowrap first:pl-(--e-3)'
+const classeCelula = 'h-10 border-b px-(--e-2) align-middle first:pl-(--e-3)'
 
 /**
  * /configuracoes/equipe (Protótipo 07; ACC-02, ACC-03). Só a Gestão administra: membros com
@@ -230,7 +230,7 @@ function EquipeDaGestao() {
         <DropdownMenuTrigger
           aria-label={`Ações de ${membro.nome}`}
           disabled={ocupado}
-          className="inline-flex size-(--size-control) cursor-pointer items-center justify-center rounded-(--radius) text-(--icon) transicao-estado hover:bg-(--neutral-subtle-hover) disabled:cursor-not-allowed max-md:size-11"
+          className="inline-flex size-(--controle) cursor-pointer items-center justify-center rounded-(--raio) text-(--icone) transicao-estado hover:bg-(--toque) disabled:cursor-not-allowed max-md:size-11"
         >
           <Icone nome="ellipsis" />
         </DropdownMenuTrigger>
@@ -245,7 +245,7 @@ function EquipeDaGestao() {
             <span className="flex flex-col">
               <span>Passar para {NOMES_PAPEL[novo]}</span>
               {impedimentoPapel === 'ultima_gestao' ? (
-                <span className="text-xs text-(--text-subtle)">{MOTIVO_ULTIMA_GESTAO}</span>
+                <span className="text-xs text-(--tinta-2)">{MOTIVO_ULTIMA_GESTAO}</span>
               ) : null}
             </span>
           </DropdownMenuItem>
@@ -267,7 +267,7 @@ function EquipeDaGestao() {
             <span className="flex flex-col">
               <span>Desligar</span>
               {impedimentoDesligar === 'ultima_gestao' ? (
-                <span className="text-xs text-(--text-subtle)">{MOTIVO_ULTIMA_GESTAO}</span>
+                <span className="text-xs text-(--tinta-2)">{MOTIVO_ULTIMA_GESTAO}</span>
               ) : null}
             </span>
           </DropdownMenuItem>
@@ -303,7 +303,7 @@ function EquipeDaGestao() {
               ].join(' · ')
             : 'Profissão não informada'}
         </span>
-        <span className="truncate text-xs text-(--text-subtle)">
+        <span className="truncate text-xs text-(--tinta-2)">
           {membro.cargoCodigo
             ? membro.cargo
             : membro.cargoAntigo
@@ -317,13 +317,13 @@ function EquipeDaGestao() {
   function nomeDoMembro(membro: Membro) {
     const desligado = membro.situacao === 'desligado'
     return (
-      <span className="flex min-w-0 items-center gap-(--space-100)">
+      <span className="flex min-w-0 items-center gap-(--e-2)">
         <Avatar nome={membro.nome} />
-        <span className={desligado ? 'truncate text-(--text-subtle)' : 'truncate corpo-medio'}>
+        <span className={desligado ? 'truncate text-(--tinta-2)' : 'truncate corpo-medio'}>
           {membro.nome}
         </span>
         {membro.id === atual.membroId ? (
-          <span className="text-xs text-(--text-subtle)">você</span>
+          <span className="text-xs text-(--tinta-2)">você</span>
         ) : null}
       </span>
     )
@@ -334,7 +334,7 @@ function EquipeDaGestao() {
       situacaoDoConvite({ situacao: convite.situacao, expiraEm: convite.expiraEm }, agora) ===
       'expirado'
     return (
-      <span className="inline-flex items-center gap-(--space-100) whitespace-nowrap">
+      <span className="inline-flex items-center gap-(--e-2) whitespace-nowrap">
         {formatarInstanteComoData(convite.expiraEm, atual.fuso)}
         {expirado ? <Selo tom="perigo">Expirado</Selo> : null}
       </span>
@@ -344,7 +344,7 @@ function EquipeDaGestao() {
   function acoesDoConvite(convite: ConvitePendente) {
     if (suporte) return null
     return (
-      <span className="flex items-center justify-end gap-(--space-050)">
+      <span className="flex items-center justify-end gap-(--e-1)">
         <Botao
           tamanho="compacto"
           iconeAntes="send"
@@ -374,8 +374,8 @@ function EquipeDaGestao() {
   }
 
   return (
-    <div className="flex flex-col gap-(--space-300)">
-      <div className="flex flex-wrap items-start justify-between gap-(--space-100)">
+    <div className="flex flex-col gap-(--e-6)">
+      <div className="flex flex-wrap items-start justify-between gap-(--e-2)">
         <Pagina titulo="Equipe">{null}</Pagina>
         {suporte ? null : (
           <Botao
@@ -397,7 +397,7 @@ function EquipeDaGestao() {
         </MensagemSecao>
       ) : null}
 
-      <section aria-labelledby="titulo-membros" className="flex flex-col gap-(--space-100)">
+      <section aria-labelledby="titulo-membros" className="flex flex-col gap-(--e-2)">
         <TituloSecao id="titulo-membros" total={membros.isSuccess ? listaMembros.total : undefined}>
           Membros
         </TituloSecao>
@@ -407,7 +407,7 @@ function EquipeDaGestao() {
           <EstadoErro aoTentarDeNovo={() => void membros.refetch()} />
         ) : (
           <>
-            <div className="hidden overflow-x-auto rounded-(--radius-large) border bg-(--surface) shadow-cartao md:block">
+            <div className="hidden overflow-x-auto rounded-(--raio-painel) border bg-(--folha) shadow-cartao md:block">
               <table className={classeTabela}>
                 <thead>
                   <tr>
@@ -435,12 +435,12 @@ function EquipeDaGestao() {
                   {listaMembros.itens.map((membro) => (
                     <tr key={membro.id} className="last:[&>td]:border-b-0">
                       <td className={classeCelula}>{nomeDoMembro(membro)}</td>
-                      <td className={`${classeCelula} text-(--text-subtle)`}>{membro.email}</td>
+                      <td className={`${classeCelula} text-(--tinta-2)`}>{membro.email}</td>
                       <td className={`${classeCelula} max-w-56`}>
                         {profissaoECargoDoMembro(membro)}
                       </td>
                       <td className={classeCelula}>{seloPapel(membro)}</td>
-                      <td className={`${classeCelula} whitespace-nowrap text-(--text-subtle)`}>
+                      <td className={`${classeCelula} whitespace-nowrap text-(--tinta-2)`}>
                         {formatarInstanteComoData(membro.criadoEm, atual.fuso)}
                       </td>
                       <td className={`${classeCelula} w-12 text-right`}>{acoesDoMembro(membro)}</td>
@@ -450,17 +450,17 @@ function EquipeDaGestao() {
               </table>
             </div>
             <ul
-              className="flex flex-col rounded-(--radius-large) border bg-(--surface) shadow-cartao md:hidden"
+              className="flex flex-col rounded-(--raio-painel) border bg-(--folha) shadow-cartao md:hidden"
               aria-label="Membros"
             >
               {listaMembros.itens.map((membro) => (
                 <li
                   key={membro.id}
-                  className="flex items-center gap-(--space-100) border-b px-(--space-150) py-(--space-100) last:border-b-0"
+                  className="flex items-center gap-(--e-2) border-b px-(--e-3) py-(--e-2) last:border-b-0"
                 >
-                  <span className="flex min-w-0 flex-1 flex-col gap-(--space-025)">
+                  <span className="flex min-w-0 flex-1 flex-col gap-(--e-05)">
                     {nomeDoMembro(membro)}
-                    <span className="truncate text-xs text-(--text-subtle)">{membro.email}</span>
+                    <span className="truncate text-xs text-(--tinta-2)">{membro.email}</span>
                     {profissaoECargoDoMembro(membro)}
                     <span>{seloPapel(membro)}</span>
                   </span>
@@ -481,7 +481,7 @@ function EquipeDaGestao() {
         )}
       </section>
 
-      <section aria-labelledby="titulo-convites" className="flex flex-col gap-(--space-100)">
+      <section aria-labelledby="titulo-convites" className="flex flex-col gap-(--e-2)">
         <TituloSecao
           id="titulo-convites"
           total={convites.isSuccess ? listaConvites.total : undefined}
@@ -493,12 +493,12 @@ function EquipeDaGestao() {
         ) : convites.isError ? (
           <EstadoErro aoTentarDeNovo={() => void convites.refetch()} />
         ) : listaConvites.itens.length === 0 ? (
-          <p className="corpo text-(--text-subtle)">
+          <p className="corpo text-(--tinta-2)">
             Nenhum convite pendente. Use “Convidar pessoa” para chamar alguém da equipe.
           </p>
         ) : (
           <>
-            <div className="hidden overflow-x-auto rounded-(--radius-large) border bg-(--surface) shadow-cartao md:block">
+            <div className="hidden overflow-x-auto rounded-(--raio-painel) border bg-(--folha) shadow-cartao md:block">
               <table className={classeTabela}>
                 <thead>
                   <tr>
@@ -526,12 +526,10 @@ function EquipeDaGestao() {
                       <td className={classeCelula}>
                         <Selo>{NOMES_PAPEL[convite.papel]}</Selo>
                       </td>
-                      <td className={`${classeCelula} whitespace-nowrap text-(--text-subtle)`}>
+                      <td className={`${classeCelula} whitespace-nowrap text-(--tinta-2)`}>
                         {formatarInstanteComoData(convite.enviadoEm, atual.fuso)}
                       </td>
-                      <td className={`${classeCelula} text-(--text-subtle)`}>
-                        {expiraEm(convite)}
-                      </td>
+                      <td className={`${classeCelula} text-(--tinta-2)`}>{expiraEm(convite)}</td>
                       <td className={classeCelula}>{acoesDoConvite(convite)}</td>
                     </tr>
                   ))}
@@ -539,16 +537,16 @@ function EquipeDaGestao() {
               </table>
             </div>
             <ul
-              className="flex flex-col rounded-(--radius-large) border bg-(--surface) shadow-cartao md:hidden"
+              className="flex flex-col rounded-(--raio-painel) border bg-(--folha) shadow-cartao md:hidden"
               aria-label="Convites pendentes"
             >
               {listaConvites.itens.map((convite) => (
                 <li
                   key={convite.id}
-                  className="flex flex-col gap-(--space-050) border-b px-(--space-150) py-(--space-100) last:border-b-0"
+                  className="flex flex-col gap-(--e-1) border-b px-(--e-3) py-(--e-2) last:border-b-0"
                 >
                   <span className="truncate corpo-medio">{convite.email}</span>
-                  <span className="flex flex-wrap items-center gap-(--space-100) text-xs text-(--text-subtle)">
+                  <span className="flex flex-wrap items-center gap-(--e-2) text-xs text-(--tinta-2)">
                     <Selo>{NOMES_PAPEL[convite.papel]}</Selo>
                     Expira em {expiraEm(convite)}
                   </span>
@@ -628,7 +626,7 @@ function EquipeDaGestao() {
           </>
         }
       >
-        <p className="text-(--text-subtle)">Nada é apagado nem cancelado.</p>
+        <p className="text-(--tinta-2)">Nada é apagado nem cancelado.</p>
       </Dialogo>
     </div>
   )
@@ -678,7 +676,7 @@ function DialogoProfissaoECargo({
         </>
       }
     >
-      <div className="flex flex-col gap-(--space-150)">
+      <div className="flex flex-col gap-(--e-3)">
         <CamposProfissaoECargo
           profissao={profissao}
           outras={outras}

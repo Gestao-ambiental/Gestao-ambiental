@@ -41,7 +41,7 @@ function proximaPagina<T>(
 }
 
 const classeCartao =
-  'flex min-w-0 flex-col gap-(--space-050) rounded-(--radius-large) border bg-(--surface) p-(--space-150) shadow-cartao sm:p-(--space-200)'
+  'flex min-w-0 flex-col gap-(--e-1) rounded-(--raio-painel) border bg-(--folha) p-(--e-3) shadow-cartao sm:p-(--e-4)'
 
 function Numeros({ consultoria }: { consultoria: ConsultoriaDetalhada }) {
   const numeros: [string, number][] = [
@@ -52,11 +52,11 @@ function Numeros({ consultoria }: { consultoria: ConsultoriaDetalhada }) {
   ]
   return (
     <section aria-label="Números">
-      <dl className="grid grid-cols-2 gap-(--space-150) lg:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-(--e-3) lg:grid-cols-4">
         {numeros.map(([titulo, valor]) => (
           <div key={titulo} className={classeCartao}>
-            <dt className="corpo text-(--text-subtle)">{titulo}</dt>
-            <dd className="titulo-tela text-(--text) tabular-nums">{valor}</dd>
+            <dt className="corpo text-(--tinta-2)">{titulo}</dt>
+            <dd className="titulo-tela text-(--tinta) tabular-nums">{valor}</dd>
           </div>
         ))}
       </dl>
@@ -92,8 +92,8 @@ function Pessoas({ consultoria }: { consultoria: ConsultoriaDetalhada }) {
     const seloSituacao = (situacao: 'ativo' | 'desligado') =>
       situacao === 'ativo' ? <Selo tom="sucesso">Ativo</Selo> : <Selo>Desligado</Selo>
     conteudo = (
-      <div className="flex flex-col gap-(--space-100)">
-        <div className="hidden overflow-x-auto rounded-(--radius-large) border bg-(--surface) shadow-cartao md:block">
+      <div className="flex flex-col gap-(--e-2)">
+        <div className="hidden overflow-x-auto rounded-(--raio-painel) border bg-(--folha) shadow-cartao md:block">
           <table className="w-full border-collapse corpo">
             <thead>
               <tr>
@@ -124,12 +124,12 @@ function Pessoas({ consultoria }: { consultoria: ConsultoriaDetalhada }) {
               {itens.map((pessoa) => (
                 <tr key={pessoa.membroId} className="last:[&>td]:border-b-0">
                   <td className={classeCelula}>{pessoa.nome}</td>
-                  <td className={`${classeCelula} text-(--text-subtle)`}>{pessoa.email}</td>
+                  <td className={`${classeCelula} text-(--tinta-2)`}>{pessoa.email}</td>
                   <td className={classeCelula}>
                     <Selo>{NOMES_PAPEL[pessoa.papel]}</Selo>
                   </td>
                   <td className={classeCelula}>{seloSituacao(pessoa.situacao)}</td>
-                  <td className={`${classeCelula} whitespace-nowrap text-(--text-subtle)`}>
+                  <td className={`${classeCelula} whitespace-nowrap text-(--tinta-2)`}>
                     {formatarInstanteComoData(pessoa.criadoEm, consultoria.fuso)}
                   </td>
                   <td className={`${classeCelula} whitespace-nowrap`}>
@@ -145,20 +145,20 @@ function Pessoas({ consultoria }: { consultoria: ConsultoriaDetalhada }) {
         </div>
         <ul
           aria-label="Pessoas"
-          className="flex flex-col rounded-(--radius-large) border bg-(--surface) shadow-cartao md:hidden"
+          className="flex flex-col rounded-(--raio-painel) border bg-(--folha) shadow-cartao md:hidden"
         >
           {itens.map((pessoa) => (
             <li
               key={pessoa.membroId}
-              className="flex flex-col gap-(--space-050) border-b px-(--space-150) py-(--space-100) last:border-b-0"
+              className="flex flex-col gap-(--e-1) border-b px-(--e-3) py-(--e-2) last:border-b-0"
             >
               <span className="corpo-medio">{pessoa.nome}</span>
-              <span className="truncate text-xs text-(--text-subtle)">{pessoa.email}</span>
-              <span className="flex flex-wrap gap-(--space-075)">
+              <span className="truncate text-xs text-(--tinta-2)">{pessoa.email}</span>
+              <span className="flex flex-wrap gap-(--e-15)">
                 <Selo>{NOMES_PAPEL[pessoa.papel]}</Selo>
                 {seloSituacao(pessoa.situacao)}
               </span>
-              <span className="text-xs text-(--text)">
+              <span className="text-xs text-(--tinta)">
                 Último uso: {ultimoUsoComHora(pessoa.ultimoUsoEm, consultoria.fuso, agora)} ·{' '}
                 {plural(pessoa.diasComUso30, 'dia', 'dias')} com uso em 30 dias
               </span>
@@ -179,14 +179,12 @@ function Pessoas({ consultoria }: { consultoria: ConsultoriaDetalhada }) {
   }
 
   return (
-    <section aria-labelledby="central-pessoas" className="flex flex-col gap-(--space-100)">
-      <div className="flex items-baseline gap-(--space-100)">
-        <h2 id="central-pessoas" className="titulo-secao text-(--text)">
+    <section aria-labelledby="central-pessoas" className="flex flex-col gap-(--e-2)">
+      <div className="flex items-baseline gap-(--e-2)">
+        <h2 id="central-pessoas" className="titulo-secao text-(--tinta)">
           Pessoas
         </h2>
-        {consulta.isSuccess ? (
-          <span className="text-(--text-subtle) tabular-nums">{total}</span>
-        ) : null}
+        {consulta.isSuccess ? <span className="text-(--tinta-2) tabular-nums">{total}</span> : null}
       </div>
       {conteudo}
     </section>
@@ -217,14 +215,14 @@ function Historico({ consultoria }: { consultoria: ConsultoriaDetalhada }) {
     conteudo = <EstadoVazio icone="clock" titulo="Nenhuma mudança de situação" />
   } else {
     conteudo = (
-      <div className="flex flex-col gap-(--space-100)">
-        <ol className="flex flex-col rounded-(--radius-large) border bg-(--surface) shadow-cartao">
+      <div className="flex flex-col gap-(--e-2)">
+        <ol className="flex flex-col rounded-(--raio-painel) border bg-(--folha) shadow-cartao">
           {itens.map((mudanca) => (
             <li
               key={mudanca.id}
-              className="flex flex-col gap-(--space-050) border-b px-(--space-150) py-(--space-100) last:border-b-0"
+              className="flex flex-col gap-(--e-1) border-b px-(--e-3) py-(--e-2) last:border-b-0"
             >
-              <span className="flex flex-wrap items-center gap-(--space-075)">
+              <span className="flex flex-wrap items-center gap-(--e-15)">
                 <Selo tom={TOM_DA_SITUACAO[mudanca.anterior]}>
                   {ROTULO_SITUACAO_CONSULTORIA[mudanca.anterior]}
                 </Selo>
@@ -235,7 +233,7 @@ function Historico({ consultoria }: { consultoria: ConsultoriaDetalhada }) {
                 </Selo>
               </span>
               <span className="whitespace-pre-wrap break-words">{mudanca.motivo}</span>
-              <span className="text-xs text-(--text-subtle)">
+              <span className="text-xs text-(--tinta-2)">
                 {formatarInstanteComHora(mudanca.alteradaEm, consultoria.fuso)} ·{' '}
                 {mudanca.alteradaPorNome}
               </span>
@@ -256,8 +254,8 @@ function Historico({ consultoria }: { consultoria: ConsultoriaDetalhada }) {
   }
 
   return (
-    <section aria-labelledby="central-historico" className="flex flex-col gap-(--space-100)">
-      <h2 id="central-historico" className="titulo-secao text-(--text)">
+    <section aria-labelledby="central-historico" className="flex flex-col gap-(--e-2)">
+      <h2 id="central-historico" className="titulo-secao text-(--tinta)">
         Histórico de situações
       </h2>
       {conteudo}
@@ -268,7 +266,7 @@ function Historico({ consultoria }: { consultoria: ConsultoriaDetalhada }) {
 const linkVoltar = (
   <Link
     to="/admin"
-    className="inline-flex items-center gap-(--space-050) self-start corpo-medio text-(--text-link) no-underline hover:underline"
+    className="inline-flex items-center gap-(--e-1) self-start corpo-medio text-(--link) no-underline hover:underline"
   >
     <span aria-hidden="true">←</span> Consultorias
   </Link>
@@ -296,7 +294,7 @@ export function PaginaCentralConsultoria() {
 
   if (consulta.isPending) {
     return (
-      <div className="flex flex-col gap-(--space-200)">
+      <div className="flex flex-col gap-(--e-4)">
         {linkVoltar}
         <Carregando rotulo="Carregando a consultoria" linhas={5} />
       </div>
@@ -304,7 +302,7 @@ export function PaginaCentralConsultoria() {
   }
   if (consulta.isError) {
     return (
-      <div className="flex flex-col gap-(--space-200)">
+      <div className="flex flex-col gap-(--e-4)">
         {linkVoltar}
         {ehDoisFatoresNecessarios(consulta.error) ? (
           <RelerDoisFatores />
@@ -323,7 +321,7 @@ export function PaginaCentralConsultoria() {
   const consultoria = consulta.data
   if (!consultoria) {
     return (
-      <div className="flex flex-col gap-(--space-200)">
+      <div className="flex flex-col gap-(--e-4)">
         {linkVoltar}
         <EstadoVazio icone="search" titulo="Consultoria não encontrada" />
       </div>
@@ -331,11 +329,11 @@ export function PaginaCentralConsultoria() {
   }
 
   return (
-    <div className="flex flex-col gap-(--space-300)">
-      <div className="flex flex-col gap-(--space-150)">
+    <div className="flex flex-col gap-(--e-6)">
+      <div className="flex flex-col gap-(--e-3)">
         {linkVoltar}
-        <div className="flex flex-wrap items-center justify-between gap-(--space-100)">
-          <div className="flex min-w-0 flex-wrap items-center gap-(--space-100)">
+        <div className="flex flex-wrap items-center justify-between gap-(--e-2)">
+          <div className="flex min-w-0 flex-wrap items-center gap-(--e-2)">
             <Pagina titulo={consultoria.nome}>{null}</Pagina>
             <Selo tom={TOM_DA_SITUACAO[consultoria.situacao]}>
               {ROTULO_SITUACAO_CONSULTORIA[consultoria.situacao]}
@@ -350,12 +348,12 @@ export function PaginaCentralConsultoria() {
             Mudar situação
           </Botao>
         </div>
-        <dl className="grid grid-cols-1 gap-(--space-150) sm:grid-cols-2">
-          <div className="flex flex-col gap-(--space-025)">
+        <dl className="grid grid-cols-1 gap-(--e-3) sm:grid-cols-2">
+          <div className="flex flex-col gap-(--e-05)">
             <dt className="rotulo">Criada em</dt>
             <dd>{formatarInstanteComoData(consultoria.criadaEm, consultoria.fuso)}</dd>
           </div>
-          <div className="flex min-w-0 flex-col gap-(--space-025)">
+          <div className="flex min-w-0 flex-col gap-(--e-05)">
             <dt className="rotulo">Gestão</dt>
             <dd className="min-w-0">
               {consultoria.gestao.length === 0
@@ -368,11 +366,11 @@ export function PaginaCentralConsultoria() {
             </dd>
           </div>
           {consultoria.situacaoMotivo && consultoria.situacaoAlteradaEm ? (
-            <div className="flex min-w-0 flex-col gap-(--space-025) sm:col-span-2">
+            <div className="flex min-w-0 flex-col gap-(--e-05) sm:col-span-2">
               <dt className="rotulo">Motivo da situação</dt>
               <dd className="whitespace-pre-wrap break-words">
                 {consultoria.situacaoMotivo}
-                <span className="block text-xs text-(--text-subtle)">
+                <span className="block text-xs text-(--tinta-2)">
                   {formatarInstanteComHora(consultoria.situacaoAlteradaEm, consultoria.fuso)}
                   {consultoria.situacaoAlteradaPorNome
                     ? ` · ${consultoria.situacaoAlteradaPorNome}`

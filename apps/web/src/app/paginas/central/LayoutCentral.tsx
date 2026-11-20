@@ -30,13 +30,13 @@ function MenuContaCentral() {
       <DropdownMenuTrigger
         aria-label={`Conta de ${usuario.nome}`}
         title={usuario.nome}
-        className="inline-flex size-(--size-control) cursor-pointer items-center justify-center rounded-(--radius) transicao-estado hover:bg-(--neutral-subtle-hover)"
+        className="inline-flex size-(--controle) cursor-pointer items-center justify-center rounded-(--raio) transicao-estado hover:bg-(--toque)"
       >
         <Avatar nome={usuario.nome} />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-[240px]">
-        <div className="flex flex-col px-(--space-150) py-(--space-100)">
-          <span className="corpo-medio text-(--text)">{usuario.nome}</span>
+        <div className="flex flex-col px-(--e-3) py-(--e-2)">
+          <span className="corpo-medio text-(--tinta)">{usuario.nome}</span>
           <span className="rotulo">{usuario.email}</span>
         </div>
         <DropdownMenuItem
@@ -89,7 +89,7 @@ export function LayoutCentral() {
   } else {
     conteudo = (
       <ExigeDoisFatores>
-        <nav aria-label="Central" className="mb-(--space-200) flex flex-wrap gap-(--space-100)">
+        <nav aria-label="Central" className="mb-(--e-4) flex flex-wrap gap-(--e-2)">
           <Link to="/admin">Consultorias</Link>
           <Link to="/admin/financeiro">Financeiro</Link>
           <Link to="/admin/valor">Valor</Link>
@@ -105,7 +105,7 @@ export function LayoutCentral() {
     <div className="flex h-dvh flex-col">
       <a
         href="#conteudo"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-(--space-100) focus:left-(--space-100) focus:z-50 focus:rounded-(--radius) focus:bg-(--surface-overlay) focus:px-(--space-150) focus:py-(--space-100) focus:shadow-sobreposicao"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-(--e-2) focus:left-(--e-2) focus:z-50 focus:rounded-(--raio) focus:bg-(--flutuante) focus:px-(--e-3) focus:py-(--e-2) focus:shadow-sobreposicao"
       >
         Pular para o conteúdo
       </a>
@@ -115,11 +115,11 @@ export function LayoutCentral() {
             <Link
               to="/admin"
               aria-label="Grama, central administrativa"
-              className="inline-flex rounded-(--radius) no-underline hover:no-underline"
+              className="inline-flex rounded-(--raio) no-underline hover:no-underline"
             >
               <MarcaGrama />
             </Link>
-            <span className="hidden corpo-medio text-(--text-subtle) sm:inline">
+            <span className="hidden corpo-medio text-(--tinta-2) sm:inline">
               Central administrativa
             </span>
           </>
@@ -132,9 +132,7 @@ export function LayoutCentral() {
         }
       />
       <main id="conteudo" tabIndex={-1} className="min-w-0 flex-1 overflow-auto outline-none">
-        <div className="mx-auto w-full max-w-[1440px] p-(--space-200) md:p-(--space-300)">
-          {conteudo}
-        </div>
+        <div className="mx-auto w-full max-w-[1440px] p-(--e-4) md:p-(--e-6)">{conteudo}</div>
       </main>
     </div>
   )

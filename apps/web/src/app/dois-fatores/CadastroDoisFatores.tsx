@@ -24,13 +24,13 @@ export function CadastroDoisFatores({ aoAtivar, aoCancelar }: Props) {
 
   if (!novo) {
     return (
-      <div className="flex flex-col gap-(--space-150)">
+      <div className="flex flex-col gap-(--e-3)">
         {cadastro.error ? (
           <MensagemSecao role="alert" tom="perigo">
             {mensagemDoErro(cadastro.error)}
           </MensagemSecao>
         ) : null}
-        <div className="flex flex-wrap items-center gap-(--space-100)">
+        <div className="flex flex-wrap items-center gap-(--e-2)">
           <Botao
             aparencia="primario"
             iconeAntes="lock"
@@ -47,20 +47,20 @@ export function CadastroDoisFatores({ aoAtivar, aoCancelar }: Props) {
   }
 
   return (
-    <div className="flex flex-col gap-(--space-200)">
-      <div className="flex flex-col gap-(--space-150) sm:flex-row sm:items-start">
+    <div className="flex flex-col gap-(--e-4)">
+      <div className="flex flex-col gap-(--e-3) sm:flex-row sm:items-start">
         {/* Fundo branco nos dois temas: o leitor do aplicativo precisa do contraste do QR code. */}
         <img
           src={novo.qrCode}
           alt="QR code para o aplicativo autenticador"
           width={176}
           height={176}
-          className="size-44 shrink-0 rounded-(--radius) border bg-white p-(--space-100)"
+          className="size-44 shrink-0 rounded-(--raio) border bg-white p-(--e-2)"
         />
-        <dl className="flex min-w-0 flex-col gap-(--space-025)">
+        <dl className="flex min-w-0 flex-col gap-(--e-05)">
           <dt className="rotulo">Chave</dt>
           <dd>
-            <code className="corpo break-all text-(--text) select-all">{novo.segredo}</code>
+            <code className="corpo break-all text-(--tinta) select-all">{novo.segredo}</code>
           </dd>
         </dl>
       </div>

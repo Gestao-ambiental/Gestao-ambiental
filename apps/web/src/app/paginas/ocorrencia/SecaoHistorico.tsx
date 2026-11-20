@@ -37,21 +37,21 @@ export function SecaoHistorico({
   fuso: string
 }) {
   return (
-    <section aria-labelledby="titulo-historico" className="flex flex-col gap-(--space-100)">
-      <h2 id="titulo-historico" className="rotulo-maiusculo text-(--text-subtle)">
+    <section aria-labelledby="titulo-historico" className="flex flex-col gap-(--e-2)">
+      <h2 id="titulo-historico" className="rotulo-maiusculo text-(--tinta-2)">
         Histórico
       </h2>
       {eventos.length === 0 ? (
-        <p className="text-xs text-(--text-subtle)">Nada registrado ainda.</p>
+        <p className="text-xs text-(--tinta-2)">Nada registrado ainda.</p>
       ) : (
-        <ol className="flex flex-col gap-(--space-075)">
+        <ol className="flex flex-col gap-(--e-15)">
           {eventos.map((evento) => (
             <li key={evento.id} className="flex flex-col">
               <span className="corpo">
                 <span className="corpo-medio">{evento.atorNome ?? 'Sistema'}</span>{' '}
                 {textoDoEvento(evento)}
               </span>
-              <span className="text-xs text-(--text-subtle)">
+              <span className="text-xs text-(--tinta-2)">
                 {formatarInstanteComHora(evento.instante, fuso)}
               </span>
             </li>

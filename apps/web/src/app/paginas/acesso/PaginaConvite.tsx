@@ -36,8 +36,8 @@ type DadosConta = z.infer<typeof esquemaConta>
 function Convidou({ convite }: { convite: ConviteRecebido }) {
   return (
     <>
-      <strong className="text-(--text)">{convite.convidadoPorNome}</strong> convidou você para a{' '}
-      <strong className="text-(--text)">{convite.consultoriaNome}</strong> como{' '}
+      <strong className="text-(--tinta)">{convite.convidadoPorNome}</strong> convidou você para a{' '}
+      <strong className="text-(--tinta)">{convite.consultoriaNome}</strong> como{' '}
       {NOMES_PAPEL[convite.papel]}.
     </>
   )
@@ -45,7 +45,7 @@ function Convidou({ convite }: { convite: ConviteRecebido }) {
 
 function Indisponivel({ children }: { children: string }) {
   return (
-    <div className="flex flex-col gap-(--space-300)">
+    <div className="flex flex-col gap-(--e-6)">
       <CabecalhoAcesso titulo="Aceitar convite" />
       <MensagemSecao role="alert" tom="perigo">
         {children}
@@ -144,7 +144,7 @@ export function PaginaConvite() {
   if (carregando || consulta.isPending) return <TelaDeEspera />
   if (consulta.isError) {
     return (
-      <div className="flex flex-col gap-(--space-300)">
+      <div className="flex flex-col gap-(--e-6)">
         <CabecalhoAcesso titulo="Aceitar convite" />
         <EstadoErro aoTentarDeNovo={() => void consulta.refetch()} />
       </div>
@@ -156,7 +156,7 @@ export function PaginaConvite() {
   if (convite.situacao === 'aceito') {
     if (mesmaConta) {
       return (
-        <div className="flex flex-col gap-(--space-300)">
+        <div className="flex flex-col gap-(--e-6)">
           <CabecalhoAcesso titulo="Aceitar convite">
             Você já faz parte da {convite.consultoriaNome}.
           </CabecalhoAcesso>
@@ -197,7 +197,7 @@ export function PaginaConvite() {
   // Logado com outra conta
   if (usuario && !mesmaConta) {
     return (
-      <div className="flex flex-col gap-(--space-300)">
+      <div className="flex flex-col gap-(--e-6)">
         {cabecalho}
         <MensagemSecao tom="atencao">
           Você está como <strong>{usuario.email}</strong>, mas o convite é para{' '}
@@ -214,7 +214,7 @@ export function PaginaConvite() {
   if (usuario) {
     if (convite.contaComSenha) {
       return (
-        <div className="flex flex-col gap-(--space-300)">
+        <div className="flex flex-col gap-(--e-6)">
           {cabecalho}
           {aviso}
           {aceite.isPending ? <Carregando rotulo="Aceitando o convite" linhas={1} /> : null}
@@ -232,13 +232,13 @@ export function PaginaConvite() {
       )
     }
     return (
-      <div className="flex flex-col gap-(--space-300)">
+      <div className="flex flex-col gap-(--e-6)">
         {cabecalho}
         {aviso}
         <form
           noValidate
           onSubmit={(evento) => void criarContaEAceitar(evento)}
-          className="flex flex-col gap-(--space-200)"
+          className="flex flex-col gap-(--e-4)"
         >
           <CampoTexto
             rotulo="Nome"
@@ -275,10 +275,10 @@ export function PaginaConvite() {
   const voltarParaCa = `/convite?token=${encodeURIComponent(token)}&aceitar=1`
   if (convite.contaComSenha) {
     return (
-      <div className="flex flex-col gap-(--space-300)">
+      <div className="flex flex-col gap-(--e-6)">
         {cabecalho}
-        <p className="corpo text-(--text-subtle)">
-          Você já tem conta com <strong className="text-(--text)">{convite.email}</strong>.
+        <p className="corpo text-(--tinta-2)">
+          Você já tem conta com <strong className="text-(--tinta)">{convite.email}</strong>.
         </p>
         <Botao aparencia="primario" larguraTotal asChild>
           <Link to={`/entrar?para=${encodeURIComponent(voltarParaCa)}`}>Entrar e aceitar</Link>
@@ -290,16 +290,16 @@ export function PaginaConvite() {
   // Sem senha e sem sessão: o link de acesso do e-mail expirou (vale 1 hora) ou foi aberto
   // antes. A própria pessoa pede outro, sempre para o e-mail do convite.
   return (
-    <div className="flex flex-col gap-(--space-300)">
+    <div className="flex flex-col gap-(--e-6)">
       {cabecalho}
       {linkReenviado ? (
         <MensagemSecao role="status" tom="sucesso">
           Enviamos um link novo para {convite.email}. Abra-o para criar sua conta.
         </MensagemSecao>
       ) : (
-        <p className="corpo text-(--text-subtle)">
+        <p className="corpo text-(--tinta-2)">
           O link de acesso do e-mail expirou. Peça outro para criar sua conta com{' '}
-          <strong className="text-(--text)">{convite.email}</strong>.
+          <strong className="text-(--tinta)">{convite.email}</strong>.
         </p>
       )}
       {reenvio.isError ? (

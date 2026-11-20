@@ -37,22 +37,21 @@ import { DialogoMtr } from './DialogoMtr'
 import { SecaoCdfs } from './SecaoCdfs'
 
 const classeCabecalho =
-  'h-10 border-b px-(--space-100) text-left rotulo whitespace-nowrap first:pl-(--space-150)'
-const classeCelula =
-  'h-10 border-b px-(--space-100) py-(--space-050) align-middle first:pl-(--space-150)'
+  'h-10 border-b px-(--e-2) text-left rotulo whitespace-nowrap first:pl-(--e-3)'
+const classeCelula = 'h-10 border-b px-(--e-2) py-(--e-1) align-middle first:pl-(--e-3)'
 
 function Migalhas({ empreendimentoId, nome }: { empreendimentoId: string; nome?: string }) {
   return (
-    <nav aria-label="Caminho" className="flex flex-wrap items-center gap-(--space-050) corpo">
+    <nav aria-label="Caminho" className="flex flex-wrap items-center gap-(--e-1) corpo">
       <Link to="/empreendimentos">Empreendimentos</Link>
-      <span className="text-(--text-subtle)" aria-hidden="true">
+      <span className="text-(--tinta-2)" aria-hidden="true">
         /
       </span>
       <Link to={`/empreendimentos/${empreendimentoId}`}>{nome ?? 'Empreendimento'}</Link>
-      <span className="text-(--text-subtle)" aria-hidden="true">
+      <span className="text-(--tinta-2)" aria-hidden="true">
         /
       </span>
-      <span className="text-(--text-subtle)" aria-current="page">
+      <span className="text-(--tinta-2)" aria-current="page">
         Resíduos
       </span>
     </nav>
@@ -154,7 +153,7 @@ export function PaginaMtrs() {
 
   if (empreendimento.isPending) {
     return (
-      <div className="flex flex-col gap-(--space-200)">
+      <div className="flex flex-col gap-(--e-4)">
         <Migalhas empreendimentoId={id} />
         <Carregando rotulo="Carregando o empreendimento" linhas={4} />
       </div>
@@ -162,7 +161,7 @@ export function PaginaMtrs() {
   }
   if (empreendimento.isError) {
     return (
-      <div className="flex flex-col gap-(--space-200)">
+      <div className="flex flex-col gap-(--e-4)">
         <Migalhas empreendimentoId={id} />
         {ehSemPermissao(empreendimento.error) ? (
           <SemPermissao />
@@ -177,7 +176,7 @@ export function PaginaMtrs() {
   }
   if (!empreendimento.data) {
     return (
-      <div className="flex flex-col gap-(--space-200)">
+      <div className="flex flex-col gap-(--e-4)">
         <Migalhas empreendimentoId={id} />
         <h1 className="sr-only">Empreendimento não encontrado</h1>
         <EstadoVazio
@@ -203,13 +202,13 @@ export function PaginaMtrs() {
     busca !== ''
 
   return (
-    <div className="flex min-w-0 flex-col gap-(--space-200)">
+    <div className="flex min-w-0 flex-col gap-(--e-4)">
       <Migalhas empreendimentoId={id} nome={empreendimento.data.nome} />
-      <div className="flex flex-wrap items-start gap-(--space-150)">
-        <h1 className="min-w-0 flex-1 titulo-tela text-(--text)">
+      <div className="flex flex-wrap items-start gap-(--e-3)">
+        <h1 className="min-w-0 flex-1 titulo-tela text-(--tinta)">
           Resíduos · {empreendimento.data.nome}
         </h1>
-        <div className="flex flex-wrap gap-(--space-100)">
+        <div className="flex flex-wrap gap-(--e-2)">
           <Botao
             iconeAntes="file-check"
             onClick={() => {
@@ -246,9 +245,9 @@ export function PaginaMtrs() {
       <div
         role="group"
         aria-label="Filtros dos MTRs"
-        className="flex flex-wrap items-end gap-(--space-150)"
+        className="flex flex-wrap items-end gap-(--e-3)"
       >
-        <label className="flex w-full flex-col gap-(--space-050) sm:w-[240px]">
+        <label className="flex w-full flex-col gap-(--e-1) sm:w-[240px]">
           <span className="rotulo">Buscar</span>
           <input
             type="search"
@@ -265,7 +264,7 @@ export function PaginaMtrs() {
           hoje={hoje}
           valor={filtros.de}
           maximo={filtros.ate ?? undefined}
-          className="w-[calc(50%-var(--space-075))] sm:w-[160px]"
+          className="w-[calc(50%-var(--e-15))] sm:w-[160px]"
           aoMudar={(data) => {
             setFiltros((f) => ({ ...f, de: data }))
           }}
@@ -275,12 +274,12 @@ export function PaginaMtrs() {
           hoje={hoje}
           valor={filtros.ate}
           minimo={filtros.de ?? undefined}
-          className="w-[calc(50%-var(--space-075))] sm:w-[160px]"
+          className="w-[calc(50%-var(--e-15))] sm:w-[160px]"
           aoMudar={(data) => {
             setFiltros((f) => ({ ...f, ate: data }))
           }}
         />
-        <label className="flex w-full flex-col gap-(--space-050) sm:w-[220px]">
+        <label className="flex w-full flex-col gap-(--e-1) sm:w-[220px]">
           <span className="rotulo">Situação</span>
           <select
             className={classeControle}
@@ -300,7 +299,7 @@ export function PaginaMtrs() {
         </label>
         <CaixaSelecao
           rotulo="Só sem CDF"
-          className="h-(--size-control)"
+          className="h-(--controle)"
           checked={filtros.semCdf}
           onChange={(evento) => {
             setFiltros((f) => ({ ...f, semCdf: evento.target.checked }))
@@ -310,7 +309,7 @@ export function PaginaMtrs() {
 
       <section
         aria-label="MTRs"
-        className="flex min-w-0 flex-col overflow-hidden rounded-(--radius-large) border bg-(--surface) shadow-cartao"
+        className="flex min-w-0 flex-col overflow-hidden rounded-(--raio-painel) border bg-(--folha) shadow-cartao"
       >
         {mtrs.isPending ? (
           <Carregando rotulo="Carregando MTRs" linhas={3} className="border-0" />
@@ -321,7 +320,7 @@ export function PaginaMtrs() {
             <EstadoErro
               titulo="Não foi possível carregar os MTRs."
               aoTentarDeNovo={() => void mtrs.refetch()}
-              className="m-(--space-150)"
+              className="m-(--e-3)"
             />
           )
         ) : lista.length === 0 ? (
@@ -405,7 +404,7 @@ export function PaginaMtrs() {
                       {mtr.cdfs.length > 0 ? mtr.cdfs.map((c) => c.numero).join(', ') : 'Sem CDF'}
                     </td>
                     <td className={`${classeCelula} whitespace-nowrap`}>
-                      <span className="flex justify-end gap-(--space-025)">
+                      <span className="flex justify-end gap-(--e-05)">
                         {mtr.pdf ? (
                           <BotaoIcone
                             icone="file-text"
@@ -441,7 +440,7 @@ export function PaginaMtrs() {
             </table>
           </div>
         )}
-        <div className="flex flex-wrap items-center gap-(--space-100) border-t px-(--space-150) py-(--space-100)">
+        <div className="flex flex-wrap items-center gap-(--e-2) border-t px-(--e-3) py-(--e-2)">
           <p className="flex-1 text-xs">
             {lista.length === 0
               ? 'Nenhum MTR'
@@ -522,8 +521,8 @@ export function PaginaMtrs() {
               {mensagemDoErro(excluir.error)}
             </MensagemSecao>
           ) : (
-            <p className="flex items-center gap-(--space-100)">
-              <Icone nome="triangle-alert" className="shrink-0 text-(--icon)" />
+            <p className="flex items-center gap-(--e-2)">
+              <Icone nome="triangle-alert" className="shrink-0 text-(--icone)" />
               Emitido em {formatarDataCivil(aberto.mtr.emitidoEm)} para {aberto.mtr.destinadorNome}.
             </p>
           )}

@@ -50,7 +50,7 @@ export function HorasDevolvidas({ consultoriaId }: { consultoriaId: string | nul
   } else {
     const [atual, anterior] = consulta.data
     if (!atual || atual.consultoriasComDados === 0) {
-      conteudo = <p className="corpo text-(--text)">Juntando dados</p>
+      conteudo = <p className="corpo text-(--tinta)">Juntando dados</p>
     } else {
       const cartoes = [
         {
@@ -72,18 +72,18 @@ export function HorasDevolvidas({ consultoriaId }: { consultoriaId: string | nul
         },
       ]
       conteudo = (
-        <dl className="grid grid-cols-1 gap-(--space-100) sm:grid-cols-2 lg:grid-cols-4">
+        <dl className="grid grid-cols-1 gap-(--e-2) sm:grid-cols-2 lg:grid-cols-4">
           {cartoes.map((c) => (
             <div
               key={c.rotulo}
-              className="flex min-w-0 flex-col gap-(--space-025) rounded-(--radius-large) border bg-(--surface) p-(--space-150) shadow-cartao"
+              className="flex min-w-0 flex-col gap-(--e-05) rounded-(--raio-painel) border bg-(--folha) p-(--e-3) shadow-cartao"
             >
               <dt className="rotulo">{c.rotulo}</dt>
-              <dd className="flex flex-wrap items-baseline gap-x-(--space-100)">
-                <span className="titulo-secao text-(--text) tabular-nums">{c.valor}</span>
+              <dd className="flex flex-wrap items-baseline gap-x-(--e-2)">
+                <span className="titulo-secao text-(--tinta) tabular-nums">{c.valor}</span>
                 {c.variacao ? (
                   <span
-                    className="corpo text-(--text) tabular-nums"
+                    className="corpo text-(--tinta) tabular-nums"
                     aria-label={`${c.variacao} contra o mês anterior`}
                   >
                     {c.variacao}
@@ -98,7 +98,7 @@ export function HorasDevolvidas({ consultoriaId }: { consultoriaId: string | nul
         conteudo = (
           <>
             {conteudo}
-            <div className="flex flex-wrap gap-(--space-100)">
+            <div className="flex flex-wrap gap-(--e-2)">
               {atual.estimado ? <Selo tom="revisao">Estimado</Selo> : null}
               {consultoriaId === null && atual.consultoriasJuntando > 0 ? (
                 <Selo>{`${String(atual.consultoriasJuntando)} juntando dados`}</Selo>
@@ -111,8 +111,8 @@ export function HorasDevolvidas({ consultoriaId }: { consultoriaId: string | nul
   }
 
   return (
-    <section aria-label="Horas devolvidas" className="flex flex-col gap-(--space-075)">
-      <h3 className="corpo-medio text-(--text)">Horas devolvidas</h3>
+    <section aria-label="Horas devolvidas" className="flex flex-col gap-(--e-15)">
+      <h3 className="corpo-medio text-(--tinta)">Horas devolvidas</h3>
       {conteudo}
     </section>
   )
@@ -122,7 +122,7 @@ export function HorasDevolvidas({ consultoriaId }: { consultoriaId: string | nul
 export function ResumoDeTeste({ consultoriaId }: { consultoriaId: string }) {
   const envio = useMutation({ mutationFn: () => enviarResumoDeTeste(consultoriaId) })
   return (
-    <div className="flex flex-col gap-(--space-100)">
+    <div className="flex flex-col gap-(--e-2)">
       <div>
         <Botao
           iconeAntes="mail"

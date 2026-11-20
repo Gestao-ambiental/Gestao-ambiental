@@ -18,7 +18,7 @@ import { RelerDoisFatores } from './ExigeDoisFatores'
 import { plural } from './comum'
 
 const classeCartao =
-  'flex min-w-0 flex-col gap-(--space-050) rounded-(--radius-large) border bg-(--surface) p-(--space-150) shadow-cartao sm:p-(--space-200)'
+  'flex min-w-0 flex-col gap-(--e-1) rounded-(--raio-painel) border bg-(--folha) p-(--e-3) shadow-cartao sm:p-(--e-4)'
 
 /** Erro de uma seção da central: sem permissão, dois fatores ou falha comum. */
 function ErroDaSecao({
@@ -63,11 +63,11 @@ export function ResumoDeUsoNaCentral() {
       ['Ativas em 30 dias', consulta.data.ultimos30Dias],
     ]
     conteudo = (
-      <dl className="grid grid-cols-1 gap-(--space-150) sm:grid-cols-3">
+      <dl className="grid grid-cols-1 gap-(--e-3) sm:grid-cols-3">
         {numeros.map(([titulo, valor]) => (
           <div key={titulo} className={classeCartao}>
-            <dt className="corpo text-(--text-subtle)">{titulo}</dt>
-            <dd className="titulo-tela text-(--text) tabular-nums">{valor}</dd>
+            <dt className="corpo text-(--tinta-2)">{titulo}</dt>
+            <dd className="titulo-tela text-(--tinta) tabular-nums">{valor}</dd>
           </div>
         ))}
       </dl>
@@ -75,8 +75,8 @@ export function ResumoDeUsoNaCentral() {
   }
 
   return (
-    <section aria-labelledby="central-uso" className="flex flex-col gap-(--space-100)">
-      <h2 id="central-uso" className="titulo-secao text-(--text)">
+    <section aria-labelledby="central-uso" className="flex flex-col gap-(--e-2)">
+      <h2 id="central-uso" className="titulo-secao text-(--tinta)">
         Uso
       </h2>
       {conteudo}
@@ -116,21 +116,21 @@ export function AlertasDeSemUso() {
     conteudo = <EstadoVazio icone="circle-check" titulo="Nenhum alerta" />
   } else {
     conteudo = (
-      <div className="flex flex-col gap-(--space-100)">
+      <div className="flex flex-col gap-(--e-2)">
         <ul
           aria-label="Consultorias sem uso"
-          className="flex flex-col rounded-(--radius-large) border bg-(--surface) shadow-cartao"
+          className="flex flex-col rounded-(--raio-painel) border bg-(--folha) shadow-cartao"
         >
           {itens.map((alerta) => (
             <li key={alerta.id} className="border-b last:border-b-0">
               <Link
                 to={`/admin/consultorias/${alerta.id}`}
-                className="flex flex-wrap items-center gap-x-(--space-150) gap-y-(--space-050) px-(--space-150) py-(--space-100) text-(--text) no-underline hover:bg-(--surface-hover) hover:text-(--text) hover:no-underline"
+                className="flex flex-wrap items-center gap-x-(--e-3) gap-y-(--e-1) px-(--e-3) py-(--e-2) text-(--tinta) no-underline hover:bg-(--toque) hover:text-(--tinta) hover:no-underline"
               >
-                <Icone nome="triangle-alert" className="text-(--icon)" />
+                <Icone nome="triangle-alert" className="text-(--icone)" />
                 <span className="min-w-0 flex-1 corpo-medio">{alerta.nome}</span>
                 <Selo tom="atencao">{rotuloDoAlertaDeSemUso(alerta, agora)}</Selo>
-                <span className="text-xs text-(--text-subtle)">
+                <span className="text-xs text-(--tinta-2)">
                   {plural(alerta.pessoasAtivas, 'pessoa ativa', 'pessoas ativas')}
                 </span>
               </Link>
@@ -151,13 +151,13 @@ export function AlertasDeSemUso() {
   }
 
   return (
-    <section aria-labelledby="central-alertas" className="flex flex-col gap-(--space-100)">
-      <div className="flex items-baseline gap-(--space-100)">
-        <h2 id="central-alertas" className="titulo-secao text-(--text)">
+    <section aria-labelledby="central-alertas" className="flex flex-col gap-(--e-2)">
+      <div className="flex items-baseline gap-(--e-2)">
+        <h2 id="central-alertas" className="titulo-secao text-(--tinta)">
           Alertas
         </h2>
         {consulta.isSuccess && total > 0 ? (
-          <span className="text-(--text-subtle) tabular-nums">{total}</span>
+          <span className="text-(--tinta-2) tabular-nums">{total}</span>
         ) : null}
       </div>
       {conteudo}
@@ -187,11 +187,11 @@ export function UsoPorModulo({ consultoriaId }: { consultoriaId: string }) {
     conteudo = <EstadoVazio icone="chart-column" titulo="Sem uso registrado" />
   } else {
     conteudo = (
-      <dl className="grid grid-cols-1 gap-(--space-150) sm:grid-cols-2 lg:grid-cols-4">
+      <dl className="grid grid-cols-1 gap-(--e-3) sm:grid-cols-2 lg:grid-cols-4">
         {consulta.data.map((uso) => (
           <div key={uso.modulo} className={classeCartao}>
-            <dt className="corpo text-(--text-subtle)">{ROTULO_DO_MODULO_DE_USO[uso.modulo]}</dt>
-            <dd className="titulo-tela text-(--text) tabular-nums">
+            <dt className="corpo text-(--tinta-2)">{ROTULO_DO_MODULO_DE_USO[uso.modulo]}</dt>
+            <dd className="titulo-tela text-(--tinta) tabular-nums">
               {plural(uso.dias, 'dia', 'dias')}
             </dd>
           </div>
@@ -201,8 +201,8 @@ export function UsoPorModulo({ consultoriaId }: { consultoriaId: string }) {
   }
 
   return (
-    <section aria-labelledby="central-uso-por-area" className="flex flex-col gap-(--space-100)">
-      <h2 id="central-uso-por-area" className="titulo-secao text-(--text)">
+    <section aria-labelledby="central-uso-por-area" className="flex flex-col gap-(--e-2)">
+      <h2 id="central-uso-por-area" className="titulo-secao text-(--tinta)">
         Uso por área em 30 dias
       </h2>
       {conteudo}

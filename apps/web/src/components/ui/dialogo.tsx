@@ -1,6 +1,5 @@
-// Modal do design system com o comportamento do Dialog do Radix (foco preso, Esc, retorno do foco):
-// scrim, alinhado ao topo a 64px, sombra de overlay, ação principal por último à direita.
-// Referência: docs/design-system/referencia-componentes/overlay/Modal.jsx.
+// Diálogo com o comportamento do Dialog do Radix (foco preso, Esc, retorno do foco): véu verde-escuro,
+// alinhado ao topo, título grande, ação principal por último à direita. No celular sobe do rodapé.
 import { Dialog as Primitivo } from 'radix-ui'
 import type { ReactNode } from 'react'
 
@@ -30,19 +29,21 @@ export function Dialogo({
   return (
     <Primitivo.Root open={aberto} onOpenChange={aoMudar}>
       <Primitivo.Portal>
-        <Primitivo.Overlay className="fixed inset-0 z-50 bg-(--scrim) data-[state=open]:animate-in data-[state=open]:fade-in-0" />
-        <div className="pointer-events-none fixed inset-0 z-50 flex items-start justify-center overflow-y-auto px-(--space-200) py-(--space-800)">
+        <Primitivo.Overlay className="fixed inset-0 z-50 bg-(--veu) data-[state=open]:animate-in data-[state=open]:fade-in-0" />
+        <div className="pointer-events-none fixed inset-0 z-50 flex items-end justify-center overflow-y-auto px-0 pt-(--e-16) md:items-start md:px-(--e-4) md:py-(--e-16)">
           <Primitivo.Content
             style={{ maxWidth: largura }}
-            className="pointer-events-auto w-full rounded-(--radius-large) bg-(--surface-overlay) text-(--text) shadow-dialogo outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0"
+            className="pointer-events-auto w-full rounded-t-(--raio-painel) bg-(--flutuante) text-(--tinta) shadow-dialogo outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-bottom-4 duration-(--dur-media) md:rounded-(--raio-painel) md:data-[state=open]:slide-in-from-top-2"
           >
-            <div className="flex items-start gap-(--space-100) px-(--space-300) pt-(--space-300) pb-(--space-100)">
-              <Primitivo.Title className="flex-1 titulo-tela">{titulo}</Primitivo.Title>
+            <div className="flex items-start gap-(--e-2) px-(--e-6) pt-(--e-6) pb-(--e-2)">
+              <Primitivo.Title className="flex-1 pt-(--e-1) titulo-painel">
+                {titulo}
+              </Primitivo.Title>
               <Primitivo.Close asChild>
                 <BotaoIcone icone="x" rotulo="Fechar" />
               </Primitivo.Close>
             </div>
-            <div className="flex flex-col gap-(--space-200) px-(--space-300) corpo">
+            <div className="flex flex-col gap-(--e-4) px-(--e-6) corpo">
               {descricao ? (
                 <Primitivo.Description className="text-pretty">{descricao}</Primitivo.Description>
               ) : (
@@ -51,11 +52,11 @@ export function Dialogo({
               {children}
             </div>
             {acoes ? (
-              <div className="flex flex-wrap justify-end gap-(--space-100) p-(--space-300)">
+              <div className="flex flex-wrap justify-end gap-(--e-2) p-(--e-6) max-md:flex-col-reverse max-md:[&>*]:w-full">
                 {acoes}
               </div>
             ) : (
-              <div className="h-(--space-300)" />
+              <div className="h-(--e-6)" />
             )}
           </Primitivo.Content>
         </div>

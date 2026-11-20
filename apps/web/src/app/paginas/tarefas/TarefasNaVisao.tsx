@@ -48,21 +48,21 @@ export function TarefasNaVisao({ aba }: { aba: 'todos' | 'minhas' }) {
     return null
   } else {
     conteudo = (
-      <ul className="flex flex-col divide-y rounded-(--radius-large) border bg-(--surface) shadow-cartao">
+      <ul className="flex flex-col divide-y rounded-(--raio-painel) border bg-(--folha) shadow-cartao">
         {tarefas.data.map((t) => {
           const prazo = textoDoPrazo(t)
           return (
             <li
               key={t.id}
-              className="flex flex-wrap items-center justify-between gap-(--space-100) px-(--space-150) py-(--space-100)"
+              className="flex flex-wrap items-center justify-between gap-(--e-2) px-(--e-3) py-(--e-2)"
             >
-              <div className="flex min-w-0 flex-col gap-(--space-025)">
-                <span className="flex flex-wrap items-center gap-(--space-075)">
+              <div className="flex min-w-0 flex-col gap-(--e-05)">
+                <span className="flex flex-wrap items-center gap-(--e-15)">
                   <Selo>Serviço</Selo>
                   <span className="corpo">{t.titulo}</span>
                   <SeloDaTarefa situacao={t.situacao} />
                 </span>
-                <span className="text-xs tabular-nums text-(--text-subtle)">
+                <span className="text-xs tabular-nums text-(--tinta-2)">
                   {ehGestao ? (
                     <Link to={`/orcamentos/${t.orcamentoId}`}>{t.orcamentoNumero}</Link>
                   ) : (
@@ -88,7 +88,7 @@ export function TarefasNaVisao({ aba }: { aba: 'todos' | 'minhas' }) {
   }
 
   return (
-    <section aria-label={titulo} className="flex flex-col gap-(--space-100)">
+    <section aria-label={titulo} className="flex flex-col gap-(--e-2)">
       <h2 className="titulo-secao">{titulo}</h2>
       {falha ? (
         <MensagemSecao role="alert" tom="perigo">

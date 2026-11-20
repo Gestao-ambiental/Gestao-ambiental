@@ -15,15 +15,15 @@ export function CartoesDeValor({ meses }: { meses: readonly MetricasDoMes[] }) {
   const [atual, anterior] = meses
   if (!atual) return null
   return (
-    <div className="flex flex-col gap-(--space-200)">
+    <div className="flex flex-col gap-(--e-4)">
       {GRUPOS.map((grupo) => (
         <section
           key={grupo.titulo}
           aria-label={grupo.titulo}
-          className="flex flex-col gap-(--space-075)"
+          className="flex flex-col gap-(--e-15)"
         >
-          <h3 className="corpo-medio text-(--text)">{grupo.titulo}</h3>
-          <dl className="grid grid-cols-1 gap-(--space-100) sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <h3 className="corpo-medio text-(--tinta)">{grupo.titulo}</h3>
+          <dl className="grid grid-cols-1 gap-(--e-2) sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {grupo.metricas.map((metrica) => {
               const valor = metrica.valor(atual)
               const mudanca = formatarVariacao(
@@ -33,16 +33,16 @@ export function CartoesDeValor({ meses }: { meses: readonly MetricasDoMes[] }) {
               return (
                 <div
                   key={metrica.rotulo}
-                  className="flex min-w-0 flex-col gap-(--space-025) rounded-(--radius-large) border bg-(--surface) p-(--space-150) shadow-cartao"
+                  className="flex min-w-0 flex-col gap-(--e-05) rounded-(--raio-painel) border bg-(--folha) p-(--e-3) shadow-cartao"
                 >
                   <dt className="rotulo">{metrica.rotulo}</dt>
-                  <dd className="flex flex-wrap items-baseline gap-x-(--space-100)">
-                    <span className="titulo-secao text-(--text) tabular-nums">
+                  <dd className="flex flex-wrap items-baseline gap-x-(--e-2)">
+                    <span className="titulo-secao text-(--tinta) tabular-nums">
                       {formatarValor(valor, metrica.unidade)}
                     </span>
                     {mudanca ? (
                       <span
-                        className="corpo text-(--text) tabular-nums"
+                        className="corpo text-(--tinta) tabular-nums"
                         aria-label={`${mudanca} contra o mês anterior`}
                       >
                         {mudanca}
@@ -65,7 +65,7 @@ export function TabelaDeValor({ meses }: { meses: readonly MetricasDoMes[] }) {
     <div
       role="region"
       aria-label="Métricas por mês"
-      className="overflow-x-auto rounded-(--radius-large) border bg-(--surface) shadow-cartao"
+      className="overflow-x-auto rounded-(--raio-painel) border bg-(--folha) shadow-cartao"
     >
       <table className="w-full border-collapse corpo">
         <thead>
@@ -129,8 +129,8 @@ export function EstadoDasMetricas({
 export function ValorDaConsultoria({ consultoriaId }: { consultoriaId: string }) {
   const consulta = useMetricasDeValor(consultoriaId)
   return (
-    <section aria-labelledby="central-valor" className="flex flex-col gap-(--space-100)">
-      <h2 id="central-valor" className="titulo-secao text-(--text)">
+    <section aria-labelledby="central-valor" className="flex flex-col gap-(--e-2)">
+      <h2 id="central-valor" className="titulo-secao text-(--tinta)">
         Valor
       </h2>
       <HorasDevolvidas consultoriaId={consultoriaId} />

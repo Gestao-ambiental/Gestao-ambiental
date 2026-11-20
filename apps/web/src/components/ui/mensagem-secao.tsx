@@ -8,19 +8,19 @@ type Tom = 'informacao' | 'sucesso' | 'atencao' | 'perigo'
 
 const TONS: Record<Tom, { classes: string; icone: NomeIcone }> = {
   informacao: {
-    classes: 'bg-(--lozenge-inprogress-bg) [--cor-icone:var(--lozenge-inprogress-text)]',
+    classes: 'bg-(--andamento-fundo) [--cor-icone:var(--andamento-texto)]',
     icone: 'info',
   },
   sucesso: {
-    classes: 'bg-(--lozenge-success-bg) [--cor-icone:var(--lozenge-success-text)]',
+    classes: 'bg-(--ok-fundo) [--cor-icone:var(--ok-texto)]',
     icone: 'circle-check',
   },
   atencao: {
-    classes: 'bg-(--lozenge-warning-bg) [--cor-icone:var(--lozenge-warning-text)]',
+    classes: 'bg-(--alerta-fundo) [--cor-icone:var(--alerta-texto)]',
     icone: 'triangle-alert',
   },
   perigo: {
-    classes: 'bg-(--lozenge-danger-bg) [--cor-icone:var(--lozenge-danger-text)]',
+    classes: 'bg-(--atraso-fundo) [--cor-icone:var(--atraso-texto)]',
     icone: 'circle-alert',
   },
 }
@@ -36,8 +36,8 @@ interface Props {
 }
 
 /**
- * Mensagem dentro da coluna de conteúdo (nunca flutua): MessageBar do Fluent 2 (ADR-0015):
- * fundo do status, contorno sutil, raio de 4px e ícone do status à esquerda.
+ * Mensagem dentro da coluna de conteúdo (nunca flutua): faixa no fundo do status, ícone do status
+ * à esquerda e título forte.
  */
 export function MensagemSecao({
   tom = 'informacao',
@@ -51,17 +51,13 @@ export function MensagemSecao({
   return (
     <div
       role={role}
-      className={cn(
-        'flex gap-(--space-100) rounded-(--radius) border border-(--border-subtle) px-(--space-150) py-(--space-100)',
-        classes,
-        className,
-      )}
+      className={cn('flex gap-(--e-3) rounded-(--raio) px-(--e-4) py-(--e-3)', classes, className)}
     >
-      <Icone nome={icone} className="mt-0.5 text-(--cor-icone)" />
-      <div className="flex flex-1 flex-col gap-(--space-050) text-(--text)">
-        {titulo ? <div className="corpo font-semibold">{titulo}</div> : null}
+      <Icone nome={icone} tamanho={18} className="mt-px text-(--cor-icone)" />
+      <div className="flex flex-1 flex-col gap-(--e-1) text-(--tinta)">
+        {titulo ? <div className="corpo-medio">{titulo}</div> : null}
         {children ? <div className="corpo text-pretty">{children}</div> : null}
-        {acoes ? <div className="mt-(--space-050) flex gap-(--space-100)">{acoes}</div> : null}
+        {acoes ? <div className="mt-(--e-1) flex gap-(--e-2)">{acoes}</div> : null}
       </div>
     </div>
   )

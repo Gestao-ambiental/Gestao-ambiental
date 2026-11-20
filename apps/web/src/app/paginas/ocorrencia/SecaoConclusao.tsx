@@ -75,8 +75,8 @@ export function SecaoConclusao({
   const dialogo = acao ? DIALOGOS[acao] : null
 
   return (
-    <section aria-labelledby="titulo-conclusao" className="flex flex-col gap-(--space-100)">
-      <h2 id="titulo-conclusao" className="rotulo-maiusculo text-(--text-subtle)">
+    <section aria-labelledby="titulo-conclusao" className="flex flex-col gap-(--e-2)">
+      <h2 id="titulo-conclusao" className="rotulo-maiusculo text-(--tinta-2)">
         Conclusão
       </h2>
       {executar.isError && !acao ? (
@@ -95,17 +95,17 @@ export function SecaoConclusao({
           .
         </p>
       ) : !ehGestao ? (
-        <p className="text-xs text-(--text-subtle)">Só a Gestão conclui, depois da aprovação.</p>
+        <p className="text-xs text-(--tinta-2)">Só a Gestão conclui, depois da aprovação.</p>
       ) : ultimaAprovada ? (
-        <p className="text-xs text-(--text-subtle)">Evidência aprovada. Falta concluir.</p>
+        <p className="text-xs text-(--tinta-2)">Evidência aprovada. Falta concluir.</p>
       ) : (
-        <p className="text-xs text-(--text-subtle)">
+        <p className="text-xs text-(--tinta-2)">
           Concluir fica disponível depois da evidência aprovada.
         </p>
       )}
 
       {ehGestao ? (
-        <div className="flex flex-wrap gap-(--space-100)">
+        <div className="flex flex-wrap gap-(--e-2)">
           {concluida ? (
             <Botao
               onClick={() => {

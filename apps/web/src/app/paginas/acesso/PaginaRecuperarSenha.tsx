@@ -77,10 +77,10 @@ export function PaginaRecuperarSenha() {
 
   if (enviadoPara) {
     return (
-      <div className="flex flex-col gap-(--space-300)">
+      <div className="flex flex-col gap-(--e-6)">
         <CabecalhoAcesso titulo="Confira seu e-mail">
-          Se houver uma conta com <strong className="text-(--text)">{enviadoPara}</strong>, enviamos
-          um link. Ele vale por 1 hora.
+          Se houver uma conta com <strong className="text-(--tinta)">{enviadoPara}</strong>,
+          enviamos um link. Ele vale por 1 hora.
         </CabecalhoAcesso>
         {falha ? (
           <MensagemSecao role="alert" tom="atencao">
@@ -98,7 +98,7 @@ export function PaginaRecuperarSenha() {
   }
 
   return (
-    <div className="flex flex-col gap-(--space-300)">
+    <div className="flex flex-col gap-(--e-6)">
       <CabecalhoAcesso titulo="Recuperar senha">
         Informe o e-mail da sua conta. Enviaremos um link para criar uma senha nova.
       </CabecalhoAcesso>
@@ -110,7 +110,7 @@ export function PaginaRecuperarSenha() {
       <form
         noValidate
         onSubmit={(evento) => void enviar(evento)}
-        className="flex flex-col gap-(--space-200)"
+        className="flex flex-col gap-(--e-4)"
       >
         <CampoTexto
           rotulo="E-mail"

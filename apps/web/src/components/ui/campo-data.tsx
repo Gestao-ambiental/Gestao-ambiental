@@ -200,9 +200,9 @@ export function CampoData({
         setAberto((a) => !a)
       }}
       className={cn(
-        'absolute inset-y-px right-px inline-flex w-9 cursor-pointer items-center justify-center rounded-r-(--radius) text-(--icon) transicao-estado outline-none',
-        'hover:bg-(--neutral-subtle-hover) focus-visible:shadow-[inset_0_0_0_2px_var(--border-focus)] disabled:cursor-not-allowed disabled:text-(--text-disabled) disabled:hover:bg-transparent',
-        aberto && 'bg-(--surface-selected) text-(--icon-brand) hover:bg-(--surface-selected)',
+        'absolute inset-y-px right-px inline-flex w-9 cursor-pointer items-center justify-center rounded-r-(--raio) text-(--icone) transicao-estado outline-none',
+        'hover:bg-(--toque) focus-visible:shadow-[inset_0_0_0_2px_var(--foco)] disabled:cursor-not-allowed disabled:text-(--tinta-off) disabled:hover:bg-transparent',
+        aberto && 'bg-(--escolha) text-(--marca-linha) hover:bg-(--escolha)',
       )}
     >
       <Icone nome="calendar" />
@@ -210,8 +210,8 @@ export function CampoData({
   )
 
   return (
-    <div className={cn('flex flex-col gap-(--space-050)', className)}>
-      <div className="flex min-h-5 items-center gap-(--space-100)">
+    <div className={cn('flex flex-col gap-(--e-1)', className)}>
+      <div className="flex min-h-5 items-center gap-(--e-2)">
         <label htmlFor={campoId} className="flex-1 rotulo">
           {rotulo}
         </label>
@@ -234,16 +234,16 @@ export function CampoData({
             {botaoCalendario}
           </div>
           <Dialog.Portal>
-            <Dialog.Overlay className="fixed inset-0 z-50 bg-(--scrim) data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0" />
+            <Dialog.Overlay className="fixed inset-0 z-50 bg-(--veu) data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0" />
             <Dialog.Content
               aria-describedby={undefined}
-              className="fixed inset-x-0 bottom-0 z-50 flex max-h-[90dvh] flex-col overflow-auto rounded-t-[12px] border-t bg-(--surface-overlay) px-(--space-200) pt-(--space-100) pb-(--space-300) text-(--text) shadow-sobreposicao outline-none data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:animate-in data-[state=open]:slide-in-from-bottom"
+              className="fixed inset-x-0 bottom-0 z-50 flex max-h-[90dvh] flex-col overflow-auto rounded-t-[12px] border-t bg-(--flutuante) px-(--e-4) pt-(--e-2) pb-(--e-6) text-(--tinta) shadow-sobreposicao outline-none data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:animate-in data-[state=open]:slide-in-from-bottom"
             >
               <span
                 aria-hidden="true"
-                className="mx-auto mb-(--space-150) h-1 w-10 rounded-full bg-(--border-strong)"
+                className="mx-auto mb-(--e-3) h-1 w-10 rounded-full bg-(--regra-forte)"
               />
-              <div className="mb-(--space-150) flex items-center justify-between gap-(--space-100)">
+              <div className="mb-(--e-3) flex items-center justify-between gap-(--e-2)">
                 <Dialog.Title className="titulo-secao">{rotulo.replace(/\s*\*$/, '')}</Dialog.Title>
                 <Dialog.Close asChild>
                   <BotaoIcone icone="x" rotulo="Fechar calendário" />
@@ -285,7 +285,7 @@ export function CampoData({
                 evento.preventDefault()
                 campoRef.current?.focus()
               }}
-              className="z-50 w-[276px] rounded-(--radius) border bg-(--surface-overlay) p-(--space-150) text-(--text) shadow-sobreposicao outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
+              className="z-50 w-[276px] rounded-(--raio) border bg-(--flutuante) p-(--e-3) text-(--tinta) shadow-sobreposicao outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
             >
               {painel}
             </Popover.Content>
@@ -296,8 +296,8 @@ export function CampoData({
         <span
           id={apoioId}
           className={cn(
-            'inline-flex items-start gap-(--space-075) text-xs',
-            mensagemErro ? 'text-(--text-danger)' : 'text-(--text-subtle)',
+            'inline-flex items-start gap-(--e-15) text-xs',
+            mensagemErro ? 'text-(--atraso-texto)' : 'text-(--tinta-2)',
           )}
         >
           {mensagemErro ? <Icone nome="circle-alert" tamanho={12} className="mt-0.5" /> : null}
@@ -347,13 +347,13 @@ function EntradaData({
       }}
       onBlur={aoSair}
       className={cn(
-        'h-(--size-control) w-full rounded-(--radius) border bg-(--surface-input) pr-10 pl-(--space-100) corpo text-(--text) tabular-nums transicao-estado outline-none placeholder:text-(--text-subtlest)',
-        'border-(--border-input) border-b-(--border-input-accessible) hover:bg-(--surface-hover) focus:border-b-(--border-input-active) focus:bg-(--surface-input-focus) focus:shadow-[inset_0_-1px_0_0_var(--border-input-active)]',
-        'disabled:cursor-not-allowed disabled:bg-(--surface-disabled) disabled:text-(--text-disabled) disabled:hover:bg-(--surface-disabled)',
+        'h-(--controle) w-full rounded-(--raio) border bg-(--campo) pr-10 pl-(--e-2) corpo text-(--tinta) tabular-nums transicao-estado outline-none placeholder:text-(--tinta-3)',
+        'border-(--campo-borda) border-b-(--campo-borda) hover:bg-(--toque) focus:border-b-(--campo-borda-ativa) focus:bg-(--campo-foco) focus:shadow-[inset_0_-1px_0_0_var(--campo-borda-ativa)]',
+        'disabled:cursor-not-allowed disabled:bg-(--off) disabled:text-(--tinta-off) disabled:hover:bg-(--off)',
         aberto &&
-          'border-b-(--border-input-active) bg-(--surface-input-focus) shadow-[inset_0_-1px_0_0_var(--border-input-active)]',
+          'border-b-(--campo-borda-ativa) bg-(--campo-foco) shadow-[inset_0_-1px_0_0_var(--campo-borda-ativa)]',
         invalido &&
-          'border-(--border-danger) focus:border-(--border-danger) focus:shadow-[0_0_0_1px_var(--border-danger)]',
+          'border-(--atraso) focus:border-(--atraso) focus:shadow-[0_0_0_1px_var(--atraso)]',
       )}
     />
   )
@@ -462,8 +462,8 @@ export function PainelCalendario({
   const celula = grande ? 'h-11' : 'h-8'
 
   return (
-    <div className="flex flex-col gap-(--space-100)">
-      <div className="flex items-center justify-between gap-(--space-050)">
+    <div className="flex flex-col gap-(--e-2)">
+      <div className="flex items-center justify-between gap-(--e-1)">
         <BotaoIcone
           icone="chevron-left"
           rotulo={anterior.rotulo}
@@ -486,10 +486,10 @@ export function PainelCalendario({
                 setVista('anos')
               }
             }}
-            className="inline-flex cursor-pointer items-center gap-(--space-050) rounded-(--radius) px-(--space-100) py-(--space-025) corpo-medio transicao-estado outline-none hover:bg-(--neutral-subtle-hover) focus-visible:shadow-[0_0_0_2px_var(--border-focus)]"
+            className="inline-flex cursor-pointer items-center gap-(--e-1) rounded-(--raio) px-(--e-2) py-(--e-05) corpo-medio transicao-estado outline-none hover:bg-(--toque) focus-visible:shadow-[0_0_0_2px_var(--foco)]"
           >
             {vista === 'dias' ? `${nomeDoMes(mes)} de ${String(ano)}` : String(ano)}
-            <Icone nome="chevron-down" tamanho={12} className="text-(--icon)" />
+            <Icone nome="chevron-down" tamanho={12} className="text-(--icone)" />
             <span className="sr-only">
               {vista === 'dias' ? ', escolher mês e ano' : ', escolher ano'}
             </span>
@@ -515,7 +515,7 @@ export function PainelCalendario({
         >
           <div role="row" className="grid grid-cols-7">
             {DIAS_DA_SEMANA.map((d) => (
-              <span key={d} role="columnheader" className="pb-(--space-050) text-center rotulo">
+              <span key={d} role="columnheader" className="pb-(--e-1) text-center rotulo">
                 {d}
               </span>
             ))}
@@ -542,23 +542,23 @@ export function PainelCalendario({
                         if (dia !== focada) setFocada(dia)
                       }}
                       className={cn(
-                        'relative flex w-full items-center justify-center rounded-(--radius) corpo tabular-nums transicao-estado outline-none focus-visible:shadow-[0_0_0_2px_var(--border-focus)]',
+                        'relative flex w-full items-center justify-center rounded-(--raio) corpo tabular-nums transicao-estado outline-none focus-visible:shadow-[0_0_0_2px_var(--foco)]',
                         celula,
                         bloqueado
-                          ? 'cursor-not-allowed text-(--text-disabled)'
-                          : 'cursor-pointer hover:bg-(--neutral-subtle-hover)',
-                        !bloqueado && !doMes && 'text-(--text-subtle)',
-                        !bloqueado && doMes && 'text-(--text)',
-                        ehHoje && !escolhido && 'corpo-medio text-(--text-link)',
+                          ? 'cursor-not-allowed text-(--tinta-off)'
+                          : 'cursor-pointer hover:bg-(--toque)',
+                        !bloqueado && !doMes && 'text-(--tinta-2)',
+                        !bloqueado && doMes && 'text-(--tinta)',
+                        ehHoje && !escolhido && 'corpo-medio text-(--link)',
                         escolhido &&
-                          'bg-(--brand) corpo-medio text-(--text-inverse) hover:bg-(--brand-hover)',
+                          'bg-(--acao) corpo-medio text-(--acao-texto) hover:bg-(--acao-toque)',
                       )}
                     >
                       {Number(dia.slice(8))}
                       {ehHoje && !escolhido ? (
                         <span
                           aria-hidden="true"
-                          className="absolute bottom-0.5 left-1/2 h-0.5 w-3 -translate-x-1/2 rounded-full bg-(--brand-stroke)"
+                          className="absolute bottom-0.5 left-1/2 h-0.5 w-3 -translate-x-1/2 rounded-full bg-(--marca-linha)"
                         />
                       ) : null}
                     </button>
@@ -572,7 +572,7 @@ export function PainelCalendario({
         <div
           role="group"
           aria-label={`Meses de ${String(ano)}`}
-          className="grid grid-cols-3 gap-(--space-050)"
+          className="grid grid-cols-3 gap-(--e-1)"
         >
           {MESES_CURTOS.map((rotulo, indice) => {
             const numero = indice + 1
@@ -600,7 +600,7 @@ export function PainelCalendario({
           })}
         </div>
       ) : (
-        <div role="group" aria-label="Anos" className="grid grid-cols-3 gap-(--space-050)">
+        <div role="group" aria-label="Anos" className="grid grid-cols-3 gap-(--e-1)">
           {Array.from({ length: 12 }, (_, i) => inicioDosAnos + i).map((umAno) => (
             <BotaoGrade
               key={umAno}
@@ -620,13 +620,13 @@ export function PainelCalendario({
       )}
 
       {vista === 'dias' && (nota ?? (motivoDoLimite && (minimo ?? maximo))) ? (
-        <p className="flex items-start gap-(--space-075) text-xs text-(--text-subtle)">
+        <p className="flex items-start gap-(--e-15) text-xs text-(--tinta-2)">
           <Icone nome="clock" tamanho={12} className="mt-0.5" />
           <span>{nota ?? motivoDoLimite}</span>
         </p>
       ) : null}
 
-      <div className="flex items-center justify-between border-t pt-(--space-100)">
+      <div className="flex items-center justify-between border-t pt-(--e-2)">
         <Botao
           aparencia="sutil"
           tamanho="compacto"
@@ -675,17 +675,17 @@ function BotaoGrade({
       aria-current={atual ? 'date' : undefined}
       onClick={aoClicar}
       className={cn(
-        'relative flex cursor-pointer items-center justify-center rounded-(--radius) corpo transicao-estado outline-none hover:bg-(--neutral-subtle-hover) focus-visible:shadow-[0_0_0_2px_var(--border-focus)]',
+        'relative flex cursor-pointer items-center justify-center rounded-(--raio) corpo transicao-estado outline-none hover:bg-(--toque) focus-visible:shadow-[0_0_0_2px_var(--foco)]',
         grande ? 'h-12' : 'h-10',
-        atual && !escolhido && 'corpo-medio text-(--text-link)',
-        escolhido && 'bg-(--brand) corpo-medio text-(--text-inverse) hover:bg-(--brand-hover)',
+        atual && !escolhido && 'corpo-medio text-(--link)',
+        escolhido && 'bg-(--acao) corpo-medio text-(--acao-texto) hover:bg-(--acao-toque)',
       )}
     >
       {children}
       {atual && !escolhido ? (
         <span
           aria-hidden="true"
-          className="absolute bottom-1 left-1/2 h-0.5 w-4 -translate-x-1/2 rounded-full bg-(--brand-stroke)"
+          className="absolute bottom-1 left-1/2 h-0.5 w-4 -translate-x-1/2 rounded-full bg-(--marca-linha)"
         />
       ) : null}
     </button>

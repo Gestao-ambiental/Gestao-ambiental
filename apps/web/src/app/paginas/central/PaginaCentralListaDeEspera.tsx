@@ -132,8 +132,8 @@ export function PaginaCentralListaDeEspera() {
     )
   } else {
     conteudo = (
-      <div className="flex flex-col gap-(--space-100)">
-        <div className="overflow-x-auto rounded-(--radius-large) border bg-(--surface) shadow-cartao">
+      <div className="flex flex-col gap-(--e-2)">
+        <div className="overflow-x-auto rounded-(--raio-painel) border bg-(--folha) shadow-cartao">
           <table className="w-full border-collapse corpo">
             <thead>
               <tr>
@@ -159,9 +159,9 @@ export function PaginaCentralListaDeEspera() {
                 const convidando = convite.isPending && convite.variables.id === item.id
                 return (
                   <tr key={item.id} className="last:[&>td]:border-b-0">
-                    <td className={`${classeCelula} corpo-medio text-(--text)`}>{item.nome}</td>
+                    <td className={`${classeCelula} corpo-medio text-(--tinta)`}>{item.nome}</td>
                     <td className={`${classeCelula} whitespace-nowrap`}>
-                      <span className="rotulo mr-(--space-075)">
+                      <span className="rotulo mr-(--e-15)">
                         {ROTULO_DO_TIPO[item.contato.tipo]}
                       </span>
                       <a
@@ -176,10 +176,10 @@ export function PaginaCentralListaDeEspera() {
                       {formatarInstanteComHora(item.criadaEm, FUSO_DA_CENTRAL)}
                     </td>
                     <td className={`${classeCelula} whitespace-nowrap`}>
-                      <label className="flex items-center gap-(--space-075)">
+                      <label className="flex items-center gap-(--e-15)">
                         <input
                           type="checkbox"
-                          className="accent-(--brand)"
+                          className="accent-(--acao)"
                           checked={item.contatadoEm !== null}
                           disabled={contatado.isPending}
                           aria-label={`Contatado: ${item.nome}`}
@@ -195,7 +195,7 @@ export function PaginaCentralListaDeEspera() {
                       </label>
                     </td>
                     <td className={`${classeCelula} whitespace-nowrap`}>
-                      <div className="flex items-center gap-(--space-100)">
+                      <div className="flex items-center gap-(--e-2)">
                         {item.convidadoEm ? (
                           <span>
                             Convidado em{' '}
@@ -224,7 +224,7 @@ export function PaginaCentralListaDeEspera() {
               })}
             </tbody>
           </table>
-          <p className="border-t px-(--space-150) py-(--space-100) text-xs text-(--text-subtle)">
+          <p className="border-t px-(--e-3) py-(--e-2) text-xs text-(--tinta-2)">
             {plural(total, 'pessoa', 'pessoas')}
           </p>
         </div>
@@ -242,12 +242,12 @@ export function PaginaCentralListaDeEspera() {
   }
 
   return (
-    <div className="flex flex-col gap-(--space-300)">
+    <div className="flex flex-col gap-(--e-6)">
       <Pagina titulo="Lista de espera">{null}</Pagina>
-      <label className="flex items-center gap-(--space-075) self-start">
+      <label className="flex items-center gap-(--e-15) self-start">
         <input
           type="checkbox"
-          className="accent-(--brand)"
+          className="accent-(--acao)"
           checked={soPendentes}
           onChange={(e) => {
             setSoPendentes(e.target.checked)

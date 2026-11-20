@@ -39,13 +39,15 @@ function Cartao({
   variacao: string | null
 }) {
   return (
-    <div className="flex min-w-0 flex-col gap-(--space-050) rounded-(--radius-large) border bg-(--surface) p-(--space-200) shadow-cartao">
+    <div className="flex min-w-0 flex-col gap-(--e-1) rounded-(--raio-painel) border bg-(--folha) p-(--e-4) shadow-cartao">
       <dt className="rotulo">{rotulo}</dt>
-      <dd className="flex flex-col gap-(--space-050)">
-        <span className="titulo-tela text-(--text) tabular-nums">{valor}</span>
+      <dd className="flex flex-col gap-(--e-1)">
+        <span className="titulo-tela text-(--tinta) tabular-nums">{valor}</span>
         {extra}
         {variacao ? (
-          <span className="corpo text-(--text) tabular-nums">{variacao} contra o mês anterior</span>
+          <span className="corpo text-(--tinta) tabular-nums">
+            {variacao} contra o mês anterior
+          </span>
         ) : null}
       </dd>
     </div>
@@ -64,13 +66,13 @@ function Cartoes({ atual, anterior }: { atual: ResumoDoMes; anterior: ResumoDoMe
     : null
 
   return (
-    <dl className="grid grid-cols-1 gap-(--space-150) md:grid-cols-3">
+    <dl className="grid grid-cols-1 gap-(--e-3) md:grid-cols-3">
       <Cartao
         rotulo="Horas devolvidas à equipe"
         valor={horasVisiveis ? formatarHoras(atual.horasTotal) : 'Juntando dados'}
         extra={
           horasVisiveis ? (
-            <span className="flex flex-wrap items-center gap-(--space-100) corpo tabular-nums">
+            <span className="flex flex-wrap items-center gap-(--e-2) corpo tabular-nums">
               {atual.reaisCentavos !== null ? formatarReais(atual.reaisCentavos) : null}
               {atual.horasEstimadas ? <Selo tom="revisao">Estimado</Selo> : null}
             </span>
@@ -140,14 +142,14 @@ export function PaginaResumoDoMes() {
 
   return (
     <Pagina titulo="Resumo do mês">
-      <label className="flex max-w-xs flex-col gap-(--space-050)">
+      <label className="flex max-w-xs flex-col gap-(--e-1)">
         <span className="rotulo">Mês</span>
         <select
           value={mes}
           onChange={(evento) => {
             setMes(evento.target.value)
           }}
-          className="h-(--size-control) w-full rounded-(--radius) border border-(--border-input) bg-(--surface-input) px-(--space-100) corpo text-(--text)"
+          className="h-(--controle) w-full rounded-(--raio) border border-(--campo-borda) bg-(--campo) px-(--e-2) corpo text-(--tinta)"
         >
           {meses.map((m) => (
             <option key={m} value={m}>

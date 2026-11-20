@@ -3,9 +3,9 @@ import type { ComponentProps } from 'react'
 import { cn } from '@/lib/utils'
 
 /**
- * Tons do design system (lozenge). Mapeamento de domínio (README do DS):
+ * Tons de situação. Mapeamento de domínio:
  * padrao = a fazer / planejada · andamento = em andamento / espera externa ·
- * atencao = pendente de revisão / vence em breve · revisao = em conferência ·
+ * atencao = vence em breve / pendente · revisao = em conferência ·
  * sucesso = concluída / vigente · perigo = atrasada / vencida / devolvida.
  */
 export type TomSelo =
@@ -18,36 +18,51 @@ export type TomSelo =
   | 'perigoMedio'
   | 'perigoForte'
 
-const TONS: Record<TomSelo, string> = {
-  padrao: 'border-(--border) bg-(--lozenge-default-bg) text-(--lozenge-default-text)',
-  andamento: 'border-transparent bg-(--lozenge-inprogress-bg) text-(--lozenge-inprogress-text)',
-  revisao: 'border-transparent bg-(--lozenge-review-bg) text-(--lozenge-review-text)',
-  sucesso:
-    'border-(--lozenge-success-border) bg-(--lozenge-success-bg) text-(--lozenge-success-text)',
-  atencao:
-    'border-(--lozenge-warning-border) bg-(--lozenge-warning-bg) text-(--lozenge-warning-text)',
-  perigo: 'border-(--lozenge-danger-border) bg-(--lozenge-danger-bg) text-(--lozenge-danger-text)',
-  // Faixas de atraso (EQ-03): mais escuro quanto maior o atraso; o número de dias vai escrito.
-  perigoMedio: 'border-(--border-danger) bg-(--lozenge-danger-bg) text-(--lozenge-danger-text)',
-  perigoForte: 'border-transparent bg-(--danger) text-(--text-on-danger)',
+/*
+ * Situação no quadro de partidas: palavra colorida com uma marca de forma à esquerda, sem
+ * pílula. A forma muda com o tom (quadrado cheio, vazado, losango, traço), então o estado se lê
+ * mesmo sem cor. Só o atraso forte vira plaqueta cheia, como o "ATRASADO" de painel.
+ */
+const TONS: Record<TomSelo, { texto: string; marca: string }> = {
+  padrao: {
+    texto: 'text-(--neutro-texto)',
+    marca: 'size-2 rounded-[1px] border-[1.5px] border-current',
+  },
+  andamento: {
+    texto: 'text-(--andamento-texto)',
+    marca: 'h-2 w-2 rounded-full border-[1.5px] border-current border-r-transparent',
+  },
+  revisao: { texto: 'text-(--revisao-texto)', marca: 'size-[7px] rotate-45 bg-current' },
+  sucesso: { texto: 'text-(--ok-texto)', marca: 'size-2 rounded-full bg-current' },
+  atencao: {
+    texto: 'text-(--alerta-texto)',
+    marca: 'h-0 w-0 border-x-[4.5px] border-b-[8px] border-x-transparent border-b-current',
+  },
+  perigo: { texto: 'text-(--atraso-texto)', marca: 'size-2 bg-current' },
+  perigoMedio: { texto: 'text-(--atraso-texto)', marca: 'size-2 bg-current' },
+  perigoForte: { texto: 'text-(--atraso-texto)', marca: 'size-2 bg-current' },
 }
 
 type Props = ComponentProps<'span'> & { tom?: TomSelo }
 
-/**
- * Selo de situação: o único lugar onde estado tem cor. Badge "tint" do Fluent 2 (ADR-0015): pílula
- * de 20px, fundo e contorno do status, texto de 12px em semibold; sempre com palavra (a cor nunca
- * é o único sinal).
- */
-export function Selo({ tom = 'padrao', className, ...rest }: Props) {
+/** Situação: a única peça onde estado tem cor; sempre com palavra (a cor nunca é o único sinal). */
+export function Selo({ tom = 'padrao', className, children, ...rest }: Props) {
+  const forte = tom === 'perigoForte'
+  const t = TONS[tom]
   return (
     <span
+      data-tom={tom}
       className={cn(
-        'inline-flex h-5 max-w-[200px] items-center overflow-hidden rounded-(--radius-pill) border px-(--space-075) text-xs font-semibold text-ellipsis whitespace-nowrap',
-        TONS[tom],
+        'inline-flex max-w-full items-center gap-(--e-15) overflow-hidden text-xs font-[750] whitespace-nowrap',
+        forte
+          ? 'h-6 rounded-(--raio-mini) bg-(--atraso) px-(--e-2) text-(--tinta-inversa) uppercase tracking-[0.04em]'
+          : cn('h-5', t.texto),
         className,
       )}
       {...rest}
-    />
+    >
+      {forte ? null : <span aria-hidden className={cn('inline-block shrink-0', t.marca)} />}
+      <span className="truncate">{children}</span>
+    </span>
   )
 }

@@ -58,28 +58,24 @@ export function MolduraCadastro({
   }, [titulo])
 
   return (
-    <div
-      className={cn('flex flex-col bg-(--surface-sunken)', suporte ? 'min-h-0 flex-1' : 'h-dvh')}
-    >
+    <div className={cn('flex flex-col bg-(--chao)', suporte ? 'min-h-0 flex-1' : 'h-dvh')}>
       <a
         href="#conteudo"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-(--space-100) focus:left-(--space-100) focus:z-50 focus:rounded-(--radius) focus:bg-(--surface-overlay) focus:px-(--space-150) focus:py-(--space-100)"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-(--e-2) focus:left-(--e-2) focus:z-50 focus:rounded-(--raio) focus:bg-(--flutuante) focus:px-(--e-3) focus:py-(--e-2)"
       >
         Pular para o conteúdo
       </a>
-      <header className="flex min-h-14 shrink-0 flex-wrap items-center gap-(--space-150) border-b bg-(--surface) px-(--space-200) py-(--space-100) md:px-(--space-300)">
+      <header className="flex min-h-14 shrink-0 flex-wrap items-center gap-(--e-3) border-b bg-(--folha) px-(--e-4) py-(--e-2) md:px-(--e-6)">
         <MarcaGrama compactaNoCelular />
         <span aria-hidden="true" className="h-6 border-l" />
         <div className="flex min-w-0 flex-1 flex-col">
-          <h1 className="truncate corpo-medio text-(--text)">{titulo}</h1>
-          {contexto ? (
-            <span className="truncate text-xs text-(--text-subtle)">{contexto}</span>
-          ) : null}
+          <h1 className="truncate corpo-medio text-(--tinta)">{titulo}</h1>
+          {contexto ? <span className="truncate text-xs text-(--tinta-2)">{contexto}</span> : null}
         </div>
         {salvoEm ? (
           <span
             role="status"
-            className="hidden items-center gap-(--space-050) text-xs text-(--text-subtle) sm:flex"
+            className="hidden items-center gap-(--e-1) text-xs text-(--tinta-2) sm:flex"
           >
             <Icone nome="check" tamanho={12} />
             Rascunho salvo às {horaDe(salvoEm)}
@@ -92,9 +88,9 @@ export function MolduraCadastro({
 
       <nav
         aria-label="Passos do cadastro"
-        className="shrink-0 overflow-x-auto border-b bg-(--surface)"
+        className="shrink-0 overflow-x-auto border-b bg-(--folha)"
       >
-        <ol className="flex min-w-max items-center gap-(--space-100) px-(--space-200) py-(--space-150) md:px-(--space-300)">
+        <ol className="flex min-w-max items-center gap-(--e-2) px-(--e-4) py-(--e-3) md:px-(--e-6)">
           {PASSOS.map((item, indice) => {
             const feito = indice < indiceAtual
             const atual = indice === indiceAtual
@@ -104,11 +100,10 @@ export function MolduraCadastro({
                 <span
                   aria-hidden="true"
                   className={cn(
-                    'inline-flex size-6 shrink-0 items-center justify-center rounded-(--radius) border rotulo',
-                    atual && 'border-(--brand) bg-(--brand) text-(--text-inverse)',
-                    feito &&
-                      'border-(--surface-selected) bg-(--surface-selected) text-(--text-link)',
-                    !atual && !feito && 'border-(--border-strong) text-(--text-subtle)',
+                    'inline-flex size-6 shrink-0 items-center justify-center rounded-(--raio) border rotulo',
+                    atual && 'border-(--acao) bg-(--acao) text-(--acao-texto)',
+                    feito && 'border-(--escolha) bg-(--escolha) text-(--link)',
+                    !atual && !feito && 'border-(--regra-forte) text-(--tinta-2)',
                   )}
                 >
                   {feito ? <Icone nome="check" tamanho={12} /> : indice + 1}
@@ -116,9 +111,9 @@ export function MolduraCadastro({
                 <span
                   className={cn(
                     'whitespace-nowrap',
-                    atual ? 'corpo-medio text-(--text)' : 'corpo',
-                    feito && 'text-(--text)',
-                    !atual && !feito && 'text-(--text-subtle)',
+                    atual ? 'corpo-medio text-(--tinta)' : 'corpo',
+                    feito && 'text-(--tinta)',
+                    !atual && !feito && 'text-(--tinta-2)',
                   )}
                 >
                   {item.rotulo}
@@ -129,28 +124,25 @@ export function MolduraCadastro({
             return (
               <li
                 key={item.chave}
-                className={cn(
-                  'flex items-center gap-(--space-100)',
-                  ultimo ? 'flex-none' : 'flex-1',
-                )}
+                className={cn('flex items-center gap-(--e-2)', ultimo ? 'flex-none' : 'flex-1')}
               >
                 {feito && instrumentoId ? (
                   <Link
                     to={`/licencas/${instrumentoId}/${item.chave}`}
-                    className="flex items-center gap-(--space-100) no-underline hover:no-underline"
+                    className="flex items-center gap-(--e-2) no-underline hover:no-underline"
                   >
                     {conteudo}
                   </Link>
                 ) : (
                   <span
-                    className="flex items-center gap-(--space-100)"
+                    className="flex items-center gap-(--e-2)"
                     aria-current={atual ? 'step' : undefined}
                   >
                     {conteudo}
                   </span>
                 )}
                 {ultimo ? null : (
-                  <span aria-hidden="true" className="h-px min-w-3 flex-1 bg-(--border)" />
+                  <span aria-hidden="true" className="h-px min-w-3 flex-1 bg-(--regra)" />
                 )}
               </li>
             )
@@ -162,14 +154,12 @@ export function MolduraCadastro({
         {larga ? (
           children
         ) : (
-          <div className="mx-auto w-full max-w-[880px] p-(--space-200) md:p-(--space-300)">
-            {children}
-          </div>
+          <div className="mx-auto w-full max-w-[880px] p-(--e-4) md:p-(--e-6)">{children}</div>
         )}
       </main>
 
       {rodape ? (
-        <footer className="flex shrink-0 flex-wrap items-center gap-(--space-150) border-t bg-(--surface) px-(--space-200) py-(--space-150) md:px-(--space-300)">
+        <footer className="flex shrink-0 flex-wrap items-center gap-(--e-3) border-t bg-(--folha) px-(--e-4) py-(--e-3) md:px-(--e-6)">
           {rodape}
         </footer>
       ) : null}
@@ -204,7 +194,7 @@ export function RodapeCadastro({
           {salvando ? 'Salvando…' : 'Salvar rascunho'}
         </Botao>
       ) : null}
-      <span className="min-w-0 flex-1 text-xs text-(--text-subtle)" aria-live="polite">
+      <span className="min-w-0 flex-1 text-xs text-(--tinta-2)" aria-live="polite">
         {aviso}
       </span>
       {voltarPara ? (

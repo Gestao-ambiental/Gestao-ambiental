@@ -42,17 +42,17 @@ const ROTULO_CURTO_DA_SITUACAO: Record<string, string> = {
 
 function Cartao({ rotulo, valor }: { rotulo: string; valor: string }) {
   return (
-    <div className="flex flex-col gap-(--space-025) rounded-(--radius-large) border bg-(--surface) p-(--space-150) shadow-cartao">
+    <div className="flex flex-col gap-(--e-05) rounded-(--raio-painel) border bg-(--folha) p-(--e-3) shadow-cartao">
       <dt className="rotulo">{rotulo}</dt>
-      <dd className="titulo-secao text-(--text) tabular-nums">{valor}</dd>
+      <dd className="titulo-secao text-(--tinta) tabular-nums">{valor}</dd>
     </div>
   )
 }
 
 function Numeros({ r, catalogo }: { r: ResumoFinanceiro; catalogo: CatalogoComercial }) {
   return (
-    <section aria-label="Números do Financeiro" className="flex flex-col gap-(--space-150)">
-      <dl className="grid grid-cols-2 gap-(--space-100) md:grid-cols-4">
+    <section aria-label="Números do Financeiro" className="flex flex-col gap-(--e-3)">
+      <dl className="grid grid-cols-2 gap-(--e-2) md:grid-cols-4">
         <Cartao rotulo="MRR" valor={formatarReais(r.mrrCentavos)} />
         <Cartao rotulo="Ticket médio" valor={formatarReais(r.ticketMedioCentavos)} />
         <Cartao rotulo="Mensal × anual" valor={`${String(r.mensais)} × ${String(r.anuais)}`} />
@@ -67,11 +67,11 @@ function Numeros({ r, catalogo }: { r: ResumoFinanceiro; catalogo: CatalogoComer
         <Cartao rotulo="Cancelados" valor={String(r.cancelados)} />
         <Cartao rotulo="Teste encerrado" valor={String(r.testeEncerrado)} />
       </dl>
-      <section aria-labelledby="receita-por-plano" className="flex flex-col gap-(--space-075)">
-        <h2 id="receita-por-plano" className="titulo-secao text-(--text)">
+      <section aria-labelledby="receita-por-plano" className="flex flex-col gap-(--e-15)">
+        <h2 id="receita-por-plano" className="titulo-secao text-(--tinta)">
           Receita mensal por plano
         </h2>
-        <dl className="grid grid-cols-1 gap-(--space-100) sm:grid-cols-3">
+        <dl className="grid grid-cols-1 gap-(--e-2) sm:grid-cols-3">
           {(['essencial', 'equipe', 'escala'] as const).map((p) => (
             <Cartao
               key={p}
@@ -124,11 +124,11 @@ function Lista({
     return <EstadoVazio icone="briefcase" titulo="Nenhuma consultoria neste grupo" />
 
   return (
-    <div className="flex flex-col gap-(--space-100)">
+    <div className="flex flex-col gap-(--e-2)">
       <div
         role="region"
         aria-label="Consultorias do Financeiro"
-        className="overflow-x-auto rounded-(--radius-large) border bg-(--surface) shadow-cartao"
+        className="overflow-x-auto rounded-(--raio-painel) border bg-(--folha) shadow-cartao"
       >
         <table className="w-full border-collapse corpo">
           <thead>
@@ -150,7 +150,7 @@ function Lista({
           <tbody>
             {itens.map((l) => (
               <tr key={l.id} className="last:[&>td]:border-b-0">
-                <td className={`${classeCelula} py-(--space-100)`}>
+                <td className={`${classeCelula} py-(--e-2)`}>
                   <Link to={`/admin/consultorias/${l.id}`} className="corpo-medio">
                     {l.nome}
                   </Link>
@@ -227,9 +227,9 @@ export function PaginaCentralFinanceiro() {
     conteudo = (
       <>
         <Numeros r={resumo.data} catalogo={catalogo.data} />
-        <section aria-labelledby="financeiro-lista" className="flex flex-col gap-(--space-150)">
-          <div className="flex flex-wrap items-center justify-between gap-(--space-100)">
-            <h2 id="financeiro-lista" className="titulo-secao text-(--text)">
+        <section aria-labelledby="financeiro-lista" className="flex flex-col gap-(--e-3)">
+          <div className="flex flex-wrap items-center justify-between gap-(--e-2)">
+            <h2 id="financeiro-lista" className="titulo-secao text-(--tinta)">
               Consultorias
             </h2>
             <label className="flex min-w-0 flex-1 sm:flex-none">
@@ -240,7 +240,7 @@ export function PaginaCentralFinanceiro() {
                   const novo = grupoOuNulo(evento.target.value)
                   setParametros(novo ? { grupo: novo } : {}, { replace: true })
                 }}
-                className="h-(--size-control) w-full rounded-(--radius) border border-(--border-input) bg-(--surface-input) px-(--space-100) corpo text-(--text) sm:w-auto"
+                className="h-(--controle) w-full rounded-(--raio) border border-(--campo-borda) bg-(--campo) px-(--e-2) corpo text-(--tinta) sm:w-auto"
               >
                 <option value="">Todas</option>
                 {GRUPOS_FINANCEIROS.map((g) => (
@@ -257,7 +257,7 @@ export function PaginaCentralFinanceiro() {
     )
 
   return (
-    <div className="flex flex-col gap-(--space-300)">
+    <div className="flex flex-col gap-(--e-6)">
       <Pagina titulo="Financeiro">{null}</Pagina>
       {conteudo}
     </div>

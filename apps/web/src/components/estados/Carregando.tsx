@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 interface Props {
   /** Texto lido por leitores de tela enquanto carrega. */
   rotulo?: string
-  /** Linhas do esqueleto, no ritmo de tabela (40px). */
+  /** Linhas do esqueleto, no ritmo do quadro (48px). */
   linhas?: number
   className?: string
 }
@@ -15,7 +15,7 @@ export function Carregando({ rotulo = 'Carregando', linhas = 5, className }: Pro
     <div
       role="status"
       aria-live="polite"
-      className={cn('rounded-(--radius-large) border bg-(--surface) shadow-cartao', className)}
+      className={cn('rounded-(--raio-painel) border bg-(--folha)', className)}
     >
       <span className="sr-only">{rotulo}</span>
       <EsqueletoLinhas linhas={linhas} />

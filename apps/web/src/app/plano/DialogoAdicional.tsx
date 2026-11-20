@@ -91,7 +91,7 @@ export function DialogoAdicional({ recurso, aberto, aoMudar, aoConfirmado }: Pro
       }
     >
       {passagem && catalogo && s?.planoVigente ? (
-        <dl className="grid grid-cols-[1fr_auto] gap-x-(--space-200) gap-y-(--space-075)">
+        <dl className="grid grid-cols-[1fr_auto] gap-x-(--e-4) gap-y-(--e-15)">
           <dt>{nome.titulo}</dt>
           <dd className="text-right tabular-nums">
             {passagem.quantidade} de {passagem.limite} no plano{' '}
@@ -108,7 +108,7 @@ export function DialogoAdicional({ recurso, aberto, aoMudar, aoConfirmado }: Pro
         </dl>
       ) : null}
       {confirmar.isError ? (
-        <p role="alert" className="text-(--text-danger)">
+        <p role="alert" className="text-(--atraso-texto)">
           {mensagemDoErro(confirmar.error)}
         </p>
       ) : null}

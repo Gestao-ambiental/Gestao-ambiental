@@ -24,17 +24,16 @@ import { AlertasDeSemUso, ResumoDeUsoNaCentral } from './UsoNaCentral'
 import { TOM_DA_SITUACAO, classeCabecalho, classeCelula, plural, ultimoUsoComoData } from './comum'
 
 const classeCampoFiltro =
-  'h-(--size-control) rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) corpo text-(--text) outline-none transicao-estado focus:border-b-(--border-input-active) focus:shadow-[inset_0_-1px_0_0_var(--border-input-active)] focus:bg-(--surface-input-focus)'
+  'h-(--controle) rounded-(--raio) border border-(--campo-borda) border-b-(--campo-borda) bg-(--campo) corpo text-(--tinta) outline-none transicao-estado focus:border-b-(--campo-borda-ativa) focus:shadow-[inset_0_-1px_0_0_var(--campo-borda-ativa)] focus:bg-(--campo-foco)'
 
 function Gestao({ item }: { item: ConsultoriaNaCentral }) {
-  if (item.gestao.length === 0)
-    return <span className="text-(--text-subtle)">Sem Gestão ativa</span>
+  if (item.gestao.length === 0) return <span className="text-(--tinta-2)">Sem Gestão ativa</span>
   return (
-    <ul className="flex flex-col gap-(--space-025)">
+    <ul className="flex flex-col gap-(--e-05)">
       {item.gestao.map((pessoa) => (
         <li key={pessoa.email} className="flex min-w-0 flex-col">
           <span className="truncate">{pessoa.nome}</span>
-          <span className="truncate text-xs text-(--text-subtle)">{pessoa.email}</span>
+          <span className="truncate text-xs text-(--tinta-2)">{pessoa.email}</span>
         </li>
       ))}
     </ul>
@@ -121,8 +120,8 @@ export function PaginaCentral() {
     )
   } else {
     conteudo = (
-      <div className="flex flex-col gap-(--space-100)">
-        <div className="hidden overflow-x-auto rounded-(--radius-large) border bg-(--surface) shadow-cartao md:block">
+      <div className="flex flex-col gap-(--e-2)">
+        <div className="hidden overflow-x-auto rounded-(--raio-painel) border bg-(--folha) shadow-cartao md:block">
           <table className="w-full border-collapse corpo">
             <thead>
               <tr>
@@ -156,26 +155,26 @@ export function PaginaCentral() {
               {itens.map((item) => (
                 <tr
                   key={item.id}
-                  className="cursor-pointer transicao-estado hover:bg-(--surface-hover) last:[&>td]:border-b-0"
+                  className="cursor-pointer transicao-estado hover:bg-(--toque) last:[&>td]:border-b-0"
                   onClick={() => {
                     void navegar(`/admin/consultorias/${item.id}`)
                   }}
                 >
-                  <td className={`${classeCelula} py-(--space-100)`}>
+                  <td className={`${classeCelula} py-(--e-2)`}>
                     <Link
                       to={`/admin/consultorias/${item.id}`}
-                      className="corpo-medio text-(--text) hover:text-(--text)"
+                      className="corpo-medio text-(--tinta) hover:text-(--tinta)"
                       onClick={(evento) => {
                         evento.stopPropagation()
                       }}
                     >
                       {item.nome}
                     </Link>
-                    <span className="block text-xs text-(--text-subtle)">
+                    <span className="block text-xs text-(--tinta-2)">
                       Criada em {formatarInstanteComoData(item.criadaEm, item.fuso)}
                     </span>
                   </td>
-                  <td className={`${classeCelula} max-w-64 py-(--space-100)`}>
+                  <td className={`${classeCelula} max-w-64 py-(--e-2)`}>
                     <Gestao item={item} />
                   </td>
                   <td className={`${classeCelula} text-right tabular-nums`}>
@@ -198,40 +197,40 @@ export function PaginaCentral() {
               ))}
             </tbody>
           </table>
-          <p className="border-t px-(--space-150) py-(--space-100) text-xs text-(--text-subtle)">
+          <p className="border-t px-(--e-3) py-(--e-2) text-xs text-(--tinta-2)">
             {plural(total, 'consultoria', 'consultorias')}
           </p>
         </div>
 
-        <ul className="flex flex-col gap-(--space-100) md:hidden" aria-label="Consultorias">
+        <ul className="flex flex-col gap-(--e-2) md:hidden" aria-label="Consultorias">
           {itens.map((item) => (
             <li
               key={item.id}
-              className="flex flex-col rounded-(--radius-large) border bg-(--surface) shadow-cartao"
+              className="flex flex-col rounded-(--raio-painel) border bg-(--folha) shadow-cartao"
             >
               <Link
                 to={`/admin/consultorias/${item.id}`}
-                className="flex flex-col gap-(--space-075) rounded-(--radius-large) p-(--space-150) text-(--text) no-underline hover:bg-(--surface-hover) hover:text-(--text) hover:no-underline"
+                className="flex flex-col gap-(--e-15) rounded-(--raio-painel) p-(--e-3) text-(--tinta) no-underline hover:bg-(--toque) hover:text-(--tinta) hover:no-underline"
               >
-                <span className="flex items-center justify-between gap-(--space-100)">
+                <span className="flex items-center justify-between gap-(--e-2)">
                   <Selo tom={TOM_DA_SITUACAO[item.situacao]}>
                     {ROTULO_SITUACAO_CONSULTORIA[item.situacao]}
                   </Selo>
-                  <Icone nome="chevron-right" className="text-(--icon)" />
+                  <Icone nome="chevron-right" className="text-(--icone)" />
                 </span>
                 <span className="corpo-medio">{item.nome}</span>
-                <span className="text-xs text-(--text-subtle)">
+                <span className="text-xs text-(--tinta-2)">
                   {item.gestao.length > 0
                     ? item.gestao.map((p) => `${p.nome} · ${p.email}`).join(', ')
                     : 'Sem Gestão ativa'}
                 </span>
-                <span className="text-xs text-(--text)">
+                <span className="text-xs text-(--tinta)">
                   {plural(item.pessoasAtivas, 'pessoa', 'pessoas')} ·{' '}
                   {plural(item.orcamentos, 'orçamento', 'orçamentos')} ·{' '}
                   {plural(item.empreendimentos, 'empreendimento', 'empreendimentos')} ·{' '}
                   {plural(item.licencas, 'licença', 'licenças')}
                 </span>
-                <span className="text-xs text-(--text-subtle)">
+                <span className="text-xs text-(--tinta-2)">
                   Criada em {formatarInstanteComoData(item.criadaEm, item.fuso)} · Último uso:{' '}
                   {ultimoUsoComoData(item.ultimoUsoEm, item.fuso, agora)}
                 </span>
@@ -239,7 +238,7 @@ export function PaginaCentral() {
             </li>
           ))}
         </ul>
-        <p className="text-xs text-(--text-subtle) md:hidden">
+        <p className="text-xs text-(--tinta-2) md:hidden">
           {plural(total, 'consultoria', 'consultorias')}
         </p>
 
@@ -257,21 +256,21 @@ export function PaginaCentral() {
   }
 
   return (
-    <div className="flex flex-col gap-(--space-300)">
+    <div className="flex flex-col gap-(--e-6)">
       <Pagina titulo="Consultorias">{null}</Pagina>
       <ResumoDeUsoNaCentral />
       <AlertasDeSemUso />
-      <section aria-labelledby="central-lista" className="flex flex-col gap-(--space-150)">
-        <div className="flex flex-wrap items-center justify-between gap-(--space-100)">
-          <h2 id="central-lista" className="titulo-secao text-(--text)">
+      <section aria-labelledby="central-lista" className="flex flex-col gap-(--e-3)">
+        <div className="flex flex-wrap items-center justify-between gap-(--e-2)">
+          <h2 id="central-lista" className="titulo-secao text-(--tinta)">
             Todas as consultorias
           </h2>
-          <div className="flex w-full flex-wrap items-center gap-(--space-100) sm:w-auto">
+          <div className="flex w-full flex-wrap items-center gap-(--e-2) sm:w-auto">
             <label className="relative flex min-w-0 flex-1 items-center sm:flex-none">
               <span className="sr-only">Buscar consultoria pelo nome</span>
               <Icone
                 nome="search"
-                className="pointer-events-none absolute left-(--space-100) text-(--icon-subtle)"
+                className="pointer-events-none absolute left-(--e-2) text-(--icone-2)"
               />
               <input
                 ref={campoBusca}
@@ -281,7 +280,7 @@ export function PaginaCentral() {
                 onChange={(evento) => {
                   setBusca(evento.target.value)
                 }}
-                className={`${classeCampoFiltro} w-full pr-(--space-100) pl-(--space-400) sm:w-[260px]`}
+                className={`${classeCampoFiltro} w-full pr-(--e-2) pl-(--e-8) sm:w-[260px]`}
               />
             </label>
             <label className="flex min-w-0 flex-1 sm:flex-none">
@@ -291,7 +290,7 @@ export function PaginaCentral() {
                 onChange={(evento) => {
                   escolherSituacao(situacaoConsultoriaOuNula(evento.target.value))
                 }}
-                className={`${classeCampoFiltro} w-full px-(--space-100) sm:w-auto`}
+                className={`${classeCampoFiltro} w-full px-(--e-2) sm:w-auto`}
               >
                 <option value="">Todas as situações</option>
                 {SITUACOES_CONSULTORIA.map((s) => (

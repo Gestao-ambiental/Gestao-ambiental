@@ -6,34 +6,37 @@ import { cn } from '@/lib/utils'
 
 import { Icone, type NomeIcone } from './icone'
 
-/** Botão do Fluent 2 (ADR-0015): 32px (24 compacto), raio 4px, rótulo semibold; padrão com contorno. */
+/**
+ * Botão do quadro de partidas: 36px (44 no celular), raio 6px, rótulo em Overpass 650.
+ * Primário = verde-placa (lima no escuro). Padrão = contorno de regra forte. Sem sombra.
+ */
 export const variantesBotao = cva(
   [
-    'inline-flex items-center justify-center gap-(--space-050) whitespace-nowrap',
-    'h-(--size-control) px-(--space-150) rounded-(--radius) border corpo-medio',
-    'cursor-pointer transicao-estado select-none',
-    'disabled:cursor-not-allowed disabled:text-(--text-disabled)',
+    'inline-flex items-center justify-center gap-(--e-2) whitespace-nowrap',
+    'h-(--controle) max-md:min-h-(--controle-toque) px-(--e-4) rounded-(--raio) border corpo-medio',
+    'cursor-pointer transicao-estado select-none active:translate-y-px',
+    'disabled:cursor-not-allowed disabled:text-(--tinta-off) disabled:active:translate-y-0',
   ],
   {
     variants: {
       aparencia: {
         primario:
-          'border-transparent bg-(--brand) text-(--text-inverse) hover:bg-(--brand-hover) active:bg-(--brand-pressed) disabled:bg-(--surface-disabled)',
+          'border-transparent bg-(--acao) text-(--acao-texto) hover:bg-(--acao-toque) active:bg-(--acao-aperto) disabled:bg-(--off)',
         padrao:
-          'border-(--border-strong) bg-(--surface) text-(--text) hover:bg-(--surface-hover) active:bg-(--surface-pressed) disabled:border-(--border) disabled:bg-(--surface-disabled)',
+          'border-(--regra-forte) bg-(--folha) text-(--tinta) hover:border-(--tinta-3) hover:bg-(--toque) active:bg-(--aperto) disabled:border-(--regra) disabled:bg-(--off)',
         sutil:
-          'border-transparent bg-transparent text-(--text) hover:bg-(--neutral-subtle-hover) active:bg-(--neutral-subtle-pressed) disabled:bg-transparent',
+          'border-transparent bg-transparent text-(--tinta) hover:bg-(--toque) active:bg-(--aperto) disabled:bg-transparent',
         perigo:
-          'border-transparent bg-(--danger) text-(--text-on-danger) hover:bg-(--danger-hover) active:bg-(--danger-pressed) disabled:bg-(--surface-disabled)',
-        link: 'border-transparent bg-transparent px-(--space-025) text-(--text-link) hover:underline disabled:no-underline',
+          'border-transparent bg-(--atraso) text-(--tinta-inversa) hover:bg-(--atraso-toque) disabled:bg-(--off)',
+        link: 'h-auto border-transparent bg-transparent px-(--e-05) text-(--link) underline-offset-[3px] hover:underline disabled:no-underline max-md:min-h-0',
       },
       tamanho: {
         padrao: '',
-        compacto: 'h-(--size-control-sm) px-(--space-100)',
+        compacto: 'h-(--controle-mini) px-(--e-3) gap-(--e-15)',
       },
       larguraTotal: { true: 'flex w-full', false: '' },
       selecionado: {
-        true: 'bg-(--surface-selected) text-(--text-link) hover:bg-(--surface-selected-hover)',
+        true: 'border-(--marca-linha) bg-(--escolha) text-(--tinta) hover:bg-(--escolha-toque)',
         false: '',
       },
     },
@@ -41,7 +44,7 @@ export const variantesBotao = cva(
       {
         aparencia: 'primario',
         selecionado: true,
-        className: 'bg-(--brand-pressed) text-(--text-inverse)',
+        className: 'bg-(--acao-aperto) text-(--acao-texto)',
       },
     ],
     defaultVariants: {
@@ -61,7 +64,7 @@ type Props = ComponentProps<'button'> &
     asChild?: boolean
   }
 
-/** Botão de 32px (24px compacto): rótulo primeiro, ícone opcional, sem sombra. */
+/** Botão: rótulo primeiro, ícone opcional, sem sombra. */
 export function Botao({
   aparencia,
   tamanho,

@@ -41,8 +41,8 @@ export function PaginaDadosDaProposta() {
   }
   return (
     <Pagina titulo="Dados da proposta">
-      <div className="flex max-w-3xl flex-col gap-(--space-200)">
-        <p className="text-(--text-subtle)">
+      <div className="flex max-w-3xl flex-col gap-(--e-4)">
+        <p className="text-(--tinta-2)">
           Aparecem no topo de toda proposta. Só a gestão edita. O texto de apresentação é o padrão;
           cada orçamento pode ter o seu. <Link to="/orcamentos">Voltar aos orçamentos</Link>
         </p>
@@ -159,10 +159,10 @@ function Formulario({
   }
 
   return (
-    <div className="flex flex-col gap-(--space-200)">
-      <section aria-label="Logo" className="flex flex-col gap-(--space-100)">
+    <div className="flex flex-col gap-(--e-4)">
+      <section aria-label="Logo" className="flex flex-col gap-(--e-2)">
         <Titulo className="corpo-medio">Logo</Titulo>
-        <div className="flex flex-wrap items-center gap-(--space-150)">
+        <div className="flex flex-wrap items-center gap-(--e-3)">
           {identidade.logoUrl ? (
             <img
               src={identidade.logoUrl}
@@ -170,7 +170,7 @@ function Formulario({
               className="h-16 max-w-48 object-contain"
             />
           ) : (
-            <span className="text-xs text-(--text-subtle)">Sem logo.</span>
+            <span className="text-xs text-(--tinta-2)">Sem logo.</span>
           )}
           <input
             ref={entrada}
@@ -218,7 +218,7 @@ function Formulario({
           <span className="rotulo">PNG ou JPEG, até 2 MB.</span>
         </div>
         {identidade.rowVersion === 0 ? (
-          <p className="text-xs text-(--text-subtle)">
+          <p className="text-xs text-(--tinta-2)">
             Salve os dados abaixo para habilitar o envio da logo.
           </p>
         ) : null}
@@ -229,9 +229,9 @@ function Formulario({
         ) : null}
       </section>
 
-      <section aria-label="Dados da consultoria" className="flex flex-col gap-(--space-150)">
+      <section aria-label="Dados da consultoria" className="flex flex-col gap-(--e-3)">
         <Titulo className="corpo-medio">Dados da consultoria</Titulo>
-        <div className="grid gap-(--space-150) sm:grid-cols-2">
+        <div className="grid gap-(--e-3) sm:grid-cols-2">
           <Campo rotulo="Razão social" {...campo('razaoSocial')} />
           <Campo rotulo="CNPJ" inputMode="text" {...campo('cnpj')} />
           <Campo rotulo="Telefone" inputMode="tel" {...campo('telefone')} />
@@ -285,7 +285,7 @@ function Campo({
 }) {
   const id = useId()
   return (
-    <label htmlFor={id} className="flex flex-col gap-(--space-050)">
+    <label htmlFor={id} className="flex flex-col gap-(--e-1)">
       <span className="rotulo">{rotulo}</span>
       <input
         id={id}
@@ -312,7 +312,7 @@ function CampoTexto({
   const id = useId()
   const idApoio = useId()
   return (
-    <div className="flex flex-col gap-(--space-050)">
+    <div className="flex flex-col gap-(--e-1)">
       <label htmlFor={id} className="rotulo">
         {rotulo}
       </label>
@@ -325,7 +325,7 @@ function CampoTexto({
         value={value}
         onChange={onChange}
       />
-      <span id={idApoio} className="text-xs text-(--text-subtle)">
+      <span id={idApoio} className="text-xs text-(--tinta-2)">
         {apoio}
       </span>
     </div>

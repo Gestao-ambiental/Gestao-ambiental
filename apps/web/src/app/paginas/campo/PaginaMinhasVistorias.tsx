@@ -60,13 +60,13 @@ function CartaoDaVistoria({
           .filter(Boolean)
           .join(' · ')
   return (
-    <li className={`${classeCartao} flex flex-col gap-(--space-075) p-(--space-150)`}>
-      <div className="flex flex-wrap items-center justify-between gap-(--space-100)">
+    <li className={`${classeCartao} flex flex-col gap-(--e-15) p-(--e-3)`}>
+      <div className="flex flex-wrap items-center justify-between gap-(--e-2)">
         <SeloDaVistoria situacao={vistoria.situacao} />
         <span className="corpo-medio">
           {quando}
           {grupo === 'atrasadas' ? (
-            <span className="text-(--text-danger)">
+            <span className="text-(--atraso-texto)">
               {' '}
               · {plural(atraso, 'dia', 'dias')} de atraso
             </span>
@@ -76,18 +76,18 @@ function CartaoDaVistoria({
       <h3 className="titulo-secao">
         <Link to={`/campo/${vistoria.id}`}>{vistoria.titulo}</Link>
       </h3>
-      <p className="corpo text-(--text-subtle)">
+      <p className="corpo text-(--tinta-2)">
         {[vistoria.empreendimentoNome, vistoria.unidadeNome].join(' · ')}
       </p>
-      <p className="flex flex-wrap items-center gap-(--space-150) text-xs text-(--text-subtle)">
+      <p className="flex flex-wrap items-center gap-(--e-3) text-xs text-(--tinta-2)">
         {vistoria.licenca ? (
-          <span className="inline-flex items-center gap-(--space-050)">
+          <span className="inline-flex items-center gap-(--e-1)">
             <Icone nome="file-text" tamanho={12} />
             {vistoria.licenca}
           </span>
         ) : null}
         {vistoria.duracaoMinutos ? (
-          <span className="inline-flex items-center gap-(--space-050)">
+          <span className="inline-flex items-center gap-(--e-1)">
             <Icone nome="clock" tamanho={12} />
             {vistoria.duracaoMinutos} min
           </span>
@@ -144,19 +144,19 @@ export function PaginaMinhasVistorias() {
 
   return (
     <ColunaCampo>
-      <header className="flex flex-col gap-(--space-050)">
-        <p className="corpo text-(--text-subtle)">
+      <header className="flex flex-col gap-(--e-1)">
+        <p className="corpo text-(--tinta-2)">
           {nomeDoDiaDaSemana(hoje)}, {formatarDataCivil(hoje)}
         </p>
-        <h1 className="titulo-tela text-(--text)">{titulo}</h1>
+        <h1 className="titulo-tela text-(--tinta)">{titulo}</h1>
         {consulta.isSuccess ? (
-          <p className="corpo text-(--text-subtle)">
+          <p className="corpo text-(--tinta-2)">
             {plural(abertas, 'vistoria aberta', 'vistorias abertas')}
           </p>
         ) : null}
       </header>
 
-      <div role="group" aria-label="Quais vistorias" className="flex gap-(--space-100)">
+      <div role="group" aria-label="Quais vistorias" className="flex gap-(--e-2)">
         <Botao
           className={`${classeAlvo} flex-1`}
           selecionado={somenteMinhas}
@@ -198,17 +198,17 @@ export function PaginaMinhasVistorias() {
               <section
                 key={grupo}
                 aria-labelledby={`grupo-${grupo}`}
-                className="flex flex-col gap-(--space-100)"
+                className="flex flex-col gap-(--e-2)"
               >
                 <div className="flex items-baseline justify-between">
-                  <h2 id={`grupo-${grupo}`} className="titulo-secao text-(--text)">
+                  <h2 id={`grupo-${grupo}`} className="titulo-secao text-(--tinta)">
                     {ROTULO_DO_GRUPO[grupo]}
                   </h2>
-                  <span className="text-xs text-(--text-subtle)">
+                  <span className="text-xs text-(--tinta-2)">
                     {plural(lista.length, 'vistoria', 'vistorias')}
                   </span>
                 </div>
-                <ul className="flex flex-col gap-(--space-100)">
+                <ul className="flex flex-col gap-(--e-2)">
                   {lista.map((vistoria) => (
                     <CartaoDaVistoria
                       key={vistoria.id}

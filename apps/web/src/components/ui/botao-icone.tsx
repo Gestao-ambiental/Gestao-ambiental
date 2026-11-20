@@ -15,7 +15,6 @@ type Props = Omit<ComponentProps<'button'>, 'children'> & {
 
 /**
  * Botão quadrado só com ícone (barra de ferramentas, ação de linha, navegação).
- * Referência: docs/design-system/referencia-componentes/core/IconButton.jsx.
  */
 export function BotaoIcone({
   icone,
@@ -34,19 +33,21 @@ export function BotaoIcone({
       aria-label={rotulo}
       title={rotulo}
       className={cn(
-        'inline-flex shrink-0 cursor-pointer items-center justify-center rounded-(--radius) border p-0 transicao-estado',
-        'disabled:cursor-not-allowed disabled:text-(--text-disabled)',
-        compacto ? 'size-(--size-control-sm)' : 'size-(--size-control)',
-        aparencia === 'padrao' ? 'border-(--border)' : 'border-transparent',
+        'inline-flex shrink-0 cursor-pointer items-center justify-center rounded-(--raio) border p-0 transicao-estado active:translate-y-px',
+        'disabled:cursor-not-allowed disabled:text-(--tinta-off)',
+        compacto ? 'size-(--controle-mini)' : 'size-(--controle)',
+        // Alvo de 44px no celular (WCAG 2.5.8 com folga para o campo).
+        'max-md:size-(--controle-toque)',
+        aparencia === 'padrao' ? 'border-(--regra-forte)' : 'border-transparent',
         aparencia === 'primario'
-          ? 'bg-(--brand) text-(--icon-inverse) hover:bg-(--brand-hover) active:bg-(--brand-pressed)'
-          : 'bg-transparent text-(--icon) hover:bg-(--neutral-subtle-hover) active:bg-(--neutral-subtle-pressed)',
-        selecionado && aparencia !== 'primario' && 'bg-(--surface-selected) text-(--text-link)',
+          ? 'bg-(--acao) text-(--acao-texto) hover:bg-(--acao-toque) active:bg-(--acao-aperto)'
+          : 'bg-transparent text-(--icone) hover:bg-(--toque) active:bg-(--aperto)',
+        selecionado && aparencia !== 'primario' && 'bg-(--escolha) text-(--tinta)',
         className,
       )}
       {...rest}
     >
-      <Icone nome={icone} tamanho={compacto ? 12 : 16} />
+      <Icone nome={icone} tamanho={compacto ? 16 : 18} />
     </button>
   )
 }

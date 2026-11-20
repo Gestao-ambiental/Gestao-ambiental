@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 
 import type { NomeIcone } from './nomes-icones'
 
-// Fluent System Icons (ADR-0015, ver assets/icons/LEIA-ME.md), servidos pelo Vite (pequenos viram data URI no build).
+// Phosphor Icons, peso bold (ver assets/icons/LEIA-ME.md), servidos pelo Vite (pequenos viram data URI no build).
 const urls = import.meta.glob<string>('../../assets/icons/*.svg', {
   eager: true,
   query: '?url',
@@ -22,15 +22,14 @@ export type { NomeIcone }
 
 interface Props extends Omit<ComponentProps<'span'>, 'children'> {
   nome: NomeIcone
-  /** 16 padrão, 12 em metadado, 24 só em estado vazio (design system). */
-  tamanho?: 12 | 16 | 24
+  /** 16 padrão, 12 em metadado, 18 em botão de ícone, 20 no trilho, 24 e 32 em estado vazio. */
+  tamanho?: 12 | 14 | 16 | 18 | 20 | 24 | 32
   /** Nome acessível. Sem ele o ícone é decorativo (aria-hidden). */
   rotulo?: string
 }
 
 /**
  * Ícone monocromático por máscara: a cor vem do texto ao redor (currentColor).
- * Referência: docs/design-system/referencia-componentes/core/Icon.jsx.
  */
 export function Icone({ nome, tamanho = 16, rotulo, className, style, ...rest }: Props) {
   const url = `url("${URL_DOS_ICONES[nome] ?? ''}")`

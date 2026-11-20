@@ -28,22 +28,22 @@ import { SeloRenovacao } from './SeloRenovacao'
 
 function Migalhas({ licenca }: { licenca?: string }) {
   return (
-    <nav aria-label="Caminho" className="flex items-center gap-(--space-050) corpo">
+    <nav aria-label="Caminho" className="flex items-center gap-(--e-1) corpo">
       <Link
         to="/acompanhamentos"
         aria-label="Voltar para Acompanhamentos"
         title="Voltar para Acompanhamentos"
-        className="inline-flex size-(--size-control) items-center justify-center rounded-(--radius) text-(--icon) transicao-estado hover:bg-(--neutral-subtle-hover)"
+        className="inline-flex size-(--controle) items-center justify-center rounded-(--raio) text-(--icone) transicao-estado hover:bg-(--toque)"
       >
         <Icone nome="chevron-left" />
       </Link>
       <Link to="/acompanhamentos">Acompanhamentos</Link>
       {licenca ? (
         <>
-          <span className="text-(--text-subtle)" aria-hidden="true">
+          <span className="text-(--tinta-2)" aria-hidden="true">
             /
           </span>
-          <span className="text-(--text-subtle)" aria-current="page">
+          <span className="text-(--tinta-2)" aria-current="page">
             Renovação da {licenca}
           </span>
         </>
@@ -80,31 +80,31 @@ function LinhaDoTempo({
   const pHoje = posicao(hoje, inicio, vencimento)
   const hojeVisivel = hoje >= inicio && hoje <= vencimento
   return (
-    <div className="flex flex-col gap-(--space-100)">
-      <div className="flex justify-between gap-(--space-200)">
+    <div className="flex flex-col gap-(--e-2)">
+      <div className="flex justify-between gap-(--e-4)">
         <p className="flex flex-col">
-          <span className="text-xs text-(--text-subtle)">Início da preparação</span>
+          <span className="text-xs text-(--tinta-2)">Início da preparação</span>
           <span className="corpo-medio">{formatarDataCivil(inicio)}</span>
         </p>
         <p className="flex flex-col items-end text-right">
-          <span className="text-xs text-(--text-danger)">Vencimento</span>
+          <span className="text-xs text-(--atraso-texto)">Vencimento</span>
           <span className="corpo-medio">{formatarDataCivil(vencimento)}</span>
         </p>
       </div>
       <div className="relative h-3" aria-hidden="true">
-        <div className="absolute top-1/2 right-0 left-0 h-1 -translate-y-1/2 rounded-full bg-(--border)" />
-        <span className="absolute top-0 left-0 size-3 rounded-[2px] bg-(--lozenge-inprogress-text)" />
+        <div className="absolute top-1/2 right-0 left-0 h-1 -translate-y-1/2 rounded-full bg-(--regra)" />
+        <span className="absolute top-0 left-0 size-3 rounded-[2px] bg-(--andamento-texto)" />
         {hojeVisivel ? (
           <span
-            className="absolute top-0 h-3 w-1 -translate-x-1/2 rounded-full bg-(--brand-stroke)"
+            className="absolute top-0 h-3 w-1 -translate-x-1/2 rounded-full bg-(--marca-linha)"
             style={{ left: `${String(pHoje)}%` }}
           />
         ) : null}
         <span
-          className="absolute top-0 size-3 -translate-x-1/2 rounded-[2px] bg-(--progress-warning)"
+          className="absolute top-0 size-3 -translate-x-1/2 rounded-[2px] bg-(--alerta-texto)"
           style={{ left: `${String(pLimite)}%` }}
         />
-        <span className="absolute top-0 right-0 size-3 rounded-[2px] bg-(--danger)" />
+        <span className="absolute top-0 right-0 size-3 rounded-[2px] bg-(--atraso)" />
       </div>
       <div className="relative h-10">
         {hojeVisivel && Math.abs(pHoje - pLimite) > 12 ? (
@@ -112,7 +112,7 @@ function LinhaDoTempo({
             className={cn('absolute top-0 flex flex-col', deslocamento(pHoje))}
             style={{ left: `${String(pHoje)}%` }}
           >
-            <span className="text-xs text-(--text-link)">Hoje</span>
+            <span className="text-xs text-(--link)">Hoje</span>
             <span className="corpo-medio">{formatarDataCivil(hoje).slice(0, 5)}</span>
           </p>
         ) : null}
@@ -120,7 +120,7 @@ function LinhaDoTempo({
           className={cn('absolute top-0 flex flex-col', deslocamento(pLimite))}
           style={{ left: `${String(pLimite)}%` }}
         >
-          <span className="text-xs text-(--text-warning)">Limite de protocolo</span>
+          <span className="text-xs text-(--alerta-texto)">Limite de protocolo</span>
           <span className="corpo-medio">{formatarDataCivil(limite)}</span>
         </p>
       </div>
@@ -155,7 +155,7 @@ function Antecedencia({
   const mudou = valido && dias !== plano.antecedencia
 
   return (
-    <div className="flex flex-col gap-(--space-050)">
+    <div className="flex flex-col gap-(--e-1)">
       {salvar.isError ? (
         <MensagemSecao role="alert" tom="perigo">
           {mensagemDoErro(salvar.error)}
@@ -164,7 +164,7 @@ function Antecedencia({
       <label htmlFor="antecedencia" className="rotulo">
         Antecedência adicional (dias)
       </label>
-      <div className="flex flex-wrap items-center gap-(--space-150)">
+      <div className="flex flex-wrap items-center gap-(--e-3)">
         <input
           id="antecedencia"
           inputMode="numeric"
@@ -175,9 +175,9 @@ function Antecedencia({
           onChange={(evento) => {
             aoMudarRascunho(evento.target.value.replace(/\D/g, '').slice(0, 4))
           }}
-          className="h-(--size-control) w-28 rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) px-(--space-100) corpo text-(--text) outline-none transicao-estado focus:border-b-(--border-input-active) focus:shadow-[inset_0_-1px_0_0_var(--border-input-active)] disabled:bg-(--surface-disabled) disabled:text-(--text-disabled)"
+          className="h-(--controle) w-28 rounded-(--raio) border border-(--campo-borda) border-b-(--campo-borda) bg-(--campo) px-(--e-2) corpo text-(--tinta) outline-none transicao-estado focus:border-b-(--campo-borda-ativa) focus:shadow-[inset_0_-1px_0_0_var(--campo-borda-ativa)] disabled:bg-(--off) disabled:text-(--tinta-off)"
         />
-        <span id="antecedencia-nota" className="text-xs text-(--text-subtle)">
+        <span id="antecedencia-nota" className="text-xs text-(--tinta-2)">
           {valido
             ? `Início da preparação ${formatarDataCivil(inicioPreparacao)} · limite continua ${formatarDataCivil(limiteProtocolo)}`
             : 'Use um número inteiro de 0 ou mais.'}
@@ -237,7 +237,7 @@ export function PaginaPlanoRenovacao() {
 
   if (plano.isPending) {
     return (
-      <div className="flex flex-col gap-(--space-200)">
+      <div className="flex flex-col gap-(--e-4)">
         <Migalhas />
         <Carregando rotulo="Carregando o plano de renovação" linhas={5} />
       </div>
@@ -245,7 +245,7 @@ export function PaginaPlanoRenovacao() {
   }
   if (plano.isError) {
     return (
-      <div className="flex flex-col gap-(--space-200)">
+      <div className="flex flex-col gap-(--e-4)">
         <Migalhas />
         {ehSemPermissao(plano.error) ? (
           <SemPermissao />
@@ -261,7 +261,7 @@ export function PaginaPlanoRenovacao() {
   if (!plano.data) {
     // Inexistente, de outra consultoria ou licença sem plano (só LAO ativa tem).
     return (
-      <div className="flex flex-col gap-(--space-200)">
+      <div className="flex flex-col gap-(--e-4)">
         <Migalhas />
         <h1 className="sr-only">Plano de renovação não encontrado</h1>
         <EstadoVazio
@@ -299,21 +299,21 @@ export function PaginaPlanoRenovacao() {
   })
 
   return (
-    <div className="flex flex-col gap-(--space-200)">
+    <div className="flex flex-col gap-(--e-4)">
       <Migalhas licenca={dados.licenca} />
 
-      <header className="flex flex-wrap items-start gap-(--space-150)">
+      <header className="flex flex-wrap items-start gap-(--e-3)">
         <SiglaEmpreendimento nome={dados.empreendimentoNome} grande />
-        <div className="flex min-w-0 flex-1 flex-col gap-(--space-025)">
-          <h1 className="titulo-tela text-(--text)">Renovação da {dados.licenca}</h1>
-          <p className="corpo text-(--text-subtle)">
+        <div className="flex min-w-0 flex-1 flex-col gap-(--e-05)">
+          <h1 className="titulo-tela text-(--tinta)">Renovação da {dados.licenca}</h1>
+          <p className="corpo text-(--tinta-2)">
             <Link to={`/empreendimentos/${dados.empreendimentoId}`}>
               {dados.empreendimentoNome}
             </Link>
             {dados.orgao ? ` · ${dados.orgao}` : ''}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-(--space-150)">
+        <div className="flex flex-wrap items-center gap-(--e-3)">
           <SeloRenovacao situacao={situacao} hoje={dados.hoje} />
           {podeEditar ? (
             <Botao
@@ -333,26 +333,26 @@ export function PaginaPlanoRenovacao() {
           tom="sucesso"
           titulo={`Protocolada em ${formatarDataCivil(dados.protocoladoEm)} · protocolo ${dados.protocoloNumero ?? ''}`}
         >
-          <span className="flex flex-wrap items-center gap-x-(--space-100)">
+          <span className="flex flex-wrap items-center gap-x-(--e-2)">
             {dados.comprovante ? (
               <button
                 type="button"
                 onClick={() => {
                   if (dados.comprovante) abrirComprovante.mutate(dados.comprovante.caminho)
                 }}
-                className="cursor-pointer text-(--text-link) hover:underline"
+                className="cursor-pointer text-(--link) hover:underline"
               >
                 {dados.comprovante.nome}
               </button>
             ) : null}
             {dados.registradoPorNome && dados.registradoEm ? (
-              <span className="text-xs text-(--text-subtle)">
+              <span className="text-xs text-(--tinta-2)">
                 Registrado por {dados.registradoPorNome} em{' '}
                 {formatarInstanteComHora(dados.registradoEm, atual.fuso)}
               </span>
             ) : null}
           </span>
-          <span className="mt-(--space-100) block">
+          <span className="mt-(--e-2) block">
             <AcompanhamentoOrgao
               key={dados.rowVersion}
               plano={dados}
@@ -372,7 +372,7 @@ export function PaginaPlanoRenovacao() {
 
       <section
         aria-label="Prazos da renovação"
-        className="flex flex-col gap-(--space-150) rounded-(--radius-large) border bg-(--surface) shadow-cartao p-(--space-150)"
+        className="flex flex-col gap-(--e-3) rounded-(--raio-painel) border bg-(--folha) shadow-cartao p-(--e-3)"
       >
         <LinhaDoTempo
           inicio={inicioPreparacao}
@@ -380,7 +380,7 @@ export function PaginaPlanoRenovacao() {
           vencimento={dados.validade}
           hoje={dados.hoje}
         />
-        <p className="text-xs text-(--text-subtle)">
+        <p className="text-xs text-(--tinta-2)">
           Limite = vencimento − {dados.diasLimite} dias corridos. Preparação = limite −
           antecedência.
         </p>
@@ -396,7 +396,7 @@ export function PaginaPlanoRenovacao() {
           }}
         />
         {!ehGestao ? (
-          <p className="text-xs text-(--text-subtle)">
+          <p className="text-xs text-(--tinta-2)">
             Só a Gestão muda a antecedência e registra o protocolo.
           </p>
         ) : null}
@@ -404,13 +404,13 @@ export function PaginaPlanoRenovacao() {
 
       <section
         aria-labelledby="titulo-etapas-renovacao"
-        className="flex flex-col overflow-hidden rounded-(--radius-large) border bg-(--surface) shadow-cartao"
+        className="flex flex-col overflow-hidden rounded-(--raio-painel) border bg-(--folha) shadow-cartao"
       >
-        <header className="flex flex-wrap items-center justify-between gap-(--space-100) border-b px-(--space-150) py-(--space-150)">
+        <header className="flex flex-wrap items-center justify-between gap-(--e-2) border-b px-(--e-3) py-(--e-3)">
           <h2 id="titulo-etapas-renovacao" className="titulo-secao">
             Etapas preparatórias
           </h2>
-          <span className="text-xs text-(--text-subtle)">
+          <span className="text-xs text-(--tinta-2)">
             {etapas.length} {etapas.length === 1 ? 'etapa' : 'etapas'} · antecedência de{' '}
             {diasPrevia} {diasPrevia === 1 ? 'dia' : 'dias'}
           </span>
@@ -419,12 +419,12 @@ export function PaginaPlanoRenovacao() {
           {etapas.map((etapa) => (
             <li
               key={etapa.titulo}
-              className="flex items-start gap-(--space-100) border-b px-(--space-150) py-(--space-100) last:border-b-0"
+              className="flex items-start gap-(--e-2) border-b px-(--e-3) py-(--e-2) last:border-b-0"
             >
-              <Icone nome="clock" className="mt-0.5 text-(--icon)" />
+              <Icone nome="clock" className="mt-0.5 text-(--icone)" />
               <span className="flex flex-col">
                 <span className="corpo">{etapa.titulo}</span>
-                <span className="text-xs text-(--text-subtle)">
+                <span className="text-xs text-(--tinta-2)">
                   Meta {formatarDataCivil(etapa.prazo)}
                 </span>
               </span>

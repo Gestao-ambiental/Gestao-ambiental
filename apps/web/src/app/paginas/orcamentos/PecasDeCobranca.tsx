@@ -77,9 +77,9 @@ export function TabelaDePrecos({
     aoMudar((a) => a.filter((x) => x.id !== linhaId))
   }
   return (
-    <div className="flex flex-col gap-(--space-300)">
-      <section aria-labelledby={`${id}-hora`} className="flex flex-col gap-(--space-100)">
-        <h3 id={`${id}-hora`} className="corpo-medio text-(--text)">
+    <div className="flex flex-col gap-(--e-6)">
+      <section aria-labelledby={`${id}-hora`} className="flex flex-col gap-(--e-2)">
+        <h3 id={`${id}-hora`} className="corpo-medio text-(--tinta)">
           Hora de profissional
         </h3>
         {profissionais.length > 0 ? (
@@ -125,7 +125,7 @@ export function TabelaDePrecos({
             </table>
           </div>
         ) : null}
-        <div className="flex flex-wrap gap-(--space-150)">
+        <div className="flex flex-wrap gap-(--e-3)">
           <Botao
             aparencia="link"
             iconeAntes="plus"
@@ -156,8 +156,8 @@ export function TabelaDePrecos({
         </div>
       </section>
 
-      <section aria-labelledby={`${id}-servicos`} className="flex flex-col gap-(--space-100)">
-        <h3 id={`${id}-servicos`} className="corpo-medio text-(--text)">
+      <section aria-labelledby={`${id}-servicos`} className="flex flex-col gap-(--e-2)">
+        <h3 id={`${id}-servicos`} className="corpo-medio text-(--tinta)">
           Serviços
         </h3>
         {servicos.length > 0 ? (
@@ -368,7 +368,7 @@ function LinhaDeServico({
         </td>
         <td className={classeCelula}>
           {comFaixas ? (
-            <span className="block text-right text-(--text)">Por faixas</span>
+            <span className="block text-right text-(--tinta)">Por faixas</span>
           ) : (
             <input
               aria-label={`Preço do serviço ${n}`}
@@ -385,7 +385,7 @@ function LinhaDeServico({
           {UNIDADES_COM_FAIXAS.includes(l.unidade) && !comFaixas ? (
             <Botao
               aparencia="link"
-              className="mt-(--space-050) text-xs"
+              className="mt-(--e-1) text-xs"
               onClick={() => {
                 aoMudar((x) => ({ ...x, faixas: faixasIniciais(x.valor) }))
               }}
@@ -396,7 +396,7 @@ function LinhaDeServico({
         </td>
         <td className={classeCelula}>
           {l.unidade === 'pacote' ? (
-            <span className="block text-right text-(--text-subtle)">—</span>
+            <span className="block text-right text-(--tinta-2)">—</span>
           ) : (
             <input
               aria-label={`Preço mínimo do serviço ${n}`}
@@ -461,8 +461,8 @@ function LinhaDeServico({
         <tr>
           <td colSpan={8} className={classeCelula}>
             {/* Fica à esquerda, visível, mesmo com a tabela rolada de lado (celular). */}
-            <fieldset className="sticky left-0 flex max-w-[calc(100vw-5rem)] flex-col gap-(--space-075) border-l-2 border-(--border-input) pl-(--space-150) sm:max-w-none">
-              <legend className="mb-(--space-050) text-xs text-(--text)">
+            <fieldset className="sticky left-0 flex max-w-[calc(100vw-5rem)] flex-col gap-(--e-15) border-l-2 border-(--campo-borda) pl-(--e-3) sm:max-w-none">
+              <legend className="mb-(--e-1) text-xs text-(--tinta)">
                 Faixas de quantidade do serviço {n}
               </legend>
               {l.faixas.map((f, i) => {
@@ -472,13 +472,13 @@ function LinhaDeServico({
                 const anterior = i === 0 ? '0' : ateAnterior === '' ? '…' : ateAnterior
                 const ateInvalido = !ultima && f.ate.trim() !== '' && !lerQuantidade(f.ate)
                 return (
-                  <div key={f.id} className="flex flex-wrap items-center gap-(--space-100) text-xs">
+                  <div key={f.id} className="flex flex-wrap items-center gap-(--e-2) text-xs">
                     {ultima ? (
                       <span className="w-48">
                         Acima de {anterior} {sufixo.slice(1)}
                       </span>
                     ) : (
-                      <label className="flex w-48 items-center gap-(--space-050)">
+                      <label className="flex w-48 items-center gap-(--e-1)">
                         Até
                         <input
                           aria-label={`Até quanto vale a faixa ${k} do serviço ${n}`}
@@ -496,7 +496,7 @@ function LinhaDeServico({
                         {sufixo.slice(1)}
                       </label>
                     )}
-                    <label className="flex items-center gap-(--space-050)">
+                    <label className="flex items-center gap-(--e-1)">
                       R$
                       <input
                         aria-label={`Valor por unidade da faixa ${k} do serviço ${n}`}
@@ -523,7 +523,7 @@ function LinhaDeServico({
                   </div>
                 )
               })}
-              <div className="flex flex-wrap gap-(--space-150)">
+              <div className="flex flex-wrap gap-(--e-3)">
                 {l.faixas.length < MAXIMO_DE_FAIXAS ? (
                   <Botao
                     aparencia="link"
@@ -579,12 +579,12 @@ export function Deslocamento({
   const km = valorDoKmDigitado(campos)
   const consumoInvalido = lerConsumo(campos.consumo) === undefined
   return (
-    <div className="flex flex-col gap-(--space-150)">
-      <fieldset className="flex flex-col gap-(--space-100)">
-        <legend className="mb-(--space-075) corpo-medio text-(--text)">
+    <div className="flex flex-col gap-(--e-3)">
+      <fieldset className="flex flex-col gap-(--e-2)">
+        <legend className="mb-(--e-15) corpo-medio text-(--tinta)">
           Como vocês cobram a visita
         </legend>
-        <div className="grid gap-(--space-100) sm:max-w-xl sm:grid-cols-2">
+        <div className="grid gap-(--e-2) sm:max-w-xl sm:grid-cols-2">
           <OpcaoRadio
             name={nome}
             value="visita"
@@ -661,7 +661,7 @@ export function Deslocamento({
               }}
             />
           </Linha>
-          <p aria-live="polite" className="corpo text-(--text)">
+          <p aria-live="polite" className="corpo text-(--tinta)">
             Valor do km:{' '}
             <span className="corpo-medio tabular-nums">
               {!digitouKm

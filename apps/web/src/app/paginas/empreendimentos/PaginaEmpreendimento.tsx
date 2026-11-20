@@ -25,22 +25,22 @@ import { TabelaLicencas } from './TabelaLicencas'
 
 function Migalhas({ nome }: { nome?: string }) {
   return (
-    <nav aria-label="Caminho" className="flex items-center gap-(--space-050) corpo">
+    <nav aria-label="Caminho" className="flex items-center gap-(--e-1) corpo">
       <Link
         to="/empreendimentos"
         aria-label="Voltar para Empreendimentos"
         title="Voltar para Empreendimentos"
-        className="inline-flex size-(--size-control) items-center justify-center rounded-(--radius) text-(--icon) transicao-estado hover:bg-(--neutral-subtle-hover)"
+        className="inline-flex size-(--controle) items-center justify-center rounded-(--raio) text-(--icone) transicao-estado hover:bg-(--toque)"
       >
         <Icone nome="chevron-left" />
       </Link>
       <Link to="/empreendimentos">Empreendimentos</Link>
       {nome ? (
         <>
-          <span className="text-(--text-subtle)" aria-hidden="true">
+          <span className="text-(--tinta-2)" aria-hidden="true">
             /
           </span>
-          <span className="text-(--text-subtle)" aria-current="page">
+          <span className="text-(--tinta-2)" aria-current="page">
             {nome}
           </span>
         </>
@@ -61,26 +61,26 @@ function Cabecalho({
 }) {
   const cnpj = formatarDocumentoDoTitular(empreendimento.cnpj)
   return (
-    <div className="flex flex-wrap items-start gap-(--space-150)">
+    <div className="flex flex-wrap items-start gap-(--e-3)">
       <SiglaEmpreendimento nome={empreendimento.nome} grande />
-      <div className="flex min-w-0 flex-1 flex-col gap-(--space-025)">
-        <h1 className="titulo-tela text-(--text)">{empreendimento.nome}</h1>
-        <p className="flex flex-wrap gap-x-(--space-050) corpo text-(--text-subtle)">
-          <span className={empreendimento.clienteNome ? undefined : 'text-(--text-subtlest)'}>
+      <div className="flex min-w-0 flex-1 flex-col gap-(--e-05)">
+        <h1 className="titulo-tela text-(--tinta)">{empreendimento.nome}</h1>
+        <p className="flex flex-wrap gap-x-(--e-1) corpo text-(--tinta-2)">
+          <span className={empreendimento.clienteNome ? undefined : 'text-(--tinta-3)'}>
             {empreendimento.clienteNome ?? 'Cliente contratante não informado'}
           </span>
           <span aria-hidden="true">·</span>
           <span>
             {rotuloDoDocumentoDoTitular(empreendimento.cnpj)}{' '}
             {cnpj ? (
-              <span className="font-mono text-(--text)">{cnpj}</span>
+              <span className="font-mono text-(--tinta)">{cnpj}</span>
             ) : (
-              <span className="text-(--text-subtlest)">não informado</span>
+              <span className="text-(--tinta-3)">não informado</span>
             )}
           </span>
         </p>
       </div>
-      <div className="flex flex-wrap gap-(--space-100)">
+      <div className="flex flex-wrap gap-(--e-2)">
         <BotaoGerarRelatorio
           empreendimentoId={empreendimento.id}
           empreendimentoNome={empreendimento.nome}
@@ -146,7 +146,7 @@ export function PaginaEmpreendimento() {
 
   if (empreendimento.isPending) {
     return (
-      <div className="flex flex-col gap-(--space-200)">
+      <div className="flex flex-col gap-(--e-4)">
         <Migalhas />
         <Carregando rotulo="Carregando o empreendimento" linhas={4} />
       </div>
@@ -154,7 +154,7 @@ export function PaginaEmpreendimento() {
   }
   if (empreendimento.isError) {
     return (
-      <div className="flex flex-col gap-(--space-200)">
+      <div className="flex flex-col gap-(--e-4)">
         <Migalhas />
         <EstadoErro
           titulo="Não foi possível carregar o empreendimento."
@@ -166,7 +166,7 @@ export function PaginaEmpreendimento() {
   if (!empreendimento.data) {
     // Inexistente ou de outra consultoria: a RLS não distingue, e a tela também não.
     return (
-      <div className="flex flex-col gap-(--space-200)">
+      <div className="flex flex-col gap-(--e-4)">
         <Migalhas />
         <h1 className="sr-only">Empreendimento não encontrado</h1>
         <EstadoVazio
@@ -217,7 +217,7 @@ export function PaginaEmpreendimento() {
   const filtrando = Boolean(termo || unidadeFiltro)
 
   return (
-    <div className="flex flex-col gap-(--space-200)">
+    <div className="flex flex-col gap-(--e-4)">
       <Migalhas nome={dados.nome} />
       {aviso ? (
         <MensagemSecao role="status" tom="sucesso">
@@ -232,12 +232,12 @@ export function PaginaEmpreendimento() {
         }}
       />
 
-      <div className="flex flex-wrap items-center gap-(--space-100)">
+      <div className="flex flex-wrap items-center gap-(--e-2)">
         <label className="relative flex items-center">
           <span className="sr-only">Buscar neste empreendimento</span>
           <Icone
             nome="search"
-            className="pointer-events-none absolute left-(--space-100) text-(--icon-subtle)"
+            className="pointer-events-none absolute left-(--e-2) text-(--icone-2)"
           />
           <input
             type="search"
@@ -246,15 +246,15 @@ export function PaginaEmpreendimento() {
             onChange={(evento) => {
               setBusca(evento.target.value)
             }}
-            className="h-(--size-control) w-[260px] max-w-full rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) pr-(--space-100) pl-(--space-400) corpo text-(--text) outline-none transicao-estado focus:border-b-(--border-input-active) focus:shadow-[inset_0_-1px_0_0_var(--border-input-active)] focus:bg-(--surface-input-focus)"
+            className="h-(--controle) w-[260px] max-w-full rounded-(--raio) border border-(--campo-borda) border-b-(--campo-borda) bg-(--campo) pr-(--e-2) pl-(--e-8) corpo text-(--tinta) outline-none transicao-estado focus:border-b-(--campo-borda-ativa) focus:shadow-[inset_0_-1px_0_0_var(--campo-borda-ativa)] focus:bg-(--campo-foco)"
           />
         </label>
         <div
           role="group"
           aria-label="Filtrar por unidade"
-          className="flex max-w-full items-center gap-(--space-050) overflow-x-auto"
+          className="flex max-w-full items-center gap-(--e-1) overflow-x-auto"
         >
-          <span className="text-xs text-(--text-subtle)">Documentos</span>
+          <span className="text-xs text-(--tinta-2)">Documentos</span>
           {unidades.isPending
             ? null
             : chips.map((chip) => {
@@ -268,14 +268,14 @@ export function PaginaEmpreendimento() {
                       setUnidadeFiltro(chip.id)
                     }}
                     className={cn(
-                      'inline-flex h-(--size-control) shrink-0 cursor-pointer items-center gap-(--space-050) rounded-(--radius) border px-(--space-100) corpo whitespace-nowrap transicao-estado',
+                      'inline-flex h-(--controle) shrink-0 cursor-pointer items-center gap-(--e-1) rounded-(--raio) border px-(--e-2) corpo whitespace-nowrap transicao-estado',
                       ligado
-                        ? 'border-(--brand-stroke) bg-(--surface-selected) text-(--text-link)'
-                        : 'border-(--border) hover:bg-(--surface-hover)',
+                        ? 'border-(--marca-linha) bg-(--escolha) text-(--link)'
+                        : 'border-(--regra) hover:bg-(--toque)',
                     )}
                   >
                     {chip.rotulo}
-                    <span className="text-xs text-(--text-subtle)">{chip.contagem}</span>
+                    <span className="text-xs text-(--tinta-2)">{chip.contagem}</span>
                   </button>
                 )
               })}
@@ -301,7 +301,7 @@ export function PaginaEmpreendimento() {
 
       <section
         aria-label="Licenças"
-        className="flex flex-col overflow-hidden rounded-(--radius-large) border bg-(--surface) shadow-cartao"
+        className="flex flex-col overflow-hidden rounded-(--raio-painel) border bg-(--folha) shadow-cartao"
       >
         {licencas.isPending ? (
           <Carregando rotulo="Carregando licenças" linhas={3} className="border-0" />
@@ -309,7 +309,7 @@ export function PaginaEmpreendimento() {
           <EstadoErro
             titulo="Não foi possível carregar as licenças."
             aoTentarDeNovo={() => void licencas.refetch()}
-            className="m-(--space-150)"
+            className="m-(--e-3)"
           />
         ) : (
           <TabelaLicencas
@@ -328,8 +328,8 @@ export function PaginaEmpreendimento() {
             }}
           />
         )}
-        <div className="flex items-center gap-(--space-100) border-t px-(--space-150) py-(--space-100)">
-          <p className="flex-1 text-xs text-(--text-subtle)">
+        <div className="flex items-center gap-(--e-2) border-t px-(--e-3) py-(--e-2)">
+          <p className="flex-1 text-xs text-(--tinta-2)">
             {todasLicencas.length === 0
               ? 'Nenhum item'
               : filtrando

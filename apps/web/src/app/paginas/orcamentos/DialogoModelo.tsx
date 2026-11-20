@@ -233,12 +233,12 @@ export function DialogoModelo({
           Não foi possível carregar o catálogo. Tente de novo.
         </MensagemSecao>
       ) : !modelos ? (
-        <p role="status" className="text-(--text-subtle)">
+        <p role="status" className="text-(--tinta-2)">
           Carregando modelos…
         </p>
       ) : escolhido ? (
-        <div className="flex flex-col gap-(--space-200)">
-          <p className="text-xs text-(--text-subtle)">
+        <div className="flex flex-col gap-(--e-4)">
+          <p className="text-xs text-(--tinta-2)">
             {escolhido.jurisdicao}
             {escolhido.fonte ? (
               <>
@@ -252,8 +252,8 @@ export function DialogoModelo({
               </>
             ) : null}
           </p>
-          <fieldset className="flex flex-col gap-(--space-100)">
-            <legend className="mb-(--space-100) corpo-medio">Etapas</legend>
+          <fieldset className="flex flex-col gap-(--e-2)">
+            <legend className="mb-(--e-2) corpo-medio">Etapas</legend>
             {escolhido.etapas.map((e, i) => (
               <CaixaSelecao
                 key={e.nome}
@@ -261,10 +261,10 @@ export function DialogoModelo({
                   <>
                     {e.nome}
                     {e.condicional ? (
-                      <span className="text-(--text-subtle)"> · só quando se aplica</span>
+                      <span className="text-(--tinta-2)"> · só quando se aplica</span>
                     ) : null}
                     {e.horasSugeridas !== null ? (
-                      <span className="text-(--text-subtle)">
+                      <span className="text-(--tinta-2)">
                         {' '}
                         ·{' '}
                         {proprio
@@ -282,8 +282,8 @@ export function DialogoModelo({
             ))}
           </fieldset>
           {escolhido.despesas.length > 0 ? (
-            <fieldset className="flex flex-col gap-(--space-100)">
-              <legend className="mb-(--space-100) corpo-medio">Despesas de terceiros</legend>
+            <fieldset className="flex flex-col gap-(--e-2)">
+              <legend className="mb-(--e-2) corpo-medio">Despesas de terceiros</legend>
               {escolhido.despesas.map((d, i) => (
                 <CaixaSelecao
                   key={d.nome}
@@ -291,7 +291,7 @@ export function DialogoModelo({
                     <>
                       {d.nome}
                       {d.condicional ? (
-                        <span className="text-(--text-subtle)"> · só quando se aplica</span>
+                        <span className="text-(--tinta-2)"> · só quando se aplica</span>
                       ) : null}
                     </>
                   }
@@ -303,11 +303,11 @@ export function DialogoModelo({
               ))}
             </fieldset>
           ) : null}
-          <p className="text-xs text-pretty text-(--text-subtle)">{escolhido.nota}</p>
+          <p className="text-xs text-pretty text-(--tinta-2)">{escolhido.nota}</p>
         </div>
       ) : (
-        <div className="flex flex-col gap-(--space-150)">
-          <label className="flex flex-col gap-(--space-050)">
+        <div className="flex flex-col gap-(--e-3)">
+          <label className="flex flex-col gap-(--e-1)">
             <span className="rotulo">Buscar serviço</span>
             <input
               type="search"
@@ -320,10 +320,10 @@ export function DialogoModelo({
             />
           </label>
           <div className="max-h-[50vh] overflow-y-auto">
-            <section aria-label="Modelos da consultoria" className="mb-(--space-150)">
-              <h3 className="mb-(--space-050) rotulo">Modelos da consultoria</h3>
+            <section aria-label="Modelos da consultoria" className="mb-(--e-3)">
+              <h3 className="mb-(--e-1) rotulo">Modelos da consultoria</h3>
               {proprios.isPending ? (
-                <p role="status" className="text-xs text-(--text-subtle)">
+                <p role="status" className="text-xs text-(--tinta-2)">
                   Carregando modelos da consultoria…
                 </p>
               ) : proprios.isError ? (
@@ -339,7 +339,7 @@ export function DialogoModelo({
                   </Botao>
                 </MensagemSecao>
               ) : proprios.data.itens.length === 0 ? (
-                <p className="text-xs text-(--text-subtle)">
+                <p className="text-xs text-(--tinta-2)">
                   {busca.trim()
                     ? 'Nenhum modelo da consultoria com essa busca.'
                     : 'Nenhum ainda. Num orçamento, use "Salvar como modelo" para guardar o escopo.'}
@@ -353,21 +353,21 @@ export function DialogoModelo({
                   ) : null}
                   <ul className="flex flex-col">
                     {proprios.data.itens.map((m) => (
-                      <li key={m.id} className="flex items-center gap-(--space-050)">
+                      <li key={m.id} className="flex items-center gap-(--e-1)">
                         <button
                           type="button"
-                          className="flex min-w-0 flex-1 items-baseline justify-between gap-(--space-150) rounded-(--radius) px-(--space-100) py-(--space-075) text-left corpo text-(--text) transicao-estado hover:bg-(--surface-hover) focus-visible:outline-2 focus-visible:outline-(--border-focus)"
+                          className="flex min-w-0 flex-1 items-baseline justify-between gap-(--e-3) rounded-(--raio) px-(--e-2) py-(--e-15) text-left corpo text-(--tinta) transicao-estado hover:bg-(--toque) focus-visible:outline-2 focus-visible:outline-(--foco)"
                           onClick={() => {
                             escolher(comoModeloDeServico(m), m)
                           }}
                         >
                           <span className="truncate">{m.nome}</span>
-                          <span className="shrink-0 text-xs text-(--text-subtle)">
+                          <span className="shrink-0 text-xs text-(--tinta-2)">
                             {m.itens.length} {m.itens.length === 1 ? 'serviço' : 'serviços'}
                           </span>
                         </button>
                         {excluindo === m.id ? (
-                          <span className="flex shrink-0 items-center gap-(--space-050) text-xs">
+                          <span className="flex shrink-0 items-center gap-(--e-1) text-xs">
                             Excluir?
                             <Botao tamanho="compacto" onClick={() => void excluirProprio(m)}>
                               Sim, excluir
@@ -407,23 +407,23 @@ export function DialogoModelo({
               )}
             </section>
             {categorias.length === 0 ? (
-              <p className="text-(--text-subtle)">Nenhum modelo do catálogo com “{busca}”.</p>
+              <p className="text-(--tinta-2)">Nenhum modelo do catálogo com “{busca}”.</p>
             ) : null}
             {categorias.map(([categoria, lista]) => (
-              <section key={categoria} aria-label={categoria} className="mb-(--space-150)">
-                <h3 className="mb-(--space-050) rotulo">{categoria}</h3>
+              <section key={categoria} aria-label={categoria} className="mb-(--e-3)">
+                <h3 className="mb-(--e-1) rotulo">{categoria}</h3>
                 <ul className="flex flex-col">
                   {lista.map((m) => (
                     <li key={m.id}>
                       <button
                         type="button"
-                        className="flex w-full items-baseline justify-between gap-(--space-150) rounded-(--radius) px-(--space-100) py-(--space-075) text-left corpo text-(--text) transicao-estado hover:bg-(--surface-hover) focus-visible:outline-2 focus-visible:outline-(--border-focus)"
+                        className="flex w-full items-baseline justify-between gap-(--e-3) rounded-(--raio) px-(--e-2) py-(--e-15) text-left corpo text-(--tinta) transicao-estado hover:bg-(--toque) focus-visible:outline-2 focus-visible:outline-(--foco)"
                         onClick={() => {
                           escolher(m)
                         }}
                       >
                         <span>{m.nome}</span>
-                        <span className="shrink-0 text-xs text-(--text-subtle)">
+                        <span className="shrink-0 text-xs text-(--tinta-2)">
                           {m.etapas.length} etapas
                         </span>
                       </button>

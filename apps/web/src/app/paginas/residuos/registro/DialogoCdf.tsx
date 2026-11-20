@@ -260,7 +260,7 @@ export function DialogoCdf({
         </>
       }
     >
-      <div className="flex flex-col gap-(--space-200)">
+      <div className="flex flex-col gap-(--e-4)">
         {salvar.isError ? (
           <MensagemSecao role="alert" tom="perigo">
             {gravado
@@ -269,7 +269,7 @@ export function DialogoCdf({
           </MensagemSecao>
         ) : null}
 
-        <div className="grid gap-(--space-150) sm:grid-cols-2">
+        <div className="grid gap-(--e-3) sm:grid-cols-2">
           <CampoTexto
             rotulo="Número do CDF *"
             value={numero}
@@ -333,7 +333,7 @@ export function DialogoCdf({
           />
         </div>
 
-        <section aria-labelledby="titulo-mtrs-cdf" className="flex flex-col gap-(--space-100)">
+        <section aria-labelledby="titulo-mtrs-cdf" className="flex flex-col gap-(--e-2)">
           <h3 id="titulo-mtrs-cdf" className="titulo-secao">
             MTRs cobertos
           </h3>
@@ -347,13 +347,13 @@ export function DialogoCdf({
           ) : opcoes.length === 0 ? (
             <p className="corpo">Nenhum MTR sem CDF neste empreendimento.</p>
           ) : (
-            <ul className="flex flex-col gap-(--space-100)">
+            <ul className="flex flex-col gap-(--e-2)">
               {opcoes.map((mtr) => {
                 const doMtr = escolhidos[mtr.mtrId]
                 return (
                   <li
                     key={mtr.mtrId}
-                    className="flex flex-col gap-(--space-100) rounded-(--radius) border p-(--space-100)"
+                    className="flex flex-col gap-(--e-2) rounded-(--raio) border p-(--e-2)"
                   >
                     <CaixaSelecao
                       rotulo={`MTR ${mtr.numero} · ${formatarDataCivil(mtr.emitidoEm)}`}
@@ -363,7 +363,7 @@ export function DialogoCdf({
                       }}
                     />
                     {doMtr ? (
-                      <ul className="flex flex-col gap-(--space-100) pl-(--space-300)">
+                      <ul className="flex flex-col gap-(--e-2) pl-(--e-6)">
                         {mtr.itens.map((item) => {
                           const recebido = doMtr[item.mtrItemId] ?? {
                             quantidade: '',
@@ -374,7 +374,7 @@ export function DialogoCdf({
                           return (
                             <li
                               key={item.mtrItemId}
-                              className="grid grid-cols-[1fr_96px] items-end gap-(--space-100) sm:grid-cols-[1fr_160px_96px]"
+                              className="grid grid-cols-[1fr_96px] items-end gap-(--e-2) sm:grid-cols-[1fr_160px_96px]"
                             >
                               <p className="col-span-2 min-w-0 corpo sm:col-span-1">
                                 <span className="corpo-medio">{item.residuoCodigo}</span>{' '}
@@ -393,7 +393,7 @@ export function DialogoCdf({
                                   })
                                 }}
                               />
-                              <label className="flex flex-col gap-(--space-050)">
+                              <label className="flex flex-col gap-(--e-1)">
                                 <span className="rotulo">Unidade</span>
                                 <select
                                   aria-label={`Unidade recebida no CDF: ${nome}`}

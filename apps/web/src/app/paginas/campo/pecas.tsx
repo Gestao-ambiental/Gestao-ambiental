@@ -23,15 +23,13 @@ import { useRecarregarVistoria } from './consultas'
 import { classeAreaTexto } from './estilos'
 
 export function ColunaCampo({ children }: { children: ReactNode }) {
-  return (
-    <div className="mx-auto flex w-full max-w-[640px] flex-col gap-(--space-200)">{children}</div>
-  )
+  return <div className="mx-auto flex w-full max-w-[640px] flex-col gap-(--e-4)">{children}</div>
 }
 
 /** Ações da tela, presas ao rodapé enquanto a página rola (uso com uma mão). */
 export function BarraDeAcao({ children }: { children: ReactNode }) {
   return (
-    <div className="sticky bottom-0 z-10 -mx-(--space-200) flex gap-(--space-100) border-t bg-(--surface) px-(--space-200) py-(--space-150) md:mx-0 md:rounded-(--radius-large) md:border">
+    <div className="sticky bottom-0 z-10 -mx-(--e-4) flex gap-(--e-2) border-t bg-(--folha) px-(--e-4) py-(--e-3) md:mx-0 md:rounded-(--raio-painel) md:border">
       {children}
     </div>
   )
@@ -39,12 +37,12 @@ export function BarraDeAcao({ children }: { children: ReactNode }) {
 
 export function VoltarPara({ para, rotulo }: { para: string; rotulo: string }) {
   return (
-    <nav aria-label="Caminho" className="flex items-center gap-(--space-050) corpo">
+    <nav aria-label="Caminho" className="flex items-center gap-(--e-1) corpo">
       <Link
         to={para}
         aria-label={`Voltar para ${rotulo}`}
         title={`Voltar para ${rotulo}`}
-        className="inline-flex size-11 items-center justify-center rounded-(--radius) text-(--icon) transicao-estado hover:bg-(--neutral-subtle-hover)"
+        className="inline-flex size-11 items-center justify-center rounded-(--raio) text-(--icone) transicao-estado hover:bg-(--toque)"
       >
         <Icone nome="chevron-left" />
       </Link>
@@ -140,16 +138,16 @@ export function SituacaoDaGravacao({
   aoTentarDeNovo: () => void
 }) {
   return (
-    <div role="status" aria-live="polite" className="flex min-h-5 items-center gap-(--space-100)">
+    <div role="status" aria-live="polite" className="flex min-h-5 items-center gap-(--e-2)">
       {estado === 'salvando' ? (
-        <span className="text-xs text-(--text-subtle)">Salvando…</span>
+        <span className="text-xs text-(--tinta-2)">Salvando…</span>
       ) : estado === 'salvo' ? (
-        <span className="inline-flex items-center gap-(--space-050) text-xs text-(--text-subtle)">
+        <span className="inline-flex items-center gap-(--e-1) text-xs text-(--tinta-2)">
           <Icone nome="check" tamanho={12} />
           Salvo
         </span>
       ) : estado === 'erro' ? (
-        <span className="inline-flex flex-wrap items-center gap-(--space-100) text-xs text-(--text-danger)">
+        <span className="inline-flex flex-wrap items-center gap-(--e-2) text-xs text-(--atraso-texto)">
           <Icone nome="circle-alert" tamanho={12} />
           Não salvou{erro ? `: ${mensagemDoErroDaVistoria(erro)}` : ''}
           <Botao tamanho="compacto" onClick={aoTentarDeNovo}>
@@ -177,19 +175,19 @@ export function CampoObservacao({ vistoria, editavel }: { vistoria: Vistoria; ed
 
   if (!editavel) {
     return (
-      <section aria-labelledby={id} className="flex flex-col gap-(--space-050)">
+      <section aria-labelledby={id} className="flex flex-col gap-(--e-1)">
         <h2 id={id} className="rotulo">
           Observação geral
         </h2>
         <p className="corpo whitespace-pre-line">
-          {vistoria.observacao ?? <span className="text-(--text-subtlest)">Sem observação</span>}
+          {vistoria.observacao ?? <span className="text-(--tinta-3)">Sem observação</span>}
         </p>
       </section>
     )
   }
 
   return (
-    <div className="flex flex-col gap-(--space-050)">
+    <div className="flex flex-col gap-(--e-1)">
       <label htmlFor={id} className="rotulo">
         Observação geral
       </label>
@@ -236,22 +234,19 @@ export function Miniaturas({
 }) {
   if (fotos.length === 0) return null
   return (
-    <ul aria-label="Fotos" className={cn('flex flex-wrap gap-(--space-075)', className)}>
+    <ul aria-label="Fotos" className={cn('flex flex-wrap gap-(--e-15)', className)}>
       {fotos.map((foto, indice) => {
         const url = urls?.[foto.caminho]
         const alt = foto.legenda ?? `Foto ${String(indice + 1)}`
         return (
-          <li
-            key={foto.id}
-            className="size-14 overflow-hidden rounded-(--radius) border bg-(--surface-disabled)"
-          >
+          <li key={foto.id} className="size-14 overflow-hidden rounded-(--raio) border bg-(--off)">
             {url ? (
               <img src={url} alt={alt} className="size-full object-cover" />
             ) : (
               <span
                 role="img"
                 aria-label={alt}
-                className="flex size-full items-center justify-center text-(--icon)"
+                className="flex size-full items-center justify-center text-(--icone)"
               >
                 <Icone nome="image" />
               </span>
@@ -273,12 +268,12 @@ export function BarraDeProgresso({
   percentual: number
 }) {
   return (
-    <div className="flex flex-col gap-(--space-050)">
+    <div className="flex flex-col gap-(--e-1)">
       <div className="flex justify-between corpo-medio">
         <span id="rotulo-progresso">
           {registrados} de {total} {total === 1 ? 'item' : 'itens'}
         </span>
-        <span className="text-(--text-subtle)">{percentual}%</span>
+        <span className="text-(--tinta-2)">{percentual}%</span>
       </div>
       <div
         role="progressbar"
@@ -286,9 +281,9 @@ export function BarraDeProgresso({
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={percentual}
-        className="h-1.5 overflow-hidden rounded-(--radius-pill) bg-(--surface-disabled)"
+        className="h-1.5 overflow-hidden rounded-(--raio-redondo) bg-(--off)"
       >
-        <div className="h-full bg-(--brand)" style={{ width: `${String(percentual)}%` }} />
+        <div className="h-full bg-(--acao)" style={{ width: `${String(percentual)}%` }} />
       </div>
     </div>
   )

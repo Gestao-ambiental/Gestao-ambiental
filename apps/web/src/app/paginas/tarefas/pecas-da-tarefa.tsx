@@ -65,7 +65,7 @@ export function AcoesDaTarefa({
   const pode = ehGestao || (membroAtualId !== null && tarefa.responsavelId === membroAtualId)
   if (!pode) return null
   return (
-    <div className="flex flex-wrap gap-(--space-050)">
+    <div className="flex flex-wrap gap-(--e-1)">
       {proximasSituacoesDaTarefa(tarefa.situacao, ehGestao).map((para) => (
         <Botao
           key={para}
@@ -172,7 +172,7 @@ function FormularioDaTarefa({
 
   return (
     <form
-      className="flex flex-col gap-(--space-150)"
+      className="flex flex-col gap-(--e-3)"
       onSubmit={(e) => {
         e.preventDefault()
         setTentou(true)
@@ -189,7 +189,7 @@ function FormularioDaTarefa({
           setTitulo(e.target.value)
         }}
       />
-      <label htmlFor={idResponsavel} className="flex flex-col gap-(--space-050)">
+      <label htmlFor={idResponsavel} className="flex flex-col gap-(--e-1)">
         <span className="rotulo">Responsável</span>
         <select
           id={idResponsavel}
@@ -207,7 +207,7 @@ function FormularioDaTarefa({
           ))}
         </select>
       </label>
-      <div className="grid gap-(--space-150) sm:grid-cols-2">
+      <div className="grid gap-(--e-3) sm:grid-cols-2">
         <CampoTexto
           rotulo="Horas"
           inputMode="decimal"
@@ -225,7 +225,7 @@ function FormularioDaTarefa({
           {falha}
         </MensagemSecao>
       ) : null}
-      <div className="flex justify-end gap-(--space-100)">
+      <div className="flex justify-end gap-(--e-2)">
         <Botao type="button" onClick={aoTerminar}>
           Cancelar
         </Botao>

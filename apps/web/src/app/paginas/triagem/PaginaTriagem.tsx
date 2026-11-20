@@ -106,7 +106,7 @@ const MOTIVO_ESTADUAL: Record<Extract<Competencia, { orgao: 'estadual' }>['motiv
 function QuemLicencia({ competencia }: { competencia: Competencia }) {
   if (competencia.orgao === 'municipal') {
     return (
-      <p className="corpo text-(--text)">
+      <p className="corpo text-(--tinta)">
         <span className="corpo-medio">Quem licencia: município</span>, pela lista do nível{' '}
         {ROTULO_DO_NIVEL[competencia.nivel]} da CONSEMA 251/2024.
       </p>
@@ -114,7 +114,7 @@ function QuemLicencia({ competencia }: { competencia: Competencia }) {
   }
   if (competencia.orgao === 'estadual') {
     return (
-      <p className="corpo text-(--text)">
+      <p className="corpo text-(--tinta)">
         <span className="corpo-medio">Quem licencia: Estado (IMA)</span>:{' '}
         {MOTIVO_ESTADUAL[competencia.motivo]}.
       </p>
@@ -135,7 +135,7 @@ function BuscaDeAtividade({
   const idLista = useId()
 
   return (
-    <section aria-label="Buscar atividade" className="flex flex-col gap-(--space-100)">
+    <section aria-label="Buscar atividade" className="flex flex-col gap-(--e-2)">
       <CampoTexto
         rotulo="Atividade"
         ajuda="Digite o código da CONSEMA (ex.: 12.80.10) ou palavras da descrição (ex.: pintura)."
@@ -149,26 +149,26 @@ function BuscaDeAtividade({
       />
       <div id={idLista}>
         {termo.trim() && resultados.length === 0 ? (
-          <p className="corpo text-(--text-subtle)" role="status">
+          <p className="corpo text-(--tinta-2)" role="status">
             Nenhuma atividade do Anexo VI encontrada para "{termo.trim()}".
           </p>
         ) : null}
         {resultados.length > 0 ? (
           <ul
             aria-label="Atividades encontradas"
-            className="flex max-h-[320px] flex-col overflow-y-auto rounded-(--radius-large) border bg-(--surface) shadow-cartao"
+            className="flex max-h-[320px] flex-col overflow-y-auto rounded-(--raio-painel) border bg-(--folha) shadow-cartao"
           >
             {resultados.map((a) => {
               const incluida = jaIncluidas.has(a.codigo)
               return (
                 <li
                   key={a.codigo}
-                  className="flex items-start gap-(--space-100) border-b px-(--space-150) py-(--space-100) last:border-b-0"
+                  className="flex items-start gap-(--e-2) border-b px-(--e-3) py-(--e-2) last:border-b-0"
                 >
                   <div className="flex min-w-0 flex-1 flex-col">
-                    <span className="corpo-medio text-(--text)">{a.codigo}</span>
-                    <span className="corpo text-(--text)">{a.descricao}</span>
-                    <span className="corpo text-(--text-subtle)">{a.grupo}</span>
+                    <span className="corpo-medio text-(--tinta)">{a.codigo}</span>
+                    <span className="corpo text-(--tinta)">{a.descricao}</span>
+                    <span className="corpo text-(--tinta-2)">{a.grupo}</span>
                   </div>
                   <Botao
                     tamanho="compacto"
@@ -201,7 +201,7 @@ function DescricaoDoResultado({
   switch (resultado.tipo) {
     case 'falta_medida':
       return (
-        <p className="corpo text-(--text-subtle)">
+        <p className="corpo text-(--tinta-2)">
           Informe {resultado.parametros.join(' ou ')} para enquadrar.
         </p>
       )
@@ -223,7 +223,7 @@ function DescricaoDoResultado({
       )
     case 'acima_do_limite':
       return (
-        <p className="corpo text-(--text-subtle)">
+        <p className="corpo text-(--tinta-2)">
           {resultado.parametro} acima de{' '}
           {resultado.limite.toLocaleString('pt-BR', { maximumFractionDigits: 3 })}: fora das faixas
           desta lista.
@@ -232,35 +232,35 @@ function DescricaoDoResultado({
     case 'enquadrada': {
       const { faixa } = resultado
       return (
-        <div className="flex flex-col gap-(--space-100)">
-          <dl className="grid grid-cols-1 gap-x-(--space-200) gap-y-(--space-050) sm:grid-cols-3">
+        <div className="flex flex-col gap-(--e-2)">
+          <dl className="grid grid-cols-1 gap-x-(--e-4) gap-y-(--e-1) sm:grid-cols-3">
             <div>
-              <dt className="rotulo text-(--text-subtle)">Porte</dt>
-              <dd className="corpo-medio text-(--text)">{ROTULO_DO_PORTE[faixa.porte]}</dd>
+              <dt className="rotulo text-(--tinta-2)">Porte</dt>
+              <dd className="corpo-medio text-(--tinta)">{ROTULO_DO_PORTE[faixa.porte]}</dd>
             </div>
             <div>
-              <dt className="rotulo text-(--text-subtle)">Modalidade</dt>
-              <dd className="corpo-medio text-(--text)">
+              <dt className="rotulo text-(--tinta-2)">Modalidade</dt>
+              <dd className="corpo-medio text-(--tinta)">
                 {ROTULO_DA_MODALIDADE[faixa.modalidade]}
               </dd>
             </div>
             <div>
-              <dt className="rotulo text-(--text-subtle)">Estudo</dt>
-              <dd className="corpo-medio text-(--text)">
+              <dt className="rotulo text-(--tinta-2)">Estudo</dt>
+              <dd className="corpo-medio text-(--tinta)">
                 {faixa.estudo ? ROTULO_DO_ESTUDO[faixa.estudo] : 'Dispensado (Art. 22)'}
               </dd>
             </div>
           </dl>
-          <p className="corpo text-(--text-subtle)">
+          <p className="corpo text-(--tinta-2)">
             Na resolução: <q>{faixa.textoOriginal}</q>
           </p>
           {resultado.avisos.length > 0 ? (
             <ul
               aria-label={`Observações de ${atividade.codigo}`}
-              className="flex flex-col gap-(--space-050)"
+              className="flex flex-col gap-(--e-1)"
             >
               {resultado.avisos.map((aviso) => (
-                <li key={aviso} className="corpo text-(--text)">
+                <li key={aviso} className="corpo text-(--tinta)">
                   {aviso}
                 </li>
               ))}
@@ -275,7 +275,7 @@ function DescricaoDoResultado({
 function ValorDaTaxa({ taxa }: { taxa: TaxaDoIma }) {
   if (taxa.tipo === 'autorizacao') {
     return (
-      <p className="corpo text-(--text)">
+      <p className="corpo text-(--tinta)">
         <span className="corpo-medio">Taxa da AuA: {formatarReais(taxa.centavos)}</span> (item{' '}
         {taxa.item} do anexo)
       </p>
@@ -283,7 +283,7 @@ function ValorDaTaxa({ taxa }: { taxa: TaxaDoIma }) {
   }
   if (taxa.tipo === 'sem_valor') {
     return (
-      <p className="corpo text-(--text-subtle)">
+      <p className="corpo text-(--tinta-2)">
         {taxa.motivo === 'falta_medida'
           ? `Informe ${taxa.parametro ?? 'o parâmetro'} para calcular a taxa.`
           : 'O decreto não traz valor de taxa para esta atividade: consulte o IMA.'}
@@ -291,28 +291,28 @@ function ValorDaTaxa({ taxa }: { taxa: TaxaDoIma }) {
     )
   }
   return (
-    <div className="flex flex-col gap-(--space-050)">
-      <dl className="grid grid-cols-2 gap-x-(--space-200) gap-y-(--space-050) sm:grid-cols-4">
+    <div className="flex flex-col gap-(--e-1)">
+      <dl className="grid grid-cols-2 gap-x-(--e-4) gap-y-(--e-1) sm:grid-cols-4">
         {taxa.fases.map((v) => (
           <div key={v.fase}>
-            <dt className="rotulo text-(--text-subtle)">{v.fase}</dt>
-            <dd className="corpo-medio text-(--text)">{formatarReais(v.centavos)}</dd>
+            <dt className="rotulo text-(--tinta-2)">{v.fase}</dt>
+            <dd className="corpo-medio text-(--tinta)">{formatarReais(v.centavos)}</dd>
           </div>
         ))}
         {taxa.fases.length > 1 ? (
           <div>
-            <dt className="rotulo text-(--text-subtle)">Total</dt>
-            <dd className="corpo-medio text-(--text)">{formatarReais(taxa.totalCentavos)}</dd>
+            <dt className="rotulo text-(--tinta-2)">Total</dt>
+            <dd className="corpo-medio text-(--tinta)">{formatarReais(taxa.totalCentavos)}</dd>
           </div>
         ) : null}
       </dl>
-      <p className="corpo text-(--text-subtle)">
+      <p className="corpo text-(--tinta-2)">
         {taxa.formula
           ? `Fórmula: ${taxa.formula}, com fator 1 (LAP), 1,5 (LAI) e 1,25 (LAO).`
           : `Classe ${taxa.classe ?? ''} (porte, potencial). Na renovação, paga-se de novo a LAO.`}
       </p>
       {taxa.avisos.map((aviso) => (
-        <p key={aviso} className="corpo text-(--text)">
+        <p key={aviso} className="corpo text-(--tinta)">
           {aviso}
         </p>
       ))}
@@ -337,12 +337,12 @@ function NoIma({
   return (
     <section
       aria-label={`No IMA: ${atividade.codigo}`}
-      className="flex flex-col gap-(--space-075) border-t pt-(--space-100)"
+      className="flex flex-col gap-(--e-15) border-t pt-(--e-2)"
     >
-      <h4 className="rotulo text-(--text)">No IMA</h4>
+      <h4 className="rotulo text-(--tinta)">No IMA</h4>
       {resultado.tipo === 'enquadrada' ? (
         municipal ? (
-          <p className="corpo text-(--text-subtle)">
+          <p className="corpo text-(--tinta-2)">
             Licenciamento no município: a taxa é a do município.
           </p>
         ) : (
@@ -350,7 +350,7 @@ function NoIma({
         )
       ) : null}
       {instrucao ? (
-        <p className="flex flex-wrap items-center gap-(--space-050) corpo text-(--text)">
+        <p className="flex flex-wrap items-center gap-(--e-1) corpo text-(--tinta)">
           <a href={instrucao.url} target="_blank" rel="noopener noreferrer">
             IN {String(instrucao.numero).padStart(2, '0')} · {instrucao.titulo}
           </a>
@@ -358,12 +358,12 @@ function NoIma({
         </p>
       ) : null}
       {info.tfasc !== null ? (
-        <p className="corpo text-(--text)">
+        <p className="corpo text-(--tinta)">
           {info.tfasc ? 'Paga TFASC (taxa anual de fiscalização ambiental).' : 'Não paga TFASC.'}
         </p>
       ) : null}
       {info.potencialDivergente ? (
-        <p className="corpo text-(--text)">
+        <p className="corpo text-(--tinta)">
           O simulador do IMA ainda usa potencial poluidor {info.potencialDivergente}; a resolução
           vigente diz {atividade.potencial.geral}.
         </p>
@@ -393,20 +393,20 @@ function CartaoDaAtividade({
   return (
     <article
       aria-label={`${atividade.codigo} ${atividade.descricao}`}
-      className="flex flex-col gap-(--space-150) rounded-(--radius-large) border bg-(--surface) p-(--space-150) shadow-cartao"
+      className="flex flex-col gap-(--e-3) rounded-(--raio-painel) border bg-(--folha) p-(--e-3) shadow-cartao"
     >
-      <header className="flex items-start gap-(--space-100)">
-        <div className="flex min-w-0 flex-1 flex-col gap-(--space-050)">
-          <h3 className="titulo-secao text-(--text)">
+      <header className="flex items-start gap-(--e-2)">
+        <div className="flex min-w-0 flex-1 flex-col gap-(--e-1)">
+          <h3 className="titulo-secao text-(--tinta)">
             {atividade.codigo} · {atividade.descricao}
           </h3>
-          <div className="flex flex-wrap items-center gap-(--space-050)">
+          <div className="flex flex-wrap items-center gap-(--e-1)">
             <Selo tom={TOM_DO_POTENCIAL[atividade.potencial.geral]}>
               Potencial poluidor geral {ROTULO_DO_POTENCIAL[atividade.potencial.geral]} (
               {atividade.potencial.geral})
             </Selo>
             {atividade.redacaoDada ? (
-              <span className="corpo text-(--text-subtle)">
+              <span className="corpo text-(--tinta-2)">
                 Redação dada pela CONSEMA {atividade.redacaoDada}
               </span>
             ) : null}
@@ -416,7 +416,7 @@ function CartaoDaAtividade({
       </header>
 
       {parametros.length > 0 ? (
-        <div className="grid grid-cols-1 gap-(--space-100) sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-(--e-2) sm:grid-cols-2">
           {parametros.map((sigla) => (
             <CampoTexto
               key={sigla}
@@ -435,7 +435,7 @@ function CartaoDaAtividade({
 
       <QuemLicencia competencia={competencia} />
       {competencia.orgao !== 'fora_da_lista' && competencia.avisos.length > 0 ? (
-        <p className="corpo text-(--text)">{competencia.avisos.join(' ')}</p>
+        <p className="corpo text-(--tinta)">{competencia.avisos.join(' ')}</p>
       ) : null}
       <DescricaoDoResultado atividade={atividade} resultado={resultado} />
       <NoIma
@@ -457,15 +457,15 @@ function Conclusao({
 }) {
   if (conclusao.modalidade === null && conclusao.abaixoDoLimite.length === 0) {
     return (
-      <p className="corpo text-(--text-subtle)">
+      <p className="corpo text-(--tinta-2)">
         Informe os parâmetros das atividades para ver a conclusão.
       </p>
     )
   }
   return (
-    <div className="flex flex-col gap-(--space-100)">
+    <div className="flex flex-col gap-(--e-2)">
       {orgao ? (
-        <p className="corpo text-(--text)">
+        <p className="corpo text-(--tinta)">
           <span className="corpo-medio">
             Órgão licenciador: {orgao === 'municipal' ? 'município' : 'Estado (IMA)'}
           </span>
@@ -475,40 +475,40 @@ function Conclusao({
         </p>
       ) : null}
       {conclusao.modalidade ? (
-        <dl className="grid grid-cols-1 gap-x-(--space-200) gap-y-(--space-050) sm:grid-cols-3">
+        <dl className="grid grid-cols-1 gap-x-(--e-4) gap-y-(--e-1) sm:grid-cols-3">
           <div>
-            <dt className="rotulo text-(--text-subtle)">Modalidade</dt>
-            <dd className="corpo-medio text-(--text)">
+            <dt className="rotulo text-(--tinta-2)">Modalidade</dt>
+            <dd className="corpo-medio text-(--tinta)">
               {ROTULO_DA_MODALIDADE[conclusao.modalidade]}
             </dd>
           </div>
           <div>
-            <dt className="rotulo text-(--text-subtle)">Estudo do empreendimento</dt>
-            <dd className="corpo-medio text-(--text)">
+            <dt className="rotulo text-(--tinta-2)">Estudo do empreendimento</dt>
+            <dd className="corpo-medio text-(--tinta)">
               {conclusao.estudo
                 ? `${ROTULO_DO_ESTUDO[conclusao.estudo]}, pela atividade ${conclusao.atividadeDoEstudo ?? ''}`
                 : 'Dispensado (Art. 22)'}
             </dd>
           </div>
           <div>
-            <dt className="rotulo text-(--text-subtle)">Maior potencial poluidor</dt>
-            <dd className="corpo-medio text-(--text)">{conclusao.potencialGeral}</dd>
+            <dt className="rotulo text-(--tinta-2)">Maior potencial poluidor</dt>
+            <dd className="corpo-medio text-(--tinta)">{conclusao.potencialGeral}</dd>
           </div>
         </dl>
       ) : null}
       {conclusao.podeAvaliarLac ? (
-        <p className="corpo text-(--text)">
+        <p className="corpo text-(--tinta)">
           Todas as atividades preveem Licença Ambiental por Compromisso (LAC): avalie se o
           empreendimento atende às condições do item, como não depender de supressão de vegetação.
         </p>
       ) : null}
       {conclusao.abaixoDoLimite.length > 0 ? (
-        <p className="corpo text-(--text)">
+        <p className="corpo text-(--tinta)">
           Abaixo do limite de licenciamento: {conclusao.abaixoDoLimite.join(', ')}.
         </p>
       ) : null}
       {conclusao.pendentes.length > 0 ? (
-        <p className="corpo text-(--text)">
+        <p className="corpo text-(--tinta)">
           Faltam parâmetros de: {conclusao.pendentes.join(', ')}. A conclusão pode mudar.
         </p>
       ) : null}
@@ -526,14 +526,14 @@ function SeletorDoNivel({
   const id = useId()
   const idAjuda = `${id}-ajuda`
   return (
-    <div className="flex flex-col gap-(--space-050)">
-      <label htmlFor={id} className="rotulo text-(--text)">
+    <div className="flex flex-col gap-(--e-1)">
+      <label htmlFor={id} className="rotulo text-(--tinta)">
         Habilitação do município para licenciar (CONSEMA 251/2024)
       </label>
       <select
         id={id}
         aria-describedby={idAjuda}
-        className="h-(--size-control) w-full max-w-[320px] rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) px-(--space-100) corpo text-(--text) outline-none focus:border-b-(--border-input-active) focus:shadow-[inset_0_-1px_0_0_var(--border-input-active)]"
+        className="h-(--controle) w-full max-w-[320px] rounded-(--raio) border border-(--campo-borda) border-b-(--campo-borda) bg-(--campo) px-(--e-2) corpo text-(--tinta) outline-none focus:border-b-(--campo-borda-ativa) focus:shadow-[inset_0_-1px_0_0_var(--campo-borda-ativa)]"
         value={nivel ?? ''}
         onChange={(e) => {
           const v = e.target.value
@@ -545,7 +545,7 @@ function SeletorDoNivel({
         <option value="2">Nível II</option>
         <option value="3">Nível III</option>
       </select>
-      <p id={idAjuda} className="corpo text-(--text-subtle)">
+      <p id={idAjuda} className="corpo text-(--tinta-2)">
         O nível em que o município do empreendimento está habilitado define o que ele licencia.
         Confirme na resolução CONSEMA de habilitação do município.
       </p>
@@ -586,7 +586,7 @@ export function PaginaTriagem() {
         : 'municipal'
 
   return (
-    <div className="flex flex-col gap-(--space-200)">
+    <div className="flex flex-col gap-(--e-4)">
       <Pagina titulo="Triagem de licenciamento">{null}</Pagina>
 
       <MensagemSecao tom="atencao" titulo="Triagem, não enquadramento oficial">
@@ -616,11 +616,8 @@ export function PaginaTriagem() {
         }}
       />
 
-      <section
-        aria-label="Atividades do empreendimento"
-        className="flex flex-col gap-(--space-100)"
-      >
-        <h2 className="titulo-secao text-(--text)">Atividades do empreendimento</h2>
+      <section aria-label="Atividades do empreendimento" className="flex flex-col gap-(--e-2)">
+        <h2 className="titulo-secao text-(--tinta)">Atividades do empreendimento</h2>
         {itens.length === 0 ? (
           <EstadoVazio
             icone="search"
@@ -650,8 +647,8 @@ export function PaginaTriagem() {
       </section>
 
       {itens.length > 0 ? (
-        <section aria-label="Conclusão da triagem" className="flex flex-col gap-(--space-100)">
-          <h2 className="titulo-secao text-(--text)">Conclusão</h2>
+        <section aria-label="Conclusão da triagem" className="flex flex-col gap-(--e-2)">
+          <h2 className="titulo-secao text-(--tinta)">Conclusão</h2>
           <Conclusao conclusao={conclusao} orgao={orgao} />
         </section>
       ) : null}

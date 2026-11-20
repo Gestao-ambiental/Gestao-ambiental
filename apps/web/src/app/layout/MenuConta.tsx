@@ -64,13 +64,13 @@ export function MenuConta() {
       <DropdownMenuTrigger
         aria-label={`Conta de ${usuario.nome}`}
         title={usuario.nome}
-        className="inline-flex size-(--size-control) cursor-pointer items-center justify-center rounded-(--radius) transicao-estado hover:bg-(--neutral-subtle-hover)"
+        className="inline-flex size-(--controle) cursor-pointer items-center justify-center rounded-(--raio) transicao-estado hover:bg-(--toque)"
       >
         <Avatar nome={usuario.nome} fotoUrl={perfil.data?.fotoUrl} />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-[240px]">
-        <div className="flex flex-col px-(--space-150) py-(--space-100)">
-          <span className="corpo-medio text-(--text)">{usuario.nome}</span>
+        <div className="flex flex-col px-(--e-3) py-(--e-2)">
+          <span className="corpo-medio text-(--tinta)">{usuario.nome}</span>
           <span className="rotulo">{usuario.email}</span>
         </div>
         {suporte ? null : (
@@ -138,7 +138,7 @@ export function MenuConta() {
         <DropdownMenuItem onSelect={bloquear}>
           <Icone nome="lock" />
           <span className="flex-1">Bloquear tela</span>
-          <kbd className="text-xs text-(--text-subtle)">Ctrl+Shift+L</kbd>
+          <kbd className="text-xs text-(--tinta-2)">Ctrl+Shift+L</kbd>
         </DropdownMenuItem>
         <DropdownMenuItem
           onSelect={() => {

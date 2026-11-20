@@ -65,7 +65,7 @@ export function PaginaEntrar() {
   const sufixo = para === '/' ? '' : `?para=${encodeURIComponent(para)}`
 
   return (
-    <div className="flex flex-col gap-(--space-300)">
+    <div className="flex flex-col gap-(--e-6)">
       <CabecalhoAcesso titulo="Entrar no Grama" tituloDaAba="Entrar">
         Licenças, condicionantes e prazos dos empreendimentos dos seus clientes, num lugar só.
       </CabecalhoAcesso>
@@ -90,7 +90,7 @@ export function PaginaEntrar() {
       <form
         noValidate
         onSubmit={(evento) => void entrar(evento)}
-        className="flex flex-col gap-(--space-200)"
+        className="flex flex-col gap-(--e-4)"
       >
         <CampoTexto
           rotulo="E-mail"
@@ -106,7 +106,7 @@ export function PaginaEntrar() {
           erro={errors.senha?.message}
           {...register('senha')}
         />
-        <div className="flex items-center justify-between gap-(--space-100)">
+        <div className="flex items-center justify-between gap-(--e-2)">
           <CaixaSelecao rotulo="Lembrar de mim" {...register('lembrar')} />
           <Link to="/recuperar-senha" className="corpo">
             Esqueci minha senha
@@ -121,7 +121,7 @@ export function PaginaEntrar() {
         <span>Ainda não tem conta?</span>
         <Link to={`/criar-conta${sufixo}`}>Criar conta</Link>
       </RodapeAcesso>
-      <p className="-mt-(--space-200) text-center text-xs text-(--text-subtle)">
+      <p className="-mt-(--e-4) text-center text-xs text-(--tinta-2)">
         Recebeu um convite? Abra o link do e-mail.
       </p>
     </div>

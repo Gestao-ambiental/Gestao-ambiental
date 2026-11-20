@@ -44,7 +44,7 @@ const DIAS_DA_SEMANA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 const VISIVEIS_POR_DIA = 3
 
 const classeSelect =
-  'h-(--size-control) max-w-[200px] rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) px-(--space-100) corpo text-(--text) outline-none focus:border-b-(--border-input-active) focus:shadow-[inset_0_-1px_0_0_var(--border-input-active)]'
+  'h-(--controle) max-w-[200px] rounded-(--raio) border border-(--campo-borda) border-b-(--campo-borda) bg-(--campo) px-(--e-2) corpo text-(--tinta) outline-none focus:border-b-(--campo-borda-ativa) focus:shadow-[inset_0_-1px_0_0_var(--campo-borda-ativa)]'
 
 type Modo = 'mes' | 'semana'
 
@@ -120,12 +120,12 @@ function Evento({
   linkDoOrcamento?: boolean
 }) {
   const classes = cn(
-    'flex min-w-0 items-center gap-(--space-050) rounded-(--radius) px-(--space-075) py-0.5 text-xs',
-    evento.tipo === 'prazo' && 'bg-(--lozenge-default-bg) text-(--text)',
-    evento.tipo === 'meta' && 'border border-dashed border-(--border-strong) text-(--text-subtle)',
-    evento.tipo === 'limite_protocolo' && 'bg-(--lozenge-warning-bg) text-(--lozenge-warning-text)',
-    evento.tipo === 'validade' && 'bg-(--lozenge-inprogress-bg) text-(--lozenge-inprogress-text)',
-    evento.tipo === 'tarefa' && 'border border-(--border-strong) text-(--text)',
+    'flex min-w-0 items-center gap-(--e-1) rounded-(--raio) px-(--e-15) py-0.5 text-xs',
+    evento.tipo === 'prazo' && 'bg-(--neutro-fundo) text-(--tinta)',
+    evento.tipo === 'meta' && 'border border-dashed border-(--regra-forte) text-(--tinta-2)',
+    evento.tipo === 'limite_protocolo' && 'bg-(--alerta-fundo) text-(--alerta-texto)',
+    evento.tipo === 'validade' && 'bg-(--andamento-fundo) text-(--andamento-texto)',
+    evento.tipo === 'tarefa' && 'border border-(--regra-forte) text-(--tinta)',
   )
   const conteudo = (
     <>
@@ -133,9 +133,7 @@ function Evento({
       {evento.tipo === 'meta' ? <span className="font-semibold">Meta</span> : null}
       {evento.tipo === 'tarefa' ? <span className="font-semibold">Serviço</span> : null}
       <span className={inteiro ? 'break-words' : 'truncate'}>{textoDoEvento(evento)}</span>
-      {evento.semResponsavel ? (
-        <span className="shrink-0 text-(--text-subtle)">sem resp.</span>
-      ) : null}
+      {evento.semResponsavel ? <span className="shrink-0 text-(--tinta-2)">sem resp.</span> : null}
     </>
   )
   if (evento.tipo !== 'validade' && (evento.tipo !== 'tarefa' || linkDoOrcamento)) {
@@ -268,10 +266,10 @@ export function PaginaCalendario() {
   const agenda = diasVisiveis.filter((d) => d >= hoje && quantosNoDia(d) > 0)
 
   return (
-    <div className="flex flex-col gap-(--space-200)">
+    <div className="flex flex-col gap-(--e-4)">
       <Pagina titulo="Calendário">{null}</Pagina>
 
-      <div className="flex flex-wrap items-center gap-(--space-100)">
+      <div className="flex flex-wrap items-center gap-(--e-2)">
         <BotaoIcone
           icone="chevron-left"
           rotulo={modo === 'mes' ? 'Mês anterior' : 'Semana anterior'}
@@ -337,7 +335,7 @@ export function PaginaCalendario() {
             setFiltros((f) => ({ ...f, semResponsavel: evento.target.checked }))
           }}
         />
-        <div role="group" aria-label="Visualização" className="ml-auto flex gap-(--space-050)">
+        <div role="group" aria-label="Visualização" className="ml-auto flex gap-(--e-1)">
           <Botao
             selecionado={modo === 'mes'}
             onClick={() => {
@@ -357,7 +355,7 @@ export function PaginaCalendario() {
         </div>
       </div>
 
-      <p className="flex flex-wrap gap-x-(--space-200) gap-y-(--space-050) text-xs text-(--text-subtle)">
+      <p className="flex flex-wrap gap-x-(--e-4) gap-y-(--e-1) text-xs text-(--tinta-2)">
         <span>Fundo cinza: prazo oficial</span>
         <span>Tracejado “Meta”: meta interna</span>
         <span>Âmbar com relógio: limite de protocolo</span>
@@ -377,13 +375,13 @@ export function PaginaCalendario() {
           aoTentarDeNovo={() => void eventos.refetch()}
         />
       ) : eventos.isPending ? (
-        <div role="status" className="rounded-(--radius-large) border bg-(--surface) shadow-cartao">
+        <div role="status" className="rounded-(--raio-painel) border bg-(--folha) shadow-cartao">
           <span className="sr-only">Carregando o calendário</span>
           <EsqueletoLinhas linhas={6} />
         </div>
       ) : (
         <>
-          <div className="hidden overflow-x-auto rounded-(--radius-large) border bg-(--surface) shadow-cartao md:block">
+          <div className="hidden overflow-x-auto rounded-(--raio-painel) border bg-(--folha) shadow-cartao md:block">
             <table
               className="w-full table-fixed border-collapse"
               aria-label={`Calendário de ${titulo}`}
@@ -394,7 +392,7 @@ export function PaginaCalendario() {
                     <th
                       key={d}
                       scope="col"
-                      className="h-8 border-b px-(--space-100) text-left rotulo-maiusculo text-(--text-subtle)"
+                      className="h-8 border-b px-(--e-2) text-left rotulo-maiusculo text-(--tinta-2)"
                     >
                       {d}
                     </th>
@@ -416,12 +414,12 @@ export function PaginaCalendario() {
                         <td
                           key={dia}
                           className={cn(
-                            'border-r border-b p-(--space-075) align-top last:border-r-0',
+                            'border-r border-b p-(--e-15) align-top last:border-r-0',
                             modo === 'mes' ? 'h-28' : 'h-64',
-                            foraDoMes && 'bg-(--surface-sunken)',
+                            foraDoMes && 'bg-(--chao)',
                           )}
                         >
-                          <div className="flex flex-col gap-(--space-050)">
+                          <div className="flex flex-col gap-(--e-1)">
                             <button
                               type="button"
                               onClick={() => {
@@ -429,20 +427,20 @@ export function PaginaCalendario() {
                               }}
                               aria-label={`${formatarDataCivil(dia)}, ${String(totalDoDia)} ${totalDoDia === 1 ? 'evento' : 'eventos'}`}
                               className={cn(
-                                'inline-flex w-fit cursor-pointer items-center gap-(--space-050) rounded-(--radius) text-xs transicao-estado hover:underline',
-                                foraDoMes ? 'text-(--text-subtle)' : 'text-(--text)',
+                                'inline-flex w-fit cursor-pointer items-center gap-(--e-1) rounded-(--raio) text-xs transicao-estado hover:underline',
+                                foraDoMes ? 'text-(--tinta-2)' : 'text-(--tinta)',
                               )}
                             >
                               <span
                                 className={cn(
-                                  'inline-flex min-w-5 justify-center rounded-(--radius) px-1',
-                                  ehHoje && 'bg-(--brand) font-semibold text-(--text-inverse)',
+                                  'inline-flex min-w-5 justify-center rounded-(--raio) px-1',
+                                  ehHoje && 'bg-(--acao) font-semibold text-(--acao-texto)',
                                 )}
                               >
                                 {partes(dia)[2]}
                               </span>
                               {ehHoje ? (
-                                <span className="font-semibold text-(--text-link)">Hoje</span>
+                                <span className="font-semibold text-(--link)">Hoje</span>
                               ) : null}
                             </button>
                             {doDia.slice(0, limite).map((evento) => (
@@ -464,7 +462,7 @@ export function PaginaCalendario() {
                                 onClick={() => {
                                   setDiaAberto(dia)
                                 }}
-                                className="w-fit cursor-pointer text-xs text-(--text-link) hover:underline"
+                                className="w-fit cursor-pointer text-xs text-(--link) hover:underline"
                               >
                                 +{restantes} mais
                               </button>
@@ -479,7 +477,7 @@ export function PaginaCalendario() {
             </table>
           </div>
 
-          <section aria-label="Agenda" className="flex flex-col gap-(--space-150) md:hidden">
+          <section aria-label="Agenda" className="flex flex-col gap-(--e-3) md:hidden">
             {agenda.length === 0 ? (
               <EstadoVazio
                 icone="calendar"
@@ -488,7 +486,7 @@ export function PaginaCalendario() {
               />
             ) : (
               agenda.map((dia) => (
-                <div key={dia} className="flex flex-col gap-(--space-050)">
+                <div key={dia} className="flex flex-col gap-(--e-1)">
                   <h3 className="corpo-medio">
                     {dia === hoje ? 'Hoje · ' : ''}
                     {nomeDoDiaDaSemana(dia)}, {formatarDataCivil(dia)}
@@ -525,25 +523,25 @@ export function PaginaCalendario() {
         }
       >
         {diaAberto && quantosNoDia(diaAberto) > 0 ? (
-          <ul className="flex flex-col gap-(--space-100)" aria-label="Eventos do dia">
+          <ul className="flex flex-col gap-(--e-2)" aria-label="Eventos do dia">
             {(porDia.get(diaAberto) ?? []).map((evento) => (
-              <li key={`${evento.tipo}:${evento.id}`} className="flex flex-col gap-(--space-025)">
+              <li key={`${evento.tipo}:${evento.id}`} className="flex flex-col gap-(--e-05)">
                 <Evento evento={evento} inteiro linkDoOrcamento={ehGestao} />
-                <span className="text-xs text-(--text-subtle)">{descricaoDoEvento(evento)}</span>
+                <span className="text-xs text-(--tinta-2)">{descricaoDoEvento(evento)}</span>
               </li>
             ))}
             {(residuosPorDia.get(diaAberto) ?? []).map((p) => (
               <li
                 key={`residuo:${p.obrigacaoId}:${p.prazo}`}
-                className="flex flex-col gap-(--space-025)"
+                className="flex flex-col gap-(--e-05)"
               >
                 <EventoPrazoDeResiduo prazo={p} inteiro />
-                <span className="text-xs text-(--text-subtle)">{descricaoDoPrazoDeResiduo(p)}</span>
+                <span className="text-xs text-(--tinta-2)">{descricaoDoPrazoDeResiduo(p)}</span>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="text-(--text-subtle)">Nenhum evento neste dia.</p>
+          <p className="text-(--tinta-2)">Nenhum evento neste dia.</p>
         )}
       </Dialogo>
     </div>

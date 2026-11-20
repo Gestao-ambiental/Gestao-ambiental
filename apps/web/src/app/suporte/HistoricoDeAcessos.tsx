@@ -43,14 +43,14 @@ function Item({ acesso, fuso }: { acesso: AcessoDeSuporte; fuso: string }) {
   }
 
   return (
-    <li className="flex flex-col gap-(--space-100) border-b px-(--space-150) py-(--space-150) last:border-b-0">
-      <span className="flex flex-wrap items-center gap-(--space-075)">
+    <li className="flex flex-col gap-(--e-2) border-b px-(--e-3) py-(--e-3) last:border-b-0">
+      <span className="flex flex-wrap items-center gap-(--e-15)">
         <Selo tom={emergencia ? 'perigo' : 'andamento'}>
           {emergencia ? 'Emergência' : 'Autorizado'}
         </Selo>
         {acesso.ativo ? <Selo tom="sucesso">Valendo</Selo> : <Selo>Encerrado</Selo>}
       </span>
-      <dl className="grid grid-cols-1 gap-x-(--space-200) gap-y-(--space-075) sm:grid-cols-2">
+      <dl className="grid grid-cols-1 gap-x-(--e-4) gap-y-(--e-15) sm:grid-cols-2">
         {linhas.map(([rotulo, valor]) => (
           <div key={rotulo} className="flex min-w-0 flex-col">
             <dt className="rotulo">{rotulo}</dt>
@@ -109,10 +109,10 @@ export function HistoricoDeAcessos({
   if (itens.length === 0) return <EstadoVazio icone="clock" titulo="Nenhum acesso do suporte" />
 
   return (
-    <div className="flex flex-col gap-(--space-100)">
+    <div className="flex flex-col gap-(--e-2)">
       <ol
         aria-label="Histórico de acessos do suporte"
-        className="flex flex-col rounded-(--radius-large) border bg-(--surface) shadow-cartao"
+        className="flex flex-col rounded-(--raio-painel) border bg-(--folha) shadow-cartao"
       >
         {itens.map((acesso) => (
           <Item key={acesso.id} acesso={acesso} fuso={fuso} />

@@ -82,7 +82,7 @@ export function PaginaCriarConsultoria() {
 
   if (criada) {
     return (
-      <div className="flex flex-col gap-(--space-300)">
+      <div className="flex flex-col gap-(--e-6)">
         <CabecalhoAcesso titulo={`Boas-vindas à ${criada}`} tituloDaAba="Consultoria criada">
           A consultoria está criada e você é a Gestão.
         </CabecalhoAcesso>
@@ -92,7 +92,7 @@ export function PaginaCriarConsultoria() {
             <Link to="/configuracoes/proposta">Enviar em Dados da proposta</Link>
           </MensagemSecao>
         ) : null}
-        <section aria-labelledby="proximos-passos" className="flex flex-col gap-(--space-100)">
+        <section aria-labelledby="proximos-passos" className="flex flex-col gap-(--e-2)">
           <h2 id="proximos-passos" className="titulo-secao">
             Próximos passos
           </h2>
@@ -111,7 +111,7 @@ export function PaginaCriarConsultoria() {
   }
 
   return (
-    <div className="flex flex-col gap-(--space-300)">
+    <div className="flex flex-col gap-(--e-6)">
       <CabecalhoAcesso titulo="Criar consultoria">
         Você será a Gestão desta consultoria.
       </CabecalhoAcesso>
@@ -127,7 +127,7 @@ export function PaginaCriarConsultoria() {
             criacao.mutate(dados)
           })(evento)
         }
-        className="flex flex-col gap-(--space-200)"
+        className="flex flex-col gap-(--e-4)"
       >
         <CampoTexto
           rotulo="Nome da consultoria"
@@ -135,7 +135,7 @@ export function PaginaCriarConsultoria() {
           erro={errors.nome?.message}
           {...register('nome')}
         />
-        <div role="group" aria-labelledby="rotulo-logo" className="flex flex-col gap-(--space-050)">
+        <div role="group" aria-labelledby="rotulo-logo" className="flex flex-col gap-(--e-1)">
           <span id="rotulo-logo" className="rotulo">
             Logo (opcional)
           </span>
@@ -155,7 +155,7 @@ export function PaginaCriarConsultoria() {
               setLogo(motivo ? null : arquivo)
             }}
           />
-          <div className="flex flex-wrap items-center gap-(--space-100)">
+          <div className="flex flex-wrap items-center gap-(--e-2)">
             <Botao
               iconeAntes="upload"
               aria-describedby={problemaDoLogo ? 'erro-logo' : undefined}
@@ -180,7 +180,7 @@ export function PaginaCriarConsultoria() {
             ) : null}
           </div>
           {problemaDoLogo ? (
-            <span id="erro-logo" role="alert" className="text-xs text-(--text-danger)">
+            <span id="erro-logo" role="alert" className="text-xs text-(--atraso-texto)">
               {problemaDoLogo}
             </span>
           ) : null}

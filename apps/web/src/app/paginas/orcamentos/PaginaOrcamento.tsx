@@ -82,7 +82,7 @@ import { camposDoProspecto, lerProspecto, type CamposDoProspecto } from './prosp
 import { SeloSituacaoOrcamento } from './SeloSituacaoOrcamento'
 
 /** Texto longo quebra linha e o campo cresce com ele (Chromium e Safari; nos demais, rola). */
-const classeTextoQueCresce = `${classeCampo} h-auto min-h-(--size-control) resize-none py-(--space-075) [field-sizing:content]`
+const classeTextoQueCresce = `${classeCampo} h-auto min-h-(--controle) resize-none py-(--e-15) [field-sizing:content]`
 
 /** Etapas do orçamento, na ordem em que ele se forma (pedido do Eduardo, 11/11/2026). */
 const ETAPAS = [
@@ -782,7 +782,7 @@ function Editor({
         />
       ),
       art: (
-        <div className="mt-(--space-050)">
+        <div className="mt-(--e-1)">
           <select
             aria-label={`ART ou RRT do item ${n}`}
             className={`${classeCampo} w-full py-0 text-xs`}
@@ -813,7 +813,7 @@ function Editor({
         />
       ),
       tabela: (
-        <div className="flex flex-col gap-(--space-050)">
+        <div className="flex flex-col gap-(--e-1)">
           {horas.length > 0 ? (
             <select
               aria-label={`Preço do item ${n}`}
@@ -1004,14 +1004,14 @@ function Editor({
   const temDigitado = r.itens.some((i) => i.digitado && i.precoFechado.trim() !== '')
 
   return (
-    <div className="flex flex-col gap-(--space-200)">
-      <Link to="/orcamentos" className="text-xs text-(--text-subtle) no-underline hover:underline">
+    <div className="flex flex-col gap-(--e-4)">
+      <Link to="/orcamentos" className="text-xs text-(--tinta-2) no-underline hover:underline">
         Orçamentos
       </Link>
-      <div className="flex flex-wrap items-end justify-between gap-(--space-150)">
-        <div className="flex flex-col gap-(--space-050)">
+      <div className="flex flex-wrap items-end justify-between gap-(--e-3)">
+        <div className="flex flex-col gap-(--e-1)">
           <Pagina titulo={orcamento.empreendimentoNome}>{null}</Pagina>
-          <p className="flex flex-wrap items-center gap-(--space-100) text-(--text-subtle)">
+          <p className="flex flex-wrap items-center gap-(--e-2) text-(--tinta-2)">
             <span className="tabular-nums">
               {numeroComRevisao(orcamento.ano, orcamento.sequencia, orcamento.revisao)}
             </span>
@@ -1032,7 +1032,7 @@ function Editor({
             {alterado ? <span>Alterações não salvas</span> : null}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-(--space-100)">
+        <div className="flex flex-wrap items-center gap-(--e-2)">
           {naLixeira ? null : (
             <>
               <Botao
@@ -1093,7 +1093,7 @@ function Editor({
 
       {naLixeira ? (
         <MensagemSecao tom="atencao">
-          <span className="flex flex-wrap items-center justify-between gap-(--space-100)">
+          <span className="flex flex-wrap items-center justify-between gap-(--e-2)">
             <span>Este orçamento está na lixeira. Nada muda até ele ser restaurado.</span>
             <Botao
               tamanho="compacto"
@@ -1149,13 +1149,13 @@ function Editor({
         role="group"
         tabIndex={-1}
         aria-label={`Etapa ${String(etapa + 1)} de ${String(ETAPAS.length)}: ${ETAPAS[etapa]?.titulo ?? ''}`}
-        className="scroll-mt-(--space-200) overflow-hidden rounded-(--radius-large) border bg-(--surface) shadow-cartao outline-none"
+        className="scroll-mt-(--e-4) overflow-hidden rounded-(--raio-painel) border bg-(--folha) shadow-cartao outline-none"
       >
         {/* Números principais: custo e preço. A margem se escolhe na etapa 2. */}
-        <div className="grid gap-(--space-200) border-b p-(--space-200) sm:grid-cols-2">
+        <div className="grid gap-(--e-4) border-b p-(--e-4) sm:grid-cols-2">
           <Numero rotulo="Custo do orçamento">
             {calculo.custoTotalCentavos === null ? (
-              <span className="text-(--text-subtle)">{base ? 'pendente' : 'não calculado'}</span>
+              <span className="text-(--tinta-2)">{base ? 'pendente' : 'não calculado'}</span>
             ) : (
               formatarReais(calculo.custoTotalCentavos)
             )}
@@ -1171,7 +1171,7 @@ function Editor({
             }
           >
             {precoTotal === null ? (
-              <span className="text-(--text-subtle)">pendente</span>
+              <span className="text-(--tinta-2)">pendente</span>
             ) : (
               formatarReais(precoTotal)
             )}
@@ -1179,7 +1179,7 @@ function Editor({
         </div>
 
         {calculo.pendencia && calculo.pendencia !== 'sem_itens' ? (
-          <div className="border-b p-(--space-200)">
+          <div className="border-b p-(--e-4)">
             <MensagemSecao tom="atencao">
               {MENSAGEM_DA_PENDENCIA[calculo.pendencia]}
               {calculo.pendencia === 'sem_base' ? (
@@ -1209,13 +1209,13 @@ function Editor({
                   </Botao>
                 }
               >
-                <div className="flex flex-col gap-(--space-150) px-(--space-150) pb-(--space-150)">
-                  <p className="text-xs text-(--text-subtle)">
+                <div className="flex flex-col gap-(--e-3) px-(--e-3) pb-(--e-3)">
+                  <p className="text-xs text-(--tinta-2)">
                     {alterado
                       ? 'Salve as alterações antes de cadastrar o prospecto.'
                       : 'Quem pediu o orçamento ainda não está cadastrado. Ao cadastrar, um CNPJ ou CPF que já existe é ligado ao empreendimento existente, sem duplicar.'}
                   </p>
-                  <div className="grid gap-(--space-150) sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid gap-(--e-3) sm:grid-cols-2 lg:grid-cols-3">
                     <CampoTexto
                       rotulo="Nome da empresa ou do cliente"
                       required
@@ -1265,7 +1265,7 @@ function Editor({
               }
             >
               {aplicado ? (
-                <div className="px-(--space-150) pb-(--space-100)">
+                <div className="px-(--e-3) pb-(--e-2)">
                   <MensagemSecao role="status" tom="sucesso">
                     {aplicado}
                   </MensagemSecao>
@@ -1327,7 +1327,7 @@ function Editor({
                         <tr>
                           <td
                             colSpan={7 + (pelaTabela ? 1 : 0)}
-                            className={`${classeCelula} text-(--text-subtle)`}
+                            className={`${classeCelula} text-(--tinta-2)`}
                           >
                             Nenhum serviço ainda. Escolha um modelo ou adicione os itens.
                           </td>
@@ -1341,12 +1341,12 @@ function Editor({
                               {campos.servico}
                               {/* Notebook: outros custos e ART/RRT recolhidos, para o nome e o mês
                                   terem espaço; o resumo diz o que há dentro (ADR-0019 §3). */}
-                              <details className="mt-(--space-050)">
-                                <summary className="cursor-pointer text-xs text-(--text-subtle)">
+                              <details className="mt-(--e-1)">
+                                <summary className="cursor-pointer text-xs text-(--tinta-2)">
                                   {resumoDosDetalhes(item)}{' '}
                                   <span className="sr-only">do item {campos.n}</span>
                                 </summary>
-                                <div className="mt-(--space-075) flex flex-col gap-(--space-100)">
+                                <div className="mt-(--e-15) flex flex-col gap-(--e-2)">
                                   <CampoDoCartao rotulo="Outros custos (R$)">
                                     {campos.outros}
                                   </CampoDoCartao>
@@ -1360,7 +1360,7 @@ function Editor({
                             <td className={classeCelula}>{campos.mes}</td>
                             <td className={`${classeCelula} text-right tabular-nums`}>
                               {campos.custo === null ? (
-                                <span className="text-(--text-subtle)">—</span>
+                                <span className="text-(--tinta-2)">—</span>
                               ) : (
                                 formatarCentavos(campos.custo)
                               )}
@@ -1368,7 +1368,7 @@ function Editor({
                             {pelaTabela ? (
                               <td className={`${classeCelula} text-right tabular-nums`}>
                                 {campos.preco === null ? (
-                                  <span className="text-(--text-subtle)">—</span>
+                                  <span className="text-(--tinta-2)">—</span>
                                 ) : (
                                   formatarCentavos(campos.preco)
                                 )}
@@ -1390,7 +1390,7 @@ function Editor({
                   </table>
                 </div>
               )}
-              <div className="flex flex-wrap items-center justify-between gap-(--space-100) px-(--space-150) py-(--space-100)">
+              <div className="flex flex-wrap items-center justify-between gap-(--e-2) px-(--e-3) py-(--e-2)">
                 {editavel ? (
                   <Botao
                     aparencia="link"
@@ -1412,7 +1412,7 @@ function Editor({
                 ) : (
                   <span />
                 )}
-                <p className="text-xs text-(--text-subtle)">
+                <p className="text-xs text-(--tinta-2)">
                   Custo = horas × hora do responsável (sem responsável, a da profissão ou a média) +
                   outros custos + contas da consultoria pelas horas.
                 </p>
@@ -1421,8 +1421,8 @@ function Editor({
 
             {/* Visitas técnicas */}
             <Secao titulo="Visitas técnicas">
-              <div className="flex flex-col gap-(--space-150) px-(--space-150) pb-(--space-150)">
-                <div className="grid gap-(--space-150) sm:grid-cols-3">
+              <div className="flex flex-col gap-(--e-3) px-(--e-3) pb-(--e-3)">
+                <div className="grid gap-(--e-3) sm:grid-cols-3">
                   <CampoRotulado id="visitas-quantidade" rotulo="Quantidade de visitas">
                     <input
                       id="visitas-quantidade"
@@ -1476,7 +1476,7 @@ function Editor({
                   </CampoRotulado>
                 </div>
                 {base ? (
-                  <p className="text-xs text-(--text-subtle)">
+                  <p className="text-xs text-(--tinta-2)">
                     Cada visita:{' '}
                     {modoDasVisitas === 'km'
                       ? `km × ${formatarReais(base.custoKmCentavos)}`
@@ -1489,7 +1489,7 @@ function Editor({
                           }`}{' '}
                     + outros gastos. Preço fixo, sem margem.{' '}
                     {quantidadeDeVisitas > 0 ? (
-                      <span className="corpo-medio text-(--text)">
+                      <span className="corpo-medio text-(--tinta)">
                         Valor das visitas: {formatarReais(calculo.valorVisitasCentavos)}
                       </span>
                     ) : (
@@ -1539,7 +1539,7 @@ function Editor({
                   <tbody>
                     {r.despesas.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className={`${classeCelula} text-(--text-subtle)`}>
+                        <td colSpan={4} className={`${classeCelula} text-(--tinta-2)`}>
                           Nenhuma despesa de terceiros.
                         </td>
                       </tr>
@@ -1615,7 +1615,7 @@ function Editor({
                 </table>
               </div>
               {editavel ? (
-                <div className="flex flex-wrap items-center justify-between gap-(--space-100) px-(--space-150) py-(--space-100)">
+                <div className="flex flex-wrap items-center justify-between gap-(--e-2) px-(--e-3) py-(--e-2)">
                   <Botao
                     aparencia="link"
                     iconeAntes="plus"
@@ -1636,7 +1636,7 @@ function Editor({
                   >
                     Adicionar despesa
                   </Botao>
-                  <p className="text-xs text-(--text-subtle)">
+                  <p className="text-xs text-(--tinta-2)">
                     Sem valor ainda? Deixe a estimativa em branco: ela fica a cotar.
                   </p>
                 </div>
@@ -1649,12 +1649,12 @@ function Editor({
           <>
             {/* Preço e margem: a margem entra só aqui, depois dos serviços */}
             <Secao titulo="Preço e margem">
-              <div className="flex flex-col gap-(--space-200) px-(--space-150) pb-(--space-200)">
+              <div className="flex flex-col gap-(--e-4) px-(--e-3) pb-(--e-4)">
                 {base ? (
                   <>
-                    <fieldset className="flex flex-col gap-(--space-100)">
-                      <legend className="mb-(--space-050) rotulo">Como o preço é formado</legend>
-                      <div className="grid gap-(--space-100) sm:grid-cols-2">
+                    <fieldset className="flex flex-col gap-(--e-2)">
+                      <legend className="mb-(--e-1) rotulo">Como o preço é formado</legend>
+                      <div className="grid gap-(--e-2) sm:grid-cols-2">
                         <OpcaoRadio
                           name="forma-de-preco"
                           rotulo="Pela tabela (hora de venda)"
@@ -1697,7 +1697,7 @@ function Editor({
                             ? 'pendente'
                             : formatarPontosBase(calculo.margemResultantePb)}
                         </span>
-                        <span className="text-(--text-subtle)">
+                        <span className="text-(--tinta-2)">
                           {' '}
                           · mínima {formatarPontosBase(base.margemMinimaPb)}
                         </span>
@@ -1708,7 +1708,7 @@ function Editor({
                         rotulo="Acréscimo sobre horas de venda e contas (%)"
                         apoio={`Sobre as horas de venda e as contas · referência ${formatarPontosBase(base.margemDesejadaPb)} · mínima ${formatarPontosBase(base.margemMinimaPb)}`}
                       >
-                        <div className="flex flex-wrap items-center gap-(--space-100)">
+                        <div className="flex flex-wrap items-center gap-(--e-2)">
                           <input
                             id="orcamento-margem"
                             inputMode="decimal"
@@ -1726,7 +1726,7 @@ function Editor({
                           <div
                             role="group"
                             aria-label="Margens mais usadas"
-                            className="flex flex-wrap gap-(--space-050)"
+                            className="flex flex-wrap gap-(--e-1)"
                           >
                             {MARGENS_RAPIDAS.map((m) => (
                               <Botao
@@ -1788,7 +1788,7 @@ function Editor({
                     pendencia={calculo.pendencia ? MENSAGEM_DA_PENDENCIA[calculo.pendencia] : null}
                   />
                 ) : d && precoTotal !== null ? (
-                  <div className="grid gap-(--space-300) lg:grid-cols-2">
+                  <div className="grid gap-(--e-6) lg:grid-cols-2">
                     {!pelaTabela ? (
                       <p className="corpo lg:col-span-2">
                         Sobre o que incide o acréscimo: {formatarReais(d.horasDeVendaCentavos)} da
@@ -1798,7 +1798,7 @@ function Editor({
                         {d.precosFechadosCentavos > 0
                           ? ` Pacotes (${formatarReais(d.precosFechadosCentavos)}) têm preço fechado e ficam fora do acréscimo.`
                           : ''}
-                        <span className="mt-(--space-050) block text-(--text-subtle)">
+                        <span className="mt-(--e-1) block text-(--tinta-2)">
                           Exemplo fictício: base R$ 1.000, acréscimo de 20% = R$ 200, preço R$ 1.200
                           antes de tributos e taxas. É acréscimo sobre a base, não margem de 20%
                           sobre a venda.
@@ -1806,8 +1806,8 @@ function Editor({
                       </p>
                     ) : null}
                     <section aria-label="Divisão do valor">
-                      <h3 className="mb-(--space-100) corpo-medio">Divisão do valor</h3>
-                      <dl className="grid grid-cols-[1fr_auto] gap-x-(--space-200) gap-y-(--space-075) corpo">
+                      <h3 className="mb-(--e-2) corpo-medio">Divisão do valor</h3>
+                      <dl className="grid grid-cols-[1fr_auto] gap-x-(--e-4) gap-y-(--e-15) corpo">
                         <Valor rotulo="Custo da equipe (horas × custo por hora)">
                           {d.trabalhoTecnicoCentavos}
                         </Valor>
@@ -1837,27 +1837,27 @@ function Editor({
                         <Valor rotulo="Lucro estimado" destaque>
                           {d.lucroCentavos}
                         </Valor>
-                        <dt className="border-t pt-(--space-075) corpo-medio">Preço</dt>
-                        <dd className="border-t pt-(--space-075) text-right corpo-medio tabular-nums">
+                        <dt className="border-t pt-(--e-15) corpo-medio">Preço</dt>
+                        <dd className="border-t pt-(--e-15) text-right corpo-medio tabular-nums">
                           {formatarReais(precoTotal)}
                         </dd>
                       </dl>
                     </section>
 
                     <section aria-label="Contas da consultoria neste orçamento">
-                      <h3 className="mb-(--space-025) corpo-medio">
+                      <h3 className="mb-(--e-05) corpo-medio">
                         Contas da consultoria neste orçamento
                       </h3>
-                      <p className="mb-(--space-100) text-xs text-(--text-subtle)">
+                      <p className="mb-(--e-2) text-xs text-(--tinta-2)">
                         Quanto este orçamento cobre de cada conta do mês, pelas horas estimadas.
                       </p>
                       {calculo.contas.length === 0 ? (
-                        <p className="text-(--text-subtle)">
+                        <p className="text-(--tinta-2)">
                           Nenhuma conta do mês cadastrada.{' '}
                           <Link to="/configuracoes/custos">Detalhar contas em Custos e taxas</Link>
                         </p>
                       ) : (
-                        <dl className="grid grid-cols-[1fr_auto] gap-x-(--space-200) gap-y-(--space-075) corpo">
+                        <dl className="grid grid-cols-[1fr_auto] gap-x-(--e-4) gap-y-(--e-15) corpo">
                           {calculo.contas.map((conta) => (
                             <Valor key={conta.descricao} rotulo={conta.descricao}>
                               {conta.valorCentavos}
@@ -1868,12 +1868,12 @@ function Editor({
                     </section>
 
                     <section aria-label="Preço na proposta" className="lg:col-span-2">
-                      <h3 className="mb-(--space-025) corpo-medio">Preço na proposta</h3>
-                      <p className="mb-(--space-100) text-xs text-(--text-subtle)">
+                      <h3 className="mb-(--e-05) corpo-medio">Preço na proposta</h3>
+                      <p className="mb-(--e-2) text-xs text-(--tinta-2)">
                         O preço é repartido entre os serviços proporcionalmente às horas de venda,
                         contas e outros custos. Custo e margem não aparecem para o cliente.
                       </p>
-                      <dl className="grid max-w-2xl grid-cols-[1fr_auto] gap-x-(--space-200) gap-y-(--space-075) corpo">
+                      <dl className="grid max-w-2xl grid-cols-[1fr_auto] gap-x-(--e-4) gap-y-(--e-15) corpo">
                         {r.itens.map((item, indice) => (
                           <Valor
                             key={item.id}
@@ -1893,7 +1893,7 @@ function Editor({
                     </section>
                   </div>
                 ) : (
-                  <p className="text-(--text-subtle)">
+                  <p className="text-(--tinta-2)">
                     {calculo.pendencia ? MENSAGEM_DA_PENDENCIA[calculo.pendencia] : null}
                   </p>
                 )}
@@ -1950,7 +1950,7 @@ function Editor({
                   <tbody>
                     {r.parcelas.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className={`${classeCelula} text-(--text-subtle)`}>
+                        <td colSpan={5} className={`${classeCelula} text-(--tinta-2)`}>
                           Nenhuma parcela. Adicione ao menos uma antes de enviar.
                         </td>
                       </tr>
@@ -2019,7 +2019,7 @@ function Editor({
                   </tbody>
                 </table>
               </div>
-              <div className="flex flex-wrap items-center justify-between gap-(--space-100) px-(--space-150) py-(--space-100)">
+              <div className="flex flex-wrap items-center justify-between gap-(--e-2) px-(--e-3) py-(--e-2)">
                 {editavel ? (
                   <Botao
                     aparencia="link"
@@ -2040,13 +2040,13 @@ function Editor({
                   <span />
                 )}
                 {r.parcelas.length > 0 && calculo.diferencaParcelasPontosBase !== 0 ? (
-                  <p role="status" className="text-xs text-(--text-danger)">
+                  <p role="status" className="text-xs text-(--atraso-texto)">
                     {calculo.diferencaParcelasPontosBase > 0
                       ? `Faltam ${formatarPontosBase(calculo.diferencaParcelasPontosBase)} para fechar 100%.`
                       : `Passa de 100% em ${formatarPontosBase(-calculo.diferencaParcelasPontosBase)}.`}
                   </p>
                 ) : r.parcelas.length > 0 ? (
-                  <p className="text-xs text-(--text-subtle)">Somam 100% do preço.</p>
+                  <p className="text-xs text-(--tinta-2)">Somam 100% do preço.</p>
                 ) : null}
               </div>
             </Secao>
@@ -2054,9 +2054,9 @@ function Editor({
             {/* Fim do orçamento: a proposta como o cliente recebe (ORC-05). */}
             <section
               aria-label="Proposta pronta"
-              className="flex flex-wrap items-center justify-between gap-(--space-150) border-b px-(--space-150) py-(--space-150)"
+              className="flex flex-wrap items-center justify-between gap-(--e-3) border-b px-(--e-3) py-(--e-3)"
             >
-              <p className="max-w-xl text-(--text-subtle)">
+              <p className="max-w-xl text-(--tinta-2)">
                 {alterado
                   ? 'Salve as mudanças para ver a proposta pronta: ela mostra o que está salvo.'
                   : 'Veja a proposta como o cliente recebe, sem custo nem margem, e imprima ou salve em PDF.'}
@@ -2069,7 +2069,7 @@ function Editor({
               titulo="Objeto, destinatário, prazos e validade"
               resumo={`${r.validade} dias`}
             >
-              <div className="grid gap-(--space-200) sm:grid-cols-2">
+              <div className="grid gap-(--e-4) sm:grid-cols-2">
                 <CampoArea
                   id="orcamento-objeto"
                   rotulo="O que está sendo orçado"
@@ -2101,7 +2101,7 @@ function Editor({
                     mudar((a) => ({ ...a, prazos: valor }))
                   }}
                 />
-                <div className="flex flex-col gap-(--space-050)">
+                <div className="flex flex-col gap-(--e-1)">
                   <label htmlFor="orcamento-validade" className="rotulo">
                     Validade da proposta (dias)
                   </label>
@@ -2273,13 +2273,13 @@ function ServicosEmCartoes({
 }) {
   if (itens.length === 0) {
     return (
-      <p className="px-(--space-150) py-(--space-100) text-(--text-subtle)">
+      <p className="px-(--e-3) py-(--e-2) text-(--tinta-2)">
         Nenhum serviço ainda. Escolha um modelo ou adicione os itens.
       </p>
     )
   }
   return (
-    <ol aria-label="Serviços" className="flex flex-col gap-(--space-100) px-(--space-150)">
+    <ol aria-label="Serviços" className="flex flex-col gap-(--e-2) px-(--e-3)">
       {itens.map((item, indice) => {
         const campos = camposDoItem(item, indice)
         const aberto = abertos.has(item.id)
@@ -2298,13 +2298,13 @@ function ServicosEmCartoes({
                     return q ? textoDaQuantidade(q, campos.linha.unidade) : 'sem quantidade'
                   })()
         return (
-          <li key={item.id} className="rounded-(--radius) border bg-(--surface)">
-            <div className="flex items-start justify-between gap-(--space-100) p-(--space-150)">
-              <div className="flex min-w-0 flex-col gap-(--space-025)">
-                <span className="corpo-medio break-words text-(--text)">
+          <li key={item.id} className="rounded-(--raio) border bg-(--folha)">
+            <div className="flex items-start justify-between gap-(--e-2) p-(--e-3)">
+              <div className="flex min-w-0 flex-col gap-(--e-05)">
+                <span className="corpo-medio break-words text-(--tinta)">
                   {campos.n}. {nome}
                 </span>
-                <span className="text-xs text-(--text-subtle)">
+                <span className="text-xs text-(--tinta-2)">
                   {unidade} · {estadoDoServico(item, campos.linha)}
                 </span>
               </div>
@@ -2312,7 +2312,7 @@ function ServicosEmCartoes({
                 {campos.preco === null ? '—' : formatarCentavos(campos.preco)}
               </span>
             </div>
-            <div className="flex flex-wrap items-center gap-(--space-100) border-t px-(--space-150) py-(--space-075)">
+            <div className="flex flex-wrap items-center gap-(--e-2) border-t px-(--e-3) py-(--e-15)">
               <Botao
                 tamanho="compacto"
                 aria-expanded={aberto}
@@ -2333,10 +2333,7 @@ function ServicosEmCartoes({
               ) : null}
             </div>
             {aberto ? (
-              <div
-                id={idDetalhes}
-                className="flex flex-col gap-(--space-150) border-t p-(--space-150)"
-              >
+              <div id={idDetalhes} className="flex flex-col gap-(--e-3) border-t p-(--e-3)">
                 <CampoDoCartao rotulo="Serviço">{campos.servico}</CampoDoCartao>
                 <CampoDoCartao rotulo={campos.rotuloDoPreco}>{campos.tabela}</CampoDoCartao>
                 <CampoDoCartao rotulo="Horas estimadas">{campos.horas}</CampoDoCartao>
@@ -2344,12 +2341,12 @@ function ServicosEmCartoes({
                 <CampoDoCartao rotulo="Mês previsto">{campos.mes}</CampoDoCartao>
                 <CampoDoCartao rotulo="Outros custos (R$)">{campos.outros}</CampoDoCartao>
                 <CampoDoCartao rotulo="ART/RRT">{campos.art}</CampoDoCartao>
-                <dl className="grid grid-cols-[1fr_auto] gap-x-(--space-150) gap-y-(--space-050) corpo">
-                  <dt className="text-(--text-subtle)">Custo estimado</dt>
+                <dl className="grid grid-cols-[1fr_auto] gap-x-(--e-3) gap-y-(--e-1) corpo">
+                  <dt className="text-(--tinta-2)">Custo estimado</dt>
                   <dd className="text-right tabular-nums">
                     {campos.custo === null ? '—' : formatarCentavos(campos.custo)}
                   </dd>
-                  <dt className="text-(--text-subtle)">Preço</dt>
+                  <dt className="text-(--tinta-2)">Preço</dt>
                   <dd className="text-right tabular-nums">
                     {campos.preco === null ? '—' : formatarCentavos(campos.preco)}
                   </dd>
@@ -2366,7 +2363,7 @@ function ServicosEmCartoes({
 /** Rótulo visível em cima do campo no cartão (o campo já tem nome acessível próprio). */
 function CampoDoCartao({ rotulo, children }: { rotulo: string; children: ReactNode }) {
   return (
-    <div className="flex flex-col gap-(--space-050)">
+    <div className="flex flex-col gap-(--e-1)">
       <span aria-hidden="true" className="rotulo">
         {rotulo}
       </span>
@@ -2397,10 +2394,10 @@ function Numero({
   children: ReactNode
 }) {
   return (
-    <div className="flex flex-col gap-(--space-025)">
+    <div className="flex flex-col gap-(--e-05)">
       <span className="rotulo">{rotulo}</span>
-      <span className="text-2xl font-semibold tabular-nums text-(--text)">{children}</span>
-      {apoio ? <span className="text-xs text-(--text-subtle)">{apoio}</span> : null}
+      <span className="text-2xl font-semibold tabular-nums text-(--tinta)">{children}</span>
+      {apoio ? <span className="text-xs text-(--tinta-2)">{apoio}</span> : null}
     </div>
   )
 }
@@ -2415,9 +2412,9 @@ function Secao({
   children: ReactNode
 }) {
   return (
-    <section className="border-b pt-(--space-150)" aria-label={titulo}>
-      <div className="flex flex-wrap items-center justify-between gap-(--space-100) px-(--space-150) pb-(--space-100)">
-        <h2 className="titulo-secao text-(--text)">{titulo}</h2>
+    <section className="border-b pt-(--e-3)" aria-label={titulo}>
+      <div className="flex flex-wrap items-center justify-between gap-(--e-2) px-(--e-3) pb-(--e-2)">
+        <h2 className="titulo-secao text-(--tinta)">{titulo}</h2>
         {acoes}
       </div>
       {children}
@@ -2437,7 +2434,7 @@ function Valor({
 }) {
   return (
     <>
-      <dt className={destaque ? 'corpo-medio text-(--text)' : 'text-(--text-subtle)'}>{rotulo}</dt>
+      <dt className={destaque ? 'corpo-medio text-(--tinta)' : 'text-(--tinta-2)'}>{rotulo}</dt>
       <dd className={`text-right tabular-nums ${destaque ? 'corpo-medio' : ''}`}>
         {formatarCentavos(children)}
       </dd>
@@ -2457,12 +2454,12 @@ function CampoRotulado({
   children: ReactNode
 }) {
   return (
-    <div className="flex flex-col gap-(--space-050)">
+    <div className="flex flex-col gap-(--e-1)">
       <label htmlFor={id} className="rotulo">
         {rotulo}
       </label>
       {children}
-      {apoio ? <span className="text-xs text-(--text-subtle)">{apoio}</span> : null}
+      {apoio ? <span className="text-xs text-(--tinta-2)">{apoio}</span> : null}
     </div>
   )
 }
@@ -2478,14 +2475,14 @@ function Recolhido({
 }) {
   return (
     <details className="group border-b last:border-b-0">
-      <summary className="flex cursor-pointer list-none items-center gap-(--space-100) px-(--space-150) py-(--space-150) corpo text-(--text) hover:bg-(--surface-hover) [&::-webkit-details-marker]:hidden">
-        <span aria-hidden className="w-3 text-(--text-subtle) group-open:rotate-45">
+      <summary className="flex cursor-pointer list-none items-center gap-(--e-2) px-(--e-3) py-(--e-3) corpo text-(--tinta) hover:bg-(--toque) [&::-webkit-details-marker]:hidden">
+        <span aria-hidden className="w-3 text-(--tinta-2) group-open:rotate-45">
           +
         </span>
         <span className="flex-1">{titulo}</span>
-        <span className="text-(--text-subtle)">{resumo}</span>
+        <span className="text-(--tinta-2)">{resumo}</span>
       </summary>
-      <div className="px-(--space-150) pb-(--space-200)">{children}</div>
+      <div className="px-(--e-3) pb-(--e-4)">{children}</div>
     </details>
   )
 }
@@ -2565,12 +2562,12 @@ function CampoArea({
   apoio?: string
 }) {
   return (
-    <div className="flex flex-col gap-(--space-050)">
+    <div className="flex flex-col gap-(--e-1)">
       <label htmlFor={id} className="rotulo">
         {rotulo}
       </label>
       {apoio ? (
-        <span id={`${id}-apoio`} className="text-xs text-(--text-subtle)">
+        <span id={`${id}-apoio`} className="text-xs text-(--tinta-2)">
           {apoio}
         </span>
       ) : null}
@@ -2578,7 +2575,7 @@ function CampoArea({
         id={id}
         aria-describedby={apoio ? `${id}-apoio` : undefined}
         rows={linhas}
-        className={`${classeCampo} h-auto min-h-(--size-control) py-(--space-075)`}
+        className={`${classeCampo} h-auto min-h-(--controle) py-(--e-15)`}
         value={valor}
         disabled={desabilitado}
         onChange={(e) => {
@@ -2605,24 +2602,24 @@ function PrecoSemConfiguracao({
   pendencia: string | null
 }) {
   return (
-    <div className="flex flex-col gap-(--space-150)">
+    <div className="flex flex-col gap-(--e-3)">
       {precoTotal === null ? (
         <p>{pendencia}</p>
       ) : (
         <section aria-label="Preço na proposta">
-          <h3 className="mb-(--space-100) corpo-medio">Preço na proposta</h3>
-          <dl className="grid max-w-2xl grid-cols-[1fr_auto] gap-x-(--space-200) gap-y-(--space-075) corpo">
+          <h3 className="mb-(--e-2) corpo-medio">Preço na proposta</h3>
+          <dl className="grid max-w-2xl grid-cols-[1fr_auto] gap-x-(--e-4) gap-y-(--e-15) corpo">
             {itens.map((item) => (
               <Valor key={item.id} rotulo={item.rotulo}>
                 {item.precoCentavos}
               </Valor>
             ))}
             {visitas ? <Valor rotulo={visitas.rotulo}>{visitas.precoCentavos}</Valor> : null}
-            <dt className="border-t pt-(--space-075) corpo-medio">Preço</dt>
-            <dd className="border-t pt-(--space-075) text-right corpo-medio tabular-nums">
+            <dt className="border-t pt-(--e-15) corpo-medio">Preço</dt>
+            <dd className="border-t pt-(--e-15) text-right corpo-medio tabular-nums">
               {formatarReais(precoTotal)}
             </dd>
-            <dt className="text-(--text-subtle)">Lucro e margem</dt>
+            <dt className="text-(--tinta-2)">Lucro e margem</dt>
             <dd className="text-right">não calculados</dd>
           </dl>
         </section>
@@ -2645,41 +2642,41 @@ function ComoOPrecoECalculado({
 }) {
   return (
     <>
-      <dl className="grid max-w-xl grid-cols-[1fr_auto] gap-x-(--space-200) gap-y-(--space-075) corpo">
-        <dt className="text-(--text-subtle)">Custo da hora técnica · contas por hora</dt>
+      <dl className="grid max-w-xl grid-cols-[1fr_auto] gap-x-(--e-4) gap-y-(--e-15) corpo">
+        <dt className="text-(--tinta-2)">Custo da hora técnica · contas por hora</dt>
         <dd className="text-right tabular-nums">
           {formatarCentavos(base.horaTecnicaCentavos)} ·{' '}
           {formatarCentavos(base.custoFixoHoraCentavos)}
         </dd>
         {base.deslocamentoModo === 'visita' ? (
           <>
-            <dt className="text-(--text-subtle)">Visita técnica (por visita)</dt>
+            <dt className="text-(--tinta-2)">Visita técnica (por visita)</dt>
             <dd className="text-right tabular-nums">
               {formatarCentavos(base.valorVisitaCentavos)}
             </dd>
           </>
         ) : base.deslocamentoModo === 'km' ? (
           <>
-            <dt className="text-(--text-subtle)">Visita técnica (por km rodado)</dt>
+            <dt className="text-(--tinta-2)">Visita técnica (por km rodado)</dt>
             <dd className="text-right tabular-nums">{formatarCentavos(base.custoKmCentavos)}</dd>
           </>
         ) : (
           <>
-            <dt className="text-(--text-subtle)">Visita técnica · valor por km</dt>
+            <dt className="text-(--tinta-2)">Visita técnica · valor por km</dt>
             <dd className="text-right tabular-nums">
               {formatarCentavos(base.valorVisitaCentavos)} ·{' '}
               {formatarCentavos(base.custoKmCentavos)}
             </dd>
           </>
         )}
-        <dt className="text-(--text-subtle)">Taxas fixas por cobrança e assinatura</dt>
+        <dt className="text-(--tinta-2)">Taxas fixas por cobrança e assinatura</dt>
         <dd className="text-right tabular-nums">{formatarCentavos(fixos)}</dd>
-        <dt className="text-(--text-subtle)">Tributos · taxas percentuais</dt>
+        <dt className="text-(--tinta-2)">Tributos · taxas percentuais</dt>
         <dd className="text-right tabular-nums">
           {formatarPontosBase(base.tributosPb)} · {formatarPontosBase(base.taxasPb)}
         </dd>
       </dl>
-      <p className="mt-(--space-150) max-w-xl text-xs text-(--text-subtle)">
+      <p className="mt-(--e-3) max-w-xl text-xs text-(--tinta-2)">
         {pelaTabela
           ? 'Pela tabela, cada serviço usa as horas e a hora de venda escolhida, com os outros custos e despesas incluídas. O lucro é o que sobra após custos, tributos e taxas.'
           : 'O acréscimo incide sobre as horas de venda e as contas. Outros custos e despesas entram sem acréscimo. Tributos e taxas são cobertos separadamente, inclusive os incidentes sobre as visitas. O preço dos serviços é repartido conforme as horas de venda, contas e outros custos.'}{' '}
@@ -2702,7 +2699,7 @@ function NavegacaoDasEtapas({
   const anterior = titulos[etapa - 1]
   const proxima = titulos[etapa + 1]
   return (
-    <div className="flex flex-wrap items-center justify-between gap-(--space-100) border-t p-(--space-150)">
+    <div className="flex flex-wrap items-center justify-between gap-(--e-2) border-t p-(--e-3)">
       {anterior ? (
         <Botao
           iconeAntes="arrow-left"
@@ -2762,7 +2759,7 @@ function CelulaResponsavel({
   const idCarga = `carga-do-item-${n}`
   const naLista = valor === TERCEIRIZADO || opcoes.some((o) => o.id === valor)
   return (
-    <div className="flex flex-col gap-(--space-025)">
+    <div className="flex flex-col gap-(--e-05)">
       <select
         aria-label={`Responsável pelo item ${n}`}
         aria-describedby={carga ? idCarga : undefined}
@@ -2796,7 +2793,7 @@ function CelulaResponsavel({
       {carga ? (
         <span
           id={idCarga}
-          className={`text-xs tabular-nums ${carga.acimaDaJornada ? 'text-(--text-danger)' : 'text-(--text-subtle)'}`}
+          className={`text-xs tabular-nums ${carga.acimaDaJornada ? 'text-(--atraso-texto)' : 'text-(--tinta-2)'}`}
         >
           {rotuloDoMes(mes)}: {formatarDuracao(carga.totalMinutos)}
           {carga.jornadaMinutos === null
@@ -2822,7 +2819,7 @@ function CamposDoTerceiro({
   aoMudar: (terceiro: TerceiroNaTela) => void
 }) {
   return (
-    <div className="flex flex-col gap-(--space-050)">
+    <div className="flex flex-col gap-(--e-1)">
       <input
         aria-label={`Nome do terceirizado do item ${n}`}
         className={classeCampo}
@@ -2910,7 +2907,7 @@ function CampoDaUnidade({
           }}
         />
         {semHoras ? (
-          <span className="text-xs text-(--text-subtle)">Informe as horas estimadas</span>
+          <span className="text-xs text-(--tinta-2)">Informe as horas estimadas</span>
         ) : null}
       </>
     )
@@ -2918,7 +2915,7 @@ function CampoDaUnidade({
   const quantidade = lerQuantidade(item.quantidade)
   return (
     <>
-      <label className="flex items-center gap-(--space-050)">
+      <label className="flex items-center gap-(--e-1)">
         <input
           aria-label={`Quantidade do item ${n}`}
           inputMode="decimal"
@@ -2949,12 +2946,12 @@ function CampoDaUnidade({
             })
           }}
         />
-        <span className="shrink-0 text-xs text-(--text-subtle)">
+        <span className="shrink-0 text-xs text-(--tinta-2)">
           {ROTULO_DA_UNIDADE[linha.unidade]}
         </span>
       </label>
       {semHoras ? (
-        <span className="text-xs text-(--text-subtle)">Informe as horas estimadas</span>
+        <span className="text-xs text-(--tinta-2)">Informe as horas estimadas</span>
       ) : null}
     </>
   )

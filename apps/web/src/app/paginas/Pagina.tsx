@@ -1,19 +1,48 @@
 import { useEffect, type ReactNode } from 'react'
+import { Link } from 'react-router'
+
+import { Icone } from '@/components/ui/icone'
 
 interface Props {
   titulo: string
   children: ReactNode
+  /** Ação principal da tela (um botão primário), à direita do título; no celular, abaixo. */
+  acao?: ReactNode
+  /** Linha curta abaixo do título (contagem, órgão, número do documento). */
+  meta?: ReactNode
+  /** Link de volta, acima do título. */
+  voltar?: { para: string; rotulo: string }
 }
 
-/** Moldura de página: título de tela (20/600) e o título da aba do navegador. */
-export function Pagina({ titulo, children }: Props) {
+/**
+ * Moldura de página: título grande (Overpass 800, 28px) com a ação principal ao lado. O título
+ * também vai para a aba do navegador.
+ */
+export function Pagina({ titulo, children, acao, meta, voltar }: Props) {
   useEffect(() => {
     document.title = `${titulo} · Grama`
   }, [titulo])
 
   return (
-    <div className="flex flex-col gap-(--space-200)">
-      <h1 className="titulo-tela text-(--text)">{titulo}</h1>
+    <div className="flex flex-col gap-(--e-6)">
+      <header className="flex flex-col gap-(--e-2)">
+        {voltar ? (
+          <Link
+            to={voltar.para}
+            className="inline-flex w-fit items-center gap-(--e-1) rounded-(--raio-mini) corpo-medio text-(--tinta-2) no-underline hover:text-(--tinta) hover:no-underline max-md:min-h-(--controle-toque)"
+          >
+            <Icone nome="chevron-left" />
+            {voltar.rotulo}
+          </Link>
+        ) : null}
+        <div className="flex flex-wrap items-end justify-between gap-x-(--e-6) gap-y-(--e-3)">
+          <div className="flex min-w-0 flex-col gap-(--e-1)">
+            <h1 className="titulo-tela text-(--tinta)">{titulo}</h1>
+            {meta ? <div className="corpo text-(--tinta-2)">{meta}</div> : null}
+          </div>
+          {acao ? <div className="flex flex-wrap items-center gap-(--e-2)">{acao}</div> : null}
+        </div>
+      </header>
       {children}
     </div>
   )

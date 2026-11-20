@@ -79,7 +79,7 @@ const MARCOS: {
 ]
 
 const classeSelect =
-  'h-(--size-control) w-full rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) px-(--space-100) corpo text-(--text) transicao-estado outline-none focus:border-b-(--border-input-active) focus:shadow-[inset_0_-1px_0_0_var(--border-input-active)] aria-invalid:border-(--border-danger)'
+  'h-(--controle) w-full rounded-(--raio) border border-(--campo-borda) border-b-(--campo-borda) bg-(--campo) px-(--e-2) corpo text-(--tinta) transicao-estado outline-none focus:border-b-(--campo-borda-ativa) focus:shadow-[inset_0_-1px_0_0_var(--campo-borda-ativa)] aria-invalid:border-(--atraso)'
 
 /** Rótulo de select com a marca da IA à direita, como no CampoTexto. */
 function RotuloComMarca({
@@ -92,7 +92,7 @@ function RotuloComMarca({
   marca?: ReactNode
 }) {
   return (
-    <div className="flex min-h-5 items-center gap-(--space-100)">
+    <div className="flex min-h-5 items-center gap-(--e-2)">
       <label htmlFor={htmlFor} className="flex-1 rotulo">
         {children}
       </label>
@@ -103,7 +103,7 @@ function RotuloComMarca({
 
 function ErroDoCampo({ id, children }: { id: string; children: ReactNode }) {
   return (
-    <span id={id} className="text-xs text-(--text-danger)">
+    <span id={id} className="text-xs text-(--atraso-texto)">
       {children}
     </span>
   )
@@ -321,7 +321,7 @@ function Identificacao({
           onSubmit={(evento) => {
             evento.preventDefault()
           }}
-          className="flex min-h-0 flex-col gap-(--space-300) overflow-auto bg-(--surface) p-(--space-200) md:p-(--space-300)"
+          className="flex min-h-0 flex-col gap-(--e-6) overflow-auto bg-(--folha) p-(--e-4) md:p-(--e-6)"
         >
           {mostrarFaltas ? (
             <div ref={avisoRef} tabIndex={-1} className="outline-none">
@@ -360,9 +360,9 @@ function Identificacao({
             </MensagemSecao>
           ) : null}
 
-          <fieldset className="grid gap-(--space-150) sm:grid-cols-2">
-            <legend className="mb-(--space-100) titulo-secao">Licença</legend>
-            <div className="flex flex-col gap-(--space-050)">
+          <fieldset className="grid gap-(--e-3) sm:grid-cols-2">
+            <legend className="mb-(--e-2) titulo-secao">Licença</legend>
+            <div className="flex flex-col gap-(--e-1)">
               <RotuloComMarca htmlFor="tipo-instrumento" marca={marca('tipo', dados.tipoId)}>
                 Tipo de instrumento *
               </RotuloComMarca>
@@ -406,8 +406,8 @@ function Identificacao({
               }}
             />
             {criandoTipo ? (
-              <div className="flex flex-col gap-(--space-100) rounded-(--radius) border p-(--space-150) sm:col-span-2">
-                <div className="grid gap-(--space-150) sm:grid-cols-[120px_1fr]">
+              <div className="flex flex-col gap-(--e-2) rounded-(--raio) border p-(--e-3) sm:col-span-2">
+                <div className="grid gap-(--e-3) sm:grid-cols-[120px_1fr]">
                   <CampoTexto
                     rotulo="Sigla"
                     value={novoTipo.sigla}
@@ -428,7 +428,7 @@ function Identificacao({
                     {mensagemDoErro(adicionarTipo.error)}
                   </MensagemSecao>
                 ) : null}
-                <div className="flex justify-end gap-(--space-100)">
+                <div className="flex justify-end gap-(--e-2)">
                   <Botao
                     tamanho="compacto"
                     onClick={() => {
@@ -466,7 +466,7 @@ function Identificacao({
                 <option key={o} value={o} />
               ))}
             </datalist>
-            <div className="flex flex-col gap-(--space-050)">
+            <div className="flex flex-col gap-(--e-1)">
               <RotuloComMarca htmlFor="unidade">Unidade</RotuloComMarca>
               <select
                 id="unidade"
@@ -487,9 +487,9 @@ function Identificacao({
             </div>
           </fieldset>
 
-          <fieldset className="flex flex-col gap-(--space-150)">
-            <legend className="mb-(--space-100) titulo-secao">Dados do documento</legend>
-            <div className="grid gap-(--space-150) sm:grid-cols-2">
+          <fieldset className="flex flex-col gap-(--e-3)">
+            <legend className="mb-(--e-2) titulo-secao">Dados do documento</legend>
+            <div className="grid gap-(--e-3) sm:grid-cols-2">
               {MARCOS.map((m) => (
                 <CampoData
                   key={m.chave}
@@ -513,21 +513,21 @@ function Identificacao({
             <fieldset
               aria-describedby={mostrarFaltas && faltaMarco ? 'erro-marco' : undefined}
               className={cn(
-                'flex flex-col gap-(--space-100) rounded-(--radius) border px-(--space-200) pt-(--space-100) pb-(--space-150)',
-                mostrarFaltas && faltaMarco && 'border-(--border-danger)',
+                'flex flex-col gap-(--e-2) rounded-(--raio) border px-(--e-4) pt-(--e-2) pb-(--e-3)',
+                mostrarFaltas && faltaMarco && 'border-(--atraso)',
               )}
             >
-              <legend className="px-(--space-050) rotulo">Marco usado para os prazos *</legend>
+              <legend className="px-(--e-1) rotulo">Marco usado para os prazos *</legend>
               {marcosPreenchidos.length === 0 ? (
-                <p className="text-xs text-(--text-subtle)">
+                <p className="text-xs text-(--tinta-2)">
                   Preencha ao menos uma data para escolher.
                 </p>
               ) : (
-                <div className="flex flex-wrap gap-x-(--space-300) gap-y-(--space-100)">
+                <div className="flex flex-wrap gap-x-(--e-6) gap-y-(--e-2)">
                   {marcosPreenchidos.map((m) => (
                     <label
                       key={m.chave}
-                      className="group inline-flex cursor-pointer items-center gap-(--space-100) corpo text-(--text)"
+                      className="group inline-flex cursor-pointer items-center gap-(--e-2) corpo text-(--tinta)"
                     >
                       <input
                         type="radio"
@@ -540,7 +540,7 @@ function Identificacao({
                       />
                       <span
                         aria-hidden="true"
-                        className="inline-flex size-4 shrink-0 items-center justify-center rounded-(--radius-circle) border border-(--border-input-accessible) bg-(--surface-input) transicao-estado group-hover:border-(--border-strong) group-hover:bg-(--surface-hover) peer-checked:border-(--brand-stroke) peer-checked:bg-(--brand) peer-focus-visible:shadow-[0_0_0_2px_var(--border-focus)] after:size-1.5 after:rounded-(--radius-circle) after:bg-(--text-inverse) after:opacity-0 peer-checked:after:opacity-100"
+                        className="inline-flex size-4 shrink-0 items-center justify-center rounded-(--raio-redondo) border border-(--campo-borda) bg-(--campo) transicao-estado group-hover:border-(--regra-forte) group-hover:bg-(--toque) peer-checked:border-(--marca-linha) peer-checked:bg-(--acao) peer-focus-visible:shadow-[0_0_0_2px_var(--foco)] after:size-1.5 after:rounded-(--raio-redondo) after:bg-(--acao-texto) after:opacity-0 peer-checked:after:opacity-100"
                       />
                       {m.rotulo} · {formatarDataCivil(dados[m.campo])}
                     </label>
@@ -553,8 +553,8 @@ function Identificacao({
             </fieldset>
           </fieldset>
 
-          <fieldset className="grid gap-(--space-150) sm:grid-cols-2">
-            <legend className="mb-(--space-100) titulo-secao">Validade</legend>
+          <fieldset className="grid gap-(--e-3) sm:grid-cols-2">
+            <legend className="mb-(--e-2) titulo-secao">Validade</legend>
             <CampoData
               rotulo="Validade confirmada *"
               hoje={hoje}
@@ -569,7 +569,7 @@ function Identificacao({
                 mudar('validade', data)
               }}
             />
-            <div className="flex flex-col gap-(--space-050) sm:pt-(--space-300)">
+            <div className="flex flex-col gap-(--e-1) sm:pt-(--e-6)">
               <span className="rotulo">Limite de protocolo</span>
               <span className="corpo">
                 {limite ??

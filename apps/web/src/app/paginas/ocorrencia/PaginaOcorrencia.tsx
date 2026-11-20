@@ -44,16 +44,16 @@ const SITUACAO: Record<SituacaoExibida, { texto: string; tom: TomSelo }> = {
 }
 
 const classeSelect =
-  'h-(--size-control) w-full rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) px-(--space-100) corpo text-(--text)'
+  'h-(--controle) w-full rounded-(--raio) border border-(--campo-borda) border-b-(--campo-borda) bg-(--campo) px-(--e-2) corpo text-(--tinta)'
 
 function Voltar() {
   return (
-    <nav aria-label="Caminho" className="flex items-center gap-(--space-050) corpo">
+    <nav aria-label="Caminho" className="flex items-center gap-(--e-1) corpo">
       <Link
         to="/"
         aria-label="Voltar para a Visão da equipe"
         title="Voltar para a Visão da equipe"
-        className="inline-flex size-(--size-control) items-center justify-center rounded-(--radius) text-(--icon) transicao-estado hover:bg-(--neutral-subtle-hover)"
+        className="inline-flex size-(--controle) items-center justify-center rounded-(--raio) text-(--icone) transicao-estado hover:bg-(--toque)"
       >
         <Icone nome="chevron-left" />
       </Link>
@@ -72,8 +72,8 @@ function emDias(data: DataCivil, hoje: DataCivil): string {
 
 function Linha({ rotulo, children }: { rotulo: string; children: ReactNode }) {
   return (
-    <div className="flex flex-col gap-(--space-025)">
-      <dt className="text-xs text-(--text-subtle)">{rotulo}</dt>
+    <div className="flex flex-col gap-(--e-05)">
+      <dt className="text-xs text-(--tinta-2)">{rotulo}</dt>
       <dd className="corpo">{children}</dd>
     </div>
   )
@@ -82,15 +82,15 @@ function Linha({ rotulo, children }: { rotulo: string; children: ReactNode }) {
 function Datas({ ocorrencia }: { ocorrencia: Ocorrencia }) {
   const mudou = ocorrencia.prazoAtual !== ocorrencia.prazoOriginal
   return (
-    <section aria-labelledby="titulo-datas" className="flex flex-col gap-(--space-100)">
-      <h2 id="titulo-datas" className="rotulo-maiusculo text-(--text-subtle)">
+    <section aria-labelledby="titulo-datas" className="flex flex-col gap-(--e-2)">
+      <h2 id="titulo-datas" className="rotulo-maiusculo text-(--tinta-2)">
         Datas
       </h2>
-      <dl className="flex flex-col gap-(--space-100)">
+      <dl className="flex flex-col gap-(--e-2)">
         <Linha rotulo="Prazo oficial">
           {formatarDataCivil(ocorrencia.prazoOriginal)}
           {mudou ? null : (
-            <span className="text-(--text-subtle)">
+            <span className="text-(--tinta-2)">
               {' '}
               · {emDias(ocorrencia.prazoOriginal, ocorrencia.hoje)}
             </span>
@@ -99,7 +99,7 @@ function Datas({ ocorrencia }: { ocorrencia: Ocorrencia }) {
         {mudou ? (
           <Linha rotulo="Prazo atual">
             {formatarDataCivil(ocorrencia.prazoAtual)}
-            <span className="text-(--text-subtle)">
+            <span className="text-(--tinta-2)">
               {' '}
               · {emDias(ocorrencia.prazoAtual, ocorrencia.hoje)}
             </span>
@@ -109,7 +109,7 @@ function Datas({ ocorrencia }: { ocorrencia: Ocorrencia }) {
           {ocorrencia.metaInterna ? (
             formatarDataCivil(ocorrencia.metaInterna)
           ) : (
-            <span className="text-(--text-subtlest)">Sem meta</span>
+            <span className="text-(--tinta-3)">Sem meta</span>
           )}
         </Linha>
       </dl>
@@ -135,8 +135,8 @@ function Pessoas({
   const podeDesignar = ehGestao && ocorrencia.situacao !== 'concluida'
 
   return (
-    <section aria-labelledby="titulo-pessoas" className="flex flex-col gap-(--space-100)">
-      <h2 id="titulo-pessoas" className="rotulo-maiusculo text-(--text-subtle)">
+    <section aria-labelledby="titulo-pessoas" className="flex flex-col gap-(--e-2)">
+      <h2 id="titulo-pessoas" className="rotulo-maiusculo text-(--tinta-2)">
         Pessoas
       </h2>
       {designar.isError ? (
@@ -144,16 +144,14 @@ function Pessoas({
           {mensagemDoErro(designar.error)}
         </MensagemSecao>
       ) : null}
-      <dl className="flex flex-col gap-(--space-100)">
+      <dl className="flex flex-col gap-(--e-2)">
         <Linha rotulo="Responsável">
-          {ocorrencia.responsavelNome ?? (
-            <span className="text-(--text-subtlest)">Sem responsável</span>
-          )}
+          {ocorrencia.responsavelNome ?? <span className="text-(--tinta-3)">Sem responsável</span>}
         </Linha>
         {podeDesignar ? (
-          <div className="flex flex-col gap-(--space-025)">
+          <div className="flex flex-col gap-(--e-05)">
             <dt>
-              <label htmlFor="conferente" className="text-xs text-(--text-subtle)">
+              <label htmlFor="conferente" className="text-xs text-(--tinta-2)">
                 Conferente
               </label>
             </dt>
@@ -179,7 +177,7 @@ function Pessoas({
         ) : (
           <Linha rotulo="Conferente">
             {ocorrencia.conferenteNome ?? (
-              <span className="text-(--text-subtle)">Qualquer pessoa da Gestão</span>
+              <span className="text-(--tinta-2)">Qualquer pessoa da Gestão</span>
             )}
           </Linha>
         )}
@@ -236,7 +234,7 @@ export function PaginaOcorrencia() {
 
   if (ocorrencia.isPending) {
     return (
-      <div className="flex flex-col gap-(--space-200)">
+      <div className="flex flex-col gap-(--e-4)">
         <Voltar />
         <Carregando rotulo="Carregando a ocorrência" linhas={5} />
       </div>
@@ -244,7 +242,7 @@ export function PaginaOcorrencia() {
   }
   if (ocorrencia.isError) {
     return (
-      <div className="flex flex-col gap-(--space-200)">
+      <div className="flex flex-col gap-(--e-4)">
         <Voltar />
         {ehSemPermissao(ocorrencia.error) ? (
           <SemPermissao />
@@ -260,7 +258,7 @@ export function PaginaOcorrencia() {
   if (!ocorrencia.data) {
     // Inexistente ou de outra consultoria: a RLS não distingue, e a tela também não.
     return (
-      <div className="flex flex-col gap-(--space-200)">
+      <div className="flex flex-col gap-(--e-4)">
         <Voltar />
         <h1 className="sr-only">Ocorrência não encontrada</h1>
         <EstadoVazio
@@ -288,14 +286,14 @@ export function PaginaOcorrencia() {
   const filhosComErro = etapas.isError || evidencias.isError
 
   return (
-    <div className="flex flex-col gap-(--space-200)">
+    <div className="flex flex-col gap-(--e-4)">
       <Voltar />
 
-      <header className="flex flex-col gap-(--space-050)">
-        <h1 className="titulo-tela text-(--text)">
-          <span className="font-mono text-(--text-subtle)">{dados.codigo}</span> · {dados.titulo}
+      <header className="flex flex-col gap-(--e-1)">
+        <h1 className="titulo-tela text-(--tinta)">
+          <span className="font-mono text-(--tinta-2)">{dados.codigo}</span> · {dados.titulo}
         </h1>
-        <p className="flex flex-wrap items-center gap-(--space-100) corpo text-(--text-subtle)">
+        <p className="flex flex-wrap items-center gap-(--e-2) corpo text-(--tinta-2)">
           <Selo tom={situacao.tom}>{situacao.texto}</Selo>
           {dados.situacao === 'concluida' ? null : (
             <SeloSituacaoPrazo
@@ -318,10 +316,10 @@ export function PaginaOcorrencia() {
         </p>
       </header>
 
-      <div className="grid gap-(--space-300) lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="flex min-w-0 flex-col gap-(--space-300)">
-          <section aria-labelledby="titulo-proxima" className="flex flex-col gap-(--space-050)">
-            <h2 id="titulo-proxima" className="rotulo-maiusculo text-(--text-subtle)">
+      <div className="grid gap-(--e-6) lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="flex min-w-0 flex-col gap-(--e-6)">
+          <section aria-labelledby="titulo-proxima" className="flex flex-col gap-(--e-1)">
+            <h2 id="titulo-proxima" className="rotulo-maiusculo text-(--tinta-2)">
               Próxima ação
             </h2>
             <p className="corpo-medio">
@@ -329,14 +327,14 @@ export function PaginaOcorrencia() {
             </p>
           </section>
 
-          <section aria-labelledby="titulo-origem" className="flex flex-col gap-(--space-050)">
-            <h2 id="titulo-origem" className="rotulo-maiusculo text-(--text-subtle)">
+          <section aria-labelledby="titulo-origem" className="flex flex-col gap-(--e-1)">
+            <h2 id="titulo-origem" className="rotulo-maiusculo text-(--tinta-2)">
               Texto da condicionante
             </h2>
-            <blockquote className="border-l-2 border-(--border-strong) pl-(--space-150) corpo whitespace-pre-line">
+            <blockquote className="border-l-2 border-(--regra-forte) pl-(--e-3) corpo whitespace-pre-line">
               {dados.textoLiteral}
             </blockquote>
-            <p className="text-xs text-(--text-subtle)">{dados.unidadeNome}</p>
+            <p className="text-xs text-(--tinta-2)">{dados.unidadeNome}</p>
           </section>
 
           {filhosComErro ? (
@@ -382,7 +380,7 @@ export function PaginaOcorrencia() {
           )}
         </div>
 
-        <aside className="flex flex-col gap-(--space-300)" aria-label="Detalhes">
+        <aside className="flex flex-col gap-(--e-6)" aria-label="Detalhes">
           <Datas ocorrencia={dados} />
           <Pessoas
             ocorrencia={dados}

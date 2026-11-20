@@ -3,10 +3,10 @@
 import { useSearchParams } from 'react-router'
 
 export const classeSelect =
-  'h-(--size-control) w-full min-w-0 rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) px-(--space-100) corpo text-(--text) outline-none focus:border-b-(--border-input-active) focus:shadow-[inset_0_-1px_0_0_var(--border-input-active)] sm:w-auto sm:max-w-[260px]'
+  'h-(--controle) w-full min-w-0 rounded-(--raio) border border-(--campo-borda) border-b-(--campo-borda) bg-(--campo) px-(--e-2) corpo text-(--tinta) outline-none focus:border-b-(--campo-borda-ativa) focus:shadow-[inset_0_-1px_0_0_var(--campo-borda-ativa)] sm:w-auto sm:max-w-[260px]'
 export const classeCabecalho =
-  'h-10 border-b px-(--space-100) text-left rotulo whitespace-nowrap first:pl-(--space-150)'
-export const classeCelula = 'h-10 border-b px-(--space-100) align-middle first:pl-(--space-150)'
+  'h-10 border-b px-(--e-2) text-left rotulo whitespace-nowrap first:pl-(--e-3)'
+export const classeCelula = 'h-10 border-b px-(--e-2) align-middle first:pl-(--e-3)'
 
 /** Empreendimento escolhido, guardado em ?empreendimento= para dar link a partir do empreendimento. */
 export function useEmpreendimentoDaUrl(): [string | null, (id: string | null) => void] {

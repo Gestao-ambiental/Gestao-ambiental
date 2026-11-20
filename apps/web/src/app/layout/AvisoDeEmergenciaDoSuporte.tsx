@@ -46,10 +46,7 @@ export function AvisoDeEmergenciaDoSuporte() {
   if (!ehGestao || itens.length === 0) return null
 
   return (
-    <section
-      aria-label="Avisos do suporte"
-      className="mb-(--space-200) flex flex-col gap-(--space-100)"
-    >
+    <section aria-label="Avisos do suporte" className="mb-(--e-4) flex flex-col gap-(--e-2)">
       {itens.map((aviso) => (
         <MensagemSecao
           key={aviso.id}
@@ -76,7 +73,7 @@ export function AvisoDeEmergenciaDoSuporte() {
           </span>
           <span className="block break-words whitespace-pre-wrap">Motivo: {aviso.motivo}</span>
           {visto.isError && visto.variables === aviso.id ? (
-            <span role="alert" className="block text-(--text-danger)">
+            <span role="alert" className="block text-(--atraso-texto)">
               {mensagemDoErro(visto.error)}
             </span>
           ) : null}

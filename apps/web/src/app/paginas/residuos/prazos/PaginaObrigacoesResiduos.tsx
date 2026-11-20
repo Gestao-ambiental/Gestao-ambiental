@@ -33,9 +33,9 @@ import { ProximosPrazosDeResiduos } from './ProximosPrazosDeResiduos'
 import { CHAVE_PRAZOS_RESIDUO } from './prazos-de-residuos'
 
 const classeSelect =
-  'h-(--size-control) w-full max-w-[320px] rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) px-(--space-100) corpo text-(--text) outline-none focus:border-b-(--border-input-active) focus:shadow-[inset_0_-1px_0_0_var(--border-input-active)]'
+  'h-(--controle) w-full max-w-[320px] rounded-(--raio) border border-(--campo-borda) border-b-(--campo-borda) bg-(--campo) px-(--e-2) corpo text-(--tinta) outline-none focus:border-b-(--campo-borda-ativa) focus:shadow-[inset_0_-1px_0_0_var(--campo-borda-ativa)]'
 
-const classeCelula = 'h-10 px-(--space-100) whitespace-nowrap first:pl-(--space-150)'
+const classeCelula = 'h-10 px-(--e-2) whitespace-nowrap first:pl-(--e-3)'
 
 function TabelaDeObrigacoes({ empreendimentoId }: { empreendimentoId: string }) {
   const { atual } = useConsultoria()
@@ -79,13 +79,13 @@ function TabelaDeObrigacoes({ empreendimentoId }: { empreendimentoId: string }) 
   if (obrigacoes.isPending) return <Carregando rotulo="Carregando as obrigações" linhas={4} />
 
   return (
-    <div className="flex flex-col gap-(--space-100)">
+    <div className="flex flex-col gap-(--e-2)">
       {erro ? (
         <MensagemSecao role="alert" tom="perigo" titulo="Não foi possível salvar">
           {erro}
         </MensagemSecao>
       ) : null}
-      <div className="overflow-x-auto rounded-(--radius-large) border bg-(--surface) shadow-cartao">
+      <div className="overflow-x-auto rounded-(--raio-painel) border bg-(--folha) shadow-cartao">
         <table className="w-full border-collapse corpo" aria-label="Obrigações de resíduos">
           <thead>
             <tr>
@@ -94,7 +94,7 @@ function TabelaDeObrigacoes({ empreendimentoId }: { empreendimentoId: string }) 
                   <th
                     key={coluna}
                     scope="col"
-                    className="h-10 border-b px-(--space-100) text-left whitespace-nowrap rotulo first:pl-(--space-150)"
+                    className="h-10 border-b px-(--e-2) text-left whitespace-nowrap rotulo first:pl-(--e-3)"
                   >
                     {coluna}
                   </th>
@@ -190,8 +190,8 @@ export function PaginaObrigacoesResiduos() {
     const escolhido = empreendimentos.data.itens.find((e) => e.id === empreendimentoId) ?? null
     corpo = (
       <>
-        <div className="flex flex-col gap-(--space-050)">
-          <label htmlFor={idSelect} className="rotulo text-(--text)">
+        <div className="flex flex-col gap-(--e-1)">
+          <label htmlFor={idSelect} className="rotulo text-(--tinta)">
             Empreendimento
           </label>
           <select
@@ -213,8 +213,8 @@ export function PaginaObrigacoesResiduos() {
         </div>
 
         {escolhido ? (
-          <section aria-label="Obrigações" className="flex flex-col gap-(--space-100)">
-            <h2 className="titulo-secao text-(--text)">Obrigações de {escolhido.nome}</h2>
+          <section aria-label="Obrigações" className="flex flex-col gap-(--e-2)">
+            <h2 className="titulo-secao text-(--tinta)">Obrigações de {escolhido.nome}</h2>
             <TabelaDeObrigacoes key={escolhido.id} empreendimentoId={escolhido.id} />
           </section>
         ) : null}
@@ -230,7 +230,7 @@ export function PaginaObrigacoesResiduos() {
   }
 
   return (
-    <div className="flex flex-col gap-(--space-200)">
+    <div className="flex flex-col gap-(--e-4)">
       <Pagina titulo="Prazos de resíduos">{null}</Pagina>
       {corpo}
     </div>

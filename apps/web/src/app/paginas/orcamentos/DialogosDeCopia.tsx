@@ -86,13 +86,13 @@ export function DialogoSalvarModelo({
         </>
       }
     >
-      <div className="flex flex-col gap-(--space-150)">
-        <p className="text-(--text-subtle)">
+      <div className="flex flex-col gap-(--e-3)">
+        <p className="text-(--tinta-2)">
           O modelo guarda o escopo: os serviços com a unidade e as horas, as despesas (a cotar),
           premissas e exclusões. Sem cliente, responsáveis nem meses. Dos preços, só os digitados
           vão junto; os demais vêm da tabela de preços do momento.
         </p>
-        <label htmlFor={idCampo} className="flex flex-col gap-(--space-050)">
+        <label htmlFor={idCampo} className="flex flex-col gap-(--e-1)">
           <span className="rotulo">Nome do modelo</span>
           <input
             id={idCampo}
@@ -185,15 +185,15 @@ export function DialogoDuplicar({
         </>
       }
     >
-      <div className="flex flex-col gap-(--space-150)">
+      <div className="flex flex-col gap-(--e-3)">
         <p>
           Cria um rascunho novo, com outro número, para o mesmo cliente. Vão junto os serviços, as
           horas, os responsáveis, as despesas, as condições de pagamento, premissas e exclusões.
         </p>
-        <p className="text-(--text-subtle)">
-          <strong className="font-semibold text-(--text)">Com os preços</strong> também copia o
+        <p className="text-(--tinta-2)">
+          <strong className="font-semibold text-(--tinta)">Com os preços</strong> também copia o
           acréscimo, os preços fechados, os outros custos e as estimativas das despesas, que não
-          voltam a cotar. <strong className="font-semibold text-(--text)">Sem os preços</strong>,
+          voltam a cotar. <strong className="font-semibold text-(--tinta)">Sem os preços</strong>,
           esses valores ficam para preencher e as despesas voltam a cotar. A tabela de preços e a
           base de custos são sempre as atuais. O mês não é copiado: escolha o mês para calcular a
           carga. Só orçamentos aprovados contam como comprometidos.

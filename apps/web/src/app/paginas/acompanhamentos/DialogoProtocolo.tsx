@@ -95,7 +95,7 @@ export function DialogoProtocolo({
         </>
       }
     >
-      <div className="flex flex-col gap-(--space-150)">
+      <div className="flex flex-col gap-(--e-3)">
         {registrar.isError ? (
           <MensagemSecao role="alert" tom="perigo">
             {mensagemDoErro(registrar.error)}
@@ -122,12 +122,12 @@ export function DialogoProtocolo({
             setErros((e) => ({ ...e, data: undefined }))
           }}
         />
-        <div className="flex flex-col gap-(--space-050)">
+        <div className="flex flex-col gap-(--e-1)">
           <span className="rotulo" id="rotulo-comprovante">
             Comprovante *
           </span>
-          <div className="flex items-center gap-(--space-100) rounded-(--radius) border border-dashed border-(--border-strong) p-(--space-100)">
-            <Icone nome="paperclip" className="text-(--icon)" />
+          <div className="flex items-center gap-(--e-2) rounded-(--raio) border border-dashed border-(--regra-forte) p-(--e-2)">
+            <Icone nome="paperclip" className="text-(--icone)" />
             <span className="min-w-0 flex-1 truncate corpo">
               {arquivo
                 ? `${arquivo.name} · ${tamanhoLegivel(arquivo.size)}`
@@ -156,7 +156,7 @@ export function DialogoProtocolo({
             />
           </div>
           {erros.arquivo ? (
-            <span role="alert" className="text-xs text-(--text-danger)">
+            <span role="alert" className="text-xs text-(--atraso-texto)">
               {erros.arquivo}
             </span>
           ) : null}

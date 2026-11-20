@@ -16,7 +16,7 @@ import { CaixaSelecao, OpcaoRadio } from '@/components/ui/caixa-selecao'
 
 function ErroDoCampo({ id, children }: { id: string; children: string }) {
   return (
-    <span id={id} className="text-xs text-(--text-danger)">
+    <span id={id} className="text-xs text-(--atraso-texto)">
       {children}
     </span>
   )
@@ -42,9 +42,9 @@ export function CampoGenero({
   const id = useId()
   const erroId = `${id}-erro`
   return (
-    <fieldset disabled={desabilitado} className="flex min-w-0 flex-col gap-(--space-050)">
-      <legend className="mb-(--space-050) rotulo">Gênero</legend>
-      <div className="flex flex-wrap gap-(--space-100)">
+    <fieldset disabled={desabilitado} className="flex min-w-0 flex-col gap-(--e-1)">
+      <legend className="mb-(--e-1) rotulo">Gênero</legend>
+      <div className="flex flex-wrap gap-(--e-2)">
         {GENEROS.map((g, indice) => (
           <OpcaoRadio
             key={g.codigo}
@@ -59,7 +59,7 @@ export function CampoGenero({
             onBlur={aoSair}
             aria-invalid={erro ? true : undefined}
             aria-describedby={erro ? erroId : undefined}
-            className={erro ? 'border-(--border-danger)' : undefined}
+            className={erro ? 'border-(--atraso)' : undefined}
           />
         ))}
       </div>
@@ -91,7 +91,7 @@ export function CampoFormacao({
   const id = useId()
   const erroId = `${id}-erro`
   return (
-    <div className="flex flex-col gap-(--space-050)">
+    <div className="flex flex-col gap-(--e-1)">
       <label htmlFor={id} className="rotulo">
         {rotulo}
       </label>

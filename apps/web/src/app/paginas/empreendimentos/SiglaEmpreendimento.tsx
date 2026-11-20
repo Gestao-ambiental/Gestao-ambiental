@@ -18,7 +18,7 @@ export function SiglaEmpreendimento({
     <span
       aria-hidden="true"
       className={cn(
-        'inline-flex shrink-0 items-center justify-center rounded-(--radius) bg-(--brand) font-semibold text-(--text-inverse)',
+        'inline-flex shrink-0 items-center justify-center rounded-(--raio) bg-(--acao) font-semibold text-(--acao-texto)',
         grande ? 'size-12 text-base' : 'size-6 text-[10px]',
         className,
       )}

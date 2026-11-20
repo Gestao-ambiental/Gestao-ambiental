@@ -174,7 +174,7 @@ export function DialogoEmpreendimento({
         id="form-empreendimento"
         noValidate
         onSubmit={(evento) => void enviar(evento)}
-        className="flex flex-col gap-(--space-200)"
+        className="flex flex-col gap-(--e-4)"
       >
         {primeiro ? (
           <MensagemSecao
@@ -217,7 +217,7 @@ export function DialogoEmpreendimento({
           erro={errors.nome?.message}
           {...campoNome}
         />
-        <div className="grid gap-(--space-200) sm:grid-cols-2">
+        <div className="grid gap-(--e-4) sm:grid-cols-2">
           <CampoTexto
             rotulo="Cliente contratante"
             disabled={salvando}
@@ -241,7 +241,7 @@ export function DialogoEmpreendimento({
             {...register('primeiraUnidade')}
           />
         )}
-        <p className="text-xs text-(--text-subtle)">Só o nome é obrigatório.</p>
+        <p className="text-xs text-(--tinta-2)">Só o nome é obrigatório.</p>
       </form>
     </Dialogo>
   )

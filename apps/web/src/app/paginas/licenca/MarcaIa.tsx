@@ -23,7 +23,7 @@ export function BotaoIa({
       onClick={() => {
         if (pagina) aoVerPagina(pagina)
       }}
-      className="inline-flex h-5 w-6 shrink-0 cursor-pointer items-center justify-center rounded-(--radius) text-(--ia) transicao-estado outline-none hover:bg-(--neutral-subtle-hover) focus-visible:shadow-[0_0_0_2px_var(--border-focus)] disabled:cursor-default disabled:hover:bg-transparent"
+      className="inline-flex h-5 w-6 shrink-0 cursor-pointer items-center justify-center rounded-(--raio) text-(--ia) transicao-estado outline-none hover:bg-(--toque) focus-visible:shadow-[0_0_0_2px_var(--foco)] disabled:cursor-default disabled:hover:bg-transparent"
     >
       <Icone nome="sparkles" />
     </button>
@@ -33,7 +33,7 @@ export function BotaoIa({
 /** A IA procurou e não achou: o campo fica vazio, nunca com valor inventado. */
 export function NaoEncontrado() {
   return (
-    <span className="inline-flex items-center gap-(--space-075) text-xs text-(--text-warning)">
+    <span className="inline-flex items-center gap-(--e-15) text-xs text-(--alerta-texto)">
       <Icone nome="info" tamanho={12} />
       Não encontrado no documento
     </span>

@@ -140,8 +140,8 @@ export function DialogoMudarSituacao({
       }
     >
       {confirmando ? (
-        <div className="flex flex-col gap-(--space-150)">
-          <dl className="flex flex-col gap-(--space-050)">
+        <div className="flex flex-col gap-(--e-3)">
+          <dl className="flex flex-col gap-(--e-1)">
             <dt className="rotulo">Motivo</dt>
             <dd className="whitespace-pre-wrap break-words">{motivo.trim()}</dd>
           </dl>
@@ -152,8 +152,8 @@ export function DialogoMudarSituacao({
           ) : null}
         </div>
       ) : (
-        <div className="flex flex-col gap-(--space-150)">
-          <label htmlFor={idSituacao} className="flex flex-col gap-(--space-050)">
+        <div className="flex flex-col gap-(--e-3)">
+          <label htmlFor={idSituacao} className="flex flex-col gap-(--e-1)">
             <span className="rotulo">Situação nova</span>
             <select
               id={idSituacao}
@@ -163,7 +163,7 @@ export function DialogoMudarSituacao({
                 if (valor) setNova(valor)
                 setChave(crypto.randomUUID())
               }}
-              className={`${classeCampo} h-(--size-control)`}
+              className={`${classeCampo} h-(--controle)`}
             >
               {opcoes.map((s) => (
                 <option key={s} value={s}>
@@ -172,7 +172,7 @@ export function DialogoMudarSituacao({
               ))}
             </select>
           </label>
-          <div className="flex flex-col gap-(--space-050)">
+          <div className="flex flex-col gap-(--e-1)">
             <label htmlFor={idMotivo} className="rotulo">
               Motivo
             </label>
@@ -189,10 +189,10 @@ export function DialogoMudarSituacao({
                 setChave(crypto.randomUUID())
                 if (erroMotivo && evento.target.value.trim() !== '') setErroMotivo(null)
               }}
-              className={`${classeCampo} py-(--space-075)`}
+              className={`${classeCampo} py-(--e-15)`}
             />
             {erroMotivo ? (
-              <span id={idErroMotivo} className="text-xs text-(--text-danger)">
+              <span id={idErroMotivo} className="text-xs text-(--atraso-texto)">
                 {erroMotivo}
               </span>
             ) : null}

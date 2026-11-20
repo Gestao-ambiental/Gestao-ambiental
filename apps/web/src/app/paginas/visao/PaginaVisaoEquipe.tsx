@@ -20,6 +20,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Icone } from '@/components/ui/icone'
+import { classeSelecao } from '@/components/ui/estilos-campo'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { listarEmpreendimentos } from '@/lib/api/empreendimentos'
 import { listarMembrosAtivos } from '@/lib/api/licencas'
@@ -39,14 +40,13 @@ import { formatarDataCurta } from '@/lib/datas'
 import { mensagemDoErro } from '@/lib/erros'
 import { cn } from '@/lib/utils'
 
+import { Contagem } from './Contagem'
 import { SeloSituacaoPrazo } from './SeloSituacaoPrazo'
 
 const SEM_RESPONSAVEL = '__sem'
 const ATUALIZAR_A_CADA = 60_000
 
-const classeSelect =
-  'h-(--size-control) max-w-[220px] rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) px-(--space-100) corpo text-(--text) outline-none focus:border-b-(--border-input-active) focus:shadow-[inset_0_-1px_0_0_var(--border-input-active)]'
-const classeCelula = 'h-10 border-b px-(--space-100) align-middle first:pl-(--space-150)'
+const classeCelula = 'h-(--linha) border-b border-(--regra-leve) px-(--e-3) align-middle'
 
 const COLUNAS: { chave: Ordem; rotulo: string }[] = [
   { chave: 'prazo', rotulo: 'Prazo' },
@@ -59,9 +59,9 @@ const COLUNAS: { chave: Ordem; rotulo: string }[] = [
 function Demanda({ linha }: { linha: LinhaDePrazo }) {
   if (linha.tipo === 'limite_protocolo') {
     return (
-      <Link to={`/renovacoes/${linha.instrumentoId}`} className="text-(--text) hover:underline">
+      <Link to={`/renovacoes/${linha.instrumentoId}`} className="text-(--tinta) hover:underline">
         <span className="corpo-medio">{linha.titulo}</span>
-        {linha.licenca ? <span className="text-(--text-subtle)"> · {linha.licenca}</span> : null}
+        {linha.licenca ? <span className="text-(--tinta-2)"> · {linha.licenca}</span> : null}
       </Link>
     )
   }
@@ -69,18 +69,18 @@ function Demanda({ linha }: { linha: LinhaDePrazo }) {
     return (
       <span>
         <span className="corpo-medio">{linha.titulo}</span>
-        {linha.licenca ? <span className="text-(--text-subtle)"> · {linha.licenca}</span> : null}
+        {linha.licenca ? <span className="text-(--tinta-2)"> · {linha.licenca}</span> : null}
       </span>
     )
   }
   return (
     <Link
       to={`/ocorrencias/${linha.id}`}
-      className="block max-w-[360px] truncate text-(--text) hover:underline"
+      className="block max-w-[360px] truncate text-(--tinta) hover:underline"
       title={linha.titulo}
     >
       {linha.codigo ? (
-        <span className="font-mono text-xs text-(--text-subtle)">{linha.codigo} · </span>
+        <span className="font-mono text-xs text-(--tinta-2)">{linha.codigo} · </span>
       ) : null}
       {linha.titulo}
     </Link>
@@ -98,17 +98,17 @@ function Responsavel({
   membros: readonly { id: string; nome: string }[]
   aoAtribuir: (membroId: string) => void
 }) {
-  if (linha.tipo !== 'ocorrencia') return <span className="text-(--text-subtle)">—</span>
+  if (linha.tipo !== 'ocorrencia') return <span className="text-(--tinta-2)">—</span>
   if (linha.responsavelNome) {
     return (
-      <span className="flex items-center gap-(--space-100)">
+      <span className="flex items-center gap-(--e-2)">
         <Avatar nome={linha.responsavelNome} />
         <span className="truncate">{linha.responsavelNome}</span>
       </span>
     )
   }
   // "Sem responsável" não é segunda situação de atraso: é uma ação (EQ-03).
-  if (!podeAtribuir) return <span className="text-(--text-subtle)">Sem responsável</span>
+  if (!podeAtribuir) return <span className="text-(--tinta-2)">Sem responsável</span>
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -141,34 +141,43 @@ function Contador({
   rotulo,
   valor,
   ativo,
-  perigo,
+  tom,
   aoClicar,
 }: {
   rotulo: string
   valor: number
   ativo: boolean
-  perigo?: boolean
+  tom?: 'atraso' | 'hoje'
   aoClicar: () => void
 }) {
+  const aceso = valor > 0
   return (
     <button
       type="button"
       aria-pressed={ativo}
       onClick={aoClicar}
       className={cn(
-        'flex min-w-[150px] flex-1 cursor-pointer items-baseline gap-(--space-100) rounded-(--radius-large) border bg-(--surface) shadow-cartao px-(--space-150) py-(--space-150) text-left transicao-estado hover:bg-(--surface-hover)',
-        ativo && 'border-(--brand-stroke) bg-(--surface-selected)',
+        'group relative flex min-w-[140px] flex-1 cursor-pointer flex-col items-start gap-(--e-1) px-(--e-5) py-(--e-4) text-left transicao-estado hover:bg-(--toque)',
+        'after:absolute after:inset-x-(--e-5) after:bottom-0 after:h-[3px] after:rounded-t-full after:bg-transparent',
+        ativo && 'bg-(--escolha) after:bg-(--marca-linha) hover:bg-(--escolha-toque)',
       )}
     >
       <span
         className={cn(
-          'titulo-tela',
-          perigo && valor > 0 ? 'text-(--text-danger)' : 'text-(--text)',
+          'numero-grande',
+          !aceso && 'text-(--tinta-3)',
+          aceso && tom === 'atraso' && 'text-(--atraso-texto)',
+          aceso && tom !== 'atraso' && 'text-(--tinta)',
+          aceso &&
+            tom === 'hoje' &&
+            'rounded-(--raio-mini) bg-(--sinal) px-(--e-2) text-(--sinal-texto)',
         )}
       >
         {valor}
       </span>
-      <span className="corpo">{rotulo}</span>
+      <span className="corpo-medio text-(--tinta-2) group-aria-pressed:text-(--tinta)">
+        {rotulo}
+      </span>
     </button>
   )
 }
@@ -324,11 +333,17 @@ export function PaginaVisaoEquipe() {
     )
   } else {
     tabela = (
-      <div className="flex flex-col overflow-hidden rounded-(--radius-large) border bg-(--surface) shadow-cartao">
+      <div className="flex flex-col overflow-hidden rounded-(--raio-painel) border bg-(--folha)">
         <div className="hidden max-h-[calc(100dvh-340px)] min-h-[240px] overflow-auto md:block">
           <table className="w-full border-collapse corpo">
-            <thead className="sticky top-0 z-10 bg-(--surface)">
+            <thead className="sticky top-0 z-10 bg-(--folha)">
               <tr>
+                <th
+                  scope="col"
+                  className="h-10 w-[88px] border-b px-(--e-3) text-left rotulo-maiusculo text-(--tinta-2)"
+                >
+                  Faltam
+                </th>
                 {COLUNAS.map((coluna) => {
                   const ascendente = ordem === coluna.chave
                   const descendente = ordem === `-${coluna.chave}`
@@ -337,14 +352,20 @@ export function PaginaVisaoEquipe() {
                       key={coluna.chave}
                       scope="col"
                       aria-sort={ascendente ? 'ascending' : descendente ? 'descending' : 'none'}
-                      className="h-10 border-b px-(--space-100) text-left whitespace-nowrap first:pl-(--space-150)"
+                      className={cn(
+                        'h-10 border-b px-(--e-3) text-left whitespace-nowrap',
+                        coluna.chave === 'licenca' && 'hidden 2xl:table-cell',
+                      )}
                     >
                       <button
                         type="button"
                         onClick={() => {
                           ordenar(coluna.chave)
                         }}
-                        className="inline-flex cursor-pointer items-center gap-(--space-050) rotulo"
+                        className={cn(
+                          'inline-flex cursor-pointer items-center gap-(--e-1) rounded-(--raio-mini) rotulo-maiusculo hover:text-(--tinta)',
+                          ascendente || descendente ? 'text-(--tinta)' : 'text-(--tinta-2)',
+                        )}
                       >
                         {coluna.rotulo}
                         {ascendente || descendente ? (
@@ -354,32 +375,46 @@ export function PaginaVisaoEquipe() {
                     </th>
                   )
                 })}
-                <th scope="col" className="h-10 border-b px-(--space-100) text-left rotulo">
+                <th
+                  scope="col"
+                  className="h-10 border-b px-(--e-3) text-left rotulo-maiusculo text-(--tinta-2)"
+                >
                   Situação
                 </th>
               </tr>
             </thead>
             <tbody>
-              {itens.map((linha) => (
-                <tr key={`${linha.tipo}:${linha.id}`}>
-                  <td className={`${classeCelula} corpo-medio whitespace-nowrap`}>
+              {itens.map((linha, indice) => (
+                <tr
+                  key={`${linha.tipo}:${linha.id}`}
+                  className={cn(
+                    'transicao-estado hover:bg-(--toque)',
+                    linha.dias === 0 && 'bg-(--sinal-fundo) hover:bg-(--sinal-fundo)',
+                  )}
+                >
+                  <td className={classeCelula}>
+                    <Contagem dias={linha.dias} ordem={indice} />
+                  </td>
+                  <td className={`${classeCelula} corpo-medio whitespace-nowrap numero`}>
                     {formatarDataCurta(linha.prazo, hoje)}
                   </td>
                   <td className={classeCelula}>
                     <Demanda linha={linha} />
                   </td>
                   <td className={classeCelula}>
-                    <span className="flex items-center gap-(--space-100)">
+                    <span className="flex items-center gap-(--e-2)">
                       <SiglaEmpreendimento nome={linha.empreendimentoNome} />
                       <Link
                         to={`/empreendimentos/${linha.empreendimentoId}`}
-                        className="truncate text-(--text)"
+                        className="truncate text-(--tinta)"
                       >
                         {linha.empreendimentoNome}
                       </Link>
                     </span>
                   </td>
-                  <td className={`${classeCelula} whitespace-nowrap text-(--text-subtle)`}>
+                  <td
+                    className={`${classeCelula} hidden whitespace-nowrap text-(--tinta-2) numero 2xl:table-cell`}
+                  >
                     {linha.licenca ?? '—'}
                   </td>
                   <td className={classeCelula}>
@@ -408,40 +443,46 @@ export function PaginaVisaoEquipe() {
         </div>
 
         <ul className="flex flex-col md:hidden" aria-label="Prazos">
-          {itens.map((linha) => (
+          {itens.map((linha, indice) => (
             <li
               key={`${linha.tipo}:${linha.id}`}
-              className="flex flex-col gap-(--space-050) border-b px-(--space-150) py-(--space-100)"
+              className={cn(
+                'flex gap-(--e-3) border-b border-(--regra-leve) px-(--e-4) py-(--e-3)',
+                linha.dias === 0 && 'bg-(--sinal-fundo)',
+              )}
             >
-              <span className="flex items-center justify-between gap-(--space-100)">
-                <span className="corpo-medio">{formatarDataCurta(linha.prazo, hoje)}</span>
-                <SeloSituacaoPrazo
-                  situacao={situacaoDoPrazo({
-                    tipo: linha.tipo,
-                    dias: linha.dias,
-                    emConferencia: linha.emConferencia,
-                  })}
+              <Contagem dias={linha.dias} ordem={indice} />
+              <span className="flex min-w-0 flex-1 flex-col gap-(--e-1)">
+                <span className="flex flex-wrap items-center justify-between gap-x-(--e-2) gap-y-(--e-1)">
+                  <span className="corpo-medio numero">{formatarDataCurta(linha.prazo, hoje)}</span>
+                  <SeloSituacaoPrazo
+                    situacao={situacaoDoPrazo({
+                      tipo: linha.tipo,
+                      dias: linha.dias,
+                      emConferencia: linha.emConferencia,
+                    })}
+                  />
+                </span>
+                <Demanda linha={linha} />
+                <span className="truncate text-xs text-(--tinta-2)">
+                  {linha.empreendimentoNome}
+                  {linha.licenca ? ` · ${linha.licenca}` : ''}
+                </span>
+                <Responsavel
+                  linha={linha}
+                  podeAtribuir={ehGestao}
+                  membros={membros.data ?? []}
+                  aoAtribuir={(membroId) => {
+                    atribuir.mutate({ linha, membroId })
+                  }}
                 />
               </span>
-              <Demanda linha={linha} />
-              <span className="text-xs text-(--text-subtle)">
-                {linha.empreendimentoNome}
-                {linha.licenca ? ` · ${linha.licenca}` : ''}
-              </span>
-              <Responsavel
-                linha={linha}
-                podeAtribuir={ehGestao}
-                membros={membros.data ?? []}
-                aoAtribuir={(membroId) => {
-                  atribuir.mutate({ linha, membroId })
-                }}
-              />
             </li>
           ))}
         </ul>
 
-        <div className="flex items-center gap-(--space-100) border-t px-(--space-150) py-(--space-100)">
-          <span className="flex-1 text-xs text-(--text-subtle)" aria-live="polite">
+        <div className="flex items-center gap-(--e-2) border-t px-(--e-4) py-(--e-2)">
+          <span className="flex-1 rotulo numero" aria-live="polite">
             {inicio + 1}–{fim} de {total}
           </span>
           <BotaoIcone
@@ -466,26 +507,30 @@ export function PaginaVisaoEquipe() {
   }
 
   return (
-    <div className="flex flex-col gap-(--space-200)">
-      <div className="flex flex-wrap items-center justify-between gap-(--space-100)">
-        <Pagina titulo="Visão da equipe">{null}</Pagina>
-        {ehGestao ? (
+    <Pagina
+      titulo="Visão da equipe"
+      acao={
+        ehGestao ? (
           <Botao aparencia="primario" asChild>
             <Link to="/licencas/nova">
               <Icone nome="plus" />
               Cadastrar licença
             </Link>
           </Botao>
-        ) : null}
-      </div>
-
+        ) : null
+      }
+    >
       {/* Sem contadores quando não carregaram: zero não substitui dado ausente (Protótipo 05). */}
       {contadores.isSuccess ? (
-        <div role="group" aria-label="Contadores" className="flex flex-wrap gap-(--space-100)">
+        <div
+          role="group"
+          aria-label="Contadores"
+          className="grid grid-cols-2 divide-x divide-y overflow-hidden rounded-(--raio-painel) border bg-(--folha) md:flex md:divide-y-0"
+        >
           <Contador
             rotulo="Atrasadas"
             valor={contadores.data.atrasadas}
-            perigo
+            tom="atraso"
             ativo={faixa === 'atrasadas'}
             aoClicar={() => {
               alternarFaixa('atrasadas')
@@ -494,6 +539,7 @@ export function PaginaVisaoEquipe() {
           <Contador
             rotulo="Vencem hoje"
             valor={contadores.data.hoje}
+            tom="hoje"
             ativo={faixa === 'hoje'}
             aoClicar={() => {
               alternarFaixa('hoje')
@@ -526,51 +572,58 @@ export function PaginaVisaoEquipe() {
         </MensagemSecao>
       ) : null}
 
-      <div className="flex flex-wrap items-end justify-between gap-(--space-150) border-b">
-        <div role="tablist" aria-label="Recorte" className="flex gap-(--space-200)">
-          {(
-            [
-              ['todos', 'Toda a equipe'],
-              ['minhas', 'Minhas ações'],
-            ] as [Aba, string][]
-          ).map(([aba, rotulo]) => {
-            const ativa = filtros.aba === aba
-            const contagem = totais.data
-              ? aba === 'todos'
-                ? totais.data.todos
-                : totais.data.minhas
-              : null
-            return (
-              <button
-                key={aba}
-                type="button"
-                role="tab"
-                aria-selected={ativa}
-                onClick={() => {
-                  mudarFiltros({ aba })
-                }}
-                className={cn(
-                  '-mb-px inline-flex cursor-pointer items-center gap-(--space-075) border-b-2 pb-(--space-100) transicao-estado',
-                  ativa
-                    ? 'border-(--brand-stroke) corpo-medio text-(--text-link)'
-                    : 'border-transparent corpo text-(--text-subtle)',
-                )}
-              >
-                {rotulo}
-                {contagem === null ? null : (
-                  <span className="rounded-(--radius) bg-(--neutral-subtle-hover) px-1.5 text-xs">
-                    {contagem}
-                  </span>
-                )}
-              </button>
-            )
-          })}
+      <div className="flex flex-col gap-(--e-3)">
+        <div className="flex flex-wrap items-end justify-between gap-(--e-3) border-b border-(--regra-forte)">
+          <div role="tablist" aria-label="Recorte" className="flex gap-(--e-5)">
+            {(
+              [
+                ['todos', 'Toda a equipe'],
+                ['minhas', 'Minhas ações'],
+              ] as [Aba, string][]
+            ).map(([aba, rotulo]) => {
+              const ativa = filtros.aba === aba
+              const contagem = totais.data
+                ? aba === 'todos'
+                  ? totais.data.todos
+                  : totais.data.minhas
+                : null
+              return (
+                <button
+                  key={aba}
+                  type="button"
+                  role="tab"
+                  aria-selected={ativa}
+                  onClick={() => {
+                    mudarFiltros({ aba })
+                  }}
+                  className={cn(
+                    '-mb-px inline-flex h-11 cursor-pointer items-center gap-(--e-2) border-b-[3px] titulo-secao transicao-estado',
+                    ativa
+                      ? 'border-(--marca-linha) text-(--tinta)'
+                      : 'border-transparent text-(--tinta-2) hover:text-(--tinta)',
+                  )}
+                >
+                  {rotulo}
+                  {contagem === null ? null : (
+                    <span
+                      className={cn(
+                        'min-w-6 rounded-(--raio-mini) px-(--e-1) text-center text-xs font-[800] numero',
+                        ativa ? 'bg-(--tinta) text-(--folha)' : 'bg-(--aperto) text-(--tinta-2)',
+                      )}
+                    >
+                      {contagem}
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-(--space-100) pb-(--space-100)">
+        <div className="-mx-(--e-4) flex items-center gap-(--e-2) overflow-x-auto px-(--e-4) pb-(--e-05) md:mx-0 md:flex-wrap md:overflow-visible md:px-0">
           <label>
             <span className="sr-only">Responsável</span>
             <select
-              className={classeSelect}
+              className={classeSelecao}
               value={responsavelSelecionado}
               onChange={(evento) => {
                 const valor = evento.target.value
@@ -592,7 +645,7 @@ export function PaginaVisaoEquipe() {
           <label>
             <span className="sr-only">Tipo de instrumento</span>
             <select
-              className={classeSelect}
+              className={classeSelecao}
               value={filtros.tipoId ?? ''}
               onChange={(evento) => {
                 mudarFiltros({ tipoId: evento.target.value || null })
@@ -609,7 +662,7 @@ export function PaginaVisaoEquipe() {
           <label>
             <span className="sr-only">Empreendimento</span>
             <select
-              className={classeSelect}
+              className={classeSelecao}
               value={filtros.empreendimentoId ?? ''}
               onChange={(evento) => {
                 mudarFiltros({ empreendimentoId: evento.target.value || null })
@@ -627,15 +680,18 @@ export function PaginaVisaoEquipe() {
             Limpar filtros
           </Botao>
         </div>
-      </div>
 
-      <div role="tabpanel" aria-label={filtros.aba === 'todos' ? 'Toda a equipe' : 'Minhas ações'}>
-        {tabela}
+        <div
+          role="tabpanel"
+          aria-label={filtros.aba === 'todos' ? 'Toda a equipe' : 'Minhas ações'}
+        >
+          {tabela}
+        </div>
       </div>
 
       <TarefasNaVisao aba={filtros.aba} />
 
       <ProximosPrazosDeResiduos limite={5} ocultarSeVazio />
-    </div>
+    </Pagina>
   )
 }

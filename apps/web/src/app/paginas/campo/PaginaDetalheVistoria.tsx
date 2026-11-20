@@ -18,8 +18,8 @@ import { BarraDeAcao, ColunaCampo, ComVistoria, SeloDaVistoria, VoltarPara } fro
 
 function Linha({ rotulo, children }: { rotulo: string; children: ReactNode }) {
   return (
-    <div className="flex items-start justify-between gap-(--space-200) border-b py-(--space-100) last:border-b-0">
-      <dt className="corpo text-(--text-subtle)">{rotulo}</dt>
+    <div className="flex items-start justify-between gap-(--e-4) border-b py-(--e-2) last:border-b-0">
+      <dt className="corpo text-(--tinta-2)">{rotulo}</dt>
       <dd className="text-right corpo-medio">{children}</dd>
     </div>
   )
@@ -79,7 +79,7 @@ function DialogoDevolver({
           {mensagemDoErroDaVistoria(devolver.error)}
         </MensagemSecao>
       ) : null}
-      <div className="flex flex-col gap-(--space-050)">
+      <div className="flex flex-col gap-(--e-1)">
         <label htmlFor={id} className="rotulo">
           Motivo
         </label>
@@ -97,7 +97,7 @@ function DialogoDevolver({
           }}
         />
         {erro ? (
-          <span id={`${id}-erro`} className="text-xs text-(--text-danger)">
+          <span id={`${id}-erro`} className="text-xs text-(--atraso-texto)">
             {erro}
           </span>
         ) : null}
@@ -141,13 +141,13 @@ function Detalhe({ vistoria }: { vistoria: Vistoria }) {
     <ColunaCampo>
       <VoltarPara para="/campo" rotulo="Minhas vistorias" />
 
-      <header className="flex flex-col gap-(--space-075)">
-        <p className="flex flex-wrap items-center gap-(--space-100) corpo-medio">
+      <header className="flex flex-col gap-(--e-15)">
+        <p className="flex flex-wrap items-center gap-(--e-2) corpo-medio">
           <SeloDaVistoria situacao={vistoria.situacao} />
           <span>{quando}</span>
         </p>
-        <h1 className="titulo-tela text-(--text)">{vistoria.titulo}</h1>
-        <p className="corpo text-(--text-subtle)">{vistoria.empreendimentoNome}</p>
+        <h1 className="titulo-tela text-(--tinta)">{vistoria.titulo}</h1>
+        <p className="corpo text-(--tinta-2)">{vistoria.empreendimentoNome}</p>
       </header>
 
       {erro ? (
@@ -169,7 +169,7 @@ function Detalhe({ vistoria }: { vistoria: Vistoria }) {
         </MensagemSecao>
       ) : null}
 
-      <dl className={`${classeCartao} px-(--space-150)`}>
+      <dl className={`${classeCartao} px-(--e-3)`}>
         <Linha rotulo="Condicionante">
           <Link to={`/ocorrencias/${vistoria.ocorrenciaId}`}>
             {[vistoria.condicionanteCodigo, vistoria.condicionanteTitulo]
@@ -181,7 +181,7 @@ function Detalhe({ vistoria }: { vistoria: Vistoria }) {
         <Linha rotulo="Unidade">
           {vistoria.unidadeNome}
           {vistoria.unidadeEndereco ? (
-            <span className="block text-xs font-normal text-(--text-subtle)">
+            <span className="block text-xs font-normal text-(--tinta-2)">
               {vistoria.unidadeEndereco}
             </span>
           ) : null}
@@ -200,36 +200,36 @@ function Detalhe({ vistoria }: { vistoria: Vistoria }) {
         ) : null}
       </dl>
 
-      <section aria-labelledby="titulo-preparacao" className="flex flex-col gap-(--space-075)">
+      <section aria-labelledby="titulo-preparacao" className="flex flex-col gap-(--e-15)">
         <h2 id="titulo-preparacao" className="titulo-secao">
           Preparação
         </h2>
         <Link
           to={checklist}
-          className={`${classeCartao} flex min-h-11 items-center gap-(--space-150) p-(--space-150) text-(--text) no-underline hover:bg-(--surface-hover) hover:no-underline`}
+          className={`${classeCartao} flex min-h-11 items-center gap-(--e-3) p-(--e-3) text-(--tinta) no-underline hover:bg-(--toque) hover:no-underline`}
         >
-          <Icone nome="file-check" className="text-(--icon)" />
+          <Icone nome="file-check" className="text-(--icone)" />
           <span className="flex flex-1 flex-col">
             <span className="corpo-medio">Checklist da vistoria</span>
-            <span className="text-xs text-(--text-subtle)">
+            <span className="text-xs text-(--tinta-2)">
               {totalItens === undefined
                 ? '…'
                 : `${String(totalItens)} ${totalItens === 1 ? 'item' : 'itens'}`}
             </span>
           </span>
-          <Icone nome="chevron-right" className="text-(--icon)" />
+          <Icone nome="chevron-right" className="text-(--icone)" />
         </Link>
       </section>
 
       {vistoria.objetivo ? (
         <section
           aria-labelledby="titulo-objetivo"
-          className={`${classeCartao} flex flex-col gap-(--space-050) p-(--space-150)`}
+          className={`${classeCartao} flex flex-col gap-(--e-1) p-(--e-3)`}
         >
           <h2 id="titulo-objetivo" className="corpo-medio">
             Objetivo da visita
           </h2>
-          <p className="corpo whitespace-pre-line text-(--text-subtle)">{vistoria.objetivo}</p>
+          <p className="corpo whitespace-pre-line text-(--tinta-2)">{vistoria.objetivo}</p>
         </section>
       ) : null}
 

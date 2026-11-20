@@ -155,7 +155,7 @@ export function DialogoLinhaDeBase() {
           evento.preventDefault()
           void enviar()
         }}
-        className="flex flex-col gap-(--space-200)"
+        className="flex flex-col gap-(--e-4)"
       >
         {falha ? (
           <MensagemSecao role="alert" tom="perigo">
@@ -170,7 +170,7 @@ export function DialogoLinhaDeBase() {
             value={respostas[campo]}
             erro={erros[campo]}
             disabled={salvando}
-            acessorio={<span className="text-xs text-(--text-subtle)">{unidade}</span>}
+            acessorio={<span className="text-xs text-(--tinta-2)">{unidade}</span>}
             onChange={(evento) => {
               const valor = evento.target.value
               setRespostas((a) => ({ ...a, [campo]: valor }))

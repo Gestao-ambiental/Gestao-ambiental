@@ -16,7 +16,7 @@ import { mensagemDoErro } from '@/lib/erros'
 const OUTRO = 'outro'
 
 const classeCampo =
-  'h-(--size-control) rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) px-(--space-100) corpo text-(--text) outline-none focus:border-b-(--border-input-active) focus:shadow-[inset_0_-1px_0_0_var(--border-input-active)]'
+  'h-(--controle) rounded-(--raio) border border-(--campo-borda) border-b-(--campo-borda) bg-(--campo) px-(--e-2) corpo text-(--tinta) outline-none focus:border-b-(--campo-borda-ativa) focus:shadow-[inset_0_-1px_0_0_var(--campo-borda-ativa)]'
 
 /**
  * "Acompanhar o órgão a cada…" (Protótipo 17, artboard 05; decisão de 19/10/2026): intervalo por
@@ -59,16 +59,16 @@ export function AcompanhamentoOrgao({
           proximo === hoje ? 'hoje' : proximo ? formatarDataCivil(proximo) : '—'
         }`
 
-  if (!podeEditar) return <p className="text-xs text-(--text-subtle)">{resumo}</p>
+  if (!podeEditar) return <p className="text-xs text-(--tinta-2)">{resumo}</p>
 
   return (
-    <div className="flex flex-col gap-(--space-100)">
+    <div className="flex flex-col gap-(--e-2)">
       {salvar.isError ? (
         <MensagemSecao role="alert" tom="perigo">
           {mensagemDoErro(salvar.error)}
         </MensagemSecao>
       ) : null}
-      <div className="flex flex-wrap items-center gap-(--space-100)">
+      <div className="flex flex-wrap items-center gap-(--e-2)">
         <label htmlFor={seletorId} className="corpo">
           Acompanhar o órgão
         </label>
@@ -89,7 +89,7 @@ export function AcompanhamentoOrgao({
           <option value={OUTRO}>Outro intervalo…</option>
         </select>
         {opcao === OUTRO ? (
-          <label className="inline-flex items-center gap-(--space-050) corpo">
+          <label className="inline-flex items-center gap-(--e-1) corpo">
             a cada
             <input
               inputMode="numeric"
@@ -114,7 +114,7 @@ export function AcompanhamentoOrgao({
           {salvar.isPending ? 'Salvando…' : 'Salvar'}
         </Botao>
       </div>
-      <p className="text-xs text-(--text-subtle)" aria-live="polite">
+      <p className="text-xs text-(--tinta-2)" aria-live="polite">
         {opcao === OUTRO && outro !== '' && !valido ? 'Use de 1 a 365 dias.' : resumo}
       </p>
     </div>

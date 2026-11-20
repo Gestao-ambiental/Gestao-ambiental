@@ -124,12 +124,12 @@ export function PlanoNaCentral({ consultoriaId, fuso }: { consultoriaId: string;
   const erro = atraso.error ?? pagamento.error
 
   return (
-    <section aria-labelledby="central-plano" className="flex flex-col gap-(--space-150)">
-      <h2 id="central-plano" className="titulo-secao text-(--text)">
+    <section aria-labelledby="central-plano" className="flex flex-col gap-(--e-3)">
+      <h2 id="central-plano" className="titulo-secao text-(--tinta)">
         Plano e cobrança
       </h2>
-      <div className="flex flex-col gap-(--space-150) rounded-(--radius-large) border bg-(--surface) p-(--space-200) shadow-cartao">
-        <div className="flex flex-wrap items-center gap-(--space-100)">
+      <div className="flex flex-col gap-(--e-3) rounded-(--raio-painel) border bg-(--folha) p-(--e-4) shadow-cartao">
+        <div className="flex flex-wrap items-center gap-(--e-2)">
           <Selo tom={TOM_DA_SITUACAO_COMERCIAL[s.situacao]}>{rotuloDaSituacao(s)}</Selo>
           <span>
             {s.situacao === 'contrato' && s.planoVigente
@@ -141,7 +141,7 @@ export function PlanoNaCentral({ consultoriaId, fuso }: { consultoriaId: string;
                 : 'Sem plano'}
           </span>
         </div>
-        <dl className="grid grid-cols-1 gap-(--space-100) sm:grid-cols-3">
+        <dl className="grid grid-cols-1 gap-(--e-2) sm:grid-cols-3">
           <div>
             <dt className="rotulo">Pessoas</dt>
             <dd className="tabular-nums">
@@ -166,7 +166,7 @@ export function PlanoNaCentral({ consultoriaId, fuso }: { consultoriaId: string;
           </div>
         </dl>
 
-        <div className="flex flex-wrap gap-(--space-100)">
+        <div className="flex flex-wrap gap-(--e-2)">
           <Botao
             onClick={() => {
               setDias(String(d.diasDeTeste))
@@ -238,7 +238,7 @@ export function PlanoNaCentral({ consultoriaId, fuso }: { consultoriaId: string;
           <div
             role="region"
             aria-label="Cobranças da consultoria"
-            className="overflow-x-auto rounded-(--radius) border"
+            className="overflow-x-auto rounded-(--raio) border"
           >
             <table className="w-full border-collapse corpo">
               <thead>
@@ -273,7 +273,7 @@ export function PlanoNaCentral({ consultoriaId, fuso }: { consultoriaId: string;
         ) : null}
 
         {historico.data && historico.data.length > 0 ? (
-          <ul aria-label="Histórico comercial" className="flex flex-col gap-(--space-075)">
+          <ul aria-label="Histórico comercial" className="flex flex-col gap-(--e-15)">
             {historico.data.map((h) => (
               <li key={h.id}>
                 {formatarInstanteComHora(h.alteradaEm, fuso)} · {h.alteradaPorNome} ·{' '}
@@ -334,10 +334,10 @@ export function PlanoNaCentral({ consultoriaId, fuso }: { consultoriaId: string;
       >
         {acao === 'contrato' ? (
           <>
-            <label className="flex flex-col gap-(--space-050)">
+            <label className="flex flex-col gap-(--e-1)">
               <span className="rotulo">Plano</span>
               <select
-                className="h-(--size-control) rounded-(--radius) border bg-(--surface) px-(--space-100)"
+                className="h-(--controle) rounded-(--raio) border bg-(--folha) px-(--e-2)"
                 value={planoDoContrato}
                 onChange={(e) => {
                   if (ehCodigoPlano(e.target.value)) setPlanoDoContrato(e.target.value)
@@ -379,7 +379,7 @@ export function PlanoNaCentral({ consultoriaId, fuso }: { consultoriaId: string;
           }}
         />
         {salvar.isError ? (
-          <p role="alert" className="text-(--text-danger)">
+          <p role="alert" className="text-(--atraso-texto)">
             {mensagemDoErro(salvar.error)}
           </p>
         ) : null}

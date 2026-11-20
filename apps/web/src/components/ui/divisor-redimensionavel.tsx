@@ -98,13 +98,13 @@ export function DivisorRedimensionavel({
       }}
       onKeyDown={aoTeclar}
       className={cn(
-        'group relative z-10 -mx-1 w-[9px] shrink-0 cursor-col-resize touch-none outline-none transicao-estado hover:bg-[color-mix(in_srgb,var(--border-focus)_18%,transparent)] focus-visible:shadow-[inset_0_0_0_2px_var(--border-focus)]',
+        'group relative z-10 -mx-1 w-[9px] shrink-0 cursor-col-resize touch-none outline-none transicao-estado hover:bg-[color-mix(in_srgb,var(--foco)_18%,transparent)] focus-visible:shadow-[inset_0_0_0_2px_var(--foco)]',
         className,
       )}
     >
       <span
         aria-hidden="true"
-        className="absolute top-1/2 left-1/2 h-8 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-(--border-strong)"
+        className="absolute top-1/2 left-1/2 h-8 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-(--regra-forte)"
       />
     </div>
   )

@@ -49,9 +49,9 @@ function Envio({ vistoria }: { vistoria: Vistoria }) {
 
   const voltar = <VoltarPara para={checklist} rotulo="Checklist" />
   const cabecalho = (
-    <header className="flex flex-col gap-(--space-050)">
-      <p className="text-xs text-(--text-subtle)">{vistoria.titulo}</p>
-      <h1 className="titulo-tela text-(--text)">Conferir envio</h1>
+    <header className="flex flex-col gap-(--e-1)">
+      <p className="text-xs text-(--tinta-2)">{vistoria.titulo}</p>
+      <h1 className="titulo-tela text-(--tinta)">Conferir envio</h1>
     </header>
   )
 
@@ -90,36 +90,36 @@ function Envio({ vistoria }: { vistoria: Vistoria }) {
       {cabecalho}
       <BarraDeProgresso {...progresso} />
 
-      <dl className={`${classeCartao} grid grid-cols-2 gap-(--space-100) p-(--space-150)`}>
+      <dl className={`${classeCartao} grid grid-cols-2 gap-(--e-2) p-(--e-3)`}>
         {RESULTADOS_DO_ITEM.map((resultado) => (
           <div key={resultado} className="flex flex-col">
-            <dt className="text-xs text-(--text-subtle)">{ROTULO_DO_RESULTADO[resultado]}</dt>
+            <dt className="text-xs text-(--tinta-2)">{ROTULO_DO_RESULTADO[resultado]}</dt>
             <dd className="corpo-medio">
               {itens.data.filter((i) => i.resultado === resultado).length}
             </dd>
           </div>
         ))}
         <div className="flex flex-col">
-          <dt className="text-xs text-(--text-subtle)">Fotos</dt>
+          <dt className="text-xs text-(--tinta-2)">Fotos</dt>
           <dd className="corpo-medio">{fotos.data.length}</dd>
         </div>
       </dl>
 
-      <section aria-labelledby="titulo-pendencias" className="flex flex-col gap-(--space-075)">
+      <section aria-labelledby="titulo-pendencias" className="flex flex-col gap-(--e-15)">
         <h2 id="titulo-pendencias" className="titulo-secao">
           Pendências
         </h2>
         {pendencias.length === 0 ? (
-          <p className="corpo text-(--text-subtle)">Nenhuma pendência</p>
+          <p className="corpo text-(--tinta-2)">Nenhuma pendência</p>
         ) : (
           <ul className={`${classeCartao} flex flex-col`}>
             {pendencias.map((p) => (
               <li
                 key={p.itemId}
-                className="flex min-h-11 items-center justify-between gap-(--space-100) border-b px-(--space-150) py-(--space-075) last:border-b-0"
+                className="flex min-h-11 items-center justify-between gap-(--e-2) border-b px-(--e-3) py-(--e-15) last:border-b-0"
               >
                 <Link to={`${checklist}#item-${p.itemId}`}>{p.titulo}</Link>
-                <span className="text-xs text-(--text-danger)">
+                <span className="text-xs text-(--atraso-texto)">
                   {ROTULO_DA_PENDENCIA[p.motivo]}
                 </span>
               </li>

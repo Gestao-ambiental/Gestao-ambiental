@@ -7,6 +7,10 @@ import { cn } from '@/lib/utils'
 interface Props {
   /** Abaixo de 640px mostra o G aberto no lugar da palavra completa (áreas pequenas). */
   compactaNoCelular?: boolean
+  /** Sobre o trilho verde: sempre a versão clara, em qualquer tema. */
+  clara?: boolean
+  /** Largura da palavra em px (mínimo do manual: 120). */
+  largura?: number
   className?: string
 }
 
@@ -16,7 +20,12 @@ interface Props {
  * versão clara, trocadas pelo mesmo [data-theme] do <html> que aplica os tokens. As imagens são
  * decorativas e o nome acessível "Grama" fica no contêiner, igual em qualquer tema.
  */
-export function MarcaGrama({ compactaNoCelular = false, className }: Props) {
+export function MarcaGrama({
+  compactaNoCelular = false,
+  clara = false,
+  largura = 120,
+  className,
+}: Props) {
   return (
     <span role="img" aria-label="Grama" className={cn('inline-flex shrink-0', className)}>
       {compactaNoCelular ? (
@@ -27,7 +36,7 @@ export function MarcaGrama({ compactaNoCelular = false, className }: Props) {
             aria-hidden="true"
             width={160}
             height={160}
-            className="size-8 dark:hidden"
+            className={clara ? 'hidden' : 'size-8 dark:hidden'}
           />
           <img
             src={simboloClaro}
@@ -35,7 +44,7 @@ export function MarcaGrama({ compactaNoCelular = false, className }: Props) {
             aria-hidden="true"
             width={160}
             height={160}
-            className="hidden size-8 dark:block"
+            className={clara ? 'size-8' : 'hidden size-8 dark:block'}
           />
         </span>
       ) : null}
@@ -46,7 +55,8 @@ export function MarcaGrama({ compactaNoCelular = false, className }: Props) {
           aria-hidden="true"
           width={616}
           height={150}
-          className="h-auto w-[120px] max-w-none dark:hidden"
+          style={{ width: largura }}
+          className={clara ? 'hidden' : 'h-auto max-w-none dark:hidden'}
         />
         <img
           src={palavraClara}
@@ -54,7 +64,8 @@ export function MarcaGrama({ compactaNoCelular = false, className }: Props) {
           aria-hidden="true"
           width={616}
           height={150}
-          className="hidden h-auto w-[120px] max-w-none dark:block"
+          style={{ width: largura }}
+          className={clara ? 'h-auto max-w-none' : 'hidden h-auto max-w-none dark:block'}
         />
       </span>
     </span>

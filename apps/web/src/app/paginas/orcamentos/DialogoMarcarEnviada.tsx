@@ -75,11 +75,11 @@ export function DialogoMarcarEnviada({
         </>
       }
     >
-      <div className="flex flex-col gap-(--space-150)">
+      <div className="flex flex-col gap-(--e-3)">
         <p>
           A proposta deixa de ser editada no lugar; para mudar depois, reabra como nova revisão.
         </p>
-        <label htmlFor={idObservacao} className="flex flex-col gap-(--space-050)">
+        <label htmlFor={idObservacao} className="flex flex-col gap-(--e-1)">
           <span className="rotulo">Observação (opcional)</span>
           <textarea
             id={idObservacao}

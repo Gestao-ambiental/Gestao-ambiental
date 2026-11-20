@@ -265,7 +265,7 @@ function gruposDeMudancas(atual: CatalogoComercial, novo: CatalogoComercial): Gr
 
 function ListaDeMudancas({ mudancas }: { mudancas: Mudanca[] }) {
   return (
-    <ul className="flex flex-col gap-(--space-025)">
+    <ul className="flex flex-col gap-(--e-05)">
       {mudancas.map((m) => (
         <li key={m.campo} className="tabular-nums">
           {m.campo}: {m.antes} → {m.depois}
@@ -279,7 +279,7 @@ function ListaDeMudancas({ mudancas }: { mudancas: Mudanca[] }) {
 // Formulário
 // ---------------------------------------------------------------------------
 
-const classeCampoTabela = `${classeCampo} h-(--size-control) min-w-24`
+const classeCampoTabela = `${classeCampo} h-(--controle) min-w-24`
 
 function Formulario({
   catalogo,
@@ -344,15 +344,15 @@ function Formulario({
   const soDigitos = (texto: string) => texto.replace(/\D/g, '').slice(0, 6)
 
   return (
-    <div className="flex flex-col gap-(--space-200)">
-      <section aria-labelledby="parametros-planos" className="flex flex-col gap-(--space-100)">
-        <h2 id="parametros-planos" className="titulo-secao text-(--text)">
+    <div className="flex flex-col gap-(--e-4)">
+      <section aria-labelledby="parametros-planos" className="flex flex-col gap-(--e-2)">
+        <h2 id="parametros-planos" className="titulo-secao text-(--tinta)">
           Planos
         </h2>
         <div
           role="region"
           aria-label="Planos"
-          className="overflow-x-auto rounded-(--radius-large) border bg-(--surface) shadow-cartao"
+          className="overflow-x-auto rounded-(--raio-painel) border bg-(--folha) shadow-cartao"
         >
           <table className="w-full border-collapse corpo">
             <thead>
@@ -391,7 +391,7 @@ function Formulario({
                 const nome = catalogo.planos[codigo].nome
                 return (
                   <tr key={codigo} className="last:[&>td]:border-b-0">
-                    <td className={`${classeCelula} py-(--space-075)`}>
+                    <td className={`${classeCelula} py-(--e-15)`}>
                       <input
                         aria-label={`Nome do plano ${nome}`}
                         value={p.nome}
@@ -439,11 +439,11 @@ function Formulario({
                       />
                     </td>
                     <td className={classeCelula}>
-                      <label className="flex items-center gap-(--space-075)">
+                      <label className="flex items-center gap-(--e-15)">
                         <input
                           type="checkbox"
                           checked={p.orcamentos}
-                          className="accent-(--brand)"
+                          className="accent-(--acao)"
                           aria-label={`Orçamentos no ${nome}`}
                           onChange={(e) => {
                             mudarPlano(codigo, { orcamentos: e.target.checked })
@@ -453,11 +453,11 @@ function Formulario({
                       </label>
                     </td>
                     <td className={classeCelula}>
-                      <label className="flex items-center gap-(--space-075)">
+                      <label className="flex items-center gap-(--e-15)">
                         <input
                           type="checkbox"
                           checked={p.ia}
-                          className="accent-(--brand)"
+                          className="accent-(--acao)"
                           aria-label={`IA no ${nome}`}
                           onChange={(e) => {
                             mudarPlano(codigo, { ia: e.target.checked })
@@ -470,11 +470,11 @@ function Formulario({
                       const ligado = p.recursos.includes(r)
                       return (
                         <td key={r} className={classeCelula}>
-                          <label className="flex items-center gap-(--space-075)">
+                          <label className="flex items-center gap-(--e-15)">
                             <input
                               type="checkbox"
                               checked={ligado}
-                              className="accent-(--brand)"
+                              className="accent-(--acao)"
                               aria-label={`${ROTULO_DO_RECURSO[r]} no ${nome}`}
                               onChange={(e) => {
                                 mudarPlano(codigo, {
@@ -499,12 +499,12 @@ function Formulario({
 
       <section
         aria-labelledby="parametros-regras"
-        className="flex flex-col gap-(--space-150) rounded-(--radius-large) border bg-(--surface) p-(--space-200) shadow-cartao"
+        className="flex flex-col gap-(--e-3) rounded-(--raio-painel) border bg-(--folha) p-(--e-4) shadow-cartao"
       >
-        <h2 id="parametros-regras" className="titulo-secao text-(--text)">
+        <h2 id="parametros-regras" className="titulo-secao text-(--tinta)">
           Regras
         </h2>
-        <div className="grid grid-cols-1 gap-(--space-150) sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-(--e-3) sm:grid-cols-2 lg:grid-cols-3">
           <CampoTexto
             rotulo="Adicional por mês (R$)"
             inputMode="decimal"
@@ -558,7 +558,7 @@ function Formulario({
           Parâmetros salvos.
         </MensagemSecao>
       ) : null}
-      <div className="flex flex-wrap gap-(--space-100)">
+      <div className="flex flex-wrap gap-(--e-2)">
         <Botao
           aparencia="primario"
           disabled={novo !== null && grupos.length === 0}
@@ -612,10 +612,10 @@ function Formulario({
           </>
         }
       >
-        <div className="flex flex-col gap-(--space-150)">
+        <div className="flex flex-col gap-(--e-3)">
           {grupos.map((g) => (
-            <section key={g.alvo} aria-label={g.titulo} className="flex flex-col gap-(--space-050)">
-              <h3 className="corpo-medio text-(--text)">{g.titulo}</h3>
+            <section key={g.alvo} aria-label={g.titulo} className="flex flex-col gap-(--e-1)">
+              <h3 className="corpo-medio text-(--tinta)">{g.titulo}</h3>
               <ListaDeMudancas mudancas={g.mudancas} />
             </section>
           ))}
@@ -628,7 +628,7 @@ function Formulario({
             }}
           />
           {salvar.isError ? (
-            <p role="alert" className="text-(--text-danger)">
+            <p role="alert" className="text-(--atraso-texto)">
               {mensagemDoErro(salvar.error)}
             </p>
           ) : null}
@@ -658,8 +658,8 @@ function Historico({
 }) {
   const itens = consulta.data?.pages.flatMap((p) => p.itens) ?? []
   return (
-    <section aria-labelledby="parametros-historico" className="flex flex-col gap-(--space-100)">
-      <h2 id="parametros-historico" className="titulo-secao text-(--text)">
+    <section aria-labelledby="parametros-historico" className="flex flex-col gap-(--e-2)">
+      <h2 id="parametros-historico" className="titulo-secao text-(--tinta)">
         Histórico
       </h2>
       {itens.length === 0 ? (
@@ -667,14 +667,11 @@ function Historico({
       ) : (
         <ul
           aria-label="Histórico de parâmetros"
-          className="flex flex-col rounded-(--radius-large) border bg-(--surface) shadow-cartao"
+          className="flex flex-col rounded-(--raio-painel) border bg-(--folha) shadow-cartao"
         >
           {itens.map((h) => (
-            <li
-              key={h.id}
-              className="flex flex-col gap-(--space-050) border-b p-(--space-150) last:border-b-0"
-            >
-              <span className="corpo-medio text-(--text)">
+            <li key={h.id} className="flex flex-col gap-(--e-1) border-b p-(--e-3) last:border-b-0">
+              <span className="corpo-medio text-(--tinta)">
                 {rotuloDoAlvo(h.alvo, catalogo)} ·{' '}
                 {formatarInstanteComHora(h.alteradaEm, FUSO_DA_PLATAFORMA)} · {h.alteradaPorNome}
               </span>
@@ -754,7 +751,7 @@ export function PaginaCentralParametros() {
     )
 
   return (
-    <div className="flex flex-col gap-(--space-300)">
+    <div className="flex flex-col gap-(--e-6)">
       <Pagina titulo="Planos e parâmetros">{null}</Pagina>
       {conteudo}
     </div>

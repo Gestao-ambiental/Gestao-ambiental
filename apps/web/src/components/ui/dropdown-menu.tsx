@@ -1,5 +1,5 @@
 // Menu suspenso: comportamento e acessibilidade do Radix (via shadcn/ui).
-// Menu do Fluent 2 (ADR-0015): popover de raio 8px com sombra 16, itens de 32px com raio 4px.
+// Menu flutuante de raio 10px, itens de 36px (44 no celular).
 import { DropdownMenu as Primitivo } from 'radix-ui'
 import type { ComponentProps } from 'react'
 
@@ -8,8 +8,8 @@ import { cn } from '@/lib/utils'
 import { Icone } from './icone'
 
 const linha =
-  'relative flex h-(--size-control) cursor-pointer select-none items-center gap-(--space-100) whitespace-nowrap rounded-(--radius) px-(--space-100) corpo text-(--text) outline-none transicao-estado ' +
-  'focus:bg-(--surface-hover) data-[disabled]:cursor-not-allowed data-[disabled]:text-(--text-disabled) data-[disabled]:focus:bg-transparent'
+  'relative flex h-(--controle) max-md:h-(--controle-toque) cursor-pointer select-none items-center gap-(--e-2) whitespace-nowrap rounded-(--raio) px-(--e-2) corpo text-(--tinta) outline-none transicao-estado ' +
+  'focus:bg-(--toque) active:bg-(--aperto) data-[disabled]:cursor-not-allowed data-[disabled]:text-(--tinta-off) data-[disabled]:focus:bg-transparent'
 
 export function DropdownMenu(props: ComponentProps<typeof Primitivo.Root>) {
   return <Primitivo.Root {...props} />
@@ -29,8 +29,8 @@ export function DropdownMenuContent({
       <Primitivo.Content
         sideOffset={sideOffset}
         className={cn(
-          'z-50 min-w-[220px] overflow-hidden rounded-(--radius-large) border border-transparent bg-(--surface-overlay) p-(--space-050) text-(--text) shadow-sobreposicao',
-          'data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-top-1 duration-(--duration-medium)',
+          'z-50 min-w-[220px] overflow-hidden rounded-(--raio-painel) border border-(--regra) bg-(--flutuante) p-(--e-1) text-(--tinta) shadow-sobreposicao origin-(--radix-dropdown-menu-content-transform-origin)',
+          'data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-top-1 duration-(--dur-media)',
           className,
         )}
         {...props}
@@ -56,7 +56,7 @@ export function DropdownMenuRadioItem({
     <Primitivo.RadioItem
       className={cn(
         linha,
-        'data-[state=checked]:bg-(--surface-selected) data-[state=checked]:text-(--text-link)',
+        'data-[state=checked]:bg-(--escolha) data-[state=checked]:corpo-medio',
         className,
       )}
       {...props}
@@ -74,7 +74,7 @@ export function DropdownMenuLabel({ className, ...props }: ComponentProps<typeof
   return (
     <Primitivo.Label
       className={cn(
-        'px-(--space-150) pt-(--space-075) pb-(--space-050) rotulo-maiusculo text-(--text-subtlest)',
+        'px-(--e-3) pt-(--e-15) pb-(--e-1) rotulo-maiusculo text-(--tinta-3)',
         className,
       )}
       {...props}
@@ -87,9 +87,6 @@ export function DropdownMenuSeparator({
   ...props
 }: ComponentProps<typeof Primitivo.Separator>) {
   return (
-    <Primitivo.Separator
-      className={cn('my-(--space-050) h-px bg-(--border)', className)}
-      {...props}
-    />
+    <Primitivo.Separator className={cn('my-(--e-1) h-px bg-(--regra)', className)} {...props} />
   )
 }

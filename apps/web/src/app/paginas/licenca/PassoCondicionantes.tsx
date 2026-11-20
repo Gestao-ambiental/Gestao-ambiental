@@ -113,11 +113,11 @@ function useLarguraLembrada(chave: string, padrao: number, minimo: number, maxim
 }
 
 const classeCampo =
-  'w-full rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) px-(--space-100) corpo text-(--text) outline-none focus:border-b-(--border-input-active) focus:shadow-[inset_0_-1px_0_0_var(--border-input-active)] focus:bg-(--surface-input-focus)'
+  'w-full rounded-(--raio) border border-(--campo-borda) border-b-(--campo-borda) bg-(--campo) px-(--e-2) corpo text-(--tinta) outline-none focus:border-b-(--campo-borda-ativa) focus:shadow-[inset_0_-1px_0_0_var(--campo-borda-ativa)] focus:bg-(--campo-foco)'
 
 /** Texto fora de edição: caixa cinza de leitura, como no Protótipo 12. */
 const classeLeitura =
-  'read-only:border-transparent read-only:bg-(--surface-sunken) read-only:focus:border-b-(--border-input-active) focus:shadow-[inset_0_-1px_0_0_var(--border-input-active)]'
+  'read-only:border-transparent read-only:bg-(--chao) read-only:focus:border-b-(--campo-borda-ativa) focus:shadow-[inset_0_-1px_0_0_var(--campo-borda-ativa)]'
 
 type Edicao =
   | { tipo: 'existente'; id: string }
@@ -172,14 +172,14 @@ function LinhaNova({
 
   return (
     <li
-      className="flex min-h-11 items-center gap-(--space-100) border-b bg-(--surface-selected) py-(--space-075) pr-(--space-150)"
+      className="flex min-h-11 items-center gap-(--e-2) border-b bg-(--escolha) py-(--e-15) pr-(--e-3)"
       style={{ paddingLeft: `${String(nivel * 16)}px` }}
     >
-      <span aria-hidden="true" className="flex w-6 shrink-0 justify-center text-(--icon)">
+      <span aria-hidden="true" className="flex w-6 shrink-0 justify-center text-(--icone)">
         <Icone nome={agrupador ? 'folder' : 'file-text'} />
       </span>
       {codigo ? (
-        <span className="shrink-0 font-mono text-xs text-(--text-subtle)">{codigo}</span>
+        <span className="shrink-0 font-mono text-xs text-(--tinta-2)">{codigo}</span>
       ) : null}
       {nomeando ? (
         <input
@@ -200,11 +200,11 @@ function LinhaNova({
             }
           }}
           onBlur={confirmar}
-          className="h-7 min-w-0 flex-1 rounded-(--radius) border border-(--brand-stroke) bg-(--surface-input) px-(--space-075) corpo text-(--text) outline-none"
+          className="h-7 min-w-0 flex-1 rounded-(--raio) border border-(--marca-linha) bg-(--campo) px-(--e-15) corpo text-(--tinta) outline-none"
         />
       ) : (
-        <span className="flex min-w-0 flex-1 items-center gap-(--space-100)">
-          <span className="truncate corpo-medio text-(--text-link)">{titulo}</span>
+        <span className="flex min-w-0 flex-1 items-center gap-(--e-2)">
+          <span className="truncate corpo-medio text-(--link)">{titulo}</span>
           <Selo>Nova</Selo>
         </span>
       )}
@@ -315,10 +315,10 @@ function Editor({
         if (!tituloValido()) return
         salvar.mutate()
       }}
-      className="flex flex-col gap-(--space-200)"
+      className="flex flex-col gap-(--e-4)"
     >
-      <div className="flex min-h-8 items-center gap-(--space-100)">
-        <span className="font-mono text-base text-(--text-subtle)">{codigo || '—'}</span>
+      <div className="flex min-h-8 items-center gap-(--e-2)">
+        <span className="font-mono text-base text-(--tinta-2)">{codigo || '—'}</span>
         {item ? (
           <Selo tom={REVISAO[item.revisao].tom}>{REVISAO[item.revisao].texto}</Selo>
         ) : (
@@ -333,7 +333,7 @@ function Editor({
             onClick={() => {
               aoVerPagina(paginaFonte, trechosDoItem(item))
             }}
-            className="inline-flex cursor-pointer items-center gap-(--space-050) rounded-(--radius) text-xs text-(--text-link) outline-none hover:underline focus-visible:shadow-[0_0_0_2px_var(--border-focus)]"
+            className="inline-flex cursor-pointer items-center gap-(--e-1) rounded-(--raio) text-xs text-(--link) outline-none hover:underline focus-visible:shadow-[0_0_0_2px_var(--foco)]"
           >
             <Icone nome="sparkles" tamanho={12} className="text-(--ia)" />
             {fonte}
@@ -350,7 +350,7 @@ function Editor({
         ) : null}
       </div>
       {item?.periodicidadeIa ? (
-        <p className="-mt-(--space-100) text-xs text-(--text-subtle)">
+        <p className="-mt-(--e-2) text-xs text-(--tinta-2)">
           A IA leu a periodicidade “{item.periodicidadeIa}”. O prazo só vale depois de confirmado no
           passo 4.
         </p>
@@ -360,7 +360,7 @@ function Editor({
           {mensagemDoErro(erro)}
         </MensagemSecao>
       ) : null}
-      <div className="grid gap-(--space-150) sm:grid-cols-[120px_1fr]">
+      <div className="grid gap-(--e-3) sm:grid-cols-[120px_1fr]">
         <CampoTexto
           rotulo="Código"
           placeholder="4.3"
@@ -382,8 +382,8 @@ function Editor({
           }}
         />
       </div>
-      <div className="flex flex-col gap-(--space-050)">
-        <div className="flex min-h-6 items-center gap-(--space-100)">
+      <div className="flex flex-col gap-(--e-1)">
+        <div className="flex min-h-6 items-center gap-(--e-2)">
           <label htmlFor={textoId} className="flex-1 rotulo">
             Texto literal da licença
           </label>
@@ -408,23 +408,23 @@ function Editor({
           onChange={(evento) => {
             setTexto(evento.target.value)
           }}
-          className={cn(classeCampo, classeLeitura, 'min-h-28 py-(--space-150) leading-6')}
+          className={cn(classeCampo, classeLeitura, 'min-h-28 py-(--e-3) leading-6')}
         />
         {textoMudou ? (
-          <p className="text-xs text-(--text-warning)">
+          <p className="text-xs text-(--alerta-texto)">
             Texto alterado em relação ao documento. Fica registrado no histórico.
           </p>
         ) : null}
       </div>
-      <fieldset disabled={travado} className="flex flex-col gap-(--space-100)">
-        <legend className="mb-(--space-050) rotulo">Natureza</legend>
-        <div className="grid gap-(--space-100) sm:grid-cols-2">
+      <fieldset disabled={travado} className="flex flex-col gap-(--e-2)">
+        <legend className="mb-(--e-1) rotulo">Natureza</legend>
+        <div className="grid gap-(--e-2) sm:grid-cols-2">
           {NATUREZAS.map((n) => (
             <label
               key={n.chave}
-              className="flex cursor-pointer flex-col gap-0.5 rounded-(--radius-large) border bg-(--surface) shadow-cartao px-(--space-150) py-(--space-100) transicao-estado has-checked:border-(--brand-stroke) has-checked:bg-(--surface-selected) hover:bg-(--surface-hover) has-disabled:cursor-not-allowed has-disabled:opacity-80"
+              className="flex cursor-pointer flex-col gap-0.5 rounded-(--raio-painel) border bg-(--folha) shadow-cartao px-(--e-3) py-(--e-2) transicao-estado has-checked:border-(--marca-linha) has-checked:bg-(--escolha) hover:bg-(--toque) has-disabled:cursor-not-allowed has-disabled:opacity-80"
             >
-              <span className="inline-flex items-center gap-(--space-100) corpo-medio">
+              <span className="inline-flex items-center gap-(--e-2) corpo-medio">
                 <input
                   type="radio"
                   name="natureza"
@@ -436,21 +436,21 @@ function Editor({
                 />
                 <span
                   aria-hidden="true"
-                  className="inline-flex size-4 shrink-0 items-center justify-center rounded-(--radius-circle) border border-(--border-input-accessible) bg-(--surface-input) transicao-estado peer-checked:border-(--brand-stroke) peer-checked:bg-(--brand) peer-focus-visible:shadow-[0_0_0_2px_var(--border-focus)] after:size-1.5 after:rounded-(--radius-circle) after:bg-(--text-inverse) after:opacity-0 peer-checked:after:opacity-100"
+                  className="inline-flex size-4 shrink-0 items-center justify-center rounded-(--raio-redondo) border border-(--campo-borda) bg-(--campo) transicao-estado peer-checked:border-(--marca-linha) peer-checked:bg-(--acao) peer-focus-visible:shadow-[0_0_0_2px_var(--foco)] after:size-1.5 after:rounded-(--raio-redondo) after:bg-(--acao-texto) after:opacity-0 peer-checked:after:opacity-100"
                 />
                 {n.rotulo}
               </span>
-              <span className="pl-6 text-xs text-(--text-subtle)">{n.descricao}</span>
+              <span className="pl-6 text-xs text-(--tinta-2)">{n.descricao}</span>
             </label>
           ))}
         </div>
-        <p className="flex gap-(--space-075) text-xs text-(--text-subtle)">
+        <p className="flex gap-(--e-15) text-xs text-(--tinta-2)">
           <Icone nome="info" tamanho={12} className="mt-0.5 shrink-0" />
           Cláusula geral (“a empresa deve manter…”) é condição contínua ou informação geral: não
           vira entrega periódica.
         </p>
       </fieldset>
-      <div className="flex flex-wrap items-center gap-(--space-100) border-t pt-(--space-200)">
+      <div className="flex flex-wrap items-center gap-(--e-2) border-t pt-(--e-4)">
         {!item ? (
           <Botao type="submit" aparencia="primario" iconeAntes="plus" disabled={ocupado}>
             {salvar.isPending ? 'Salvando…' : 'Adicionar'}
@@ -493,7 +493,7 @@ function Editor({
         {item && item.revisao !== 'descartada' ? (
           <Botao
             aparencia="link"
-            className="text-(--text-danger)"
+            className="text-(--atraso-texto)"
             disabled={ocupado}
             onClick={() => {
               revisar.mutate('descartada')
@@ -838,17 +838,17 @@ function Condicionantes({
       >
         <section
           aria-label="Lista de condicionantes"
-          className="flex min-h-0 flex-col border-r bg-(--surface) md:min-w-[260px] md:flex-[0_1_var(--largura-lista)]"
+          className="flex min-h-0 flex-col border-r bg-(--folha) md:min-w-[260px] md:flex-[0_1_var(--largura-lista)]"
         >
-          <div className="flex flex-col gap-(--space-100) border-b p-(--space-150)">
-            <div className="flex items-center gap-(--space-050)">
-              <span className="flex-1 text-xs text-(--text-subtle)">
+          <div className="flex flex-col gap-(--e-2) border-b p-(--e-3)">
+            <div className="flex items-center gap-(--e-1)">
+              <span className="flex-1 text-xs text-(--tinta-2)">
                 {revisados} de {itens.length} revisados
               </span>
               <div
                 role="toolbar"
                 aria-label="Ações da lista"
-                className="flex items-center gap-(--space-025)"
+                className="flex items-center gap-(--e-05)"
               >
                 <BotaoIcone
                   icone="file-plus"
@@ -877,12 +877,9 @@ function Condicionantes({
                 />
               </div>
             </div>
-            <div
-              className="h-1 overflow-hidden rounded-(--radius) bg-(--border)"
-              aria-hidden="true"
-            >
+            <div className="h-1 overflow-hidden rounded-(--raio) bg-(--regra)" aria-hidden="true">
               <div
-                className="h-full bg-(--progress-brand)"
+                className="h-full bg-(--acao)"
                 style={{
                   width: `${String(itens.length ? (revisados / itens.length) * 100 : 0)}%`,
                 }}
@@ -891,7 +888,7 @@ function Condicionantes({
             <div
               role="group"
               aria-label="Filtrar condicionantes"
-              className="flex flex-wrap gap-(--space-050)"
+              className="flex flex-wrap gap-(--e-1)"
             >
               {(
                 [
@@ -909,10 +906,10 @@ function Condicionantes({
                     setFiltro(chave)
                   }}
                   className={cn(
-                    'inline-flex h-(--size-control-sm) cursor-pointer items-center gap-(--space-050) rounded-(--radius) border px-(--space-100) text-xs transicao-estado',
+                    'inline-flex h-(--controle-mini) cursor-pointer items-center gap-(--e-1) rounded-(--raio) border px-(--e-2) text-xs transicao-estado',
                     filtro === chave
-                      ? 'border-(--brand-stroke) bg-(--surface-selected) text-(--text-link)'
-                      : 'hover:bg-(--surface-hover)',
+                      ? 'border-(--marca-linha) bg-(--escolha) text-(--link)'
+                      : 'hover:bg-(--toque)',
                   )}
                 >
                   {rotulo} <span className="font-semibold">{contagem[chave]}</span>
@@ -921,8 +918,8 @@ function Condicionantes({
             </div>
           </div>
           {recortado && emMovimento ? (
-            <div className="flex items-center gap-(--space-100) border-b bg-(--surface-sunken) px-(--space-150) py-(--space-075) text-xs">
-              <Icone nome="grip-vertical" tamanho={12} className="shrink-0 text-(--icon)" />
+            <div className="flex items-center gap-(--e-2) border-b bg-(--chao) px-(--e-3) py-(--e-15) text-xs">
+              <Icone nome="grip-vertical" tamanho={12} className="shrink-0 text-(--icone)" />
               <span className="min-w-0 flex-1">
                 Movendo <span className="font-semibold">{rotuloDe(emMovimento)}</span>: selecione o
                 destino e tecle Ctrl+V.
@@ -939,7 +936,7 @@ function Condicionantes({
             </div>
           ) : null}
           {mover.error ? (
-            <MensagemSecao role="alert" tom="perigo" className="m-(--space-150)">
+            <MensagemSecao role="alert" tom="perigo" className="m-(--e-3)">
               {mensagemDoErro(mover.error)}
             </MensagemSecao>
           ) : null}
@@ -951,16 +948,9 @@ function Condicionantes({
           </span>
           <div className="min-h-0 flex-1 overflow-auto">
             {consulta.isPending ? (
-              <Carregando
-                rotulo="Carregando condicionantes"
-                linhas={4}
-                className="m-(--space-150)"
-              />
+              <Carregando rotulo="Carregando condicionantes" linhas={4} className="m-(--e-3)" />
             ) : consulta.isError ? (
-              <EstadoErro
-                aoTentarDeNovo={() => void consulta.refetch()}
-                className="m-(--space-150)"
-              />
+              <EstadoErro aoTentarDeNovo={() => void consulta.refetch()} className="m-(--e-3)" />
             ) : itens.length === 0 && edicao?.tipo !== 'nova' ? (
               <EstadoVazio
                 icone="file-check"
@@ -994,10 +984,10 @@ function Condicionantes({
                         aoSoltar(evento, item)
                       }}
                       className={cn(
-                        'flex border-b transicao-estado hover:bg-(--surface-hover)',
-                        ativo && 'bg-(--surface-selected) hover:bg-(--surface-selected-hover)',
-                        sobAlvo.has(item.id) && 'bg-(--surface-selected)',
-                        alvo === item.id && 'shadow-[inset_0_0_0_2px_var(--border-focus)]',
+                        'flex border-b transicao-estado hover:bg-(--toque)',
+                        ativo && 'bg-(--escolha) hover:bg-(--escolha-toque)',
+                        sobAlvo.has(item.id) && 'bg-(--escolha)',
+                        alvo === item.id && 'shadow-[inset_0_0_0_2px_var(--foco)]',
                         emMovimento?.id === item.id && 'opacity-50',
                       )}
                       style={{ paddingLeft: `${String(nivel * 16)}px` }}
@@ -1010,7 +1000,7 @@ function Condicionantes({
                           onClick={() => {
                             alternar(item.id)
                           }}
-                          className="flex w-6 shrink-0 cursor-pointer items-start justify-center pt-(--space-100) text-(--icon) outline-none focus-visible:shadow-[inset_0_0_0_2px_var(--border-focus)]"
+                          className="flex w-6 shrink-0 cursor-pointer items-start justify-center pt-(--e-2) text-(--icone) outline-none focus-visible:shadow-[inset_0_0_0_2px_var(--foco)]"
                         >
                           <Icone
                             nome="chevron-right"
@@ -1041,23 +1031,23 @@ function Condicionantes({
                             alternar(item.id, evento.key === 'ArrowLeft')
                           }
                         }}
-                        className="flex min-w-0 flex-1 cursor-pointer gap-(--space-100) py-(--space-100) pr-(--space-150) text-left outline-none focus-visible:shadow-[inset_0_0_0_2px_var(--border-focus)]"
+                        className="flex min-w-0 flex-1 cursor-pointer gap-(--e-2) py-(--e-2) pr-(--e-3) text-left outline-none focus-visible:shadow-[inset_0_0_0_2px_var(--foco)]"
                       >
-                        <span className="shrink-0 pt-0.5 font-mono text-xs text-(--text-subtle)">
+                        <span className="shrink-0 pt-0.5 font-mono text-xs text-(--tinta-2)">
                           {item.codigo}
                         </span>
-                        <span className="flex min-w-0 flex-1 flex-col gap-(--space-050)">
+                        <span className="flex min-w-0 flex-1 flex-col gap-(--e-1)">
                           <span
                             className={cn(
                               'truncate',
                               item.natureza === 'agrupador' || ativo ? 'corpo-medio' : 'corpo',
-                              ativo && 'text-(--text-link)',
-                              item.revisao === 'descartada' && 'text-(--text-subtle) line-through',
+                              ativo && 'text-(--link)',
+                              item.revisao === 'descartada' && 'text-(--tinta-2) line-through',
                             )}
                           >
                             {item.titulo}
                           </span>
-                          <span className="flex gap-(--space-050)">
+                          <span className="flex gap-(--e-1)">
                             {item.natureza !== 'agrupador' && natureza ? (
                               <Selo>{natureza.curto}</Selo>
                             ) : null}
@@ -1087,9 +1077,8 @@ function Condicionantes({
                   aoSoltar(evento, null)
                 }}
                 className={cn(
-                  'm-(--space-150) flex min-h-14 w-[calc(100%-var(--space-150)*2)] items-center justify-center gap-(--space-075) rounded-(--radius) border border-dashed px-(--space-150) text-xs text-(--text-subtle) transicao-estado outline-none enabled:cursor-pointer focus-visible:shadow-[0_0_0_2px_var(--border-focus)]',
-                  alvo === null &&
-                    'border-(--brand-stroke) bg-(--surface-selected) text-(--text-link)',
+                  'm-(--e-3) flex min-h-14 w-[calc(100%-var(--e-3)*2)] items-center justify-center gap-(--e-15) rounded-(--raio) border border-dashed px-(--e-3) text-xs text-(--tinta-2) transicao-estado outline-none enabled:cursor-pointer focus-visible:shadow-[0_0_0_2px_var(--foco)]',
+                  alvo === null && 'border-(--marca-linha) bg-(--escolha) text-(--link)',
                 )}
               >
                 <Icone nome="arrow-left" tamanho={12} />
@@ -1111,7 +1100,7 @@ function Condicionantes({
 
         <section
           aria-label="Detalhe da condicionante"
-          className="min-h-0 overflow-auto bg-(--surface) p-(--space-200) md:min-w-[360px] md:flex-1 md:p-(--space-300)"
+          className="min-h-0 overflow-auto bg-(--folha) p-(--e-4) md:min-w-[360px] md:flex-1 md:p-(--e-6)"
         >
           {edicao?.tipo === 'nova' && nomeando ? (
             <EstadoVazio
@@ -1172,9 +1161,7 @@ function Condicionantes({
                     : 'Ou adicione outro item.'
                 }
                 acaoPrincipal={
-                  <div className="flex flex-wrap justify-center gap-(--space-100)">
-                    {botoesVazio}
-                  </div>
+                  <div className="flex flex-wrap justify-center gap-(--e-2)">{botoesVazio}</div>
                 }
               />
             </div>

@@ -59,7 +59,6 @@ describe('shell do app', () => {
       'href',
       '#conteudo',
     )
-    expect(screen.getByRole('button', { name: 'Abrir menu' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /^Tema:/ })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /^Conta de / })).toBeInTheDocument()
     // Com um vínculo só, a consultoria aparece fixa no rail (sem seletor), como no design system
@@ -67,10 +66,22 @@ describe('shell do app', () => {
     expect(screen.queryByRole('button', { name: /^Consultoria: / })).not.toBeInTheDocument()
   })
 
-  it('a gaveta do celular abre pelo botão, mostra o menu e fecha ao navegar', async () => {
+  it('no celular, a barra inferior leva aos atalhos e "Mais" abre o menu, que fecha ao navegar', async () => {
+    // A barra inferior só existe abaixo de 768px (o jsdom não tem matchMedia: simula o celular).
+    vi.stubGlobal('matchMedia', (consulta: string) => ({
+      matches: consulta.includes('max-width'),
+      media: consulta,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }))
     const usuario = userEvent.setup()
     renderizarApp('/')
-    await usuario.click(await screen.findByRole('button', { name: 'Abrir menu' }))
+    const atalhos = await screen.findByRole('navigation', { name: 'Atalhos' })
+    expect(within(atalhos).getByRole('link', { name: 'Início' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
+    await usuario.click(within(atalhos).getByRole('button', { name: 'Mais' }))
 
     const gaveta = await screen.findByRole('dialog')
     const menuGaveta = within(gaveta).getByRole('navigation', { name: 'Menu principal' })
@@ -80,6 +91,13 @@ describe('shell do app', () => {
       await screen.findByRole('heading', { level: 1, name: 'Empreendimentos' }),
     ).toBeInTheDocument()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    vi.unstubAllGlobals()
+  })
+
+  it('no desktop não há barra inferior', async () => {
+    renderizarApp('/')
+    await screen.findByRole('heading', { level: 1 })
+    expect(screen.queryByRole('navigation', { name: 'Atalhos' })).not.toBeInTheDocument()
   })
 
   it('/entrar abre o layout público sem o menu do app', async () => {

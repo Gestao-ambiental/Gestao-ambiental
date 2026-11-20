@@ -37,7 +37,7 @@ export function FormularioCodigo({
   return (
     <form
       noValidate
-      className="flex flex-col gap-(--space-150)"
+      className="flex flex-col gap-(--e-3)"
       onSubmit={(evento) => {
         evento.preventDefault()
         const limpo = codigo.replace(/\s/g, '')
@@ -66,7 +66,7 @@ export function FormularioCodigo({
           setCodigo(evento.target.value)
         }}
       />
-      <div className="flex flex-wrap items-center gap-(--space-100)">
+      <div className="flex flex-wrap items-center gap-(--e-2)">
         <Botao type="submit" aparencia="primario" disabled={confirmar.isPending}>
           {confirmar.isPending ? 'Confirmando…' : rotuloBotao}
         </Botao>

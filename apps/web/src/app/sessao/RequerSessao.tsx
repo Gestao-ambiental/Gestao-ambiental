@@ -14,7 +14,7 @@ export function TelaDeEspera({
   aoTentarDeNovo?: () => void
 }) {
   return (
-    <main id="conteudo" className="mx-auto w-full max-w-[480px] p-(--space-200) pt-(--space-800)">
+    <main id="conteudo" className="mx-auto w-full max-w-[480px] p-(--e-4) pt-(--e-16)">
       {erro ? (
         <EstadoErro
           titulo={erro.titulo}

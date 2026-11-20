@@ -15,7 +15,7 @@ interface Props {
 
 /**
  * Avatar redondo com foto ou iniciais (o único círculo do sistema). Decorativo: o nome acessível
- * fica no controle que o contém. Referência: docs/design-system/referencia-componentes/core/Avatar.jsx.
+ * fica no controle que o contém.
  */
 export function Avatar({ nome, fotoUrl, tamanho = 'medio', className }: Props) {
   const px = TAMANHOS[tamanho]
@@ -25,7 +25,7 @@ export function Avatar({ nome, fotoUrl, tamanho = 'medio', className }: Props) {
     <span
       aria-hidden="true"
       className={cn(
-        'inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-(--surface) bg-(--avatar-default) font-semibold text-(--text-inverse)',
+        'inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-(--escolha-toque) font-[750] text-(--tinta)',
         className,
       )}
       style={{ width: px, height: px, fontSize: px <= 24 ? 10 : px <= 32 ? 12 : 24, lineHeight: 1 }}

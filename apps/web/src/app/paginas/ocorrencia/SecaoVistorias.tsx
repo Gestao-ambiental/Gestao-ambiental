@@ -24,7 +24,7 @@ import { mensagemDoErroDaVistoria } from '@/lib/erros'
 import { SeloDaVistoria } from '../campo/pecas'
 
 const classeCampo =
-  'w-full rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) px-(--space-100) corpo text-(--text) outline-none focus:border-b-(--border-input-active)'
+  'w-full rounded-(--raio) border border-(--campo-borda) border-b-(--campo-borda) bg-(--campo) px-(--e-2) corpo text-(--tinta) outline-none focus:border-b-(--campo-borda-ativa)'
 
 interface ItemDoFormulario {
   chave: string
@@ -151,7 +151,7 @@ function DialogoAgendar({
           setTitulo(evento.target.value)
         }}
       />
-      <div className="grid gap-(--space-150) sm:grid-cols-3">
+      <div className="grid gap-(--e-3) sm:grid-cols-3">
         <CampoData
           rotulo="Data"
           hoje={hojeNoFuso(new Date(), atual.fuso)}
@@ -179,10 +179,10 @@ function DialogoAgendar({
           }}
         />
       </div>
-      <label className="flex flex-col gap-(--space-050)">
+      <label className="flex flex-col gap-(--e-1)">
         <span className="rotulo">Responsável</span>
         <select
-          className={`${classeCampo} h-(--size-control)`}
+          className={`${classeCampo} h-(--controle)`}
           value={responsavelId}
           aria-invalid={erros.responsavel ? true : undefined}
           onChange={(evento) => {
@@ -199,7 +199,7 @@ function DialogoAgendar({
           ))}
         </select>
       </label>
-      <div className="flex flex-col gap-(--space-050)">
+      <div className="flex flex-col gap-(--e-1)">
         <label htmlFor={`${idBase}-objetivo`} className="rotulo">
           Objetivo
         </label>
@@ -208,23 +208,23 @@ function DialogoAgendar({
           rows={2}
           maxLength={LIMITES_DA_VISTORIA.objetivo}
           value={objetivo}
-          className={`${classeCampo} py-(--space-075)`}
+          className={`${classeCampo} py-(--e-15)`}
           onChange={(evento) => {
             setObjetivo(evento.target.value)
           }}
         />
       </div>
-      <fieldset className="flex flex-col gap-(--space-100)">
-        <legend className="mb-(--space-050) rotulo">Itens do checklist</legend>
+      <fieldset className="flex flex-col gap-(--e-2)">
+        <legend className="mb-(--e-1) rotulo">Itens do checklist</legend>
         {erros.itens ? (
-          <span role="alert" className="text-xs text-(--text-danger)">
+          <span role="alert" className="text-xs text-(--atraso-texto)">
             {erros.itens}
           </span>
         ) : null}
-        <ol className="flex flex-col gap-(--space-100)">
+        <ol className="flex flex-col gap-(--e-2)">
           {itens.map((item, indice) => (
-            <li key={item.chave} className="flex items-start gap-(--space-100)">
-              <div className="grid flex-1 gap-(--space-075) sm:grid-cols-2">
+            <li key={item.chave} className="flex items-start gap-(--e-2)">
+              <div className="grid flex-1 gap-(--e-15) sm:grid-cols-2">
                 <CampoTexto
                   rotulo={`Item ${String(indice + 1)}`}
                   value={item.titulo}
@@ -297,8 +297,8 @@ export function SecaoVistorias({
   const vistorias = consulta.data?.pages.flatMap((p) => p.itens) ?? []
 
   return (
-    <section aria-labelledby="titulo-vistorias" className="flex flex-col gap-(--space-100)">
-      <h2 id="titulo-vistorias" className="rotulo-maiusculo text-(--text-subtle)">
+    <section aria-labelledby="titulo-vistorias" className="flex flex-col gap-(--e-2)">
+      <h2 id="titulo-vistorias" className="rotulo-maiusculo text-(--tinta-2)">
         Vistorias
       </h2>
       {consulta.isPending ? (
@@ -309,19 +309,19 @@ export function SecaoVistorias({
           aoTentarDeNovo={() => void consulta.refetch()}
         />
       ) : vistorias.length === 0 ? (
-        <p className="text-xs text-(--text-subtle)">Nenhuma vistoria.</p>
+        <p className="text-xs text-(--tinta-2)">Nenhuma vistoria.</p>
       ) : (
-        <ul className="flex flex-col rounded-(--radius) border" aria-label="Vistorias">
+        <ul className="flex flex-col rounded-(--raio) border" aria-label="Vistorias">
           {vistorias.map((v) => (
             <li
               key={v.id}
-              className="flex flex-wrap items-center gap-(--space-100) border-b px-(--space-150) py-(--space-100) last:border-b-0"
+              className="flex flex-wrap items-center gap-(--e-2) border-b px-(--e-3) py-(--e-2) last:border-b-0"
             >
               <span className="flex min-w-0 flex-1 flex-col">
                 <Link to={`/campo/${v.id}`} className="corpo">
                   {v.titulo}
                 </Link>
-                <span className="text-xs text-(--text-subtle)">
+                <span className="text-xs text-(--tinta-2)">
                   {[
                     `${formatarDataCivil(v.dataPlanejada)}${v.horaPlanejada ? ` às ${v.horaPlanejada}` : ''}`,
                     v.responsavelNome,

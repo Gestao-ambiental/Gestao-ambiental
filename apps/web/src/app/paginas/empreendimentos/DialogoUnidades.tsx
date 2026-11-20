@@ -62,7 +62,7 @@ function FormUnidade({
           salvar.mutate(dados)
         })(evento)
       }
-      className="flex flex-col gap-(--space-150) rounded-(--radius) border p-(--space-150)"
+      className="flex flex-col gap-(--e-3) rounded-(--raio) border p-(--e-3)"
     >
       {salvar.isError ? (
         <MensagemSecao role="alert" tom="perigo">
@@ -82,7 +82,7 @@ function FormUnidade({
         disabled={salvar.isPending}
         {...register('endereco')}
       />
-      <div className="flex justify-end gap-(--space-100)">
+      <div className="flex justify-end gap-(--e-2)">
         <Botao tamanho="compacto" disabled={salvar.isPending} onClick={aoTerminar}>
           Cancelar
         </Botao>
@@ -133,12 +133,12 @@ export function DialogoUnidades({
       }
     >
       {unidades.length === 0 && editando !== 'nova' ? (
-        <p className="text-(--text-subtle)">Nenhuma unidade cadastrada.</p>
+        <p className="text-(--tinta-2)">Nenhuma unidade cadastrada.</p>
       ) : null}
       <ul className="flex flex-col" aria-label="Unidades do empreendimento">
         {unidades.map((unidade) =>
           editando === unidade.id ? (
-            <li key={unidade.id} className="py-(--space-100)">
+            <li key={unidade.id} className="py-(--e-2)">
               <FormUnidade
                 empreendimentoId={empreendimentoId}
                 unidade={unidade}
@@ -150,15 +150,15 @@ export function DialogoUnidades({
           ) : (
             <li
               key={unidade.id}
-              className="flex items-center gap-(--space-100) border-b py-(--space-100) last:border-b-0"
+              className="flex items-center gap-(--e-2) border-b py-(--e-2) last:border-b-0"
             >
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate corpo-medio">{unidade.nome}</span>
                 <span
                   className={
                     unidade.endereco
-                      ? 'truncate text-xs text-(--text-subtle)'
-                      : 'text-xs text-(--text-subtlest)'
+                      ? 'truncate text-xs text-(--tinta-2)'
+                      : 'text-xs text-(--tinta-3)'
                   }
                 >
                   {unidade.endereco ?? 'Endereço não informado'}

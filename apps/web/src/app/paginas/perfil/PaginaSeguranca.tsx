@@ -41,7 +41,7 @@ function Remover({
   // O Auth só remove o fator numa sessão que confirmou o código (aal2).
   if (!estado.sessaoConfirmada) {
     return (
-      <div className="flex flex-col gap-(--space-150)">
+      <div className="flex flex-col gap-(--e-3)">
         {erro}
         <FormularioCodigo
           fatorId={estado.fatorId}
@@ -56,9 +56,9 @@ function Remover({
   }
 
   return (
-    <div className="flex flex-col gap-(--space-150)">
+    <div className="flex flex-col gap-(--e-3)">
       {erro}
-      <div className="flex flex-wrap items-center gap-(--space-100)">
+      <div className="flex flex-wrap items-center gap-(--e-2)">
         <Botao
           aparencia="perigo"
           disabled={remover.isPending}
@@ -109,9 +109,9 @@ export function PaginaSeguranca() {
       setModo(proximo)
     }
     conteudo = (
-      <div className="flex flex-col gap-(--space-150)">
-        <div className="flex flex-wrap items-center gap-(--space-100)">
-          <span className="corpo text-(--text)">Situação</span>
+      <div className="flex flex-col gap-(--e-3)">
+        <div className="flex flex-wrap items-center gap-(--e-2)">
+          <span className="corpo text-(--tinta)">Situação</span>
           {fatorId ? <Selo tom="sucesso">Ativados</Selo> : <Selo>Desativados</Selo>}
         </div>
         {aviso ? (
@@ -151,7 +151,7 @@ export function PaginaSeguranca() {
     <Pagina titulo="Segurança">
       <section
         aria-labelledby="titulo-dois-fatores"
-        className="flex max-w-2xl flex-col gap-(--space-150)"
+        className="flex max-w-2xl flex-col gap-(--e-3)"
       >
         <h2 id="titulo-dois-fatores" className="titulo-secao">
           Dois fatores

@@ -38,7 +38,7 @@ export function FaixaComercial() {
         tom="perigo"
         role="status"
         titulo="Somente leitura até o pagamento"
-        className="mb-(--space-200)"
+        className="mb-(--e-4)"
         acoes={
           gestao ? (
             <>
@@ -63,7 +63,7 @@ export function FaixaComercial() {
         tom="atencao"
         role="status"
         titulo="Cobrança vencida"
-        className="mb-(--space-200)"
+        className="mb-(--e-4)"
         acoes={<BotaoPagarSimulado cobranca={aberta} />}
       >
         {aberta ? `${formatarReais(aberta.valorCentavos)} · ` : ''}
@@ -79,7 +79,7 @@ export function FaixaComercial() {
         tom="informacao"
         role="status"
         titulo="A cobrança do Grama vence hoje"
-        className="mb-(--space-200)"
+        className="mb-(--e-4)"
         acoes={<BotaoPagarSimulado cobranca={aberta} />}
       >
         {aberta ? formatarReais(aberta.valorCentavos) : null}

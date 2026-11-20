@@ -45,7 +45,7 @@ export function PainelPdf({
       aria-label="Documento"
       hidden={oculto}
       style={style}
-      className={cn('flex min-h-0 flex-col border-l bg-(--surface-sunken)', className)}
+      className={cn('flex min-h-0 flex-col border-l bg-(--chao)', className)}
     >
       {url.data && instrumento.pdf ? (
         <VisualizadorPdf
@@ -58,7 +58,7 @@ export function PainelPdf({
       ) : (
         <>
           {fechar ? (
-            <div className="flex h-12 shrink-0 items-center justify-end border-b bg-(--surface) px-(--space-150)">
+            <div className="flex h-12 shrink-0 items-center justify-end border-b bg-(--folha) px-(--e-3)">
               {fechar}
             </div>
           ) : null}
@@ -72,13 +72,13 @@ export function PainelPdf({
                   <Link to={`/licencas/${instrumento.id}/documento`}>Anexar PDF</Link>
                 </Botao>
               }
-              className="m-(--space-200)"
+              className="m-(--e-4)"
             />
           ) : url.isError ? (
             <EstadoErro
               titulo="Não foi possível abrir o PDF."
               aoTentarDeNovo={() => void url.refetch()}
-              className="m-(--space-200)"
+              className="m-(--e-4)"
             />
           ) : null}
         </>

@@ -34,11 +34,11 @@ function Resultado({
   const areaHa =
     resultado.lote?.areaM2 != null ? metrosQuadradosParaHectares(resultado.lote.areaM2) : null
   return (
-    <div className="flex flex-col gap-(--space-100)">
-      <dl className="grid grid-cols-1 gap-x-(--space-200) gap-y-(--space-050) sm:grid-cols-3">
+    <div className="flex flex-col gap-(--e-2)">
+      <dl className="grid grid-cols-1 gap-x-(--e-4) gap-y-(--e-1) sm:grid-cols-3">
         <div>
-          <dt className="rotulo text-(--text-subtle)">Município</dt>
-          <dd className="corpo-medio text-(--text)">
+          <dt className="rotulo text-(--tinta-2)">Município</dt>
+          <dd className="corpo-medio text-(--tinta)">
             {resultado.municipio
               ? `${resultado.municipio.nome} (IBGE ${resultado.municipio.codigoIbge})`
               : 'Não identificado'}
@@ -46,8 +46,8 @@ function Resultado({
         </div>
         {resultado.lote ? (
           <div>
-            <dt className="rotulo text-(--text-subtle)">Inscrição imobiliária</dt>
-            <dd className="corpo-medio text-(--text)">
+            <dt className="rotulo text-(--tinta-2)">Inscrição imobiliária</dt>
+            <dd className="corpo-medio text-(--tinta)">
               {resultado.lote.inscricaoImobiliaria ?? 'Sem inscrição'}
               {areaHa !== null && resultado.lote.areaM2 !== null
                 ? ` · lote de ${formatarNumero(resultado.lote.areaM2)} m² (${formatarNumero(areaHa, 4)} ha)`
@@ -57,8 +57,8 @@ function Resultado({
         ) : null}
         {resultado.zoneamento || resultado.bairro ? (
           <div>
-            <dt className="rotulo text-(--text-subtle)">Zoneamento</dt>
-            <dd className="corpo-medio text-(--text)">
+            <dt className="rotulo text-(--tinta-2)">Zoneamento</dt>
+            <dd className="corpo-medio text-(--tinta)">
               {[
                 resultado.zoneamento
                   ? `Setor ${resultado.zoneamento.setor}${resultado.zoneamento.macrozona ? `, ${resultado.zoneamento.macrozona}` : ''}`
@@ -82,27 +82,27 @@ function Resultado({
           >
             Usar a área do lote como AU(3)
           </Botao>
-          <p className="corpo text-(--text-subtle)">
+          <p className="corpo text-(--tinta-2)">
             Ponto de partida: a área útil da atividade pode ser menor que o lote.
           </p>
         </div>
       ) : null}
 
-      <section aria-label="Restrições do terreno" className="flex flex-col gap-(--space-050)">
-        <h3 className="rotulo text-(--text)">Restrições do terreno</h3>
+      <section aria-label="Restrições do terreno" className="flex flex-col gap-(--e-1)">
+        <h3 className="rotulo text-(--tinta)">Restrições do terreno</h3>
         {resultado.restricoes.length === 0 ? (
-          <p className="corpo text-(--text)">
+          <p className="corpo text-(--tinta)">
             Nenhuma restrição encontrada nas camadas consultadas.
           </p>
         ) : (
-          <ul className="flex flex-col gap-(--space-050)">
+          <ul className="flex flex-col gap-(--e-1)">
             {resultado.restricoes.map((r) => (
               <li
                 key={`${r.tipo}-${r.descricao}`}
-                className="flex flex-wrap items-center gap-(--space-050) corpo text-(--text)"
+                className="flex flex-wrap items-center gap-(--e-1) corpo text-(--tinta)"
               >
                 <Selo tom="atencao">{r.descricao}</Selo>
-                <span className="text-(--text-subtle)">{r.fonte}</span>
+                <span className="text-(--tinta-2)">{r.fonte}</span>
               </li>
             ))}
           </ul>
@@ -116,7 +116,7 @@ function Resultado({
         </MensagemSecao>
       ) : null}
       {resultado.lote === null && resultado.municipio?.codigoIbge !== '4209102' ? (
-        <p className="corpo text-(--text-subtle)">
+        <p className="corpo text-(--tinta-2)">
           Lote, zoneamento, APP e inundação por enquanto só em Joinville (SIMGeo).
         </p>
       ) : null}
@@ -143,14 +143,14 @@ export function LocalDoEmpreendimento({ aoUsarArea }: { aoUsarArea: (hectares: n
   }
 
   return (
-    <section aria-label="Local do empreendimento" className="flex flex-col gap-(--space-100)">
-      <h2 className="titulo-secao text-(--text)">Local do empreendimento</h2>
-      <div className="grid grid-cols-1 gap-(--space-150) lg:grid-cols-2">
+    <section aria-label="Local do empreendimento" className="flex flex-col gap-(--e-2)">
+      <h2 className="titulo-secao text-(--tinta)">Local do empreendimento</h2>
+      <div className="grid grid-cols-1 gap-(--e-3) lg:grid-cols-2">
         <Suspense fallback={<Carregando rotulo="Carregando o mapa" linhas={3} />}>
           <MapaDoLocal ponto={ponto} aoEscolher={consultar} />
         </Suspense>
         <form
-          className="flex flex-col gap-(--space-100)"
+          className="flex flex-col gap-(--e-2)"
           onSubmit={(e) => {
             e.preventDefault()
             const c = lerCoordenadas(texto)

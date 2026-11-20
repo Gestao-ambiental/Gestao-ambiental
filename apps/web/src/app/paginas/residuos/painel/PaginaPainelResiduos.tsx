@@ -56,11 +56,11 @@ function GraficoMensal({
   const titulo = `Quantidade por mês (${ROTULO_DA_UNIDADE_DE_RESIDUO[unidade]})`
 
   return (
-    <figure className="flex min-w-0 flex-col gap-(--space-150) rounded-(--radius-large) border bg-(--surface) p-(--space-200) shadow-cartao">
-      <div className="flex flex-wrap items-end justify-between gap-(--space-100)">
-        <figcaption className="titulo-secao text-(--text)">{titulo}</figcaption>
+    <figure className="flex min-w-0 flex-col gap-(--e-3) rounded-(--raio-painel) border bg-(--folha) p-(--e-4) shadow-cartao">
+      <div className="flex flex-wrap items-end justify-between gap-(--e-2)">
+        <figcaption className="titulo-secao text-(--tinta)">{titulo}</figcaption>
         {unidades.length > 1 ? (
-          <label className="flex min-w-0 flex-col gap-(--space-050)">
+          <label className="flex min-w-0 flex-col gap-(--e-1)">
             <span className="rotulo">Unidade do gráfico</span>
             <select
               className={classeSelect}
@@ -82,13 +82,13 @@ function GraficoMensal({
         <div className="relative min-w-max">
           <span
             aria-hidden="true"
-            className="absolute top-0 left-0 text-xs text-(--text) tabular-nums"
+            className="absolute top-0 left-0 text-xs text-(--tinta) tabular-nums"
           >
             {formatarQuantidade(maximo, unidade)}
           </span>
           <ol
             aria-label={titulo}
-            className="flex h-44 items-end gap-(--space-050) border-b border-(--border-strong) pt-(--space-300)"
+            className="flex h-44 items-end gap-(--e-1) border-b border-(--regra-forte) pt-(--e-6)"
           >
             {serie.map(({ mes, quantidade }) => {
               const altura = maximo > 0 ? (quantidade / maximo) * 100 : 0
@@ -101,22 +101,22 @@ function GraficoMensal({
                   <span className="sr-only">{`${rotuloDoMes(mes)}: ${valor}`}</span>
                   <span
                     aria-hidden="true"
-                    className="pointer-events-none absolute -top-(--space-300) z-10 hidden rounded-(--radius) border bg-(--surface) px-(--space-050) text-xs whitespace-nowrap text-(--text) shadow-cartao group-hover:block"
+                    className="pointer-events-none absolute -top-(--e-6) z-10 hidden rounded-(--raio) border bg-(--folha) px-(--e-1) text-xs whitespace-nowrap text-(--tinta) shadow-cartao group-hover:block"
                   >
                     {valor}
                   </span>
                   <span
                     aria-hidden="true"
-                    className="w-7 rounded-t-[4px] bg-(--brand-stroke)"
+                    className="w-7 rounded-t-[4px] bg-(--marca-linha)"
                     style={{ height: quantidade > 0 ? `max(${String(altura)}%, 2px)` : 0 }}
                   />
                 </li>
               )
             })}
           </ol>
-          <div aria-hidden="true" className="flex gap-(--space-050) pt-(--space-050)">
+          <div aria-hidden="true" className="flex gap-(--e-1) pt-(--e-1)">
             {meses.map((mes) => (
-              <span key={mes} className="w-11 text-center text-xs text-(--text)">
+              <span key={mes} className="w-11 text-center text-xs text-(--tinta)">
                 {mesCurto(mes)}
               </span>
             ))}
@@ -141,7 +141,7 @@ function TabelaAgrupada({
   const mostraMtrs = por === 'residuo'
 
   return (
-    <div className="min-w-0 rounded-(--radius-large) border bg-(--surface) shadow-cartao">
+    <div className="min-w-0 rounded-(--raio-painel) border bg-(--folha) shadow-cartao">
       <div className="overflow-x-auto">
         <table className="w-full border-collapse corpo">
           <caption className="sr-only">{`Quantidade por ${ROTULO_DO_AGRUPAMENTO[por].toLowerCase()}`}</caption>
@@ -252,14 +252,14 @@ export function PaginaPainelResiduos() {
 
   return (
     <Pagina titulo="Painel de resíduos">
-      <div className="flex flex-col gap-(--space-150) sm:flex-row sm:flex-wrap sm:items-end">
+      <div className="flex flex-col gap-(--e-3) sm:flex-row sm:flex-wrap sm:items-end">
         <FiltroEmpreendimento
           consultoriaId={cid}
           valor={empreendimentoId}
           aoMudar={mudarEmpreendimento}
           rotuloTodos="Toda a consultoria"
         />
-        <label className="flex min-w-0 flex-col gap-(--space-050)">
+        <label className="flex min-w-0 flex-col gap-(--e-1)">
           <span className="rotulo">Período</span>
           <select
             className={classeSelect}
@@ -275,7 +275,7 @@ export function PaginaPainelResiduos() {
             ))}
           </select>
         </label>
-        <label className="flex min-w-0 flex-col gap-(--space-050)">
+        <label className="flex min-w-0 flex-col gap-(--e-1)">
           <span className="rotulo">Somar por</span>
           <select
             className={classeSelect}

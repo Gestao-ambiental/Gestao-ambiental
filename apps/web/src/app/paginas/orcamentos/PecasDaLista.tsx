@@ -15,7 +15,7 @@ import {
 import { cn } from '@/lib/utils'
 
 const classeCartao =
-  'flex min-w-0 flex-col gap-(--space-050) rounded-(--radius-large) border bg-(--surface) p-(--space-150) shadow-cartao sm:p-(--space-200)'
+  'flex min-w-0 flex-col gap-(--e-1) rounded-(--raio-painel) border bg-(--folha) p-(--e-3) shadow-cartao sm:p-(--e-4)'
 
 function plural(quantidade: number, singular: string, varios: string): string {
   return `${String(quantidade)} ${quantidade === 1 ? singular : varios}`
@@ -38,9 +38,9 @@ function detalheDoIndicador(indicador: IndicadorDeOrcamentos): string {
 function Indicador({ titulo, valor, detalhe }: { titulo: string; valor: string; detalhe: string }) {
   return (
     <div className={classeCartao}>
-      <dt className="corpo text-(--text-subtle)">{titulo}</dt>
-      <dd className="titulo-tela text-(--text) tabular-nums">{valor}</dd>
-      <dd className="corpo text-(--text)">{detalhe}</dd>
+      <dt className="corpo text-(--tinta-2)">{titulo}</dt>
+      <dd className="titulo-tela text-(--tinta) tabular-nums">{valor}</dd>
+      <dd className="corpo text-(--tinta)">{detalhe}</dd>
     </div>
   )
 }
@@ -76,7 +76,7 @@ export function IndicadoresDosOrcamentos({
       <div
         role="status"
         aria-label="Carregando indicadores"
-        className="grid grid-cols-1 gap-(--space-150) sm:grid-cols-3"
+        className="grid grid-cols-1 gap-(--e-3) sm:grid-cols-3"
       >
         {[0, 1, 2].map((i) => (
           <div key={i} className={classeCartao}>
@@ -89,7 +89,7 @@ export function IndicadoresDosOrcamentos({
     )
   }
   return (
-    <dl aria-label="Indicadores" className="grid grid-cols-1 gap-(--space-150) sm:grid-cols-3">
+    <dl aria-label="Indicadores" className="grid grid-cols-1 gap-(--e-3) sm:grid-cols-3">
       <Indicador
         titulo="Em elaboração"
         valor={String(resumo.emElaboracao)}
@@ -156,7 +156,7 @@ export function AbasDeSituacao({
       aria-label="Situação"
       className="relative max-w-full min-w-0 overflow-x-auto px-1 pt-1"
     >
-      <div className="flex min-w-max gap-(--space-200) border-b">
+      <div className="flex min-w-max gap-(--e-4) border-b">
         {ABAS.map((aba) => {
           const ativa = situacao === aba
           const rotulo = aba ? ROTULO_DA_SITUACAO[aba] : 'Todas'
@@ -170,10 +170,10 @@ export function AbasDeSituacao({
                 aoEscolher(aba)
               }}
               className={cn(
-                '-mb-px inline-flex cursor-pointer items-center gap-(--space-075) whitespace-nowrap border-b-2 pb-(--space-100) transicao-estado',
+                '-mb-px inline-flex cursor-pointer items-center gap-(--e-15) whitespace-nowrap border-b-2 pb-(--e-2) transicao-estado',
                 ativa
-                  ? 'border-(--brand-stroke) corpo-medio text-(--text-link)'
-                  : 'border-transparent corpo text-(--text-subtle) hover:text-(--text)',
+                  ? 'border-(--marca-linha) corpo-medio text-(--link)'
+                  : 'border-transparent corpo text-(--tinta-2) hover:text-(--tinta)',
               )}
             >
               {rotulo}
@@ -181,7 +181,7 @@ export function AbasDeSituacao({
                 <>
                   <span
                     aria-hidden="true"
-                    className="rounded-(--radius) bg-(--neutral-subtle-hover) px-1.5 text-xs tabular-nums"
+                    className="rounded-(--raio) bg-(--toque) px-1.5 text-xs tabular-nums"
                   >
                     {quantidade}
                   </span>

@@ -18,7 +18,7 @@ import { concluirEtapa, criarEtapa, type Etapa } from '@/lib/api/ocorrencias'
 import { mensagemDoErro } from '@/lib/erros'
 
 const classeSelect =
-  'h-(--size-control) w-full rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) px-(--space-100) corpo text-(--text)'
+  'h-(--controle) w-full rounded-(--raio) border border-(--campo-borda) border-b-(--campo-borda) bg-(--campo) px-(--e-2) corpo text-(--tinta)'
 
 function dataDe(valor: string): DataCivil | null {
   return /^\d{4}-\d{2}-\d{2}$/.test(valor) ? (valor as DataCivil) : null
@@ -71,7 +71,7 @@ function FormEtapa({
         }
         salvar.mutate()
       }}
-      className="flex flex-col gap-(--space-150) rounded-(--radius) border p-(--space-150)"
+      className="flex flex-col gap-(--e-3) rounded-(--raio) border p-(--e-3)"
     >
       {salvar.isError ? (
         <MensagemSecao role="alert" tom="perigo">
@@ -87,18 +87,15 @@ function FormEtapa({
           setErroTitulo(null)
         }}
       />
-      <fieldset className="flex gap-(--space-200)">
-        <legend className="mb-(--space-050) rotulo">Modo</legend>
+      <fieldset className="flex gap-(--e-4)">
+        <legend className="mb-(--e-1) rotulo">Modo</legend>
         {(
           [
             ['trabalho', 'Trabalho'],
             ['espera_externa', 'Espera externa'],
           ] as const
         ).map(([valor, rotulo]) => (
-          <label
-            key={valor}
-            className="inline-flex cursor-pointer items-center gap-(--space-100) corpo"
-          >
+          <label key={valor} className="inline-flex cursor-pointer items-center gap-(--e-2) corpo">
             <input
               type="radio"
               name="modo-etapa"
@@ -106,15 +103,15 @@ function FormEtapa({
               onChange={() => {
                 setModo(valor)
               }}
-              className="size-4 accent-(--brand-stroke)"
+              className="size-4 accent-(--marca-linha)"
             />
             {rotulo}
           </label>
         ))}
       </fieldset>
-      <div className="grid gap-(--space-150) sm:grid-cols-3">
+      <div className="grid gap-(--e-3) sm:grid-cols-3">
         {modo === 'trabalho' ? (
-          <label className="flex flex-col gap-(--space-050)">
+          <label className="flex flex-col gap-(--e-1)">
             <span className="rotulo">Responsável</span>
             <select
               className={classeSelect}
@@ -160,7 +157,7 @@ function FormEtapa({
           />
         ) : null}
       </div>
-      <div className="flex justify-end gap-(--space-100)">
+      <div className="flex justify-end gap-(--e-2)">
         <Botao
           tamanho="compacto"
           onClick={() => {
@@ -195,8 +192,8 @@ export function SecaoEtapas({
   const concluir = useMutation({ mutationFn: concluirEtapa, onSuccess: aoMudar })
 
   return (
-    <section aria-labelledby="titulo-etapas" className="flex flex-col gap-(--space-100)">
-      <h2 id="titulo-etapas" className="rotulo-maiusculo text-(--text-subtle)">
+    <section aria-labelledby="titulo-etapas" className="flex flex-col gap-(--e-2)">
+      <h2 id="titulo-etapas" className="rotulo-maiusculo text-(--tinta-2)">
         Etapas
       </h2>
       {concluir.isError ? (
@@ -205,26 +202,26 @@ export function SecaoEtapas({
         </MensagemSecao>
       ) : null}
       {etapas.length === 0 ? (
-        <p className="text-xs text-(--text-subtle)">
+        <p className="text-xs text-(--tinta-2)">
           Nenhuma etapa. Etapas são opcionais e ajudam a dividir o trabalho.
         </p>
       ) : (
-        <ul className="flex flex-col rounded-(--radius) border" aria-label="Etapas">
+        <ul className="flex flex-col rounded-(--raio) border" aria-label="Etapas">
           {etapas.map((etapa) => (
             <li
               key={etapa.id}
-              className="flex items-start gap-(--space-100) border-b px-(--space-150) py-(--space-100) last:border-b-0"
+              className="flex items-start gap-(--e-2) border-b px-(--e-3) py-(--e-2) last:border-b-0"
             >
               <Icone
                 nome={etapa.concluida ? 'circle-check' : 'clock'}
                 rotulo={etapa.concluida ? 'Etapa concluída' : 'Etapa pendente'}
-                className={etapa.concluida ? 'mt-0.5 text-(--text-link)' : 'mt-0.5 text-(--icon)'}
+                className={etapa.concluida ? 'mt-0.5 text-(--link)' : 'mt-0.5 text-(--icone)'}
               />
               <span className="flex min-w-0 flex-1 flex-col">
-                <span className={etapa.concluida ? 'corpo text-(--text-subtle)' : 'corpo'}>
+                <span className={etapa.concluida ? 'corpo text-(--tinta-2)' : 'corpo'}>
                   {etapa.titulo}
                 </span>
-                <span className="text-xs text-(--text-subtle)">
+                <span className="text-xs text-(--tinta-2)">
                   {[
                     etapa.meta ? `Meta ${formatarDataCivil(etapa.meta).slice(0, 5)}` : null,
                     etapa.responsavelNome ?? etapa.responsavelExterno ?? 'Sem responsável',

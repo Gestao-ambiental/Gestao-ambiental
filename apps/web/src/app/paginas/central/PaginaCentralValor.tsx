@@ -23,8 +23,8 @@ export function PaginaCentralValor() {
   const metricas = useMetricasDeValor(consultoriaId)
 
   return (
-    <div className="flex flex-col gap-(--space-300)">
-      <div className="flex flex-wrap items-center justify-between gap-(--space-100)">
+    <div className="flex flex-col gap-(--e-6)">
+      <div className="flex flex-wrap items-center justify-between gap-(--e-2)">
         <Pagina titulo="Valor">{null}</Pagina>
         <label className="flex min-w-0 flex-1 sm:flex-none">
           <span className="sr-only">Consultoria</span>
@@ -34,7 +34,7 @@ export function PaginaCentralValor() {
               const nova = evento.target.value
               setParametros(nova ? { consultoria: nova } : {}, { replace: true })
             }}
-            className="h-(--size-control) w-full min-w-0 rounded-(--radius) border border-(--border-input) bg-(--surface-input) px-(--space-100) corpo text-(--text) sm:w-auto"
+            className="h-(--controle) w-full min-w-0 rounded-(--raio) border border-(--campo-borda) bg-(--campo) px-(--e-2) corpo text-(--tinta) sm:w-auto"
           >
             <option value="">Todas</option>
             {(consultorias.data?.itens ?? []).map((c) => (
@@ -50,14 +50,14 @@ export function PaginaCentralValor() {
       <EstadoDasMetricas consulta={metricas}>
         {(meses) => (
           <>
-            <section aria-labelledby="valor-mes-atual" className="flex flex-col gap-(--space-150)">
-              <h2 id="valor-mes-atual" className="titulo-secao text-(--text)">
+            <section aria-labelledby="valor-mes-atual" className="flex flex-col gap-(--e-3)">
+              <h2 id="valor-mes-atual" className="titulo-secao text-(--tinta)">
                 Mês atual
               </h2>
               <CartoesDeValor meses={meses} />
             </section>
-            <section aria-labelledby="valor-por-mes" className="flex flex-col gap-(--space-150)">
-              <h2 id="valor-por-mes" className="titulo-secao text-(--text)">
+            <section aria-labelledby="valor-por-mes" className="flex flex-col gap-(--e-3)">
+              <h2 id="valor-por-mes" className="titulo-secao text-(--tinta)">
                 Por mês
               </h2>
               <TabelaDeValor meses={meses} />

@@ -2,52 +2,52 @@
    com a escala do design system, perto do que sai no Word. */
 .editor-modelo {
   outline: none;
-  color: var(--text);
+  color: var(--tinta);
   font-size: 14px;
   line-height: 1.6;
   min-height: 320px;
 }
 .editor-modelo > * + * {
-  margin-top: var(--space-100);
+  margin-top: var(--e-2);
 }
 .editor-modelo h1 {
   font-size: 24px;
   line-height: 1.3;
   font-weight: 600;
-  margin-top: var(--space-300);
+  margin-top: var(--e-6);
 }
 .editor-modelo h2 {
   font-size: 20px;
   line-height: 1.3;
   font-weight: 600;
-  margin-top: var(--space-250);
+  margin-top: var(--e-5);
 }
 .editor-modelo h3 {
   font-size: 16px;
   line-height: 1.4;
   font-weight: 600;
-  margin-top: var(--space-200);
+  margin-top: var(--e-4);
 }
 .editor-modelo > :first-child {
   margin-top: 0;
 }
 .editor-modelo ul {
   list-style: disc;
-  padding-left: var(--space-300);
+  padding-left: var(--e-6);
 }
 .editor-modelo ol {
   list-style: decimal;
-  padding-left: var(--space-300);
+  padding-left: var(--e-6);
 }
 .editor-modelo blockquote {
-  border-left: 2px solid var(--border-strong);
-  padding-left: var(--space-150);
-  color: var(--text-subtle);
+  border-left: 2px solid var(--regra-forte);
+  padding-left: var(--e-3);
+  color: var(--tinta-2);
 }
 .editor-modelo hr {
   border: 0;
-  border-top: 1px solid var(--border);
-  margin-block: var(--space-200);
+  border-top: 1px solid var(--regra);
+  margin-block: var(--e-4);
 }
 .editor-modelo table {
   border-collapse: collapse;
@@ -56,8 +56,8 @@
 }
 .editor-modelo th,
 .editor-modelo td {
-  border: 1px solid var(--border-strong);
-  padding: var(--space-050) var(--space-100);
+  border: 1px solid var(--regra-forte);
+  padding: var(--e-1) var(--e-2);
   vertical-align: top;
 }
 .editor-modelo th {
@@ -65,19 +65,19 @@
   text-align: left;
 }
 .editor-modelo .selectedCell {
-  background: var(--surface-selected);
+  background: var(--escolha);
 }
 /* Campo: marcador neutro, distinto do texto sem usar o lima (reservado à ação principal). */
 .editor-modelo .campo-do-modelo {
   display: inline-block;
-  padding: 0 var(--space-050);
-  border: 1px dashed var(--border-strong);
+  padding: 0 var(--e-1);
+  border: 1px dashed var(--regra-forte);
   border-radius: 4px;
-  background: var(--surface-sunken);
+  background: var(--chao);
   font-weight: 500;
   white-space: nowrap;
 }
 .editor-modelo .campo-do-modelo.ProseMirror-selectednode {
-  outline: 2px solid var(--border-focus);
+  outline: 2px solid var(--foco);
   outline-offset: 1px;
 }

@@ -9,21 +9,18 @@ interface Props {
   className?: string
 }
 
-/**
- * Cabeçalho do app: 56px, separado do conteúdo por uma linha de 1px.
- * Referência: docs/design-system/referencia-componentes/navigation/TopBar.jsx.
- */
+/** Barra superior de 56px, separada do conteúdo por uma regra fina. */
 export function BarraSuperior({ esquerda, centro, direita, className }: Props) {
   return (
     <header
       className={cn(
-        'flex h-(--nav-top-height) shrink-0 items-center gap-(--space-200) border-b bg-(--surface-nav) px-(--space-200)',
+        'flex h-(--barra-altura) shrink-0 items-center gap-(--e-3) border-b bg-(--folha) px-(--e-4) md:px-(--e-6)',
         className,
       )}
     >
-      <div className="flex shrink-0 items-center gap-(--space-100)">{esquerda}</div>
-      <div className="flex min-w-0 flex-1 items-center gap-(--space-100)">{centro}</div>
-      <div className="flex shrink-0 items-center gap-(--space-050)">{direita}</div>
+      {esquerda ? <div className="flex shrink-0 items-center gap-(--e-2)">{esquerda}</div> : null}
+      <div className="flex min-w-0 flex-1 items-center gap-(--e-2)">{centro}</div>
+      <div className="flex shrink-0 items-center gap-(--e-1)">{direita}</div>
     </header>
   )
 }

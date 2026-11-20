@@ -19,9 +19,9 @@ import { tempoDesde } from '@/lib/datas'
 
 import { SeloRenovacao } from './SeloRenovacao'
 
-const classeCelula = 'h-11 border-b px-(--space-100) align-middle first:pl-(--space-150)'
+const classeCelula = 'h-11 border-b px-(--e-2) align-middle first:pl-(--e-3)'
 const classeCabecalho =
-  'h-10 border-b px-(--space-100) text-left rotulo whitespace-nowrap first:pl-(--space-150)'
+  'h-10 border-b px-(--e-2) text-left rotulo whitespace-nowrap first:pl-(--e-3)'
 
 function Paginador({
   pagina,
@@ -36,8 +36,8 @@ function Paginador({
   const inicio = pagina * TAMANHO_PAGINA_ACOMPANHAMENTOS
   const fim = Math.min(total, inicio + TAMANHO_PAGINA_ACOMPANHAMENTOS)
   return (
-    <div className="flex items-center gap-(--space-100) border-t px-(--space-150) py-(--space-100)">
-      <span className="flex-1 text-xs text-(--text-subtle)" aria-live="polite">
+    <div className="flex items-center gap-(--e-2) border-t px-(--e-3) py-(--e-2)">
+      <span className="flex-1 text-xs text-(--tinta-2)" aria-live="polite">
         {inicio + 1}–{fim} de {total}
       </span>
       <BotaoIcone
@@ -87,9 +87,9 @@ function Cartao<T>({
   return (
     <section
       aria-labelledby={id}
-      className="flex min-w-0 flex-col overflow-hidden rounded-(--radius-large) border bg-(--surface) shadow-cartao"
+      className="flex min-w-0 flex-col overflow-hidden rounded-(--raio-painel) border bg-(--folha) shadow-cartao"
     >
-      <header className="flex items-center justify-between gap-(--space-100) border-b px-(--space-150) py-(--space-150)">
+      <header className="flex items-center justify-between gap-(--e-2) border-b px-(--e-3) py-(--e-3)">
         <h2 id={id} className="titulo-secao">
           {titulo}
         </h2>
@@ -99,16 +99,16 @@ function Cartao<T>({
         <Carregando
           rotulo={`Carregando ${titulo.toLowerCase()}`}
           linhas={3}
-          className="p-(--space-150)"
+          className="p-(--e-3)"
         />
       ) : consulta.isError ? (
         <EstadoErro
           titulo={`Não foi possível carregar ${titulo.toLowerCase()}.`}
           aoTentarDeNovo={() => void consulta.refetch()}
-          className="p-(--space-150)"
+          className="p-(--e-3)"
         />
       ) : total === 0 ? (
-        <p className="px-(--space-150) py-(--space-200) text-(--text-subtle)">{vazio}</p>
+        <p className="px-(--e-3) py-(--e-4) text-(--tinta-2)">{vazio}</p>
       ) : (
         <>
           {children(consulta.data?.itens ?? [])}
@@ -143,7 +143,7 @@ export function PaginaAcompanhamentos() {
 
   return (
     <Pagina titulo="Acompanhamentos">
-      <div className="grid items-start gap-(--space-200) xl:grid-cols-2">
+      <div className="grid items-start gap-(--e-4) xl:grid-cols-2">
         <Cartao
           id="titulo-conferencias"
           titulo="Aguardando conferência"
@@ -174,31 +174,29 @@ export function PaginaAcompanhamentos() {
                   </thead>
                   <tbody>
                     {itens.map((item) => (
-                      <tr key={item.ocorrenciaId} className="hover:bg-(--neutral-subtle-hover)">
+                      <tr key={item.ocorrenciaId} className="hover:bg-(--toque)">
                         <td className={`${classeCelula} max-w-[280px]`}>
                           <Link
                             to={`/ocorrencias/${item.ocorrenciaId}`}
-                            className="block truncate text-(--text) hover:underline"
+                            className="block truncate text-(--tinta) hover:underline"
                             title={item.titulo}
                           >
-                            <span className="font-mono text-xs text-(--text-subtle)">
+                            <span className="font-mono text-xs text-(--tinta-2)">
                               {item.codigo} ·{' '}
                             </span>
                             {item.titulo}
                           </Link>
-                          <span className="block truncate text-xs text-(--text-subtle)">
+                          <span className="block truncate text-xs text-(--tinta-2)">
                             {item.empreendimentoNome}
                           </span>
                         </td>
                         <td className={`${classeCelula} whitespace-nowrap`}>
                           {item.responsavelNome ?? (
-                            <span className="text-(--text-subtle)">Sem responsável</span>
+                            <span className="text-(--tinta-2)">Sem responsável</span>
                           )}
                         </td>
                         <td className={`${classeCelula} whitespace-nowrap`}>
-                          {item.conferenteNome ?? (
-                            <span className="text-(--text-subtle)">Gestão</span>
-                          )}
+                          {item.conferenteNome ?? <span className="text-(--tinta-2)">Gestão</span>}
                         </td>
                         <td className={`${classeCelula} whitespace-nowrap`}>
                           {tempoDesde(item.enviadaEm, agora)}
@@ -212,18 +210,16 @@ export function PaginaAcompanhamentos() {
                 {itens.map((item) => (
                   <li
                     key={item.ocorrenciaId}
-                    className="flex flex-col gap-(--space-025) border-b px-(--space-150) py-(--space-100) last:border-b-0"
+                    className="flex flex-col gap-(--e-05) border-b px-(--e-3) py-(--e-2) last:border-b-0"
                   >
                     <Link
                       to={`/ocorrencias/${item.ocorrenciaId}`}
-                      className="text-(--text) hover:underline"
+                      className="text-(--tinta) hover:underline"
                     >
-                      <span className="font-mono text-xs text-(--text-subtle)">
-                        {item.codigo} ·{' '}
-                      </span>
+                      <span className="font-mono text-xs text-(--tinta-2)">{item.codigo} · </span>
                       {item.titulo}
                     </Link>
-                    <span className="text-xs text-(--text-subtle)">
+                    <span className="text-xs text-(--tinta-2)">
                       {item.empreendimentoNome} · confere {item.conferenteNome ?? 'a Gestão'} ·
                       enviado há {tempoDesde(item.enviadaEm, agora)}
                     </span>
@@ -270,18 +266,18 @@ export function PaginaAcompanhamentos() {
                         item.diasLimite,
                       )
                       return (
-                        <tr key={item.instrumentoId} className="hover:bg-(--neutral-subtle-hover)">
+                        <tr key={item.instrumentoId} className="hover:bg-(--toque)">
                           <td className={`${classeCelula} max-w-[240px]`}>
-                            <span className="flex items-center gap-(--space-100)">
+                            <span className="flex items-center gap-(--e-2)">
                               <SiglaEmpreendimento nome={item.empreendimentoNome} />
                               <span className="flex min-w-0 flex-col">
                                 <Link
                                   to={`/renovacoes/${item.instrumentoId}`}
-                                  className="truncate corpo-medio text-(--text) hover:underline"
+                                  className="truncate corpo-medio text-(--tinta) hover:underline"
                                 >
                                   {item.licenca}
                                 </Link>
-                                <span className="truncate text-xs text-(--text-subtle)">
+                                <span className="truncate text-xs text-(--tinta-2)">
                                   {item.empreendimentoNome}
                                 </span>
                               </span>
@@ -322,12 +318,12 @@ export function PaginaAcompanhamentos() {
                   return (
                     <li
                       key={item.instrumentoId}
-                      className="flex flex-col gap-(--space-050) border-b px-(--space-150) py-(--space-100) last:border-b-0"
+                      className="flex flex-col gap-(--e-1) border-b px-(--e-3) py-(--e-2) last:border-b-0"
                     >
-                      <span className="flex items-center justify-between gap-(--space-100)">
+                      <span className="flex items-center justify-between gap-(--e-2)">
                         <Link
                           to={`/renovacoes/${item.instrumentoId}`}
-                          className="corpo-medio text-(--text) hover:underline"
+                          className="corpo-medio text-(--tinta) hover:underline"
                         >
                           {item.licenca}
                         </Link>
@@ -343,7 +339,7 @@ export function PaginaAcompanhamentos() {
                           hoje={item.hoje}
                         />
                       </span>
-                      <span className="text-xs text-(--text-subtle)">
+                      <span className="text-xs text-(--tinta-2)">
                         {item.empreendimentoNome} · limite {formatarDataCivil(limiteProtocolo)} ·
                         vence {formatarDataCivil(item.validade)}
                       </span>

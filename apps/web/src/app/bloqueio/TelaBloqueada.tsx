@@ -71,7 +71,7 @@ export function TelaBloqueada({
   return (
     <Primitivo.Root open>
       <Primitivo.Portal>
-        <Primitivo.Overlay className="fixed inset-0 z-[100] bg-(--surface-sunken)" />
+        <Primitivo.Overlay className="fixed inset-0 z-[100] bg-(--chao)" />
         <Primitivo.Content
           aria-describedby="descricao-bloqueio"
           onEscapeKeyDown={(evento) => {
@@ -84,30 +84,30 @@ export function TelaBloqueada({
             evento.preventDefault()
             campo.current?.focus()
           }}
-          className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-(--surface-sunken) px-(--space-200) pt-[12vh] pb-(--space-400) outline-none"
+          className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-(--chao) px-(--e-4) pt-[12vh] pb-(--e-8) outline-none"
         >
-          <div className="flex w-full max-w-[400px] flex-col gap-(--space-200) rounded-(--radius-large) border bg-(--surface) p-(--space-300) shadow-sobreposicao">
+          <div className="flex w-full max-w-[400px] flex-col gap-(--e-4) rounded-(--raio-painel) border bg-(--folha) p-(--e-6) shadow-sobreposicao">
             <MarcaGrama className="self-start" />
-            <div className="flex items-center gap-(--space-150)">
+            <div className="flex items-center gap-(--e-3)">
               <Avatar nome={usuario.nome} />
               <span className="flex min-w-0 flex-col">
                 <span className="truncate corpo-medio">{usuario.nome}</span>
-                <span className="truncate text-xs text-(--text-subtle)">{usuario.email}</span>
+                <span className="truncate text-xs text-(--tinta-2)">{usuario.email}</span>
               </span>
             </div>
-            <div className="flex flex-col gap-(--space-050)">
-              <Primitivo.Title className="flex items-center gap-(--space-100) titulo-tela">
+            <div className="flex flex-col gap-(--e-1)">
+              <Primitivo.Title className="flex items-center gap-(--e-2) titulo-tela">
                 <Icone nome="lock" />
                 Tela bloqueada
               </Primitivo.Title>
-              <Primitivo.Description id="descricao-bloqueio" className="corpo text-(--text-subtle)">
+              <Primitivo.Description id="descricao-bloqueio" className="corpo text-(--tinta-2)">
                 Digite sua senha para voltar de onde parou. O que você estava fazendo continua aqui.
               </Primitivo.Description>
             </div>
 
             <form
               noValidate
-              className="flex flex-col gap-(--space-150)"
+              className="flex flex-col gap-(--e-3)"
               onSubmit={(evento) => {
                 evento.preventDefault()
                 void desbloquear()

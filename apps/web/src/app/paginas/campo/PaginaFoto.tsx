@@ -110,19 +110,19 @@ function SecaoLocal({
   return (
     <section
       aria-labelledby="titulo-local"
-      className={`${classeCartao} flex flex-col gap-(--space-100) p-(--space-150)`}
+      className={`${classeCartao} flex flex-col gap-(--e-2) p-(--e-3)`}
     >
       <h2 id="titulo-local" className="corpo-medio">
         Localização
       </h2>
       <div role="status" aria-live="polite">
         {estado.tipo === 'pedindo' ? (
-          <p className="corpo text-(--text-subtle)">Obtendo localização…</p>
+          <p className="corpo text-(--tinta-2)">Obtendo localização…</p>
         ) : estado.tipo === 'obtido' ? (
           <p className="corpo">
             {descreverLocal({ ...estado.local, precisaoM: null })}
             {estado.local.precisaoM === null ? null : (
-              <span className="block text-xs text-(--text-subtle)">
+              <span className="block text-xs text-(--tinta-2)">
                 Precisão {rotuloDaPrecisao(estado.local.precisaoM)}
               </span>
             )}
@@ -135,7 +135,7 @@ function SecaoLocal({
         <MensagemSecao
           tom="atencao"
           titulo={estado.negada ? 'Localização negada' : 'Localização indisponível'}
-          acoes={<div className="flex flex-wrap gap-(--space-100)">{alternativas}</div>}
+          acoes={<div className="flex flex-wrap gap-(--e-2)">{alternativas}</div>}
         />
       ) : null}
       {estado.tipo === 'manual' ? (
@@ -150,13 +150,13 @@ function SecaoLocal({
         />
       ) : null}
       {estado.tipo === 'obtido' ? (
-        <div className="flex flex-wrap gap-(--space-100)">
+        <div className="flex flex-wrap gap-(--e-2)">
           <Botao tamanho="compacto" iconeAntes="refresh-cw" onClick={aoTentarDeNovo}>
             Atualizar
           </Botao>
         </div>
       ) : estado.tipo === 'manual' || estado.tipo === 'nenhum' ? (
-        <div className="flex flex-wrap gap-(--space-100)">
+        <div className="flex flex-wrap gap-(--e-2)">
           {estado.tipo === 'nenhum' ? (
             <Botao tamanho="compacto" onClick={aoDescrever}>
               Descrever o local
@@ -291,9 +291,9 @@ function Foto({ vistoria, item }: { vistoria: Vistoria; item: ItemDaVistoriaGrav
   )
 
   const contexto = (
-    <header className="flex flex-col gap-(--space-050)">
-      <p className="text-xs text-(--text-subtle)">Checklist · {item.titulo}</p>
-      <h1 className="titulo-tela text-(--text)">
+    <header className="flex flex-col gap-(--e-1)">
+      <p className="text-xs text-(--tinta-2)">Checklist · {item.titulo}</p>
+      <h1 className="titulo-tela text-(--tinta)">
         {captura ? 'Revisar evidência' : 'Foto e localização'}
       </h1>
     </header>
@@ -331,10 +331,10 @@ function Foto({ vistoria, item }: { vistoria: Vistoria; item: ItemDaVistoriaGrav
           onClick={() => {
             entrada.current?.click()
           }}
-          className={`${classeCartao} flex aspect-[4/3] w-full cursor-pointer flex-col items-center justify-center gap-(--space-100) border-dashed text-(--text-subtle) transicao-estado hover:bg-(--surface-hover)`}
+          className={`${classeCartao} flex aspect-[4/3] w-full cursor-pointer flex-col items-center justify-center gap-(--e-2) border-dashed text-(--tinta-2) transicao-estado hover:bg-(--toque)`}
         >
           <Icone nome="image" tamanho={24} />
-          <span className="corpo-medio text-(--text)">Tirar foto</span>
+          <span className="corpo-medio text-(--tinta)">Tirar foto</span>
         </button>
         {secaoLocal}
         <BarraDeAcao>
@@ -357,13 +357,13 @@ function Foto({ vistoria, item }: { vistoria: Vistoria; item: ItemDaVistoriaGrav
           className={`${classeCartao} max-h-[50vh] w-full object-contain`}
         />
       ) : null}
-      <dl className={`${classeCartao} px-(--space-150)`}>
-        <div className="flex justify-between gap-(--space-200) border-b py-(--space-100)">
-          <dt className="corpo text-(--text-subtle)">Item</dt>
+      <dl className={`${classeCartao} px-(--e-3)`}>
+        <div className="flex justify-between gap-(--e-4) border-b py-(--e-2)">
+          <dt className="corpo text-(--tinta-2)">Item</dt>
           <dd className="text-right corpo-medio">{item.titulo}</dd>
         </div>
-        <div className="flex justify-between gap-(--space-200) py-(--space-100)">
-          <dt className="corpo text-(--text-subtle)">Data e hora</dt>
+        <div className="flex justify-between gap-(--e-4) py-(--e-2)">
+          <dt className="corpo text-(--tinta-2)">Data e hora</dt>
           <dd className="text-right corpo-medio">
             {formatarInstanteComHora(captura.capturadaEm, atual.fuso)}
           </dd>

@@ -31,17 +31,17 @@ export function ComoCadastrar({
   semIa: string | null
 }) {
   return (
-    <fieldset className="flex flex-col gap-(--space-100)">
-      <legend className="mb-(--space-100) titulo-secao">Como cadastrar</legend>
-      <div className="grid gap-(--space-150) sm:grid-cols-2">
+    <fieldset className="flex flex-col gap-(--e-2)">
+      <legend className="mb-(--e-2) titulo-secao">Como cadastrar</legend>
+      <div className="grid gap-(--e-3) sm:grid-cols-2">
         <label
           className={
             semIa
-              ? 'flex cursor-not-allowed flex-col gap-(--space-050) rounded-(--radius-large) border bg-(--surface) shadow-cartao p-(--space-200) opacity-70'
-              : 'flex cursor-pointer flex-col gap-(--space-050) rounded-(--radius-large) border bg-(--surface) shadow-cartao p-(--space-200) transicao-estado has-checked:border-(--brand-stroke) has-checked:bg-(--surface-selected) hover:bg-(--surface-hover)'
+              ? 'flex cursor-not-allowed flex-col gap-(--e-1) rounded-(--raio-painel) border bg-(--folha) shadow-cartao p-(--e-4) opacity-70'
+              : 'flex cursor-pointer flex-col gap-(--e-1) rounded-(--raio-painel) border bg-(--folha) shadow-cartao p-(--e-4) transicao-estado has-checked:border-(--marca-linha) has-checked:bg-(--escolha) hover:bg-(--toque)'
           }
         >
-          <span className="inline-flex items-center gap-(--space-100) corpo-medio">
+          <span className="inline-flex items-center gap-(--e-2) corpo-medio">
             <input
               type="radio"
               name="como-cadastrar"
@@ -52,22 +52,22 @@ export function ComoCadastrar({
               }}
               aria-labelledby="como-ia"
               aria-describedby="ia-descricao"
-              className="size-4 accent-(--brand-stroke)"
+              className="size-4 accent-(--marca-linha)"
             />
-            <span id="como-ia" className={semIa ? 'text-(--text-disabled)' : undefined}>
+            <span id="como-ia" className={semIa ? 'text-(--tinta-off)' : undefined}>
               Extrair com IA
             </span>
             <Selo tom="revisao" className="ml-auto">
               IA
             </Selo>
           </span>
-          <span id="ia-descricao" className="text-xs text-(--text-subtle)">
+          <span id="ia-descricao" className="text-xs text-(--tinta-2)">
             {semIa ??
               'A IA propõe identificação e condicionantes a partir do PDF. Nada vale sem a sua revisão. PDF com texto até 10 MB.'}
           </span>
         </label>
-        <label className="flex cursor-pointer flex-col gap-(--space-050) rounded-(--radius-large) border bg-(--surface) shadow-cartao p-(--space-200) transicao-estado has-checked:border-(--brand-stroke) has-checked:bg-(--surface-selected) hover:bg-(--surface-hover)">
-          <span className="inline-flex items-center gap-(--space-100) corpo-medio">
+        <label className="flex cursor-pointer flex-col gap-(--e-1) rounded-(--raio-painel) border bg-(--folha) shadow-cartao p-(--e-4) transicao-estado has-checked:border-(--marca-linha) has-checked:bg-(--escolha) hover:bg-(--toque)">
+          <span className="inline-flex items-center gap-(--e-2) corpo-medio">
             <input
               type="radio"
               name="como-cadastrar"
@@ -77,11 +77,11 @@ export function ComoCadastrar({
               }}
               aria-labelledby="como-manual"
               aria-describedby="manual-descricao"
-              className="size-4 accent-(--brand-stroke)"
+              className="size-4 accent-(--marca-linha)"
             />
             <span id="como-manual">Cadastrar manualmente</span>
           </span>
-          <span id="manual-descricao" className="text-xs text-(--text-subtle)">
+          <span id="manual-descricao" className="text-xs text-(--tinta-2)">
             Você preenche a identificação e as condicionantes. Sempre disponível; aceita PDF até 25
             MB ou nenhum.
           </span>
@@ -175,13 +175,13 @@ export function PainelExtracao({
     return (
       <section
         aria-labelledby="titulo-extraindo"
-        className="flex flex-col gap-(--space-150) rounded-(--radius-large) border bg-(--surface) shadow-cartao p-(--space-200)"
+        className="flex flex-col gap-(--e-3) rounded-(--raio-painel) border bg-(--folha) shadow-cartao p-(--e-4)"
       >
-        <div className="flex items-center justify-between gap-(--space-100)">
+        <div className="flex items-center justify-between gap-(--e-2)">
           <h2 id="titulo-extraindo" className="titulo-secao">
             Extraindo com IA
           </h2>
-          <span className="text-xs text-(--text-subtle)" aria-live="off">
+          <span className="text-xs text-(--tinta-2)" aria-live="off">
             {decorridos} s de até 2 min
           </span>
         </div>
@@ -192,16 +192,16 @@ export function PainelExtracao({
           aria-valuemax={120}
           aria-valuenow={Math.min(120, decorridos)}
           aria-valuetext={`${String(decorridos)} segundos de até 2 minutos`}
-          className="h-1 overflow-hidden rounded-full bg-(--border)"
+          className="h-1 overflow-hidden rounded-full bg-(--regra)"
         >
-          <div className="h-full bg-(--text)" style={{ width: `${String(percentual)}%` }} />
+          <div className="h-full bg-(--tinta)" style={{ width: `${String(percentual)}%` }} />
         </div>
         <p className="corpo" role="status">
           A IA está lendo o PDF e propondo a identificação e as condicionantes.
         </p>
-        <div className="flex flex-wrap items-center gap-(--space-150)">
+        <div className="flex flex-wrap items-center gap-(--e-3)">
           <Botao onClick={aoManual}>Cancelar e cadastrar manualmente</Botao>
-          <span className="text-xs text-(--text-subtle)">
+          <span className="text-xs text-(--tinta-2)">
             Pode sair desta tela: a extração continua e o rascunho fica salvo. O que a IA propuser
             entra como pendente de revisão.
           </span>
@@ -255,7 +255,7 @@ export function PainelExtracao({
       >
         {MENSAGEM_DA_FALHA[motivo]}
         {detalhe ? (
-          <span className="mt-(--space-050) block text-xs text-(--text-subtle)">
+          <span className="mt-(--e-1) block text-xs text-(--tinta-2)">
             Detalhe técnico: {detalhe}
           </span>
         ) : null}

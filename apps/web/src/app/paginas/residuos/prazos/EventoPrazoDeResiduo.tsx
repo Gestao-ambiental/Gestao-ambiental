@@ -20,7 +20,7 @@ export function EventoPrazoDeResiduo({ prazo, inteiro = false }: Props) {
     <Link
       to={caminhoDosPrazosDeResiduo(prazo.empreendimentoId)}
       title={descricaoDoPrazoDeResiduo(prazo)}
-      className="flex min-w-0 items-center gap-(--space-050) rounded-(--radius) border border-(--lozenge-success-border) bg-(--lozenge-success-bg) px-(--space-075) py-0.5 text-xs text-(--lozenge-success-text) no-underline hover:underline"
+      className="flex min-w-0 items-center gap-(--e-1) rounded-(--raio) border border-(--ok-borda) bg-(--ok-fundo) px-(--e-15) py-0.5 text-xs text-(--ok-texto) no-underline hover:underline"
     >
       <span className="shrink-0 font-semibold">Resíduos</span>
       <span className={inteiro ? 'break-words' : 'truncate'}>

@@ -48,9 +48,9 @@ export function EditorDeModelo({ conteudoInicial, aoMudar, somenteLeitura = fals
   })
 
   return (
-    <div className="flex min-w-0 flex-col rounded-(--radius) border bg-(--surface)">
+    <div className="flex min-w-0 flex-col rounded-(--raio) border bg-(--folha)">
       {somenteLeitura ? null : <BarraDoEditor editor={editor} />}
-      <div className="max-h-[70vh] min-h-[360px] overflow-y-auto px-(--space-300) py-(--space-200)">
+      <div className="max-h-[70vh] min-h-[360px] overflow-y-auto px-(--e-6) py-(--e-4)">
         <EditorContent editor={editor} />
       </div>
     </div>
@@ -79,8 +79,8 @@ function BotaoDaBarra({
       }}
       onClick={aoClicar}
       className={cn(
-        'inline-flex h-(--size-control-sm) min-w-(--size-control-sm) cursor-pointer items-center justify-center rounded-(--radius) px-(--space-075) corpo-medio text-(--text) transicao-estado hover:bg-(--neutral-subtle-hover)',
-        ativo && 'bg-(--surface-selected) text-(--text-link) hover:bg-(--surface-selected-hover)',
+        'inline-flex h-(--controle-mini) min-w-(--controle-mini) cursor-pointer items-center justify-center rounded-(--raio) px-(--e-15) corpo-medio text-(--tinta) transicao-estado hover:bg-(--toque)',
+        ativo && 'bg-(--escolha) text-(--link) hover:bg-(--escolha-toque)',
       )}
     >
       {children}
@@ -89,7 +89,7 @@ function BotaoDaBarra({
 }
 
 function Separador() {
-  return <span aria-hidden className="mx-(--space-050) h-5 w-px bg-(--border)" />
+  return <span aria-hidden className="mx-(--e-1) h-5 w-px bg-(--regra)" />
 }
 
 type Estilo = 'paragrafo' | 'titulo1' | 'titulo2' | 'titulo3'
@@ -132,7 +132,7 @@ function BarraDoEditor({ editor }: { editor: Editor }) {
     <div
       role="toolbar"
       aria-label="Formatação"
-      className="flex flex-wrap items-center gap-(--space-025) border-b px-(--space-100) py-(--space-075)"
+      className="flex flex-wrap items-center gap-(--e-05) border-b px-(--e-2) py-(--e-15)"
     >
       <label className="sr-only" htmlFor="estilo-do-paragrafo">
         Estilo do parágrafo
@@ -143,7 +143,7 @@ function BarraDoEditor({ editor }: { editor: Editor }) {
         onChange={(e) => {
           trocarEstilo(e.target.value as Estilo)
         }}
-        className="h-(--size-control-sm) rounded-(--radius) border border-(--border-input) bg-(--surface-input) px-(--space-075) corpo text-(--text)"
+        className="h-(--controle-mini) rounded-(--raio) border border-(--campo-borda) bg-(--campo) px-(--e-15) corpo text-(--tinta)"
       >
         <option value="paragrafo">Texto</option>
         <option value="titulo1">Título 1</option>
@@ -207,7 +207,7 @@ function BarraDoEditor({ editor }: { editor: Editor }) {
       ))}
       <Separador />
       <DropdownMenu>
-        <DropdownMenuTrigger className="inline-flex h-(--size-control-sm) cursor-pointer items-center gap-(--space-050) rounded-(--radius) px-(--space-075) corpo-medio text-(--text) transicao-estado hover:bg-(--neutral-subtle-hover)">
+        <DropdownMenuTrigger className="inline-flex h-(--controle-mini) cursor-pointer items-center gap-(--e-1) rounded-(--raio) px-(--e-15) corpo-medio text-(--tinta) transicao-estado hover:bg-(--toque)">
           Tabela
           <Icone nome="chevron-down" />
         </DropdownMenuTrigger>
@@ -247,7 +247,7 @@ function BarraDoEditor({ editor }: { editor: Editor }) {
           <DropdownMenuItem
             disabled={!estado.naTabela}
             onSelect={() => editor.chain().focus().deleteTable().run()}
-            className="text-(--text-danger)"
+            className="text-(--atraso-texto)"
           >
             Excluir tabela
           </DropdownMenuItem>
@@ -255,7 +255,7 @@ function BarraDoEditor({ editor }: { editor: Editor }) {
       </DropdownMenu>
       <span className="flex-1" />
       <DropdownMenu>
-        <DropdownMenuTrigger className="inline-flex h-(--size-control-sm) cursor-pointer items-center gap-(--space-050) rounded-(--radius) border border-(--border-strong) bg-(--surface) px-(--space-100) corpo-medio text-(--text) transicao-estado hover:bg-(--surface-hover)">
+        <DropdownMenuTrigger className="inline-flex h-(--controle-mini) cursor-pointer items-center gap-(--e-1) rounded-(--raio) border border-(--regra-forte) bg-(--folha) px-(--e-2) corpo-medio text-(--tinta) transicao-estado hover:bg-(--toque)">
           <Icone nome="plus" />
           Inserir campo
         </DropdownMenuTrigger>

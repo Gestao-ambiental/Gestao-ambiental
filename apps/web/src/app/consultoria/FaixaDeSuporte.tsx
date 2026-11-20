@@ -33,15 +33,15 @@ export function FaixaDeSuporte() {
   return (
     <section
       aria-label="Acesso de suporte"
-      className="flex shrink-0 flex-wrap items-center gap-x-(--space-150) gap-y-(--space-075) border-b border-(--lozenge-warning-border) bg-(--lozenge-warning-bg) px-(--space-200) py-(--space-075) text-(--text) print:hidden md:px-(--space-300)"
+      className="flex shrink-0 flex-wrap items-center gap-x-(--e-3) gap-y-(--e-15) border-b border-(--alerta-borda) bg-(--alerta-fundo) px-(--e-4) py-(--e-15) text-(--tinta) print:hidden md:px-(--e-6)"
     >
-      <Icone nome="triangle-alert" className="text-(--lozenge-warning-text)" />
+      <Icone nome="triangle-alert" className="text-(--alerta-texto)" />
       <p role="status" className="min-w-0 flex-1 corpo-medio">
         Acesso de suporte · somente leitura ·{' '}
         {rotuloDoFimDoSuporte(suporte.fimPrevisto, atual.fuso, new Date())}
       </p>
       {erro ? (
-        <p role="alert" className="corpo text-(--text-danger)">
+        <p role="alert" className="corpo text-(--atraso-texto)">
           {erro}
         </p>
       ) : null}

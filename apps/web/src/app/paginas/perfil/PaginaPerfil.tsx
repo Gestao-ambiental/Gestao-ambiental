@@ -124,22 +124,22 @@ function Perfil({ perfil }: { perfil: MembroAtivo }) {
     outras.join() !== perfil.outrasProfissoes.join()
 
   return (
-    <div className="flex max-w-[560px] flex-col gap-(--space-300)">
-      <section aria-labelledby="titulo-foto" className="flex flex-col gap-(--space-150)">
+    <div className="flex max-w-[560px] flex-col gap-(--e-6)">
+      <section aria-labelledby="titulo-foto" className="flex flex-col gap-(--e-3)">
         <h2 id="titulo-foto" className="titulo-secao">
           Foto
         </h2>
-        <div className="flex items-center gap-(--space-200)">
+        <div className="flex items-center gap-(--e-4)">
           <Avatar nome={perfil.nome} fotoUrl={perfil.fotoUrl} tamanho="perfil" />
-          <div className="flex min-w-0 flex-col gap-(--space-050)">
-            <span className="corpo-medio text-(--text)">{perfil.nome}</span>
+          <div className="flex min-w-0 flex-col gap-(--e-1)">
+            <span className="corpo-medio text-(--tinta)">{perfil.nome}</span>
             <span className="rotulo">{email}</span>
             <span className="rotulo">
               {perfil.cargo ?? (perfil.papel ? NOMES_PAPEL[perfil.papel] : '')}
             </span>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-(--space-100)">
+        <div className="flex flex-wrap items-center gap-(--e-2)">
           <input
             ref={entrada}
             type="file"
@@ -187,12 +187,12 @@ function Perfil({ perfil }: { perfil: MembroAtivo }) {
         ) : null}
       </section>
 
-      <section aria-labelledby="titulo-genero" className="flex flex-col gap-(--space-150)">
+      <section aria-labelledby="titulo-genero" className="flex flex-col gap-(--e-3)">
         <h2 id="titulo-genero" className="titulo-secao">
           Gênero
         </h2>
         <form
-          className="flex flex-col gap-(--space-150)"
+          className="flex flex-col gap-(--e-3)"
           onSubmit={(evento) => {
             evento.preventDefault()
             if (genero && generoMudou) salvarGenero.mutate(genero)
@@ -211,7 +211,7 @@ function Perfil({ perfil }: { perfil: MembroAtivo }) {
               {mensagemDoErro(salvarGenero.error)}
             </MensagemSecao>
           ) : null}
-          <div className="flex items-center gap-(--space-150)">
+          <div className="flex items-center gap-(--e-3)">
             <Botao
               type="submit"
               aparencia="primario"
@@ -228,12 +228,12 @@ function Perfil({ perfil }: { perfil: MembroAtivo }) {
         </form>
       </section>
 
-      <section aria-labelledby="titulo-cargo" className="flex flex-col gap-(--space-150)">
+      <section aria-labelledby="titulo-cargo" className="flex flex-col gap-(--e-3)">
         <h2 id="titulo-cargo" className="titulo-secao">
           Profissão e cargo
         </h2>
         <form
-          className="flex flex-col gap-(--space-150)"
+          className="flex flex-col gap-(--e-3)"
           onSubmit={(evento) => {
             evento.preventDefault()
             if (mudou) salvar.mutate()
@@ -269,7 +269,7 @@ function Perfil({ perfil }: { perfil: MembroAtivo }) {
               {mensagemDoErro(salvar.error)}
             </MensagemSecao>
           ) : null}
-          <div className="flex items-center gap-(--space-150)">
+          <div className="flex items-center gap-(--e-3)">
             <Botao type="submit" aparencia="primario" disabled={!mudou || salvar.isPending}>
               {salvar.isPending ? 'Salvando…' : 'Salvar profissão e cargo'}
             </Botao>

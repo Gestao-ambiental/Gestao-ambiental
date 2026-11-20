@@ -12,18 +12,17 @@ interface Props {
 /**
  * Espaço reservado enquanto carrega, no formato do que vai aparecer. Sempre aria-hidden: quem
  * anuncia o carregamento é o contêiner (role="status").
- * Referência: docs/design-system/referencia-componentes/data/Skeleton.jsx.
  */
 export function Esqueleto({ largura = '100%', altura = 12, className, style }: Props) {
   return (
     <span
       aria-hidden="true"
-      className={cn('block rounded-(--radius)', className)}
+      className={cn('block rounded-(--raio)', className)}
       style={{
         width: largura,
         height: altura,
         background:
-          'linear-gradient(90deg,var(--surface-skeleton) 0%,var(--surface-skeleton-shine) 50%,var(--surface-skeleton) 100%)',
+          'linear-gradient(90deg,var(--esqueleto) 0%,var(--esqueleto-brilho) 50%,var(--esqueleto) 100%)',
         backgroundSize: '200% 100%',
         animation: 'af-skeleton 1.2s ease-in-out infinite',
         ...style,
@@ -32,7 +31,7 @@ export function Esqueleto({ largura = '100%', altura = 12, className, style }: P
   )
 }
 
-/** N linhas no ritmo de tabela (40px). Referência: SkeletonRows. */
+/** N linhas no ritmo do quadro (48px). */
 export function EsqueletoLinhas({
   linhas = 4,
   className,
@@ -45,9 +44,9 @@ export function EsqueletoLinhas({
       {Array.from({ length: linhas }, (_, indice) => (
         <div
           key={indice}
-          className="flex h-(--row-height) items-center gap-(--space-150) border-b px-(--space-100)"
+          className="flex h-(--linha) items-center gap-(--e-4) border-b px-(--e-4) last:border-b-0"
         >
-          <Esqueleto largura={16} altura={16} />
+          <Esqueleto largura={44} altura={18} />
           <Esqueleto largura={`${String(40 + (indice % 3) * 12)}%`} />
           <Esqueleto largura={72} altura={16} className="ml-auto" />
         </div>

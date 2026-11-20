@@ -73,7 +73,7 @@ export function DialogoAprovarOrcamento({ orcamento, aberto, aoMudarAberto, aoAp
           Não foi possível carregar a equipe e as tarefas. Feche e tente de novo.
         </MensagemSecao>
       ) : !pronto ? (
-        <p className="corpo text-(--text-subtle)" aria-busy="true">
+        <p className="corpo text-(--tinta-2)" aria-busy="true">
           Carregando…
         </p>
       ) : (
@@ -158,10 +158,10 @@ function FormularioDeAprovacao({
   }
 
   return (
-    <div className="flex flex-col gap-(--space-200)">
-      <section aria-label="Registro do aceite" className="flex flex-col gap-(--space-150)">
+    <div className="flex flex-col gap-(--e-4)">
+      <section aria-label="Registro do aceite" className="flex flex-col gap-(--e-3)">
         <h3 className="titulo-secao">Registro do aceite</h3>
-        <div className="grid gap-(--space-150) sm:grid-cols-2">
+        <div className="grid gap-(--e-3) sm:grid-cols-2">
           <CampoTexto
             rotulo="Quem aprovou"
             value={aprovadoPor}
@@ -190,7 +190,7 @@ function FormularioDeAprovacao({
               setReferencia(e.target.value)
             }}
           />
-          <label htmlFor={idMetodo} className="flex flex-col gap-(--space-050)">
+          <label htmlFor={idMetodo} className="flex flex-col gap-(--e-1)">
             <span className="rotulo">Como aprovou (opcional)</span>
             <select
               id={idMetodo}
@@ -211,8 +211,8 @@ function FormularioDeAprovacao({
         </div>
       </section>
 
-      <section aria-label="Tarefas da execução" className="flex flex-col gap-(--space-150)">
-        <div className="flex flex-wrap items-center justify-between gap-(--space-100)">
+      <section aria-label="Tarefas da execução" className="flex flex-col gap-(--e-3)">
+        <div className="flex flex-wrap items-center justify-between gap-(--e-2)">
           <h3 className="titulo-secao">Tarefas da execução</h3>
           <CaixaSelecao
             rotulo="Gerar tarefas com a aprovação"
@@ -224,14 +224,14 @@ function FormularioDeAprovacao({
         </div>
         {gerar ? (
           <>
-            <ol className="flex flex-col gap-(--space-100)" aria-label="Roteiro de tarefas">
+            <ol className="flex flex-col gap-(--e-2)" aria-label="Roteiro de tarefas">
               {roteiro.map((t, indice) => {
                 const erros = tentou ? errosTarefas[t.chave] : undefined
                 const n = String(indice + 1)
                 return (
                   <li
                     key={t.chave}
-                    className="grid items-end gap-(--space-100) rounded-(--radius) border p-(--space-100) sm:grid-cols-[minmax(0,2fr)_minmax(0,1.3fr)_88px_minmax(0,1.2fr)_auto]"
+                    className="grid items-end gap-(--e-2) rounded-(--raio) border p-(--e-2) sm:grid-cols-[minmax(0,2fr)_minmax(0,1.3fr)_88px_minmax(0,1.2fr)_auto]"
                   >
                     <CampoTexto
                       rotulo={`Tarefa ${n}`}
@@ -242,7 +242,7 @@ function FormularioDeAprovacao({
                         mudarTarefa(t.chave, { titulo: e.target.value })
                       }}
                     />
-                    <label className="flex flex-col gap-(--space-050)">
+                    <label className="flex flex-col gap-(--e-1)">
                       <span className="rotulo">Responsável</span>
                       <select
                         className={classeCampo}
@@ -288,7 +288,7 @@ function FormularioDeAprovacao({
                 )
               })}
             </ol>
-            <div className="flex flex-wrap items-center justify-between gap-(--space-100)">
+            <div className="flex flex-wrap items-center justify-between gap-(--e-2)">
               <Botao
                 tamanho="compacto"
                 onClick={() => {
@@ -327,7 +327,7 @@ function FormularioDeAprovacao({
         </MensagemSecao>
       ) : null}
 
-      <div className="flex flex-wrap justify-end gap-(--space-100)">
+      <div className="flex flex-wrap justify-end gap-(--e-2)">
         <Botao onClick={aoCancelar}>Cancelar</Botao>
         <Botao
           aparencia="primario"

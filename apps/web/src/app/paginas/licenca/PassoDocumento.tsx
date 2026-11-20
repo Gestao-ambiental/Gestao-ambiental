@@ -35,7 +35,7 @@ const PROBLEMAS: Record<ProblemaDoPdf, string> = {
 }
 
 const classeSelect =
-  'h-(--size-control) w-full rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) px-(--space-100) corpo text-(--text) outline-none focus:border-b-(--border-input-active) focus:shadow-[inset_0_-1px_0_0_var(--border-input-active)]'
+  'h-(--controle) w-full rounded-(--raio) border border-(--campo-borda) border-b-(--campo-borda) bg-(--campo) px-(--e-2) corpo text-(--tinta) outline-none focus:border-b-(--campo-borda-ativa) focus:shadow-[inset_0_-1px_0_0_var(--campo-borda-ativa)]'
 
 function tamanhoLegivel(bytes: number): string {
   return bytes >= 1024 * 1024
@@ -78,7 +78,7 @@ function EnvioPdf({
   const nome = arquivo?.name ?? atual
 
   return (
-    <div className="flex flex-col gap-(--space-100)">
+    <div className="flex flex-col gap-(--e-2)">
       {/* Arrastar é atalho de mouse; pelo teclado, "Escolher arquivo" faz o mesmo. */}
       {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
       <div
@@ -91,18 +91,18 @@ function EnvioPdf({
         }}
         onDrop={soltar}
         className={cn(
-          'flex flex-col items-center gap-(--space-100) rounded-(--radius) border border-dashed p-(--space-300) text-center transicao-estado',
+          'flex flex-col items-center gap-(--e-2) rounded-(--raio) border border-dashed p-(--e-6) text-center transicao-estado',
           arrastando
-            ? 'border-(--brand-stroke) bg-(--surface-selected)'
-            : 'border-(--border-strong) bg-(--surface)',
+            ? 'border-(--marca-linha) bg-(--escolha)'
+            : 'border-(--regra-forte) bg-(--folha)',
         )}
       >
-        <Icone nome="file-text" tamanho={24} className="text-(--icon)" />
+        <Icone nome="file-text" tamanho={24} className="text-(--icone)" />
         {nome ? (
           <p className="corpo">
             <span className="corpo-medio">{nome}</span>
             {arquivo ? (
-              <span className="text-(--text-subtle)"> · {tamanhoLegivel(arquivo.size)}</span>
+              <span className="text-(--tinta-2)"> · {tamanhoLegivel(arquivo.size)}</span>
             ) : null}
           </p>
         ) : (
@@ -128,7 +128,7 @@ function EnvioPdf({
             evento.target.value = ''
           }}
         />
-        <p id={ajudaId} className="text-xs text-(--text-subtle)">
+        <p id={ajudaId} className="text-xs text-(--tinta-2)">
           PDF até 25 MB.{' '}
           {atual && !arquivo ? 'Trocar cria uma versão nova; a anterior fica guardada.' : ''}
         </p>
@@ -245,13 +245,13 @@ function DocumentoNovo() {
         />
       }
     >
-      <div className="flex flex-col gap-(--space-300)">
+      <div className="flex flex-col gap-(--e-6)">
         {falha ? (
           <MensagemSecao role="alert" tom="perigo">
             {falha}
           </MensagemSecao>
         ) : null}
-        <section aria-labelledby="titulo-local" className="flex flex-col gap-(--space-100)">
+        <section aria-labelledby="titulo-local" className="flex flex-col gap-(--e-2)">
           <h2 id="titulo-local" className="titulo-secao">
             Empreendimento e unidade
           </h2>
@@ -260,8 +260,8 @@ function DocumentoNovo() {
           ) : empreendimentos.isError ? (
             <EstadoErro aoTentarDeNovo={() => void empreendimentos.refetch()} />
           ) : (
-            <div className="grid gap-(--space-150) sm:grid-cols-2">
-              <label className="flex flex-col gap-(--space-050)">
+            <div className="grid gap-(--e-3) sm:grid-cols-2">
+              <label className="flex flex-col gap-(--e-1)">
                 <span className="rotulo">Empreendimento</span>
                 <select
                   className={classeSelect}
@@ -279,7 +279,7 @@ function DocumentoNovo() {
                   ))}
                 </select>
               </label>
-              <label className="flex flex-col gap-(--space-050)">
+              <label className="flex flex-col gap-(--e-1)">
                 <span className="rotulo">Unidade</span>
                 <select
                   className={classeSelect}
@@ -307,7 +307,7 @@ function DocumentoNovo() {
           ) : null}
         </section>
 
-        <section aria-labelledby="titulo-pdf" className="flex flex-col gap-(--space-100)">
+        <section aria-labelledby="titulo-pdf" className="flex flex-col gap-(--e-2)">
           <h2 id="titulo-pdf" className="titulo-secao">
             PDF da licença
           </h2>
@@ -399,13 +399,13 @@ function DocumentoExistente({ instrumento }: { instrumento: Instrumento }) {
         />
       }
     >
-      <div className="flex flex-col gap-(--space-300)">
+      <div className="flex flex-col gap-(--e-6)">
         {falha ? (
           <MensagemSecao role="alert" tom="perigo">
             {falha}
           </MensagemSecao>
         ) : null}
-        <section aria-labelledby="titulo-pdf" className="flex flex-col gap-(--space-100)">
+        <section aria-labelledby="titulo-pdf" className="flex flex-col gap-(--e-2)">
           <h2 id="titulo-pdf" className="titulo-secao">
             PDF da licença
           </h2>

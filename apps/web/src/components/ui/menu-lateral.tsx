@@ -15,39 +15,34 @@ interface PropsMenu {
 }
 
 /**
- * Rail de 240px no padrão NavDrawer do Fluent 2 (ADR-0015): superfície separada da página por
- * borda; o item ativo leva a barra de marca à esquerda, texto semibold e aria-current.
+ * Trilho de navegação: a placa verde. Dentro dele os semânticos viram tinta branca
+ * (data-superficie="trilho"), então qualquer peça posta aqui se ajusta sozinha.
  */
 export function MenuLateral({ rotulo, cabecalho, rodape, children, className }: PropsMenu) {
   return (
     <nav
       aria-label={rotulo}
+      data-superficie="trilho"
       className={cn(
-        'flex h-full w-(--nav-side-width) shrink-0 flex-col overflow-hidden border-r bg-(--surface-nav)',
+        'flex h-full w-(--trilho-largura) shrink-0 flex-col overflow-hidden',
         className,
       )}
     >
-      {cabecalho ? (
-        <div className="px-(--space-150) pt-(--space-150) pb-(--space-100)">{cabecalho}</div>
-      ) : null}
-      <div className="flex-1 overflow-y-auto px-(--space-100) pt-(--space-050) pb-(--space-200)">
-        {children}
-      </div>
-      {rodape ? <div className="border-t p-(--space-100)">{rodape}</div> : null}
+      {cabecalho ? <div className="px-(--e-3) pt-(--e-2) pb-(--e-3)">{cabecalho}</div> : null}
+      <div className="flex-1 overflow-y-auto px-(--e-3) pt-(--e-1) pb-(--e-4)">{children}</div>
+      {rodape ? <div className="border-t p-(--e-3)">{rodape}</div> : null}
     </nav>
   )
 }
 
-/** Grupo do rail, com rótulo opcional em maiúsculas. */
+/** Grupo do trilho, com rótulo opcional em maiúsculas. */
 export function MenuLateralSecao({ rotulo, children }: { rotulo?: string; children: ReactNode }) {
   return (
-    <div className="mt-(--space-200) first:mt-0">
+    <div className="mt-(--e-5) first:mt-0">
       {rotulo ? (
-        <div className="px-(--space-100) py-(--space-050) rotulo-maiusculo text-(--text-subtlest)">
-          {rotulo}
-        </div>
+        <div className="px-(--e-3) pb-(--e-15) rotulo-maiusculo text-(--tinta-2)">{rotulo}</div>
       ) : null}
-      <ul className="flex flex-col gap-px">{children}</ul>
+      <ul className="flex flex-col gap-(--e-05)">{children}</ul>
     </div>
   )
 }
@@ -63,7 +58,8 @@ interface PropsItem {
 }
 
 /**
- * Item do rail. Atual = verde lavado com texto de link e aria-current="page"; sem barra lateral.
+ * Item do trilho. Atual = plaqueta verde-lima com tinta escura e aria-current="page" (a marca de
+ * trilha do logotipo); a mudança de fundo e de peso diz o estado, não só a cor.
  */
 export function MenuLateralItem({ para, icone, children, exato, contagem, aoNavegar }: PropsItem) {
   return (
@@ -74,20 +70,33 @@ export function MenuLateralItem({ para, icone, children, exato, contagem, aoNave
         onClick={aoNavegar}
         className={({ isActive }) =>
           cn(
-            'group relative flex h-(--size-control) items-center gap-(--space-100) whitespace-nowrap rounded-(--radius) px-(--space-150) no-underline transicao-estado hover:no-underline',
+            'group relative flex h-10 max-md:h-(--controle-toque) items-center gap-(--e-3) whitespace-nowrap rounded-(--raio) px-(--e-3) no-underline transicao-estado hover:no-underline',
             isActive
-              ? 'bg-(--neutral-subtle-pressed) corpo-medio text-(--text) hover:bg-(--neutral-subtle-pressed) hover:text-(--text) before:absolute before:top-1/2 before:left-0 before:h-4 before:w-[3px] before:-translate-y-1/2 before:rounded-(--radius-pill) before:bg-(--brand-stroke)'
-              : 'corpo text-(--text) hover:bg-(--neutral-subtle-hover) hover:text-(--text)',
+              ? 'bg-(--sinal) corpo-medio text-(--sinal-texto) hover:bg-(--sinal-toque) hover:text-(--sinal-texto)'
+              : 'corpo text-(--tinta) hover:bg-(--toque) hover:text-(--tinta) active:bg-(--aperto)',
           )
         }
       >
         {({ isActive }) => (
           <>
             {icone ? (
-              <Icone nome={icone} className={isActive ? 'text-(--icon-brand)' : 'text-(--icon)'} />
+              <Icone
+                nome={icone}
+                tamanho={18}
+                className={isActive ? 'text-(--sinal-texto)' : 'text-(--icone-2)'}
+              />
             ) : null}
             <span className="flex-1 overflow-hidden text-ellipsis">{children}</span>
-            {contagem !== undefined ? <span className="rotulo">{contagem}</span> : null}
+            {contagem !== undefined && contagem > 0 ? (
+              <span
+                className={cn(
+                  'min-w-6 rounded-(--raio-mini) px-(--e-1) text-center text-xs font-[800] numero',
+                  isActive ? 'bg-(--sinal-texto) text-(--sinal)' : 'bg-(--atraso) text-white',
+                )}
+              >
+                {contagem}
+              </span>
+            ) : null}
           </>
         )}
       </NavLink>

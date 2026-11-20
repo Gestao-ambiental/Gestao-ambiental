@@ -97,15 +97,15 @@ function DialogoPermitir({
           evento.preventDefault()
           autorizar.mutate()
         }}
-        className="flex flex-col gap-(--space-200)"
+        className="flex flex-col gap-(--e-4)"
       >
         {autorizar.isError ? (
           <MensagemSecao role="alert" tom="perigo">
             {mensagemDoErro(autorizar.error)}
           </MensagemSecao>
         ) : null}
-        <fieldset className="flex flex-col gap-(--space-100)" disabled={autorizar.isPending}>
-          <legend className="mb-(--space-050) rotulo">Duração</legend>
+        <fieldset className="flex flex-col gap-(--e-2)" disabled={autorizar.isPending}>
+          <legend className="mb-(--e-1) rotulo">Duração</legend>
           {DURACOES_DE_SUPORTE_HORAS.map((opcao) => (
             <OpcaoRadio
               key={opcao}
@@ -120,7 +120,7 @@ function DialogoPermitir({
             />
           ))}
         </fieldset>
-        <div className="flex flex-col gap-(--space-050)">
+        <div className="flex flex-col gap-(--e-1)">
           <label htmlFor={idMotivo} className="rotulo">
             Motivo (opcional)
           </label>
@@ -134,7 +134,7 @@ function DialogoPermitir({
               setMotivo(evento.target.value)
               setChave(crypto.randomUUID())
             }}
-            className={`${classeCampo} py-(--space-075)`}
+            className={`${classeCampo} py-(--e-15)`}
           />
         </div>
       </form>
@@ -182,9 +182,9 @@ export function AcessosDoSuporte() {
   const valendo = consulta.isSuccess ? acessoValendo(itens, new Date()) : null
 
   return (
-    <section aria-labelledby="titulo-acessos-suporte" className="flex flex-col gap-(--space-100)">
-      <div className="flex flex-wrap items-center justify-between gap-(--space-100)">
-        <h2 id="titulo-acessos-suporte" className="titulo-secao text-(--text)">
+    <section aria-labelledby="titulo-acessos-suporte" className="flex flex-col gap-(--e-2)">
+      <div className="flex flex-wrap items-center justify-between gap-(--e-2)">
+        <h2 id="titulo-acessos-suporte" className="titulo-secao text-(--tinta)">
           Acessos do suporte
         </h2>
         {!suporte && consulta.isSuccess ? (
@@ -214,7 +214,7 @@ export function AcessosDoSuporte() {
       </div>
 
       {consulta.isSuccess ? (
-        <p className="flex flex-wrap items-center gap-(--space-075)">
+        <p className="flex flex-wrap items-center gap-(--e-15)">
           {valendo ? <Selo tom="sucesso">Valendo</Selo> : null}
           <span>{textoDoAcessoValendo(valendo, atual.fuso)}</span>
         </p>

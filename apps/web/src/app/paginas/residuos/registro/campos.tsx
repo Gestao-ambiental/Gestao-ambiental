@@ -33,7 +33,7 @@ type PropsSelecao = Omit<ComponentProps<'select'>, 'id'> & {
 export function CampoSelecao({ rotulo, erro, className, children, ...rest }: PropsSelecao) {
   const id = useId()
   return (
-    <div className={cn('flex flex-col gap-(--space-050)', className)}>
+    <div className={cn('flex flex-col gap-(--e-1)', className)}>
       <label htmlFor={id} className="rotulo">
         {rotulo}
       </label>
@@ -41,13 +41,13 @@ export function CampoSelecao({ rotulo, erro, className, children, ...rest }: Pro
         id={id}
         aria-invalid={erro ? true : undefined}
         aria-describedby={erro ? `${id}-erro` : undefined}
-        className={cn(classeControle, erro && 'border-(--border-danger)')}
+        className={cn(classeControle, erro && 'border-(--atraso)')}
         {...rest}
       >
         {children}
       </select>
       {erro ? (
-        <span id={`${id}-erro`} className="text-xs text-(--text-danger)">
+        <span id={`${id}-erro`} className="text-xs text-(--atraso-texto)">
           {erro}
         </span>
       ) : null}
@@ -65,7 +65,7 @@ export function CampoObservacao({
 }) {
   const id = useId()
   return (
-    <div className="flex flex-col gap-(--space-050)">
+    <div className="flex flex-col gap-(--e-1)">
       <label htmlFor={id} className="rotulo">
         Observação
       </label>
@@ -77,7 +77,7 @@ export function CampoObservacao({
         onChange={(evento) => {
           aoMudar(evento.target.value)
         }}
-        className={cn(classeControle, 'h-auto min-h-16 py-(--space-075)')}
+        className={cn(classeControle, 'h-auto min-h-16 py-(--e-15)')}
       />
     </div>
   )
@@ -126,12 +126,12 @@ export function CampoPdf({
   }
 
   return (
-    <div className="flex flex-col gap-(--space-050)">
+    <div className="flex flex-col gap-(--e-1)">
       <span className="rotulo" id={id}>
         {rotulo}
       </span>
-      <div className="flex min-w-0 items-center gap-(--space-100) rounded-(--radius) border border-dashed border-(--border-strong) p-(--space-100)">
-        <Icone nome="paperclip" className="shrink-0 text-(--icon)" />
+      <div className="flex min-w-0 items-center gap-(--e-2) rounded-(--raio) border border-dashed border-(--regra-forte) p-(--e-2)">
+        <Icone nome="paperclip" className="shrink-0 text-(--icone)" />
         <span className="min-w-0 flex-1 truncate corpo">
           {arquivo
             ? `${arquivo.name} · ${tamanhoLegivel(arquivo.size)}`
@@ -163,7 +163,7 @@ export function CampoPdf({
         />
       </div>
       {erro ? (
-        <span role="alert" className="text-xs text-(--text-danger)">
+        <span role="alert" className="text-xs text-(--atraso-texto)">
           {erro}
         </span>
       ) : null}

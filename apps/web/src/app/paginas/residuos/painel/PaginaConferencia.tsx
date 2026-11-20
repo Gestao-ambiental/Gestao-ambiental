@@ -101,7 +101,7 @@ function Tabela({ itens }: { itens: readonly PendenciaDaConferencia[] }) {
                 <Selo tom={TOM[p.tipo]}>{ROTULO_DA_PENDENCIA_DE_RESIDUO[p.tipo]}</Selo>
               </td>
               <td className={`${classeCelula} corpo-medio whitespace-nowrap`}>
-                <Link to={caminhoDosMtrs(p.empreendimentoId)} className="text-(--text-link)">
+                <Link to={caminhoDosMtrs(p.empreendimentoId)} className="text-(--link)">
                   {p.numero}
                 </Link>
               </td>
@@ -178,7 +178,7 @@ export function PaginaConferenciaResiduos() {
       )
   } else {
     conteudo = (
-      <div className="min-w-0 rounded-(--radius-large) border bg-(--surface) shadow-cartao">
+      <div className="min-w-0 rounded-(--raio-painel) border bg-(--folha) shadow-cartao">
         <Tabela itens={visiveis} />
         <Paginacao
           pagina={pagina}
@@ -192,7 +192,7 @@ export function PaginaConferenciaResiduos() {
 
   return (
     <Pagina titulo="Conferência CDF x MTR">
-      <div className="flex flex-col gap-(--space-150) sm:flex-row sm:flex-wrap sm:items-end">
+      <div className="flex flex-col gap-(--e-3) sm:flex-row sm:flex-wrap sm:items-end">
         <FiltroEmpreendimento
           consultoriaId={cid}
           valor={empreendimentoId}
@@ -202,7 +202,7 @@ export function PaginaConferenciaResiduos() {
           }}
           rotuloTodos="Todos os empreendimentos"
         />
-        <label className="flex min-w-0 flex-col gap-(--space-050)">
+        <label className="flex min-w-0 flex-col gap-(--e-1)">
           <span className="rotulo">Pendência</span>
           <select
             className={classeSelect}

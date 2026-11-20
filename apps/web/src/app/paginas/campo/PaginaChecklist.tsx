@@ -103,21 +103,21 @@ function ItemDoChecklist({
   return (
     <li
       id={`item-${item.id}`}
-      className="flex flex-col gap-(--space-100) border-b py-(--space-150) last:border-b-0"
+      className="flex flex-col gap-(--e-2) border-b py-(--e-3) last:border-b-0"
     >
-      <div className="flex items-start gap-(--space-100)">
+      <div className="flex items-start gap-(--e-2)">
         <div className="flex min-w-0 flex-1 flex-col">
           <h2 id={tituloId} className="corpo-medio">
             {item.titulo}
           </h2>
-          {item.descricao ? <p className="text-xs text-(--text-subtle)">{item.descricao}</p> : null}
+          {item.descricao ? <p className="text-xs text-(--tinta-2)">{item.descricao}</p> : null}
         </div>
         {editavel ? (
           <Link
             to={`/campo/${vistoria.id}/itens/${item.id}/foto`}
             aria-label={`Tirar foto: ${item.titulo}`}
             title="Tirar foto"
-            className="inline-flex size-11 shrink-0 items-center justify-center rounded-(--radius) border border-(--border-strong) bg-(--surface) text-(--icon) transicao-estado hover:bg-(--surface-hover)"
+            className="inline-flex size-11 shrink-0 items-center justify-center rounded-(--raio) border border-(--regra-forte) bg-(--folha) text-(--icone) transicao-estado hover:bg-(--toque)"
           >
             <Icone nome="image" />
           </Link>
@@ -125,7 +125,7 @@ function ItemDoChecklist({
       </div>
 
       {editavel ? (
-        <div role="group" aria-labelledby={tituloId} className="grid grid-cols-2 gap-(--space-075)">
+        <div role="group" aria-labelledby={tituloId} className="grid grid-cols-2 gap-(--e-15)">
           {RESULTADOS_DO_ITEM.map((opcao) => (
             <Botao
               key={opcao}
@@ -158,7 +158,7 @@ function ItemDoChecklist({
       )}
 
       {editavel ? (
-        <div className="flex flex-col gap-(--space-050)">
+        <div className="flex flex-col gap-(--e-1)">
           <label htmlFor={idComentario} className="rotulo">
             Comentário{exige ? ' (obrigatório)' : ''}
           </label>
@@ -181,7 +181,7 @@ function ItemDoChecklist({
             }}
           />
           {erroComentario ? (
-            <span id={`${idComentario}-erro`} className="text-xs text-(--text-danger)">
+            <span id={`${idComentario}-erro`} className="text-xs text-(--atraso-texto)">
               {erroComentario}
             </span>
           ) : null}
@@ -190,8 +190,8 @@ function ItemDoChecklist({
         <p className="corpo whitespace-pre-line">{item.comentario}</p>
       ) : null}
 
-      <div className="flex flex-wrap items-center justify-between gap-(--space-100)">
-        <span className="text-xs text-(--text-subtle)">
+      <div className="flex flex-wrap items-center justify-between gap-(--e-2)">
+        <span className="text-xs text-(--tinta-2)">
           {fotos.length} {fotos.length === 1 ? 'foto' : 'fotos'}
         </span>
         {editavel ? (
@@ -237,7 +237,7 @@ function Checklist({ vistoria }: { vistoria: Vistoria }) {
     return (
       <ColunaCampo>
         {voltar}
-        <h1 className="titulo-tela text-(--text)">Checklist</h1>
+        <h1 className="titulo-tela text-(--tinta)">Checklist</h1>
         <EstadoErro
           titulo="Não foi possível carregar o checklist."
           aoTentarDeNovo={() => {
@@ -252,7 +252,7 @@ function Checklist({ vistoria }: { vistoria: Vistoria }) {
     return (
       <ColunaCampo>
         {voltar}
-        <h1 className="titulo-tela text-(--text)">Checklist</h1>
+        <h1 className="titulo-tela text-(--tinta)">Checklist</h1>
         <Carregando rotulo="Carregando o checklist" linhas={4} />
       </ColunaCampo>
     )
@@ -262,11 +262,11 @@ function Checklist({ vistoria }: { vistoria: Vistoria }) {
   return (
     <ColunaCampo>
       {voltar}
-      <header className="flex flex-col gap-(--space-050)">
-        <p className="text-xs text-(--text-subtle)">
+      <header className="flex flex-col gap-(--e-1)">
+        <p className="text-xs text-(--tinta-2)">
           {[vistoria.empreendimentoNome, vistoria.licenca].filter(Boolean).join(' · ')}
         </p>
-        <h1 className="titulo-tela text-(--text)">Checklist</h1>
+        <h1 className="titulo-tela text-(--tinta)">Checklist</h1>
       </header>
       <BarraDeProgresso {...progresso} />
 

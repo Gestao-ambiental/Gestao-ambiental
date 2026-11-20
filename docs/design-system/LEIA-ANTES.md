@@ -1,5 +1,11 @@
 # Design system Gestão Ambiental (Grama)
 
+> **Desde 20/11/2026 o visual é o "quadro de partidas"** ([ADR-0039](../adr/0039-identidade-quadro-de-partidas.md)).
+> A fonte da verdade é [`apps/web/DESIGN.md`](../../apps/web/DESIGN.md), com os tokens em `apps/web/src/styles/tokens.css`.
+> Tudo nesta pasta (tokens do Fluent, ícones, referência de componentes) é **histórico** e não é mais importado pelo app.
+
+# Design system Gestão Ambiental (Grama)
+
 > **Desde 11/11/2026 o visual é Fluent 2** ([ADR-0015](../adr/0015-fluent-2-como-design-system.md)).
 > - `tokens/fluent.css` é gerado do pacote oficial `@fluentui/tokens` por `scripts/gerar-tokens-fluent.mjs`. Não edite à mão.
 > - `colors.css`, `shape.css`, `typography.css` e `motion.css` mantêm os nomes semânticos de sempre, agora apontando para o Fluent.

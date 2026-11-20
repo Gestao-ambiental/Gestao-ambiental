@@ -180,8 +180,8 @@ function EdicaoDoModelo({ modelo }: { modelo: ModeloDeDocumento | null }) {
 
   return (
     <Pagina titulo={modelo ? modelo.nome : 'Novo modelo'}>
-      <div className="flex flex-col gap-(--space-200)">
-        <div className="flex flex-wrap items-end gap-(--space-100)">
+      <div className="flex flex-col gap-(--e-4)">
+        <div className="flex flex-wrap items-end gap-(--e-2)">
           <CampoTexto
             rotulo="Nome"
             value={nome}
@@ -194,7 +194,7 @@ function EdicaoDoModelo({ modelo }: { modelo: ModeloDeDocumento | null }) {
               marcarSujo(true)
             }}
           />
-          <span role="status" className="corpo text-(--text-subtle)">
+          <span role="status" className="corpo text-(--tinta-2)">
             {sujo ? 'Não salvo' : salvo ? 'Salvo' : ''}
           </span>
           {modelo ? (
@@ -214,7 +214,7 @@ function EdicaoDoModelo({ modelo }: { modelo: ModeloDeDocumento | null }) {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   disabled={ocupado}
-                  className="text-(--text-danger)"
+                  className="text-(--atraso-texto)"
                   onSelect={() => {
                     setArquivarAberto(true)
                   }}

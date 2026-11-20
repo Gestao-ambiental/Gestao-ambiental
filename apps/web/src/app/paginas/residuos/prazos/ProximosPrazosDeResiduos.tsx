@@ -88,7 +88,7 @@ export function ProximosPrazosDeResiduos({
       <EstadoVazio
         icone="calendar"
         titulo="Nenhum prazo de resíduos no período"
-        className="rounded-(--radius-large) border bg-(--surface) py-(--space-300)"
+        className="rounded-(--raio-painel) border bg-(--folha) py-(--e-6)"
       />
     )
   } else {
@@ -96,7 +96,7 @@ export function ProximosPrazosDeResiduos({
     const restantes = prazos.data.length - visiveis.length
     conteudo = (
       <>
-        <div className="overflow-x-auto rounded-(--radius-large) border bg-(--surface) shadow-cartao">
+        <div className="overflow-x-auto rounded-(--raio-painel) border bg-(--folha) shadow-cartao">
           <table className="w-full border-collapse corpo" aria-label={titulo}>
             <thead>
               <tr>
@@ -111,7 +111,7 @@ export function ProximosPrazosDeResiduos({
                   <th
                     key={coluna}
                     scope="col"
-                    className="h-10 border-b px-(--space-100) text-left whitespace-nowrap rotulo first:pl-(--space-150)"
+                    className="h-10 border-b px-(--e-2) text-left whitespace-nowrap rotulo first:pl-(--e-3)"
                   >
                     {coluna}
                   </th>
@@ -123,25 +123,25 @@ export function ProximosPrazosDeResiduos({
                 const s = situacaoDoPrazoDeResiduo(p.dias)
                 return (
                   <tr key={`${p.obrigacaoId}:${p.prazo}`} className="border-b last:border-b-0">
-                    <td className="h-10 px-(--space-100) pl-(--space-150) whitespace-nowrap corpo-medio">
+                    <td className="h-10 px-(--e-2) pl-(--e-3) whitespace-nowrap corpo-medio">
                       {formatarDataCivil(p.prazo)}
                     </td>
-                    <td className="px-(--space-100) whitespace-nowrap">
+                    <td className="px-(--e-2) whitespace-nowrap">
                       {ROTULO_DA_OBRIGACAO_RESIDUO[p.tipo]}
                     </td>
-                    <td className="px-(--space-100) whitespace-nowrap">{p.referencia}</td>
+                    <td className="px-(--e-2) whitespace-nowrap">{p.referencia}</td>
                     {semEmpreendimento ? null : (
-                      <td className="px-(--space-100)">
+                      <td className="px-(--e-2)">
                         <Link
                           to={caminhoDosPrazosDeResiduo(p.empreendimentoId)}
-                          className="text-(--text-link) hover:underline"
+                          className="text-(--link) hover:underline"
                         >
                           {p.empreendimentoNome}
                         </Link>
                       </td>
                     )}
-                    <td className="px-(--space-100) whitespace-nowrap">{janela(p)}</td>
-                    <td className="px-(--space-100) whitespace-nowrap">
+                    <td className="px-(--e-2) whitespace-nowrap">{janela(p)}</td>
+                    <td className="px-(--e-2) whitespace-nowrap">
                       <Selo tom={s.tom}>{s.texto}</Selo>
                     </td>
                   </tr>
@@ -153,7 +153,7 @@ export function ProximosPrazosDeResiduos({
         {restantes > 0 ? (
           <Link
             to={caminhoDosPrazosDeResiduo(empreendimentoId)}
-            className="w-fit corpo text-(--text-link) hover:underline"
+            className="w-fit corpo text-(--link) hover:underline"
           >
             Ver todos os {prazos.data.length} prazos
           </Link>
@@ -163,8 +163,8 @@ export function ProximosPrazosDeResiduos({
   }
 
   return (
-    <section aria-label={titulo} className="flex flex-col gap-(--space-100)">
-      <h2 className="titulo-secao text-(--text)">{titulo}</h2>
+    <section aria-label={titulo} className="flex flex-col gap-(--e-2)">
+      <h2 className="titulo-secao text-(--tinta)">{titulo}</h2>
       {conteudo}
     </section>
   )

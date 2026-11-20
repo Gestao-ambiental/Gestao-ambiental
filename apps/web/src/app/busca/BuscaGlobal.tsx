@@ -1,4 +1,4 @@
-// Busca global do Grama Fluent (Ctrl+K / Cmd+K): campo no centro da barra do app (no celular, só
+// Busca global (Ctrl+K / Cmd+K): campo no centro da barra do app (no celular, só
 // o botão de lupa) que abre um diálogo de comando. Combobox com listbox agrupada e
 // aria-activedescendant: o foco fica no campo; setas movem, Enter abre, Esc fecha e devolve o foco.
 // O que volta é decidido pela RLS; esconder orçamento e itens da Gestão aqui é só apresentação.
@@ -104,11 +104,11 @@ export function BuscaGlobal() {
         onClick={(evento) => {
           abrir(evento.currentTarget)
         }}
-        className="hidden h-(--size-control) w-full max-w-[520px] min-w-0 cursor-pointer items-center gap-(--space-100) rounded-(--radius) border border-(--border-input) bg-(--surface-input) px-(--space-100) text-left text-(--text-subtle) transicao-estado hover:bg-(--neutral-subtle-hover) md:flex"
+        className="hidden h-(--controle) w-full max-w-[480px] min-w-0 cursor-pointer items-center gap-(--e-2) rounded-(--raio) border border-(--regra-forte) bg-(--chao) px-(--e-3) text-left text-(--tinta-2) transicao-estado hover:border-(--tinta-3) hover:bg-(--folha) md:flex"
       >
         <Icone nome="search" />
         <span className="min-w-0 flex-1 truncate corpo">{PLACEHOLDER}</span>
-        <kbd className="shrink-0 rounded-(--radius) border px-(--space-050) text-xs text-(--text-subtle)">
+        <kbd className="shrink-0 rounded-(--raio-mini) border border-(--regra-forte) bg-(--folha) px-(--e-15) font-sans text-xs font-[750] text-(--tinta-2)">
           Ctrl K
         </kbd>
       </button>
@@ -123,8 +123,8 @@ export function BuscaGlobal() {
       />
       <Dialog.Root open={aberto} onOpenChange={setAberto}>
         <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-50 bg-(--scrim) data-[state=open]:animate-in data-[state=open]:fade-in-0" />
-          <div className="pointer-events-none fixed inset-0 z-50 flex items-start justify-center px-(--space-200) py-(--space-800) max-md:px-(--space-100) max-md:py-(--space-200)">
+          <Dialog.Overlay className="fixed inset-0 z-50 bg-(--veu) data-[state=open]:animate-in data-[state=open]:fade-in-0" />
+          <div className="pointer-events-none fixed inset-0 z-50 flex items-start justify-center px-(--e-4) py-(--e-16) max-md:px-(--e-2) max-md:py-(--e-4)">
             <Dialog.Content
               aria-describedby={undefined}
               onCloseAutoFocus={(evento) => {
@@ -134,7 +134,7 @@ export function BuscaGlobal() {
                 devolverFocoA.current = null
                 if (alvo?.isConnected) alvo.focus()
               }}
-              className="pointer-events-auto flex max-h-full w-full max-w-[640px] flex-col overflow-hidden rounded-(--radius-large) bg-(--surface-overlay) text-(--text) shadow-dialogo outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0"
+              className="pointer-events-auto flex max-h-full w-full max-w-[640px] flex-col overflow-hidden rounded-(--raio-painel) bg-(--flutuante) text-(--tinta) shadow-dialogo outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0"
             >
               <Dialog.Title className="sr-only">Buscar no Grama</Dialog.Title>
               <PaletaDeBusca
@@ -256,7 +256,7 @@ function PaletaDeBusca({ aoEscolher }: { aoEscolher: () => void }) {
     situacao = (
       <p
         role="alert"
-        className="flex items-center gap-(--space-100) px-(--space-200) py-(--space-150) corpo text-(--text-danger)"
+        className="flex items-center gap-(--e-2) px-(--e-4) py-(--e-3) corpo text-(--atraso-texto)"
       >
         <Icone nome="circle-alert" />
         {mensagemDoErro(consulta.error, 'Não foi possível buscar. Tente de novo.')}
@@ -264,10 +264,7 @@ function PaletaDeBusca({ aoEscolher }: { aoEscolher: () => void }) {
     )
   } else if (carregando) {
     situacao = (
-      <div
-        role="status"
-        className="flex flex-col gap-(--space-100) px-(--space-200) py-(--space-150)"
-      >
+      <div role="status" className="flex flex-col gap-(--e-2) px-(--e-4) py-(--e-3)">
         <span className="sr-only">Buscando</span>
         <Esqueleto largura="60%" />
         <Esqueleto largura="40%" />
@@ -275,7 +272,7 @@ function PaletaDeBusca({ aoEscolher }: { aoEscolher: () => void }) {
     )
   } else if (semResultado) {
     situacao = (
-      <p role="status" className="px-(--space-200) py-(--space-150) corpo text-(--text-subtle)">
+      <p role="status" className="px-(--e-4) py-(--e-3) corpo text-(--tinta-2)">
         Nada encontrado para “{termoBuscado}”
       </p>
     )
@@ -283,8 +280,8 @@ function PaletaDeBusca({ aoEscolher }: { aoEscolher: () => void }) {
 
   return (
     <>
-      <div className="flex items-center gap-(--space-100) border-b px-(--space-200)">
-        <Icone nome="search" className="text-(--icon)" />
+      <div className="flex items-center gap-(--e-2) border-b px-(--e-4)">
+        <Icone nome="search" className="text-(--icone)" />
         {/* Primeiro elemento focável do diálogo: o Radix põe o foco aqui ao abrir. */}
         <input
           type="text"
@@ -303,23 +300,20 @@ function PaletaDeBusca({ aoEscolher }: { aoEscolher: () => void }) {
             setAtivoChave(null)
           }}
           onKeyDown={aoTeclar}
-          className="h-12 min-w-0 flex-1 bg-transparent corpo text-(--text) outline-none placeholder:text-(--text-subtle) focus-visible:outline-none"
+          className="h-14 min-w-0 flex-1 bg-transparent text-lg text-(--tinta) outline-none placeholder:text-(--tinta-3) focus-visible:outline-none"
         />
-        <kbd className="shrink-0 rounded-(--radius) border px-(--space-050) text-xs text-(--text-subtle) max-md:hidden">
+        <kbd className="shrink-0 rounded-(--raio) border px-(--e-1) text-xs text-(--tinta-2) max-md:hidden">
           Esc
         </kbd>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto py-(--space-050)">
+      <div className="min-h-0 flex-1 overflow-y-auto py-(--e-1)">
         {situacao}
         <div id={listaId} role="listbox" aria-label="Resultados da busca">
           {grupos.map((grupo, indiceGrupo) => {
             const tituloId = `${base}-grupo-${String(indiceGrupo)}`
             return (
               <div key={grupo.rotulo} role="group" aria-labelledby={tituloId}>
-                <div
-                  id={tituloId}
-                  className="px-(--space-200) pt-(--space-150) pb-(--space-050) rotulo"
-                >
+                <div id={tituloId} className="px-(--e-4) pt-(--e-3) pb-(--e-1) rotulo">
                   {grupo.rotulo}
                 </div>
                 {grupo.opcoes.map((opcao) => {
@@ -344,17 +338,16 @@ function PaletaDeBusca({ aoEscolher }: { aoEscolher: () => void }) {
                         escolher(opcao)
                       }}
                       className={cn(
-                        'mx-(--space-100) flex cursor-pointer items-center gap-(--space-150) rounded-(--radius) px-(--space-100) py-(--space-100)',
-                        selecionada && 'bg-(--surface-selected)',
+                        'mx-(--e-2) flex min-h-(--controle-toque) cursor-pointer items-center gap-(--e-3) rounded-(--raio) px-(--e-3) py-(--e-2)',
+                        selecionada &&
+                          'bg-(--sinal) text-(--sinal-texto) [&_*]:text-(--sinal-texto)',
                       )}
                     >
-                      <Icone nome={opcao.icone} className="shrink-0 text-(--icon)" />
+                      <Icone nome={opcao.icone} className="shrink-0 text-(--icone)" />
                       <span className="flex min-w-0 flex-1 flex-col">
                         <span className="truncate corpo">{opcao.titulo}</span>
                         {opcao.detalhe ? (
-                          <span className="truncate text-xs text-(--text-subtle)">
-                            {opcao.detalhe}
-                          </span>
+                          <span className="truncate text-xs text-(--tinta-2)">{opcao.detalhe}</span>
                         ) : null}
                       </span>
                     </div>

@@ -53,10 +53,10 @@ function CaixaQueQuebra({ texto, children }: { texto: string; children: ReactNod
       <span
         aria-hidden="true"
         data-texto-da-selecao=""
-        className="col-start-1 row-start-1 flex min-h-[calc(var(--size-control)-2px)] items-center gap-(--space-050) px-(--space-100) py-(--space-050)"
+        className="col-start-1 row-start-1 flex min-h-[calc(var(--controle)-2px)] items-center gap-(--e-1) px-(--e-2) py-(--e-1)"
       >
         <span className="min-w-0 flex-1 break-words">{texto}</span>
-        <Icone nome="chevron-down" className="text-(--text-subtle)" />
+        <Icone nome="chevron-down" className="text-(--tinta-2)" />
       </span>
       {children}
     </div>
@@ -65,7 +65,7 @@ function CaixaQueQuebra({ texto, children }: { texto: string; children: ReactNod
 
 /** A moldura do campo (como em classeCampo) fica na caixa; o foco do select aparece nela. */
 const classeCaixaQueQuebra =
-  'grid w-full rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) corpo text-(--text) transicao-estado focus-within:border-b-(--border-input-active) focus-within:shadow-[inset_0_-1px_0_0_var(--border-input-active)] focus-within:bg-(--surface-input-focus) has-[:disabled]:bg-(--surface-disabled) has-[:disabled]:text-(--text-disabled) has-[[aria-invalid=true]]:border-(--border-danger)'
+  'grid w-full rounded-(--raio) border border-(--campo-borda) border-b-(--campo-borda) bg-(--campo) corpo text-(--tinta) transicao-estado focus-within:border-b-(--campo-borda-ativa) focus-within:shadow-[inset_0_-1px_0_0_var(--campo-borda-ativa)] focus-within:bg-(--campo-foco) has-[:disabled]:bg-(--off) has-[:disabled]:text-(--tinta-off) has-[[aria-invalid=true]]:border-(--atraso)'
 
 /** O select de CaixaQueQuebra: transparente, na mesma célula da grade que o texto. */
 const classeSelecaoSobreposta =
@@ -115,7 +115,7 @@ function ProfissaoDaPessoa({
       ? `${profissaoAntiga} (antigo, escolha na lista)`
       : 'Não informada'
   return (
-    <div className="flex flex-col gap-(--space-050)">
+    <div className="flex flex-col gap-(--e-1)">
       <CaixaQueQuebra texto={texto}>
         <SelecaoDaLista
           aria-label={rotulo}
@@ -134,7 +134,7 @@ function ProfissaoDaPessoa({
         />
       </CaixaQueQuebra>
       {salvar.isError ? (
-        <span id={idErro} role="alert" className="text-xs text-(--text-danger)">
+        <span id={idErro} role="alert" className="text-xs text-(--atraso-texto)">
           {mensagemDoErro(salvar.error)}
         </span>
       ) : null}
@@ -164,9 +164,9 @@ export function Equipe({
   aoVoltar: () => void
 }) {
   // Com a quebra de linha, a célula cresce: o respiro em cima e embaixo separa as linhas.
-  const celula = `${classeCelula} py-(--space-050)`
+  const celula = `${classeCelula} py-(--e-1)`
   return (
-    <div className="flex flex-col gap-(--space-150)">
+    <div className="flex flex-col gap-(--e-3)">
       {/* relative: textos sr-only (absolutos) ficam presos à área que rola, não à página. */}
       <div className="relative overflow-x-auto">
         <table className="w-full min-w-[980px] border-collapse corpo">
@@ -236,7 +236,7 @@ export function Equipe({
                 // O campo começa na borda da célula, como o cabeçalho; a legenda fica à direita,
                 // com largura fixa para os campos da coluna terem o mesmo tamanho.
                 const campoDaPessoa = (
-                  <label className="flex items-center gap-(--space-050)">
+                  <label className="flex items-center gap-(--e-1)">
                     <input
                       aria-label={`${rotulo} da linha ${n}`}
                       aria-describedby={opcoesDoCampo.aviso ? idAviso : undefined}
@@ -251,7 +251,7 @@ export function Equipe({
                       }}
                     />
                     {opcoesDoCampo.legenda ? (
-                      <span className="w-14 shrink-0 text-xs text-(--text-subtle)">
+                      <span className="w-14 shrink-0 text-xs text-(--tinta-2)">
                         {opcoesDoCampo.legenda}
                       </span>
                     ) : null}
@@ -260,10 +260,10 @@ export function Equipe({
                 // Estrutura sempre igual: o campo não é recriado quando o aviso aparece ou some
                 // (senão a digitação se perde no meio). O aviso não é erro.
                 return (
-                  <div className="flex flex-col gap-(--space-050)">
+                  <div className="flex flex-col gap-(--e-1)">
                     {campoDaPessoa}
                     {opcoesDoCampo.aviso ? (
-                      <span id={idAviso} className="max-w-56 text-xs text-(--text-subtle)">
+                      <span id={idAviso} className="max-w-56 text-xs text-(--tinta-2)">
                         {opcoesDoCampo.aviso}
                       </span>
                     ) : null}
@@ -275,7 +275,7 @@ export function Equipe({
               if (p.forma === 'diaria') {
                 custo = numero(ROTULO_DO_VALOR.diaria, 'diaria', { reais: true, legenda: 'diária' })
                 horas = (
-                  <div className="flex flex-col gap-(--space-050)">
+                  <div className="flex flex-col gap-(--e-1)">
                     {numero('Horas por diária', 'horasDiaria', { legenda: 'h/diária' })}
                     {numero('Dias no mês', 'dias', {
                       placeholder: 'Opcional',
@@ -289,7 +289,7 @@ export function Equipe({
                   legenda: 'projeto',
                 })
                 horas = (
-                  <div className="flex flex-col gap-(--space-050)">
+                  <div className="flex flex-col gap-(--e-1)">
                     {numero('Horas do projeto', 'horasProjeto', { legenda: 'h/projeto' })}
                     {numero('Horas no mês', 'horas', {
                       placeholder: 'Opcional',
@@ -338,7 +338,7 @@ export function Equipe({
                         rotulo={`Profissão da linha ${n}`}
                       />
                     ) : (
-                      <span className="flex min-h-(--size-control) items-center">
+                      <span className="flex min-h-(--controle) items-center">
                         {p.profissao.trim() ? `${p.profissao.trim()} (antigo)` : '—'}
                       </span>
                     )}
@@ -369,7 +369,7 @@ export function Equipe({
                     {p.forma === '' ? (
                       <span
                         id={`forma-pendente-${n}`}
-                        className="mt-(--space-025) block text-xs text-(--text-subtle)"
+                        className="mt-(--e-05) block text-xs text-(--tinta-2)"
                       >
                         Confirme como esta pessoa recebe
                       </span>
@@ -377,17 +377,17 @@ export function Equipe({
                   </td>
                   <td className={celula}>{custo}</td>
                   <td className={celula}>{horas}</td>
-                  <td className={`${celula} tabular-nums text-(--text-subtle)`}>
+                  <td className={`${celula} tabular-nums text-(--tinta-2)`}>
                     {resumo?.horaDeCustoCentavos == null
                       ? '—'
                       : formatarCentavos(resumo.horaDeCustoCentavos)}{' '}
                     <span className="sr-only">por hora, na linha {n}</span>
                     {resumo?.horaDeCustoCentavos != null && typeof lida !== 'string' ? (
-                      <details className="mt-(--space-025) text-xs">
+                      <details className="mt-(--e-05) text-xs">
                         <summary className="cursor-pointer">
                           Ver cálculo <span className="sr-only">da hora de custo da linha {n}</span>
                         </summary>
-                        <span className="mt-(--space-025) block max-w-48">
+                        <span className="mt-(--e-05) block max-w-48">
                           {contaDaHoraDeCusto(lida, resumo.horaDeCustoCentavos)}
                         </span>
                       </details>
@@ -408,7 +408,7 @@ export function Equipe({
           </tbody>
         </table>
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-(--space-100)">
+      <div className="flex flex-wrap items-center justify-between gap-(--e-2)">
         <Botao aparencia="link" iconeAntes="plus" onClick={aoAdicionar}>
           Adicionar pessoa
         </Botao>
@@ -418,7 +418,7 @@ export function Equipe({
       </div>
       <dl
         aria-label="Resultado da equipe"
-        className="grid max-w-3xl gap-(--space-100) sm:grid-cols-2 lg:grid-cols-3"
+        className="grid max-w-3xl gap-(--e-2) sm:grid-cols-2 lg:grid-cols-3"
       >
         <CartaoDoResultado
           rotulo="Custo médio por hora da equipe"
@@ -447,9 +447,9 @@ export function Equipe({
 /** Um número do resultado da equipe, em cartão (rótulo em cima, valor grande embaixo). */
 export function CartaoDoResultado({ rotulo, valor }: { rotulo: string; valor: string }) {
   return (
-    <div className="flex flex-col gap-(--space-025) rounded-(--radius) border p-(--space-150)">
-      <dt className="text-xs text-(--text-subtle)">{rotulo}</dt>
-      <dd className="titulo-secao tabular-nums text-(--text)">{valor}</dd>
+    <div className="flex flex-col gap-(--e-05) rounded-(--raio) border p-(--e-3)">
+      <dt className="text-xs text-(--tinta-2)">{rotulo}</dt>
+      <dd className="titulo-secao tabular-nums text-(--tinta)">{valor}</dd>
     </div>
   )
 }
@@ -468,9 +468,9 @@ export function Grupo({
     <section
       id={id}
       aria-label={titulo}
-      className="flex scroll-mt-(--space-200) flex-col gap-(--space-150) border-b p-(--space-200) last:border-b-0"
+      className="flex scroll-mt-(--e-4) flex-col gap-(--e-3) border-b p-(--e-4) last:border-b-0"
     >
-      <h2 className="titulo-secao text-(--text)">{titulo}</h2>
+      <h2 className="titulo-secao text-(--tinta)">{titulo}</h2>
       {children}
     </section>
   )
@@ -488,12 +488,12 @@ export function Linha({
   children: React.ReactNode
 }) {
   return (
-    <div className="grid items-center gap-(--space-100) sm:grid-cols-[260px_160px_1fr]">
-      <label htmlFor={id} className="corpo text-(--text)">
+    <div className="grid items-center gap-(--e-2) sm:grid-cols-[260px_160px_1fr]">
+      <label htmlFor={id} className="corpo text-(--tinta)">
         {rotulo}
       </label>
       {children}
-      {apoio ? <span className="text-xs text-(--text-subtle)">{apoio}</span> : <span />}
+      {apoio ? <span className="text-xs text-(--tinta-2)">{apoio}</span> : <span />}
     </div>
   )
 }
@@ -526,7 +526,7 @@ export function ContasDoMes({
     return (
       <>
         {children}
-        <div className="flex flex-wrap gap-(--space-100)">
+        <div className="flex flex-wrap gap-(--e-2)">
           <Botao aparencia="link" iconeAntes="list" onClick={sugerir}>
             Detalhar contas do mês
           </Botao>
@@ -535,9 +535,9 @@ export function ContasDoMes({
     )
   }
   return (
-    <section aria-label="Contas do mês" className="flex flex-col gap-(--space-100)">
-      <div className="flex flex-col gap-(--space-025)">
-        <h3 className="corpo-medio text-(--text)">Contas do mês</h3>
+    <section aria-label="Contas do mês" className="flex flex-col gap-(--e-2)">
+      <div className="flex flex-col gap-(--e-05)">
+        <h3 className="corpo-medio text-(--tinta)">Contas do mês</h3>
       </div>
       <div className="relative overflow-x-auto">
         <table className="w-full min-w-[420px] border-collapse corpo">

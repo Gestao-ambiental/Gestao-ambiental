@@ -25,21 +25,20 @@ import { DialogoEmpreendimento } from './DialogoEmpreendimento'
 import { SiglaEmpreendimento } from './SiglaEmpreendimento'
 
 const classeCabecalho =
-  'h-10 border-b px-(--space-100) text-left rotulo whitespace-nowrap first:pl-(--space-150)'
-const classeCelula = 'h-10 border-b px-(--space-100) align-middle first:pl-(--space-150)'
+  'h-10 border-b px-(--e-2) text-left rotulo whitespace-nowrap first:pl-(--e-3)'
+const classeCelula = 'h-10 border-b px-(--e-2) align-middle first:pl-(--e-3)'
 
 function Cliente({ nome }: { nome: string | null }) {
-  return nome ? <span>{nome}</span> : <span className="text-(--text-subtle)">Não informado</span>
+  return nome ? <span>{nome}</span> : <span className="text-(--tinta-2)">Não informado</span>
 }
 
 function ProximaValidade({ item }: { item: EmpreendimentoNaLista }) {
-  if (item.licencas.length === 0)
-    return <span className="text-(--text-subtle)">Nenhuma licença</span>
+  if (item.licencas.length === 0) return <span className="text-(--tinta-2)">Nenhuma licença</span>
   const validade = proximaValidade(item.licencas)
   return validade ? (
     <span>{formatarDataCivil(validade)}</span>
   ) : (
-    <span className="text-(--text-subtle)">Não informada</span>
+    <span className="text-(--tinta-2)">Não informada</span>
   )
 }
 
@@ -120,8 +119,8 @@ export function PaginaEmpreendimentos() {
     )
   } else {
     conteudo = (
-      <div className="flex flex-col gap-(--space-100)">
-        <div className="hidden overflow-x-auto rounded-(--radius-large) border bg-(--surface) shadow-cartao md:block">
+      <div className="flex flex-col gap-(--e-2)">
+        <div className="hidden overflow-x-auto rounded-(--raio-painel) border bg-(--folha) shadow-cartao md:block">
           <table className="w-full border-collapse corpo">
             <thead>
               <tr>
@@ -149,17 +148,17 @@ export function PaginaEmpreendimentos() {
               {itens.map((item) => (
                 <tr
                   key={item.id}
-                  className="cursor-pointer transicao-estado hover:bg-(--surface-hover)"
+                  className="cursor-pointer transicao-estado hover:bg-(--toque)"
                   onClick={() => {
                     abrir(item.id)
                   }}
                 >
                   <td className={classeCelula}>
-                    <span className="flex items-center gap-(--space-100)">
+                    <span className="flex items-center gap-(--e-2)">
                       <SiglaEmpreendimento nome={item.nome} />
                       <Link
                         to={`/empreendimentos/${item.id}`}
-                        className="corpo-medio text-(--text) hover:text-(--text)"
+                        className="corpo-medio text-(--tinta) hover:text-(--tinta)"
                         onClick={(evento) => {
                           evento.stopPropagation()
                         }}
@@ -183,29 +182,29 @@ export function PaginaEmpreendimentos() {
               ))}
             </tbody>
           </table>
-          <p className="border-t px-(--space-150) py-(--space-100) text-xs text-(--text-subtle)">
+          <p className="border-t px-(--e-3) py-(--e-2) text-xs text-(--tinta-2)">
             {filtrando
               ? `${String(total)} ${total === 1 ? 'empreendimento encontrado' : 'empreendimentos encontrados'}`
               : `${String(total)} ${total === 1 ? 'empreendimento' : 'empreendimentos'}`}
           </p>
         </div>
 
-        <ul className="flex flex-col gap-(--space-100) md:hidden" aria-label="Empreendimentos">
+        <ul className="flex flex-col gap-(--e-2) md:hidden" aria-label="Empreendimentos">
           {itens.map((item) => (
             <li key={item.id}>
               <Link
                 to={`/empreendimentos/${item.id}`}
-                className="flex flex-col gap-(--space-050) rounded-(--radius-large) border bg-(--surface) shadow-cartao p-(--space-150) text-(--text) no-underline hover:bg-(--surface-hover) hover:text-(--text) hover:no-underline"
+                className="flex flex-col gap-(--e-1) rounded-(--raio-painel) border bg-(--folha) shadow-cartao p-(--e-3) text-(--tinta) no-underline hover:bg-(--toque) hover:text-(--tinta) hover:no-underline"
               >
-                <span className="flex items-center justify-between gap-(--space-100)">
+                <span className="flex items-center justify-between gap-(--e-2)">
                   <Situacao item={item} hoje={hoje} />
-                  <Icone nome="chevron-right" className="text-(--icon)" />
+                  <Icone nome="chevron-right" className="text-(--icone)" />
                 </span>
-                <span className="flex items-center gap-(--space-100)">
+                <span className="flex items-center gap-(--e-2)">
                   <SiglaEmpreendimento nome={item.nome} />
                   <span className="truncate corpo-medio">{item.nome}</span>
                 </span>
-                <span className="text-xs text-(--text-subtle)">
+                <span className="text-xs text-(--tinta-2)">
                   {item.clienteNome ?? 'Cliente não informado'} ·{' '}
                   {item.unidades === 1 ? '1 unidade' : `${String(item.unidades)} unidades`} ·{' '}
                   {item.licencas.length === 1
@@ -226,7 +225,7 @@ export function PaginaEmpreendimentos() {
             Mostrar mais empreendimentos
           </Botao>
         ) : null}
-        <p className="text-xs text-(--text-subtle)">
+        <p className="text-xs text-(--tinta-2)">
           Situação mostra a licença mais urgente do empreendimento.
         </p>
       </div>
@@ -234,15 +233,15 @@ export function PaginaEmpreendimentos() {
   }
 
   return (
-    <div className="flex flex-col gap-(--space-200)">
-      <div className="flex flex-wrap items-center justify-between gap-(--space-100)">
+    <div className="flex flex-col gap-(--e-4)">
+      <div className="flex flex-wrap items-center justify-between gap-(--e-2)">
         <Pagina titulo="Empreendimentos">{null}</Pagina>
-        <div className="flex flex-wrap items-center gap-(--space-100)">
+        <div className="flex flex-wrap items-center gap-(--e-2)">
           <label className="relative flex items-center">
             <span className="sr-only">Buscar empreendimentos</span>
             <Icone
               nome="search"
-              className="pointer-events-none absolute left-(--space-100) text-(--icon-subtle)"
+              className="pointer-events-none absolute left-(--e-2) text-(--icone-2)"
             />
             <input
               type="search"
@@ -251,7 +250,7 @@ export function PaginaEmpreendimentos() {
               onChange={(evento) => {
                 setBusca(evento.target.value)
               }}
-              className="h-(--size-control) w-[280px] max-w-full rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) pr-(--space-100) pl-(--space-400) corpo text-(--text) outline-none transicao-estado focus:border-b-(--border-input-active) focus:shadow-[inset_0_-1px_0_0_var(--border-input-active)] focus:bg-(--surface-input-focus)"
+              className="h-(--controle) w-[280px] max-w-full rounded-(--raio) border border-(--campo-borda) border-b-(--campo-borda) bg-(--campo) pr-(--e-2) pl-(--e-8) corpo text-(--tinta) outline-none transicao-estado focus:border-b-(--campo-borda-ativa) focus:shadow-[inset_0_-1px_0_0_var(--campo-borda-ativa)] focus:bg-(--campo-foco)"
             />
           </label>
           <Botao

@@ -10,7 +10,7 @@ import { PASSOS } from './passos'
 export function ProgressoCadastro({ passo }: { passo: number }) {
   const atual = PASSOS[passo] ?? PASSOS[0]
   return (
-    <span className="inline-flex items-center gap-(--space-100)">
+    <span className="inline-flex items-center gap-(--e-2)">
       <span aria-hidden="true" className="inline-flex items-center">
         {PASSOS.map((item, indice) => (
           <span key={item.chave} className="inline-flex items-center">
@@ -18,22 +18,22 @@ export function ProgressoCadastro({ passo }: { passo: number }) {
               <span
                 className={cn(
                   'h-0.5 w-3',
-                  indice <= passo ? 'bg-(--brand-stroke)' : 'bg-(--border-strong)',
+                  indice <= passo ? 'bg-(--marca-linha)' : 'bg-(--regra-forte)',
                 )}
               />
             ) : null}
             <span
               className={cn(
                 'size-2.5 shrink-0 rounded-full border-2',
-                indice < passo && 'border-(--brand-stroke) bg-(--brand-stroke)',
-                indice === passo && 'border-(--brand-stroke) bg-(--surface)',
-                indice > passo && 'border-(--border-strong) bg-(--surface)',
+                indice < passo && 'border-(--marca-linha) bg-(--marca-linha)',
+                indice === passo && 'border-(--marca-linha) bg-(--folha)',
+                indice > passo && 'border-(--regra-forte) bg-(--folha)',
               )}
             />
           </span>
         ))}
       </span>
-      <span className="text-xs whitespace-nowrap text-(--text)" aria-hidden="true">
+      <span className="text-xs whitespace-nowrap text-(--tinta)" aria-hidden="true">
         {atual.rotulo}
       </span>
       <span className="sr-only">

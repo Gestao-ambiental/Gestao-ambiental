@@ -71,7 +71,7 @@ export default function MapaDoLocal({ ponto, aoEscolher }: Props) {
       ref={elemento}
       role="region"
       aria-label="Mapa: clique para marcar o local do empreendimento"
-      className="h-[320px] w-full overflow-hidden rounded-(--radius-large) border"
+      className="h-[320px] w-full overflow-hidden rounded-(--raio-painel) border"
     />
   )
 }

@@ -380,13 +380,13 @@ function Formulario({
   }
 
   return (
-    <div className="flex flex-col gap-(--space-200)">
-      <div className="flex flex-wrap items-end justify-between gap-(--space-150)">
+    <div className="flex flex-col gap-(--e-4)">
+      <div className="flex flex-wrap items-end justify-between gap-(--e-3)">
         <Pagina titulo="Custos e taxas">{null}</Pagina>
-        <div className="flex flex-wrap items-center gap-(--space-150)">
+        <div className="flex flex-wrap items-center gap-(--e-3)">
           <Link
             to="/orcamentos/primeiros-passos"
-            className="corpo-medio text-(--text-link) no-underline hover:underline"
+            className="corpo-medio text-(--link) no-underline hover:underline"
           >
             Configurar em passos
           </Link>
@@ -413,7 +413,7 @@ function Formulario({
       ) : null}
       <FaltaConfigurar itens={pendencias} baseSalva={base !== null} />
 
-      <div className="overflow-hidden rounded-(--radius-large) border bg-(--surface) shadow-cartao">
+      <div className="overflow-hidden rounded-(--raio-painel) border bg-(--folha) shadow-cartao">
         <Grupo id="grupo-custos" titulo="Custos e capacidade">
           {pelaEquipe ? (
             <Equipe
@@ -433,7 +433,7 @@ function Formulario({
             />
           ) : (
             <>
-              <div className="flex flex-col gap-(--space-075)">
+              <div className="flex flex-col gap-(--e-15)">
                 <div>
                   <Botao
                     iconeAntes="users"
@@ -445,7 +445,7 @@ function Formulario({
                     Calcular pela equipe
                   </Botao>
                 </div>
-                <p className="max-w-3xl text-xs text-(--text-subtle)">
+                <p className="max-w-3xl text-xs text-(--tinta-2)">
                   Recomendado: a hora de custo de cada pessoa sai de como ela recebe, e cada serviço
                   usa a hora do responsável. Ou digite abaixo o custo médio da hora e as horas.
                 </p>
@@ -501,9 +501,9 @@ function Formulario({
               />
             </Linha>
           </ContasDoMes>
-          <p className="corpo text-(--text-subtle)">
+          <p className="corpo text-(--tinta-2)">
             Contas do mês por hora:{' '}
-            <span className="corpo-medio text-(--text)">
+            <span className="corpo-medio text-(--tinta)">
               {porHora === null ? 'pendente' : `${formatarReais(porHora)} por hora`}
             </span>
             . Já entra no custo de cada serviço do orçamento, pelas horas dele.
@@ -573,8 +573,8 @@ function Formulario({
 
         <Grupo id="grupo-margens" titulo="Margens">
           {!base ? (
-            <div className="flex flex-col gap-(--space-050)">
-              <p className="text-xs text-(--text-subtle)">
+            <div className="flex flex-col gap-(--e-1)">
+              <p className="text-xs text-(--tinta-2)">
                 As margens vêm preenchidas com 30% e 25% só para começar: não são recomendação.
                 Ajuste para os valores da sua consultoria ou confirme.
               </p>
@@ -588,7 +588,7 @@ function Formulario({
               />
             </div>
           ) : null}
-          <p className="max-w-3xl text-xs text-(--text-subtle)">
+          <p className="max-w-3xl text-xs text-(--tinta-2)">
             Desejada: meta usada no cálculo pela margem. Mínima: referência de alerta, não bloqueia.
             Que sobra: resultado estimado de cada orçamento depois de custos, tributos e taxas.
           </p>
@@ -662,23 +662,23 @@ function FaltaConfigurar({ itens, baseSalva }: { itens: Pendencia[]; baseSalva: 
   return (
     <section
       aria-labelledby="falta-configurar"
-      className="flex flex-col gap-(--space-100) rounded-(--radius-large) border bg-(--surface) p-(--space-200) shadow-cartao"
+      className="flex flex-col gap-(--e-2) rounded-(--raio-painel) border bg-(--folha) p-(--e-4) shadow-cartao"
     >
-      <h2 id="falta-configurar" className="corpo-medio text-(--text)">
+      <h2 id="falta-configurar" className="corpo-medio text-(--tinta)">
         Falta configurar para calcular o preço
       </h2>
-      <p className="text-xs text-(--text-subtle)">
+      <p className="text-xs text-(--tinta-2)">
         {faltam === 1 ? 'Falta 1 item.' : `Faltam ${String(faltam)} itens.`} Enquanto isso, os
         orçamentos podem ser montados, mas ficam sem preço calculado.
       </p>
-      <ul className="flex flex-col gap-(--space-050) corpo">
+      <ul className="flex flex-col gap-(--e-1) corpo">
         {itens.map((i) => (
-          <li key={i.id} className="flex items-center gap-(--space-075)">
+          <li key={i.id} className="flex items-center gap-(--e-15)">
             <Icone
               nome={i.feito ? 'circle-check' : 'circle-alert'}
-              className={i.feito ? 'text-(--text-subtle)' : 'text-(--text)'}
+              className={i.feito ? 'text-(--tinta-2)' : 'text-(--tinta)'}
             />
-            <span className={i.feito ? 'text-(--text-subtle)' : 'corpo-medio'}>
+            <span className={i.feito ? 'text-(--tinta-2)' : 'corpo-medio'}>
               {i.feito ? 'Feito' : 'Falta'}:
             </span>
             <a href={`#${i.ancora}`}>{i.rotulo}</a>

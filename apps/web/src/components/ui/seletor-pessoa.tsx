@@ -45,7 +45,7 @@ function SemPessoa({ tamanho = 24 }: { tamanho?: number }) {
   return (
     <span
       aria-hidden="true"
-      className="inline-flex shrink-0 items-center justify-center rounded-full border border-dashed border-(--border-input) text-(--text-subtle)"
+      className="inline-flex shrink-0 items-center justify-center rounded-full border border-dashed border-(--campo-borda) text-(--tinta-2)"
       style={{ width: tamanho, height: tamanho }}
     >
       <Icone nome="user" tamanho={tamanho <= 20 ? 12 : 16} />
@@ -139,9 +139,9 @@ export function SeletorPessoa({
           }
         }}
         className={cn(
-          'flex h-(--size-control) min-w-0 cursor-pointer items-center gap-(--space-100) rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) px-(--space-100) text-left corpo text-(--text) transicao-estado',
-          'hover:bg-(--surface-hover) focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-(--border-focus)',
-          'disabled:cursor-not-allowed disabled:text-(--text-disabled)',
+          'flex h-(--controle) min-w-0 cursor-pointer items-center gap-(--e-2) rounded-(--raio) border border-(--campo-borda) border-b-(--campo-borda) bg-(--campo) px-(--e-2) text-left corpo text-(--tinta) transicao-estado',
+          'hover:bg-(--toque) focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-(--foco)',
+          'disabled:cursor-not-allowed disabled:text-(--tinta-off)',
           className,
         )}
       >
@@ -151,24 +151,24 @@ export function SeletorPessoa({
           <SemPessoa tamanho={20} />
         )}
         <span
-          className={cn('min-w-0 flex-1 truncate', !escolhida && 'text-(--text-subtle)')}
+          className={cn('min-w-0 flex-1 truncate', !escolhida && 'text-(--tinta-2)')}
           title={escolhida?.nome}
         >
           {escolhida ? escolhida.nome : vazio}
         </span>
-        <Icone nome="chevron-down" className="shrink-0 text-(--text-subtle)" />
+        <Icone nome="chevron-down" className="shrink-0 text-(--tinta-2)" />
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content
           align="start"
           sideOffset={4}
           className={cn(
-            'z-50 flex w-(--radix-popover-trigger-width) min-w-[280px] flex-col overflow-hidden rounded-(--radius) border bg-(--surface-overlay) text-(--text) shadow-sobreposicao',
-            'data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-top-1 duration-(--duration-medium)',
+            'z-50 flex w-(--radix-popover-trigger-width) min-w-[280px] flex-col overflow-hidden rounded-(--raio) border bg-(--flutuante) text-(--tinta) shadow-sobreposicao',
+            'data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-top-1 duration-(--dur-media)',
           )}
         >
-          <div className="flex items-center gap-(--space-100) border-b px-(--space-150)">
-            <Icone nome="search" className="shrink-0 text-(--text-subtle)" />
+          <div className="flex items-center gap-(--e-2) border-b px-(--e-3)">
+            <Icone nome="search" className="shrink-0 text-(--tinta-2)" />
             <input
               type="text"
               role="combobox"
@@ -185,17 +185,17 @@ export function SeletorPessoa({
                 setAtiva(0)
               }}
               onKeyDown={aoTeclar}
-              className="h-(--size-control) min-w-0 flex-1 bg-transparent corpo text-(--text) outline-none placeholder:text-(--text-subtlest)"
+              className="h-(--controle) min-w-0 flex-1 bg-transparent corpo text-(--tinta) outline-none placeholder:text-(--tinta-3)"
             />
           </div>
           <div
             id={idDaLista}
             role="listbox"
             aria-label={rotulo}
-            className="max-h-[288px] overflow-y-auto py-(--space-050)"
+            className="max-h-[288px] overflow-y-auto py-(--e-1)"
           >
             {opcoes.length === 0 ? (
-              <p className="px-(--space-150) py-(--space-100) rotulo">Ninguém encontrado</p>
+              <p className="px-(--e-3) py-(--e-2) rotulo">Ninguém encontrado</p>
             ) : null}
             {opcoes.map((opcao, indice) => {
               const selecionada = opcao.id === valor
@@ -217,12 +217,12 @@ export function SeletorPessoa({
                     escolher(opcao)
                   }}
                   className={cn(
-                    'flex cursor-pointer items-center gap-(--space-100) px-(--space-150) py-(--space-075)',
+                    'flex cursor-pointer items-center gap-(--e-2) px-(--e-3) py-(--e-15)',
                     selecionada
                       ? indice === ativa
-                        ? 'bg-(--surface-selected-hover)'
-                        : 'bg-(--surface-selected)'
-                      : indice === ativa && 'bg-(--surface-hover)',
+                        ? 'bg-(--escolha-toque)'
+                        : 'bg-(--escolha)'
+                      : indice === ativa && 'bg-(--toque)',
                   )}
                 >
                   {opcao.pessoa ? (
@@ -235,18 +235,16 @@ export function SeletorPessoa({
                     <SemPessoa tamanho={32} />
                   )}
                   <span className="flex min-w-0 flex-1 flex-col">
-                    <span className="truncate corpo text-(--text)">
+                    <span className="truncate corpo text-(--tinta)">
                       {opcao.pessoa ? opcao.pessoa.nome : rotuloSemPessoa}
                     </span>
                     {opcao.pessoa?.detalhe ? (
-                      <span className="truncate text-xs text-(--text-subtle)">
+                      <span className="truncate text-xs text-(--tinta-2)">
                         {opcao.pessoa.detalhe}
                       </span>
                     ) : null}
                   </span>
-                  {selecionada ? (
-                    <Icone nome="check" className="shrink-0 text-(--text-link)" />
-                  ) : null}
+                  {selecionada ? <Icone nome="check" className="shrink-0 text-(--link)" /> : null}
                 </div>
               )
             })}

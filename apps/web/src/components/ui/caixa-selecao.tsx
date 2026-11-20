@@ -7,38 +7,38 @@ import { Icone } from './icone'
 // Controles nativos (teclado e leitor de tela de graça) desenhados como no design system: o
 // visual padrão do navegador com a cor da marca escura parecia marcado mesmo desmarcado.
 const baseControle =
-  'peer size-4 shrink-0 cursor-pointer appearance-none border border-(--border-input-accessible) bg-(--surface-input) transicao-estado ' +
-  'hover:border-(--border-strong) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--border-focus) ' +
-  'disabled:cursor-not-allowed disabled:bg-(--surface-disabled)'
+  'peer size-[18px] shrink-0 cursor-pointer appearance-none border-[1.5px] border-(--campo-borda) bg-(--campo) transicao-estado ' +
+  'hover:border-(--tinta-2) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--foco) ' +
+  'disabled:cursor-not-allowed disabled:bg-(--off)'
 
 type Props = Omit<ComponentProps<'input'>, 'type' | 'id'> & {
   rotulo: ReactNode
   id?: string
 }
 
-/** Caixa de seleção. Referência: docs/design-system/referencia-componentes/forms/Checkbox.jsx. */
+/** Caixa de seleção nativa desenhada no visual do Grama (teclado e leitor de tela de graça). */
 export function CaixaSelecao({ rotulo, id, className, ...rest }: Props) {
   const gerado = useId()
   const campoId = id ?? gerado
   return (
-    <div className={cn('inline-flex items-center gap-(--space-100)', className)}>
+    <div className={cn('inline-flex items-center gap-(--e-2)', className)}>
       <span className="relative inline-flex">
         <input
           id={campoId}
           type="checkbox"
           className={cn(
             baseControle,
-            'rounded-(--radius) checked:border-(--brand-stroke) checked:bg-(--brand)',
+            'rounded-(--raio-mini) checked:border-(--acao) checked:bg-(--acao)',
           )}
           {...rest}
         />
         <Icone
           nome="check"
           tamanho={12}
-          className="pointer-events-none invisible absolute top-0.5 left-0.5 text-(--text-inverse) peer-checked:visible"
+          className="pointer-events-none invisible absolute top-[3px] left-[3px] text-(--acao-texto) peer-checked:visible"
         />
       </span>
-      <label htmlFor={campoId} className="cursor-pointer corpo text-(--text)">
+      <label htmlFor={campoId} className="cursor-pointer corpo text-(--tinta)">
         {rotulo}
       </label>
     </div>
@@ -60,12 +60,12 @@ export function OpcaoRadio({ rotulo, descricao, id, className, ...rest }: PropsR
     <label
       htmlFor={campoId}
       className={cn(
-        'flex cursor-pointer flex-col gap-0.5 rounded-(--radius) border px-(--space-150) py-(--space-100) transicao-estado',
-        'border-(--border) has-checked:border-(--brand-stroke) has-checked:bg-(--surface-selected) hover:bg-(--surface-hover)',
+        'flex cursor-pointer flex-col gap-0.5 rounded-(--raio) border px-(--e-3) py-(--e-2) transicao-estado',
+        'border-(--regra-forte) has-checked:border-(--marca-linha) has-checked:shadow-[0_0_0_1px_var(--marca-linha)] has-checked:bg-(--escolha) hover:bg-(--toque)',
         className,
       )}
     >
-      <span className="inline-flex items-center gap-(--space-100)">
+      <span className="inline-flex items-center gap-(--e-2)">
         <input
           id={campoId}
           type="radio"
@@ -73,16 +73,16 @@ export function OpcaoRadio({ rotulo, descricao, id, className, ...rest }: PropsR
           aria-describedby={descricao ? `${campoId}-descricao` : undefined}
           className={cn(
             baseControle,
-            'rounded-full checked:border-[5px] checked:border-(--brand-stroke) checked:bg-(--surface)',
+            'rounded-full checked:border-[5px] checked:border-(--acao) checked:bg-(--folha)',
           )}
           {...rest}
         />
-        <span id={`${campoId}-rotulo`} className="corpo text-(--text)">
+        <span id={`${campoId}-rotulo`} className="corpo text-(--tinta)">
           {rotulo}
         </span>
       </span>
       {descricao ? (
-        <span id={`${campoId}-descricao`} className="pl-6 text-xs text-(--text-subtle)">
+        <span id={`${campoId}-descricao`} className="pl-6 text-xs text-(--tinta-2)">
           {descricao}
         </span>
       ) : null}

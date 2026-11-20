@@ -67,7 +67,7 @@ export function DialogoPagamentoSimulado({
       }
     >
       {cobranca ? (
-        <dl className="grid grid-cols-[1fr_auto] gap-x-(--space-200) gap-y-(--space-075)">
+        <dl className="grid grid-cols-[1fr_auto] gap-x-(--e-4) gap-y-(--e-15)">
           <dt>Valor</dt>
           <dd className="text-right tabular-nums">{formatarReais(cobranca.valorCentavos)}</dd>
           <dt>Vencimento</dt>
@@ -77,7 +77,7 @@ export function DialogoPagamentoSimulado({
         </dl>
       ) : null}
       {pagar.isError ? (
-        <p role="alert" className="text-(--text-danger)">
+        <p role="alert" className="text-(--atraso-texto)">
           {mensagemDoErro(pagar.error)}
         </p>
       ) : null}

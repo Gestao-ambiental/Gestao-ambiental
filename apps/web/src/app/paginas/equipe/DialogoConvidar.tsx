@@ -108,7 +108,7 @@ export function DialogoConvidar({
             convite.mutate(dados)
           })(evento)
         }
-        className="flex flex-col gap-(--space-200)"
+        className="flex flex-col gap-(--e-4)"
       >
         {convite.isError && !ehAdicionalNaoConfirmado(convite.error) ? (
           <MensagemSecao role="alert" tom="perigo">
@@ -123,8 +123,8 @@ export function DialogoConvidar({
           erro={errors.email?.message}
           {...register('email')}
         />
-        <fieldset className="flex flex-col gap-(--space-100)">
-          <legend className="mb-(--space-050) rotulo">Papel</legend>
+        <fieldset className="flex flex-col gap-(--e-2)">
+          <legend className="mb-(--e-1) rotulo">Papel</legend>
           <OpcaoRadio
             rotulo="Equipe"
             descricao={DESCRICAO_PAPEL.equipe}

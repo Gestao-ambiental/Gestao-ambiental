@@ -125,7 +125,7 @@ export function DialogoGerarRelatorio({
           {semValor.join(', ')}
         </MensagemSecao>
       ) : modelos.isPending ? (
-        <p role="status" className="corpo text-(--text-subtle)">
+        <p role="status" className="corpo text-(--tinta-2)">
           Carregando modelos
         </p>
       ) : modelos.isError ? (
@@ -133,18 +133,18 @@ export function DialogoGerarRelatorio({
           {mensagemDoErro(modelos.error)}
         </MensagemSecao>
       ) : lista.length === 0 ? (
-        <div className="flex flex-col gap-(--space-100)">
+        <div className="flex flex-col gap-(--e-2)">
           <p className="corpo-medio">Nenhum modelo cadastrado.</p>
           {ehGestao ? <Link to="/configuracoes/modelos/novo">Criar modelo</Link> : null}
         </div>
       ) : (
-        <fieldset className="flex flex-col gap-(--space-050)">
-          <legend className="mb-(--space-050) rotulo">Modelo</legend>
-          <div className="flex max-h-[320px] flex-col overflow-y-auto rounded-(--radius) border">
+        <fieldset className="flex flex-col gap-(--e-1)">
+          <legend className="mb-(--e-1) rotulo">Modelo</legend>
+          <div className="flex max-h-[320px] flex-col overflow-y-auto rounded-(--raio) border">
             {lista.map((modelo) => (
               <label
                 key={modelo.id}
-                className="flex cursor-pointer items-center gap-(--space-100) border-b px-(--space-150) py-(--space-100) last:border-b-0 hover:bg-(--surface-hover)"
+                className="flex cursor-pointer items-center gap-(--e-2) border-b px-(--e-3) py-(--e-2) last:border-b-0 hover:bg-(--toque)"
               >
                 <input
                   type="radio"

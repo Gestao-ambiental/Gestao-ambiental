@@ -52,7 +52,7 @@ export function PaginaRedefinirSenha() {
 
   if (alterada) {
     return (
-      <div className="flex flex-col gap-(--space-300)">
+      <div className="flex flex-col gap-(--e-6)">
         <CabecalhoAcesso titulo="Criar senha nova" />
         <MensagemSecao role="status" tom="sucesso">
           Senha alterada. Por segurança, encerramos as sessões abertas em outros aparelhos.
@@ -73,7 +73,7 @@ export function PaginaRedefinirSenha() {
 
   if (!linkValido || !sessao) {
     return (
-      <div className="flex flex-col gap-(--space-300)">
+      <div className="flex flex-col gap-(--e-6)">
         <CabecalhoAcesso titulo="Criar senha nova" />
         <MensagemSecao role="alert" tom="perigo" titulo="Este link expirou ou já foi usado.">
           Cada link vale por 1 hora e funciona uma vez.
@@ -89,7 +89,7 @@ export function PaginaRedefinirSenha() {
   }
 
   return (
-    <div className="flex flex-col gap-(--space-300)">
+    <div className="flex flex-col gap-(--e-6)">
       <CabecalhoAcesso titulo="Criar senha nova">
         Conta: {usuarioDaSessao(sessao).email}
       </CabecalhoAcesso>
@@ -101,7 +101,7 @@ export function PaginaRedefinirSenha() {
       <form
         noValidate
         onSubmit={(evento) => void salvar(evento)}
-        className="flex flex-col gap-(--space-200)"
+        className="flex flex-col gap-(--e-4)"
       >
         <CampoTexto
           rotulo="Nova senha"

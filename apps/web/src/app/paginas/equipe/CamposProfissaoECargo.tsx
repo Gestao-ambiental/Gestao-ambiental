@@ -64,9 +64,9 @@ export function CamposProfissaoECargo({
   const podeAdicionar =
     profissao !== '' && outrasVisiveis.length < MAXIMO_DE_OUTRAS_PROFISSOES && !desabilitado
   return (
-    <div className="flex flex-col gap-(--space-150)">
-      <div className="grid gap-(--space-150) sm:grid-cols-2">
-        <div className="flex flex-col gap-(--space-050)">
+    <div className="flex flex-col gap-(--e-3)">
+      <div className="grid gap-(--e-3) sm:grid-cols-2">
+        <div className="flex flex-col gap-(--e-1)">
           <label htmlFor={idProfissao} className="rotulo">
             Profissão
           </label>
@@ -90,7 +90,7 @@ export function CamposProfissaoECargo({
             desabilitado={profissao === '' || desabilitado}
           />
         </div>
-        <div className="flex flex-col gap-(--space-050)">
+        <div className="flex flex-col gap-(--e-1)">
           <label htmlFor={idCargo} className="rotulo">
             Cargo
           </label>
@@ -106,16 +106,16 @@ export function CamposProfissaoECargo({
           />
         </div>
       </div>
-      <div role="group" aria-labelledby={idOutras} className="flex flex-col gap-(--space-050)">
+      <div role="group" aria-labelledby={idOutras} className="flex flex-col gap-(--e-1)">
         <span id={idOutras} className="rotulo">
           Outras formações concluídas
         </span>
         {outrasVisiveis.length > 0 ? (
-          <ul className="flex flex-wrap gap-(--space-100)">
+          <ul className="flex flex-wrap gap-(--e-2)">
             {outrasVisiveis.map((codigo) => (
               <li
                 key={codigo}
-                className="flex items-center gap-(--space-050) rounded-(--radius) border border-(--border) py-(--space-025) pr-(--space-025) pl-(--space-100) corpo"
+                className="flex items-center gap-(--e-1) rounded-(--raio) border border-(--regra) py-(--e-05) pr-(--e-05) pl-(--e-2) corpo"
               >
                 {rotulo(codigo)}
                 <BotaoIcone
@@ -143,7 +143,7 @@ export function CamposProfissaoECargo({
           }}
           vazio={profissao === '' ? 'Escolha a profissão primeiro' : 'Adicionar outra formação'}
           disabled={!podeAdicionar}
-          className={`${classeCampo} sm:max-w-[calc(50%-var(--space-075))]`}
+          className={`${classeCampo} sm:max-w-[calc(50%-var(--e-15))]`}
         />
       </div>
     </div>

@@ -156,7 +156,7 @@ function DialogoEmergencia({
           evento.preventDefault()
           enviar()
         }}
-        className="flex flex-col gap-(--space-200)"
+        className="flex flex-col gap-(--e-4)"
       >
         {abrir.isError ? (
           <MensagemSecao role="alert" tom="perigo">
@@ -164,11 +164,11 @@ function DialogoEmergencia({
           </MensagemSecao>
         ) : null}
         <fieldset
-          className="flex flex-col gap-(--space-100)"
+          className="flex flex-col gap-(--e-2)"
           disabled={abrir.isPending}
           aria-describedby={erros.categoria ? idErroCategoria : undefined}
         >
-          <legend className="mb-(--space-050) rotulo">Categoria</legend>
+          <legend className="mb-(--e-1) rotulo">Categoria</legend>
           {CATEGORIAS_DE_EMERGENCIA.map((opcao) => (
             <OpcaoRadio
               key={opcao}
@@ -184,12 +184,12 @@ function DialogoEmergencia({
             />
           ))}
           {erros.categoria ? (
-            <span id={idErroCategoria} className="text-xs text-(--text-danger)">
+            <span id={idErroCategoria} className="text-xs text-(--atraso-texto)">
               {erros.categoria}
             </span>
           ) : null}
         </fieldset>
-        <div className="flex flex-col gap-(--space-050)">
+        <div className="flex flex-col gap-(--e-1)">
           <label htmlFor={idMotivo} className="rotulo">
             Motivo
           </label>
@@ -208,10 +208,10 @@ function DialogoEmergencia({
                 setErros((atual) => ({ ...atual, motivo: undefined }))
               }
             }}
-            className={`${classeCampo} py-(--space-075)`}
+            className={`${classeCampo} py-(--e-15)`}
           />
           {erros.motivo ? (
-            <span id={idErroMotivo} className="text-xs text-(--text-danger)">
+            <span id={idErroMotivo} className="text-xs text-(--atraso-texto)">
               {erros.motivo}
             </span>
           ) : null}
@@ -257,9 +257,9 @@ export function AcessoDeSuporteNaCentral({
   const valendo = consulta.isSuccess ? acessoValendo(itens, new Date()) : null
 
   return (
-    <section aria-labelledby="central-suporte" className="flex flex-col gap-(--space-100)">
-      <div className="flex flex-wrap items-center justify-between gap-(--space-100)">
-        <h2 id="central-suporte" className="titulo-secao text-(--text)">
+    <section aria-labelledby="central-suporte" className="flex flex-col gap-(--e-2)">
+      <div className="flex flex-wrap items-center justify-between gap-(--e-2)">
+        <h2 id="central-suporte" className="titulo-secao text-(--tinta)">
           Acesso de suporte
         </h2>
         {consulta.isSuccess ? (
@@ -288,7 +288,7 @@ export function AcessoDeSuporteNaCentral({
       </div>
 
       {consulta.isSuccess ? (
-        <p className="flex flex-wrap items-center gap-(--space-075)">
+        <p className="flex flex-wrap items-center gap-(--e-15)">
           {valendo ? <Selo tom="sucesso">Valendo</Selo> : null}
           <span>{textoDoAcessoValendo(valendo, fuso)}</span>
         </p>

@@ -203,7 +203,7 @@ export function DialogoMtr({
         </>
       }
     >
-      <div className="flex flex-col gap-(--space-200)">
+      <div className="flex flex-col gap-(--e-4)">
         {salvar.isError ? (
           <MensagemSecao role="alert" tom="perigo">
             {gravado
@@ -212,7 +212,7 @@ export function DialogoMtr({
           </MensagemSecao>
         ) : null}
 
-        <div className="grid gap-(--space-150) sm:grid-cols-3">
+        <div className="grid gap-(--e-3) sm:grid-cols-3">
           <CampoTexto
             rotulo="Número do MTR *"
             value={numero}
@@ -250,7 +250,7 @@ export function DialogoMtr({
           </CampoSelecao>
         </div>
 
-        <div className="grid gap-(--space-150) sm:grid-cols-2">
+        <div className="grid gap-(--e-3) sm:grid-cols-2">
           <CampoTexto
             rotulo="Transportador *"
             value={transportador}
@@ -292,7 +292,7 @@ export function DialogoMtr({
           />
         </div>
 
-        <section aria-labelledby="titulo-residuos-mtr" className="flex flex-col gap-(--space-150)">
+        <section aria-labelledby="titulo-residuos-mtr" className="flex flex-col gap-(--e-3)">
           <h3 id="titulo-residuos-mtr" className="titulo-secao">
             Resíduos
           </h3>
@@ -301,9 +301,9 @@ export function DialogoMtr({
             return (
               <fieldset
                 key={item.chave}
-                className="relative flex min-w-0 flex-col gap-(--space-100) rounded-(--radius) border p-(--space-150)"
+                className="relative flex min-w-0 flex-col gap-(--e-2) rounded-(--raio) border p-(--e-3)"
               >
-                <legend className="float-left w-full pr-(--space-400) corpo-medio">
+                <legend className="float-left w-full pr-(--e-8) corpo-medio">
                   Resíduo {ordem}
                 </legend>
                 {itens.length > 1 ? (
@@ -311,13 +311,13 @@ export function DialogoMtr({
                     icone="trash-2"
                     rotulo={`Remover resíduo ${ordem}`}
                     tamanho="compacto"
-                    className="absolute top-(--space-100) right-(--space-100)"
+                    className="absolute top-(--e-2) right-(--e-2)"
                     onClick={() => {
                       setItens((lista) => lista.filter((i) => i.chave !== item.chave))
                     }}
                   />
                 ) : null}
-                <div className="clear-both grid gap-(--space-100) sm:grid-cols-[140px_1fr]">
+                <div className="clear-both grid gap-(--e-2) sm:grid-cols-[140px_1fr]">
                   <CampoTexto
                     rotulo={`Código do resíduo ${ordem} *`}
                     value={item.codigo}
@@ -339,7 +339,7 @@ export function DialogoMtr({
                     }}
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-(--space-100) sm:grid-cols-3">
+                <div className="grid grid-cols-2 gap-(--e-2) sm:grid-cols-3">
                   <CampoTexto
                     rotulo={`Classe do resíduo ${ordem}`}
                     value={item.classe}

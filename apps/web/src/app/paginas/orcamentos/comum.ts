@@ -91,12 +91,11 @@ export function numeroComRevisao(ano: number, sequencia: number, revisao: number
 }
 
 export const classeCampo =
-  'h-(--size-control) w-full rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) px-(--space-100) corpo text-(--text) outline-none transicao-estado focus:border-b-(--border-input-active) focus:shadow-[inset_0_-1px_0_0_var(--border-input-active)] focus:bg-(--surface-input-focus) disabled:bg-(--surface-disabled) disabled:text-(--text-disabled) aria-invalid:border-(--border-danger)'
+  'h-(--controle) w-full rounded-(--raio) border border-(--campo-borda) border-b-(--campo-borda) bg-(--campo) px-(--e-2) corpo text-(--tinta) outline-none transicao-estado focus:border-b-(--campo-borda-ativa) focus:shadow-[inset_0_-1px_0_0_var(--campo-borda-ativa)] focus:bg-(--campo-foco) disabled:bg-(--off) disabled:text-(--tinta-off) aria-invalid:border-(--atraso)'
 
 export const classeCabecalho =
-  'h-10 border-b px-(--space-100) text-left rotulo whitespace-nowrap first:pl-(--space-150) last:pr-(--space-150)'
-export const classeCelula =
-  'h-11 border-b px-(--space-100) align-middle first:pl-(--space-150) last:pr-(--space-150)'
+  'h-10 border-b px-(--e-2) text-left rotulo whitespace-nowrap first:pl-(--e-3) last:pr-(--e-3)'
+export const classeCelula = 'h-11 border-b px-(--e-2) align-middle first:pl-(--e-3) last:pr-(--e-3)'
 
 /**
  * Valor de um campo de reais depois da tecla: com o ponto de milhar (40000 → 40.000). O cursor

@@ -664,7 +664,7 @@ function Fluxo({
     )
   } else if (etapa === 5) {
     conteudo = (
-      <div className="flex flex-col gap-(--space-200)">
+      <div className="flex flex-col gap-(--e-4)">
         <DadosDaProposta
           consultoriaId={consultoriaId}
           nivelDosTitulos={3}
@@ -696,15 +696,15 @@ function Fluxo({
   const pendencias = etapa <= 4 ? pendenciasDoPasso(etapa) : []
 
   return (
-    <div className="flex flex-col gap-(--space-200)">
-      <div className="flex flex-wrap items-end justify-between gap-(--space-150)">
+    <div className="flex flex-col gap-(--e-4)">
+      <div className="flex flex-wrap items-end justify-between gap-(--e-3)">
         <Pagina titulo="Primeiros passos do orçamento">{null}</Pagina>
         <Botao aparencia="sutil" onClick={() => void verOrcamentos()}>
           Ver orçamentos mesmo assim
         </Botao>
       </div>
       {rascunho?.atualizadoPorNome && rascunho.atualizadoEm ? (
-        <p className="text-xs text-(--text-subtle)">
+        <p className="text-xs text-(--tinta-2)">
           Última alteração por {rascunho.atualizadoPorNome} em{' '}
           {formatarInstanteComHora(rascunho.atualizadoEm, fuso)}
         </p>
@@ -719,13 +719,13 @@ function Fluxo({
 
       <section
         aria-labelledby="titulo-do-passo"
-        className="flex flex-col gap-(--space-200) rounded-(--radius-large) border bg-(--surface) p-(--space-200) shadow-cartao"
+        className="flex flex-col gap-(--e-4) rounded-(--raio-painel) border bg-(--folha) p-(--e-4) shadow-cartao"
       >
         <h2
           id="titulo-do-passo"
           ref={titulo}
           tabIndex={-1}
-          className="titulo-secao text-(--text) outline-none"
+          className="titulo-secao text-(--tinta) outline-none"
         >
           Passo {String(etapa)} de 6: {TITULO_DA_ETAPA[etapa]}
           {etapa === 5 ? ' (opcional)' : ''}
@@ -759,12 +759,12 @@ function Fluxo({
         {conteudo}
 
         {pendencias.length > 0 ? (
-          <div className="flex flex-col gap-(--space-050)">
-            <p className="corpo-medio text-(--text)">Ainda falta neste passo</p>
-            <ul className="flex flex-col gap-(--space-050) corpo">
+          <div className="flex flex-col gap-(--e-1)">
+            <p className="corpo-medio text-(--tinta)">Ainda falta neste passo</p>
+            <ul className="flex flex-col gap-(--e-1) corpo">
               {pendencias.map((p) => (
-                <li key={p} className="flex items-center gap-(--space-075)">
-                  <Icone nome="circle-alert" className="text-(--text)" />
+                <li key={p} className="flex items-center gap-(--e-15)">
+                  <Icone nome="circle-alert" className="text-(--tinta)" />
                   {ROTULO_DA_PENDENCIA[p]}
                 </li>
               ))}
@@ -773,7 +773,7 @@ function Fluxo({
         ) : null}
 
         {etapa <= 5 ? (
-          <div className="flex flex-col-reverse gap-(--space-100) border-t pt-(--space-200) sm:flex-row sm:flex-wrap sm:items-center">
+          <div className="flex flex-col-reverse gap-(--e-2) border-t pt-(--e-4) sm:flex-row sm:flex-wrap sm:items-center">
             {etapa > 1 ? (
               <Botao
                 iconeAntes="arrow-left"
@@ -785,7 +785,7 @@ function Fluxo({
                 Voltar
               </Botao>
             ) : null}
-            <span className="min-w-0 flex-1 text-xs text-(--text-subtle)" aria-live="polite">
+            <span className="min-w-0 flex-1 text-xs text-(--tinta-2)" aria-live="polite">
               {salvando
                 ? 'Salvando…'
                 : (aviso ?? (alterados.has(etapa) ? 'Alterado, não salvo.' : ''))}
@@ -838,7 +838,7 @@ function ProgressoDosPassos({
 }) {
   return (
     <nav aria-label="Passos da configuração">
-      <ol className="grid grid-cols-2 gap-(--space-100) sm:grid-cols-3 lg:grid-cols-6">
+      <ol className="grid grid-cols-2 gap-(--e-2) sm:grid-cols-3 lg:grid-cols-6">
         {ETAPAS.map((e) => {
           const ehAtual = e === atual
           const feito = salvo(e) && !alterado(e)
@@ -860,32 +860,28 @@ function ProgressoDosPassos({
                   aoIrPara(e)
                 }}
                 className={cn(
-                  'flex w-full items-start gap-(--space-100) rounded-(--radius) border p-(--space-100) text-left transicao-estado hover:bg-(--surface-hover)',
-                  ehAtual ? 'border-(--brand-stroke)' : 'border-(--border-subtle)',
+                  'flex w-full items-start gap-(--e-2) rounded-(--raio) border p-(--e-2) text-left transicao-estado hover:bg-(--toque)',
+                  ehAtual ? 'border-(--marca-linha)' : 'border-(--regra-leve)',
                 )}
               >
                 <span
                   aria-hidden="true"
                   className={cn(
-                    'inline-flex size-6 shrink-0 items-center justify-center rounded-(--radius) border rotulo',
-                    ehAtual && 'border-(--brand) bg-(--brand) text-(--text-inverse)',
-                    !ehAtual &&
-                      feito &&
-                      'border-(--surface-selected) bg-(--surface-selected) text-(--text-link)',
-                    !ehAtual && !feito && 'border-(--border-strong) text-(--text-subtle)',
+                    'inline-flex size-6 shrink-0 items-center justify-center rounded-(--raio) border rotulo',
+                    ehAtual && 'border-(--acao) bg-(--acao) text-(--acao-texto)',
+                    !ehAtual && feito && 'border-(--escolha) bg-(--escolha) text-(--link)',
+                    !ehAtual && !feito && 'border-(--regra-forte) text-(--tinta-2)',
                   )}
                 >
                   {feito && !ehAtual ? <Icone nome="check" tamanho={12} /> : e}
                 </span>
                 <span className="flex min-w-0 flex-col">
-                  <span className={ehAtual ? 'corpo-medio text-(--text)' : 'corpo text-(--text)'}>
+                  <span className={ehAtual ? 'corpo-medio text-(--tinta)' : 'corpo text-(--tinta)'}>
                     {/* Espaços fora do sr-only: dentro dele, somem do nome acessível. */}
                     <span className="sr-only">Passo {e}:</span> {TITULO_DA_ETAPA[e]}
                     {situacao ? <span className="sr-only">,</span> : null}
                   </span>{' '}
-                  {situacao ? (
-                    <span className="text-xs text-(--text-subtle)">{situacao}</span>
-                  ) : null}
+                  {situacao ? <span className="text-xs text-(--tinta-2)">{situacao}</span> : null}
                 </span>
               </button>
             </li>
@@ -919,7 +915,7 @@ function PassoDaEquipe({
   const custoPorProfissao =
     lida && typeof lida !== 'string' ? custoHoraPorProfissao(linhasMensaisDaEquipe(lida)) : []
   return (
-    <div className="flex flex-col gap-(--space-150)">
+    <div className="flex flex-col gap-(--e-3)">
       {form.modo === 'equipe' ? (
         <Equipe
           linhas={form.linhas}
@@ -949,7 +945,7 @@ function PassoDaEquipe({
         />
       ) : (
         <>
-          <div className="flex flex-col gap-(--space-075)">
+          <div className="flex flex-col gap-(--e-15)">
             <div>
               <Botao
                 iconeAntes="users"
@@ -1020,7 +1016,7 @@ function PassoDasContas({
         })
   const total = form.contas.reduce((soma, l) => soma + (lerEstimativa(l.valor) ?? 0), 0)
   return (
-    <div className="flex flex-col gap-(--space-150)">
+    <div className="flex flex-col gap-(--e-3)">
       <ContasDoMes
         linhas={form.contas}
         total={total}
@@ -1044,8 +1040,8 @@ function PassoDasContas({
       </ContasDoMes>
 
       {modo === 'equipe' ? (
-        <div className="flex flex-col gap-(--space-050)">
-          <p className="corpo text-(--text)">
+        <div className="flex flex-col gap-(--e-1)">
+          <p className="corpo text-(--tinta)">
             Horas faturáveis por mês:{' '}
             <span className="corpo-medio">
               {horasEquipe && horasEquipe > 0 ? `${textoDasHoras(horasEquipe)} h` : 'pendente'}
@@ -1071,9 +1067,9 @@ function PassoDasContas({
         </Linha>
       )}
 
-      <p className="corpo text-(--text-subtle)">
+      <p className="corpo text-(--tinta-2)">
         Contas do mês por hora:{' '}
-        <span className="corpo-medio text-(--text)">
+        <span className="corpo-medio text-(--tinta)">
           {porHora === null ? 'pendente' : `${formatarReais(porHora)} por hora`}
         </span>
       </p>
@@ -1093,7 +1089,7 @@ function PassoDosPrecos({
   aoMudar: (alterar: (f: FormPrecos) => FormPrecos) => void
 }) {
   return (
-    <div className="flex flex-col gap-(--space-150)">
+    <div className="flex flex-col gap-(--e-3)">
       <TabelaDePrecos
         horas={form.horas}
         comAtalhoAceamb={false}
@@ -1103,9 +1099,9 @@ function PassoDosPrecos({
       />
       <section
         aria-labelledby="pp-visitas"
-        className="flex flex-col gap-(--space-100) border-t pt-(--space-150)"
+        className="flex flex-col gap-(--e-2) border-t pt-(--e-3)"
       >
-        <h3 id="pp-visitas" className="corpo-medio text-(--text)">
+        <h3 id="pp-visitas" className="corpo-medio text-(--tinta)">
           Visita técnica e deslocamento (opcional)
         </h3>
         <Deslocamento
@@ -1157,16 +1153,16 @@ function PassoDosTributos({
     }
   }
   return (
-    <div className="flex flex-col gap-(--space-200)">
-      <div className="flex flex-col gap-(--space-150)">
-        <h3 className="corpo-medio text-(--text)">Tributos</h3>
+    <div className="flex flex-col gap-(--e-4)">
+      <div className="flex flex-col gap-(--e-3)">
+        <h3 className="corpo-medio text-(--tinta)">Tributos</h3>
         <Linha id="pp-tributos" rotulo="Tributos sobre o faturamento (%)">
           <input id="pp-tributos" {...campo('tributos', false)} />
         </Linha>
       </div>
 
-      <div className="flex flex-col gap-(--space-150)">
-        <h3 className="corpo-medio text-(--text)">Taxas de cobrança e assinatura</h3>
+      <div className="flex flex-col gap-(--e-3)">
+        <h3 className="corpo-medio text-(--tinta)">Taxas de cobrança e assinatura</h3>
         <Botao
           aparencia="link"
           className="self-start text-xs"
@@ -1187,10 +1183,10 @@ function PassoDosTributos({
         </Linha>
       </div>
 
-      <div className="flex flex-col gap-(--space-150)">
-        <h3 className="corpo-medio text-(--text)">Margens</h3>
+      <div className="flex flex-col gap-(--e-3)">
+        <h3 className="corpo-medio text-(--tinta)">Margens</h3>
         {baseNova ? (
-          <div className="flex flex-col gap-(--space-050)">
+          <div className="flex flex-col gap-(--e-1)">
             <CaixaSelecao
               rotulo="Confirmo que estas margens são da minha consultoria"
               checked={form.confirmadas}
@@ -1245,11 +1241,8 @@ function PassoDoResumo({
   const horas = dados.equipe?.modo === 'equipe' ? horasDaEquipe(dados.equipe.equipe) : null
   const pronto = rascunho !== null && pendencias.length === 0 && !baseMudou
   return (
-    <div className="flex flex-col gap-(--space-200)">
-      <dl
-        aria-label="Resumo da configuração"
-        className="grid max-w-3xl gap-(--space-100) sm:grid-cols-2"
-      >
+    <div className="flex flex-col gap-(--e-4)">
+      <dl aria-label="Resumo da configuração" className="grid max-w-3xl gap-(--e-2) sm:grid-cols-2">
         <CartaoDoResultado
           rotulo={pelaEquipe ? 'Custo médio por hora da equipe' : 'Custo da hora técnica'}
           valor={
@@ -1309,14 +1302,14 @@ function PassoDoResumo({
       ) : null}
 
       {pendencias.length > 0 ? (
-        <section aria-labelledby="pendencias-do-resumo" className="flex flex-col gap-(--space-100)">
-          <h3 id="pendencias-do-resumo" className="corpo-medio text-(--text)">
+        <section aria-labelledby="pendencias-do-resumo" className="flex flex-col gap-(--e-2)">
+          <h3 id="pendencias-do-resumo" className="corpo-medio text-(--tinta)">
             Falta configurar para calcular o preço
           </h3>
-          <ul className="flex flex-col gap-(--space-075) corpo">
+          <ul className="flex flex-col gap-(--e-15) corpo">
             {pendencias.map((p) => (
-              <li key={p} className="flex flex-wrap items-center gap-(--space-075)">
-                <Icone nome="circle-alert" className="text-(--text)" />
+              <li key={p} className="flex flex-wrap items-center gap-(--e-15)">
+                <Icone nome="circle-alert" className="text-(--tinta)" />
                 <span className="corpo-medio">Falta:</span> {ROTULO_DA_PENDENCIA[p]}
                 <Botao
                   aparencia="link"
@@ -1336,8 +1329,8 @@ function PassoDoResumo({
       ) : null}
 
       {pronto ? (
-        <div className="flex flex-col gap-(--space-100) border-t pt-(--space-200)">
-          <p id="aviso-publicar" className="max-w-3xl text-(--text)">
+        <div className="flex flex-col gap-(--e-2) border-t pt-(--e-4)">
+          <p id="aviso-publicar" className="max-w-3xl text-(--tinta)">
             {baseConfigurada
               ? 'Ao continuar, estes valores substituem os de Custos e taxas. Orçamentos em rascunho usam os valores novos ao serem salvos; propostas enviadas guardam os que usaram.'
               : 'Ao continuar, esta configuração passa a valer para o preço dos orçamentos. Depois, os ajustes ficam em Custos e taxas.'}

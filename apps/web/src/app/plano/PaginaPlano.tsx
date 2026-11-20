@@ -55,18 +55,18 @@ import {
 } from './situacao'
 
 const classeCabecalho =
-  'h-10 border-b px-(--space-100) text-left rotulo whitespace-nowrap first:pl-(--space-150) last:pr-(--space-150)'
+  'h-10 border-b px-(--e-2) text-left rotulo whitespace-nowrap first:pl-(--e-3) last:pr-(--e-3)'
 const classeCelula =
-  'h-11 border-b px-(--space-100) align-middle whitespace-nowrap first:pl-(--space-150) last:pr-(--space-150)'
+  'h-11 border-b px-(--e-2) align-middle whitespace-nowrap first:pl-(--e-3) last:pr-(--e-3)'
 
 function Secao({ titulo, children }: { titulo: string; children: ReactNode }) {
   const id = useId()
   return (
     <section
       aria-labelledby={id}
-      className="flex flex-col gap-(--space-150) rounded-(--radius-large) border bg-(--surface) p-(--space-200) shadow-cartao"
+      className="flex flex-col gap-(--e-3) rounded-(--raio-painel) border bg-(--folha) p-(--e-4) shadow-cartao"
     >
-      <h2 id={id} className="titulo-secao text-(--text)">
+      <h2 id={id} className="titulo-secao text-(--tinta)">
         {titulo}
       </h2>
       {children}
@@ -76,7 +76,7 @@ function Secao({ titulo, children }: { titulo: string; children: ReactNode }) {
 
 function Linha({ rotulo, children }: { rotulo: string; children: ReactNode }) {
   return (
-    <div className="flex flex-wrap items-baseline justify-between gap-x-(--space-200) gap-y-(--space-025) border-b py-(--space-075) last:border-b-0">
+    <div className="flex flex-wrap items-baseline justify-between gap-x-(--e-4) gap-y-(--e-05) border-b py-(--e-15) last:border-b-0">
       <dt className="rotulo">{rotulo}</dt>
       <dd className="text-right tabular-nums">{children}</dd>
     </div>
@@ -181,18 +181,18 @@ function OpcaoDePlano({
   return (
     <label
       className={cn(
-        'flex cursor-pointer flex-col gap-(--space-050) rounded-(--radius-large) border p-(--space-150) transicao-estado hover:bg-(--surface-hover) has-focus-visible:outline-2 has-focus-visible:outline-(--border-focus)',
-        escolhido && 'border-(--brand) bg-(--surface-selected)',
+        'flex cursor-pointer flex-col gap-(--e-1) rounded-(--raio-painel) border p-(--e-3) transicao-estado hover:bg-(--toque) has-focus-visible:outline-2 has-focus-visible:outline-(--foco)',
+        escolhido && 'border-(--acao) bg-(--escolha)',
       )}
     >
-      <span className="flex items-center gap-(--space-100)">
+      <span className="flex items-center gap-(--e-2)">
         <input
           type="radio"
           name={nome}
           value={plano}
           checked={escolhido}
           onChange={aoEscolher}
-          className="accent-(--brand)"
+          className="accent-(--acao)"
         />
         <span className="corpo-medio">{p.nome}</span>
       </span>
@@ -205,7 +205,7 @@ function OpcaoDePlano({
       <span>
         {p.pessoas} pessoas · {p.empreendimentos} empreendimentos ativos
       </span>
-      <ul aria-label={`O que o ${p.nome} inclui`} className="flex flex-col gap-(--space-025)">
+      <ul aria-label={`O que o ${p.nome} inclui`} className="flex flex-col gap-(--e-05)">
         <li>{p.orcamentos ? 'Orçamentos, aprovação e tarefas' : 'Sem orçamentos'}</li>
         <li>{p.ia ? 'Leitura da licença por IA' : 'Sem leitura por IA'}</li>
         {RECURSOS_DO_PLANO.filter((r) => p.recursos.includes(r)).map((r) => (
@@ -291,9 +291,9 @@ function EscolhaDePlano({
 
   return (
     <Secao titulo={ativa ? 'Trocar plano' : 'Escolher plano'}>
-      <form noValidate onSubmit={enviar} className="flex flex-col gap-(--space-200)">
-        <fieldset className="flex flex-wrap gap-(--space-100)">
-          <legend className="mb-(--space-075) rotulo">Ciclo</legend>
+      <form noValidate onSubmit={enviar} className="flex flex-col gap-(--e-4)">
+        <fieldset className="flex flex-wrap gap-(--e-2)">
+          <legend className="mb-(--e-15) rotulo">Ciclo</legend>
           {(['mensal', 'anual'] as const).map((c) => (
             <Botao
               key={c}
@@ -307,8 +307,8 @@ function EscolhaDePlano({
           ))}
         </fieldset>
 
-        <fieldset className="grid grid-cols-1 gap-(--space-100) md:grid-cols-3">
-          <legend className="mb-(--space-075) rotulo">Plano</legend>
+        <fieldset className="grid grid-cols-1 gap-(--e-2) md:grid-cols-3">
+          <legend className="mb-(--e-15) rotulo">Plano</legend>
           {CODIGOS_DE_PLANO.map((p) => (
             <OpcaoDePlano
               key={p}
@@ -324,10 +324,10 @@ function EscolhaDePlano({
           ))}
         </fieldset>
 
-        <fieldset className="flex flex-wrap gap-(--space-200)">
-          <legend className="mb-(--space-075) rotulo">Forma de pagamento</legend>
+        <fieldset className="flex flex-wrap gap-(--e-4)">
+          <legend className="mb-(--e-15) rotulo">Forma de pagamento</legend>
           {(['pix', 'cartao'] as const).map((f) => (
-            <label key={f} className="flex items-center gap-(--space-075)">
+            <label key={f} className="flex items-center gap-(--e-15)">
               <input
                 type="radio"
                 name={nomeDaForma}
@@ -336,7 +336,7 @@ function EscolhaDePlano({
                 onChange={() => {
                   setForma(f)
                 }}
-                className="accent-(--brand)"
+                className="accent-(--acao)"
               />
               {ROTULO_DA_FORMA[f]}
             </label>
@@ -344,7 +344,7 @@ function EscolhaDePlano({
         </fieldset>
 
         {ativa ? null : (
-          <div className="grid grid-cols-1 gap-(--space-150) md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-(--e-3) md:grid-cols-3">
             <CampoTexto
               rotulo="Nome de quem paga"
               value={nome}
@@ -395,7 +395,7 @@ function EscolhaDePlano({
           </MensagemSecao>
         ) : null}
 
-        <div className="flex flex-wrap gap-(--space-100)">
+        <div className="flex flex-wrap gap-(--e-2)">
           <Botao type="submit" aparencia="primario" disabled={ocupado}>
             {ativa ? 'Trocar plano' : 'Assinar e pagar'}
           </Botao>
@@ -443,7 +443,7 @@ function EscolhaDePlano({
         }
       >
         {cancelar.isError ? (
-          <p role="alert" className="text-(--text-danger)">
+          <p role="alert" className="text-(--atraso-texto)">
             {mensagemDoErro(cancelar.error)}
           </p>
         ) : null}
@@ -487,11 +487,11 @@ function Cobrancas() {
     conteudo = <EstadoVazio icone="file-text" titulo="Nenhuma cobrança" />
   else
     conteudo = (
-      <div className="flex flex-col gap-(--space-100)">
+      <div className="flex flex-col gap-(--e-2)">
         <div
           role="region"
           aria-label="Cobranças"
-          className="overflow-x-auto rounded-(--radius-large) border"
+          className="overflow-x-auto rounded-(--raio-painel) border"
         >
           <table className="w-full border-collapse corpo">
             <thead>
@@ -601,7 +601,7 @@ export function PaginaPlano() {
   else {
     const dados = consulta.data
     conteudo = (
-      <div className="flex flex-col gap-(--space-200)">
+      <div className="flex flex-col gap-(--e-4)">
         <SituacaoEUso dados={dados} catalogo={catalogo.data} />
         {dados.interna || dados.situacao.situacao === 'contrato' || suporte ? null : (
           <EscolhaDePlano dados={dados} catalogo={catalogo.data} />

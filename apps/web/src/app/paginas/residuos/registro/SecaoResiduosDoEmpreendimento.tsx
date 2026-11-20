@@ -30,19 +30,19 @@ export function SecaoResiduosDoEmpreendimento({ empreendimentoId }: { empreendim
   return (
     <section
       aria-labelledby="titulo-secao-residuos"
-      className="flex min-w-0 flex-col overflow-hidden rounded-(--radius-large) border bg-(--surface) shadow-cartao"
+      className="flex min-w-0 flex-col overflow-hidden rounded-(--raio-painel) border bg-(--folha) shadow-cartao"
     >
-      <div className="flex flex-wrap items-center gap-(--space-100) border-b px-(--space-150) py-(--space-100)">
-        <h2 id="titulo-secao-residuos" className="flex-1 titulo-secao text-(--text)">
+      <div className="flex flex-wrap items-center gap-(--e-2) border-b px-(--e-3) py-(--e-2)">
+        <h2 id="titulo-secao-residuos" className="flex-1 titulo-secao text-(--tinta)">
           Resíduos
         </h2>
         <Link
           to={caminhoDosPrazosDeResiduo(empreendimentoId)}
-          className="corpo text-(--text-link) hover:underline"
+          className="corpo text-(--link) hover:underline"
         >
           Prazos de resíduos
         </Link>
-        <Link to={caminho} className="corpo text-(--text-link) hover:underline">
+        <Link to={caminho} className="corpo text-(--link) hover:underline">
           Ver MTRs e CDFs
         </Link>
       </div>
@@ -55,7 +55,7 @@ export function SecaoResiduosDoEmpreendimento({ empreendimentoId }: { empreendim
           <EstadoErro
             titulo="Não foi possível carregar os MTRs."
             aoTentarDeNovo={() => void mtrs.refetch()}
-            className="m-(--space-150)"
+            className="m-(--e-3)"
           />
         )
       ) : ultimos.length === 0 ? (
@@ -73,7 +73,7 @@ export function SecaoResiduosDoEmpreendimento({ empreendimentoId }: { empreendim
           {ultimos.map((mtr) => (
             <li
               key={mtr.id}
-              className="flex flex-wrap items-center gap-x-(--space-150) gap-y-(--space-050) border-b px-(--space-150) py-(--space-100) last:border-b-0"
+              className="flex flex-wrap items-center gap-x-(--e-3) gap-y-(--e-1) border-b px-(--e-3) py-(--e-2) last:border-b-0"
             >
               <span className="corpo-medio">MTR {mtr.numero}</span>
               <span>{formatarDataCivil(mtr.emitidoEm)}</span>

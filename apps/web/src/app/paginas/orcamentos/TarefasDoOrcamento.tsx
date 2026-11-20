@@ -74,11 +74,11 @@ export function TarefasDoOrcamento({
   return (
     <section
       aria-label="Tarefas da execução"
-      className="flex flex-col gap-(--space-150) rounded-(--radius-large) border bg-(--surface) p-(--space-200) shadow-cartao"
+      className="flex flex-col gap-(--e-3) rounded-(--raio-painel) border bg-(--folha) p-(--e-4) shadow-cartao"
     >
-      <div className="flex flex-wrap items-center justify-between gap-(--space-100)">
+      <div className="flex flex-wrap items-center justify-between gap-(--e-2)">
         <h2 className="titulo-secao">Tarefas da execução</h2>
-        <span className="corpo tabular-nums text-(--text-subtle)">
+        <span className="corpo tabular-nums text-(--tinta-2)">
           {concluidas} de {tarefas.data.length} concluídas · {formatarDuracao(minutos)} estimadas
         </span>
       </div>
@@ -99,7 +99,7 @@ export function TarefasDoOrcamento({
       ) : null}
 
       {tarefas.data.length === 0 ? (
-        <p className="corpo text-(--text-subtle)">Nenhuma tarefa.</p>
+        <p className="corpo text-(--tinta-2)">Nenhuma tarefa.</p>
       ) : (
         <ul className="flex flex-col divide-y">
           {tarefas.data.map((t) => {
@@ -107,17 +107,17 @@ export function TarefasDoOrcamento({
             return (
               <li
                 key={t.id}
-                className="flex flex-wrap items-center justify-between gap-(--space-100) py-(--space-100)"
+                className="flex flex-wrap items-center justify-between gap-(--e-2) py-(--e-2)"
               >
-                <div className="flex min-w-0 flex-col gap-(--space-025)">
-                  <span className="flex flex-wrap items-center gap-(--space-075)">
+                <div className="flex min-w-0 flex-col gap-(--e-05)">
+                  <span className="flex flex-wrap items-center gap-(--e-15)">
                     <span className={t.situacao === 'cancelada' ? 'corpo line-through' : 'corpo'}>
                       {t.titulo}
                     </span>
                     <SeloDaTarefa situacao={t.situacao} />
                     {t.foraDaRevisao ? <Selo tom="atencao">Fora da revisão aprovada</Selo> : null}
                   </span>
-                  <span className="text-xs tabular-nums text-(--text-subtle)">
+                  <span className="text-xs tabular-nums text-(--tinta-2)">
                     {t.responsavelNome ?? 'Sem responsável'} ·{' '}
                     {t.prazoInterno ? `Prazo ${formatarDataCivil(t.prazoInterno)}` : 'Sem prazo'}
                     {prazo ? ` (${prazo})` : ''} ·{' '}
@@ -126,7 +126,7 @@ export function TarefasDoOrcamento({
                       : formatarDuracao(t.minutosEstimados)}
                   </span>
                 </div>
-                <div className="flex flex-wrap items-center gap-(--space-050)">
+                <div className="flex flex-wrap items-center gap-(--e-1)">
                   <AcoesDaTarefa
                     tarefa={t}
                     ehGestao={ehGestao}

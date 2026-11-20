@@ -204,10 +204,10 @@ export function VisualizadorPdf({ url, nome, className, paginaPedida = null, aco
   return (
     <section
       aria-label={`PDF ${nome}`}
-      className={cn('flex min-h-0 flex-col bg-(--surface-sunken)', className)}
+      className={cn('flex min-h-0 flex-col bg-(--chao)', className)}
     >
-      <div className="flex h-12 shrink-0 items-center gap-(--space-100) border-b bg-(--surface) px-(--space-150)">
-        <Icone nome="file-text" className="text-(--icon)" />
+      <div className="flex h-12 shrink-0 items-center gap-(--e-2) border-b bg-(--folha) px-(--e-3)">
+        <Icone nome="file-text" className="text-(--icone)" />
         <span className="min-w-0 flex-1 truncate corpo-medio" title={nome}>
           {nome}
         </span>
@@ -234,7 +234,7 @@ export function VisualizadorPdf({ url, nome, className, paginaPedida = null, aco
                 setPagina((p) => Math.min(total, p + 1))
               }}
             />
-            <span aria-hidden="true" className="mx-(--space-050) h-5 border-l" />
+            <span aria-hidden="true" className="mx-(--e-1) h-5 border-l" />
             <BotaoIcone
               icone="minus"
               rotulo="Diminuir zoom"
@@ -244,7 +244,7 @@ export function VisualizadorPdf({ url, nome, className, paginaPedida = null, aco
                 setZoom((z) => Math.max(ZOOM_MINIMO, z - PASSO_ZOOM))
               }}
             />
-            <span className="w-10 text-center text-xs text-(--text-subtle)">{zoom}%</span>
+            <span className="w-10 text-center text-xs text-(--tinta-2)">{zoom}%</span>
             <BotaoIcone
               icone="plus"
               rotulo="Aumentar zoom"
@@ -260,7 +260,7 @@ export function VisualizadorPdf({ url, nome, className, paginaPedida = null, aco
       </div>
       <div
         ref={areaRef}
-        className="min-h-0 flex-1 overflow-auto p-(--space-200) [scrollbar-gutter:stable]"
+        className="min-h-0 flex-1 overflow-auto p-(--e-4) [scrollbar-gutter:stable]"
       >
         {falhou ? (
           <EstadoErro

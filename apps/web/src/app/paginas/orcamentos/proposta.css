@@ -7,10 +7,10 @@
 
 .proposta-folha {
   /* Rótulo das tabelas na tela: lima do Grama com texto tinta (13,5:1 nos dois temas). */
-  --proposta-rotulo-fundo: var(--brand);
-  --proposta-rotulo-texto: var(--text-inverse);
-  --proposta-borda: var(--border-strong);
-  --proposta-destaque-fundo: var(--brand-subtle);
+  --proposta-rotulo-fundo: var(--acao);
+  --proposta-rotulo-texto: var(--acao-texto);
+  --proposta-borda: var(--regra-forte);
+  --proposta-destaque-fundo: var(--escolha);
 }
 
 .proposta-tabela {
@@ -20,7 +20,7 @@
 .proposta-tabela th,
 .proposta-tabela td {
   border: 1px solid var(--proposta-borda);
-  padding: var(--space-075) var(--space-100);
+  padding: var(--e-15) var(--e-2);
   text-align: left;
   vertical-align: top;
 }
@@ -41,7 +41,7 @@
 .proposta-tabela tfoot th[scope='row'],
 .proposta-tabela tfoot td {
   background: var(--proposta-destaque-fundo);
-  color: var(--text);
+  color: var(--tinta);
   font-weight: 600;
 }
 
@@ -61,7 +61,7 @@
   font-size: 7rem;
   font-weight: 700;
   letter-spacing: 0.1em;
-  color: var(--text);
+  color: var(--tinta);
   opacity: 0.07;
   white-space: nowrap;
 }
@@ -73,16 +73,16 @@
 
 @media print {
   .proposta-folha {
-    --text: #1a1a1a;
-    --text-subtle: #4d4d4d;
-    --surface: #fff;
-    --border: #bdbdbd;
-    --brand-subtle: #e8f3ef;
+    --tinta: #1a1a1a;
+    --tinta-2: #4d4d4d;
+    --folha: #fff;
+    --regra: #bdbdbd;
+    --escolha: #e8f3ef;
     --proposta-rotulo-fundo: #0f6e56;
     --proposta-rotulo-texto: #fff;
     --proposta-borda: #bdbdbd;
     --proposta-destaque-fundo: #e8f3ef;
-    color: var(--text);
+    color: var(--tinta);
     background: #fff;
     font-size: 10pt;
     print-color-adjust: exact;

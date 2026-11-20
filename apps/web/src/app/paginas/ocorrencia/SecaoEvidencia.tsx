@@ -111,15 +111,15 @@ function EnvioDeEvidencia({
         }
         envio.mutate()
       }}
-      className="flex flex-col gap-(--space-150) rounded-(--radius) border border-dashed border-(--border-strong) p-(--space-150)"
+      className="flex flex-col gap-(--e-3) rounded-(--raio) border border-dashed border-(--regra-forte) p-(--e-3)"
     >
       {envio.isError ? (
         <MensagemSecao role="alert" tom="perigo">
           {mensagemDoErro(envio.error)}
         </MensagemSecao>
       ) : null}
-      <div className="flex flex-wrap items-center gap-(--space-100)">
-        <Icone nome="paperclip" className="text-(--icon)" />
+      <div className="flex flex-wrap items-center gap-(--e-2)">
+        <Icone nome="paperclip" className="text-(--icone)" />
         <span className="min-w-0 flex-1 truncate corpo">
           {arquivo
             ? `${arquivo.name} · ${tamanhoLegivel(arquivo.size)}`
@@ -175,8 +175,8 @@ function EnvioDeEvidencia({
           . Confira antes de enviar.
         </MensagemSecao>
       ) : null}
-      <div className="flex flex-wrap items-center gap-(--space-100)">
-        <span className="flex-1 text-xs text-(--text-subtle)">
+      <div className="flex flex-wrap items-center gap-(--e-2)">
+        <span className="flex-1 text-xs text-(--tinta-2)">
           {ocorrencia.conferenteNome
             ? `${ocorrencia.conferenteNome} confere depois do envio.`
             : 'A gestão confere depois do envio.'}
@@ -247,9 +247,9 @@ export function SecaoEvidencia({
   const possoEnviar = ocorrencia.situacao === 'aberta'
 
   return (
-    <section aria-labelledby="titulo-evidencia" className="flex flex-col gap-(--space-100)">
-      <div className="flex flex-wrap items-center justify-between gap-(--space-100)">
-        <h2 id="titulo-evidencia" className="rotulo-maiusculo text-(--text-subtle)">
+    <section aria-labelledby="titulo-evidencia" className="flex flex-col gap-(--e-2)">
+      <div className="flex flex-wrap items-center justify-between gap-(--e-2)">
+        <h2 id="titulo-evidencia" className="rotulo-maiusculo text-(--tinta-2)">
           Evidência
         </h2>
         {possoEnviar ? (
@@ -290,32 +290,32 @@ export function SecaoEvidencia({
       ) : null}
 
       {evidencias.length > 0 ? (
-        <ul className="flex flex-col rounded-(--radius) border" aria-label="Versões da evidência">
+        <ul className="flex flex-col rounded-(--raio) border" aria-label="Versões da evidência">
           {evidencias.map((ev) => (
             <li
               key={ev.id}
-              className="flex flex-col gap-(--space-050) border-b px-(--space-150) py-(--space-100) last:border-b-0"
+              className="flex flex-col gap-(--e-1) border-b px-(--e-3) py-(--e-2) last:border-b-0"
             >
-              <span className="flex flex-wrap items-center gap-(--space-100)">
-                <Icone nome="paperclip" className="text-(--icon)" />
+              <span className="flex flex-wrap items-center gap-(--e-2)">
+                <Icone nome="paperclip" className="text-(--icone)" />
                 <button
                   type="button"
                   onClick={() => {
                     abrir.mutate(ev.arquivo.caminho)
                   }}
-                  className="min-w-0 flex-1 cursor-pointer truncate text-left corpo-medio text-(--text-link) hover:underline"
+                  className="min-w-0 flex-1 cursor-pointer truncate text-left corpo-medio text-(--link) hover:underline"
                 >
                   {ev.arquivo.nome}
                 </button>
-                <span className="text-xs text-(--text-subtle)">v{ev.numero}</span>
+                <span className="text-xs text-(--tinta-2)">v{ev.numero}</span>
                 <Selo tom={SITUACAO[ev.situacao].tom}>{SITUACAO[ev.situacao].texto}</Selo>
               </span>
-              <span className="text-xs text-(--text-subtle)">
+              <span className="text-xs text-(--tinta-2)">
                 {ev.enviadaPorNome} · {formatarInstanteComHora(ev.enviadaEm, fuso)} · execução{' '}
                 {formatarDataCivil(ev.dataExecucao)} · {tamanhoLegivel(ev.arquivo.tamanho)}
               </span>
               {ev.conferencia ? (
-                <span className="text-xs text-(--text-subtle)">
+                <span className="text-xs text-(--tinta-2)">
                   {ev.conferencia.decisao === 'aprovada' ? 'Aprovada' : 'Devolvida'} por{' '}
                   {ev.conferencia.conferenteNome} em{' '}
                   {formatarInstanteComHora(ev.conferencia.em, fuso)}
@@ -326,11 +326,11 @@ export function SecaoEvidencia({
           ))}
         </ul>
       ) : !possoEnviar ? (
-        <p className="text-xs text-(--text-subtle)">Nenhuma evidência enviada.</p>
+        <p className="text-xs text-(--tinta-2)">Nenhuma evidência enviada.</p>
       ) : null}
 
       {possoConferir ? (
-        <div className="flex flex-wrap gap-(--space-100)">
+        <div className="flex flex-wrap gap-(--e-2)">
           <Botao
             aparencia="primario"
             iconeAntes="check"

@@ -13,9 +13,8 @@ import { listarModelosDeDocumento } from '@/lib/api/modelos-de-documento'
 import { formatarInstanteComoData } from '@/lib/datas'
 
 const classeCabecalho =
-  'h-10 border-b px-(--space-100) text-left rotulo whitespace-nowrap first:pl-(--space-150) last:pr-(--space-150)'
-const classeCelula =
-  'h-11 border-b px-(--space-100) align-middle first:pl-(--space-150) last:pr-(--space-150)'
+  'h-10 border-b px-(--e-2) text-left rotulo whitespace-nowrap first:pl-(--e-3) last:pr-(--e-3)'
+const classeCelula = 'h-11 border-b px-(--e-2) align-middle first:pl-(--e-3) last:pr-(--e-3)'
 
 export function PaginaModelos() {
   const { atual } = useConsultoria()
@@ -58,9 +57,9 @@ function ListaDeModelos() {
       ) : modelos.data.length === 0 ? (
         <EstadoVazio icone="file-text" titulo="Nenhum modelo" acaoPrincipal={novo} />
       ) : (
-        <div className="flex flex-col gap-(--space-200)">
+        <div className="flex flex-col gap-(--e-4)">
           <div className="flex justify-end">{novo}</div>
-          <div className="overflow-x-auto rounded-(--radius) border bg-(--surface)">
+          <div className="overflow-x-auto rounded-(--raio) border bg-(--folha)">
             <table className="w-full min-w-[520px] border-collapse">
               <thead>
                 <tr>
@@ -71,7 +70,7 @@ function ListaDeModelos() {
               </thead>
               <tbody>
                 {modelos.data.map((modelo) => (
-                  <tr key={modelo.id} className="hover:bg-(--surface-hover)">
+                  <tr key={modelo.id} className="hover:bg-(--toque)">
                     <td className={classeCelula}>
                       <Link to={`/configuracoes/modelos/${modelo.id}`} className="corpo-medio">
                         {modelo.nome}

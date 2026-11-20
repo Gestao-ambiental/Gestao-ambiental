@@ -17,9 +17,8 @@ type Props = Omit<ComponentProps<'input'>, 'id'> & {
 }
 
 /**
- * Campo de texto de 32px com rótulo, ajuda e erro (Field + TextField do design system).
+ * Campo de texto com rótulo em cima, ajuda e erro.
  * O erro fica ligado ao campo por aria-describedby e marca aria-invalid; nunca só pela cor.
- * Referência: docs/design-system/referencia-componentes/forms/TextField.jsx.
  */
 export function CampoTexto({
   rotulo,
@@ -39,9 +38,9 @@ export function CampoTexto({
   const apoio = erro ?? ajuda
 
   return (
-    <div className={cn('flex flex-col gap-(--space-050)', className)}>
-      <div className="flex min-h-5 items-center gap-(--space-100)">
-        <label htmlFor={campoId} className="flex-1 rotulo">
+    <div className={cn('flex flex-col gap-(--e-1)', className)}>
+      <div className="flex min-h-5 items-center gap-(--e-2)">
+        <label htmlFor={campoId} className="flex-1 rotulo text-(--tinta)">
           {rotulo}
         </label>
         {acessorio}
@@ -53,13 +52,13 @@ export function CampoTexto({
           aria-invalid={erro ? true : undefined}
           aria-describedby={apoio ? apoioId : undefined}
           className={cn(
-            'h-(--size-control) w-full rounded-(--radius) border bg-(--surface-input) px-(--space-100) corpo text-(--text) transicao-estado outline-none',
-            'border-(--border-input) border-b-(--border-input-accessible) focus:border-b-(--border-input-active) focus:bg-(--surface-input-focus) focus:shadow-[inset_0_-1px_0_0_var(--border-input-active)]',
-            'disabled:cursor-not-allowed disabled:bg-(--surface-disabled) disabled:text-(--text-disabled)',
-            'read-only:bg-(--surface-disabled) read-only:text-(--text-subtle)',
+            'h-(--controle) max-md:h-(--controle-toque) w-full rounded-(--raio) border bg-(--campo) px-(--e-3) corpo text-(--tinta) transicao-estado outline-none',
+            'border-(--campo-borda) hover:border-(--tinta-3) focus:border-(--campo-borda-ativa) focus:bg-(--campo-foco) focus:shadow-[0_0_0_1px_var(--campo-borda-ativa)]',
+            'disabled:cursor-not-allowed disabled:bg-(--off) disabled:text-(--tinta-off)',
+            'read-only:bg-(--off) read-only:text-(--tinta-2)',
             erro &&
-              'border-(--border-danger) focus:border-(--border-danger) focus:shadow-[0_0_0_1px_var(--border-danger)]',
-            senha && 'pr-(--space-400)',
+              'border-(--atraso) focus:border-(--atraso) focus:shadow-[0_0_0_1px_var(--atraso)]',
+            senha && 'pr-(--e-8)',
           )}
           {...rest}
         />
@@ -69,7 +68,7 @@ export function CampoTexto({
             rotulo={mostrar ? 'Ocultar senha' : 'Mostrar senha'}
             selecionado={mostrar}
             tamanho="compacto"
-            className="absolute right-(--space-050)"
+            className="absolute right-(--e-1)"
             onClick={() => {
               setMostrar((valor) => !valor)
             }}
@@ -79,7 +78,7 @@ export function CampoTexto({
       {apoio ? (
         <span
           id={apoioId}
-          className={cn('text-xs', erro ? 'text-(--text-danger)' : 'text-(--text-subtle)')}
+          className={cn('text-xs', erro ? 'font-[650] text-(--atraso-texto)' : 'text-(--tinta-2)')}
         >
           {apoio}
         </span>

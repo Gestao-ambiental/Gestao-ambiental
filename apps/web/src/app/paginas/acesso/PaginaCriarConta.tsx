@@ -84,9 +84,9 @@ export function PaginaCriarConta() {
 
   if (confirmarEm) {
     return (
-      <div className="flex flex-col gap-(--space-300)">
+      <div className="flex flex-col gap-(--e-6)">
         <CabecalhoAcesso titulo="Confira seu e-mail">
-          Enviamos um link para <strong className="text-(--text)">{confirmarEm}</strong>. Abra-o
+          Enviamos um link para <strong className="text-(--tinta)">{confirmarEm}</strong>. Abra-o
           para ativar a conta e entrar.
         </CabecalhoAcesso>
         <RodapeAcesso>
@@ -99,7 +99,7 @@ export function PaginaCriarConta() {
   const sufixo = para === '/' ? '' : `?para=${encodeURIComponent(para)}`
 
   return (
-    <div className="flex flex-col gap-(--space-300)">
+    <div className="flex flex-col gap-(--e-6)">
       <CabecalhoAcesso titulo="Criar conta">
         É a sua conta pessoal. Depois você cria a consultoria ou entra por convite.
       </CabecalhoAcesso>
@@ -111,7 +111,7 @@ export function PaginaCriarConta() {
       <form
         noValidate
         onSubmit={(evento) => void criar(evento)}
-        className="flex flex-col gap-(--space-200)"
+        className="flex flex-col gap-(--e-4)"
       >
         <CampoTexto
           rotulo="Nome"
@@ -119,7 +119,7 @@ export function PaginaCriarConta() {
           erro={errors.nome?.message}
           {...register('nome')}
         />
-        <div className="flex flex-col gap-(--space-050)">
+        <div className="flex flex-col gap-(--e-1)">
           <CampoTexto
             rotulo="E-mail"
             type="email"

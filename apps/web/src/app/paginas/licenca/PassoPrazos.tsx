@@ -41,8 +41,8 @@ import { MolduraCadastro, RodapeCadastro } from './MolduraCadastro'
 import { useCondicionantes, useSalvamento } from './usar-rascunho'
 
 const classeCabecalho =
-  'h-10 border-b px-(--space-100) text-left rotulo whitespace-nowrap first:pl-(--space-150)'
-const classeCelula = 'h-10 border-b px-(--space-100) align-middle first:pl-(--space-150)'
+  'h-10 border-b px-(--e-2) text-left rotulo whitespace-nowrap first:pl-(--e-3)'
+const classeCelula = 'h-10 border-b px-(--e-2) align-middle first:pl-(--e-3)'
 
 function dataDoMarco(instrumento: Instrumento): DataCivil | null {
   switch (instrumento.marco) {
@@ -189,10 +189,10 @@ function PainelPrazo({
   return (
     <section
       aria-label={`Prazo de ${item.codigo || item.titulo}`}
-      className="flex min-h-0 flex-col border-l bg-(--surface)"
+      className="flex min-h-0 flex-col border-l bg-(--folha)"
     >
-      <div className="flex items-start gap-(--space-100) border-b p-(--space-200)">
-        <div className="flex min-w-0 flex-1 flex-col gap-(--space-050)">
+      <div className="flex items-start gap-(--e-2) border-b p-(--e-4)">
+        <div className="flex min-w-0 flex-1 flex-col gap-(--e-1)">
           <h2 className="titulo-secao">
             Prazo de {[item.codigo, item.titulo].filter(Boolean).join(' · ')}
           </h2>
@@ -206,7 +206,7 @@ function PainelPrazo({
         </div>
         <BotaoIcone icone="x" rotulo="Fechar painel do prazo" onClick={aoFechar} />
       </div>
-      <div className="flex min-h-0 flex-1 flex-col gap-(--space-200) overflow-auto p-(--space-200)">
+      <div className="flex min-h-0 flex-1 flex-col gap-(--e-4) overflow-auto p-(--e-4)">
         {confirmar.isError || desfazer.isError ? (
           <MensagemSecao role="alert" tom="perigo">
             {mensagemDoErro(confirmar.error ?? desfazer.error)}
@@ -216,9 +216,9 @@ function PainelPrazo({
         <fieldset
           disabled={confirmado}
           aria-label="Dados do prazo"
-          className="m-0 flex min-w-0 flex-col gap-(--space-200) border-0 p-0"
+          className="m-0 flex min-w-0 flex-col gap-(--e-4) border-0 p-0"
         >
-          <label htmlFor={fonteId} className="flex flex-col gap-(--space-050)">
+          <label htmlFor={fonteId} className="flex flex-col gap-(--e-1)">
             <span className="rotulo">Fonte ou regra *</span>
             <textarea
               id={fonteId}
@@ -228,17 +228,17 @@ function PainelPrazo({
               onChange={(evento) => {
                 setFonte(evento.target.value)
               }}
-              className="w-full rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) px-(--space-100) py-(--space-100) corpo outline-none focus:border-b-(--border-input-active) focus:shadow-[inset_0_-1px_0_0_var(--border-input-active)]"
+              className="w-full rounded-(--raio) border border-(--campo-borda) border-b-(--campo-borda) bg-(--campo) px-(--e-2) py-(--e-2) corpo outline-none focus:border-b-(--campo-borda-ativa) focus:shadow-[inset_0_-1px_0_0_var(--campo-borda-ativa)]"
             />
-            <span className="text-xs text-(--text-subtle)">
+            <span className="text-xs text-(--tinta-2)">
               Trecho do documento ou norma que define o prazo. Sem base no documento, o prazo fica
               pendente: nada é inventado.
             </span>
           </label>
 
-          <fieldset className="flex flex-col gap-(--space-100)">
-            <legend className="mb-(--space-050) rotulo">Recorrência</legend>
-            <div className="flex flex-wrap gap-(--space-050)">
+          <fieldset className="flex flex-col gap-(--e-2)">
+            <legend className="mb-(--e-1) rotulo">Recorrência</legend>
+            <div className="flex flex-wrap gap-(--e-1)">
               {RECORRENCIAS.map((r) => (
                 <button
                   key={r}
@@ -248,10 +248,10 @@ function PainelPrazo({
                     setRecorrencia(r)
                   }}
                   className={cn(
-                    'h-(--size-control) cursor-pointer rounded-(--radius) border px-(--space-100) corpo transicao-estado',
+                    'h-(--controle) cursor-pointer rounded-(--raio) border px-(--e-2) corpo transicao-estado',
                     recorrencia === r
-                      ? 'border-(--brand-stroke) bg-(--surface-selected) text-(--text-link)'
-                      : 'hover:bg-(--surface-hover)',
+                      ? 'border-(--marca-linha) bg-(--escolha) text-(--link)'
+                      : 'hover:bg-(--toque)',
                   )}
                 >
                   {nomeDaRecorrencia(r)}
@@ -259,15 +259,15 @@ function PainelPrazo({
               ))}
             </div>
             {recorrencia === 'personalizada' ? (
-              <div className="grid grid-cols-[1fr_120px] gap-(--space-150) rounded-(--radius) border p-(--space-150)">
-                <label className="flex flex-col gap-(--space-050)">
+              <div className="grid grid-cols-[1fr_120px] gap-(--e-3) rounded-(--raio) border p-(--e-3)">
+                <label className="flex flex-col gap-(--e-1)">
                   <span className="rotulo">Unidade</span>
                   <select
                     value={unidade}
                     onChange={(evento) => {
                       setUnidade(evento.target.value as UnidadeCiclo)
                     }}
-                    className="h-(--size-control) rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) px-(--space-100) corpo"
+                    className="h-(--controle) rounded-(--raio) border border-(--campo-borda) border-b-(--campo-borda) bg-(--campo) px-(--e-2) corpo"
                   >
                     <option value="mes">Mês</option>
                     <option value="dia">Dia</option>
@@ -287,7 +287,7 @@ function PainelPrazo({
 
           {recorrencia && recorrencia !== 'continua' ? (
             <>
-              <div className="grid gap-(--space-150) sm:grid-cols-2">
+              <div className="grid gap-(--e-3) sm:grid-cols-2">
                 <CampoData
                   rotulo="Data de referência"
                   hoje={hojeNoFuso(new Date(), fuso)}
@@ -309,19 +309,19 @@ function PainelPrazo({
                     setPrimeira(data)
                   }}
                 />
-                <fieldset className="flex flex-col gap-(--space-050)">
+                <fieldset className="flex flex-col gap-(--e-1)">
                   <legend className="rotulo">Contagem</legend>
-                  <label className="inline-flex items-center gap-(--space-100) corpo">
+                  <label className="inline-flex items-center gap-(--e-2) corpo">
                     <input
                       type="radio"
                       name="contagem"
                       checked
                       readOnly
-                      className="size-4 accent-(--brand-stroke)"
+                      className="size-4 accent-(--marca-linha)"
                     />
                     Dias corridos
                   </label>
-                  <label className="inline-flex items-center gap-(--space-100) corpo text-(--text-disabled)">
+                  <label className="inline-flex items-center gap-(--e-2) corpo text-(--tinta-off)">
                     <input
                       type="radio"
                       name="contagem"
@@ -330,39 +330,37 @@ function PainelPrazo({
                     />
                     Dias úteis
                   </label>
-                  <span id="uteis-indisponivel" className="text-xs text-(--text-subtle)">
+                  <span id="uteis-indisponivel" className="text-xs text-(--tinta-2)">
                     Dias úteis entram com o calendário de feriados.
                   </span>
                 </fieldset>
               </div>
 
-              <div className="flex flex-col gap-(--space-100)">
+              <div className="flex flex-col gap-(--e-2)">
                 <span className="rotulo">Simulação · próximas datas</span>
                 {problema ? (
                   <MensagemSecao tom="atencao">{problema}</MensagemSecao>
                 ) : simulacao.length === 0 ? (
-                  <p className="text-xs text-(--text-subtle)">
-                    Informe as datas para ver a simulação.
-                  </p>
+                  <p className="text-xs text-(--tinta-2)">Informe as datas para ver a simulação.</p>
                 ) : (
                   <>
                     <ol
-                      className="grid grid-cols-2 gap-(--space-100) sm:grid-cols-3"
+                      className="grid grid-cols-2 gap-(--e-2) sm:grid-cols-3"
                       aria-label="Próximas datas"
                     >
                       {simulacao.slice(0, 6).map((d) => (
                         <li
                           key={d.ciclo}
-                          className="flex flex-col rounded-(--radius) border px-(--space-100) py-(--space-075)"
+                          className="flex flex-col rounded-(--raio) border px-(--e-2) py-(--e-15)"
                         >
                           <span className="corpo-medio">{formatarDataCivil(d.prazo)}</span>
-                          <span className="text-xs text-(--text-subtle)">
+                          <span className="text-xs text-(--tinta-2)">
                             {nomeDoDiaDaSemana(d.prazo)}
                           </span>
                         </li>
                       ))}
                     </ol>
-                    <span className="text-xs text-(--text-subtle)">
+                    <span className="text-xs text-(--tinta-2)">
                       {simulacao.length === 1
                         ? '1 entrega'
                         : `${String(simulacao.length)} entregas`}
@@ -387,15 +385,15 @@ function PainelPrazo({
         </fieldset>
 
         {item.confirmadoEm && item.confirmadoPor ? (
-          <p className="text-xs text-(--text-subtle)">
+          <p className="text-xs text-(--tinta-2)">
             Confirmado por {item.confirmadoPor} em{' '}
             {formatarInstanteComoData(item.confirmadoEm, fuso)}.
           </p>
         ) : null}
       </div>
-      <div className="flex items-center justify-end gap-(--space-100) border-t p-(--space-150)">
+      <div className="flex items-center justify-end gap-(--e-2) border-t p-(--e-3)">
         {semFonte && !confirmado ? (
-          <span className="flex-1 text-xs text-(--text-subtle)">Informe a fonte ou regra.</span>
+          <span className="flex-1 text-xs text-(--tinta-2)">Informe a fonte ou regra.</span>
         ) : null}
         {confirmado ? (
           <Botao
@@ -510,19 +508,16 @@ function Prazos({
     >
       <div className={cn('grid h-full min-h-0', item && 'lg:grid-cols-[minmax(0,1fr)_480px]')}>
         <div
-          className={cn(
-            'min-h-0 overflow-auto p-(--space-200) md:p-(--space-300)',
-            item && 'hidden lg:block',
-          )}
+          className={cn('min-h-0 overflow-auto p-(--e-4) md:p-(--e-6)', item && 'hidden lg:block')}
         >
-          <div className="mb-(--space-150) flex items-baseline gap-(--space-100)">
+          <div className="mb-(--e-3) flex items-baseline gap-(--e-2)">
             <h2 className="titulo-secao">Prazos das obrigações</h2>
-            <span className="text-xs text-(--text-subtle)">
+            <span className="text-xs text-(--tinta-2)">
               {confirmados} de {obrigacoes.length} confirmados
             </span>
           </div>
           {confirmarRapido.isError ? (
-            <MensagemSecao role="alert" tom="perigo" className="mb-(--space-150)">
+            <MensagemSecao role="alert" tom="perigo" className="mb-(--e-3)">
               {mensagemDoErro(confirmarRapido.error)}
             </MensagemSecao>
           ) : null}
@@ -537,7 +532,7 @@ function Prazos({
               descricao="Só obrigação vira prazo. Condições contínuas e informações gerais não geram entregas."
             />
           ) : (
-            <div className="overflow-x-auto rounded-(--radius-large) border bg-(--surface) shadow-cartao">
+            <div className="overflow-x-auto rounded-(--raio-painel) border bg-(--folha) shadow-cartao">
               <table className="w-full border-collapse corpo">
                 <thead>
                   <tr>
@@ -557,7 +552,7 @@ function Prazos({
                       Confirmado por
                     </th>
                     <th scope="col" className={classeCabecalho}>
-                      <span className="flex items-center justify-between gap-(--space-100)">
+                      <span className="flex items-center justify-between gap-(--e-2)">
                         Situação
                         {prontos.length > 0 ? (
                           <Botao
@@ -586,11 +581,11 @@ function Prazos({
                         setAberto(o.id)
                       }}
                       className={cn(
-                        'cursor-pointer transicao-estado hover:bg-(--neutral-subtle-hover)',
-                        o.id === aberto && 'bg-(--surface-selected) hover:bg-(--surface-selected)',
+                        'cursor-pointer transicao-estado hover:bg-(--toque)',
+                        o.id === aberto && 'bg-(--escolha) hover:bg-(--escolha)',
                       )}
                     >
-                      <td className={`${classeCelula} font-mono text-xs text-(--text-subtle)`}>
+                      <td className={`${classeCelula} font-mono text-xs text-(--tinta-2)`}>
                         {o.codigo}
                       </td>
                       <td className={classeCelula}>
@@ -599,7 +594,7 @@ function Prazos({
                           onClick={() => {
                             setAberto(o.id)
                           }}
-                          className="cursor-pointer text-left text-(--text-link) hover:underline"
+                          className="cursor-pointer text-left text-(--link) hover:underline"
                         >
                           {o.titulo}
                         </button>
@@ -607,7 +602,7 @@ function Prazos({
                       <td className={classeCelula}>
                         {(() => {
                           const dados = o.recorrencia ? o : propostos.get(o.id)?.dados
-                          if (!dados) return <span className="text-(--text-subtle)">Sem base</span>
+                          if (!dados) return <span className="text-(--tinta-2)">Sem base</span>
                           return (
                             <span className="flex flex-col">
                               {descreverRecorrencia({
@@ -616,7 +611,7 @@ function Prazos({
                                 intervalo: dados.intervalo,
                               })}
                               {o.recorrencia ? null : (
-                                <span className="text-xs text-(--text-subtle)">
+                                <span className="text-xs text-(--tinta-2)">
                                   sugerida pela leitura da IA
                                 </span>
                               )}
@@ -627,12 +622,12 @@ function Prazos({
                       <td className={classeCelula}>
                         {(() => {
                           const primeira = o.primeiraData ?? propostos.get(o.id)?.dados.primeiraData
-                          if (!primeira) return <span className="text-(--text-subtle)">—</span>
+                          if (!primeira) return <span className="text-(--tinta-2)">—</span>
                           return (
                             <span className="flex flex-col">
                               {formatarDataCivil(primeira)}
                               {o.primeiraData ? null : (
-                                <span className="text-xs text-(--text-subtle)">sugerida</span>
+                                <span className="text-xs text-(--tinta-2)">sugerida</span>
                               )}
                             </span>
                           )

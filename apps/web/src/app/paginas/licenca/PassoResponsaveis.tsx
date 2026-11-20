@@ -37,8 +37,8 @@ import { MolduraCadastro, RodapeCadastro } from './MolduraCadastro'
 import { useCondicionantes, useSalvamento } from './usar-rascunho'
 
 const classeCabecalho =
-  'h-10 border-b px-(--space-100) text-left rotulo whitespace-nowrap first:pl-(--space-150)'
-const classeCelula = 'h-10 border-b px-(--space-100) align-middle first:pl-(--space-150)'
+  'h-10 border-b px-(--e-2) text-left rotulo whitespace-nowrap first:pl-(--e-3)'
+const classeCelula = 'h-10 border-b px-(--e-2) align-middle first:pl-(--e-3)'
 
 /** Para o seletor: embaixo do nome vai o cargo; sem cargo, o papel. */
 function pessoaDoSeletor(membro: MembroAtivo): PessoaDoSeletor {
@@ -57,7 +57,7 @@ const SEM_PRAZO: Partial<Record<Condicionante['natureza'], string>> = {
 
 function Recorrencia({ item }: { item: Condicionante }) {
   if (item.natureza !== 'obrigacao' || !item.recorrencia) {
-    return <span className="text-(--text-subtle)">{SEM_PRAZO[item.natureza] ?? '—'}</span>
+    return <span className="text-(--tinta-2)">{SEM_PRAZO[item.natureza] ?? '—'}</span>
   }
   return (
     <>
@@ -92,11 +92,11 @@ function ProximoPrazo({
           hoje,
         )
       : null
-  if (!proxima) return <span className="text-(--text-subtle)">Sem prazo</span>
+  if (!proxima) return <span className="text-(--tinta-2)">Sem prazo</span>
   return (
     <span className="flex flex-col">
       <span className="tabular-nums">{formatarDataCivil(proxima.data)}</span>
-      {proxima.vencida ? <span className="text-xs text-(--text-danger)">Vencido</span> : null}
+      {proxima.vencida ? <span className="text-xs text-(--atraso-texto)">Vencido</span> : null}
     </span>
   )
 }
@@ -130,18 +130,15 @@ function Sucesso({ instrumento, ativado }: { instrumento: Instrumento; ativado: 
   const nome = sessao ? usuarioDaSessao(sessao).nome : ''
   const identificacao = [instrumento.tipoSigla, instrumento.numero].filter(Boolean).join(' ')
   return (
-    <div
-      role="status"
-      className="flex flex-col items-center gap-(--space-150) py-(--space-800) text-center"
-    >
-      <Icone nome="circle-check" tamanho={24} className="text-(--text-link)" />
+    <div role="status" className="flex flex-col items-center gap-(--e-3) py-(--e-16) text-center">
+      <Icone nome="circle-check" tamanho={24} className="text-(--link)" />
       <h2 className="titulo-tela">
         Plano ativado.{' '}
         {ativado.total === 1
           ? '1 ocorrência criada.'
           : `${String(ativado.total)} ocorrências criadas.`}
       </h2>
-      <p className="max-w-[480px] corpo text-pretty text-(--text-subtle)">
+      <p className="max-w-[480px] corpo text-pretty text-(--tinta-2)">
         {identificacao} · {instrumento.empreendimentoNome} · {instrumento.unidadeNome}. Ativado por{' '}
         {nome} em {formatarDataCivil(hojeNoFuso(ativado.instante, atual.fuso))} às{' '}
         {ativado.instante.toLocaleTimeString('pt-BR', {
@@ -151,7 +148,7 @@ function Sucesso({ instrumento, ativado }: { instrumento: Instrumento; ativado: 
         })}
         .
       </p>
-      <div className="flex flex-wrap justify-center gap-(--space-100)">
+      <div className="flex flex-wrap justify-center gap-(--e-2)">
         <Botao aparencia="primario" asChild>
           <Link to="/">Ver na visão da equipe</Link>
         </Botao>
@@ -306,19 +303,19 @@ function Responsaveis({
         />
       }
     >
-      <div className="flex flex-col gap-(--space-150)">
+      <div className="flex flex-col gap-(--e-3)">
         {erro ? (
           <MensagemSecao role="alert" tom="perigo">
             {mensagemDoErro(erro)}
           </MensagemSecao>
         ) : null}
-        <div className="flex items-baseline gap-(--space-100)">
+        <div className="flex items-baseline gap-(--e-2)">
           <h2 className="titulo-secao">Condicionantes</h2>
-          <span className="text-xs text-(--text-subtle)">
+          <span className="text-xs text-(--tinta-2)">
             {itens.length === 1 ? '1 condicionante' : `${String(itens.length)} condicionantes`}
           </span>
           {excecoes > 0 ? (
-            <span className="ml-auto text-xs text-(--text-subtle)">
+            <span className="ml-auto text-xs text-(--tinta-2)">
               {excecoes === 1 ? '1 exceção' : `${String(excecoes)} exceções`}
             </span>
           ) : null}
@@ -339,7 +336,7 @@ function Responsaveis({
             descricao="Volte ao passo 3 para cadastrar."
           />
         ) : (
-          <div className="overflow-x-auto rounded-(--radius-large) border bg-(--surface) shadow-cartao">
+          <div className="overflow-x-auto rounded-(--raio-painel) border bg-(--folha) shadow-cartao">
             <table className="w-full border-collapse corpo">
               <thead>
                 <tr>
@@ -356,7 +353,7 @@ function Responsaveis({
                     Próximo prazo
                   </th>
                   <th scope="col" className={classeCabecalho}>
-                    <span className="flex items-center gap-(--space-100)">
+                    <span className="flex items-center gap-(--e-2)">
                       Responsável
                       <Botao
                         tamanho="compacto"
@@ -380,7 +377,7 @@ function Responsaveis({
                   )
                   return (
                     <tr key={item.id}>
-                      <td className={`${classeCelula} font-mono text-xs text-(--text-subtle)`}>
+                      <td className={`${classeCelula} font-mono text-xs text-(--tinta-2)`}>
                         {item.codigo}
                       </td>
                       <td className={classeCelula}>{item.titulo}</td>
@@ -390,8 +387,8 @@ function Responsaveis({
                       <td className={`${classeCelula} whitespace-nowrap`}>
                         <ProximoPrazo item={item} validade={instrumento.validade} hoje={hoje} />
                       </td>
-                      <td className={`${classeCelula} w-[300px] py-(--space-050)`}>
-                        <span className="flex items-center gap-(--space-100)">
+                      <td className={`${classeCelula} w-[300px] py-(--e-1)`}>
+                        <span className="flex items-center gap-(--e-2)">
                           <SeletorPessoa
                             rotulo={`Responsável por ${item.codigo || item.titulo}`}
                             pessoas={pessoas}
@@ -440,7 +437,7 @@ function Responsaveis({
           </>
         }
       >
-        <div className="flex flex-col gap-(--space-050)">
+        <div className="flex flex-col gap-(--e-1)">
           <span className="rotulo">Responsável</span>
           <SeletorPessoa
             rotulo="Responsável"

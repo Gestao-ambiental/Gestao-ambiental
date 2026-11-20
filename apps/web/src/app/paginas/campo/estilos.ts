@@ -3,10 +3,10 @@
 export const classeAlvo = 'h-11 min-h-11'
 
 export const classeCampoBase =
-  'w-full rounded-(--radius) border border-(--border-input) border-b-(--border-input-accessible) bg-(--surface-input) px-(--space-100) corpo text-(--text) outline-none transicao-estado focus:border-b-(--border-input-active) focus:bg-(--surface-input-focus) disabled:cursor-not-allowed disabled:bg-(--surface-disabled) disabled:text-(--text-disabled)'
+  'w-full rounded-(--raio) border border-(--campo-borda) border-b-(--campo-borda) bg-(--campo) px-(--e-2) corpo text-(--tinta) outline-none transicao-estado focus:border-b-(--campo-borda-ativa) focus:bg-(--campo-foco) disabled:cursor-not-allowed disabled:bg-(--off) disabled:text-(--tinta-off)'
 
-export const classeAreaTexto = `${classeCampoBase} min-h-20 py-(--space-075)`
+export const classeAreaTexto = `${classeCampoBase} min-h-20 py-(--e-15)`
 
-export const classeSelect = `${classeCampoBase} h-(--size-control)`
+export const classeSelect = `${classeCampoBase} h-(--controle)`
 
-export const classeCartao = 'rounded-(--radius-large) border bg-(--surface)'
+export const classeCartao = 'rounded-(--raio-painel) border bg-(--folha)'

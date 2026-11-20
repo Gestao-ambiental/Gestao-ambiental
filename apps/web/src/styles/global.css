@@ -1,58 +1,24 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
+@import '@fontsource-variable/overpass/wght.css';
 
 /*
- * Design system do Grama: Fluent 2 (ADR-0015), com tokens em docs/design-system/tokens.
- * fluent.css é gerado do pacote oficial (scripts/gerar-tokens-fluent.mjs); colors, shape,
- * typography e motion apontam os nomes semânticos para ele. Componentes usam só os semânticos
- * (--surface, --text, --brand, --border, --lozenge-*, --space-*, --radius…), nunca --color* do
- * Fluent direto nem hexadecimal. base.css entra na camada base para não vencer as utilitárias.
+ * Design system do Grama: "quadro de partidas" (apps/web/DESIGN.md).
+ * Os tokens vivem em tokens.css; componentes usam só os nomes semânticos (--folha, --tinta,
+ * --acao, --sinal, --atraso-texto, --e-*, --raio…), nunca primitivos nem hexadecimal.
  */
-@import '../../../../docs/design-system/tokens/fluent.css';
-@import '../../../../docs/design-system/tokens/colors.css';
-@import '../../../../docs/design-system/tokens/typography.css';
-@import '../../../../docs/design-system/tokens/spacing.css';
-@import '../../../../docs/design-system/tokens/shape.css';
-@import '../../../../docs/design-system/tokens/motion.css';
-@import '../../../../docs/design-system/tokens/base.css' layer(base);
-
-/*
- * O que a IA propôs é marcado em violeta (Protótipos 10 a 12). Ela não é cor de status do Fluent:
- * existe só aqui, como --ia, e só serve à marca da IA.
- */
-:root {
-  --ia: #8b5cf6;
-  /* Fundo do trecho destacado no PDF; a página é sempre branca, então não muda no tema escuro. */
-  --ia-destaque: color-mix(in srgb, #8b5cf6 28%, transparent);
-}
-[data-theme='dark'] {
-  --ia: #a78bfa;
-}
-
-/*
- * Controles nativos (lista do select, calendário, barras de rolagem) seguem o tema do app, não o
- * do sistema: com o Windows escuro e o app claro, a opção sob o mouse ficava branca no claro.
- * Seletor mais forte que o ":root { color-scheme: light dark }" do CSS do pdf.js.
- */
-:root[data-theme='light'] {
-  color-scheme: light;
-}
-:root[data-theme='dark'] {
-  color-scheme: dark;
-}
+@import './tokens.css';
 
 /* Trecho do PDF de onde a IA tirou o campo (classes do pdf.js: .highlight.appended). */
 .textLayer .highlight.destaque-ia {
   --highlight-bg-color: var(--ia-destaque);
-  /* A marca fica dentro do span do pedaço, que já tem a escala e o tamanho da fonte. */
   transform: none;
   font-size: inherit;
-  /* A camada de texto usa fonte genérica e escorrega alguns pixels do desenho: a folga cobre. */
   margin: -2px -4px;
   padding: 2px 4px;
 }
 
-/* Tema escuro como nos tokens: [data-theme="dark"] no <html> (tema-inicial.js e ProvedorTema). */
+/* Tema escuro: [data-theme="dark"] no <html> (tema-inicial.js e ProvedorTema). */
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
 
 @theme inline {
@@ -63,85 +29,190 @@
   --text-*: initial;
   --font-*: initial;
 
-  --font-sans: var(--font-family);
-  --font-codigo: var(--font-mono);
+  --font-sans: var(--fonte);
+  --font-codigo: var(--fonte-mono);
 
-  /* Escala de typography.css (xs 12 · sm/base 14 corpo · lg 16 seção · xl 20 tela · 2xl 24 contador) */
-  --text-xs: var(--font-size-075);
-  --text-xs--line-height: var(--line-height-075);
-  --text-sm: var(--font-size-100);
-  --text-sm--line-height: var(--line-height-100);
-  --text-base: var(--font-size-100);
-  --text-base--line-height: var(--line-height-100);
-  --text-lg: var(--font-size-200);
-  --text-lg--line-height: var(--line-height-200);
-  --text-xl: var(--font-size-300);
-  --text-xl--line-height: var(--line-height-300);
-  --text-2xl: var(--font-size-400);
-  --text-2xl--line-height: var(--line-height-400);
+  /* xs 12 · sm/base 14 corpo · lg 16 seção · xl 20 painel · 2xl 28 tela */
+  --text-xs: var(--tam-legenda);
+  --text-xs--line-height: var(--entrelinha-legenda);
+  --text-sm: var(--tam-corpo);
+  --text-sm--line-height: var(--entrelinha-corpo);
+  --text-base: var(--tam-corpo);
+  --text-base--line-height: var(--entrelinha-corpo);
+  --text-lg: var(--tam-secao);
+  --text-lg--line-height: var(--entrelinha-secao);
+  --text-xl: var(--tam-painel);
+  --text-xl--line-height: var(--entrelinha-painel);
+  --text-2xl: var(--tam-tela);
+  --text-2xl--line-height: var(--entrelinha-tela);
 
-  /* Fluent 2 (shape.css): 4px em controles, 8px em cartões e diálogos; pílula em selo e avatar. */
-  --radius-xs: var(--radius-sm);
-  --radius-sm: var(--radius);
-  --radius-md: var(--radius);
-  --radius-lg: var(--radius-large);
-  --radius-xl: var(--radius-large);
+  --radius-xs: var(--raio-mini);
+  --radius-sm: var(--raio);
+  --radius-md: var(--raio);
+  --radius-lg: var(--raio-painel);
+  --radius-xl: var(--raio-painel);
 
-  /* Elevação do Fluent: cartão (shadow4), destaque (shadow8), menu (shadow16), diálogo (shadow64). */
-  --shadow-cartao: var(--shadow-card);
-  --shadow-elevado: var(--shadow-raised);
-  --shadow-sobreposicao: var(--shadow-overlay);
-  --shadow-dialogo: var(--shadow-dialog);
+  /* Painéis não têm sombra (regras finas fazem a separação); só o que flutua tem. */
+  --shadow-cartao: none;
+  --shadow-elevado: var(--sombra-flutuante);
+  --shadow-sobreposicao: var(--sombra-flutuante);
+  --shadow-dialogo: var(--sombra-dialogo);
 
-  /* Nomes que os primitivos do shadcn/ui usam, apontando para os semânticos do design system. */
-  --color-background: var(--surface-sunken);
-  --color-foreground: var(--text);
-  --color-card: var(--surface);
-  --color-card-foreground: var(--text);
-  --color-popover: var(--surface-overlay);
-  --color-popover-foreground: var(--text);
-  --color-primary: var(--brand);
-  --color-primary-foreground: var(--text-inverse);
-  --color-secondary: var(--surface-hover);
-  --color-secondary-foreground: var(--text);
-  --color-muted: var(--surface-sunken);
-  --color-muted-foreground: var(--text-subtle);
-  --color-accent: var(--surface-hover);
-  --color-accent-foreground: var(--text);
-  --color-destructive: var(--danger);
-  --color-border: var(--border);
-  --color-input: var(--border-input);
-  --color-ring: var(--border-focus);
+  /* Nomes que os primitivos do shadcn/ui usam. */
+  --color-background: var(--chao);
+  --color-foreground: var(--tinta);
+  --color-card: var(--folha);
+  --color-card-foreground: var(--tinta);
+  --color-popover: var(--flutuante);
+  --color-popover-foreground: var(--tinta);
+  --color-primary: var(--acao);
+  --color-primary-foreground: var(--acao-texto);
+  --color-secondary: var(--toque);
+  --color-secondary-foreground: var(--tinta);
+  --color-muted: var(--chao);
+  --color-muted-foreground: var(--tinta-2);
+  --color-accent: var(--toque);
+  --color-accent-foreground: var(--tinta);
+  --color-destructive: var(--atraso);
+  --color-border: var(--regra);
+  --color-input: var(--campo-borda);
+  --color-ring: var(--foco);
 }
 
-/* Papéis de tipo compostos de typography.css. */
+/* Papéis de tipo. */
 @utility titulo-tela {
-  font: var(--text-screen-title);
+  font: var(--tipo-tela);
+  letter-spacing: var(--tracking-tela);
+  text-wrap: balance;
+}
+@utility titulo-painel {
+  font: var(--tipo-painel);
+  letter-spacing: -0.01em;
 }
 @utility titulo-secao {
-  font: var(--text-section-title);
+  font: var(--tipo-secao);
 }
 @utility corpo {
-  font: var(--text-body);
+  font: var(--tipo-corpo);
 }
 @utility corpo-medio {
-  font: var(--text-body-medium);
+  font: var(--tipo-corpo-forte);
 }
 @utility rotulo {
-  font: var(--text-label);
-  color: var(--text-subtle);
+  font: var(--tipo-rotulo);
+  color: var(--tinta-2);
 }
 @utility rotulo-maiusculo {
-  font: var(--text-uppercase);
-  letter-spacing: var(--tracking-uppercase);
+  font: var(--tipo-coluna);
+  letter-spacing: var(--tracking-coluna);
   text-transform: uppercase;
 }
+/* Número do quadro: tabular, para as colunas alinharem como num painel de horários. */
+@utility numero {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+@utility numero-contagem {
+  font: var(--tipo-contagem);
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: -0.02em;
+}
+@utility numero-grande {
+  font: var(--tipo-numero);
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: -0.03em;
+}
 @utility transicao-estado {
-  transition: var(--transition-state);
+  transition: var(--transicao);
 }
 
 @layer base {
   * {
-    border-color: var(--border);
+    border-color: var(--regra);
   }
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    margin: 0;
+    background: var(--chao);
+    color: var(--tinta);
+    font: var(--tipo-corpo);
+    -webkit-font-smoothing: antialiased;
+  }
+  a {
+    color: var(--link);
+    text-decoration: none;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1.5px;
+  }
+  a:hover {
+    text-decoration: underline;
+  }
+  :focus-visible {
+    outline: var(--borda-foco) solid var(--foco);
+    outline-offset: 2px;
+  }
+  code,
+  kbd,
+  pre {
+    font-family: var(--fonte-mono);
+    font-size: 12px;
+  }
+  ::selection {
+    background: var(--sinal);
+    color: var(--sinal-texto);
+  }
+  input,
+  textarea {
+    caret-color: var(--marca-linha);
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--tinta-3);
+    opacity: 1;
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--regra-forte) transparent;
+  }
+}
+
+@keyframes af-skeleton {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+@keyframes af-overlay-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes af-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+/* Movimento-assinatura: o número do quadro "vira" como plaqueta de painel ao chegar. */
+@keyframes virar-placa {
+  from {
+    opacity: 0;
+    transform: translateY(40%);
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    clip-path: inset(0 0 0 0);
+  }
+}
+@utility virar-placa {
+  animation: virar-placa var(--dur-lenta) var(--saida) both;
 }

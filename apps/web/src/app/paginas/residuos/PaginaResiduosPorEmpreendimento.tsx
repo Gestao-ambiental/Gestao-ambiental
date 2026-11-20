@@ -43,7 +43,7 @@ export function PaginaResiduosPorEmpreendimento() {
       <EstadoErro
         titulo="Não foi possível carregar os empreendimentos."
         aoTentarDeNovo={() => void empreendimentos.refetch()}
-        className="m-(--space-150)"
+        className="m-(--e-3)"
       />
     )
   } else if (lista.length === 0) {
@@ -80,11 +80,11 @@ export function PaginaResiduosPorEmpreendimento() {
           <li key={e.id} className="border-b last:border-b-0">
             <Link
               to={caminhoDosMtrs(e.id)}
-              className="flex flex-wrap items-center gap-x-(--space-150) gap-y-(--space-025) px-(--space-150) py-(--space-100) text-(--text) no-underline transicao-estado hover:bg-(--surface-hover)"
+              className="flex flex-wrap items-center gap-x-(--e-3) gap-y-(--e-05) px-(--e-3) py-(--e-2) text-(--tinta) no-underline transicao-estado hover:bg-(--toque)"
             >
               <span className="min-w-0 flex-1 corpo-medio">{e.nome}</span>
               {e.clienteNome ? <span className="corpo">{e.clienteNome}</span> : null}
-              <Icone nome="chevron-right" className="shrink-0 text-(--icon-subtle)" />
+              <Icone nome="chevron-right" className="shrink-0 text-(--icone-2)" />
             </Link>
           </li>
         ))}
@@ -94,7 +94,7 @@ export function PaginaResiduosPorEmpreendimento() {
 
   return (
     <Pagina titulo="MTRs e CDFs">
-      <label className="flex w-full flex-col gap-(--space-050) sm:w-[320px]">
+      <label className="flex w-full flex-col gap-(--e-1) sm:w-[320px]">
         <span className="rotulo">Buscar empreendimento</span>
         <input
           type="search"
@@ -107,11 +107,11 @@ export function PaginaResiduosPorEmpreendimento() {
       </label>
       <section
         aria-label="Empreendimentos"
-        className="flex min-w-0 flex-col overflow-hidden rounded-(--radius-large) border bg-(--surface) shadow-cartao"
+        className="flex min-w-0 flex-col overflow-hidden rounded-(--raio-painel) border bg-(--folha) shadow-cartao"
       >
         {conteudo}
         {empreendimentos.hasNextPage ? (
-          <div className="border-t px-(--space-150) py-(--space-100)">
+          <div className="border-t px-(--e-3) py-(--e-2)">
             <Botao
               tamanho="compacto"
               disabled={empreendimentos.isFetchingNextPage}

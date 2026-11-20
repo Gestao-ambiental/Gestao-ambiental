@@ -22,9 +22,8 @@ import { ehSemPermissao, mensagemDoErro } from '@/lib/erros'
 import { DialogoCdf } from './DialogoCdf'
 
 const classeCabecalho =
-  'h-10 border-b px-(--space-100) text-left rotulo whitespace-nowrap first:pl-(--space-150)'
-const classeCelula =
-  'h-10 border-b px-(--space-100) py-(--space-050) align-middle first:pl-(--space-150)'
+  'h-10 border-b px-(--e-2) text-left rotulo whitespace-nowrap first:pl-(--e-3)'
+const classeCelula = 'h-10 border-b px-(--e-2) py-(--e-1) align-middle first:pl-(--e-3)'
 
 type Aberto = { tipo: 'editar'; cdf: Cdf } | { tipo: 'excluir'; cdf: Cdf } | null
 
@@ -82,7 +81,7 @@ export function SecaoCdfs({
       <EstadoErro
         titulo="Não foi possível carregar os CDFs."
         aoTentarDeNovo={() => void cdfs.refetch()}
-        className="m-(--space-150)"
+        className="m-(--e-3)"
       />
     )
   } else if (lista.length === 0) {
@@ -129,7 +128,7 @@ export function SecaoCdfs({
                   {cdf.mtrs.length > 0 ? cdf.mtrs.map((m) => m.numero).join(', ') : 'Nenhum'}
                 </td>
                 <td className={`${classeCelula} whitespace-nowrap`}>
-                  <span className="flex justify-end gap-(--space-025)">
+                  <span className="flex justify-end gap-(--e-05)">
                     {cdf.pdf ? (
                       <BotaoIcone
                         icone="file-text"
@@ -170,26 +169,26 @@ export function SecaoCdfs({
   return (
     <section
       aria-labelledby="titulo-secao-cdfs"
-      className="flex min-w-0 flex-col overflow-hidden rounded-(--radius-large) border bg-(--surface) shadow-cartao"
+      className="flex min-w-0 flex-col overflow-hidden rounded-(--raio-painel) border bg-(--folha) shadow-cartao"
     >
       <h2
         id="titulo-secao-cdfs"
-        className="border-b px-(--space-150) py-(--space-100) titulo-secao text-(--text)"
+        className="border-b px-(--e-3) py-(--e-2) titulo-secao text-(--tinta)"
       >
         CDFs
       </h2>
       {aviso ? (
-        <MensagemSecao role="status" tom="sucesso" className="m-(--space-150)">
+        <MensagemSecao role="status" tom="sucesso" className="m-(--e-3)">
           {aviso}
         </MensagemSecao>
       ) : null}
       {abrirPdf.isError ? (
-        <MensagemSecao role="alert" tom="perigo" className="m-(--space-150)">
+        <MensagemSecao role="alert" tom="perigo" className="m-(--e-3)">
           {mensagemDoErro(abrirPdf.error)}
         </MensagemSecao>
       ) : null}
       {conteudo}
-      <div className="flex flex-wrap items-center gap-(--space-100) border-t px-(--space-150) py-(--space-100)">
+      <div className="flex flex-wrap items-center gap-(--e-2) border-t px-(--e-3) py-(--e-2)">
         <p className="flex-1 text-xs">
           {lista.length === 0
             ? 'Nenhum CDF'

@@ -14,9 +14,9 @@ const ABAS = [
 
 export function LayoutResiduos() {
   return (
-    <div className="flex min-w-0 flex-col gap-(--space-200)">
+    <div className="flex min-w-0 flex-col gap-(--e-4)">
       <nav aria-label="Resíduos" className="overflow-x-auto">
-        <ul className="flex min-w-max gap-(--space-200) border-b">
+        <ul className="flex min-w-max gap-(--e-4) border-b">
           {ABAS.map((aba) => (
             <li key={aba.para} className="shrink-0">
               <NavLink
@@ -24,10 +24,10 @@ export function LayoutResiduos() {
                 end={aba.exato}
                 className={({ isActive }) =>
                   cn(
-                    '-mb-px inline-flex border-b-2 pb-(--space-100) whitespace-nowrap no-underline transicao-estado hover:text-(--text)',
+                    '-mb-px inline-flex border-b-2 pb-(--e-2) whitespace-nowrap no-underline transicao-estado hover:text-(--tinta)',
                     isActive
-                      ? 'border-(--brand-stroke) corpo-medio text-(--text-link)'
-                      : 'border-transparent corpo text-(--text-subtle)',
+                      ? 'border-(--marca-linha) corpo-medio text-(--link)'
+                      : 'border-transparent corpo text-(--tinta-2)',
                   )
                 }
               >

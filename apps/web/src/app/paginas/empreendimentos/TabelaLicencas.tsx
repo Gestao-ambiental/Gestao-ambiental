@@ -12,8 +12,8 @@ import type { LicencaNaLista } from '@/lib/api/licencas'
 import { formatarInstanteComoData } from '@/lib/datas'
 
 const classeCabecalho =
-  'h-10 border-b px-(--space-100) text-left rotulo whitespace-nowrap first:pl-(--space-150)'
-const classeCelula = 'h-10 border-b px-(--space-100) align-middle first:pl-(--space-150)'
+  'h-10 border-b px-(--e-2) text-left rotulo whitespace-nowrap first:pl-(--e-3)'
+const classeCelula = 'h-10 border-b px-(--e-2) align-middle first:pl-(--e-3)'
 
 function titulo(licenca: LicencaNaLista): string {
   const sigla = licenca.sigla ?? 'Licença'
@@ -95,7 +95,7 @@ export function TabelaLicencas({
               <button
                 type="button"
                 onClick={aoInverterOrdem}
-                className="inline-flex cursor-pointer items-center gap-(--space-050) rotulo"
+                className="inline-flex cursor-pointer items-center gap-(--e-1) rotulo"
               >
                 Criado em
                 <Icone nome={ordemDecrescente ? 'chevron-down' : 'chevron-up'} tamanho={12} />
@@ -110,12 +110,12 @@ export function TabelaLicencas({
             return (
               <tr key={licenca.id}>
                 <td className={classeCelula}>
-                  <span className="flex items-center gap-(--space-100)">
-                    <Icone nome="file-check" className="text-(--icon)" />
-                    <span className={rascunho ? 'text-(--text-subtle)' : 'corpo-medio'}>
+                  <span className="flex items-center gap-(--e-2)">
+                    <Icone nome="file-check" className="text-(--icone)" />
+                    <span className={rascunho ? 'text-(--tinta-2)' : 'corpo-medio'}>
                       {titulo(licenca)}
                     </span>
-                    <span className="text-xs text-(--text-subtle)">
+                    <span className="text-xs text-(--tinta-2)">
                       {rascunho
                         ? 'cadastro incompleto'
                         : licenca.condicionantes === 1
@@ -128,19 +128,19 @@ export function TabelaLicencas({
                   {licenca.tipoNome ? (
                     <Selo title={licenca.tipoNome}>{licenca.tipoNome}</Selo>
                   ) : (
-                    <span className="text-(--text-subtle)">—</span>
+                    <span className="text-(--tinta-2)">—</span>
                   )}
                 </td>
                 <td className={classeCelula}>
-                  {licenca.orgao ?? <span className="text-(--text-subtle)">Não informado</span>}
+                  {licenca.orgao ?? <span className="text-(--tinta-2)">Não informado</span>}
                 </td>
                 <td className={classeCelula}>{licenca.unidadeNome}</td>
                 <td className={`${classeCelula} whitespace-nowrap`}>
-                  <span className="text-xs text-(--text-subtle)">Validade </span>
+                  <span className="text-xs text-(--tinta-2)">Validade </span>
                   {licenca.validade ? formatarDataCivil(licenca.validade) : '—'}
                 </td>
                 <td className={`${classeCelula} whitespace-nowrap`}>
-                  <span className="flex items-center gap-(--space-150)">
+                  <span className="flex items-center gap-(--e-3)">
                     {rascunho ? (
                       <ProgressoCadastro passo={passo} />
                     ) : (
@@ -158,7 +158,7 @@ export function TabelaLicencas({
                     ) : null}
                   </span>
                 </td>
-                <td className={`${classeCelula} whitespace-nowrap text-(--text-subtle)`}>
+                <td className={`${classeCelula} whitespace-nowrap text-(--tinta-2)`}>
                   {formatarInstanteComoData(licenca.criadoEm, fuso)}
                 </td>
               </tr>

@@ -14,8 +14,8 @@ interface Props {
 }
 
 /**
- * Estado vazio: um ícone cinza de 24px, título factual e uma frase instrutiva. Sem ilustração,
- * sem cor, sem "Ops!". Referência: docs/design-system/referencia-componentes/data/EmptyState.jsx.
+ * Estado vazio: ícone de 32px, título factual e, se preciso, uma frase curta. Sem ilustração e
+ * sem "Ops!".
  */
 export function EstadoVazio({
   titulo,
@@ -29,17 +29,17 @@ export function EstadoVazio({
     <section
       aria-label={titulo}
       className={cn(
-        'flex flex-col items-center justify-center gap-(--space-100) px-(--space-300) py-(--space-600) text-center',
+        'flex flex-col items-center justify-center gap-(--e-2) px-(--e-6) py-(--e-12) text-center',
         className,
       )}
     >
-      <Icone nome={icone} tamanho={24} className="text-(--icon-disabled)" />
-      <h2 className="titulo-secao text-(--text)">{titulo}</h2>
+      <Icone nome={icone} tamanho={32} className="mb-(--e-1) text-(--tinta-3)" />
+      <h2 className="titulo-painel text-(--tinta)">{titulo}</h2>
       {descricao ? (
-        <p className="max-w-[380px] corpo text-pretty text-(--text-subtle)">{descricao}</p>
+        <p className="max-w-[380px] corpo text-pretty text-(--tinta-2)">{descricao}</p>
       ) : null}
       {acaoPrincipal || acaoSecundaria ? (
-        <div className="mt-(--space-100) flex gap-(--space-100)">
+        <div className="mt-(--e-3) flex flex-wrap justify-center gap-(--e-2)">
           {acaoPrincipal}
           {acaoSecundaria}
         </div>

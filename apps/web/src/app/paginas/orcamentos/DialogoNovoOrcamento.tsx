@@ -149,7 +149,7 @@ export function DialogoNovoOrcamento({
           evento.preventDefault()
           void criar()
         }}
-        className="flex flex-col gap-(--space-200)"
+        className="flex flex-col gap-(--e-4)"
       >
         {falha ? (
           <MensagemSecao role="alert" tom="perigo">
@@ -157,8 +157,8 @@ export function DialogoNovoOrcamento({
           </MensagemSecao>
         ) : null}
 
-        <fieldset className="flex flex-col gap-(--space-100)">
-          <legend className="mb-(--space-050) rotulo">Para quem é o orçamento</legend>
+        <fieldset className="flex flex-col gap-(--e-2)">
+          <legend className="mb-(--e-1) rotulo">Para quem é o orçamento</legend>
           <OpcaoRadio
             name="destino-orcamento"
             rotulo="Empreendimento cadastrado"
@@ -182,7 +182,7 @@ export function DialogoNovoOrcamento({
         </fieldset>
 
         {destino === 'empreendimento' ? (
-          <div className="flex flex-col gap-(--space-050)">
+          <div className="flex flex-col gap-(--e-1)">
             <label htmlFor="novo-orcamento-empreendimento" className="rotulo">
               Empreendimento
             </label>
@@ -209,18 +209,18 @@ export function DialogoNovoOrcamento({
               ))}
             </select>
             {erros.empreendimento ? (
-              <p id="novo-orcamento-empreendimento-erro" className="text-xs text-(--text-danger)">
+              <p id="novo-orcamento-empreendimento-erro" className="text-xs text-(--atraso-texto)">
                 {erros.empreendimento}
               </p>
             ) : null}
             {empreendimentos.isSuccess && opcoes.length === 0 ? (
-              <p className="text-xs text-(--text-subtle)">
+              <p className="text-xs text-(--tinta-2)">
                 Nenhum empreendimento cadastrado. Orce como prospecto e cadastre depois.
               </p>
             ) : null}
           </div>
         ) : (
-          <div className="grid gap-(--space-150) sm:grid-cols-2">
+          <div className="grid gap-(--e-3) sm:grid-cols-2">
             <CampoTexto
               rotulo="Nome da empresa ou do cliente"
               required

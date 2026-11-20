@@ -87,17 +87,17 @@ export function PaginaProposta() {
 function Moldura({ id, acoes, children }: { id: string; acoes?: ReactNode; children: ReactNode }) {
   return (
     <div className="min-h-dvh bg-(--background) print:min-h-0 print:bg-[#fff]">
-      <div className="relative z-20 flex flex-wrap items-center justify-between gap-(--space-100) border-b bg-(--surface) px-(--space-200) py-(--space-100) print:hidden">
+      <div className="relative z-20 flex flex-wrap items-center justify-between gap-(--e-2) border-b bg-(--folha) px-(--e-4) py-(--e-2) print:hidden">
         <Link
           to={`/orcamentos/${id}?etapa=parcelas`}
-          className="inline-flex items-center gap-(--space-050) corpo-medio text-(--text-link) no-underline hover:underline"
+          className="inline-flex items-center gap-(--e-1) corpo-medio text-(--link) no-underline hover:underline"
         >
           <Icone nome="arrow-left" />
           Voltar ao orçamento
         </Link>
-        {acoes ? <div className="flex flex-wrap gap-(--space-100)">{acoes}</div> : null}
+        {acoes ? <div className="flex flex-wrap gap-(--e-2)">{acoes}</div> : null}
       </div>
-      <div className="mx-auto flex max-w-[880px] flex-col gap-(--space-200) px-(--space-200) py-(--space-300) print:max-w-none print:p-0">
+      <div className="mx-auto flex max-w-[880px] flex-col gap-(--e-4) px-(--e-4) py-(--e-6) print:max-w-none print:p-0">
         {children}
       </div>
     </div>
@@ -311,7 +311,7 @@ function Proposta({ orcamento: o }: { orcamento: Orcamento }) {
         </MensagemSecao>
       ) : null}
       {avisos.length > 0 ? (
-        <div className="flex flex-col gap-(--space-100) print:hidden">
+        <div className="flex flex-col gap-(--e-2) print:hidden">
           {avisos.map((aviso) => (
             <MensagemSecao key={aviso} tom="atencao">
               {aviso}
@@ -322,18 +322,18 @@ function Proposta({ orcamento: o }: { orcamento: Orcamento }) {
 
       <article
         aria-label={`Proposta ${numero}`}
-        className="proposta-folha relative flex flex-col gap-(--space-250) rounded-(--radius-large) border bg-(--surface) p-(--space-200) corpo text-(--text) shadow-cartao sm:p-(--space-400) print:rounded-none print:border-0 print:p-0 print:shadow-none"
+        className="proposta-folha relative flex flex-col gap-(--e-5) rounded-(--raio-painel) border bg-(--folha) p-(--e-4) corpo text-(--tinta) shadow-cartao sm:p-(--e-8) print:rounded-none print:border-0 print:p-0 print:shadow-none"
       >
         {rascunho ? (
-          <p className="flex flex-wrap items-center gap-x-(--space-100) rounded-(--radius) border-2 border-(--lozenge-warning-border) bg-(--lozenge-warning-bg) px-(--space-150) py-(--space-100) text-(--text) print:border-[#000] print:bg-[#fff]">
-            <Icone nome="triangle-alert" className="text-(--lozenge-warning-text) print:hidden" />
+          <p className="flex flex-wrap items-center gap-x-(--e-2) rounded-(--raio) border-2 border-(--alerta-borda) bg-(--alerta-fundo) px-(--e-3) py-(--e-2) text-(--tinta) print:border-[#000] print:bg-[#fff]">
+            <Icone nome="triangle-alert" className="text-(--alerta-texto) print:hidden" />
             <strong className="tracking-[0.2em]">RASCUNHO</strong>
             <span>Não envie esta versão ao cliente como final.</span>
           </p>
         ) : null}
 
-        <header className="flex flex-wrap items-start justify-between gap-(--space-200)">
-          <div className="flex flex-col gap-(--space-050)">
+        <header className="flex flex-wrap items-start justify-between gap-(--e-4)">
+          <div className="flex flex-col gap-(--e-1)">
             {identidade?.logoUrl ? (
               <img
                 src={identidade.logoUrl}
@@ -343,7 +343,7 @@ function Proposta({ orcamento: o }: { orcamento: Orcamento }) {
             ) : (
               <span className="titulo-secao">{nomeDaConsultoria}</span>
             )}
-            <span className="text-xs tracking-wide text-(--text-subtle) uppercase tabular-nums">
+            <span className="text-xs tracking-wide text-(--tinta-2) uppercase tabular-nums">
               {`Orçamento nº ${numero}`}
             </span>
           </div>
@@ -352,7 +352,7 @@ function Proposta({ orcamento: o }: { orcamento: Orcamento }) {
           </span>
         </header>
 
-        <div className="flex flex-col items-center gap-(--space-050) text-center">
+        <div className="flex flex-col items-center gap-(--e-1) text-center">
           <h2 className="text-xl font-bold tracking-wide uppercase">
             Proposta técnica e comercial
           </h2>
@@ -390,10 +390,10 @@ function Proposta({ orcamento: o }: { orcamento: Orcamento }) {
 
         <section
           aria-label="Valor total"
-          className="proposta-sem-quebra flex flex-wrap items-baseline justify-between gap-x-(--space-200) gap-y-(--space-050) rounded-(--radius) border-2 border-(--proposta-rotulo-fundo) px-(--space-200) py-(--space-150)"
+          className="proposta-sem-quebra flex flex-wrap items-baseline justify-between gap-x-(--e-4) gap-y-(--e-1) rounded-(--raio) border-2 border-(--proposta-rotulo-fundo) px-(--e-4) py-(--e-3)"
         >
           <span className="corpo-medio uppercase">Valor total da proposta</span>
-          <span className="flex flex-wrap items-baseline gap-x-(--space-100)">
+          <span className="flex flex-wrap items-baseline gap-x-(--e-2)">
             <strong className="text-2xl font-bold tabular-nums">
               {pendente ? 'A definir' : `R$ ${formatarCentavos(total)}`}
             </strong>
@@ -441,7 +441,7 @@ function Proposta({ orcamento: o }: { orcamento: Orcamento }) {
               </table>
             </RegiaoDaTabela>
             {o.prazos ? (
-              <p className="text-xs text-(--text-subtle) italic">
+              <p className="text-xs text-(--tinta-2) italic">
                 Os prazos são contados após o recebimento integral das informações e documentos
                 necessários.
               </p>
@@ -481,7 +481,7 @@ function Proposta({ orcamento: o }: { orcamento: Orcamento }) {
                         <td>
                           <span className="block whitespace-pre-line">{i.descricao}</span>
                           {colunas.apoio.map((texto) => (
-                            <span key={texto} className="block text-xs text-(--text-subtle)">
+                            <span key={texto} className="block text-xs text-(--tinta-2)">
                               {texto}
                             </span>
                           ))}
@@ -541,9 +541,9 @@ function Proposta({ orcamento: o }: { orcamento: Orcamento }) {
             <tbody>
               {o.parcelas.length > 0 ? (
                 <LinhaDoQuadro rotulo="Pagamento">
-                  <ol className="flex flex-col gap-(--space-050)">
+                  <ol className="flex flex-col gap-(--e-1)">
                     {o.parcelas.map((p, indice) => (
-                      <li key={p.id} className="flex flex-wrap justify-between gap-x-(--space-100)">
+                      <li key={p.id} className="flex flex-wrap justify-between gap-x-(--e-2)">
                         <span>
                           {`${String(indice + 1)}. ${p.descricao}`}
                           {p.dias > 0 ? `, ${String(p.dias)} dias após` : ''}
@@ -562,9 +562,9 @@ function Proposta({ orcamento: o }: { orcamento: Orcamento }) {
               <LinhaDoQuadro rotulo="Tributos">Inclusos no valor.</LinhaDoQuadro>
               {porContaDoCliente.length > 0 ? (
                 <LinhaDoQuadro rotulo="Por conta do cliente">
-                  <ul className="flex flex-col gap-(--space-050)">
+                  <ul className="flex flex-col gap-(--e-1)">
                     {porContaDoCliente.map((d) => (
-                      <li key={d.id} className="flex flex-wrap justify-between gap-x-(--space-100)">
+                      <li key={d.id} className="flex flex-wrap justify-between gap-x-(--e-2)">
                         <span>
                           <span>{d.descricao}</span>
                           {d.tratamento === 'reembolsavel'
@@ -594,7 +594,7 @@ function Proposta({ orcamento: o }: { orcamento: Orcamento }) {
 
         {temPremissas ? (
           <Secao numero={nPremissas} titulo="Premissas e responsabilidades">
-            <ol className="flex list-decimal flex-col gap-(--space-025) pl-(--space-250)">
+            <ol className="flex list-decimal flex-col gap-(--e-05) pl-(--e-5)">
               {o.premissas.map((texto) => (
                 <li key={`p-${texto}`}>{texto}</li>
               ))}
@@ -610,14 +610,14 @@ function Proposta({ orcamento: o }: { orcamento: Orcamento }) {
             O aceite formal confirma a concordância com o escopo, os valores, as premissas e as
             condições desta proposta.
           </p>
-          <div className="grid gap-(--space-300) pt-(--space-200) sm:grid-cols-2 print:grid-cols-2">
+          <div className="grid gap-(--e-6) pt-(--e-4) sm:grid-cols-2 print:grid-cols-2">
             <Assinatura titulo="Cliente" nome="Nome" />
             <Assinatura titulo={nomeDaConsultoria} nome={nomeDaConsultoria} />
           </div>
         </Secao>
 
-        <footer className="proposta-sem-quebra flex flex-col items-center gap-(--space-025) border-t pt-(--space-150) text-center text-xs text-(--text-subtle)">
-          <span className="corpo-medio text-(--text)">{nomeDaConsultoria}</span>
+        <footer className="proposta-sem-quebra flex flex-col items-center gap-(--e-05) border-t pt-(--e-3) text-center text-xs text-(--tinta-2)">
+          <span className="corpo-medio text-(--tinta)">{nomeDaConsultoria}</span>
           {identidade?.cnpj || identidade?.endereco ? (
             <span>
               {[identidade.cnpj ? `CNPJ ${mascararCnpj(identidade.cnpj)}` : '', identidade.endereco]
@@ -662,7 +662,7 @@ function Secao({
   return (
     <section
       aria-label={titulo}
-      className={`proposta-secao flex flex-col gap-(--space-100)${semQuebra ? ' proposta-sem-quebra' : ''}`}
+      className={`proposta-secao flex flex-col gap-(--e-2)${semQuebra ? ' proposta-sem-quebra' : ''}`}
     >
       <h3 className="titulo-secao">{`${numero} ${titulo}`}</h3>
       {children}
@@ -689,7 +689,7 @@ function RegiaoDaTabela({ rotulo, children }: { rotulo: string; children: ReactN
       // Região que rola no celular: precisa receber foco para rolar pelo teclado (WCAG 2.1.1).
       // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
       tabIndex={0}
-      className="overflow-x-auto rounded-(--radius) focus-visible:outline-2 focus-visible:outline-(--border-focus) print:overflow-visible"
+      className="overflow-x-auto rounded-(--raio) focus-visible:outline-2 focus-visible:outline-(--foco) print:overflow-visible"
     >
       {children}
     </div>
@@ -698,9 +698,9 @@ function RegiaoDaTabela({ rotulo, children }: { rotulo: string; children: ReactN
 
 function Assinatura({ titulo, nome }: { titulo: string; nome: string }) {
   return (
-    <div className="flex flex-col gap-(--space-075)">
+    <div className="flex flex-col gap-(--e-15)">
       <span className="corpo-medio uppercase">{titulo}</span>
-      <span className="mt-(--space-500) border-t border-(--text)" aria-hidden="true" />
+      <span className="mt-(--e-10) border-t border-(--tinta)" aria-hidden="true" />
       <span className="text-center">{nome}</span>
       <span className="text-center">Data: ____/____/________</span>
     </div>

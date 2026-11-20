@@ -91,8 +91,8 @@ export function SituacaoDoOrcamento({
   }
 
   return (
-    <section aria-label="Situação do orçamento" className="flex flex-col gap-(--space-100)">
-      <div className="flex flex-wrap items-center gap-(--space-100)">
+    <section aria-label="Situação do orçamento" className="flex flex-col gap-(--e-2)">
+      <div className="flex flex-wrap items-center gap-(--e-2)">
         <span className="rotulo">Mudar situação</span>
         {proximas.map((alvo) => (
           <Botao
@@ -110,11 +110,11 @@ export function SituacaoDoOrcamento({
         ))}
       </div>
       {orcamento.historicoSituacao.length > 0 ? (
-        <details className="corpo text-(--text-subtle)">
+        <details className="corpo text-(--tinta-2)">
           <summary className="cursor-pointer">
             Histórico da situação ({orcamento.historicoSituacao.length})
           </summary>
-          <ol className="mt-(--space-075) flex flex-col gap-(--space-050)">
+          <ol className="mt-(--e-15) flex flex-col gap-(--e-1)">
             {orcamento.historicoSituacao.map((h) => (
               <li key={`${h.em}-${h.para}`}>
                 {formatarInstanteComoData(h.em, fuso)} · {h.membroNome ?? 'Membro desligado'}:{' '}
@@ -163,9 +163,9 @@ export function SituacaoDoOrcamento({
           </>
         }
       >
-        <div className="flex flex-col gap-(--space-150)">
+        <div className="flex flex-col gap-(--e-3)">
           {para ? <p>{explicacao(orcamento.situacao, para, orcamento.revisao)}</p> : null}
-          <label htmlFor={idObservacao} className="flex flex-col gap-(--space-050)">
+          <label htmlFor={idObservacao} className="flex flex-col gap-(--e-1)">
             <span className="rotulo">Observação (opcional)</span>
             <textarea
               id={idObservacao}
