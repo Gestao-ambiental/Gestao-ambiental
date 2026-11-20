@@ -11,6 +11,15 @@ import { useState } from 'react'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Pagina } from '@/app/paginas/Pagina'
+import { AbasResiduos } from '@/app/paginas/residuos/LayoutResiduos'
+import {
+  Segmentos,
+  TituloDoPainel,
+  classeCabecalho,
+  classeCelula,
+  classeLinha,
+  classePainel,
+} from '@/app/paginas/residuos/quadro'
 import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
 import {
@@ -19,6 +28,7 @@ import {
   type LinhaDoPainelDeResiduos,
 } from '@/lib/api/residuos'
 import { ehSemPermissao } from '@/lib/erros'
+import { cn } from '@/lib/utils'
 
 import {
   ROTULO_DO_AGRUPAMENTO,
@@ -31,16 +41,26 @@ import {
   type Agrupamento,
   type Periodo,
 } from './agrupar'
-import { classeCabecalho, classeCelula, classeSelect, useEmpreendimentoDaUrl } from './comum'
+import { useEmpreendimentoDaUrl } from './comum'
 import { FiltroEmpreendimento, Paginacao } from './PecasDoPainel'
 
-const PERIODOS = Object.keys(ROTULO_DO_PERIODO) as Periodo[]
-const AGRUPAMENTOS = Object.keys(ROTULO_DO_AGRUPAMENTO) as Agrupamento[]
+const PERIODOS = (Object.keys(ROTULO_DO_PERIODO) as Periodo[]).map((p) => ({
+  valor: p,
+  rotulo: ROTULO_DO_PERIODO[p],
+}))
+const AGRUPAMENTOS = (Object.keys(ROTULO_DO_AGRUPAMENTO) as Agrupamento[]).map((a) => ({
+  valor: a,
+  rotulo: ROTULO_DO_AGRUPAMENTO[a],
+}))
 
 function mesCurto(mes: DataCivil): string {
   return rotuloDoMes(mes).replace('/20', '/')
 }
 
+/**
+ * Barras por mês no verde do sistema (--ok-texto: verde-placa no claro, verde claro no escuro),
+ * eixo e rótulos em tinta, valor escrito sobre cada barra (nada depende de passar o mouse).
+ */
 function GraficoMensal({
   linhas,
   meses,
@@ -53,70 +73,69 @@ function GraficoMensal({
   const unidade = escolhida && unidades.includes(escolhida) ? escolhida : (unidades[0] ?? 't')
   const serie = serieMensal(linhas, meses, unidade)
   const maximo = Math.max(...serie.map((s) => s.quantidade), 0)
+  const soma = serie.reduce((total, s) => total + s.quantidade, 0)
   const titulo = `Quantidade por mês (${ROTULO_DA_UNIDADE_DE_RESIDUO[unidade]})`
 
   return (
-    <figure className="flex min-w-0 flex-col gap-(--e-3) rounded-(--raio-painel) border bg-(--folha) p-(--e-4) shadow-cartao">
-      <div className="flex flex-wrap items-end justify-between gap-(--e-2)">
-        <figcaption className="titulo-secao text-(--tinta)">{titulo}</figcaption>
+    <figure className={cn(classePainel, 'gap-(--e-4) p-(--e-4) md:p-(--e-5)')}>
+      <div className="flex flex-wrap items-start justify-between gap-(--e-3)">
+        <div className="flex flex-col gap-(--e-1)">
+          <figcaption className="titulo-secao text-(--tinta)">{titulo}</figcaption>
+          <span className="numero-grande text-(--tinta)">
+            {formatarQuantidade(Math.round(soma * 10_000) / 10_000, unidade)}
+          </span>
+        </div>
         {unidades.length > 1 ? (
-          <label className="flex min-w-0 flex-col gap-(--e-1)">
-            <span className="rotulo">Unidade do gráfico</span>
-            <select
-              className={classeSelect}
-              value={unidade}
-              onChange={(evento) => {
-                setEscolhida(unidades.find((u) => u === evento.target.value) ?? null)
-              }}
-            >
-              {unidades.map((u) => (
-                <option key={u} value={u}>
-                  {ROTULO_DA_UNIDADE_DE_RESIDUO[u]}
-                </option>
-              ))}
-            </select>
-          </label>
+          <Segmentos
+            rotulo="Unidade do gráfico"
+            opcoes={unidades.map((u) => ({ valor: u, rotulo: ROTULO_DA_UNIDADE_DE_RESIDUO[u] }))}
+            valor={unidade}
+            aoMudar={setEscolhida}
+          />
         ) : null}
       </div>
-      <div className="overflow-x-auto">
+      <div className="-mx-(--e-4) min-w-0 overflow-x-auto px-(--e-4) md:mx-0 md:px-0">
         <div className="relative min-w-max">
+          <div
+            aria-hidden="true"
+            className="absolute inset-x-0 top-(--e-6) border-t border-dashed border-(--regra)"
+          />
           <span
             aria-hidden="true"
-            className="absolute top-0 left-0 text-xs text-(--tinta) tabular-nums"
+            className="absolute top-(--e-2) left-0 text-xs font-[650] text-(--tinta) numero"
           >
             {formatarQuantidade(maximo, unidade)}
           </span>
           <ol
             aria-label={titulo}
-            className="flex h-44 items-end gap-(--e-1) border-b border-(--regra-forte) pt-(--e-6)"
+            className="flex h-52 items-end gap-(--e-1) border-b border-(--tinta-3) pt-(--e-12)"
           >
             {serie.map(({ mes, quantidade }) => {
               const altura = maximo > 0 ? (quantidade / maximo) * 100 : 0
               const valor = formatarQuantidade(quantidade, unidade)
               return (
-                <li
-                  key={mes}
-                  className="group relative flex h-full w-11 flex-col items-center justify-end"
-                >
+                <li key={mes} className="flex h-full w-12 flex-col items-center justify-end">
                   <span className="sr-only">{`${rotuloDoMes(mes)}: ${valor}`}</span>
+                  {quantidade > 0 ? (
+                    <span
+                      aria-hidden="true"
+                      className="pb-(--e-1) text-[11px] font-[700] whitespace-nowrap text-(--tinta) numero"
+                    >
+                      {valor}
+                    </span>
+                  ) : null}
                   <span
                     aria-hidden="true"
-                    className="pointer-events-none absolute -top-(--e-6) z-10 hidden rounded-(--raio) border bg-(--folha) px-(--e-1) text-xs whitespace-nowrap text-(--tinta) shadow-cartao group-hover:block"
-                  >
-                    {valor}
-                  </span>
-                  <span
-                    aria-hidden="true"
-                    className="w-7 rounded-t-[4px] bg-(--marca-linha)"
+                    className="w-8 rounded-t-(--raio-mini) bg-(--ok-texto)"
                     style={{ height: quantidade > 0 ? `max(${String(altura)}%, 2px)` : 0 }}
                   />
                 </li>
               )
             })}
           </ol>
-          <div aria-hidden="true" className="flex gap-(--e-1) pt-(--e-1)">
+          <div aria-hidden="true" className="flex gap-(--e-1) pt-(--e-2)">
             {meses.map((mes) => (
-              <span key={mes} className="w-11 text-center text-xs text-(--tinta)">
+              <span key={mes} className="w-12 text-center text-xs text-(--tinta) numero">
                 {mesCurto(mes)}
               </span>
             ))}
@@ -130,9 +149,11 @@ function GraficoMensal({
 function TabelaAgrupada({
   linhas,
   por,
+  aoMudarPor,
 }: {
   linhas: readonly LinhaDoPainelDeResiduos[]
   por: Agrupamento
+  aoMudarPor: (por: Agrupamento) => void
 }) {
   const [pagina, setPagina] = useState(0)
   const grupos = agrupar(linhas, por)
@@ -141,7 +162,23 @@ function TabelaAgrupada({
   const mostraMtrs = por === 'residuo'
 
   return (
-    <div className="min-w-0 rounded-(--raio-painel) border bg-(--folha) shadow-cartao">
+    <section aria-labelledby="titulo-soma-residuos" className={classePainel}>
+      <TituloDoPainel
+        id="titulo-soma-residuos"
+        acoes={
+          <Segmentos
+            rotulo="Somar por"
+            opcoes={AGRUPAMENTOS}
+            valor={por}
+            aoMudar={(novo) => {
+              setPagina(0)
+              aoMudarPor(novo)
+            }}
+          />
+        }
+      >
+        Total por {ROTULO_DO_AGRUPAMENTO[por].toLowerCase()}
+      </TituloDoPainel>
       <div className="overflow-x-auto">
         <table className="w-full border-collapse corpo">
           <caption className="sr-only">{`Quantidade por ${ROTULO_DO_AGRUPAMENTO[por].toLowerCase()}`}</caption>
@@ -162,15 +199,15 @@ function TabelaAgrupada({
           </thead>
           <tbody>
             {visiveis.map((g) => (
-              <tr key={g.chave}>
-                <th scope="row" className={`${classeCelula} text-left font-normal`}>
+              <tr key={g.chave} className={classeLinha}>
+                <th scope="row" className={`${classeCelula} text-left font-normal numero`}>
                   {g.rotulo}
                 </th>
-                <td className={`${classeCelula} text-right whitespace-nowrap tabular-nums`}>
+                <td className={`${classeCelula} text-right whitespace-nowrap corpo-medio numero`}>
                   {formatarQuantidade(g.quantidade, g.unidade)}
                 </td>
                 {mostraMtrs ? (
-                  <td className={`${classeCelula} text-right tabular-nums`}>{g.mtrs}</td>
+                  <td className={`${classeCelula} text-right numero`}>{g.mtrs}</td>
                 ) : null}
               </tr>
             ))}
@@ -183,7 +220,7 @@ function TabelaAgrupada({
         total={grupos.length}
         aoMudar={setPagina}
       />
-    </div>
+    </section>
   )
 }
 
@@ -223,6 +260,7 @@ export function PaginaPainelResiduos() {
       <EstadoVazio
         icone="chart-column"
         titulo="Nenhum MTR no período"
+        className={classePainel}
         acaoPrincipal={
           empreendimentoId || periodo !== 'ultimos_12_meses' ? (
             <Botao
@@ -242,9 +280,10 @@ export function PaginaPainelResiduos() {
       <>
         <GraficoMensal linhas={consulta.data} meses={mesesDoIntervalo(de, ate)} />
         <TabelaAgrupada
-          key={`${por}:${de}:${empreendimentoId ?? ''}`}
+          key={`${de}:${empreendimentoId ?? ''}`}
           linhas={consulta.data}
           por={por}
+          aoMudarPor={setPor}
         />
       </>
     )
@@ -252,45 +291,17 @@ export function PaginaPainelResiduos() {
 
   return (
     <Pagina titulo="Painel de resíduos">
-      <div className="flex flex-col gap-(--e-3) sm:flex-row sm:flex-wrap sm:items-end">
+      <AbasResiduos />
+      <div className="flex flex-wrap items-center gap-(--e-2)">
         <FiltroEmpreendimento
           consultoriaId={cid}
           valor={empreendimentoId}
           aoMudar={mudarEmpreendimento}
           rotuloTodos="Toda a consultoria"
         />
-        <label className="flex min-w-0 flex-col gap-(--e-1)">
-          <span className="rotulo">Período</span>
-          <select
-            className={classeSelect}
-            value={periodo}
-            onChange={(evento) => {
-              setPeriodo(PERIODOS.find((p) => p === evento.target.value) ?? 'ultimos_12_meses')
-            }}
-          >
-            {PERIODOS.map((p) => (
-              <option key={p} value={p}>
-                {ROTULO_DO_PERIODO[p]}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex min-w-0 flex-col gap-(--e-1)">
-          <span className="rotulo">Somar por</span>
-          <select
-            className={classeSelect}
-            value={por}
-            onChange={(evento) => {
-              setPor(AGRUPAMENTOS.find((a) => a === evento.target.value) ?? 'residuo')
-            }}
-          >
-            {AGRUPAMENTOS.map((a) => (
-              <option key={a} value={a}>
-                {ROTULO_DO_AGRUPAMENTO[a]}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="max-w-full overflow-x-auto">
+          <Segmentos rotulo="Período" opcoes={PERIODOS} valor={periodo} aoMudar={setPeriodo} />
+        </div>
       </div>
       {conteudo}
     </Pagina>

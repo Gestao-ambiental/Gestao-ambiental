@@ -29,5 +29,10 @@ export function cnpjDoCampo(texto: string): string | null {
   return situacaoDoCnpj(texto) === 'vazio' ? null : normalizarCnpj(texto)
 }
 
-export const classeControle =
-  'h-(--controle) w-full rounded-(--raio) border border-(--campo-borda) border-b-(--campo-borda) bg-(--campo) px-(--e-2) corpo text-(--tinta) outline-none transicao-estado focus:border-b-(--campo-borda-ativa) focus:bg-(--campo-foco) focus:shadow-[inset_0_-1px_0_0_var(--campo-borda-ativa)]'
+/** `?registrar=cdf` na lista de MTRs abre o registro do CDF (link da conferência). */
+export const PARAMETRO_REGISTRAR = 'registrar'
+
+/** Lista de MTRs do empreendimento já com o registro do CDF aberto. */
+export function caminhoParaRegistrarCdf(empreendimentoId: string): string {
+  return `${caminhoDosMtrs(empreendimentoId)}?${PARAMETRO_REGISTRAR}=cdf`
+}

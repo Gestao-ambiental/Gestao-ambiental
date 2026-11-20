@@ -5,12 +5,11 @@ import { useId, useRef, type ComponentProps, type ReactNode } from 'react'
 
 import { Botao } from '@/components/ui/botao'
 import { Icone } from '@/components/ui/icone'
+import { classeAreaTexto, classeCampo } from '@/components/ui/estilos-campo'
 import { Selo, type TomSelo } from '@/components/ui/selo'
 import { conferirPdf, type ProblemaDoPdf } from '@/lib/api/licencas'
 import type { ArquivoPdf } from '@/lib/api/residuos'
 import { cn } from '@/lib/utils'
-
-import { classeControle } from './comum'
 
 const TOM_DA_SITUACAO: Record<SituacaoMtr, TomSelo> = {
   salvo: 'andamento',
@@ -41,7 +40,7 @@ export function CampoSelecao({ rotulo, erro, className, children, ...rest }: Pro
         id={id}
         aria-invalid={erro ? true : undefined}
         aria-describedby={erro ? `${id}-erro` : undefined}
-        className={cn(classeControle, erro && 'border-(--atraso)')}
+        className={classeCampo}
         {...rest}
       >
         {children}
@@ -77,7 +76,7 @@ export function CampoObservacao({
         onChange={(evento) => {
           aoMudar(evento.target.value)
         }}
-        className={cn(classeControle, 'h-auto min-h-16 py-(--e-15)')}
+        className={classeAreaTexto}
       />
     </div>
   )

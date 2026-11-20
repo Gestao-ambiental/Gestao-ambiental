@@ -3,9 +3,8 @@
 import { useQuery } from '@tanstack/react-query'
 
 import { BotaoIcone } from '@/components/ui/botao-icone'
+import { classeSelecao } from '@/components/ui/estilos-campo'
 import { listarEmpreendimentos } from '@/lib/api/empreendimentos'
-
-import { classeSelect } from './comum'
 
 export function FiltroEmpreendimento({
   consultoriaId,
@@ -23,10 +22,10 @@ export function FiltroEmpreendimento({
     queryFn: () => listarEmpreendimentos(consultoriaId, '', 0),
   })
   return (
-    <label className="flex min-w-0 flex-col gap-(--e-1)">
-      <span className="rotulo">Empreendimento</span>
+    <label className="min-w-0">
+      <span className="sr-only">Empreendimento</span>
       <select
-        className={classeSelect}
+        className={classeSelecao}
         value={valor ?? ''}
         onChange={(evento) => {
           aoMudar(evento.target.value || null)
@@ -43,6 +42,7 @@ export function FiltroEmpreendimento({
   )
 }
 
+/** Rodapé "1–20 de 54" com anterior e próxima; some quando cabe numa página. */
 export function Paginacao({
   pagina,
   tamanho,
@@ -58,8 +58,8 @@ export function Paginacao({
   const inicio = pagina * tamanho
   const fim = Math.min(total, inicio + tamanho)
   return (
-    <div className="flex items-center gap-(--e-2) border-t px-(--e-3) py-(--e-2)">
-      <span className="flex-1 corpo text-(--tinta)" aria-live="polite">
+    <div className="flex items-center gap-(--e-2) border-t px-(--e-4) py-(--e-2)">
+      <span className="flex-1 rotulo numero" aria-live="polite">
         {inicio + 1}–{fim} de {total}
       </span>
       <BotaoIcone

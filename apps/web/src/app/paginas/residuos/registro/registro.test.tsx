@@ -63,13 +63,13 @@ const linhaDoMtr = {
   total: 1,
 }
 
-function renderizar(elemento: ReactNode) {
+function renderizar(elemento: ReactNode, caminho = '/empreendimentos/e1/residuos') {
   const router = createMemoryRouter(
     [
       { path: '/empreendimentos/:id/residuos', element: elemento },
       { path: '/empreendimentos/:id', element: elemento },
     ],
-    { initialEntries: ['/empreendimentos/e1/residuos'] },
+    { initialEntries: [caminho] },
   )
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(
@@ -264,6 +264,24 @@ describe('Registro de MTR e CDF', () => {
       p_periodo_fim: '2026-10-31',
       p_mtrs: [{ mtr_id: 'm1', itens: [{ mtr_item_id: 'i1', quantidade: 1.4, unidade: 't' }] }],
     })
+  })
+
+  it('vindo da conferência (?registrar=cdf), abre o registro do CDF e limpa a URL ao fechar', async () => {
+    falso.reiniciar({
+      tabelas: { empreendimento: [empreendimento] },
+      rpc: { listar_mtrs: { data: [linhaDoMtr] } },
+    })
+    const usuario = userEvent.setup()
+    const router = renderizar(<PaginaMtrs />, '/empreendimentos/e1/residuos?registrar=cdf')
+
+    const dialogo = await screen.findByRole('dialog', { name: 'Registrar CDF' })
+    expect(await within(dialogo).findByLabelText('MTR 2610001 · 05/10/2026')).toBeInTheDocument()
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Cancelar' }))
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
+    expect(router.state.location.search).toBe('')
   })
 
   it('mostra os últimos MTRs na seção do empreendimento, com link para a lista', async () => {

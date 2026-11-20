@@ -12,13 +12,21 @@ import {
   proximosPrazosDaObrigacaoResiduo,
 } from '@gestao-ambiental/domain'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useId, useState } from 'react'
+import { useState } from 'react'
 import { useSearchParams } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Pagina } from '@/app/paginas/Pagina'
+import { AbasResiduos } from '@/app/paginas/residuos/LayoutResiduos'
+import {
+  classeCabecalho,
+  classeCelula,
+  classeLinha,
+  classePainel,
+} from '@/app/paginas/residuos/quadro'
 import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
+import { classeSelecao } from '@/components/ui/estilos-campo'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { Selo } from '@/components/ui/selo'
 import { listarEmpreendimentos } from '@/lib/api/empreendimentos'
@@ -28,14 +36,10 @@ import {
   type ObrigacaoDeResiduo,
 } from '@/lib/api/residuos'
 import { ehSemPermissao, mensagemDoErro } from '@/lib/erros'
+import { cn } from '@/lib/utils'
 
 import { ProximosPrazosDeResiduos } from './ProximosPrazosDeResiduos'
 import { CHAVE_PRAZOS_RESIDUO } from './prazos-de-residuos'
-
-const classeSelect =
-  'h-(--controle) w-full max-w-[320px] rounded-(--raio) border border-(--campo-borda) border-b-(--campo-borda) bg-(--campo) px-(--e-2) corpo text-(--tinta) outline-none focus:border-b-(--campo-borda-ativa) focus:shadow-[inset_0_-1px_0_0_var(--campo-borda-ativa)]'
-
-const classeCelula = 'h-10 px-(--e-2) whitespace-nowrap first:pl-(--e-3)'
 
 function TabelaDeObrigacoes({ empreendimentoId }: { empreendimentoId: string }) {
   const { atual } = useConsultoria()
@@ -85,7 +89,7 @@ function TabelaDeObrigacoes({ empreendimentoId }: { empreendimentoId: string }) 
           {erro}
         </MensagemSecao>
       ) : null}
-      <div className="overflow-x-auto rounded-(--raio-painel) border bg-(--folha) shadow-cartao">
+      <div className={cn(classePainel, 'overflow-x-auto')}>
         <table className="w-full border-collapse corpo" aria-label="Obrigações de resíduos">
           <thead>
             <tr>
@@ -94,7 +98,7 @@ function TabelaDeObrigacoes({ empreendimentoId }: { empreendimentoId: string }) 
                   <th
                     key={coluna}
                     scope="col"
-                    className="h-10 border-b px-(--e-2) text-left whitespace-nowrap rotulo first:pl-(--e-3)"
+                    className={cn(classeCabecalho, coluna === 'Ação' && 'text-right')}
                   >
                     {coluna}
                   </th>
@@ -108,33 +112,37 @@ function TabelaDeObrigacoes({ empreendimentoId }: { empreendimentoId: string }) 
               const proximo = o.ativa ? proximosPrazosDaObrigacaoResiduo(o.tipo, hoje, 1)[0] : null
               const salvando = definir.isPending && definir.variables.tipo === o.tipo
               return (
-                <tr key={o.tipo} className="border-b last:border-b-0">
-                  <th scope="row" className={`${classeCelula} text-left font-normal`}>
+                <tr key={o.tipo} className={classeLinha}>
+                  <th scope="row" className={`${classeCelula} text-left corpo-medio`}>
                     {rotulo}
                   </th>
-                  <td className={classeCelula}>
+                  <td className={`${classeCelula} whitespace-nowrap`}>
                     <Selo tom={o.ativa ? 'sucesso' : 'padrao'}>
                       {o.ativa ? 'Ligada' : 'Desligada'}
                     </Selo>
                   </td>
-                  <td className={classeCelula}>
+                  <td className={`${classeCelula} whitespace-nowrap`}>
                     {proximo ? (
                       <>
-                        <span className="corpo-medio">{formatarDataCivil(proximo.prazo)}</span>
-                        <span> · {proximo.referencia}</span>
+                        <span className="corpo-medio numero">
+                          {formatarDataCivil(proximo.prazo)}
+                        </span>
+                        <span className="text-(--tinta-2)"> · {proximo.referencia}</span>
                       </>
                     ) : (
                       <>
-                        <span aria-hidden="true">—</span>
+                        <span aria-hidden="true" className="text-(--tinta-3)">
+                          —
+                        </span>
                         <span className="sr-only">Sem prazo</span>
                       </>
                     )}
                   </td>
                   {ehGestao ? (
-                    <td className={classeCelula}>
+                    <td className={`${classeCelula} w-px whitespace-nowrap text-right`}>
                       <Botao
                         tamanho="compacto"
-                        aparencia={o.ativa ? 'padrao' : 'primario'}
+                        aparencia={o.ativa ? 'sutil' : 'padrao'}
                         disabled={definir.isPending}
                         aria-label={`${o.ativa ? 'Desligar' : 'Ligar'} ${rotulo}`}
                         onClick={() => {
@@ -164,7 +172,6 @@ export function PaginaObrigacoesResiduos() {
   const cid = atual.consultoriaId
   const [parametros, setParametros] = useSearchParams()
   const empreendimentoId = parametros.get('empreendimento')
-  const idSelect = useId()
 
   // Primeira página de empreendimentos (50), como os outros filtros por empreendimento do app.
   const empreendimentos = useQuery({
@@ -190,13 +197,10 @@ export function PaginaObrigacoesResiduos() {
     const escolhido = empreendimentos.data.itens.find((e) => e.id === empreendimentoId) ?? null
     corpo = (
       <>
-        <div className="flex flex-col gap-(--e-1)">
-          <label htmlFor={idSelect} className="rotulo text-(--tinta)">
-            Empreendimento
-          </label>
+        <label className="w-fit">
+          <span className="sr-only">Empreendimento</span>
           <select
-            id={idSelect}
-            className={classeSelect}
+            className={classeSelecao}
             value={escolhido?.id ?? ''}
             onChange={(evento) => {
               const valor = evento.target.value
@@ -210,10 +214,10 @@ export function PaginaObrigacoesResiduos() {
               </option>
             ))}
           </select>
-        </div>
+        </label>
 
         {escolhido ? (
-          <section aria-label="Obrigações" className="flex flex-col gap-(--e-2)">
+          <section aria-label="Obrigações" className="flex flex-col gap-(--e-3)">
             <h2 className="titulo-secao text-(--tinta)">Obrigações de {escolhido.nome}</h2>
             <TabelaDeObrigacoes key={escolhido.id} empreendimentoId={escolhido.id} />
           </section>
@@ -230,9 +234,9 @@ export function PaginaObrigacoesResiduos() {
   }
 
   return (
-    <div className="flex flex-col gap-(--e-4)">
-      <Pagina titulo="Prazos de resíduos">{null}</Pagina>
+    <Pagina titulo="Prazos de resíduos">
+      <AbasResiduos />
       {corpo}
-    </div>
+    </Pagina>
   )
 }

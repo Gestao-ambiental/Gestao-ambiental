@@ -18,12 +18,31 @@ import {
   type Cdf,
 } from '@/lib/api/residuos'
 import { ehSemPermissao, mensagemDoErro } from '@/lib/erros'
+import { cn } from '@/lib/utils'
 
+import {
+  RodapeDoQuadro,
+  TituloDoPainel,
+  classeCabecalho,
+  classeCelula,
+  classeItemCelular,
+  classeLinha,
+  classePainel,
+  classeRegiao,
+} from '../quadro'
 import { DialogoCdf } from './DialogoCdf'
 
-const classeCabecalho =
-  'h-10 border-b px-(--e-2) text-left rotulo whitespace-nowrap first:pl-(--e-3)'
-const classeCelula = 'h-10 border-b px-(--e-2) py-(--e-1) align-middle first:pl-(--e-3)'
+function periodo(cdf: Cdf): string {
+  return `${formatarDataCivil(cdf.periodoInicio)} a ${formatarDataCivil(cdf.periodoFim)}`
+}
+
+function MtrsDoCdf({ cdf }: { cdf: Cdf }) {
+  return cdf.mtrs.length > 0 ? (
+    <span className="numero">{cdf.mtrs.map((m) => m.numero).join(', ')}</span>
+  ) : (
+    <span className="text-(--tinta-2)">Nenhum</span>
+  )
+}
 
 type Aberto = { tipo: 'editar'; cdf: Cdf } | { tipo: 'excluir'; cdf: Cdf } | null
 
@@ -71,6 +90,40 @@ export function SecaoCdfs({
   const lista = cdfs.data?.pages.flatMap((p) => p.itens) ?? []
   const total = cdfs.data?.pages[0]?.total ?? 0
 
+  function acoes(cdf: Cdf) {
+    return (
+      <span className="flex shrink-0 justify-end gap-(--e-05)">
+        {cdf.pdf ? (
+          <BotaoIcone
+            icone="file-text"
+            rotulo={`Abrir PDF do CDF ${cdf.numero}`}
+            disabled={abrirPdf.isPending}
+            onClick={() => {
+              if (cdf.pdf) abrirPdf.mutate(cdf.pdf.caminho)
+            }}
+          />
+        ) : null}
+        <BotaoIcone
+          icone="pencil"
+          rotulo={`Editar CDF ${cdf.numero}`}
+          onClick={() => {
+            setAviso(null)
+            setAberto({ tipo: 'editar', cdf })
+          }}
+        />
+        <BotaoIcone
+          icone="trash-2"
+          rotulo={`Excluir CDF ${cdf.numero}`}
+          onClick={() => {
+            setAviso(null)
+            excluir.reset()
+            setAberto({ tipo: 'excluir', cdf })
+          }}
+        />
+      </span>
+    )
+  }
+
   let conteudo
   if (cdfs.isPending) {
     conteudo = <Carregando rotulo="Carregando CDFs" linhas={2} className="border-0" />
@@ -88,95 +141,84 @@ export function SecaoCdfs({
     conteudo = <EstadoVazio icone="file-check" titulo="Nenhum CDF registrado" />
   } else {
     conteudo = (
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse corpo">
-          <caption className="sr-only">CDFs do empreendimento</caption>
-          <thead>
-            <tr>
-              <th scope="col" className={classeCabecalho}>
-                CDF
-              </th>
-              <th scope="col" className={classeCabecalho}>
-                Emissão
-              </th>
-              <th scope="col" className={classeCabecalho}>
-                Destinador
-              </th>
-              <th scope="col" className={classeCabecalho}>
-                Período
-              </th>
-              <th scope="col" className={classeCabecalho}>
-                MTRs
-              </th>
-              <th scope="col" className={classeCabecalho}>
-                <span className="sr-only">Ações</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {lista.map((cdf) => (
-              <tr key={cdf.id}>
-                <td className={`${classeCelula} whitespace-nowrap corpo-medio`}>{cdf.numero}</td>
-                <td className={`${classeCelula} whitespace-nowrap`}>
-                  {formatarDataCivil(cdf.emitidoEm)}
-                </td>
-                <td className={classeCelula}>{cdf.destinadorNome}</td>
-                <td className={`${classeCelula} whitespace-nowrap`}>
-                  {formatarDataCivil(cdf.periodoInicio)} a {formatarDataCivil(cdf.periodoFim)}
-                </td>
-                <td className={`${classeCelula} min-w-[160px]`}>
-                  {cdf.mtrs.length > 0 ? cdf.mtrs.map((m) => m.numero).join(', ') : 'Nenhum'}
-                </td>
-                <td className={`${classeCelula} whitespace-nowrap`}>
-                  <span className="flex justify-end gap-(--e-05)">
-                    {cdf.pdf ? (
-                      <BotaoIcone
-                        icone="file-text"
-                        rotulo={`Abrir PDF do CDF ${cdf.numero}`}
-                        disabled={abrirPdf.isPending}
-                        onClick={() => {
-                          if (cdf.pdf) abrirPdf.mutate(cdf.pdf.caminho)
-                        }}
-                      />
-                    ) : null}
-                    <BotaoIcone
-                      icone="pencil"
-                      rotulo={`Editar CDF ${cdf.numero}`}
-                      onClick={() => {
-                        setAviso(null)
-                        setAberto({ tipo: 'editar', cdf })
-                      }}
-                    />
-                    <BotaoIcone
-                      icone="trash-2"
-                      rotulo={`Excluir CDF ${cdf.numero}`}
-                      onClick={() => {
-                        setAviso(null)
-                        excluir.reset()
-                        setAberto({ tipo: 'excluir', cdf })
-                      }}
-                    />
-                  </span>
-                </td>
+      <>
+        <div className={cn(classeRegiao, 'hidden md:block')}>
+          <table className="w-full border-collapse corpo">
+            <caption className="sr-only">CDFs do empreendimento</caption>
+            <thead className="sticky top-0 z-10 bg-(--folha)">
+              <tr>
+                <th scope="col" className={classeCabecalho}>
+                  CDF
+                </th>
+                <th scope="col" className={classeCabecalho}>
+                  Emissão
+                </th>
+                <th scope="col" className={classeCabecalho}>
+                  Destinador
+                </th>
+                <th scope="col" className={classeCabecalho}>
+                  Período
+                </th>
+                <th scope="col" className={classeCabecalho}>
+                  MTRs
+                </th>
+                <th scope="col" className={classeCabecalho}>
+                  <span className="sr-only">Ações</span>
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {lista.map((cdf) => (
+                <tr key={cdf.id} className={classeLinha}>
+                  <td className={`${classeCelula} whitespace-nowrap corpo-medio numero`}>
+                    {cdf.numero}
+                  </td>
+                  <td className={`${classeCelula} whitespace-nowrap numero`}>
+                    {formatarDataCivil(cdf.emitidoEm)}
+                  </td>
+                  <td className={classeCelula}>
+                    <span className="block max-w-[260px] truncate" title={cdf.destinadorNome}>
+                      {cdf.destinadorNome}
+                    </span>
+                  </td>
+                  <td className={`${classeCelula} whitespace-nowrap numero`}>{periodo(cdf)}</td>
+                  <td className={classeCelula}>
+                    <MtrsDoCdf cdf={cdf} />
+                  </td>
+                  <td className={`${classeCelula} w-px whitespace-nowrap`}>{acoes(cdf)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <ul aria-label="CDFs do empreendimento" className="flex flex-col md:hidden">
+          {lista.map((cdf) => (
+            <li key={cdf.id} className={classeItemCelular}>
+              <span className="flex items-start justify-between gap-(--e-2)">
+                <span className="flex min-w-0 flex-col">
+                  <span className="corpo-medio numero">CDF {cdf.numero}</span>
+                  <span className="rotulo numero">{formatarDataCivil(cdf.emitidoEm)}</span>
+                </span>
+                {acoes(cdf)}
+              </span>
+              <span className="truncate">{cdf.destinadorNome}</span>
+              <span className="text-xs text-(--tinta-2) numero">{periodo(cdf)}</span>
+              <span className="text-xs">
+                <MtrsDoCdf cdf={cdf} />
+              </span>
+            </li>
+          ))}
+        </ul>
+      </>
     )
   }
 
   return (
-    <section
-      aria-labelledby="titulo-secao-cdfs"
-      className="flex min-w-0 flex-col overflow-hidden rounded-(--raio-painel) border bg-(--folha) shadow-cartao"
-    >
-      <h2
-        id="titulo-secao-cdfs"
-        className="border-b px-(--e-3) py-(--e-2) titulo-secao text-(--tinta)"
-      >
+    <section aria-labelledby="titulo-secao-cdfs" className={classePainel}>
+      <TituloDoPainel id="titulo-secao-cdfs" contagem={cdfs.isSuccess ? total : null}>
         CDFs
-      </h2>
+      </TituloDoPainel>
       {aviso ? (
         <MensagemSecao role="status" tom="sucesso" className="m-(--e-3)">
           {aviso}
@@ -188,22 +230,21 @@ export function SecaoCdfs({
         </MensagemSecao>
       ) : null}
       {conteudo}
-      <div className="flex flex-wrap items-center gap-(--e-2) border-t px-(--e-3) py-(--e-2)">
-        <p className="flex-1 text-xs">
-          {lista.length === 0
-            ? 'Nenhum CDF'
-            : `${String(lista.length)} de ${String(total)} ${total === 1 ? 'CDF' : 'CDFs'}`}
-        </p>
-        {cdfs.hasNextPage ? (
-          <Botao
-            tamanho="compacto"
-            disabled={cdfs.isFetchingNextPage}
-            onClick={() => void cdfs.fetchNextPage()}
-          >
-            Mostrar mais CDFs
-          </Botao>
-        ) : null}
-      </div>
+      {lista.length > 0 ? (
+        <RodapeDoQuadro
+          texto={`${String(lista.length)} de ${String(total)} ${total === 1 ? 'CDF' : 'CDFs'}`}
+        >
+          {cdfs.hasNextPage ? (
+            <Botao
+              tamanho="compacto"
+              disabled={cdfs.isFetchingNextPage}
+              onClick={() => void cdfs.fetchNextPage()}
+            >
+              Mostrar mais CDFs
+            </Botao>
+          ) : null}
+        </RodapeDoQuadro>
+      ) : null}
 
       {aberto?.tipo === 'editar' ? (
         <DialogoCdf

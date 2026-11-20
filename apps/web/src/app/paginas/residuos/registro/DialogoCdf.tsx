@@ -20,6 +20,7 @@ import { CaixaSelecao } from '@/components/ui/caixa-selecao'
 import { CampoData } from '@/components/ui/campo-data'
 import { CampoTexto } from '@/components/ui/campo-texto'
 import { Dialogo } from '@/components/ui/dialogo'
+import { classeCampo } from '@/components/ui/estilos-campo'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import {
   TAMANHO_PAGINA_RESIDUOS,
@@ -33,7 +34,7 @@ import {
 import { mensagemDoErro } from '@/lib/erros'
 
 import { CampoObservacao, CampoPdf } from './campos'
-import { classeControle, cnpjDoCampo, quantidadeParaTexto } from './comum'
+import { cnpjDoCampo, quantidadeParaTexto } from './comum'
 
 /** MTR que o CDF pode cobrir, com os itens para informar a quantidade recebida. */
 interface MtrParaEscolher {
@@ -353,7 +354,7 @@ export function DialogoCdf({
                 return (
                   <li
                     key={mtr.mtrId}
-                    className="flex flex-col gap-(--e-2) rounded-(--raio) border p-(--e-2)"
+                    className="flex flex-col gap-(--e-2) border-t border-(--regra-leve) pt-(--e-2) first:border-t-0 first:pt-0"
                   >
                     <CaixaSelecao
                       rotulo={`MTR ${mtr.numero} · ${formatarDataCivil(mtr.emitidoEm)}`}
@@ -377,7 +378,7 @@ export function DialogoCdf({
                               className="grid grid-cols-[1fr_96px] items-end gap-(--e-2) sm:grid-cols-[1fr_160px_96px]"
                             >
                               <p className="col-span-2 min-w-0 corpo sm:col-span-1">
-                                <span className="corpo-medio">{item.residuoCodigo}</span>{' '}
+                                <span className="corpo-medio numero">{item.residuoCodigo}</span>{' '}
                                 {item.residuoDescricao} ·{' '}
                                 {formatarQuantidade(item.quantidadeMtr, item.unidadeMtr)} no MTR
                               </p>
@@ -397,7 +398,7 @@ export function DialogoCdf({
                                 <span className="rotulo">Unidade</span>
                                 <select
                                   aria-label={`Unidade recebida no CDF: ${nome}`}
-                                  className={classeControle}
+                                  className={classeCampo}
                                   value={recebido.unidade}
                                   onChange={(evento) => {
                                     if (ehUnidadeResiduo(evento.target.value))

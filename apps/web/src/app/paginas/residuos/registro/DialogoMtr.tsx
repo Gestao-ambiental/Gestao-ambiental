@@ -301,7 +301,7 @@ export function DialogoMtr({
             return (
               <fieldset
                 key={item.chave}
-                className="relative flex min-w-0 flex-col gap-(--e-2) rounded-(--raio) border p-(--e-3)"
+                className="relative flex min-w-0 flex-col gap-(--e-2) border-t border-(--regra) pt-(--e-3)"
               >
                 <legend className="float-left w-full pr-(--e-8) corpo-medio">
                   Resíduo {ordem}
@@ -311,7 +311,7 @@ export function DialogoMtr({
                     icone="trash-2"
                     rotulo={`Remover resíduo ${ordem}`}
                     tamanho="compacto"
-                    className="absolute top-(--e-2) right-(--e-2)"
+                    className="absolute top-(--e-2) right-0"
                     onClick={() => {
                       setItens((lista) => lista.filter((i) => i.chave !== item.chave))
                     }}

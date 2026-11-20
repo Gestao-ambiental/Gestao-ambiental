@@ -138,7 +138,22 @@ describe('Conferência CDF x MTR', () => {
     ).toBeInTheDocument()
     expect(within(linhaDa(linhas, 2)).getByText('CDF-77')).toBeInTheDocument()
 
-    await usuario.selectOptions(screen.getByLabelText('Pendência'), 'quantidade_diferente')
+    // Placar: total e um contador por tipo; o contador filtra a tabela.
+    const placar = screen.getByRole('group', { name: 'Pendências por tipo' })
+    expect(within(placar).getByRole('button', { name: '2 Pendências' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    expect(within(placar).getByRole('button', { name: '1 MTR sem CDF' })).toBeInTheDocument()
+    // Cada linha diz o que fazer: MTR sem CDF leva ao registro do CDF já aberto.
+    expect(
+      within(linhaDa(linhas, 1)).getByRole('link', { name: 'Registrar CDF do MTR 240001' }),
+    ).toHaveAttribute('href', '/empreendimentos/e-1/residuos?registrar=cdf')
+    expect(
+      within(linhaDa(linhas, 2)).getByRole('link', { name: 'Revisar o MTR 240002' }),
+    ).toHaveAttribute('href', '/empreendimentos/e-1/residuos')
+
+    await usuario.click(within(placar).getByRole('button', { name: '1 Quantidade diferente' }))
     expect(screen.queryByText('74 dias sem CDF')).not.toBeInTheDocument()
 
     await screen.findByRole('option', { name: 'Pátio Sul' })
@@ -223,19 +238,24 @@ describe('Painel de resíduos', () => {
     const grafico = screen.getByRole('list', { name: 'Quantidade por mês (t)' })
     expect(within(grafico).getByText('out/2026: 2,5 t')).toBeInTheDocument()
     expect(within(grafico).getByText('set/2026: 1,25 t')).toBeInTheDocument()
-    await usuario.selectOptions(screen.getByLabelText('Unidade do gráfico'), 'm3')
+    await usuario.click(
+      within(screen.getByRole('group', { name: 'Unidade do gráfico' })).getByRole('button', {
+        name: 'm³',
+      }),
+    )
     expect(
       within(screen.getByRole('list', { name: 'Quantidade por mês (m³)' })).getByText(
         'out/2026: 4 m³',
       ),
     ).toBeInTheDocument()
 
-    await usuario.selectOptions(screen.getByLabelText('Somar por'), 'destinador')
+    const somarPor = screen.getByRole('group', { name: 'Somar por' })
+    await usuario.click(within(somarPor).getByRole('button', { name: 'Destinador' }))
     const porDestinador = screen.getByRole('table', { name: 'Quantidade por destinador' })
     expect(within(porDestinador).getAllByRole('row')).toHaveLength(3)
     expect(within(porDestinador).getByText('3,75 t')).toBeInTheDocument()
 
-    await usuario.selectOptions(screen.getByLabelText('Somar por'), 'mes')
+    await usuario.click(within(somarPor).getByRole('button', { name: 'Mês' }))
     const porMes = screen.getByRole('table', { name: 'Quantidade por mês' })
     const meses = within(porMes)
       .getAllByRole('row')

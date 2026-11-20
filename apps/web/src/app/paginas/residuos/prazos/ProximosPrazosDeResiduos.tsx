@@ -13,10 +13,19 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
+import {
+  classeCabecalho,
+  classeCelula,
+  classeLinha,
+  classePainel,
+  classeRegiao,
+} from '@/app/paginas/residuos/quadro'
+import { Contagem } from '@/app/paginas/visao/Contagem'
 import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/estados'
 import { Selo } from '@/components/ui/selo'
 import { prazosDasObrigacoesDeResiduo, type PrazoDeObrigacaoNoCalendario } from '@/lib/api/residuos'
 import { ehSemPermissao } from '@/lib/erros'
+import { cn } from '@/lib/utils'
 
 import {
   CHAVE_PRAZOS_RESIDUO,
@@ -88,60 +97,69 @@ export function ProximosPrazosDeResiduos({
       <EstadoVazio
         icone="calendar"
         titulo="Nenhum prazo de resíduos no período"
-        className="rounded-(--raio-painel) border bg-(--folha) py-(--e-6)"
+        className={cn(classePainel, 'py-(--e-6)')}
       />
     )
   } else {
     const visiveis = prazos.data.slice(0, limite)
     const restantes = prazos.data.length - visiveis.length
     conteudo = (
-      <>
-        <div className="overflow-x-auto rounded-(--raio-painel) border bg-(--folha) shadow-cartao">
+      <div className={classePainel}>
+        <div className={cn(classeRegiao, 'hidden md:block')}>
           <table className="w-full border-collapse corpo" aria-label={titulo}>
-            <thead>
+            <thead className="sticky top-0 z-10 bg-(--folha)">
               <tr>
+                <th scope="col" className={cn(classeCabecalho, 'w-[88px]')}>
+                  Faltam
+                </th>
                 {[
                   'Prazo',
                   'Obrigação',
-                  'Referência',
                   ...(semEmpreendimento ? [] : ['Empreendimento']),
                   'Janela de entrega',
                   'Situação',
                 ].map((coluna) => (
-                  <th
-                    key={coluna}
-                    scope="col"
-                    className="h-10 border-b px-(--e-2) text-left whitespace-nowrap rotulo first:pl-(--e-3)"
-                  >
+                  <th key={coluna} scope="col" className={classeCabecalho}>
                     {coluna}
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {visiveis.map((p) => {
+              {visiveis.map((p, indice) => {
                 const s = situacaoDoPrazoDeResiduo(p.dias)
                 return (
-                  <tr key={`${p.obrigacaoId}:${p.prazo}`} className="border-b last:border-b-0">
-                    <td className="h-10 px-(--e-2) pl-(--e-3) whitespace-nowrap corpo-medio">
+                  <tr
+                    key={`${p.obrigacaoId}:${p.prazo}`}
+                    className={cn(
+                      classeLinha,
+                      p.dias === 0 && 'bg-(--sinal-fundo) hover:bg-(--sinal-fundo)',
+                    )}
+                  >
+                    <td className={classeCelula}>
+                      <Contagem dias={p.dias} ordem={indice} />
+                    </td>
+                    <td className={`${classeCelula} whitespace-nowrap corpo-medio numero`}>
                       {formatarDataCivil(p.prazo)}
                     </td>
-                    <td className="px-(--e-2) whitespace-nowrap">
-                      {ROTULO_DA_OBRIGACAO_RESIDUO[p.tipo]}
+                    <td className={classeCelula}>
+                      <span className="corpo-medio">{ROTULO_DA_OBRIGACAO_RESIDUO[p.tipo]}</span>
+                      <span className="text-(--tinta-2)"> · {p.referencia}</span>
                     </td>
-                    <td className="px-(--e-2) whitespace-nowrap">{p.referencia}</td>
                     {semEmpreendimento ? null : (
-                      <td className="px-(--e-2)">
+                      <td className={classeCelula}>
                         <Link
                           to={caminhoDosPrazosDeResiduo(p.empreendimentoId)}
-                          className="text-(--link) hover:underline"
+                          className="block max-w-[240px] truncate text-(--tinta)"
                         >
                           {p.empreendimentoNome}
                         </Link>
                       </td>
                     )}
-                    <td className="px-(--e-2) whitespace-nowrap">{janela(p)}</td>
-                    <td className="px-(--e-2) whitespace-nowrap">
+                    <td className={`${classeCelula} whitespace-nowrap text-(--tinta-2) numero`}>
+                      {janela(p)}
+                    </td>
+                    <td className={`${classeCelula} whitespace-nowrap`}>
                       <Selo tom={s.tom}>{s.texto}</Selo>
                     </td>
                   </tr>
@@ -150,20 +168,54 @@ export function ProximosPrazosDeResiduos({
             </tbody>
           </table>
         </div>
+
+        <ul aria-label={titulo} className="flex flex-col md:hidden">
+          {visiveis.map((p, indice) => {
+            const s = situacaoDoPrazoDeResiduo(p.dias)
+            return (
+              <li
+                key={`${p.obrigacaoId}:${p.prazo}`}
+                className={cn(
+                  'flex gap-(--e-3) border-b border-(--regra-leve) px-(--e-4) py-(--e-3) last:border-b-0',
+                  p.dias === 0 && 'bg-(--sinal-fundo)',
+                )}
+              >
+                <Contagem dias={p.dias} ordem={indice} />
+                <span className="flex min-w-0 flex-1 flex-col gap-(--e-1)">
+                  <span className="flex flex-wrap items-center justify-between gap-x-(--e-2) gap-y-(--e-1)">
+                    <span className="corpo-medio numero">{formatarDataCivil(p.prazo)}</span>
+                    <Selo tom={s.tom}>{s.texto}</Selo>
+                  </span>
+                  <span>
+                    <span className="corpo-medio">{ROTULO_DA_OBRIGACAO_RESIDUO[p.tipo]}</span>
+                    <span className="text-(--tinta-2)"> · {p.referencia}</span>
+                  </span>
+                  <span className="truncate text-xs text-(--tinta-2) numero">
+                    {semEmpreendimento ? '' : `${p.empreendimentoNome} · `}
+                    {janela(p)}
+                  </span>
+                </span>
+              </li>
+            )
+          })}
+        </ul>
+
         {restantes > 0 ? (
-          <Link
-            to={caminhoDosPrazosDeResiduo(empreendimentoId)}
-            className="w-fit corpo text-(--link) hover:underline"
-          >
-            Ver todos os {prazos.data.length} prazos
-          </Link>
+          <div className="border-t px-(--e-4) py-(--e-2)">
+            <Link
+              to={caminhoDosPrazosDeResiduo(empreendimentoId)}
+              className="corpo-medio max-md:inline-flex max-md:min-h-(--controle-toque) max-md:items-center"
+            >
+              Ver todos os {prazos.data.length} prazos
+            </Link>
+          </div>
         ) : null}
-      </>
+      </div>
     )
   }
 
   return (
-    <section aria-label={titulo} className="flex flex-col gap-(--e-2)">
+    <section aria-label={titulo} className="flex flex-col gap-(--e-3)">
       <h2 className="titulo-secao text-(--tinta)">{titulo}</h2>
       {conteudo}
     </section>

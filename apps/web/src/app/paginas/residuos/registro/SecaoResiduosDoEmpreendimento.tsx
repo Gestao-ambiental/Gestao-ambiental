@@ -10,6 +10,7 @@ import { listarMtrs } from '@/lib/api/residuos'
 import { ehSemPermissao } from '@/lib/erros'
 
 import { SeloSituacaoMtr } from './campos'
+import { TituloDoPainel, classePainel } from '../quadro'
 import { caminhoDosMtrs, resumoDosItens } from './comum'
 
 const QUANTOS = 5
@@ -28,24 +29,28 @@ export function SecaoResiduosDoEmpreendimento({ empreendimentoId }: { empreendim
   const ultimos = mtrs.data?.itens.slice(0, QUANTOS) ?? []
 
   return (
-    <section
-      aria-labelledby="titulo-secao-residuos"
-      className="flex min-w-0 flex-col overflow-hidden rounded-(--raio-painel) border bg-(--folha) shadow-cartao"
-    >
-      <div className="flex flex-wrap items-center gap-(--e-2) border-b px-(--e-3) py-(--e-2)">
-        <h2 id="titulo-secao-residuos" className="flex-1 titulo-secao text-(--tinta)">
-          Resíduos
-        </h2>
-        <Link
-          to={caminhoDosPrazosDeResiduo(empreendimentoId)}
-          className="corpo text-(--link) hover:underline"
-        >
-          Prazos de resíduos
-        </Link>
-        <Link to={caminho} className="corpo text-(--link) hover:underline">
-          Ver MTRs e CDFs
-        </Link>
-      </div>
+    <section aria-labelledby="titulo-secao-residuos" className={classePainel}>
+      <TituloDoPainel
+        id="titulo-secao-residuos"
+        acoes={
+          <span className="flex flex-wrap items-center gap-x-(--e-4) gap-y-(--e-1)">
+            <Link
+              to={caminhoDosPrazosDeResiduo(empreendimentoId)}
+              className="corpo-medio max-md:inline-flex max-md:min-h-(--controle-toque) max-md:items-center"
+            >
+              Prazos de resíduos
+            </Link>
+            <Link
+              to={caminho}
+              className="corpo-medio max-md:inline-flex max-md:min-h-(--controle-toque) max-md:items-center"
+            >
+              Ver MTRs e CDFs
+            </Link>
+          </span>
+        }
+      >
+        Resíduos
+      </TituloDoPainel>
       {mtrs.isPending ? (
         <Carregando rotulo="Carregando MTRs" linhas={2} className="border-0" />
       ) : mtrs.isError ? (
@@ -73,13 +78,17 @@ export function SecaoResiduosDoEmpreendimento({ empreendimentoId }: { empreendim
           {ultimos.map((mtr) => (
             <li
               key={mtr.id}
-              className="flex flex-wrap items-center gap-x-(--e-3) gap-y-(--e-1) border-b px-(--e-3) py-(--e-2) last:border-b-0"
+              className="flex min-h-(--linha) flex-wrap items-center gap-x-(--e-4) gap-y-(--e-1) border-b border-(--regra-leve) px-(--e-4) py-(--e-2) last:border-b-0"
             >
-              <span className="corpo-medio">MTR {mtr.numero}</span>
-              <span>{formatarDataCivil(mtr.emitidoEm)}</span>
+              <span className="w-[136px] corpo-medio numero">MTR {mtr.numero}</span>
+              <span className="numero text-(--tinta-2)">{formatarDataCivil(mtr.emitidoEm)}</span>
               <SeloSituacaoMtr situacao={mtr.situacao} />
-              <span className="min-w-0 flex-1">{resumoDosItens(mtr.itens, 1)}</span>
-              <span className="whitespace-nowrap">
+              <span className="min-w-0 flex-1 truncate numero">{resumoDosItens(mtr.itens, 1)}</span>
+              <span
+                className={
+                  mtr.temCdf ? 'whitespace-nowrap numero' : 'whitespace-nowrap text-(--tinta-2)'
+                }
+              >
                 {mtr.temCdf ? `CDF ${mtr.cdfs.map((c) => c.numero).join(', ')}` : 'Sem CDF'}
               </span>
             </li>
