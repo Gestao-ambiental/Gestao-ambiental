@@ -13,6 +13,7 @@ import {
   type ResumoDosOrcamentos,
   type SituacaoOrcamento,
 } from '@/lib/api/orcamentos'
+import { IndicadorDeslizante, useIndicadorDeslizante } from '@/components/ui/indicador-deslizante'
 import { cn } from '@/lib/utils'
 
 /** "R$ 19.100,00"; sem nenhum com preço (mas com orçamentos), "Sem preço": nunca vira zero. */
@@ -126,6 +127,11 @@ export function AbasDeSituacao({
 }) {
   const todas = contagem ? Object.values(contagem).reduce((soma, n) => soma + n, 0) : null
   const grupo = useRef<HTMLDivElement>(null)
+  // O traço da aba escolhida desliza até a nova aba.
+  const { conteiner, medida, desliza } = useIndicadorDeslizante<HTMLDivElement>(
+    '[aria-pressed="true"]',
+    `${String(situacao)}:${String(todas)}`,
+  )
 
   // No celular, a aba escolhida (ex.: aberta pela URL) entra na área visível da faixa, sem mexer
   // na rolagem da página (scrollIntoView rolaria a página até as abas).
@@ -148,7 +154,15 @@ export function AbasDeSituacao({
       aria-label="Situação"
       className="relative -mx-1 max-w-[calc(100%+8px)] min-w-0 overflow-x-auto px-1 pt-1 [scrollbar-width:none]"
     >
-      <div className="flex w-max min-w-full gap-(--e-5) border-b border-(--regra-forte)">
+      <div
+        ref={conteiner}
+        className="relative flex w-max min-w-full gap-(--e-5) border-b border-(--regra-forte)"
+      >
+        <IndicadorDeslizante
+          medida={medida}
+          desliza={desliza}
+          className="border-b-[3px] border-(--marca-linha)"
+        />
         {ABAS.map((aba) => {
           const ativa = situacao === aba
           const rotulo = aba ? ROTULO_DA_SITUACAO[aba] : 'Todas'
@@ -163,9 +177,8 @@ export function AbasDeSituacao({
               }}
               className={cn(
                 '-mb-px inline-flex h-11 cursor-pointer items-center gap-(--e-2) border-b-[3px] whitespace-nowrap titulo-secao transicao-estado',
-                ativa
-                  ? 'border-(--marca-linha) text-(--tinta)'
-                  : 'border-transparent text-(--tinta-2) hover:text-(--tinta)',
+                'border-transparent',
+                ativa ? 'text-(--tinta)' : 'text-(--tinta-2) hover:text-(--tinta)',
               )}
             >
               {rotulo}

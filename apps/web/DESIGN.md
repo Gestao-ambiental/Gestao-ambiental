@@ -83,9 +83,29 @@ Phosphor, peso **bold** (MIT), por máscara com `currentColor` (`<Icone nome=…
 
 ## Movimento
 
-Curto, com saída exponencial (`--saida`), nunca atrasa um clique: `--dur-rapida` 120ms (estado), `--dur-media` 200ms (menu, diálogo), `--dur-lenta` 360ms (assinatura). Botão encolhe para 98% ao apertar; a busca Ctrl+K abre sem animação.
+Curto, com saída exponencial (`--saida`, `cubic-bezier(0.16, 1, 0.3, 1)`), nunca atrasa um clique. Só onde explica o que aconteceu; nada decorativo em loop (o brilho do esqueleto é o único, e só enquanto carrega).
 
-**Movimento-assinatura:** `virar-placa`, o número da coluna "Faltam" sobe e se revela como plaqueta de painel ao chegar, em cascata de 28ms por linha. Uma vez, na chegada. `prefers-reduced-motion` zera as durações.
+| Token             | Valor | Uso                                                                   |
+| ----------------- | ----- | --------------------------------------------------------------------- |
+| `--dur-rapida`    | 120ms | estado: cor, borda, aperto do botão                                   |
+| `--dur-media`     | 200ms | menu, diálogo, chegada (`entrar`), estação que acende, check do salvo |
+| `--dur-indicador` | 220ms | indicador que desliza: item do menu, segmentado, aba                  |
+| `--dur-lenta`     | 360ms | assinatura (`virar-placa`)                                            |
+| `--dur-pulso`     | 640ms | pulso lima, só cor, uma vez                                           |
+
+**Microtransições (20/11/2026, "dar vida" sem animação):**
+
+- **Botão:** encolhe para 97% ao apertar; o primário "acende" no hover com um halo lima curto, que some ao apertar.
+- **Indicadores que deslizam** (`IndicadorDeslizante`): a plaqueta lima do item atual do menu, o cheio do segmentado e o traço da aba são um elemento só, movido por `transform`. Na primeira medida aparece no lugar; depois desliza.
+- **Trilha:** a estação nova se preenche de lima ao avançar (`acender`).
+- **Chegadas:** mensagens e o corpo da etapa entram com fade e 4px (`entrar`); linhas de tabela novas com fade curto, sem mexer embaixo do ponteiro.
+- **Menus e popovers** abrem de onde foram chamados (`transform-origin` do Radix, 97% → 100%) e fecham mais rápido; diálogo centrado abre do centro.
+- **Pulso lima** (`pulso-lima`): o "vence hoje" da Visão ao chegar. Só cor.
+- **Salvo:** `ConfirmacaoSalva`, check lima que aparece de 60% sem quicar, com o texto em `role="status"`.
+
+**Movimento-assinatura:** `virar-placa`, o número da coluna "Faltam" sobe e se revela como plaqueta de painel ao chegar, em cascata de 28ms por linha. Uma vez, na chegada.
+
+**Movimento reduzido:** `prefers-reduced-motion` zera as durações e tira `entrar`, `marcar`, `virar-placa` e o brilho do esqueleto; a estação da trilha só troca de cor e o pulso lima fica (é só cor). A busca Ctrl+K abre sem animação. Os testes (jsdom) não rodam CSS: nada depende de tempo.
 
 ## Componentes
 

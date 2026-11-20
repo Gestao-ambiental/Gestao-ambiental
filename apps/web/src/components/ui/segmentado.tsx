@@ -2,6 +2,8 @@ import type { ReactNode } from 'react'
 
 import { cn } from '@/lib/utils'
 
+import { IndicadorDeslizante, useIndicadorDeslizante } from './indicador-deslizante'
+
 export interface OpcaoSegmentada<T> {
   valor: T
   rotulo: ReactNode
@@ -32,17 +34,28 @@ export function Segmentado<T extends string | number | boolean>({
   desabilitado?: boolean
   className?: string
 }) {
+  // A opção escolhida é um fundo só, que desliza até a nova escolha.
+  const { conteiner, medida, desliza } = useIndicadorDeslizante<HTMLDivElement>(
+    '[aria-pressed="true"]',
+    String(valor),
+  )
   return (
     <div
+      ref={conteiner}
       role="group"
       aria-label={rotulo}
       data-largura-total={larguraTotalNoCelular ? '' : undefined}
       className={cn(
-        'inline-flex shrink-0 rounded-(--raio) border border-(--regra-forte) bg-(--folha)',
+        'relative isolate inline-flex shrink-0 rounded-(--raio) border border-(--regra-forte) bg-(--folha)',
         larguraTotalNoCelular && 'max-md:flex max-md:w-full',
         className,
       )}
     >
+      <IndicadorDeslizante
+        medida={medida}
+        desliza={desliza}
+        className={cn('-z-10 rounded-[5px]', desabilitado ? 'bg-(--tinta-3)' : 'bg-(--tinta)')}
+      />
       {opcoes.map((opcao) => {
         const ativo = opcao.valor === valor
         return (
@@ -59,7 +72,7 @@ export function Segmentado<T extends string | number | boolean>({
               'first:rounded-l-[5px] first:border-l-0 last:rounded-r-[5px] disabled:cursor-not-allowed',
               larguraTotalNoCelular && 'max-md:flex-1',
               ativo
-                ? 'bg-(--tinta) text-(--folha) disabled:bg-(--tinta-3)'
+                ? 'bg-transparent text-(--folha)'
                 : 'bg-transparent text-(--tinta-2) hover:bg-(--toque) hover:text-(--tinta) disabled:bg-transparent disabled:text-(--tinta-off)',
             )}
           >
