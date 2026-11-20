@@ -174,6 +174,36 @@ export function valorPorFaixas(
   return dividir(soma, BigInt(ESCALA_DA_QUANTIDADE))
 }
 
+/**
+ * Honorários de um serviço pela linha da tabela, antes e depois do preço mínimo (P12): hora =
+ * minutos × valor ÷ 60; m², hectare, diária e campanha = quantidade × valor (ou as faixas). O mínimo
+ * vale só sobre os honorários, antes dos outros custos e das despesas. `null` no pacote (preço
+ * fechado) ou sem quantidade. Igual a private.itens_do_preco.
+ */
+export function honorariosPelaTabela(
+  linha: HoraDeVenda,
+  item: { minutos: number; quantidadeDezMilesimos?: number | null },
+): { pelaTabelaCentavos: number; comMinimoCentavos: number } | null {
+  const unidade = linha.unidade ?? 'hora'
+  let pelaTabela: number
+  if (unidade === 'hora') {
+    pelaTabela = dividir(BigInt(item.minutos) * BigInt(linha.valorCentavos), 60n)
+  } else {
+    const quantidade = item.quantidadeDezMilesimos
+    if (unidade === 'pacote' || quantidade === null || quantidade === undefined) return null
+    exigirInteiro(quantidade, QUANTIDADE_MAXIMA)
+    const faixas = linha.faixas ?? []
+    pelaTabela =
+      faixas.length > 0
+        ? valorPorFaixas(quantidade, faixas)
+        : dividir(BigInt(quantidade) * BigInt(linha.valorCentavos), BigInt(ESCALA_DA_QUANTIDADE))
+  }
+  return {
+    pelaTabelaCentavos: pelaTabela,
+    comMinimoCentavos: Math.max(pelaTabela, linha.minimoCentavos ?? 0),
+  }
+}
+
 export interface CustoDaProfissao {
   profissao: string
   horaTecnicaCentavos: number
@@ -392,33 +422,15 @@ export function precificarOrcamento(entrada: EntradaDoPreco): PrecoDoOrcamento {
     }
     const linha = horas.get(item.horaVendaId)
     if (!linha) return 'hora_sem_valor'
-    const unidade = linha.unidade ?? 'hora'
-    // Preço mínimo (P12): só sobre os honorários, antes dos outros custos e das despesas.
-    const comMinimo = (venda: number) => Math.max(venda, linha.minimoCentavos ?? 0)
-    if (unidade === 'hora') {
-      return {
-        venda: comMinimo(dividir(BigInt(item.minutos) * BigInt(linha.valorCentavos), 60n)),
-        fixo: false,
-      }
-    }
-    if (unidade === 'pacote') {
+    if (linha.unidade === 'pacote') {
       const preco = item.precoFechadoCentavos
       if (preco === null || preco === undefined) return 'quantidade_pendente'
       exigirInteiro(preco, PRECO_MAXIMO_CENTAVOS)
       return { venda: preco, fixo: true }
     }
-    const quantidade = item.quantidadeDezMilesimos
-    if (quantidade === null || quantidade === undefined) return 'quantidade_pendente'
-    exigirInteiro(quantidade, QUANTIDADE_MAXIMA)
-    const faixas = linha.faixas ?? []
-    return {
-      venda: comMinimo(
-        faixas.length > 0
-          ? valorPorFaixas(quantidade, faixas)
-          : dividir(BigInt(quantidade) * BigInt(linha.valorCentavos), BigInt(ESCALA_DA_QUANTIDADE)),
-      ),
-      fixo: false,
-    }
+    const honorarios = honorariosPelaTabela(linha, item)
+    if (honorarios === null) return 'quantidade_pendente'
+    return { venda: honorarios.comMinimoCentavos, fixo: false }
   }
   const custosDosItens = itens.map((item, indice): CustoDoItem => {
     if (item.terceiro) {
@@ -587,6 +599,8 @@ export function precificarOrcamento(entrada: EntradaDoPreco): PrecoDoOrcamento {
     (soma, i) => soma + (itens[i]?.custoDiretoExtraCentavos ?? 0),
     0,
   )
+  // Acima do teto, aplicarPontosBase lançaria: pendente, como a forma "tabela".
+  if (baseDoAcrescimo > PRECO_MAXIMO_CENTAVOS) return pendente('valor_invalido', parcial)
   const acrescimo = aplicarPontosBase(baseDoAcrescimo, margemPb)
   const percentuais = base.tributosPb + base.taxasPb
   const divisor = BigInt(PONTOS_BASE_TOTAL - percentuais)

@@ -85,6 +85,7 @@ function ProximoPrazo({
             recorrencia: item.recorrencia,
             unidade: item.unidade,
             intervalo: item.intervalo,
+            dataReferencia: item.dataReferencia,
             primeiraData: item.primeiraData,
           },
           validade,

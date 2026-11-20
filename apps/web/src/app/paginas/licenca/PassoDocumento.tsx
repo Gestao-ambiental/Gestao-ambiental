@@ -23,6 +23,7 @@ import {
   type ProblemaDoPdf,
 } from '@/lib/api/licencas'
 import { mensagemDoErro } from '@/lib/erros'
+import { tamanhoLegivel } from '@/lib/texto'
 import { cn } from '@/lib/utils'
 
 import { ComoCadastrar, PainelExtracao, type Metodo } from './ExtracaoIa'
@@ -33,12 +34,6 @@ const PROBLEMAS: Record<ProblemaDoPdf, string> = {
   nao_pdf: 'Este arquivo não é um PDF.',
   grande_demais: 'O PDF passa de 25 MB.',
   vazio: 'O arquivo está vazio.',
-}
-
-function tamanhoLegivel(bytes: number): string {
-  return bytes >= 1024 * 1024
-    ? `${(bytes / (1024 * 1024)).toFixed(1).replace('.', ',')} MB`
-    : `${String(Math.max(1, Math.round(bytes / 1024)))} KB`
 }
 
 /** Área de envio: arrastar ou escolher. Confere assinatura, tipo e tamanho antes de aceitar. */

@@ -15,14 +15,14 @@ Ao final você terá:
 
 ## Onde pegar cada valor
 
-| Valor                            | Onde fica                                                                                                                                                          | Vai para                                                 |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------- |
-| Senha do banco                   | Você define ao criar o projeto (passo 1). Se perder: Supabase → projeto → **Database → Settings → Reset database password**.                                       | GitHub Secret (`SUPABASE_DB_PASSWORD` ou `_PROD`)        |
-| Project ID (Reference ID)        | Supabase → projeto → **Project Settings → General → Project ID**. É também o trecho `xxxx` em `https://xxxx.supabase.co`.                                          | GitHub Secret (`SUPABASE_PROJECT_ID_STAGING` ou `_PROD`) |
-| Access token                     | <https://supabase.com/dashboard/account/tokens> (menu do seu avatar → **Account → Access Tokens**). É da sua conta, não do projeto.                                | GitHub Secret `SUPABASE_ACCESS_TOKEN`                    |
-| Project URL                      | Supabase → projeto → **Project Settings → Data API → Project URL** (`https://xxxx.supabase.co`).                                                                   | Vercel `VITE_SUPABASE_URL`                               |
-| Chave pública (publishable/anon) | Supabase → projeto → **Project Settings → API Keys** → **Publishable key** (`sb_publishable_…`). Se o projeto mostrar só as chaves legadas, use a **anon public**. | Vercel `VITE_SUPABASE_ANON_KEY`                          |
-| Deploy hook de produção          | Vercel → projeto → **Settings → Git → Deploy Hooks** (passo 6).                                                                                                    | GitHub Secret `VERCEL_DEPLOY_HOOK_PROD`                  |
+| Valor                            | Onde fica                                                                                                                                                          | Vai para                                               |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------ |
+| Senha do banco                   | Você define ao criar o projeto (passo 1). Se perder: Supabase → projeto → **Database → Settings → Reset database password**.                                       | Secret `DEPLOY_SUPABASE_DB_PASSWORD` no environment    |
+| Project ID (Reference ID)        | Supabase → projeto → **Project Settings → General → Project ID**. É também o trecho `xxxx` em `https://xxxx.supabase.co`.                                          | Variable `DEPLOY_SUPABASE_PROJECT_ID` no environment   |
+| Access token                     | <https://supabase.com/dashboard/account/tokens> (menu do seu avatar → **Account → Access Tokens**). É da sua conta, não do projeto.                                | Secret `DEPLOY_SUPABASE_ACCESS_TOKEN` no environment   |
+| Project URL                      | Supabase → projeto → **Project Settings → Data API → Project URL** (`https://xxxx.supabase.co`).                                                                   | Vercel `VITE_SUPABASE_URL`                             |
+| Chave pública (publishable/anon) | Supabase → projeto → **Project Settings → API Keys** → **Publishable key** (`sb_publishable_…`). Se o projeto mostrar só as chaves legadas, use a **anon public**. | Vercel `VITE_SUPABASE_ANON_KEY`                        |
+| Deploy hook de produção          | Vercel → projeto → **Settings → Git → Deploy Hooks** (passo 6).                                                                                                    | Secret `DEPLOY_VERCEL_HOOK` no environment de produção |
 
 **Nunca** use a **secret key** (`sb_secret_…`) nem a **service_role** em lugar nenhum deste guia. Elas ignoram RLS e só podem existir em Edge Functions e no CI quando for preciso.
 
@@ -52,7 +52,9 @@ O `supabase/config.toml` vale só para o ambiente local; os projetos remotos sã
 2. **Authentication → URL Configuration**:
    - **Staging:**
      - **Site URL:** a URL de qualquer preview da Vercel que você vai receber no passo 4. O app manda o endereço de retorno em cada e-mail; a Site URL é só o padrão. Pode voltar aqui depois do passo 4.
-     - **Redirect URLs:** adicione `https://*-<time>.vercel.app/**` (troque `<time>` pelo slug do seu time na Vercel, que aparece nas URLs de preview) e `http://localhost:5173/**`. É esse curinga que libera os previews de todos os PRs.
+     - **Redirect URLs:** adicione `https://gestao-ambiental-git-*-<time>.vercel.app/**` (troque `<time>` pelo slug do seu time na Vercel; `gestao-ambiental` é o nome do projeto no passo 4) e `http://localhost:5173/**`. Esse curinga libera a URL de branch de cada PR (`<projeto>-git-<branch>-<time>.vercel.app`, a que a Vercel comenta no PR); abra o preview por ela.
+
+       > **Nunca** use `https://*-<time>.vercel.app/**` nem `https://*.vercel.app/**`: o `*` casa com qualquer projeto de qualquer conta da Vercel cuja URL termine assim, e o Supabase mandaria o link de login, convite ou senha (com a sessão) para o site de outra pessoa. Se o painel tiver esse curinga largo, troque-o pelo de cima. Mesmo o curinga estreito ainda casa com um projeto alheio chamado `gestao-ambiental` num time cujo slug termine em `-<time>`; quando houver domínio próprio para os previews, troque pelo domínio.
    - **Produção:**
      - **Site URL:** a URL de produção da Vercel (ex.: `https://gestao-ambiental.vercel.app`) ou o domínio próprio, quando existir.
      - **Redirect URLs:** a mesma URL com `/**` no final.
@@ -66,21 +68,29 @@ O `supabase/config.toml` vale só para o ambiente local; os projetos remotos sã
 
 > Os e-mails (confirmação, convite e senha) usam o SMTP padrão do Supabase, que só entrega para endereços da equipe da organização no Supabase e manda poucos e-mails por hora. Para convidar a equipe real do piloto é preciso configurar o SMTP próprio (Resend) em **Authentication → Emails → SMTP Settings** — só painel, sem mudança de código. Ele é item do go-live (F12).
 
-## 3. Access token e segredos no GitHub (staging)
+## 3. Credenciais de deploy no GitHub (environments só da `main`)
 
-1. Gere o token em <https://supabase.com/dashboard/account/tokens> → **Generate new token** → nome `github-actions-gestao-ambiental` → copie (ele aparece uma vez só).
-2. No GitHub, abra o repositório `Gestao-ambiental/Gestao-ambiental` → **Settings → Secrets and variables → Actions → Secrets → New repository secret** e cadastre:
+As credenciais de deploy **não** ficam em **Repository secrets**: qualquer workflow de qualquer branch (inclusive um PR de branch do próprio repositório, que roda o workflow da branch, editado ou não) lê segredo do repositório. Elas ficam em dois **environments** liberados só para a `main`. Um job de outra branch nem recebe os valores.
 
-| Nome                          | Valor                           |
-| ----------------------------- | ------------------------------- |
-| `SUPABASE_ACCESS_TOKEN`       | o token do item 1               |
-| `SUPABASE_DB_PASSWORD`        | a senha do banco **de staging** |
-| `SUPABASE_PROJECT_ID_STAGING` | o Project ID **de staging**     |
+> **Plano:** environments com segredos em repositório **privado** exigem GitHub Team (ou Pro, em conta pessoal), ou repositório público. No Free privado, os workflows de deploy ficam vermelhos no passo "Conferir configuração" até os environments existirem.
 
-Com isso, o workflow **Migrations** (`.github/workflows/migrations.yml`):
+1. Gere um token em <https://supabase.com/dashboard/account/tokens> → **Generate new token** → nome `github-actions-gestao-ambiental-staging` → copie (ele aparece uma vez só). Gere outro, `github-actions-gestao-ambiental-producao`, para produção. Tokens separados: revogar um não derruba o outro.
+2. No GitHub, abra o repositório `Gestao-ambiental/Gestao-ambiental` → **Settings → Environments → New environment** e crie `supabase-staging` e `supabase-producao`. Em cada um:
+   - **Deployment branches and tags → Selected branches and tags → Add deployment branch or tag rule** → `main` (só a branch, sem tags);
+   - em `supabase-producao`, ligue também **Required reviewers** (quem aprova o deploy de produção);
+   - cadastre:
 
-- em todo push na `main`, liga no staging, roda `supabase db push` e publica a Edge Function `extrair-licenca`;
-- em PR que mexe em `supabase/migrations/`, roda `supabase db push --dry-run` contra staging, só para mostrar o que seria aplicado.
+| Nome                           | Tipo     | Valor                                                       |
+| ------------------------------ | -------- | ----------------------------------------------------------- |
+| `DEPLOY_SUPABASE_ACCESS_TOKEN` | Secret   | o token do item 1 daquele ambiente                          |
+| `DEPLOY_SUPABASE_DB_PASSWORD`  | Secret   | a senha do banco daquele ambiente                           |
+| `DEPLOY_SUPABASE_PROJECT_ID`   | Variable | o Project ID daquele ambiente                               |
+| `DEPLOY_VERCEL_HOOK`           | Secret   | só em `supabase-producao`: a URL do deploy hook (passo 6.1) |
+
+3. **Settings → Branches**: proteja a `main` com PR obrigatório e os checks do CI. Sem isso, quem pode dar push na `main` também publica.
+4. Se você já tinha cadastrado `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_ID_STAGING`, `SUPABASE_DB_PASSWORD_PROD`, `SUPABASE_PROJECT_ID_PROD` ou `VERCEL_DEPLOY_HOOK_PROD` em **Secrets and variables → Actions → Repository secrets**: apague-os, confira que a organização não tem segredos com esses nomes e **troque os valores** (revogue o token antigo do Supabase, troque as senhas do banco e recrie o deploy hook), porque eles ficaram ao alcance de qualquer branch.
+
+Com isso, o workflow **Migrations** (`.github/workflows/migrations.yml`), em todo push na `main`, liga no staging, roda `supabase db push` e publica **todas** as Edge Functions de `supabase/functions/` (`supabase functions deploy` sem nome; o `verify_jwt` de cada uma vem do `supabase/config.toml`, e as pastas que começam com `_`, como `_shared`, não são funções). Em PR, quem confere as migrations é o job **Banco (migrations, seed e pgTAP)** do CI, com Supabase descartável no runner e sem segredo nenhum; o antigo dry-run contra staging saiu porque entregava o token a qualquer PR.
 
 ### 3.1 Segredo da extração por IA (Edge Function)
 
@@ -125,28 +135,20 @@ Como fica o comportamento:
 
 1. Abra um PR qualquer (o do épico 1 serve). Confira:
    - os checks **Lint, tipos, testes e build** e **Banco (migrations, seed e pgTAP)** verdes;
-   - o comentário da Vercel com a URL do preview, e a página abrindo;
-   - se o PR mexe em migrations, o job **Conferir migrations contra staging (dry-run)** verde.
+   - o comentário da Vercel com a URL do preview, e a página abrindo.
 2. Faça o merge. Em **Actions → Migrations**, o job **Aplicar migrations em staging** deve ficar verde.
 3. No Supabase de staging → **Storage**: o bucket **arquivos** existe e está marcado como **private**.
 
 ## 6. Produção (antes do go-live, não agora)
 
-Produção nunca recebe nada sozinha. Ela é publicada pelo workflow **Deploy produção** (`.github/workflows/deploy-producao.yml`), que só roda quando alguém clica em **Run workflow**. O clique é a aprovação: no plano Free do GitHub, repositório privado não tem Environments com revisor obrigatório.
+Produção nunca recebe nada sozinha. Ela é publicada pelo workflow **Deploy produção** (`.github/workflows/deploy-producao.yml`), que só roda quando alguém clica em **Run workflow** na `main`. As credenciais vêm do environment `supabase-producao` (passo 3), que só libera a `main` e pede a aprovação dos revisores.
 
 1. Vercel → projeto → **Settings → Git → Deploy Hooks** → nome `producao`, branch `main` → **Create Hook** → copie a URL. Teste uma vez com `curl -X POST <url>` e confira em **Deployments** que saiu um deploy de **Production**.
-2. GitHub → **Settings → Secrets and variables → Actions → Secrets → New repository secret**:
-
-| Nome                        | Valor                          |
-| --------------------------- | ------------------------------ |
-| `SUPABASE_PROJECT_ID_PROD`  | Project ID **de produção**     |
-| `SUPABASE_DB_PASSWORD_PROD` | senha do banco **de produção** |
-| `VERCEL_DEPLOY_HOOK_PROD`   | URL do deploy hook do item 1   |
+2. Cadastre a URL como secret `DEPLOY_VERCEL_HOOK` no environment `supabase-producao`, junto com o token, a senha e o Project ID **de produção** (passo 3).
 
 Para publicar: GitHub → **Actions → Deploy produção → Run workflow**, branch **main**. O workflow segue sempre esta ordem e para no primeiro erro: migrations pendentes em staging → migrations em produção → deploy de produção na Vercel. Assim o front de produção nunca chega antes do schema.
 
 ## Limites do plano Free do GitHub (repositório privado)
 
-- **Sem proteção de branch:** o GitHub não impede push direto na `main`. A regra "nada entra na `main` sem PR" vale por disciplina. Para o GitHub barrar, é preciso o plano Team ou tornar o repositório público.
-- **Sem Environments:** por isso produção é por disparo manual, e não por aprovação.
+- **Sem proteção de branch nem Environments:** o GitHub não impede push direto na `main` e não guarda segredo por environment em repositório privado. Os workflows de deploy dependem dos environments do passo 3 e não rodam no Free privado. Para isso é preciso o plano Team ou tornar o repositório público.
 - **2.000 minutos de Actions por mês:** cada push num PR gasta uns 5 a 6 minutos (CI + Supabase no runner). Acompanhe em **Settings → Billing**.

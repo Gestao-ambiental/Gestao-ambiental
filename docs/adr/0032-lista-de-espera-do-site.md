@@ -23,7 +23,7 @@ O site grava pela RPC `public.entrar_lista_de_espera(nome, contato)`, liberada p
 - **E-mail:** fica em minúsculas.
 - **WhatsApp:** fica só com dígitos e ganha o DDI 55 quando vier sem ele. Precisa ter um DDD válido e 8 ou 9 dígitos.
 - **Contato repetido:** não grava de novo e não dá erro, para não revelar quem já está na lista.
-- **Teto:** 200 cadastros por hora. Passou disso, a RPC recusa com `muitas_tentativas`. Isso segura robô sem captcha.
+- **Teto:** 10 tentativas por hora por origem (IP lido dos headers da requisição, `cf-connecting-ip`, `x-real-ip` ou o primeiro `x-forwarded-for`; gravado só como hash e apagado depois de 1 hora; IPv6 conta pelo prefixo /64, porque quem tem um /64 troca de endereço a cada pedido, e IPv4 pelo endereço exato) e 300 cadastros por hora no total. Passou disso, a RPC recusa com `muitas_tentativas`. Isso segura robô sem captcha. Até 19/11/2026 o teto era só global (200 por hora), e um robô sozinho travava os visitantes de verdade (migration `20261119300100_lista_de_espera_limites_e_resumo_do_aviso.sql`).
 - **Domínio:** `normalizarContato` aplica a mesma regra.
 
 ### Quem lê

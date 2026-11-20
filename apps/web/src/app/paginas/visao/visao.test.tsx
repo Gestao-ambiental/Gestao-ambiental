@@ -1,5 +1,5 @@
 import { adicionarDias, hojeNoFuso } from '@gestao-ambiental/domain'
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import axe from 'axe-core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -94,6 +94,34 @@ describe('visão da equipe (EQ-01 a EQ-03)', () => {
     expect(within(contadores).getByRole('button', { name: /Atrasadas/ })).toHaveTextContent('1')
     expect(within(contadores).getByRole('button', { name: /Sem responsável/ })).toBeInTheDocument()
     expect(screen.getByText('1–4 de 4')).toBeInTheDocument()
+  })
+
+  it('o filtro de tipo lista os tipos em uso que o banco devolve, por sigla', async () => {
+    falso.reiniciar(
+      cenario('gestao', {
+        rpc: {
+          listar_tipos_em_uso: {
+            data: [
+              { id: 't-lap', sigla: 'LAP' },
+              { id: 't-lao', sigla: 'LAO' },
+            ],
+          },
+        },
+      }),
+    )
+    renderizarApp('/')
+    await screen.findByRole('table')
+    const filtro = screen.getByRole('combobox', { name: 'Tipo de instrumento' })
+    await waitFor(() => {
+      expect(
+        within(filtro)
+          .getAllByRole('option')
+          .map((o) => o.textContent),
+      ).toEqual(['Todos os tipos', 'LAO', 'LAP'])
+    })
+    expect(falso.cliente.rpc).toHaveBeenCalledWith('listar_tipos_em_uso', {
+      p_consultoria_id: 'c-Filtroville',
+    })
   })
 
   it('o contador filtra a tabela e o cabeçalho ordena', async () => {

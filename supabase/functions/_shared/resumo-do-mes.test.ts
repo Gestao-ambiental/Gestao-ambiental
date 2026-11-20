@@ -33,26 +33,54 @@ function linha(mes: string, extra: Partial<LinhaDoResumo> = {}): LinhaDoResumo {
 
 const LINHAS = [linha('2026-10-01'), linha('2026-09-01', { horasTotal: 20.5, prazoCumpridas: 2 })]
 
-function montar(
-  variaveis: Record<string, string> = {
-    CRON_TOKEN: TOKEN,
-    RESEND_API_KEY: 're_chave_de_teste',
-    AVISO_REMETENTE: 'Grama <avisos@exemplo.test>',
-  },
-) {
-  const enviados = new Set<string>()
+const VARIAVEIS: Record<string, string> = {
+  CRON_TOKEN: TOKEN,
+  RESEND_API_KEY: 're_chave_de_teste',
+  AVISO_REMETENTE: 'Grama <avisos@exemplo.test>',
+}
+
+/** Banco falso: envios gravados e reservas (compartilhável entre duas execuções). */
+function novoBanco() {
+  return { enviados: new Set<string>(), reservas: new Set<string>() }
+}
+
+interface Opcoes {
+  banco?: ReturnType<typeof novoBanco>
+  /** Resposta do Resend: status HTTP, ou 'sem_resposta' (fetch lança, ex.: tempo esgotado). */
+  resend?: () => number | 'sem_resposta'
+  falharAoRegistrar?: boolean
+}
+
+function montar(variaveis: Record<string, string> = VARIAVEIS, opcoes: Opcoes = {}) {
+  const banco = opcoes.banco ?? novoBanco()
+  const { enviados, reservas } = banco
   const chamadas: { url: string; init: RequestInit }[] = []
   const log: string[] = []
   const deps: DependenciasDoResumo = {
     env: (nome) => variaveis[nome],
-    fetch: ((url: string, init: RequestInit) => {
+    fetch: (async (url: string, init: RequestInit) => {
       chamadas.push({ url, init })
-      return Promise.resolve(new Response('{"id":"x"}', { status: 200 }))
+      await new Promise((resolver) => setTimeout(resolver, 1))
+      const status = opcoes.resend?.() ?? 200
+      if (status === 'sem_resposta') throw new Error('tempo esgotado')
+      return new Response('{"id":"x"}', { status })
     }) as typeof fetch,
     resumosPendentes: () =>
       Promise.resolve(LINHAS.filter((l) => !enviados.has(`${l.consultoriaId}:${l.mesDoResumo}`))),
     emailsDaGestao: () => Promise.resolve(['gestao@exemplo.test']),
+    // Como no banco: só uma execução reserva; envio gravado não reserva.
+    reservarEnvio: (consultoriaId, mes) => {
+      const chave = `${consultoriaId}:${mes}`
+      if (enviados.has(chave) || reservas.has(chave)) return Promise.resolve(false)
+      reservas.add(chave)
+      return Promise.resolve(true)
+    },
+    liberarReserva: (consultoriaId, mes) => {
+      reservas.delete(`${consultoriaId}:${mes}`)
+      return Promise.resolve()
+    },
     registrarEnvio: (consultoriaId, mes) => {
+      if (opcoes.falharAoRegistrar) return Promise.reject(new Error('registrar'))
       const chave = `${consultoriaId}:${mes}`
       const novo = !enviados.has(chave)
       enviados.add(chave)
@@ -62,7 +90,7 @@ function montar(
       Promise.resolve({ linhas: LINHAS, email: 'operador@exemplo.test', erro: null }),
     registrar: (l) => log.push(l),
   }
-  return { tratar: criarTratadorDoResumo(deps), chamadas, log }
+  return { tratar: criarTratadorDoResumo(deps), chamadas, log, banco }
 }
 
 function pedido(token: string | null, corpo: unknown = {}, autorizacao?: string) {
@@ -96,6 +124,7 @@ Deno.test('envia um e-mail por consultoria e é idempotente no mesmo mês', asyn
     consultorias: 1,
     enviados: 1,
     sem_destinatarios: 0,
+    em_andamento: 0,
     falhas: 0,
   })
   assert.equal(chamadas.length, 1)
@@ -110,10 +139,98 @@ Deno.test('envia um e-mail por consultoria e é idempotente no mesmo mês', asyn
     consultorias: 0,
     enviados: 0,
     sem_destinatarios: 0,
+    em_andamento: 0,
     falhas: 0,
   })
   assert.equal(chamadas.length, 1)
   assert.ok(log.every((l) => !l.includes('@') && !l.includes('23')))
+})
+
+Deno.test('recusa do Resend: libera a reserva e a próxima execução envia', async () => {
+  let status = 500
+  const { tratar, chamadas, banco, log } = montar(VARIAVEIS, { resend: () => status })
+  const primeira = await tratar(pedido(TOKEN))
+  assert.equal(primeira.status, 502)
+  assert.deepEqual(await primeira.json(), {
+    consultorias: 1,
+    enviados: 0,
+    sem_destinatarios: 0,
+    em_andamento: 0,
+    falhas: 1,
+  })
+  assert.equal(banco.reservas.size, 0)
+  assert.equal(banco.enviados.size, 0)
+  assert.ok(log.some((l) => l.includes('falha_no_envio')))
+
+  status = 200
+  const segunda = await tratar(pedido(TOKEN))
+  assert.equal(segunda.status, 200)
+  assert.equal(((await segunda.json()) as { enviados: number }).enviados, 1)
+  assert.equal(chamadas.length, 2)
+})
+
+Deno.test('sem resposta do Resend: a reserva fica e repetir logo não reenvia', async () => {
+  let resposta: number | 'sem_resposta' = 'sem_resposta'
+  const { tratar, chamadas, banco } = montar(VARIAVEIS, { resend: () => resposta })
+  const primeira = await tratar(pedido(TOKEN))
+  assert.equal(primeira.status, 502)
+  assert.equal(banco.reservas.size, 1)
+
+  resposta = 200
+  const segunda = await tratar(pedido(TOKEN))
+  assert.deepEqual(await segunda.json(), {
+    consultorias: 1,
+    enviados: 0,
+    sem_destinatarios: 0,
+    em_andamento: 1,
+    falhas: 0,
+  })
+  assert.equal(chamadas.length, 1)
+})
+
+Deno.test('falha ao gravar depois de enviar: a reserva fica e repetir não reenvia', async () => {
+  const { tratar, chamadas, banco, log } = montar(VARIAVEIS, { falharAoRegistrar: true })
+  const primeira = await tratar(pedido(TOKEN))
+  assert.equal(primeira.status, 502)
+  assert.deepEqual(await primeira.json(), {
+    consultorias: 1,
+    enviados: 0,
+    sem_destinatarios: 0,
+    em_andamento: 0,
+    falhas: 1,
+  })
+  assert.equal(chamadas.length, 1)
+  assert.equal(banco.reservas.size, 1)
+  assert.ok(log.some((l) => l.includes('"etapa":"registro"')))
+
+  // O envio não foi gravado (continua pendente), mas a reserva impede o segundo e-mail.
+  const segunda = await tratar(pedido(TOKEN))
+  assert.equal(segunda.status, 200)
+  assert.deepEqual(await segunda.json(), {
+    consultorias: 1,
+    enviados: 0,
+    sem_destinatarios: 0,
+    em_andamento: 1,
+    falhas: 0,
+  })
+  assert.equal(chamadas.length, 1)
+})
+
+Deno.test('duas execuções ao mesmo tempo: só uma envia', async () => {
+  const banco = novoBanco()
+  const a = montar(VARIAVEIS, { banco })
+  const b = montar(VARIAVEIS, { banco })
+  const respostas = await Promise.all([a.tratar(pedido(TOKEN)), b.tratar(pedido(TOKEN))])
+  const corpos = (await Promise.all(respostas.map((r) => r.json()))) as {
+    enviados: number
+    em_andamento: number
+    falhas: number
+  }[]
+  assert.equal(a.chamadas.length + b.chamadas.length, 1)
+  assert.deepEqual(corpos.map((c) => c.enviados).sort(), [0, 1])
+  assert.deepEqual(corpos.map((c) => c.em_andamento).sort(), [0, 1])
+  assert.ok(corpos.every((c) => c.falhas === 0))
+  assert.equal(banco.enviados.size, 1)
 })
 
 Deno.test('sem RESEND_API_KEY: erro tratado (503), sem enviar', async () => {

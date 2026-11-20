@@ -28,15 +28,6 @@ export {
 export type { LeituraDeData } from './calendario'
 
 export {
-  MAXIMO_OCORRENCIAS,
-  MESES_POR_PERIODICIDADE,
-  ocorrencias,
-  primeiraOcorrenciaSugerida,
-  sugerirDatasDeDependencia,
-} from './recorrencia'
-export type { Periodicidade } from './recorrencia'
-
-export {
   ANTECEDENCIA_PREPARACAO_PADRAO_DIAS,
   DIAS_AVISO_PROTOCOLO,
   DIAS_LIMITE_PROTOCOLO_LAO,
@@ -51,8 +42,7 @@ export {
 } from './renovacao'
 export type { DatasRenovacaoLao, EtapaRenovacaoLao, SituacaoDaRenovacao } from './renovacao'
 
-export { diaUtilAnterior, ehDiaUtil, prazoDeOficio } from './dias-uteis'
-export type { PrazoDeOficio, UnidadePrazo } from './dias-uteis'
+export { ehDiaUtil } from './dias-uteis'
 
 export {
   VALIDADE_CONVITE_DIAS,
@@ -73,6 +63,7 @@ export { formatarCnpj, mascararCnpj, normalizarCnpj, situacaoDoCnpj } from './cn
 
 export {
   ErroDePrazo,
+  MAXIMO_OCORRENCIAS,
   RECORRENCIAS,
   datasDoPrazo,
   descreverRecorrencia,
@@ -163,6 +154,7 @@ export {
   UNIDADES_DE_COBRANCA,
   custoDoTerceiro,
   custoHoraPorProfissao,
+  honorariosPelaTabela,
   mesmaProfissao,
   precificarOrcamento,
   problemaDasFaixas,
@@ -344,13 +336,7 @@ export type {
   Uso,
 } from './planos'
 
-export {
-  cnpjValido,
-  cpfValido,
-  mascararDocumento,
-  normalizarDocumento,
-  tipoDoDocumento,
-} from './documento'
+export { cpfValido, mascararDocumento, normalizarDocumento, tipoDoDocumento } from './documento'
 export type { TipoDeDocumento } from './documento'
 
 export {

@@ -368,7 +368,7 @@ select results_eq(
 
 select results_eq(
   $$select titulo, responsavel_nome, total_itens, itens_registrados, licenca, total::integer
-    from public.listar_vistorias(null, true)$$,
+    from public.listar_vistorias('c0000000-0000-4000-8000-00000000000a', null, true)$$,
   $$values ('Vistoria da ETE'::text, 'Bruno Tavares'::text, 3, 3, 'LAO 4821/2023'::text, 1)$$,
   'minhas vistorias traz a vistoria com o progresso'
 );
@@ -434,8 +434,8 @@ select testes.autenticar_como('gustavo@verdesul.test');
 select results_eq(
   $$select (select count(*) from public.vistoria) + (select count(*) from public.vistoria_item)
          + (select count(*) from public.vistoria_foto) + (select count(*) from public.vistoria_decisao)
-         + (select count(*) from public.listar_vistorias())
-         + (select count(*) from public.listar_vistorias(current_setting('testes.o1')::uuid))
+         + (select count(*) from public.listar_vistorias('c0000000-0000-4000-8000-00000000000a'))
+         + (select count(*) from public.listar_vistorias('c0000000-0000-4000-8000-00000000000a', current_setting('testes.o1')::uuid))
          + (select count(*) from public.obter_vistoria('e4850000-0000-4000-8000-000000000001'))$$,
   $$values (0::bigint)$$,
   'outra consultoria lê zero linhas das 4 tabelas, da lista e do detalhe'

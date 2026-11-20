@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { cnpjValido, cpfValido, mascararDocumento, tipoDoDocumento } from './documento'
+import { cpfValido, mascararDocumento, tipoDoDocumento } from './documento'
 
 describe('documento de quem paga (CPF ou CNPJ)', () => {
   it('CPF pelos dígitos verificadores', () => {
@@ -12,12 +12,12 @@ describe('documento de quem paga (CPF ou CNPJ)', () => {
   })
 
   it('CNPJ numérico e alfanumérico pelos dígitos verificadores', () => {
-    expect(cnpjValido('11.222.333/0001-81')).toBe(true)
-    expect(cnpjValido('11.222.333/0001-80')).toBe(false)
-    expect(cnpjValido('00.000.000/0000-00')).toBe(false)
+    expect(tipoDoDocumento('11.222.333/0001-81')).toBe('cnpj')
+    expect(tipoDoDocumento('11.222.333/0001-80')).toBeNull()
+    expect(tipoDoDocumento('00.000.000/0000-00')).toBeNull()
     // Exemplo da Receita para o CNPJ alfanumérico.
-    expect(cnpjValido('12.ABC.345/01DE-35')).toBe(true)
-    expect(cnpjValido('12.ABC.345/01DE-36')).toBe(false)
+    expect(tipoDoDocumento('12.ABC.345/01DE-35')).toBe('cnpj')
+    expect(tipoDoDocumento('12.ABC.345/01DE-36')).toBeNull()
   })
 
   it('tipo do documento: CPF, CNPJ ou nada', () => {

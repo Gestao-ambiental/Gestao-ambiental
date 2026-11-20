@@ -24,7 +24,9 @@ import {
 } from '@/lib/api/ocorrencias'
 import { formatarInstanteComHora } from '@/lib/datas'
 import { mensagemDoErro } from '@/lib/erros'
+import { tamanhoLegivel } from '@/lib/texto'
 
+import { ConferenciaDaIa } from './ConferenciaDaIa'
 import { CabecalhoDeSecao, VazioDeSecao } from './pecas'
 
 const SITUACAO: Record<Evidencia['situacao'], { texto: string; tom: TomSelo }> = {
@@ -37,13 +39,8 @@ const PROBLEMAS: Record<ProblemaDaEvidencia, string> = {
   nao_pdf: 'Este arquivo não é um PDF válido.',
   grande_demais: 'O arquivo passa de 25 MB.',
   vazio: 'O arquivo está vazio.',
-  tipo: 'Envie PDF, PNG ou JPEG.',
-}
-
-function tamanhoLegivel(bytes: number): string {
-  return bytes >= 1024 * 1024
-    ? `${(bytes / (1024 * 1024)).toFixed(1).replace('.', ',')} MB`
-    : `${String(Math.max(1, Math.round(bytes / 1024)))} KB`
+  tipo: 'Envie PDF, PNG, JPEG ou DOCX.',
+  nao_docx: 'Este arquivo não é um .docx válido.',
 }
 
 function dataDe(valor: string): DataCivil | null {
@@ -145,7 +142,7 @@ function EnvioDeEvidencia({
         <input
           ref={entrada}
           type="file"
-          accept="application/pdf,image/png,image/jpeg"
+          accept="application/pdf,image/png,image/jpeg,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
           className="sr-only"
           tabIndex={-1}
           aria-hidden="true"
@@ -290,6 +287,10 @@ export function SecaoEvidencia({
         </ul>
       ) : !possoEnviar ? (
         <VazioDeSecao>Nenhuma evidência enviada.</VazioDeSecao>
+      ) : null}
+
+      {ultima ? (
+        <ConferenciaDaIa key={ultima.id} ocorrencia={ocorrencia} evidencia={ultima} />
       ) : null}
     </section>
   )

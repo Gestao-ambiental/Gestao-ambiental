@@ -2,15 +2,33 @@
 // Function avisar-acesso-de-suporte só liga as dependências reais (Supabase e fetch); a regra fica
 // aqui, testada com `deno test` e dependências falsas.
 //
-// 1. Com o JWT de quem chama: o banco confere que é operador com dois fatores e que existe acesso de
-//    emergência valendo aberto por ele (RPC dados_do_aviso_de_emergencia).
-// 2. Com a service role: lê os e-mails da Gestão ativa da consultoria.
-// 3. Envia pelo Resend (RESEND_API_KEY, AVISO_REMETENTE). Sem as variáveis: erro tratado; o acesso
-//    continua (a faixa de aviso aparece para a Gestão no Grama do mesmo jeito).
-// Nunca vão para o log: e-mails, a chave e o motivo.
+// Dois chamadores:
+// - o gatilho do banco (pg_net), com o header x-aviso-token, conferido em tempo constante contra
+//   SUPORTE_AVISO_TOKEN: o aviso sai mesmo quando o acesso foi aberto sem o front;
+// - o front da central, com o JWT de quem chama: o banco confere que é operador com dois fatores e
+//   que existe acesso de emergência valendo aberto por ele (RPC dados_do_aviso_de_emergencia).
+// Depois, com a service role:
+// 1. Reserva o aviso (RPC reservar_aviso_de_emergencia): só um chamador envia. Quem chega depois
+//    espera o resultado do outro (estado_do_aviso_de_emergencia): já enviado, responde
+//    { enviados: 0, jaEnviado: true }; o outro falhou e liberou, reserva e envia (vira a nova
+//    tentativa); sem resultado a tempo, 409 envio_em_andamento. Nunca diz que saiu sem saber.
+// 2. Lê os e-mails da Gestão ativa da consultoria.
+// 3. Envia pelo Resend (RESEND_API_KEY, AVISO_REMETENTE) e marca o aviso como enviado
+//    (marcar_aviso_de_emergencia_enviado). Se falhar, libera a reserva
+//    (liberar_aviso_de_emergencia) para uma nova tentativa. Sem as variáveis: erro tratado, sem
+//    reservar; o acesso continua (a faixa de aviso aparece para a Gestão no Grama do mesmo jeito).
+// Nunca vão para o log: e-mails, a chave, o token e o motivo.
+
+import { iguaisEmTempoConstante } from './resumo-do-mes.ts'
 
 export const URL_DO_RESEND = 'https://api.resend.com/emails'
 export const LIMITE_TEMPO_ENVIO_MS = 15_000
+/** Quanto quem perdeu a reserva espera o resultado do outro chamador (o envio dele e uma folga). */
+export const ESPERA_PELO_OUTRO_ENVIO_MS = LIMITE_TEMPO_ENVIO_MS + 5_000
+export const INTERVALO_DA_ESPERA_MS = 500
+
+/** RPC estado_do_aviso_de_emergencia: reservado e enviado, reservado sem resultado, ou sem reserva. */
+export type EstadoDoAviso = 'enviado' | 'em_andamento' | 'livre'
 
 export const ROTULO_DA_CATEGORIA: Record<string, string> = {
   incidente_de_seguranca: 'Incidente de segurança',
@@ -49,6 +67,19 @@ export interface DependenciasDoAviso {
   env: (nome: string) => string | undefined
   /** RPC com o JWT de quem chama: confere operador, dois fatores e emergência valendo. */
   conferirAviso: (autorizacao: string, acessoId: string) => Promise<ConferenciaDoAviso>
+  /**
+   * RPC reservar_aviso_de_emergencia (service role): os dados do e-mail quando esta chamada
+   * reservou o aviso; nulo quando já foi reservado (ou não é emergência).
+   */
+  reservarAviso: (acessoId: string) => Promise<DadosDoAviso | null>
+  /** RPC liberar_aviso_de_emergencia (service role): desfaz a reserva depois de uma falha. */
+  liberarAviso: (acessoId: string) => Promise<void>
+  /** RPC marcar_aviso_de_emergencia_enviado (service role): o Resend aceitou o e-mail. */
+  marcarEnviado: (acessoId: string) => Promise<void>
+  /** RPC estado_do_aviso_de_emergencia (service role). */
+  estadoDoAviso: (acessoId: string) => Promise<EstadoDoAviso>
+  /** Pausa entre as consultas ao estado; nos testes, imediata. */
+  esperar?: (ms: number) => Promise<void>
   /** E-mails da Gestão ativa da consultoria (service role). */
   emailsDaGestao: (consultoriaId: string) => Promise<string[]>
   fetch: typeof fetch
@@ -115,13 +146,28 @@ const RECUSAS: Record<string, number> = {
 
 export function criarTratadorDoAviso(deps: DependenciasDoAviso) {
   const registrar = deps.registrar ?? ((linha: string) => console.error(linha))
+  const esperar =
+    deps.esperar ??
+    ((ms: number) =>
+      new Promise<void>((resolver) => {
+        setTimeout(resolver, ms)
+      }))
 
   return async (pedido: Request): Promise<Response> => {
     if (pedido.method === 'OPTIONS') return new Response('ok', { headers: CORS })
     if (pedido.method !== 'POST') return responder({ erro: 'metodo_invalido' }, 405)
 
+    // Gatilho do banco: só o token. Front: o JWT, conferido pelo banco logo abaixo.
+    const token = pedido.headers.get('x-aviso-token')
     const autorizacao = pedido.headers.get('Authorization')
-    if (!autorizacao) return responder({ erro: 'sem_permissao' }, 401)
+    if (token !== null) {
+      const esperado = deps.env('SUPORTE_AVISO_TOKEN') ?? ''
+      if (!esperado || !iguaisEmTempoConstante(token, esperado)) {
+        return responder({ erro: 'sem_permissao' }, 401)
+      }
+    } else if (!autorizacao) {
+      return responder({ erro: 'sem_permissao' }, 401)
+    }
 
     let acessoId = ''
     try {
@@ -132,20 +178,21 @@ export function criarTratadorDoAviso(deps: DependenciasDoAviso) {
     }
     if (!UUID.test(acessoId)) return responder({ erro: 'pedido_invalido' }, 400)
 
-    let conferencia: ConferenciaDoAviso
-    try {
-      conferencia = await deps.conferirAviso(autorizacao, acessoId)
-    } catch {
-      registrar(JSON.stringify({ acessoId, etapa: 'conferencia', motivo: 'erro_interno' }))
-      return responder({ erro: 'erro_interno' }, 500)
-    }
-    const dados = conferencia.dados
-    if (!dados) {
-      const codigo = conferencia.erro ?? 'sem_permissao'
-      return responder(
-        { erro: codigo in RECUSAS ? codigo : 'sem_permissao' },
-        RECUSAS[codigo] ?? 403,
-      )
+    if (token === null && autorizacao) {
+      let conferencia: ConferenciaDoAviso
+      try {
+        conferencia = await deps.conferirAviso(autorizacao, acessoId)
+      } catch {
+        registrar(JSON.stringify({ acessoId, etapa: 'conferencia', motivo: 'erro_interno' }))
+        return responder({ erro: 'erro_interno' }, 500)
+      }
+      if (!conferencia.dados) {
+        const codigo = conferencia.erro ?? 'sem_permissao'
+        return responder(
+          { erro: codigo in RECUSAS ? codigo : 'sem_permissao' },
+          RECUSAS[codigo] ?? 403,
+        )
+      }
     }
 
     const chave = deps.env('RESEND_API_KEY')
@@ -155,14 +202,47 @@ export function criarTratadorDoAviso(deps: DependenciasDoAviso) {
       return responder({ erro: 'configuracao_ausente' }, 503)
     }
 
+    let dados: DadosDoAviso | null
+    try {
+      dados = await deps.reservarAviso(acessoId)
+      // Reservado pelo outro chamador (gatilho ou front): espera o resultado dele.
+      for (let espera = 0; !dados && espera < ESPERA_PELO_OUTRO_ENVIO_MS;) {
+        const estado = await deps.estadoDoAviso(acessoId)
+        if (estado === 'enviado') return responder({ enviados: 0, jaEnviado: true })
+        // O outro falhou e liberou a reserva: esta chamada é a nova tentativa.
+        if (estado === 'livre') dados = await deps.reservarAviso(acessoId)
+        if (!dados) {
+          await esperar(INTERVALO_DA_ESPERA_MS)
+          espera += INTERVALO_DA_ESPERA_MS
+        }
+      }
+    } catch {
+      registrar(JSON.stringify({ acessoId, etapa: 'reserva', motivo: 'erro_interno' }))
+      return responder({ erro: 'erro_interno' }, 500)
+    }
+    // O outro chamador ainda não terminou: não dá para dizer que o e-mail saiu.
+    if (!dados) return responder({ erro: 'envio_em_andamento' }, 409)
+
+    const liberar = async () => {
+      try {
+        await deps.liberarAviso(acessoId)
+      } catch {
+        registrar(JSON.stringify({ acessoId, etapa: 'liberar', motivo: 'erro_interno' }))
+      }
+    }
+
     let destinatarios: string[]
     try {
       destinatarios = await deps.emailsDaGestao(dados.consultoriaId)
     } catch {
       registrar(JSON.stringify({ acessoId, etapa: 'destinatarios', motivo: 'erro_interno' }))
+      await liberar()
       return responder({ erro: 'erro_interno' }, 500)
     }
-    if (destinatarios.length === 0) return responder({ erro: 'sem_destinatarios' }, 422)
+    if (destinatarios.length === 0) {
+      await liberar()
+      return responder({ erro: 'sem_destinatarios' }, 422)
+    }
 
     const email = montarEmail(dados)
     let status = 0
@@ -179,11 +259,20 @@ export function criarTratadorDoAviso(deps: DependenciasDoAviso) {
         signal: AbortSignal.timeout(LIMITE_TEMPO_ENVIO_MS),
       })
       status = resposta.status
-      if (resposta.ok) return responder({ enviados: destinatarios.length })
+      if (resposta.ok) {
+        try {
+          await deps.marcarEnviado(acessoId)
+        } catch {
+          // O e-mail saiu; quem espera este resultado responde envio_em_andamento.
+          registrar(JSON.stringify({ acessoId, etapa: 'marcar', motivo: 'erro_interno' }))
+        }
+        return responder({ enviados: destinatarios.length })
+      }
     } catch {
       // rede ou tempo esgotado: status fica 0
     }
     registrar(JSON.stringify({ acessoId, etapa: 'envio', motivo: 'falha_no_envio', status }))
+    await liberar()
     return responder({ erro: 'falha_no_envio' }, 502)
   }
 }

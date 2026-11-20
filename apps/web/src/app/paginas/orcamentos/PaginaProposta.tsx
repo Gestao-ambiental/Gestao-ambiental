@@ -1,5 +1,4 @@
 import {
-  ESCALA_DA_QUANTIDADE,
   datasDaProposta,
   diferencaDasParcelas,
   distribuirPorMaiorResto,
@@ -7,9 +6,9 @@ import {
   formatarDataCivil,
   formatarPontosBase,
   formatarDocumentoDoTitular,
+  honorariosPelaTabela,
   mascararCnpj,
   rotuloDoDocumentoDoTitular,
-  valorPorFaixas,
 } from '@gestao-ambiental/domain'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState, type ReactNode } from 'react'
@@ -30,7 +29,7 @@ import {
   type Orcamento,
 } from '@/lib/api/orcamentos'
 
-import { calcularOrcamento } from './calculo'
+import { calcularOrcamento, linhaParaCalculo } from './calculo'
 import { SUFIXO_DA_UNIDADE, numeroComRevisao, textoDaQuantidade, textoDasFaixas } from './comum'
 import { DialogoMarcarEnviada } from './DialogoMarcarEnviada'
 import './proposta.css'
@@ -199,14 +198,7 @@ function Proposta({ orcamento: o }: { orcamento: Orcamento }) {
 
   // A pendência sai da mesma regra do editor; os preços são os gravados pelo banco.
   const calculo = calcularOrcamento(
-    o.itens.map((i) => ({
-      minutos: i.minutos,
-      custoDiretoExtraCentavos: i.custoDiretoExtraCentavos,
-      horaVendaId: i.horaVendaId,
-      responsavelId: i.responsavelId,
-      quantidadeDezMilesimos: i.quantidadeDezMilesimos,
-      precoFechadoCentavos: i.precoFechadoCentavos,
-    })),
+    o.itens.map((i) => linhaParaCalculo(i)),
     o.visitas,
     o.despesas.filter((d) => d.tratamento === 'incluida').map((d) => d.estimativaCentavos),
     o.parcelas.map((p) => p.percentualPb),
@@ -475,7 +467,11 @@ function Proposta({ orcamento: o }: { orcamento: Orcamento }) {
                 </thead>
                 <tbody>
                   {o.itens.map((i, indice) => {
-                    const colunas = colunasDoItem(i, linhas)
+                    const colunas = colunasDoItem(
+                      i,
+                      linhas,
+                      o.formaPreco === 'margem' && o.base !== null && i.terceiro !== null,
+                    )
                     return (
                       <tr key={i.id}>
                         <td className="text-center tabular-nums">{doisDigitos(indice + 1)}</td>
@@ -713,12 +709,16 @@ function Assinatura({ titulo, nome }: { titulo: string; nome: string }) {
  * horas são internas (ADR-0018) e assim toda linha fecha Qtd. × Valor unit. = Total. Pacote:
  * "1 pacote". m², ha, diária e campanha: a quantidade e a tarifa; por faixas, a quantidade com as
  * faixas na linha de apoio (nunca uma média como tarifa). Quando o preço mínimo valeu, diz isso.
+ * Terceirizado "pela margem": o banco precifica pelo custo dele (private.itens_do_preco), sem a
+ * linha da tabela nem o mínimo dela; então "1 serviço" e o preço gravado, sem tarifa nem mínimo.
  */
 function colunasDoItem(
   item: Orcamento['itens'][number],
   linhas: readonly HoraDeVenda[],
+  pelaMargemDoTerceiro: boolean,
 ): { quantidade: string; unitario: string; apoio: string[] } {
   const preco = `R$ ${formatarCentavos(item.precoCentavos)}`
+  if (pelaMargemDoTerceiro) return { quantidade: '1 serviço', unitario: preco, apoio: [] }
   const linha = linhas.find((h) => h.id === item.horaVendaId)
   if (!linha || linha.unidade === 'hora') {
     return { quantidade: '1 serviço', unitario: preco, apoio: apoioDoMinimo(item, linha) }
@@ -744,16 +744,8 @@ function colunasDoItem(
 
 /** "Preço mínimo do serviço: R$ X" quando a tabela daria menos que o mínimo (o banco faz igual). */
 function apoioDoMinimo(item: Orcamento['itens'][number], linha: HoraDeVenda | undefined): string[] {
-  if (linha?.minimoCentavos == null) return []
-  const quantidade = item.quantidadeDezMilesimos
-  let pelaTabela: number | null = null
-  if (linha.unidade === 'hora') pelaTabela = Math.round((item.minutos * linha.valorCentavos) / 60)
-  else if (quantidade !== null)
-    pelaTabela =
-      linha.faixas.length > 0
-        ? valorPorFaixas(quantidade, linha.faixas)
-        : Math.round((quantidade * linha.valorCentavos) / ESCALA_DA_QUANTIDADE)
-  return pelaTabela !== null && pelaTabela < linha.minimoCentavos
-    ? [`Preço mínimo do serviço: R$ ${formatarCentavos(linha.minimoCentavos)}`]
+  const honorarios = linha ? honorariosPelaTabela(linha, item) : null
+  return honorarios && honorarios.pelaTabelaCentavos < honorarios.comMinimoCentavos
+    ? [`Preço mínimo do serviço: R$ ${formatarCentavos(honorarios.comMinimoCentavos)}`]
     : []
 }

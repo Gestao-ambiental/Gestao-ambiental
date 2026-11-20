@@ -545,6 +545,43 @@ describe('acesso de suporte: emergência pela central', () => {
     )
   })
 
+  it.each([
+    [
+      'o envio pelo gatilho ainda sem resultado',
+      {
+        error: new FunctionsHttpError(
+          new Response(JSON.stringify({ erro: 'envio_em_andamento' }), { status: 409 }),
+        ),
+      },
+      'o envio não foi confirmado a tempo',
+    ],
+    ['nenhum e-mail confirmado', { data: { enviados: 0 } }, 'erro no envio'],
+  ])('%s: a central não diz que o e-mail saiu', async (_caso, resposta, motivo) => {
+    const fim = daqui(2 * HORA)
+    let aberto = false
+    cenarioDoOperador(
+      {
+        abrir_acesso_de_emergencia: (args) => {
+          aberto = true
+          return { data: args.p_id }
+        },
+        meus_acessos_de_suporte: () => ({ data: aberto ? [meuAcesso(fim, 'emergencia')] : [] }),
+      },
+      { funcoes: { 'avisar-acesso-de-suporte': resposta } },
+    )
+    const { usuario, dialogo } = await abrirDialogo()
+    await usuario.click(
+      within(dialogo).getByRole('radio', { name: 'Falha grave que impede o uso' }),
+    )
+    await usuario.type(within(dialogo).getByRole('textbox', { name: 'Motivo' }), 'Sistema fora')
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Abrir acesso de emergência' }))
+
+    const aviso = await screen.findByRole('dialog', { name: 'Acesso de emergência aberto' })
+    expect(within(aviso).getByRole('alert')).toHaveTextContent(
+      `O e-mail para a Gestão não saiu (${motivo}).`,
+    )
+  })
+
   it('o banco recusando mostra a mensagem no diálogo', async () => {
     cenarioDoOperador({
       abrir_acesso_de_emergencia: {

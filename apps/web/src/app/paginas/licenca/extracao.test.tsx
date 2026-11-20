@@ -201,6 +201,29 @@ describe('extrair com IA: passo 1 (IA-01, IA-04)', () => {
     expect(screen.queryByRole('button', { name: 'Tentar de novo' })).toBeNull()
   })
 
+  it('texto longo demais: não culpa os 10 MB nem as 300 páginas', async () => {
+    const usuario = userEvent.setup()
+    falso.reiniciar(
+      cenario({
+        funcoes: {
+          'extrair-licenca': {
+            data: {
+              situacao: 'falhou',
+              motivo: 'pdf_texto_longo_demais',
+              detalhe: '450000 caracteres (limite 400000)',
+            },
+          },
+        },
+      }),
+    )
+    renderizarApp('/licencas/i1/documento')
+    await usuario.click(await screen.findByRole('radio', { name: 'Extrair com IA' }))
+    await usuario.click(screen.getByRole('button', { name: 'Continuar' }))
+    expect(await screen.findByText(/tem texto demais para a IA ler de uma vez/)).toBeInTheDocument()
+    expect(screen.queryByText(/10 MB e 300 páginas/)).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Tentar de novo' })).toBeNull()
+  })
+
   it('provedor recusou: explica, mostra o detalhe técnico e não oferece tentar de novo', async () => {
     const usuario = userEvent.setup()
     falso.reiniciar(
@@ -249,6 +272,30 @@ describe('extrair com IA: passo 1 (IA-01, IA-04)', () => {
         'Este rascunho já tem condicionantes: a IA só preenche rascunho sem itens. Siga pelo manual.',
       ),
     ).toBeInTheDocument()
+  })
+
+  it('plano sem IA: a recusa explica e leva ao cadastro manual', async () => {
+    const usuario = userEvent.setup()
+    falso.reiniciar(
+      cenario({
+        funcoes: {
+          'extrair-licenca': {
+            error: new FunctionsHttpError(
+              new Response(JSON.stringify({ erro: 'ia_fora_do_plano' }), { status: 403 }),
+            ),
+          },
+        },
+      }),
+    )
+    renderizarApp('/licencas/i1/documento')
+    await usuario.click(await screen.findByRole('radio', { name: 'Extrair com IA' }))
+    await usuario.click(screen.getByRole('button', { name: 'Continuar' }))
+    expect(
+      await screen.findByText(
+        'A extração por IA não faz parte do plano desta consultoria. Siga pelo cadastro manual.',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Cadastrar manualmente' })).toBeInTheDocument()
   })
 })
 

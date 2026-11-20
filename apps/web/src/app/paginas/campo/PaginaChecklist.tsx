@@ -8,10 +8,11 @@ import {
   type ResultadoDoItem,
 } from '@gestao-ambiental/domain'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useId, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router'
 
 import { Pagina } from '@/app/paginas/Pagina'
+import { AvisoDeSaida } from '@/components/aviso-de-saida'
 import { Carregando, EstadoErro } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
 import { classeAreaTexto } from '@/components/ui/estilos-campo'
@@ -89,6 +90,7 @@ function ItemDoChecklist({
   fotos,
   urls,
   editavel,
+  aoMudarNaoSalvo,
 }: {
   vistoria: Vistoria
   item: ItemDaVistoriaGravado
@@ -96,12 +98,16 @@ function ItemDoChecklist({
   fotos: readonly FotoDaVistoria[]
   urls: Readonly<Record<string, string>> | undefined
   editavel: boolean
+  /** Há comentário digitado que ainda não foi enviado, ou gravação que falhou? */
+  aoMudarNaoSalvo: (itemId: string, naoSalvo: boolean) => void
 }) {
   const queryClient = useQueryClient()
   const idComentario = useId()
   const campoComentario = useRef<HTMLTextAreaElement>(null)
   const [resultado, setResultado] = useState<ResultadoDoItem>(item.resultado)
   const [comentario, setComentario] = useState(item.comentario ?? '')
+  // O texto da caixa agora, para a gravação que termina saber se ele já mudou de novo.
+  const comentarioDigitado = useRef(comentario)
   const [erroComentario, setErroComentario] = useState<string | null>(null)
   const [comentando, setComentando] = useState(false)
 
@@ -124,8 +130,20 @@ function ItemDoChecklist({
           ),
       )
       void queryClient.invalidateQueries({ queryKey: ['vistorias'] })
+      // Só agora o comentário está no banco; o que foi digitado depois continua pendente.
+      aoMudarNaoSalvo(item.id, comentarioDigitado.current.trim() !== registro.comentario.trim())
+    },
+    // O texto só existe nesta tela: sair agora o perderia.
+    onError: () => {
+      aoMudarNaoSalvo(item.id, true)
     },
   })
+
+  // O item segue "não salvo" até o banco confirmar: sair com a gravação em curso pede
+  // confirmação, e o aviso se fecha sozinho quando ela termina bem.
+  function enviar(registro: Registro) {
+    salvar.mutate(registro)
+  }
 
   function gravar(registro: Registro) {
     if (registro.resultado === 'pendente') return
@@ -134,7 +152,7 @@ function ItemDoChecklist({
       return
     }
     setErroComentario(null)
-    salvar.mutate(registro)
+    enviar(registro)
   }
 
   useEffect(() => {
@@ -219,7 +237,12 @@ function ItemDoChecklist({
             className={cn(classeAreaTexto, 'min-h-16')}
             onChange={(evento) => {
               setComentario(evento.target.value)
+              comentarioDigitado.current = evento.target.value
               if (evento.target.value.trim()) setErroComentario(null)
+              aoMudarNaoSalvo(
+                item.id,
+                evento.target.value.trim() !== (item.comentario ?? '').trim(),
+              )
             }}
             onBlur={() => {
               const salvo = item.comentario ?? ''
@@ -275,7 +298,7 @@ function ItemDoChecklist({
               }
               erro={salvar.error}
               aoTentarDeNovo={() => {
-                if (salvar.variables) salvar.mutate(salvar.variables)
+                if (salvar.variables) enviar(salvar.variables)
               }}
             />
           </span>
@@ -292,6 +315,15 @@ function Checklist({ vistoria }: { vistoria: Vistoria }) {
   const urls = useUrlsDasFotos(vistoria.id, fotos.data ?? [])
   const editavel = vistoria.podeRegistrar && aceitaRegistro(vistoria.situacao)
   const carregado = itens.isSuccess
+  // Itens com comentário que não chegou ao banco: sair da tela (por exemplo, para tirar a foto)
+  // pede confirmação, porque o texto só vive aqui.
+  const naoSalvos = useRef(new Set<string>())
+  const [temNaoSalvo, setTemNaoSalvo] = useState(false)
+  const mudarNaoSalvo = useCallback((itemId: string, naoSalvo: boolean) => {
+    if (naoSalvo) naoSalvos.current.add(itemId)
+    else naoSalvos.current.delete(itemId)
+    setTemNaoSalvo(naoSalvos.current.size > 0)
+  }, [])
 
   // Vindo da lista de pendências (#item-<id>): leva ao item.
   useEffect(() => {
@@ -346,12 +378,19 @@ function Checklist({ vistoria }: { vistoria: Vistoria }) {
                 fotos={fotos.data.filter((f) => f.itemId === item.id)}
                 urls={urls.data}
                 editavel={editavel}
+                aoMudarNaoSalvo={mudarNaoSalvo}
               />
             ))}
           </ul>
         </div>
 
         <CampoObservacao vistoria={vistoria} editavel={editavel} />
+
+        <AvisoDeSaida
+          bloquear={() => naoSalvos.current.size > 0}
+          sujo={temNaoSalvo}
+          descricao="Um comentário do checklist ainda não foi salvo. Se sair agora, ele se perde."
+        />
 
         <BarraDeAcao>
           <Botao aparencia="sutil" asChild className={classeAcaoSecundaria}>

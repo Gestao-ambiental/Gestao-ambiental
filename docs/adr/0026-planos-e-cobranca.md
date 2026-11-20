@@ -34,17 +34,17 @@
 
 ## 4. Cobrança simulada (protótipo)
 
-- `assinar_plano_simulado` (Gestão de verdade): sem plano ativo, grava a assinatura e a primeira cobrança pendente (vencimento: hoje, ou o dia seguinte ao fim do teste/beta, ou ao período já pago); com plano ativo, troca a partir do próximo vencimento (`plano_agendado`, `ciclo_agendado`, `mudanca_em`). Conta interna recusa (`conta_interna_sem_cobranca`).
-- `pagar_cobranca_simulada`: o "Confirmar pagamento" do diálogo **Pagamento simulado** (no lugar da página do Asaas). Funciona mesmo em só leitura.
-- `cancelar_plano_simulado`: o plano vale até o fim do período pago (`valida_ate`); depois, só leitura.
+- `assinar_plano_simulado` (Gestão de verdade): sem plano ativo, grava a assinatura e a primeira cobrança pendente (vencimento: hoje, ou o dia seguinte ao fim do teste/beta, ou ao período já pago); com plano ativo, troca a partir do próximo vencimento (`plano_agendado`, `ciclo_agendado`, `mudanca_em`). Conta interna recusa (`conta_interna_sem_cobranca`). Assinatura nova com cobrança em aberto já vencida recusa (`cobranca_em_atraso`, desde 19/11/2026).
+- `pagar_cobranca_simulada`: **só o operador com dois fatores** (`private.exigir_operador`), por cobrança; funciona mesmo em só leitura. Até 19/11/2026 era o "Confirmar pagamento" de um diálogo da Gestão, o que deixava a Gestão marcar a própria cobrança como paga e sair do só leitura sem pagar (migration `20261119100000_pagamento_simulado_so_pelo_operador.sql`, teste `600`). Sem o Asaas, quem confirma o pagamento é a central.
+- `cancelar_plano_simulado`: o plano vale até o fim do período pago (`valida_ate`); depois, só leitura. Só saem (`removida`) as cobranças pendentes que ainda não venceram (vencimento a partir de hoje, no fuso da consultoria); as vencidas continuam devidas. Até 19/11/2026 saíam todas, e cancelar e assinar de novo apagava a dívida (migration `20261119100100_cancelar_plano_mantem_cobranca_vencida.sql`, teste `601`).
 - Central: `central_simular_atraso` (cobrança vencida com vencimento retroativo, padrão 5 dias) e `central_simular_pagamento`.
 - O formulário de cobrança (nome, e-mail, CNPJ ou CPF com máscara) só valida (`documento.ts`) e descarta: nada é gravado nem enviado.
 - As colunas `asaas_cliente_id`, `asaas_assinatura_id`, `asaas_cobranca_id`, `invoice_url` e `situacao_asaas` existem e ficam nulas/padrão até a integração real.
 
 ## 5. Telas
 
-- **Plano e cobrança** (`/configuracoes/plano`, menu só da Gestão): situação (em teste até, beta até, conta interna, ativa, em atraso, somente leitura, teste encerrado, cancelada), pessoas e empreendimentos contra o limite, adicionais e valor mensal, escolher/trocar plano (mensal ou anual mostrando as 10 mensalidades; Pix ou cartão), dados de quem paga, cancelar e histórico de cobranças com "Pagar". Equipe vê "sem permissão" e a faixa.
-- **Faixas** (no shell): todos veem "Somente leitura até o pagamento"; a Gestão vê "Cobrança vencida" (com o dia em que fica só leitura) e "A cobrança do Grama vence hoje", com "Pagar".
+- **Plano e cobrança** (`/configuracoes/plano`, menu só da Gestão): situação (em teste até, beta até, conta interna, ativa, em atraso, somente leitura, teste encerrado, cancelada), pessoas e empreendimentos contra o limite, adicionais e valor mensal, escolher/trocar plano (mensal ou anual mostrando as 10 mensalidades; Pix ou cartão), dados de quem paga, cancelar e histórico de cobranças (sem "Pagar": o pagamento é confirmado pela central até a integração com o Asaas). Equipe vê "sem permissão" e a faixa.
+- **Faixas** (no shell): todos veem "Somente leitura até o pagamento"; a Gestão vê "Cobrança vencida" (com o dia em que fica só leitura) e "A cobrança do Grama vence hoje", com o link para "Plano e cobrança".
 - **Diálogo do adicional** ao convidar pessoa e ao ativar a licença que torna um empreendimento ativo, quando o banco pede a confirmação.
 - **Central:** página **Financeiro** (`/admin/financeiro`: MRR = mensal + anual/12 + adicionais, ticket médio, receita por plano, mensal × anual, pagantes, em teste, teste acabando nos próximos 3 dias úteis, beta, internas, em atraso, somente leitura, cancelados, teste encerrado; lista paginada por grupo) e, no detalhe da consultoria, **Plano e cobrança** (situação, uso, cobranças, ajustar dias de teste, marcar/desmarcar conta interna com motivo e histórico, simular atraso e pagamento).
 

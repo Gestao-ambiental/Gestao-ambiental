@@ -364,6 +364,23 @@ describe('acompanhamento do órgão (decisão de 19/10/2026)', () => {
       ...extra,
     })
 
+  it('licença vencida com renovação protocolada continua escrita como vencida', async () => {
+    falso.reiniciar(
+      cenario('equipe', {
+        obter_plano_renovacao: {
+          data: [
+            protocolada({
+              validade: adicionarDias(hoje, -3),
+              protocolado_em: adicionarDias(hoje, -200),
+            }),
+          ],
+        },
+      }),
+    )
+    renderizarApp('/renovacoes/i2')
+    expect(await screen.findByText('Sem retorno do órgão · vencida há 3 dias')).toBeInTheDocument()
+  })
+
   it('a Gestão escolhe um atalho ou outro intervalo a partir de 1 dia', async () => {
     const usuario = userEvent.setup()
     falso.reiniciar(cenario('gestao', { obter_plano_renovacao: { data: [protocolada()] } }))

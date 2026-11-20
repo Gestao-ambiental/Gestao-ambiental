@@ -85,6 +85,8 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   condicionantes_existentes:
     'Este rascunho já tem condicionantes: a IA só preenche rascunho sem itens. Siga pelo manual.',
   extracao_em_andamento: 'Já há uma extração em andamento para este rascunho. Aguarde.',
+  ia_fora_do_plano:
+    'A extração por IA não faz parte do plano desta consultoria. Siga pelo cadastro manual.',
   cargo_longo_demais: 'O cargo pode ter até 80 caracteres.',
   // Orçamentos (onda 5)
   orcamento_existente: 'Não foi possível criar o orçamento. Tente de novo.',
@@ -157,9 +159,12 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
     'Já há acesso de suporte valendo nesta consultoria. Use “Entrar como suporte”.',
   sem_acesso_de_emergencia: 'Não há acesso de emergência valendo.',
   // Planos e cobrança (ADR-0026)
+  ia_indisponivel: 'A conferência por IA não respondeu. Tente de novo em alguns minutos.',
   consultoria_somente_leitura: 'Somente leitura até o pagamento: ninguém cria nem edita.',
   orcamentos_fora_do_plano: 'Orçamentos fazem parte dos planos Equipe e Escala.',
   adicional_nao_confirmado: 'Isso passa do limite do plano. Confirme o valor adicional antes.',
+  cobranca_em_atraso:
+    'Há cobrança vencida em aberto. Fale com o suporte do Grama para pagar e assinar de novo.',
   recurso_invalido: 'Não foi possível concluir. Tente de novo.',
   dias_de_teste_invalidos: 'Use de 0 a 365 dias úteis.',
   valor_obrigatorio: 'Escolha marcar ou desmarcar.',
@@ -331,8 +336,13 @@ export function ehDoisFatoresNecessarios(erro: unknown): boolean {
 export function ehSemPermissao(erro: unknown): boolean {
   if (ehDoisFatoresNecessarios(erro)) return false
   const { code, message } = comoObjeto(erro)
-  // Só leitura por atraso e orçamento fora do plano usam 42501, mas têm mensagem própria (ADR-0026).
-  if (message === 'consultoria_somente_leitura' || message === 'orcamentos_fora_do_plano')
+  // Só leitura por atraso e orçamento ou IA fora do plano usam 42501, mas têm mensagem própria
+  // (ADR-0026).
+  if (
+    message === 'consultoria_somente_leitura' ||
+    message === 'orcamentos_fora_do_plano' ||
+    message === 'ia_fora_do_plano'
+  )
     return false
   return code === '42501' || message === 'sem_permissao'
 }

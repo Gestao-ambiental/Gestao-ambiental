@@ -33,7 +33,9 @@ A cada cadastro, os operadores recebem um e-mail. O site não muda.
 3. A função tem `verify_jwt = false`. Ela confere o header `x-aviso-token` contra `LISTA_AVISO_TOKEN`, em tempo constante.
 4. Com a service role, a função lê os cadastros ainda sem aviso (até 50) e os e-mails dos operadores. Manda um e-mail só, depois marca os cadastros como avisados (`avisado_em`).
 5. Se o envio falhar, nada é marcado, e o próximo cadastro leva os pendentes junto.
-6. Os cadastros que já existiam antes desta migration entram como avisados, para não gerar e-mail atrasado.
+6. **Aviso agrupado** (19/11/2026, migration `20261119300100_lista_de_espera_limites_e_resumo_do_aviso.sql`): o gatilho só chama a função se não chamou nos últimos 10 minutos (no máximo 6 e-mails por hora, mesmo com muitos cadastros seguidos). A reserva é uma atualização atômica em `private.lista_de_espera_aviso`. Os cadastros do intervalo ficam pendentes e vão juntos no aviso seguinte; a central mostra sempre a lista inteira. O aviso seguinte não depende de outro cadastro: um job do pg_cron (`aviso-da-lista-de-espera`, a cada 5 minutos) chama o mesmo disparo (`private.disparar_aviso_da_lista_de_espera`), que só sai se há cadastro sem aviso e já passaram os 10 minutos. Assim o último cadastro de um intervalo, o resto de um pico (50 por envio) e um envio que falhou saem em até ~15 minutos. Sem cadastro pendente, nem o gatilho nem o job gastam a janela.
+7. O assunto nunca leva o nome de quem se cadastrou (texto livre de quem não tem login): "Grama: 1 pessoa entrou na lista de espera" ou "Grama: N pessoas…". O nome fica só no corpo, que é texto puro.
+8. Os cadastros que já existiam antes desta migration entram como avisados, para não gerar e-mail atrasado.
 
 Nunca vão para o log: e-mails, telefones, nomes, a chave e o token.
 

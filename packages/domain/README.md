@@ -12,30 +12,26 @@ corepack pnpm --filter domain test   # a suíte roda 3 vezes: TZ=UTC, America/Sa
 
 Portado de `dist/domain.js` do repositório `nexo-gestao-ambiental`, commit `c06f5b3`, com os testes convertidos de `node:test` para Vitest (cada teste portado cita arquivo e linha de origem). O porte foi comparado com o original em 164 mil casos aleatórios por fuso (UTC−11 a UTC+14), sem nenhuma divergência.
 
-| Protótipo                                          | Aqui                                                        | Arquivo          |
-| -------------------------------------------------- | ----------------------------------------------------------- | ---------------- |
-| `addDays`                                          | `adicionarDias`                                             | `data-civil.ts`  |
-| `days(a, b)`                                       | `diferencaEmDias(a, b)` (a − b)                             | `data-civil.ts`  |
-| `addMonths`                                        | `adicionarMeses`                                            | `data-civil.ts`  |
-| `weekRange` / `weekdayLabel`                       | `semanaDe` / `nomeDoDiaDaSemana`                            | `data-civil.ts`  |
-| `brDate`                                           | `formatarDataCivil`                                         | `data-civil.ts`  |
-| `brasiliaNow`                                      | `dataEHoraNoFuso` / `hojeNoFuso` (fuso explícito)           | `data-civil.ts`  |
-| `occurrences`                                      | `ocorrencias`                                               | `recorrencia.ts` |
-| `suggestedFirstOccurrence`                         | `primeiraOcorrenciaSugerida` (`null` em vez de `""`)        | `recorrencia.ts` |
-| `dependencyDateSuggestions`                        | `sugerirDatasDeDependencia`                                 | `recorrencia.ts` |
-| `LAO_PROTOCOL_LEAD_DAYS`                           | `DIAS_LIMITE_PROTOCOLO_LAO` (120)                           | `renovacao.ts`   |
-| `DEFAULT_RENEWAL_PLANNING_LEAD_DAYS`               | `ANTECEDENCIA_PREPARACAO_PADRAO_DIAS` (30)                  | `renovacao.ts`   |
-| `renewalPlanningLeadDays`                          | `antecedenciaPreparacao`                                    | `renovacao.ts`   |
-| `laoRenewalDates` (`protocolDue`, `planningStart`) | `datasRenovacaoLao` (`limiteProtocolo`, `inicioPreparacao`) | `renovacao.ts`   |
-| `laoRenewalSteps`                                  | `etapasRenovacaoLao`                                        | `renovacao.ts`   |
-| `businessDay` / `previousBusinessDay`              | `ehDiaUtil` / `diaUtilAnterior`                             | `dias-uteis.ts`  |
-| `letterDeadline` (`official`, `internal`)          | `prazoDeOficio` (`oficial`, `interno`)                      | `dias-uteis.ts`  |
+| Protótipo                                          | Aqui                                                        | Arquivo         |
+| -------------------------------------------------- | ----------------------------------------------------------- | --------------- |
+| `addDays`                                          | `adicionarDias`                                             | `data-civil.ts` |
+| `days(a, b)`                                       | `diferencaEmDias(a, b)` (a − b)                             | `data-civil.ts` |
+| `addMonths`                                        | `adicionarMeses`                                            | `data-civil.ts` |
+| `weekRange` / `weekdayLabel`                       | `semanaDe` / `nomeDoDiaDaSemana`                            | `data-civil.ts` |
+| `brDate`                                           | `formatarDataCivil`                                         | `data-civil.ts` |
+| `brasiliaNow`                                      | `dataEHoraNoFuso` / `hojeNoFuso` (fuso explícito)           | `data-civil.ts` |
+| `LAO_PROTOCOL_LEAD_DAYS`                           | `DIAS_LIMITE_PROTOCOLO_LAO` (120)                           | `renovacao.ts`  |
+| `DEFAULT_RENEWAL_PLANNING_LEAD_DAYS`               | `ANTECEDENCIA_PREPARACAO_PADRAO_DIAS` (30)                  | `renovacao.ts`  |
+| `renewalPlanningLeadDays`                          | `antecedenciaPreparacao`                                    | `renovacao.ts`  |
+| `laoRenewalDates` (`protocolDue`, `planningStart`) | `datasRenovacaoLao` (`limiteProtocolo`, `inicioPreparacao`) | `renovacao.ts`  |
+| `laoRenewalSteps`                                  | `etapasRenovacaoLao`                                        | `renovacao.ts`  |
+| `businessDay`                                      | `ehDiaUtil`                                                 | `dias-uteis.ts` |
 
 Única diferença de comportamento: data inexistente (ex.: `2026-02-30`) agora lança erro. No protótipo, o `Date` do V8 a convertia silenciosamente em outra data.
 
 ## Testes portados (tests/domain.test.mjs e tests/clock.test.mjs)
 
-`domain.test.mjs`: linhas 140, 146, 169, 195, 231, 237, 335, 598. `clock.test.mjs`: linhas 14 e 38.
+`domain.test.mjs`: linha 195 (as demais portadas saíram com o código sem uso: `ocorrencias`, `primeiraOcorrenciaSugerida`, `sugerirDatasDeDependencia`, `diaUtilAnterior` e `prazoDeOficio`; a série de prazos vive em `prazo.ts`). `clock.test.mjs`: linhas 14 e 38.
 
 ## TODO: o que ainda não foi portado, e por quê
 

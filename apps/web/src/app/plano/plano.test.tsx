@@ -59,14 +59,13 @@ function chamadas(nome: string) {
 }
 
 describe('Plano e cobrança (ADR-0026)', () => {
-  it('Gestão escolhe o plano, assina e paga no pagamento simulado; o CPF não sai da tela', async () => {
+  it('Gestão escolhe o plano e assina sem marcar a cobrança como paga; o CPF não sai da tela', async () => {
     falso.reiniciar({
       sessao: eduardo,
       rpc: {
         meus_vinculos: { data: [vinculoFalso('Filtroville', 'gestao')] },
         situacao_comercial: { data: [emTeste] },
         assinar_plano_simulado: { data: [{ cobranca_id: 'cob-1', mudanca_em: null }] },
-        pagar_cobranca_simulada: { data: null },
       },
     })
     const usuario = userEvent.setup()
@@ -82,7 +81,7 @@ describe('Plano e cobrança (ADR-0026)', () => {
     await usuario.click(escala)
     expect(screen.getByText('R$ 29.900,00 por ano')).toBeInTheDocument()
 
-    await usuario.click(screen.getByRole('button', { name: 'Assinar e pagar' }))
+    await usuario.click(screen.getByRole('button', { name: 'Assinar' }))
     expect(await screen.findByText('CNPJ ou CPF inválido')).toBeInTheDocument()
     expect(chamadas('assinar_plano_simulado')).toHaveLength(0)
 
@@ -90,9 +89,9 @@ describe('Plano e cobrança (ADR-0026)', () => {
     await usuario.type(screen.getByLabelText('E-mail de cobrança'), 'financeiro@filtroville.test')
     await usuario.type(screen.getByLabelText('CNPJ ou CPF'), '52998224725')
     expect(screen.getByLabelText('CNPJ ou CPF')).toHaveValue(CPF)
-    await usuario.click(screen.getByRole('button', { name: 'Assinar e pagar' }))
+    await usuario.click(screen.getByRole('button', { name: 'Assinar' }))
 
-    const dialogo = await screen.findByRole('dialog', { name: 'Pagamento simulado' })
+    expect(await screen.findByText('Assinatura criada.')).toBeInTheDocument()
     expect(chamadas('assinar_plano_simulado')[0]?.[1]).toEqual({
       p_consultoria_id: 'c-Filtroville',
       p_plano: 'escala',
@@ -107,8 +106,48 @@ describe('Plano e cobrança (ADR-0026)', () => {
       ),
     ).not.toContain('52998224725')
 
-    await usuario.click(within(dialogo).getByRole('button', { name: 'Confirmar pagamento' }))
-    expect(chamadas('pagar_cobranca_simulada')[0]?.[1]).toEqual({ p_cobranca_id: 'cob-1' })
+    // O pagamento é confirmado pela central (operador), nunca pela Gestão.
+    expect(screen.queryByRole('dialog', { name: 'Pagamento simulado' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Pagar' })).not.toBeInTheDocument()
+    expect(chamadas('pagar_cobranca_simulada')).toHaveLength(0)
+  })
+
+  it('cancelada com cobrança vencida: assinar diz o motivo e que o pagamento é pelo suporte', async () => {
+    falso.reiniciar({
+      sessao: eduardo,
+      rpc: {
+        meus_vinculos: { data: [vinculoFalso('Filtroville', 'gestao')] },
+        situacao_comercial: {
+          data: [
+            {
+              ...bloqueada,
+              valida_ate: '2027-05-06',
+              cobranca_aberta_id: 'cob-1',
+              cobranca_aberta_valor_centavos: 19900,
+              cobranca_aberta_vencimento: '2027-05-07',
+            },
+          ],
+        },
+        assinar_plano_simulado: { error: { message: 'cobranca_em_atraso', code: 'P0001' } },
+      },
+    })
+    const usuario = userEvent.setup()
+    renderizarApp('/configuracoes/plano')
+
+    expect(
+      await screen.findByText(/Ninguém cria nem edita até o pagamento\. O pagamento é confirmado/),
+    ).toBeInTheDocument()
+    await usuario.click(screen.getByRole('radio', { name: /Escala/ }))
+    await usuario.type(screen.getByLabelText('Nome de quem paga'), 'Filtroville Consultoria')
+    await usuario.type(screen.getByLabelText('E-mail de cobrança'), 'financeiro@filtroville.test')
+    await usuario.type(screen.getByLabelText('CNPJ ou CPF'), '52998224725')
+    await usuario.click(screen.getByRole('button', { name: 'Assinar' }))
+    expect(
+      await screen.findByText(
+        'Há cobrança vencida em aberto. Fale com o suporte do Grama para pagar e assinar de novo.',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/Verifique a conexão/)).not.toBeInTheDocument()
   })
 
   it('só leitura: todos veem a faixa; a Equipe não vê a página de plano', async () => {
@@ -123,7 +162,7 @@ describe('Plano e cobrança (ADR-0026)', () => {
     expect(await screen.findByText('Somente leitura até o pagamento')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Pagar' })).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 1, name: 'Plano e cobrança' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Assinar e pagar' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Assinar' })).not.toBeInTheDocument()
   })
 })
 
