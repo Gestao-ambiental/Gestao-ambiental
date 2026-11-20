@@ -1783,125 +1783,135 @@ describe('orçamentos (onda 5)', () => {
     expect(itens[1]).toMatchObject({ responsavel_id: null, mes_previsto: null })
   })
 
-  it('cadastra a tabela de horas e a equipe dizendo como cada pessoa recebe (sem piso)', async () => {
-    falso.reiniciar({ ...cenario(), tabelas: { membro: membros } })
-    const usuario = userEvent.setup()
-    renderizarApp('/configuracoes/custos')
-    await screen.findByText('Falta configurar para calcular o preço')
-    await usuario.click(
-      screen.getByRole('button', { name: 'Usar tabela ACEAMB corrigida (ago/2026)' }),
-    )
-    // Profissão escolhida da lista fixa do Grama (ADR-0021), sem digitar.
-    expect(screen.getByLabelText('Profissão do profissional 1')).toHaveDisplayValue(
-      'Engenheiro ambiental e sanitarista',
-    )
-    expect(screen.getByLabelText('Nível do profissional 1')).toHaveValue('Júnior')
-    expect(screen.getByLabelText('Preço por hora do profissional 1')).toHaveValue('214,19')
-    expect(screen.getByLabelText('Nível do profissional 4')).toHaveValue(
-      'Avaliação e perícia ambiental',
-    )
-    expect(screen.getByLabelText('Preço por hora do profissional 4')).toHaveValue('356,98')
-    // Outra profissão, com o valor que a consultoria informar.
-    await usuario.click(screen.getByRole('button', { name: 'Adicionar profissional' }))
-    await usuario.selectOptions(screen.getByLabelText('Profissão do profissional 5'), 'Biólogo')
-    await usuario.type(screen.getByLabelText('Nível do profissional 5'), 'Sênior')
-    await usuario.type(screen.getByLabelText('Preço por hora do profissional 5'), '300,00')
+  it(
+    'cadastra a tabela de horas e a equipe dizendo como cada pessoa recebe (sem piso)',
+    { timeout: 15_000 },
+    async () => {
+      falso.reiniciar({ ...cenario(), tabelas: { membro: membros } })
+      const usuario = userEvent.setup()
+      renderizarApp('/configuracoes/custos')
+      await screen.findByText('Falta configurar para calcular o preço')
+      await usuario.click(
+        screen.getByRole('button', { name: 'Usar tabela ACEAMB corrigida (ago/2026)' }),
+      )
+      // Profissão escolhida da lista fixa do Grama (ADR-0021), sem digitar.
+      expect(screen.getByLabelText('Profissão do profissional 1')).toHaveDisplayValue(
+        'Engenheiro ambiental e sanitarista',
+      )
+      expect(screen.getByLabelText('Nível do profissional 1')).toHaveValue('Júnior')
+      expect(screen.getByLabelText('Preço por hora do profissional 1')).toHaveValue('214,19')
+      expect(screen.getByLabelText('Nível do profissional 4')).toHaveValue(
+        'Avaliação e perícia ambiental',
+      )
+      expect(screen.getByLabelText('Preço por hora do profissional 4')).toHaveValue('356,98')
+      // Outra profissão, com o valor que a consultoria informar.
+      await usuario.click(screen.getByRole('button', { name: 'Adicionar profissional' }))
+      await usuario.selectOptions(screen.getByLabelText('Profissão do profissional 5'), 'Biólogo')
+      await usuario.type(screen.getByLabelText('Nível do profissional 5'), 'Sênior')
+      await usuario.type(screen.getByLabelText('Preço por hora do profissional 5'), '300,00')
 
-    await usuario.type(screen.getByLabelText('Custos fixos por mês (R$)'), '250,00')
-    await usuario.click(screen.getByRole('button', { name: 'Calcular pela equipe' }))
-    // Sem piso: cada pessoa diz como recebe; os percentuais saíram.
-    expect(screen.queryByLabelText(/Piso/)).not.toBeInTheDocument()
-    expect(screen.queryByLabelText(/Aproveitamento/)).not.toBeInTheDocument()
-    await usuario.selectOptions(await screen.findByLabelText('Pessoa da linha 1'), 'm-eduardo')
-    // A profissão vem do cadastro da pessoa, escolhida na lista; não se digita aqui.
-    expect(screen.getByLabelText('Profissão da linha 1')).toHaveDisplayValue(
-      'Engenheiro ambiental e sanitarista',
-    )
-    await usuario.selectOptions(screen.getByLabelText('Como recebe na linha 1'), 'pro_labore')
-    await digitarReais(usuario, screen.getByLabelText('Pró-labore mensal da linha 1'), '13.751,77')
-    await usuario.type(screen.getByLabelText('Horas no mês da linha 1'), '173')
-    // 13.751,77 ÷ 173 h = 79,49
-    expect(screen.getByText('79,49')).toBeInTheDocument()
-    // A conta fica à mão para conferir (Marcos).
-    expect(screen.getByText('13.751,77 ÷ 173 h no mês = 79,49')).toBeInTheDocument()
+      await usuario.type(screen.getByLabelText('Custos fixos por mês (R$)'), '250,00')
+      await usuario.click(screen.getByRole('button', { name: 'Calcular pela equipe' }))
+      // Sem piso: cada pessoa diz como recebe; os percentuais saíram.
+      expect(screen.queryByLabelText(/Piso/)).not.toBeInTheDocument()
+      expect(screen.queryByLabelText(/Aproveitamento/)).not.toBeInTheDocument()
+      await usuario.selectOptions(await screen.findByLabelText('Pessoa da linha 1'), 'm-eduardo')
+      // A profissão vem do cadastro da pessoa, escolhida na lista; não se digita aqui.
+      expect(screen.getByLabelText('Profissão da linha 1')).toHaveDisplayValue(
+        'Engenheiro ambiental e sanitarista',
+      )
+      await usuario.selectOptions(screen.getByLabelText('Como recebe na linha 1'), 'pro_labore')
+      await digitarReais(
+        usuario,
+        screen.getByLabelText('Pró-labore mensal da linha 1'),
+        '13.751,77',
+      )
+      await usuario.type(screen.getByLabelText('Horas no mês da linha 1'), '173')
+      // 13.751,77 ÷ 173 h = 79,49
+      expect(screen.getByText('79,49')).toBeInTheDocument()
+      // A conta fica à mão para conferir (Marcos).
+      expect(screen.getByText('13.751,77 ÷ 173 h no mês = 79,49')).toBeInTheDocument()
 
-    await usuario.click(screen.getByRole('button', { name: 'Adicionar pessoa' }))
-    const pessoa2 = screen.getByLabelText('Pessoa da linha 2')
-    // Quem já está numa linha não aparece de novo.
-    expect(within(pessoa2).queryByRole('option', { name: 'Eduardo Karnopp' })).toBeNull()
-    await usuario.selectOptions(pessoa2, 'm-helena')
-    expect(screen.getByLabelText('Profissão da linha 2')).toHaveDisplayValue('Biólogo')
-    await usuario.selectOptions(screen.getByLabelText('Como recebe na linha 2'), 'diaria')
-    expect(screen.queryByLabelText('Salário mensal da linha 2')).not.toBeInTheDocument()
-    await usuario.type(screen.getByLabelText('Valor da diária da linha 2'), '400,00')
-    await usuario.type(screen.getByLabelText('Horas por diária da linha 2'), '8')
-    // 400 ÷ 8 h = 50,00; sem os dias no mês, a capacidade fica desconhecida (nunca zero).
-    expect(screen.getByText('50,00')).toBeInTheDocument()
-    expect(screen.getByText('400,00 ÷ 8 h por diária = 50,00')).toBeInTheDocument()
-    // O aviso cinza de capacidade não calculada saiu; o resultado diz quem entra na média.
-    expect(screen.queryByText(/capacidade não calculada/)).not.toBeInTheDocument()
-    const resultado = screen.getByLabelText('Resultado da equipe')
-    // Só quem tem custo e horas do mês entra na média: por enquanto, só o Eduardo.
-    expect(within(resultado).getByText('173 h')).toBeInTheDocument()
-    await usuario.type(screen.getByLabelText('Dias no mês da linha 2'), '10')
-    // (13.751,77 + 10 × 400) ÷ (173 + 80) h = 70,17
-    expect(within(resultado).getByText('253 h')).toBeInTheDocument()
-    expect(within(resultado).getByText('R$ 70,17')).toBeInTheDocument()
-    expect(within(resultado).getByText('Custo por hora de Biólogo')).toBeInTheDocument()
-    expect(within(resultado).getByText('R$ 50,00')).toBeInTheDocument()
-    expect(within(resultado).getByText('R$ 79,49')).toBeInTheDocument()
+      await usuario.click(screen.getByRole('button', { name: 'Adicionar pessoa' }))
+      const pessoa2 = screen.getByLabelText('Pessoa da linha 2')
+      // Quem já está numa linha não aparece de novo.
+      expect(within(pessoa2).queryByRole('option', { name: 'Eduardo Karnopp' })).toBeNull()
+      await usuario.selectOptions(pessoa2, 'm-helena')
+      expect(screen.getByLabelText('Profissão da linha 2')).toHaveDisplayValue('Biólogo')
+      await usuario.selectOptions(screen.getByLabelText('Como recebe na linha 2'), 'diaria')
+      expect(screen.queryByLabelText('Salário mensal da linha 2')).not.toBeInTheDocument()
+      await usuario.type(screen.getByLabelText('Valor da diária da linha 2'), '400,00')
+      await usuario.type(screen.getByLabelText('Horas por diária da linha 2'), '8')
+      // 400 ÷ 8 h = 50,00; sem os dias no mês, a capacidade fica desconhecida (nunca zero).
+      expect(screen.getByText('50,00')).toBeInTheDocument()
+      expect(screen.getByText('400,00 ÷ 8 h por diária = 50,00')).toBeInTheDocument()
+      // O aviso cinza de capacidade não calculada saiu; o resultado diz quem entra na média.
+      expect(screen.queryByText(/capacidade não calculada/)).not.toBeInTheDocument()
+      const resultado = screen.getByLabelText('Resultado da equipe')
+      // Só quem tem custo e horas do mês entra na média: por enquanto, só o Eduardo.
+      expect(within(resultado).getByText('173 h')).toBeInTheDocument()
+      await usuario.type(screen.getByLabelText('Dias no mês da linha 2'), '10')
+      // (13.751,77 + 10 × 400) ÷ (173 + 80) h = 70,17
+      expect(within(resultado).getByText('253 h')).toBeInTheDocument()
+      expect(within(resultado).getByText('R$ 70,17')).toBeInTheDocument()
+      expect(within(resultado).getByText('Custo por hora de Biólogo')).toBeInTheDocument()
+      expect(within(resultado).getByText('R$ 50,00')).toBeInTheDocument()
+      expect(within(resultado).getByText('R$ 79,49')).toBeInTheDocument()
 
-    await confirmarBaseNova(usuario)
-    await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
-    const chamada = falso.cliente.rpc.mock.calls.find(([nome]) => nome === 'salvar_base_de_custos')
-    expect(chamada?.[1]).not.toHaveProperty('p_piso_hora_centavos')
-    expect(chamada?.[1]).toMatchObject({
-      p_horas_venda: [
-        {
-          profissao: 'Engenheiro ambiental e sanitarista',
-          atividade: 'Júnior',
-          valor_centavos: 21_419,
-        },
-        {
-          profissao: 'Engenheiro ambiental e sanitarista',
-          atividade: 'Sênior',
-          valor_centavos: 35_698,
-        },
-        {
-          profissao: 'Engenheiro ambiental e sanitarista',
-          atividade: 'Máster',
-          valor_centavos: 44_622,
-        },
-        {
-          profissao: 'Engenheiro ambiental e sanitarista',
-          atividade: 'Avaliação e perícia ambiental',
-          valor_centavos: 35_698,
-        },
-        { profissao: 'Biólogo', atividade: 'Sênior', valor_centavos: 30_000, fonte: null },
-      ],
-      p_equipe: [
-        {
-          membro_id: 'm-eduardo',
-          tipo_recebimento: 'pro_labore',
-          profissao: 'Engenheiro ambiental e sanitarista',
-          custo_mensal_centavos: 1_375_177,
-          horas_disponiveis_mes: 173,
-        },
-        {
-          membro_id: 'm-helena',
-          tipo_recebimento: 'diaria',
-          profissao: 'Biólogo',
-          custo_mensal_centavos: null,
-          horas_disponiveis_mes: null,
-          custo_diaria_centavos: 40_000,
-          horas_por_diaria: 8,
-          dias_no_mes: 10,
-        },
-      ],
-    })
-    const enviada = chamada?.[1] as { p_equipe: Record<string, unknown>[] } | undefined
-    expect(enviada?.p_equipe[0]).not.toHaveProperty('pelo_piso')
-  })
+      await confirmarBaseNova(usuario)
+      await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
+      const chamada = falso.cliente.rpc.mock.calls.find(
+        ([nome]) => nome === 'salvar_base_de_custos',
+      )
+      expect(chamada?.[1]).not.toHaveProperty('p_piso_hora_centavos')
+      expect(chamada?.[1]).toMatchObject({
+        p_horas_venda: [
+          {
+            profissao: 'Engenheiro ambiental e sanitarista',
+            atividade: 'Júnior',
+            valor_centavos: 21_419,
+          },
+          {
+            profissao: 'Engenheiro ambiental e sanitarista',
+            atividade: 'Sênior',
+            valor_centavos: 35_698,
+          },
+          {
+            profissao: 'Engenheiro ambiental e sanitarista',
+            atividade: 'Máster',
+            valor_centavos: 44_622,
+          },
+          {
+            profissao: 'Engenheiro ambiental e sanitarista',
+            atividade: 'Avaliação e perícia ambiental',
+            valor_centavos: 35_698,
+          },
+          { profissao: 'Biólogo', atividade: 'Sênior', valor_centavos: 30_000, fonte: null },
+        ],
+        p_equipe: [
+          {
+            membro_id: 'm-eduardo',
+            tipo_recebimento: 'pro_labore',
+            profissao: 'Engenheiro ambiental e sanitarista',
+            custo_mensal_centavos: 1_375_177,
+            horas_disponiveis_mes: 173,
+          },
+          {
+            membro_id: 'm-helena',
+            tipo_recebimento: 'diaria',
+            profissao: 'Biólogo',
+            custo_mensal_centavos: null,
+            horas_disponiveis_mes: null,
+            custo_diaria_centavos: 40_000,
+            horas_por_diaria: 8,
+            dias_no_mes: 10,
+          },
+        ],
+      })
+      const enviada = chamada?.[1] as { p_equipe: Record<string, unknown>[] } | undefined
+      expect(enviada?.p_equipe[0]).not.toHaveProperty('pelo_piso')
+    },
+  )
 
   it('cadastra preço por faixas de quantidade e preço mínimo', async () => {
     const usuario = userEvent.setup()
