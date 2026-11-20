@@ -14,6 +14,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
+import { Pagina } from '@/app/paginas/Pagina'
 import { Carregando, EstadoErro, EstadoVazio } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
 import { CampoTexto } from '@/components/ui/campo-texto'
@@ -30,7 +31,7 @@ import { formatarInstanteComHora } from '@/lib/datas'
 import { mensagemDoErroDaVistoria } from '@/lib/erros'
 
 import { recarregarVistoria, useItensDaVistoria, useVistoria } from './consultas'
-import { classeAlvo, classeCartao } from './estilos'
+import { classeAcaoPrincipal, classeAcaoSecundaria } from './estilos'
 import { BarraDeAcao, ColunaCampo, ComVistoria, VoltarPara } from './pecas'
 
 const PROBLEMA_DA_FOTO: Record<ProblemaDaFoto, string> = {
@@ -108,27 +109,30 @@ function SecaoLocal({
     </>
   )
   return (
-    <section
-      aria-labelledby="titulo-local"
-      className={`${classeCartao} flex flex-col gap-(--e-2) p-(--e-3)`}
-    >
-      <h2 id="titulo-local" className="corpo-medio">
+    <section aria-labelledby="titulo-local" className="flex flex-col gap-(--e-3)">
+      <h2 id="titulo-local" className="titulo-secao text-(--tinta)">
         Localização
       </h2>
       <div role="status" aria-live="polite">
         {estado.tipo === 'pedindo' ? (
-          <p className="corpo text-(--tinta-2)">Obtendo localização…</p>
+          <p className="inline-flex items-center gap-(--e-2) corpo text-(--tinta-2)">
+            <Icone nome="map-pin" />
+            Obtendo localização…
+          </p>
         ) : estado.tipo === 'obtido' ? (
-          <p className="corpo">
-            {descreverLocal({ ...estado.local, precisaoM: null })}
-            {estado.local.precisaoM === null ? null : (
-              <span className="block text-xs text-(--tinta-2)">
-                Precisão {rotuloDaPrecisao(estado.local.precisaoM)}
-              </span>
-            )}
+          <p className="flex items-start gap-(--e-2) corpo-medio text-(--tinta)">
+            <Icone nome="map-pin" className="mt-(--e-05) text-(--ok-texto)" />
+            <span className="numero">
+              {descreverLocal({ ...estado.local, precisaoM: null })}
+              {estado.local.precisaoM === null ? null : (
+                <span className="block corpo text-(--tinta-2)">
+                  Precisão {rotuloDaPrecisao(estado.local.precisaoM)}
+                </span>
+              )}
+            </span>
           </p>
         ) : estado.tipo === 'nenhum' ? (
-          <p className="corpo">Sem localização</p>
+          <p className="corpo-medio text-(--tinta)">Sem localização</p>
         ) : null}
       </div>
       {estado.tipo === 'falhou' ? (
@@ -290,14 +294,11 @@ function Foto({ vistoria, item }: { vistoria: Vistoria; item: ItemDaVistoriaGrav
     />
   )
 
-  const contexto = (
-    <header className="flex flex-col gap-(--e-1)">
-      <p className="text-xs text-(--tinta-2)">Checklist · {item.titulo}</p>
-      <h1 className="titulo-tela text-(--tinta)">
-        {captura ? 'Revisar evidência' : 'Foto e localização'}
-      </h1>
-    </header>
-  )
+  const moldura = {
+    titulo: captura ? 'Revisar evidência' : 'Foto e localização',
+    voltar: { para: checklist, rotulo: 'Checklist' },
+    meta: item.titulo,
+  }
 
   const campoArquivo = (
     <input
@@ -317,98 +318,103 @@ function Foto({ vistoria, item }: { vistoria: Vistoria; item: ItemDaVistoriaGrav
 
   if (!captura) {
     return (
-      <ColunaCampo>
-        <VoltarPara para={checklist} rotulo="Checklist" />
-        {contexto}
-        {campoArquivo}
-        {erroArquivo ? (
-          <MensagemSecao role="alert" tom="perigo">
-            {erroArquivo}
-          </MensagemSecao>
-        ) : null}
-        <button
-          type="button"
-          onClick={() => {
-            entrada.current?.click()
-          }}
-          className={`${classeCartao} flex aspect-[4/3] w-full cursor-pointer flex-col items-center justify-center gap-(--e-2) border-dashed text-(--tinta-2) transicao-estado hover:bg-(--toque)`}
-        >
-          <Icone nome="image" tamanho={24} />
-          <span className="corpo-medio text-(--tinta)">Tirar foto</span>
-        </button>
-        {secaoLocal}
-        <BarraDeAcao>
-          <Botao asChild className={`${classeAlvo} flex-1`}>
-            <Link to={checklist}>Cancelar</Link>
-          </Botao>
-        </BarraDeAcao>
+      <ColunaCampo comBarra>
+        <Pagina {...moldura}>
+          {campoArquivo}
+          {erroArquivo ? (
+            <MensagemSecao role="alert" tom="perigo">
+              {erroArquivo}
+            </MensagemSecao>
+          ) : null}
+          {secaoLocal}
+          <BarraDeAcao>
+            <Botao aparencia="sutil" asChild className={classeAcaoSecundaria}>
+              <Link to={checklist}>Cancelar</Link>
+            </Botao>
+            <Botao
+              aparencia="primario"
+              iconeAntes="camera"
+              className={classeAcaoPrincipal}
+              onClick={() => {
+                entrada.current?.click()
+              }}
+            >
+              Tirar foto
+            </Botao>
+          </BarraDeAcao>
+        </Pagina>
       </ColunaCampo>
     )
   }
 
   return (
-    <ColunaCampo>
-      <VoltarPara para={checklist} rotulo="Checklist" />
-      {contexto}
-      {captura.previa ? (
-        <img
-          src={captura.previa}
-          alt={`Prévia da foto de ${item.titulo}`}
-          className={`${classeCartao} max-h-[50vh] w-full object-contain`}
-        />
-      ) : null}
-      <dl className={`${classeCartao} px-(--e-3)`}>
-        <div className="flex justify-between gap-(--e-4) border-b py-(--e-2)">
-          <dt className="corpo text-(--tinta-2)">Item</dt>
-          <dd className="text-right corpo-medio">{item.titulo}</dd>
-        </div>
-        <div className="flex justify-between gap-(--e-4) py-(--e-2)">
-          <dt className="corpo text-(--tinta-2)">Data e hora</dt>
-          <dd className="text-right corpo-medio">
-            {formatarInstanteComHora(captura.capturadaEm, atual.fuso)}
-          </dd>
-        </div>
-      </dl>
-      {secaoLocal}
-      {erroLocal ? (
-        <MensagemSecao role="alert" tom="atencao">
-          {erroLocal}
-        </MensagemSecao>
-      ) : null}
-      <CampoTexto
-        rotulo="Legenda (opcional)"
-        value={legenda}
-        maxLength={LIMITES_DA_VISTORIA.legenda}
-        onChange={(evento) => {
-          setLegenda(evento.target.value)
-        }}
-      />
-      {vincular.isError ? (
-        <MensagemSecao role="alert" tom="perigo" titulo="Não salvou">
-          {mensagemDoErroDaVistoria(vincular.error)}
-        </MensagemSecao>
-      ) : null}
-      <BarraDeAcao>
-        <Botao
-          className={`${classeAlvo} flex-1`}
-          disabled={vincular.isPending}
-          onClick={() => {
-            setCaptura(null)
-            vincular.reset()
+    <ColunaCampo comBarra>
+      <Pagina {...moldura}>
+        {captura.previa ? (
+          <img
+            src={captura.previa}
+            alt={`Prévia da foto de ${item.titulo}`}
+            className="max-h-[50vh] w-full rounded-(--raio-painel) border bg-(--folha) object-contain"
+          />
+        ) : null}
+        <dl className="flex flex-col">
+          <div className="flex justify-between gap-(--e-4) border-b border-(--regra-leve) py-(--e-3)">
+            <dt className="rotulo">Item</dt>
+            <dd className="text-right corpo-medio text-(--tinta)">{item.titulo}</dd>
+          </div>
+          <div className="flex justify-between gap-(--e-4) py-(--e-3)">
+            <dt className="rotulo">Data e hora</dt>
+            <dd className="text-right corpo-medio text-(--tinta) numero">
+              {formatarInstanteComHora(captura.capturadaEm, atual.fuso)}
+            </dd>
+          </div>
+        </dl>
+        {secaoLocal}
+        {erroLocal ? (
+          <MensagemSecao role="alert" tom="atencao">
+            {erroLocal}
+          </MensagemSecao>
+        ) : null}
+        <CampoTexto
+          rotulo="Legenda (opcional)"
+          value={legenda}
+          maxLength={LIMITES_DA_VISTORIA.legenda}
+          onChange={(evento) => {
+            setLegenda(evento.target.value)
           }}
-        >
-          Refazer
-        </Botao>
-        <Botao
-          aparencia="primario"
-          iconeDepois="check"
-          className={`${classeAlvo} flex-[2]`}
-          disabled={vincular.isPending || estado.tipo === 'pedindo'}
-          onClick={confirmar}
-        >
-          {vincular.isPending ? 'Salvando…' : vincular.isError ? 'Tentar de novo' : 'Vincular foto'}
-        </Botao>
-      </BarraDeAcao>
+        />
+        {vincular.isError ? (
+          <MensagemSecao role="alert" tom="perigo" titulo="Não salvou">
+            {mensagemDoErroDaVistoria(vincular.error)}
+          </MensagemSecao>
+        ) : null}
+        <BarraDeAcao>
+          <Botao
+            iconeAntes="camera"
+            className={classeAcaoSecundaria}
+            disabled={vincular.isPending}
+            onClick={() => {
+              setCaptura(null)
+              vincular.reset()
+            }}
+          >
+            Refazer
+          </Botao>
+          <Botao
+            aparencia="primario"
+            iconeDepois="check"
+            className={classeAcaoPrincipal}
+            disabled={vincular.isPending || estado.tipo === 'pedindo'}
+            onClick={confirmar}
+          >
+            {vincular.isPending
+              ? 'Salvando…'
+              : vincular.isError
+                ? 'Tentar de novo'
+                : 'Vincular foto'}
+          </Botao>
+        </BarraDeAcao>
+      </Pagina>
     </ColunaCampo>
   )
 }

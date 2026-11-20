@@ -11,23 +11,29 @@ import {
   type GrupoDaVistoria,
 } from '@gestao-ambiental/domain'
 import { useInfiniteQuery } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
+import { Pagina } from '@/app/paginas/Pagina'
+import { Contagem } from '@/app/paginas/visao/Contagem'
 import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
-import { Icone } from '@/components/ui/icone'
 import { listarVistorias, type VistoriaDaLista } from '@/lib/api/vistorias'
 import { formatarInstanteComHora } from '@/lib/datas'
 import { ehSemPermissao } from '@/lib/erros'
+import { cn } from '@/lib/utils'
 
-import { classeAlvo, classeCartao } from './estilos'
-import { ColunaCampo, SeloDaVistoria } from './pecas'
+import { classePainel } from './estilos'
+import { SeloDaVistoria } from './pecas'
 
 function plural(n: number, um: string, varios: string) {
   return `${String(n)} ${n === 1 ? um : varios}`
 }
+
+/** Colunas do quadro no desktop: Faltam, Quando, Vistoria, Itens, Responsável, Situação, ação. */
+const GRADE =
+  'md:grid md:grid-cols-[64px_minmax(120px,160px)_minmax(0,1fr)_88px_minmax(0,160px)_128px_96px] md:items-center md:gap-x-(--e-3)'
 
 /** Atrasadas da mais antiga; Hoje e Próximas por data e hora; Enviadas da mais recente. */
 function ordenar(grupo: GrupoDaVistoria, lista: VistoriaDaLista[]): VistoriaDaLista[] {
@@ -37,74 +43,156 @@ function ordenar(grupo: GrupoDaVistoria, lista: VistoriaDaLista[]): VistoriaDaLi
   return ordenada.sort((a, b) => (b.enviadaEm ?? '').localeCompare(a.enviadaEm ?? ''))
 }
 
-function CartaoDaVistoria({
+/**
+ * Linha do quadro. Uma estrutura só para os dois tamanhos: no celular, a contagem à esquerda e o
+ * resto empilhado; no desktop, `md:contents` solta as peças nas colunas da grade. A linha inteira
+ * abre a vistoria (o link do título se estende sobre ela).
+ */
+function LinhaDaVistoria({
   vistoria,
   grupo,
   hoje,
   fuso,
+  ordem,
 }: {
   vistoria: VistoriaDaLista
   grupo: GrupoDaVistoria
   hoje: DataCivil
   fuso: string
+  ordem: number
 }) {
-  const atraso = -diferencaEmDias(vistoria.dataPlanejada, hoje)
+  const dias = diferencaEmDias(vistoria.dataPlanejada, hoje)
+  const enviada = grupo === 'enviadas'
   const quando =
-    grupo === 'enviadas' && vistoria.enviadaEm
-      ? `Enviada em ${formatarInstanteComHora(vistoria.enviadaEm, fuso)}`
-      : [
-          rotuloDoDiaDaVistoria(vistoria.dataPlanejada, hoje),
-          grupo === 'proximas' ? nomeDoDiaDaSemana(vistoria.dataPlanejada) : null,
-          vistoria.horaPlanejada,
-        ]
-          .filter(Boolean)
-          .join(' · ')
+    enviada && vistoria.enviadaEm
+      ? `Enviada ${formatarInstanteComHora(vistoria.enviadaEm, fuso)}`
+      : grupo === 'hoje' && vistoria.horaPlanejada
+        ? '' // a plaqueta "Hoje" já diz o dia; fica só a hora
+        : [
+            rotuloDoDiaDaVistoria(vistoria.dataPlanejada, hoje),
+            grupo === 'proximas' ? nomeDoDiaDaSemana(vistoria.dataPlanejada) : null,
+          ]
+            .filter(Boolean)
+            .join(' · ')
+  const local = [
+    vistoria.empreendimentoNome,
+    vistoria.unidadeNome,
+    vistoria.licenca,
+    vistoria.duracaoMinutos ? `${String(vistoria.duracaoMinutos)} min` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+
   return (
-    <li className={`${classeCartao} flex flex-col gap-(--e-15) p-(--e-3)`}>
-      <div className="flex flex-wrap items-center justify-between gap-(--e-2)">
-        <SeloDaVistoria situacao={vistoria.situacao} />
-        <span className="corpo-medio">
-          {quando}
-          {grupo === 'atrasadas' ? (
-            <span className="text-(--atraso-texto)">
-              {' '}
-              · {plural(atraso, 'dia', 'dias')} de atraso
+    <li
+      className={cn(
+        'relative flex gap-(--e-3) border-t border-(--regra-leve) px-(--e-4) py-(--e-3) transicao-estado hover:bg-(--toque)',
+        'md:min-h-(--linha) md:py-(--e-2)',
+        GRADE,
+        grupo === 'hoje' && 'bg-(--sinal-fundo) hover:bg-(--sinal-fundo)',
+      )}
+    >
+      <span className="w-[56px] shrink-0 md:col-start-1 md:row-start-1 md:w-auto">
+        {enviada ? null : <Contagem dias={dias} ordem={ordem} />}
+      </span>
+
+      <div className="flex min-w-0 flex-1 flex-col gap-(--e-1) md:contents">
+        <div className="flex flex-wrap items-center justify-between gap-x-(--e-2) gap-y-(--e-1) md:contents">
+          <span className="corpo-medio numero text-(--tinta) md:col-start-2 md:row-start-1">
+            {quando}
+            {vistoria.horaPlanejada && !enviada ? (
+              <span className={quando ? 'text-(--tinta-2)' : undefined}>
+                {quando ? ' · ' : ''}
+                {vistoria.horaPlanejada}
+              </span>
+            ) : null}
+            {grupo === 'atrasadas' ? (
+              <span className="sr-only">, {plural(-dias, 'dia', 'dias')} de atraso</span>
+            ) : null}
+          </span>
+          <span className="md:col-start-6 md:row-start-1">
+            <SeloDaVistoria situacao={vistoria.situacao} />
+          </span>
+        </div>
+
+        <div className="flex min-w-0 flex-col md:col-start-3 md:row-start-1">
+          <Link
+            to={`/campo/${vistoria.id}`}
+            className="titulo-secao text-(--tinta) no-underline after:absolute after:inset-0 after:content-[''] hover:underline md:truncate md:corpo-medio"
+          >
+            {vistoria.titulo}
+          </Link>
+          <span className="corpo text-(--tinta-2) numero md:truncate">{local}</span>
+        </div>
+
+        <div className="flex flex-wrap gap-x-(--e-3) corpo text-(--tinta-2) md:contents">
+          <span className="numero md:col-start-4 md:row-start-1">
+            {vistoria.itensRegistrados} de {vistoria.totalItens}
+            <span className="md:sr-only"> itens</span>
+          </span>
+          {vistoria.responsavelNome ? (
+            <span className="truncate md:col-start-5 md:row-start-1">
+              {vistoria.responsavelNome}
             </span>
           ) : null}
-        </span>
+        </div>
+
+        {grupo === 'hoje' ? (
+          <Botao
+            aparencia="primario"
+            asChild
+            className="relative z-[1] mt-(--e-2) h-12 w-full md:col-start-7 md:row-start-1 md:mt-0 md:h-(--controle-mini) md:w-auto md:px-(--e-3)"
+          >
+            <Link to={`/campo/${vistoria.id}`} aria-label={`Abrir vistoria ${vistoria.titulo}`}>
+              Abrir
+            </Link>
+          </Botao>
+        ) : null}
       </div>
-      <h3 className="titulo-secao">
-        <Link to={`/campo/${vistoria.id}`}>{vistoria.titulo}</Link>
-      </h3>
-      <p className="corpo text-(--tinta-2)">
-        {[vistoria.empreendimentoNome, vistoria.unidadeNome].join(' · ')}
-      </p>
-      <p className="flex flex-wrap items-center gap-(--e-3) text-xs text-(--tinta-2)">
-        {vistoria.licenca ? (
-          <span className="inline-flex items-center gap-(--e-1)">
-            <Icone nome="file-text" tamanho={12} />
-            {vistoria.licenca}
-          </span>
-        ) : null}
-        {vistoria.duracaoMinutos ? (
-          <span className="inline-flex items-center gap-(--e-1)">
-            <Icone nome="clock" tamanho={12} />
-            {vistoria.duracaoMinutos} min
-          </span>
-        ) : null}
-        <span>
-          {vistoria.itensRegistrados} de {vistoria.totalItens} itens
-        </span>
-        {vistoria.responsavelNome ? <span>{vistoria.responsavelNome}</span> : null}
-      </p>
-      {grupo === 'hoje' ? (
-        <Botao aparencia="primario" larguraTotal asChild className={classeAlvo}>
-          <Link to={`/campo/${vistoria.id}`} aria-label={`Abrir vistoria ${vistoria.titulo}`}>
-            Abrir vistoria
-          </Link>
-        </Botao>
-      ) : null}
     </li>
+  )
+}
+
+/** Alternador compacto Minhas/Todas: segmentado no desktop, largura total no celular. */
+function Alternador({
+  somenteMinhas,
+  aoMudar,
+}: {
+  somenteMinhas: boolean
+  aoMudar: (somenteMinhas: boolean) => void
+}) {
+  const opcoes: [boolean, string][] = [
+    [true, 'Minhas'],
+    [false, 'Todas'],
+  ]
+  return (
+    <div
+      role="group"
+      aria-label="Quais vistorias"
+      className="inline-flex rounded-(--raio) border border-(--regra-forte) bg-(--folha) p-(--e-05) max-md:w-[calc(100vw-2*var(--e-4))]"
+    >
+      {opcoes.map(([valor, rotulo]) => {
+        const ativo = somenteMinhas === valor
+        return (
+          <button
+            key={rotulo}
+            type="button"
+            aria-pressed={ativo}
+            onClick={() => {
+              aoMudar(valor)
+            }}
+            className={cn(
+              'h-8 min-w-24 flex-1 cursor-pointer rounded-[4px] px-(--e-4) corpo-medio transicao-estado max-md:h-11',
+              ativo
+                ? 'bg-(--tinta) text-(--folha)'
+                : 'text-(--tinta-2) hover:bg-(--toque) hover:text-(--tinta)',
+            )}
+          >
+            {rotulo}
+          </button>
+        )
+      })}
+    </div>
   )
 }
 
@@ -117,10 +205,6 @@ export function PaginaMinhasVistorias() {
   const [somenteMinhas, setSomenteMinhas] = useState(true)
   const titulo = somenteMinhas ? 'Minhas vistorias' : 'Todas as vistorias'
 
-  useEffect(() => {
-    document.title = `${titulo} · Grama`
-  }, [titulo])
-
   const consulta = useInfiniteQuery({
     queryKey: ['vistorias', atual.consultoriaId, 'campo', somenteMinhas],
     queryFn: ({ pageParam }) =>
@@ -130,6 +214,7 @@ export function PaginaMinhasVistorias() {
   })
   // O hoje do banco (fuso da consultoria) agrupa; sem linhas, o mesmo cálculo pelo fuso dela.
   const hoje = consulta.data?.pages[0]?.hoje ?? hojeNoFuso(new Date(), atual.fuso)
+  const total = consulta.data?.pages[0]?.total ?? 0
 
   const vistorias = consulta.data?.pages.flatMap((p) => p.itens) ?? []
   const grupos = new Map<GrupoDaVistoria, VistoriaDaLista[]>()
@@ -142,97 +227,98 @@ export function PaginaMinhasVistorias() {
     return grupo !== null && grupo !== 'enviadas'
   }).length
 
-  return (
-    <ColunaCampo>
-      <header className="flex flex-col gap-(--e-1)">
-        <p className="corpo text-(--tinta-2)">
-          {nomeDoDiaDaSemana(hoje)}, {formatarDataCivil(hoje)}
-        </p>
-        <h1 className="titulo-tela text-(--tinta)">{titulo}</h1>
-        {consulta.isSuccess ? (
-          <p className="corpo text-(--tinta-2)">
-            {plural(abertas, 'vistoria aberta', 'vistorias abertas')}
-          </p>
-        ) : null}
-      </header>
-
-      <div role="group" aria-label="Quais vistorias" className="flex gap-(--e-2)">
-        <Botao
-          className={`${classeAlvo} flex-1`}
-          selecionado={somenteMinhas}
-          onClick={() => {
-            setSomenteMinhas(true)
-          }}
+  let conteudo
+  if (consulta.isPending) {
+    conteudo = <Carregando rotulo="Carregando as vistorias" linhas={4} />
+  } else if (consulta.isError) {
+    conteudo = ehSemPermissao(consulta.error) ? (
+      <SemPermissao />
+    ) : (
+      <EstadoErro
+        titulo="Não foi possível carregar as vistorias."
+        aoTentarDeNovo={() => void consulta.refetch()}
+      />
+    )
+  } else if (grupos.size === 0) {
+    conteudo = <EstadoVazio icone="calendar" titulo="Nenhuma vistoria" />
+  } else {
+    let ordem = 0
+    conteudo = (
+      <div className={cn(classePainel, 'flex flex-col overflow-hidden')}>
+        <div
+          aria-hidden
+          className={cn('hidden h-10 px-(--e-4) rotulo-maiusculo text-(--tinta-2) md:grid', GRADE)}
         >
-          Minhas
-        </Botao>
-        <Botao
-          className={`${classeAlvo} flex-1`}
-          selecionado={!somenteMinhas}
-          onClick={() => {
-            setSomenteMinhas(false)
-          }}
-        >
-          Todas
-        </Botao>
-      </div>
-
-      {consulta.isPending ? (
-        <Carregando rotulo="Carregando as vistorias" linhas={4} />
-      ) : consulta.isError ? (
-        ehSemPermissao(consulta.error) ? (
-          <SemPermissao />
-        ) : (
-          <EstadoErro
-            titulo="Não foi possível carregar as vistorias."
-            aoTentarDeNovo={() => void consulta.refetch()}
-          />
-        )
-      ) : grupos.size === 0 ? (
-        <EstadoVazio icone="calendar" titulo="Nenhuma vistoria" />
-      ) : (
-        <>
-          {GRUPOS_DA_VISTORIA.filter((g) => grupos.has(g)).map((grupo) => {
-            const lista = ordenar(grupo, grupos.get(grupo) ?? [])
-            return (
-              <section
-                key={grupo}
-                aria-labelledby={`grupo-${grupo}`}
-                className="flex flex-col gap-(--e-2)"
-              >
-                <div className="flex items-baseline justify-between">
-                  <h2 id={`grupo-${grupo}`} className="titulo-secao text-(--tinta)">
-                    {ROTULO_DO_GRUPO[grupo]}
-                  </h2>
-                  <span className="text-xs text-(--tinta-2)">
-                    {plural(lista.length, 'vistoria', 'vistorias')}
-                  </span>
-                </div>
-                <ul className="flex flex-col gap-(--e-2)">
-                  {lista.map((vistoria) => (
-                    <CartaoDaVistoria
-                      key={vistoria.id}
-                      vistoria={vistoria}
-                      grupo={grupo}
-                      hoje={hoje}
-                      fuso={atual.fuso}
-                    />
-                  ))}
-                </ul>
-              </section>
-            )
-          })}
+          <span>Faltam</span>
+          <span>Quando</span>
+          <span>Vistoria</span>
+          <span>Itens</span>
+          <span>Responsável</span>
+          <span>Situação</span>
+          <span />
+        </div>
+        {GRUPOS_DA_VISTORIA.filter((g) => grupos.has(g)).map((grupo) => {
+          const lista = ordenar(grupo, grupos.get(grupo) ?? [])
+          return (
+            <section key={grupo} aria-labelledby={`grupo-${grupo}`}>
+              <div className="flex h-11 items-center gap-(--e-2) border-t border-(--regra-forte) bg-(--chao) px-(--e-4)">
+                <h2
+                  id={`grupo-${grupo}`}
+                  className={cn(
+                    'titulo-secao',
+                    grupo === 'atrasadas' ? 'text-(--atraso-texto)' : 'text-(--tinta)',
+                  )}
+                >
+                  {ROTULO_DO_GRUPO[grupo]}
+                </h2>
+                <span className="min-w-6 rounded-(--raio-mini) bg-(--aperto) px-(--e-1) text-center text-xs font-[800] text-(--tinta-2) numero">
+                  {lista.length}
+                </span>
+              </div>
+              <ul className="flex flex-col">
+                {lista.map((vistoria) => (
+                  <LinhaDaVistoria
+                    key={vistoria.id}
+                    vistoria={vistoria}
+                    grupo={grupo}
+                    hoje={hoje}
+                    fuso={atual.fuso}
+                    ordem={ordem++}
+                  />
+                ))}
+              </ul>
+            </section>
+          )
+        })}
+        <div className="flex min-h-12 items-center gap-(--e-3) border-t px-(--e-4) py-(--e-2)">
+          <span className="flex-1 rotulo numero" aria-live="polite">
+            {vistorias.length} de {total}
+          </span>
           {consulta.hasNextPage ? (
             <Botao
-              className={classeAlvo}
               disabled={consulta.isFetchingNextPage}
               onClick={() => void consulta.fetchNextPage()}
             >
               Mostrar mais vistorias
             </Botao>
           ) : null}
-        </>
-      )}
-    </ColunaCampo>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <Pagina
+      titulo={titulo}
+      meta={
+        <span className="numero">
+          {nomeDoDiaDaSemana(hoje)}, {formatarDataCivil(hoje)}
+          {consulta.isSuccess ? ` · ${plural(abertas, 'aberta', 'abertas')}` : null}
+        </span>
+      }
+      acao={<Alternador somenteMinhas={somenteMinhas} aoMudar={setSomenteMinhas} />}
+    >
+      {conteudo}
+    </Pagina>
   )
 }

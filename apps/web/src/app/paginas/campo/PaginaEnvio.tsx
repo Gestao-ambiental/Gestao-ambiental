@@ -9,11 +9,14 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate, useParams } from 'react-router'
 
+import { Pagina } from '@/app/paginas/Pagina'
 import { Carregando, EstadoErro } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
+import { Icone } from '@/components/ui/icone'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { enviarVistoria, type Vistoria } from '@/lib/api/vistorias'
 import { mensagemDoErroDaVistoria } from '@/lib/erros'
+import { cn } from '@/lib/utils'
 
 import {
   recarregarVistoria,
@@ -21,7 +24,7 @@ import {
   useItensDaVistoria,
   useVistoria,
 } from './consultas'
-import { classeAlvo, classeCartao } from './estilos'
+import { classeAcaoPrincipal, classeAcaoSecundaria, classePainel } from './estilos'
 import {
   BarraDeAcao,
   BarraDeProgresso,
@@ -47,35 +50,33 @@ function Envio({ vistoria }: { vistoria: Vistoria }) {
     },
   })
 
-  const voltar = <VoltarPara para={checklist} rotulo="Checklist" />
-  const cabecalho = (
-    <header className="flex flex-col gap-(--e-1)">
-      <p className="text-xs text-(--tinta-2)">{vistoria.titulo}</p>
-      <h1 className="titulo-tela text-(--tinta)">Conferir envio</h1>
-    </header>
-  )
+  const moldura = {
+    titulo: 'Conferir envio',
+    voltar: { para: checklist, rotulo: 'Checklist' },
+    meta: vistoria.titulo,
+  }
 
   if (itens.isError || fotos.isError) {
     return (
       <ColunaCampo>
-        {voltar}
-        {cabecalho}
-        <EstadoErro
-          titulo="Não foi possível carregar o resumo."
-          aoTentarDeNovo={() => {
-            void itens.refetch()
-            void fotos.refetch()
-          }}
-        />
+        <Pagina {...moldura}>
+          <EstadoErro
+            titulo="Não foi possível carregar o resumo."
+            aoTentarDeNovo={() => {
+              void itens.refetch()
+              void fotos.refetch()
+            }}
+          />
+        </Pagina>
       </ColunaCampo>
     )
   }
   if (itens.isPending || fotos.isPending) {
     return (
       <ColunaCampo>
-        {voltar}
-        {cabecalho}
-        <Carregando rotulo="Carregando o resumo" linhas={4} />
+        <Pagina {...moldura}>
+          <Carregando rotulo="Carregando o resumo" linhas={4} />
+        </Pagina>
       </ColunaCampo>
     )
   }
@@ -83,75 +84,103 @@ function Envio({ vistoria }: { vistoria: Vistoria }) {
   const progresso = progressoDaVistoria(itens.data)
   const pendencias = pendenciasDoEnvio(itens.data)
   const bloqueado = !editavel || pendencias.length > 0 || itens.data.length === 0
+  const contagens = [
+    ...RESULTADOS_DO_ITEM.map((resultado) => ({
+      rotulo: ROTULO_DO_RESULTADO[resultado],
+      valor: itens.data.filter((i) => i.resultado === resultado).length,
+    })),
+    { rotulo: 'Fotos', valor: fotos.data.length },
+  ]
 
   return (
-    <ColunaCampo>
-      {voltar}
-      {cabecalho}
-      <BarraDeProgresso {...progresso} />
+    <ColunaCampo comBarra>
+      <Pagina {...moldura}>
+        <BarraDeProgresso {...progresso} />
 
-      <dl className={`${classeCartao} grid grid-cols-2 gap-(--e-2) p-(--e-3)`}>
-        {RESULTADOS_DO_ITEM.map((resultado) => (
-          <div key={resultado} className="flex flex-col">
-            <dt className="text-xs text-(--tinta-2)">{ROTULO_DO_RESULTADO[resultado]}</dt>
-            <dd className="corpo-medio">
-              {itens.data.filter((i) => i.resultado === resultado).length}
-            </dd>
-          </div>
-        ))}
-        <div className="flex flex-col">
-          <dt className="text-xs text-(--tinta-2)">Fotos</dt>
-          <dd className="corpo-medio">{fotos.data.length}</dd>
-        </div>
-      </dl>
-
-      <section aria-labelledby="titulo-pendencias" className="flex flex-col gap-(--e-15)">
-        <h2 id="titulo-pendencias" className="titulo-secao">
-          Pendências
-        </h2>
-        {pendencias.length === 0 ? (
-          <p className="corpo text-(--tinta-2)">Nenhuma pendência</p>
-        ) : (
-          <ul className={`${classeCartao} flex flex-col`}>
-            {pendencias.map((p) => (
-              <li
-                key={p.itemId}
-                className="flex min-h-11 items-center justify-between gap-(--e-2) border-b px-(--e-3) py-(--e-15) last:border-b-0"
-              >
-                <Link to={`${checklist}#item-${p.itemId}`}>{p.titulo}</Link>
-                <span className="text-xs text-(--atraso-texto)">
-                  {ROTULO_DA_PENDENCIA[p.motivo]}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <CampoObservacao vistoria={vistoria} editavel={editavel} />
-
-      {enviar.isError ? (
-        <MensagemSecao role="alert" tom="perigo">
-          {mensagemDoErroDaVistoria(enviar.error)}
-        </MensagemSecao>
-      ) : null}
-
-      <BarraDeAcao>
-        <Botao asChild className={`${classeAlvo} flex-1`}>
-          <Link to={checklist}>Voltar</Link>
-        </Botao>
-        <Botao
-          aparencia="primario"
-          iconeDepois="send"
-          className={`${classeAlvo} flex-[2]`}
-          disabled={bloqueado || enviar.isPending}
-          onClick={() => {
-            enviar.mutate()
-          }}
+        <dl
+          className={cn(
+            classePainel,
+            'grid grid-cols-2 gap-px overflow-hidden bg-(--regra) md:grid-cols-5',
+          )}
         >
-          {enviar.isPending ? 'Enviando…' : 'Enviar para conferência'}
-        </Botao>
-      </BarraDeAcao>
+          {contagens.map(({ rotulo, valor }, indice) => (
+            <div
+              key={rotulo}
+              className={cn(
+                'flex flex-col-reverse justify-end gap-(--e-05) bg-(--folha) px-(--e-4) py-(--e-3)',
+                indice === contagens.length - 1 && 'col-span-2 md:col-span-1',
+              )}
+            >
+              <dt className="corpo-medio text-(--tinta-2)">{rotulo}</dt>
+              <dd
+                className={cn(
+                  'numero-contagem',
+                  valor === 0 ? 'text-(--tinta-3)' : 'text-(--tinta)',
+                )}
+              >
+                {valor}
+              </dd>
+            </div>
+          ))}
+        </dl>
+
+        <section aria-labelledby="titulo-pendencias" className="flex flex-col gap-(--e-3)">
+          <h2 id="titulo-pendencias" className="titulo-secao text-(--tinta)">
+            Pendências
+          </h2>
+          {pendencias.length === 0 ? (
+            <p className="inline-flex items-center gap-(--e-2) corpo-medio text-(--ok-texto)">
+              <Icone nome="circle-check" />
+              Nenhuma pendência
+            </p>
+          ) : (
+            <ul className={cn(classePainel, 'flex flex-col overflow-hidden')}>
+              {pendencias.map((p) => (
+                <li
+                  key={p.itemId}
+                  className="relative flex min-h-(--linha) items-center justify-between gap-(--e-3) border-b border-(--regra-leve) px-(--e-4) py-(--e-2) transicao-estado last:border-b-0 hover:bg-(--toque)"
+                >
+                  <Link
+                    to={`${checklist}#item-${p.itemId}`}
+                    className="corpo-medio text-(--tinta) after:absolute after:inset-0 after:content-['']"
+                  >
+                    {p.titulo}
+                  </Link>
+                  <span className="flex shrink-0 items-center gap-(--e-2) corpo text-(--atraso-texto)">
+                    {ROTULO_DA_PENDENCIA[p.motivo]}
+                    <Icone nome="chevron-right" className="text-(--icone)" />
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <CampoObservacao vistoria={vistoria} editavel={editavel} />
+
+        {enviar.isError ? (
+          <MensagemSecao role="alert" tom="perigo">
+            {mensagemDoErroDaVistoria(enviar.error)}
+          </MensagemSecao>
+        ) : null}
+
+        <BarraDeAcao>
+          <Botao aparencia="sutil" asChild className={classeAcaoSecundaria}>
+            <Link to={checklist}>Voltar</Link>
+          </Botao>
+          <Botao
+            aparencia="primario"
+            iconeDepois="send"
+            className={classeAcaoPrincipal}
+            disabled={bloqueado || enviar.isPending}
+            onClick={() => {
+              enviar.mutate()
+            }}
+          >
+            {enviar.isPending ? 'Enviando…' : 'Enviar para conferência'}
+          </Botao>
+        </BarraDeAcao>
+      </Pagina>
     </ColunaCampo>
   )
 }

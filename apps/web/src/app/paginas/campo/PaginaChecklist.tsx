@@ -8,19 +8,22 @@ import {
   type ResultadoDoItem,
 } from '@gestao-ambiental/domain'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router'
 
+import { Pagina } from '@/app/paginas/Pagina'
 import { Carregando, EstadoErro } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
-import { Icone } from '@/components/ui/icone'
-import { Selo } from '@/components/ui/selo'
+import { classeAreaTexto } from '@/components/ui/estilos-campo'
+import { Icone, type NomeIcone } from '@/components/ui/icone'
+import { Selo, type TomSelo } from '@/components/ui/selo'
 import {
   registrarItemDaVistoria,
   type FotoDaVistoria,
   type ItemDaVistoriaGravado,
   type Vistoria,
 } from '@/lib/api/vistorias'
+import { cn } from '@/lib/utils'
 
 import {
   chaveDaVistoria,
@@ -29,7 +32,7 @@ import {
   useUrlsDasFotos,
   useVistoria,
 } from './consultas'
-import { classeAlvo, classeAreaTexto } from './estilos'
+import { classeAcaoPrincipal, classeAcaoSecundaria, classePainel } from './estilos'
 import {
   BarraDeAcao,
   BarraDeProgresso,
@@ -46,24 +49,61 @@ interface Registro {
   comentario: string
 }
 
+type Resposta = (typeof RESULTADOS_DO_ITEM)[number]
+
+/**
+ * Cada resposta tem um ícone próprio (forma além da cor) e, escolhida, fundo e contorno duplo no
+ * tom do estado. `aria-pressed` diz qual está marcada.
+ */
+const VISUAL_DA_RESPOSTA: Record<Resposta, { icone: NomeIcone; marcada: string }> = {
+  conforme: {
+    icone: 'check',
+    marcada: 'border-(--ok-texto) bg-(--ok-fundo) text-(--ok-texto)',
+  },
+  nao_conforme: {
+    icone: 'x',
+    marcada: 'border-(--atraso-texto) bg-(--atraso-fundo) text-(--atraso-texto)',
+  },
+  nao_aplicavel: {
+    icone: 'minus',
+    marcada: 'border-(--tinta-2) bg-(--neutro-fundo) text-(--tinta)',
+  },
+  requer_avaliacao: {
+    icone: 'circle-help',
+    marcada: 'border-(--alerta-texto) bg-(--alerta-fundo) text-(--alerta-texto)',
+  },
+}
+
+const TOM_DO_RESULTADO: Record<ResultadoDoItem, TomSelo> = {
+  pendente: 'padrao',
+  conforme: 'sucesso',
+  nao_conforme: 'perigo',
+  nao_aplicavel: 'padrao',
+  requer_avaliacao: 'atencao',
+}
+
 function ItemDoChecklist({
   vistoria,
   item,
+  posicao,
   fotos,
   urls,
   editavel,
 }: {
   vistoria: Vistoria
   item: ItemDaVistoriaGravado
+  posicao: number
   fotos: readonly FotoDaVistoria[]
   urls: Readonly<Record<string, string>> | undefined
   editavel: boolean
 }) {
   const queryClient = useQueryClient()
   const idComentario = useId()
+  const campoComentario = useRef<HTMLTextAreaElement>(null)
   const [resultado, setResultado] = useState<ResultadoDoItem>(item.resultado)
   const [comentario, setComentario] = useState(item.comentario ?? '')
   const [erroComentario, setErroComentario] = useState<string | null>(null)
+  const [comentando, setComentando] = useState(false)
 
   const salvar = useMutation({
     mutationFn: (registro: Registro) =>
@@ -97,79 +137,86 @@ function ItemDoChecklist({
     salvar.mutate(registro)
   }
 
+  useEffect(() => {
+    if (comentando) campoComentario.current?.focus()
+  }, [comentando])
+
   const exige = exigeComentario(resultado)
+  const mostraComentario = exige || comentando || comentario.trim() !== ''
   const tituloId = `item-${item.id}-titulo`
+  const registrado = item.resultado !== 'pendente'
 
   return (
     <li
       id={`item-${item.id}`}
-      className="flex flex-col gap-(--e-2) border-b py-(--e-3) last:border-b-0"
+      className="flex scroll-mt-24 flex-col gap-(--e-3) border-b border-(--regra-leve) px-(--e-4) py-(--e-4) last:border-b-0"
     >
-      <div className="flex items-start gap-(--e-2)">
-        <div className="flex min-w-0 flex-1 flex-col">
-          <h2 id={tituloId} className="corpo-medio">
+      <div className="flex items-start gap-(--e-3)">
+        <span
+          aria-hidden
+          className={cn(
+            'flex size-7 shrink-0 items-center justify-center rounded-(--raio-mini) text-xs font-[800] numero',
+            registrado ? 'bg-(--ok-fundo) text-(--ok-texto)' : 'bg-(--aperto) text-(--tinta-2)',
+          )}
+        >
+          {registrado ? <Icone nome="check" tamanho={14} /> : posicao}
+        </span>
+        <div className="flex min-w-0 flex-1 flex-col gap-(--e-05)">
+          <h2 id={tituloId} className="titulo-secao text-(--tinta)">
             {item.titulo}
           </h2>
-          {item.descricao ? <p className="text-xs text-(--tinta-2)">{item.descricao}</p> : null}
+          {item.descricao ? <p className="corpo text-(--tinta-2)">{item.descricao}</p> : null}
         </div>
-        {editavel ? (
-          <Link
-            to={`/campo/${vistoria.id}/itens/${item.id}/foto`}
-            aria-label={`Tirar foto: ${item.titulo}`}
-            title="Tirar foto"
-            className="inline-flex size-11 shrink-0 items-center justify-center rounded-(--raio) border border-(--regra-forte) bg-(--folha) text-(--icone) transicao-estado hover:bg-(--toque)"
-          >
-            <Icone nome="image" />
-          </Link>
-        ) : null}
       </div>
 
       {editavel ? (
-        <div role="group" aria-labelledby={tituloId} className="grid grid-cols-2 gap-(--e-15)">
-          {RESULTADOS_DO_ITEM.map((opcao) => (
-            <Botao
-              key={opcao}
-              className={`${classeAlvo} whitespace-normal`}
-              selecionado={resultado === opcao}
-              disabled={salvar.isPending}
-              onClick={() => {
-                setResultado(opcao)
-                gravar({ resultado: opcao, comentario })
-              }}
-            >
-              {ROTULO_DO_RESULTADO[opcao]}
-            </Botao>
-          ))}
+        <div role="group" aria-labelledby={tituloId} className="grid grid-cols-2 gap-(--e-2)">
+          {RESULTADOS_DO_ITEM.map((opcao) => {
+            const marcada = resultado === opcao
+            const visual = VISUAL_DA_RESPOSTA[opcao]
+            return (
+              <button
+                key={opcao}
+                type="button"
+                aria-pressed={marcada}
+                disabled={salvar.isPending}
+                onClick={() => {
+                  setResultado(opcao)
+                  gravar({ resultado: opcao, comentario })
+                }}
+                className={cn(
+                  'flex min-h-13 cursor-pointer items-center justify-center gap-(--e-2) rounded-(--raio) border px-(--e-2) text-center corpo-medio transicao-estado active:translate-y-px disabled:cursor-wait',
+                  marcada
+                    ? cn('ring-1 ring-current ring-inset', visual.marcada)
+                    : 'border-(--regra-forte) bg-(--folha) text-(--tinta) hover:bg-(--toque)',
+                )}
+              >
+                <Icone nome={visual.icone} tamanho={18} />
+                {ROTULO_DO_RESULTADO[opcao]}
+              </button>
+            )
+          })}
         </div>
       ) : (
         <p>
-          <Selo
-            tom={
-              item.resultado === 'nao_conforme'
-                ? 'perigo'
-                : item.resultado === 'requer_avaliacao'
-                  ? 'atencao'
-                  : 'padrao'
-            }
-          >
-            {ROTULO_DO_RESULTADO[item.resultado]}
-          </Selo>
+          <Selo tom={TOM_DO_RESULTADO[item.resultado]}>{ROTULO_DO_RESULTADO[item.resultado]}</Selo>
         </p>
       )}
 
-      {editavel ? (
+      {editavel && mostraComentario ? (
         <div className="flex flex-col gap-(--e-1)">
           <label htmlFor={idComentario} className="rotulo">
             Comentário{exige ? ' (obrigatório)' : ''}
           </label>
           <textarea
+            ref={campoComentario}
             id={idComentario}
             rows={2}
             maxLength={LIMITES_DA_VISTORIA.comentario}
             value={comentario}
             aria-invalid={erroComentario ? true : undefined}
             aria-describedby={erroComentario ? `${idComentario}-erro` : undefined}
-            className={classeAreaTexto}
+            className={cn(classeAreaTexto, 'min-h-16')}
             onChange={(evento) => {
               setComentario(evento.target.value)
               if (evento.target.value.trim()) setErroComentario(null)
@@ -181,38 +228,59 @@ function ItemDoChecklist({
             }}
           />
           {erroComentario ? (
-            <span id={`${idComentario}-erro`} className="text-xs text-(--atraso-texto)">
+            <span id={`${idComentario}-erro`} className="rotulo text-(--atraso-texto)">
               {erroComentario}
             </span>
           ) : null}
         </div>
-      ) : item.comentario ? (
-        <p className="corpo whitespace-pre-line">{item.comentario}</p>
+      ) : !editavel && item.comentario ? (
+        <p className="corpo whitespace-pre-line text-(--tinta)">{item.comentario}</p>
       ) : null}
 
-      <div className="flex flex-wrap items-center justify-between gap-(--e-2)">
-        <span className="text-xs text-(--tinta-2)">
-          {fotos.length} {fotos.length === 1 ? 'foto' : 'fotos'}
-        </span>
-        {editavel ? (
-          <SituacaoDaGravacao
-            estado={
-              salvar.isPending
-                ? 'salvando'
-                : salvar.isError
-                  ? 'erro'
-                  : salvar.isSuccess
-                    ? 'salvo'
-                    : null
-            }
-            erro={salvar.error}
-            aoTentarDeNovo={() => {
-              if (salvar.variables) salvar.mutate(salvar.variables)
-            }}
-          />
-        ) : null}
-      </div>
       <Miniaturas fotos={fotos} urls={urls} />
+
+      {editavel ? (
+        <div className="flex flex-wrap items-center gap-(--e-2)">
+          <Botao asChild className="h-11 min-h-11">
+            <Link
+              to={`/campo/${vistoria.id}/itens/${item.id}/foto`}
+              aria-label={`Tirar foto: ${item.titulo}`}
+            >
+              <Icone nome="camera" />
+              Tirar foto
+            </Link>
+          </Botao>
+          {mostraComentario ? null : (
+            <Botao
+              aparencia="sutil"
+              iconeAntes="message-square"
+              className="h-11 min-h-11"
+              onClick={() => {
+                setComentando(true)
+              }}
+            >
+              Comentar
+            </Botao>
+          )}
+          <span className="ml-auto">
+            <SituacaoDaGravacao
+              estado={
+                salvar.isPending
+                  ? 'salvando'
+                  : salvar.isError
+                    ? 'erro'
+                    : salvar.isSuccess
+                      ? 'salvo'
+                      : null
+              }
+              erro={salvar.error}
+              aoTentarDeNovo={() => {
+                if (salvar.variables) salvar.mutate(salvar.variables)
+              }}
+            />
+          </span>
+        </div>
+      ) : null}
     </li>
   )
 }
@@ -231,70 +299,74 @@ function Checklist({ vistoria }: { vistoria: Vistoria }) {
     document.getElementById(hash.slice(1))?.scrollIntoView({ block: 'start' })
   }, [carregado, hash])
 
-  const voltar = <VoltarPara para={`/campo/${vistoria.id}`} rotulo="Detalhe da visita" />
+  const voltar = { para: `/campo/${vistoria.id}`, rotulo: 'Vistoria' }
+  const meta = [vistoria.empreendimentoNome, vistoria.licenca].filter(Boolean).join(' · ')
 
   if (itens.isError || fotos.isError) {
     return (
       <ColunaCampo>
-        {voltar}
-        <h1 className="titulo-tela text-(--tinta)">Checklist</h1>
-        <EstadoErro
-          titulo="Não foi possível carregar o checklist."
-          aoTentarDeNovo={() => {
-            void itens.refetch()
-            void fotos.refetch()
-          }}
-        />
+        <Pagina titulo="Checklist" voltar={voltar} meta={meta}>
+          <EstadoErro
+            titulo="Não foi possível carregar o checklist."
+            aoTentarDeNovo={() => {
+              void itens.refetch()
+              void fotos.refetch()
+            }}
+          />
+        </Pagina>
       </ColunaCampo>
     )
   }
   if (itens.isPending || fotos.isPending) {
     return (
       <ColunaCampo>
-        {voltar}
-        <h1 className="titulo-tela text-(--tinta)">Checklist</h1>
-        <Carregando rotulo="Carregando o checklist" linhas={4} />
+        <Pagina titulo="Checklist" voltar={voltar} meta={meta}>
+          <Carregando rotulo="Carregando o checklist" linhas={4} />
+        </Pagina>
       </ColunaCampo>
     )
   }
 
   const progresso = progressoDaVistoria(itens.data)
   return (
-    <ColunaCampo>
-      {voltar}
-      <header className="flex flex-col gap-(--e-1)">
-        <p className="text-xs text-(--tinta-2)">
-          {[vistoria.empreendimentoNome, vistoria.licenca].filter(Boolean).join(' · ')}
-        </p>
-        <h1 className="titulo-tela text-(--tinta)">Checklist</h1>
-      </header>
-      <BarraDeProgresso {...progresso} />
+    <ColunaCampo comBarra>
+      <Pagina titulo="Checklist" voltar={voltar} meta={<span className="numero">{meta}</span>}>
+        <div className="flex flex-col">
+          <BarraDeProgresso {...progresso} fixa />
+          <ul
+            aria-label="Itens do checklist"
+            className={cn(classePainel, 'mt-(--e-2) flex flex-col')}
+          >
+            {itens.data.map((item, indice) => (
+              <ItemDoChecklist
+                key={item.id}
+                vistoria={vistoria}
+                item={item}
+                posicao={indice + 1}
+                fotos={fotos.data.filter((f) => f.itemId === item.id)}
+                urls={urls.data}
+                editavel={editavel}
+              />
+            ))}
+          </ul>
+        </div>
 
-      <ul aria-label="Itens do checklist" className="flex flex-col">
-        {itens.data.map((item) => (
-          <ItemDoChecklist
-            key={item.id}
-            vistoria={vistoria}
-            item={item}
-            fotos={fotos.data.filter((f) => f.itemId === item.id)}
-            urls={urls.data}
-            editavel={editavel}
-          />
-        ))}
-      </ul>
+        <CampoObservacao vistoria={vistoria} editavel={editavel} />
 
-      <CampoObservacao vistoria={vistoria} editavel={editavel} />
-
-      <BarraDeAcao>
-        <Botao asChild className={`${classeAlvo} flex-1`}>
-          <Link to={`/campo/${vistoria.id}`}>Voltar</Link>
-        </Botao>
-        {editavel ? (
-          <Botao aparencia="primario" asChild className={`${classeAlvo} flex-[2]`}>
-            <Link to={`/campo/${vistoria.id}/envio`}>Revisar envio</Link>
+        <BarraDeAcao>
+          <Botao aparencia="sutil" asChild className={classeAcaoSecundaria}>
+            <Link to={`/campo/${vistoria.id}`}>Voltar</Link>
           </Botao>
-        ) : null}
-      </BarraDeAcao>
+          {editavel ? (
+            <Botao aparencia="primario" asChild className={classeAcaoPrincipal}>
+              <Link to={`/campo/${vistoria.id}/envio`}>
+                Revisar envio
+                <Icone nome="arrow-right" />
+              </Link>
+            </Botao>
+          ) : null}
+        </BarraDeAcao>
+      </Pagina>
     </ColunaCampo>
   )
 }
@@ -306,7 +378,7 @@ export function PaginaChecklist() {
   return (
     <ComVistoria
       consulta={consulta}
-      voltar={<VoltarPara para={`/campo/${id}`} rotulo="Detalhe da visita" />}
+      voltar={<VoltarPara para={`/campo/${id}`} rotulo="Vistoria" />}
     >
       {(vistoria) => <Checklist vistoria={vistoria} />}
     </ComVistoria>

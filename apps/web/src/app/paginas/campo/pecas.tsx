@@ -13,6 +13,7 @@ import { Link } from 'react-router'
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
+import { classeAreaTexto } from '@/components/ui/estilos-campo'
 import { Icone } from '@/components/ui/icone'
 import { Selo, type TomSelo } from '@/components/ui/selo'
 import { salvarObservacaoDaVistoria, type FotoDaVistoria, type Vistoria } from '@/lib/api/vistorias'
@@ -20,34 +21,56 @@ import { ehSemPermissao, mensagemDoErroDaVistoria } from '@/lib/erros'
 import { cn } from '@/lib/utils'
 
 import { useRecarregarVistoria } from './consultas'
-import { classeAreaTexto } from './estilos'
 
-export function ColunaCampo({ children }: { children: ReactNode }) {
-  return <div className="mx-auto flex w-full max-w-[640px] flex-col gap-(--e-4)">{children}</div>
-}
-
-/** Ações da tela, presas ao rodapé enquanto a página rola (uso com uma mão). */
-export function BarraDeAcao({ children }: { children: ReactNode }) {
+/**
+ * Coluna do campo: estreita (formulário de uma mão) ou larga (detalhe com dados ao lado).
+ * `comBarra`: no celular, a coluna ocupa a altura útil (tela menos barra superior de 56px, barra
+ * inferior de 64px e o respiro de cima) para a `BarraDeAcao` ficar no rodapé mesmo em tela curta.
+ */
+export function ColunaCampo({
+  children,
+  larga = false,
+  comBarra = false,
+}: {
+  children: ReactNode
+  larga?: boolean
+  comBarra?: boolean
+}) {
   return (
-    <div className="sticky bottom-0 z-10 -mx-(--e-4) flex gap-(--e-2) border-t bg-(--folha) px-(--e-4) py-(--e-3) md:mx-0 md:rounded-(--raio-painel) md:border">
+    <div
+      className={cn(
+        'mx-auto flex w-full flex-col gap-(--e-6)',
+        larga ? 'max-w-[1040px]' : 'max-w-[720px]',
+        comBarra && 'max-md:min-h-[calc(100dvh-140px)] *:flex-1',
+      )}
+    >
       {children}
     </div>
   )
 }
 
+/**
+ * Ações da tela, presas ao rodapé enquanto a página rola: no celular, faixa de largura total acima
+ * da barra inferior (polegar); no desktop, botões no tamanho natural, à direita.
+ */
+export function BarraDeAcao({ children }: { children: ReactNode }) {
+  return (
+    <div className="sticky bottom-0 z-10 -mx-(--e-4) mt-auto flex gap-(--e-2) border-t border-(--regra-forte) bg-(--folha) px-(--e-4) py-(--e-3) md:mx-0 md:justify-end md:bg-(--chao) md:px-0">
+      {children}
+    </div>
+  )
+}
+
+/** Voltar dos estados (carregando, erro, não encontrada), no mesmo desenho do `voltar` da Pagina. */
 export function VoltarPara({ para, rotulo }: { para: string; rotulo: string }) {
   return (
-    <nav aria-label="Caminho" className="flex items-center gap-(--e-1) corpo">
-      <Link
-        to={para}
-        aria-label={`Voltar para ${rotulo}`}
-        title={`Voltar para ${rotulo}`}
-        className="inline-flex size-11 items-center justify-center rounded-(--raio) text-(--icone) transicao-estado hover:bg-(--toque)"
-      >
-        <Icone nome="chevron-left" />
-      </Link>
-      <Link to={para}>{rotulo}</Link>
-    </nav>
+    <Link
+      to={para}
+      className="inline-flex min-h-(--controle-toque) w-fit items-center gap-(--e-1) rounded-(--raio-mini) corpo-medio text-(--tinta-2) no-underline hover:text-(--tinta) hover:no-underline"
+    >
+      <Icone nome="chevron-left" />
+      {rotulo}
+    </Link>
   )
 }
 
@@ -140,14 +163,14 @@ export function SituacaoDaGravacao({
   return (
     <div role="status" aria-live="polite" className="flex min-h-5 items-center gap-(--e-2)">
       {estado === 'salvando' ? (
-        <span className="text-xs text-(--tinta-2)">Salvando…</span>
+        <span className="rotulo">Salvando…</span>
       ) : estado === 'salvo' ? (
-        <span className="inline-flex items-center gap-(--e-1) text-xs text-(--tinta-2)">
+        <span className="inline-flex items-center gap-(--e-1) rotulo text-(--ok-texto)">
           <Icone nome="check" tamanho={12} />
           Salvo
         </span>
       ) : estado === 'erro' ? (
-        <span className="inline-flex flex-wrap items-center gap-(--e-2) text-xs text-(--atraso-texto)">
+        <span className="inline-flex flex-wrap items-center gap-(--e-2) rotulo text-(--atraso-texto)">
           <Icone nome="circle-alert" tamanho={12} />
           Não salvou{erro ? `: ${mensagemDoErroDaVistoria(erro)}` : ''}
           <Botao tamanho="compacto" onClick={aoTentarDeNovo}>
@@ -175,11 +198,11 @@ export function CampoObservacao({ vistoria, editavel }: { vistoria: Vistoria; ed
 
   if (!editavel) {
     return (
-      <section aria-labelledby={id} className="flex flex-col gap-(--e-1)">
-        <h2 id={id} className="rotulo">
+      <section aria-labelledby={id} className="flex flex-col gap-(--e-2)">
+        <h2 id={id} className="titulo-secao text-(--tinta)">
           Observação geral
         </h2>
-        <p className="corpo whitespace-pre-line">
+        <p className="corpo whitespace-pre-line text-(--tinta)">
           {vistoria.observacao ?? <span className="text-(--tinta-3)">Sem observação</span>}
         </p>
       </section>
@@ -187,8 +210,8 @@ export function CampoObservacao({ vistoria, editavel }: { vistoria: Vistoria; ed
   }
 
   return (
-    <div className="flex flex-col gap-(--e-1)">
-      <label htmlFor={id} className="rotulo">
+    <div className="flex flex-col gap-(--e-2)">
+      <label htmlFor={id} className="titulo-secao text-(--tinta)">
         Observação geral
       </label>
       <textarea
@@ -234,12 +257,12 @@ export function Miniaturas({
 }) {
   if (fotos.length === 0) return null
   return (
-    <ul aria-label="Fotos" className={cn('flex flex-wrap gap-(--e-15)', className)}>
+    <ul aria-label="Fotos" className={cn('flex flex-wrap gap-(--e-2)', className)}>
       {fotos.map((foto, indice) => {
         const url = urls?.[foto.caminho]
         const alt = foto.legenda ?? `Foto ${String(indice + 1)}`
         return (
-          <li key={foto.id} className="size-14 overflow-hidden rounded-(--raio) border bg-(--off)">
+          <li key={foto.id} className="size-16 overflow-hidden rounded-(--raio) border bg-(--off)">
             {url ? (
               <img src={url} alt={alt} className="size-full object-cover" />
             ) : (
@@ -258,32 +281,52 @@ export function Miniaturas({
   )
 }
 
+/**
+ * Progresso "x de y itens" em número grande e barra. `fixa` prende no topo enquanto o checklist
+ * rola, para quem está em campo saber sempre quanto falta.
+ */
 export function BarraDeProgresso({
   registrados,
   total,
   percentual,
+  fixa = false,
 }: {
   registrados: number
   total: number
   percentual: number
+  fixa?: boolean
 }) {
+  const id = useId()
+  const completo = total > 0 && registrados === total
   return (
-    <div className="flex flex-col gap-(--e-1)">
-      <div className="flex justify-between corpo-medio">
-        <span id="rotulo-progresso">
+    <div
+      className={cn(
+        'flex flex-col gap-(--e-2)',
+        fixa && 'sticky top-0 z-10 -mx-(--e-4) bg-(--chao) px-(--e-4) py-(--e-3) md:mx-0 md:px-0',
+      )}
+    >
+      <div className="flex items-baseline justify-between gap-(--e-3)">
+        <span id={id} className="titulo-secao numero text-(--tinta)">
           {registrados} de {total} {total === 1 ? 'item' : 'itens'}
         </span>
-        <span className="text-(--tinta-2)">{percentual}%</span>
+        <span
+          className={cn('corpo-medio numero', completo ? 'text-(--ok-texto)' : 'text-(--tinta-2)')}
+        >
+          {percentual}%
+        </span>
       </div>
       <div
         role="progressbar"
-        aria-labelledby="rotulo-progresso"
+        aria-labelledby={id}
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={percentual}
-        className="h-1.5 overflow-hidden rounded-(--raio-redondo) bg-(--off)"
+        className="h-2 overflow-hidden rounded-(--raio-mini) bg-(--aperto)"
       >
-        <div className="h-full bg-(--acao)" style={{ width: `${String(percentual)}%` }} />
+        <div
+          className="h-full bg-(--acao) transicao-estado"
+          style={{ width: `${String(percentual)}%` }}
+        />
       </div>
     </div>
   )

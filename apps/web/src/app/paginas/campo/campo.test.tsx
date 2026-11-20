@@ -268,6 +268,39 @@ describe('detalhe da visita (/campo/:id)', () => {
     })
   })
 
+  it('aprovar pede confirmação antes de gravar', async () => {
+    falso.reiniciar(
+      cenario({
+        papel: 'gestao',
+        rpc: {
+          obter_vistoria: {
+            data: [vistoria({ situacao: 'enviada', pode_registrar: false, pode_conferir: true })],
+          },
+        },
+      }),
+    )
+    const usuario = userEvent.setup()
+    renderizarApp('/campo/v1')
+
+    await usuario.click(await screen.findByRole('button', { name: 'Aprovar' }))
+    const dialogo = await screen.findByRole('dialog', { name: 'Aprovar vistoria?' })
+    expect(falso.cliente.rpc).not.toHaveBeenCalledWith('conferir_vistoria', expect.anything())
+
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Cancelar' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(falso.cliente.rpc).not.toHaveBeenCalledWith('conferir_vistoria', expect.anything())
+
+    await usuario.click(screen.getByRole('button', { name: 'Aprovar' }))
+    const confirmar = await screen.findByRole('dialog', { name: 'Aprovar vistoria?' })
+    await usuario.click(within(confirmar).getByRole('button', { name: 'Aprovar' }))
+    expect(falso.cliente.rpc).toHaveBeenCalledWith('conferir_vistoria', {
+      p_id: 'v1',
+      p_decisao: 'aprovada',
+      p_motivo: null,
+      p_row_version: 2,
+    })
+  })
+
   it('vistoria de outra consultoria ou inexistente', async () => {
     falso.reiniciar(cenario({ rpc: { obter_vistoria: { data: [] } } }))
     renderizarApp('/campo/v9')
@@ -313,6 +346,34 @@ describe('checklist (/campo/:id/checklist)', () => {
     expect(await area.findByText('Salvo')).toBeInTheDocument()
     expect(screen.getByText('1 de 2 itens')).toBeInTheDocument()
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '50')
+  })
+
+  it('comentário opcional fica recolhido até "Comentar" e grava ao sair do campo', async () => {
+    falso.reiniciar(cenario())
+    const usuario = userEvent.setup()
+    renderizarApp('/campo/v1/checklist')
+
+    await esperarChecklistCarregado()
+    const area = areaDoItem('i1')
+    expect(area.queryByLabelText('Comentário')).not.toBeInTheDocument()
+    expect(area.getByRole('link', { name: 'Tirar foto: Registrar área visitada' })).toHaveAttribute(
+      'href',
+      '/campo/v1/itens/i1/foto',
+    )
+    const respostas = within(screen.getByRole('group', { name: 'Registrar área visitada' }))
+    await usuario.click(respostas.getByRole('button', { name: 'Conforme' }))
+    expect(await area.findByText('Salvo')).toBeInTheDocument()
+
+    await usuario.click(area.getByRole('button', { name: 'Comentar' }))
+    const campo = area.getByLabelText('Comentário')
+    expect(campo).toHaveFocus()
+    await usuario.type(campo, 'Área limpa')
+    await usuario.tab()
+    expect(falso.cliente.rpc).toHaveBeenLastCalledWith('registrar_item_da_vistoria', {
+      p_item_id: 'i1',
+      p_resultado: 'conforme',
+      p_comentario: 'Área limpa',
+    })
   })
 
   it('erro de gravação avisa "Não salvou" e tenta de novo', async () => {
