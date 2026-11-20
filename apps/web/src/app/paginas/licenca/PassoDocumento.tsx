@@ -1,12 +1,14 @@
+import { lerTitularDaLicenca, recursoLiberado } from '@gestao-ambiental/domain'
 import { useIsMutating, useQuery } from '@tanstack/react-query'
 import { useId, useRef, useState, type DragEvent } from 'react'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { useTarefas } from '@/app/consultoria/tempo-ativo'
-import { Carregando, EstadoErro } from '@/components/estados'
+import { useCatalogoComercial } from '@/app/plano/catalogo'
+import { useDadosComerciais } from '@/app/plano/situacao'
+import { lerTextoDoPdf } from '@/components/pdf/ler-texto-do-pdf'
 import { Botao } from '@/components/ui/botao'
-import { classeCampo } from '@/components/ui/estilos-campo'
 import { Icone } from '@/components/ui/icone'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { listarEmpreendimentos, listarUnidades } from '@/lib/api/empreendimentos'
@@ -26,6 +28,7 @@ import { mensagemDoErro } from '@/lib/erros'
 import { tamanhoLegivel } from '@/lib/texto'
 import { cn } from '@/lib/utils'
 
+import { EmpreendimentoDaLicenca, type LeituraDoTitular } from './EmpreendimentoDaLicenca'
 import { ComoCadastrar, PainelExtracao, type Metodo } from './ExtracaoIa'
 import { GuardaRascunho, SoGestao } from './GuardaCadastro'
 import { MolduraCadastro, RodapeCadastro } from './MolduraCadastro'
@@ -41,10 +44,13 @@ function EnvioPdf({
   arquivo,
   atual,
   aoEscolher,
+  idEntrada,
 }: {
   arquivo: File | null
   atual: string | null
   aoEscolher: (arquivo: File) => void
+  /** Id do campo de arquivo, para outro botão da tela abrir o seletor. */
+  idEntrada?: string
 }) {
   const entrada = useRef<HTMLInputElement>(null)
   const ajudaId = useId()
@@ -111,6 +117,7 @@ function EnvioPdf({
         </Botao>
         <input
           ref={entrada}
+          id={idEntrada}
           type="file"
           accept="application/pdf,.pdf"
           className="sr-only"
@@ -134,16 +141,27 @@ function EnvioPdf({
   )
 }
 
-/** Por que a IA não pode ler este PDF agora (nulo = pode). */
-function motivoSemIa(arquivo: File | null, temPdf: boolean): string | null {
+/** Por que a IA não pode ler este PDF agora (nulo = pode). Uma linha, sem beco sem saída. */
+function motivoSemIa(arquivo: File | null, temPdf: boolean, iaNoPlano = true): string | null {
+  if (!iaNoPlano) return 'A extração por IA faz parte dos planos Equipe e Escala.'
   if (!arquivo && !temPdf) return 'Envie o PDF da licença para a IA ler. O manual aceita sem PDF.'
   if (arquivo && arquivo.size > LIMITE_PDF_IA_BYTES)
     return `A IA lê PDF com texto até 10 MB; este tem ${tamanhoLegivel(arquivo.size)}. Siga pelo manual.`
   return null
 }
 
+/** A IA está no plano? Sem os dados (carregando ou erro), não bloqueia: o banco decide de fato. */
+function useIaNoPlano(): boolean {
+  const dados = useDadosComerciais()
+  const catalogo = useCatalogoComercial()
+  if (!dados.data || !catalogo.data) return true
+  return recursoLiberado(dados.data.situacao, 'ia', catalogo.data)
+}
+
 /**
- * /licencas/nova (Protótipo 10; LIC-01, IA-01): empreendimento, unidade, PDF e método. Com IA, o
+ * /licencas/nova (Protótipo 10; LIC-01, IA-01): PDF primeiro, empreendimento e unidade, método.
+ * O titular é lido do PDF no navegador (antes de existir rascunho) para sugerir o empreendimento
+ * cadastrado ou cadastrar com um clique; sem PDF, dá para escolher ou cadastrar na hora. Com IA, o
  * rascunho é criado, o PDF enviado e a extração começa no passo do documento do rascunho.
  */
 export function PassoDocumentoNovo() {
@@ -167,6 +185,26 @@ function DocumentoNovo() {
   const [falha, setFalha] = useState<string | null>(null)
   const [enviando, setEnviando] = useState(false)
   const tarefas = useTarefas()
+  const iaNoPlano = useIaNoPlano()
+  const idEntradaPdf = useId()
+
+  const leituraDoPdf = useQuery({
+    queryKey: ['titular-do-pdf', arquivo?.name, arquivo?.size, arquivo?.lastModified],
+    queryFn: async () => {
+      if (!arquivo) throw new Error('sem_pdf')
+      return lerTitularDaLicenca(await lerTextoDoPdf(arquivo))
+    },
+    enabled: arquivo !== null,
+    retry: false,
+    staleTime: Infinity,
+  })
+  const leitura: LeituraDoTitular = !arquivo
+    ? { situacao: 'sem_pdf' }
+    : leituraDoPdf.isPending
+      ? { situacao: 'lendo' }
+      : leituraDoPdf.isError
+        ? { situacao: 'falhou' }
+        : { situacao: 'pronta', titular: leituraDoPdf.data }
 
   const empreendimentos = useQuery({
     queryKey: ['empreendimentos', cid, '', 'selecao'],
@@ -210,11 +248,13 @@ function DocumentoNovo() {
     }
   }
 
-  const semIa = motivoSemIa(arquivo, false)
+  const semIa = motivoSemIa(arquivo, false, iaNoPlano)
   const metodoValido = metodo === 'ia' && semIa ? null : metodo
   const podeContinuar = Boolean(unidadeEscolhida) && metodoValido !== null
   const aviso = !unidadeEscolhida
-    ? 'Escolha o empreendimento e a unidade.'
+    ? empreendimentoId
+      ? 'Escolha a unidade.'
+      : 'Escolha ou cadastre o empreendimento.'
     : !metodoValido
       ? 'Escolha como cadastrar.'
       : metodoValido === 'ia'
@@ -243,67 +283,48 @@ function DocumentoNovo() {
             {falha}
           </MensagemSecao>
         ) : null}
-        <section aria-labelledby="titulo-local" className="flex flex-col gap-(--e-2)">
+        <section aria-labelledby="titulo-pdf" className="flex flex-col gap-(--e-2)">
+          <h2 id="titulo-pdf" className="titulo-secao">
+            PDF da licença
+          </h2>
+          <EnvioPdf
+            arquivo={arquivo}
+            atual={null}
+            aoEscolher={setArquivo}
+            idEntrada={idEntradaPdf}
+          />
+        </section>
+
+        <section aria-labelledby="titulo-local" className="flex flex-col gap-(--e-3)">
           <h2 id="titulo-local" className="titulo-secao">
             Empreendimento e unidade
           </h2>
-          {empreendimentos.isPending ? (
-            <Carregando rotulo="Carregando empreendimentos" linhas={1} />
-          ) : empreendimentos.isError ? (
-            <EstadoErro aoTentarDeNovo={() => void empreendimentos.refetch()} />
-          ) : (
-            <div className="grid gap-(--e-3) sm:grid-cols-2">
-              <label className="flex flex-col gap-(--e-1)">
-                <span className="rotulo">Empreendimento</span>
-                <select
-                  className={classeCampo}
-                  value={empreendimentoId}
-                  onChange={(evento) => {
-                    setEmpreendimentoId(evento.target.value)
-                    setUnidadeId('')
-                  }}
-                >
-                  <option value="">Selecione o empreendimento</option>
-                  {empreendimentos.data.itens.map((e) => (
-                    <option key={e.id} value={e.id}>
-                      {e.nome}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="flex flex-col gap-(--e-1)">
-                <span className="rotulo">Unidade</span>
-                <select
-                  className={classeCampo}
-                  value={unidadeEscolhida}
-                  disabled={!empreendimentoId || unidades.isPending}
-                  onChange={(evento) => {
-                    setUnidadeId(evento.target.value)
-                  }}
-                >
-                  <option value="">Selecione a unidade</option>
-                  {listaUnidades.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.nome}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-          )}
+          <EmpreendimentoDaLicenca
+            consultoriaId={cid}
+            empreendimentos={empreendimentos.data?.itens ?? []}
+            carregando={empreendimentos.isPending}
+            erro={empreendimentos.isError}
+            aoTentarDeNovo={() => void empreendimentos.refetch()}
+            empreendimentoId={empreendimentoId}
+            unidadeEscolhida={unidadeEscolhida}
+            unidades={listaUnidades}
+            unidadesCarregando={Boolean(empreendimentoId) && unidades.isPending}
+            leitura={leitura}
+            aoEscolherEmpreendimento={(novo, unidade) => {
+              setEmpreendimentoId(novo)
+              setUnidadeId(unidade ?? '')
+            }}
+            aoEscolherUnidade={setUnidadeId}
+            aoPedirPdf={() => {
+              document.getElementById(idEntradaPdf)?.click()
+            }}
+          />
           {empreendimentoId && unidades.isSuccess && listaUnidades.length === 0 ? (
             <MensagemSecao tom="atencao">
               Este empreendimento ainda não tem unidade. A licença pertence a uma unidade:{' '}
               <Link to={`/empreendimentos/${empreendimentoId}`}>cadastre a unidade</Link> e volte.
             </MensagemSecao>
           ) : null}
-        </section>
-
-        <section aria-labelledby="titulo-pdf" className="flex flex-col gap-(--e-2)">
-          <h2 id="titulo-pdf" className="titulo-secao">
-            PDF da licença
-          </h2>
-          <EnvioPdf arquivo={arquivo} atual={null} aoEscolher={setArquivo} />
         </section>
 
         <ComoCadastrar metodo={metodoValido} aoEscolher={setMetodo} semIa={semIa} />
@@ -345,7 +366,8 @@ function DocumentoExistente({ instrumento }: { instrumento: Instrumento }) {
     (ultima.data?.situacao === 'em_andamento' &&
       abertaEm - new Date(ultima.data.iniciadaEm).getTime() < EXTRACAO_ABANDONADA_MS)
 
-  const semIa = motivoSemIa(arquivo, Boolean(instrumento.pdf))
+  const iaNoPlano = useIaNoPlano()
+  const semIa = motivoSemIa(arquivo, Boolean(instrumento.pdf), iaNoPlano)
   const metodoValido: Metodo = metodo === 'ia' && semIa ? 'manual' : metodo
   const irParaIdentificacao = () => void navegar(`/licencas/${instrumento.id}/identificacao`)
 

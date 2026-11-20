@@ -4,74 +4,77 @@ Fonte da verdade visual do app (`apps/web`). Tokens em [`src/styles/tokens.css`]
 
 ## A ideia
 
-**O prazo é uma partida.** Toda lista de prazos é um quadro de partidas de rodoviária: colunas fixas, número grande do que falta, a linha de hoje acesa. A casca é a **placa verde de rodovia** (verde-placa, letra branca, Overpass, desenhada a partir da letra das placas) e o **sinal verde-lima** do logotipo marca o "agora": item ativo, hoje, seleção, passo atual.
+**O prazo é uma partida.** Toda lista de prazos é um quadro de partidas: colunas fixas, número grande do que falta, a linha de hoje acesa. Cores e fontes são as do site **gramaapp.com.br**: papel, tinta preta e o **verde-lima** como única cor de destaque (desde 20/11/2026 não há verde-escuro no sistema). O lima marca o "agora" e a ação principal: botão em pílula, item ativo, hoje, passo atual. Títulos de tela e números do placar em **Anton** caixa alta, como o herói do site; o resto em **Outfit**.
 
 O que isso recusa: cartões de KPI com sombra, selos em pílula colorida em toda linha, cinza neutro em tudo, ícone dentro de quadradinho, prosa cinza de ajuda.
 
 ## Regras curtas
 
 1. **Uma ação principal por tela**, à direita do título (`<Pagina acao={…}>`). O resto é botão padrão, sutil ou vai para o menu "…".
-2. **Sem sombra em painel.** Painel = folha branca com regra de 1px e raio de 10px. Só o que flutua (menu, diálogo, busca) tem sombra.
+2. **Sem sombra em painel.** Painel = folha branca com regra de 1px e raio de 16px. Só o que flutua (menu, diálogo, busca) tem sombra.
 3. **Sem cartão dentro de cartão.** Dentro de um painel, separe com regra fina, não com outra caixa.
 4. **Estado = palavra + forma.** O `Selo` é uma palavra colorida com uma marca de forma (quadrado, triângulo, losango, círculo). A plaqueta cheia vermelha só para atraso grave.
 5. **Número tabular** (`numero`, `numero-contagem`, `numero-grande`) em toda coluna de data, valor, quantidade e documento.
-6. **Lima é sinal, não decoração.** Só em: item ativo da navegação, hoje, seleção forte (busca), passo atual, seleção de texto, botão principal no tema escuro.
+6. **Lima é sinal, não decoração, e sempre preenchimento no claro.** Botão principal, item ativo, hoje, seleção forte (busca), passo atual, seleção de texto, campo do login. No claro o lima sobre o papel tem 1,2:1: nunca é texto, ícone nem linha; ali a marca e o link são tinta. No escuro, o lima pode ser texto, linha e foco.
 7. **Sem texto cinza explicativo.** Rótulo, valor, estado, erro e o que falta. Nada de parágrafo de ajuda.
 8. **Celular de primeira classe.** Alvos de 44px (`--controle-toque`), barra inferior com Início, Calendário, Campo e Mais; tabelas viram lista no celular.
 
 ## Cor
 
-Estratégia: **comprometida na casca, contida no trabalho.** O trilho é verde; a folha é branca; cor de estado só onde há estado.
+Estratégia: **a do site.** Papel no chão, folha branca no trabalho, areia no trilho, tinta preta em tudo que é texto e marca, lima só no destaque. Cor de estado só onde há estado.
 
-| Token                       | Claro                 | Escuro                | Uso                                                |
-| --------------------------- | --------------------- | --------------------- | -------------------------------------------------- |
-| `--chao`                    | `#f5f8f5`             | `#0b1410`             | fundo da área de conteúdo                          |
-| `--folha`                   | `#ffffff`             | `#121e19`             | painel, tabela, campo                              |
-| `--trilho`                  | `#0b4632`             | `#0e2a20`             | navegação lateral, faixa do celular                |
-| `--tinta`                   | `#0f1f18`             | `#e7efe9`             | texto principal (17:1 / 16:1)                      |
-| `--tinta-2`                 | `#3f5047`             | `#a7b7ad`             | texto secundário (8,6:1 / 8,9:1)                   |
-| `--tinta-3`                 | `#5b6b62`             | `#8a9b91`             | metadado, rótulo de coluna (5,6:1 / 5,9:1)         |
-| `--regra` / `--regra-forte` | `#d9e1dc` / `#b4c0b8` | `#20302a` / `#2c3d35` | linhas do quadro                                   |
-| `--campo-borda`             | `#7a8a81`             | `#6b7d73`             | contorno de campo (3,6:1)                          |
-| `--acao`                    | verde-placa `#0e5a3f` | lima `#e5ff73`        | botão principal                                    |
-| `--sinal`                   | lima `#e5ff73`        | lima `#e5ff73`        | "agora" (tinta escura sobre ele, 15:1)             |
-| `--sinal-fundo`             | `#f0ffb3`             | `#26330f`             | linha de hoje                                      |
-| `--atraso-texto`            | `#b42318`             | `#ff8b7e`             | atrasado, erro (6,6:1 / 7,5:1)                     |
-| `--alerta-texto`            | `#8a5300`             | `#f2b95a`             | vence em breve                                     |
-| `--ok-texto`                | `#0e6b45`             | `#7dd9a8`             | concluído, vigente                                 |
-| `--andamento-texto`         | `#1d4ed8`             | `#93b4ff`             | em andamento, espera externa                       |
-| `--revisao-texto`           | `#6d3fc8`             | `#b9a0ff`             | em conferência                                     |
-| `--ia`                      | `#7c4ddb`             | `#b9a0ff`             | o que a IA propôs (só isso)                        |
-| `--estacao-feita`           | `#0e5a3f`             | `#b9d6c6`             | estação concluída da trilha (não é lima no escuro) |
-| `--papel`                   | `#ffffff`             | `#ffffff`             | sempre branco: QR code, folha de documento         |
+| Token                                 | Claro                      | Escuro                | Uso                                                   |
+| ------------------------------------- | -------------------------- | --------------------- | ----------------------------------------------------- |
+| `--chao`                              | papel `#faf8f3`            | tinta `#08090b`       | fundo da área de conteúdo                             |
+| `--folha`                             | `#ffffff`                  | `#15171a`             | painel, tabela, campo                                 |
+| `--trilho`                            | areia `#f0efe9`            | `#111311`             | navegação lateral, faixa do celular                   |
+| `--tinta`                             | `#08090b`                  | papel `#faf8f3`       | texto principal (18,8:1 / 18,8:1)                     |
+| `--tinta-2`                           | muted `#484e45`            | `#a9ada4`             | texto secundário (8,1:1 / 8,7:1)                      |
+| `--tinta-3`                           | `#5f665b`                  | `#8b9086`             | metadado, rótulo de coluna (5,6:1 / 5,5:1)            |
+| `--regra` / `--regra-forte`           | line `#d2d6cd` / `#b9beb2` | `#2a2d29` / `#3a3e38` | linhas do quadro                                      |
+| `--campo-borda`                       | `#7d8478`                  | `#6b7068`             | contorno de campo (3,6:1 / 3,5:1)                     |
+| `--acao`                              | lima `#cdf22b`             | lima `#cdf22b`        | botão principal, com tinta preta (15,5:1)             |
+| `--sinal`                             | lima `#cdf22b`             | lima `#cdf22b`        | "agora", sempre com tinta preta                       |
+| `--sinal-fundo` / `--escolha`         | `#eef9c4`                  | `#22290b`             | linha de hoje, item selecionado                       |
+| `--marca-linha` / `--link` / `--foco` | tinta `#08090b`            | lima `#cdf22b`        | aba ativa, link, anel de foco                         |
+| `--atraso-texto`                      | `#b42318`                  | `#ff8b7e`             | atrasado, erro                                        |
+| `--alerta-texto`                      | `#8a5300`                  | `#f2b95a`             | vence em breve                                        |
+| `--ok-texto`                          | tinta (marca lima)         | lima                  | concluído, vigente: palavra em tinta com bolinha lima |
+| `--andamento-texto`                   | `#1d4ed8`                  | `#93b4ff`             | em andamento, espera externa                          |
+| `--revisao-texto`                     | `#6d3fc8`                  | `#b9a0ff`             | em conferência                                        |
+| `--ia`                                | `#7c4ddb`                  | `#b9a0ff`             | o que a IA propôs (só isso)                           |
+| `--estacao-feita`                     | tinta                      | line `#d2d6cd`        | estação concluída da trilha (não é lima)              |
+| `--branco`                            | `#ffffff`                  | `#ffffff`             | sempre branco: QR code                                |
 
-Cada estado tem `-texto`, `-fundo` e, quando precisa, `-borda`. Superfícies de interação: `--toque` (hover), `--aperto` (pressionado), `--escolha` / `--escolha-toque` (selecionado), `--off` (desabilitado), `--flutuante`, `--veu`.
+Contraste AA conferido com accesslint e axe (color-contrast) no claro e no escuro em Visão, Orçamentos, Ocorrência, Calendário e cadastro de licença: zero violações.
 
-**Trilho:** `data-superficie="trilho"` redefine os semânticos (tinta branca, toque translúcido, foco lima). Qualquer componente posto no trilho se ajusta sozinho.
+Cada estado tem `-texto`, `-fundo` e, quando precisa, `-borda`. Superfícies: `--toque` (areia, hover), `--aperto` (pedra, pressionado), `--escolha` (lima claro, selecionado), `--off`, `--flutuante`, `--veu`.
+
+**Trilho:** `data-superficie="trilho"` redefine os semânticos para o fundo do trilho. **Login:** o painel do layout público é um campo lima com o logotipo preto (`<MarcaGrama escura />`).
 
 ## Tipo
 
-**Overpass** (variável, auto-hospedada via `@fontsource-variable/overpass`; CSP `font-src 'self'`). Uma família só, em várias medidas e pesos: o espécime manda. O ponto médio "·" vem de uma fonte do sistema (`Grama Ponto`, `unicode-range: U+00B7`), porque o da Overpass encosta na palavra seguinte.
+As fontes do site, auto-hospedadas (CSP `font-src 'self'`): **Outfit** variável (`@fontsource-variable/outfit`) em toda a interface e **Anton** (`@fontsource/anton`) só nos destaques: título de tela em caixa alta e números do placar e da coluna "Faltam".
 
-| Utilitário         | Medida         | Peso | Uso                           |
-| ------------------ | -------------- | ---- | ----------------------------- |
-| `titulo-tela`      | 28/32, −0,02em | 800  | título da tela (h1)           |
-| `titulo-painel`    | 20/26          | 750  | título de painel e diálogo    |
-| `titulo-secao`     | 16/22          | 700  | seção, aba                    |
-| `corpo`            | 14/20          | 400  | texto e tabela                |
-| `corpo-medio`      | 14/20          | 650  | ênfase, rótulo de botão       |
-| `rotulo`           | 12/16          | 650  | rótulo de campo, metadado     |
-| `rotulo-maiusculo` | 11/16, +0,08em | 750  | cabeçalho de coluna do quadro |
-| `numero-contagem`  | 22             | 800  | coluna "Faltam"               |
-| `numero-grande`    | 40             | 800  | placar (contadores)           |
-| `numero`           | —              | —    | só liga os numerais tabulares |
+| Utilitário         | Fonte             | Medida         | Peso | Uso                           |
+| ------------------ | ----------------- | -------------- | ---- | ----------------------------- |
+| `titulo-tela`      | Anton, caixa alta | 34/38, +0,01em | 400  | título da tela (h1)           |
+| `titulo-painel`    | Outfit            | 20/26          | 650  | título de painel e diálogo    |
+| `titulo-secao`     | Outfit            | 16/22          | 650  | seção, aba                    |
+| `corpo`            | Outfit            | 14/20          | 400  | texto e tabela                |
+| `corpo-medio`      | Outfit            | 14/20          | 600  | ênfase, rótulo de botão       |
+| `rotulo`           | Outfit            | 12/16          | 600  | rótulo de campo, metadado     |
+| `rotulo-maiusculo` | Outfit            | 11/16, +0,08em | 650  | cabeçalho de coluna do quadro |
+| `numero-contagem`  | Anton             | 26             | 400  | coluna "Faltam"               |
+| `numero-grande`    | Anton             | 46             | 400  | placar (contadores)           |
+| `numero`           | —                 | —              | —    | só liga os numerais tabulares |
 
 ## Espaço, forma, tamanho
 
 - Grade de 4px: `--e-05` 2 · `--e-1` 4 · `--e-15` 6 · `--e-2` 8 · `--e-3` 12 · `--e-4` 16 · `--e-5` 20 · `--e-6` 24 · `--e-8` 32 · `--e-10` 40 · `--e-12` 48 · `--e-16` 64.
-- Controle 36px (`--controle`), mini 28px, toque 44px; linha do quadro 48px (`--linha`), densa 40px.
-- Raio: `--raio-mini` 3px (plaqueta, contador), `--raio` 6px (controle), `--raio-painel` 10px (painel, menu, diálogo), `--raio-redondo` (avatar, estação da trilha).
-- Trilho 232px; barra superior 56px; conteúdo até 1440px com margem de 32px no desktop e 16px no celular.
+- Controle 38px (`--controle`), mini 30px, toque 44px; linha do quadro 48px (`--linha`), densa 40px.
+- Raio: `--raio-mini` 4px (plaqueta, contador), `--raio` 10px (campo, item de menu), `--raio-painel` 16px (painel, menu, diálogo), `--raio-redondo` (botões em pílula como no site, botão de ícone, avatar, estação da trilha).
+- Trilho 232px; barra superior 60px; conteúdo até 1440px com margem de 32px no desktop e 16px no celular.
 - Sombra só em `--sombra-flutuante` e `--sombra-dialogo`.
 
 ## Ícones
@@ -80,7 +83,7 @@ Phosphor, peso **bold** (MIT), por máscara com `currentColor` (`<Icone nome=…
 
 ## Movimento
 
-Curto, com saída exponencial (`--saida`), nunca atrasa um clique: `--dur-rapida` 120ms (estado), `--dur-media` 200ms (menu, diálogo), `--dur-lenta` 360ms (assinatura). Botão afunda 1px ao apertar.
+Curto, com saída exponencial (`--saida`), nunca atrasa um clique: `--dur-rapida` 120ms (estado), `--dur-media` 200ms (menu, diálogo), `--dur-lenta` 360ms (assinatura). Botão encolhe para 98% ao apertar; a busca Ctrl+K abre sem animação.
 
 **Movimento-assinatura:** `virar-placa`, o número da coluna "Faltam" sobe e se revela como plaqueta de painel ao chegar, em cascata de 28ms por linha. Uma vez, na chegada. `prefers-reduced-motion` zera as durações.
 
@@ -88,9 +91,9 @@ Curto, com saída exponencial (`--saida`), nunca atrasa um clique: `--dur-rapida
 
 | Componente            | Arquivo                                             | Notas                                                                                                                                             |
 | --------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Casca                 | `app/layout/AppShell.tsx`                           | trilho verde (desktop), faixa verde + barra inferior (celular), busca Ctrl+K                                                                      |
+| Casca                 | `app/layout/AppShell.tsx`                           | trilho de areia (desktop), faixa de areia + barra inferior (celular), busca Ctrl+K                                                                |
 | Página                | `app/paginas/Pagina.tsx`                            | `titulo`, `acao`, `meta`, `voltar`                                                                                                                |
-| Botão                 | `components/ui/botao.tsx`                           | `primario`, `padrao`, `sutil`, `perigo`, `link`; `compacto`; `selecionado`                                                                        |
+| Botão                 | `components/ui/botao.tsx`                           | pílula; `primario` (lima + tinta), `padrao`, `sutil`, `perigo`, `link`; `compacto`; `selecionado`                                                 |
 | Botão de ícone        | `components/ui/botao-icone.tsx`                     | nome acessível obrigatório; 44px no celular                                                                                                       |
 | Situação              | `components/ui/selo.tsx`                            | palavra + forma; `perigoForte` = plaqueta cheia                                                                                                   |
 | Campo                 | `components/ui/campo-texto.tsx`, `estilos-campo.ts` | `classeCampo`, `classeSelecao`, `classeAreaTexto` para nativos                                                                                    |

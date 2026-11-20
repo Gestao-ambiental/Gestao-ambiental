@@ -27,15 +27,15 @@ function MarcaNoTrilho() {
       aria-label="Grama, ir para a Visão da equipe"
       className="flex h-(--barra-altura) items-center rounded-(--raio) px-(--e-3) no-underline hover:no-underline"
     >
-      <MarcaGrama clara largura={104} />
+      <MarcaGrama largura={104} />
     </Link>
   )
 }
 
 /**
- * Casca do app. Desktop: trilho verde-placa à esquerda (logotipo, consultoria e navegação) e, à
+ * Casca do app. Desktop: trilho de areia à esquerda (logotipo, consultoria e navegação) e, à
  * direita, a barra com a busca (Ctrl+K), o tema e a conta; só a área principal rola. Celular:
- * barra superior verde com logotipo e busca, e a barra inferior com os destinos de todo dia e "Mais".
+ * barra superior de areia com logotipo e busca, e a barra inferior com os destinos de todo dia e "Mais".
  */
 export function AppShell() {
   const [maisAberto, setMaisAberto] = useState(false)
@@ -75,7 +75,7 @@ export function AppShell() {
               aria-label="Grama, ir para a Visão da equipe"
               className="inline-flex rounded-(--raio) no-underline hover:no-underline md:hidden"
             >
-              <MarcaGrama clara largura={96} />
+              <MarcaGrama largura={96} />
             </Link>
           }
           centro={<BuscaGlobal />}
@@ -124,7 +124,7 @@ export function AppShell() {
           </SheetDescription>
           <div className="flex flex-col gap-(--e-2) px-(--e-3) pt-(--e-2) pb-(--e-3)">
             <div className="flex h-(--barra-altura) items-center px-(--e-3)">
-              <MarcaGrama clara largura={96} />
+              <MarcaGrama largura={96} />
             </div>
             <ConsultoriaAtual />
           </div>

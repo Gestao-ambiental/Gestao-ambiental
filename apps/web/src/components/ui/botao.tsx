@@ -7,13 +7,13 @@ import { cn } from '@/lib/utils'
 import { Icone, type NomeIcone } from './icone'
 
 /**
- * Botão do quadro de partidas: 36px (44 no celular), raio 6px, rótulo em Overpass 650.
- * Primário = verde-placa (lima no escuro). Padrão = contorno de regra forte. Sem sombra.
+ * Botão em pílula, como os do site: 38px (44 no celular), rótulo em Outfit 600.
+ * Primário = verde-lima com tinta preta. Padrão = contorno. Sem sombra.
  */
 export const variantesBotao = cva(
   [
     'inline-flex items-center justify-center gap-(--e-2) whitespace-nowrap',
-    'h-(--controle) max-md:min-h-(--controle-toque) px-(--e-4) rounded-(--raio) border corpo-medio',
+    'h-(--controle) max-md:min-h-(--controle-toque) px-(--e-5) rounded-(--raio-redondo) border corpo-medio',
     'cursor-pointer transicao-estado select-none active:scale-[0.98]',
     'disabled:cursor-not-allowed disabled:text-(--tinta-off) disabled:active:scale-100',
   ],

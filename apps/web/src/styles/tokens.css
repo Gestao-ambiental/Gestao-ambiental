@@ -1,39 +1,31 @@
 /*
- * Tokens do Grama: "quadro de partidas" (DESIGN.md).
- * Placa verde de rodovia + sinal verde-lima do logotipo. Componentes usam só estes nomes;
- * nada de hexadecimal fora deste arquivo.
+ * Tokens do Grama: "quadro de partidas" com as cores e as fontes do site gramaapp.com.br.
+ * Papel, tinta e verde-lima; nenhum verde-escuro. Componentes usam só os nomes semânticos;
+ * nada de hexadecimal fora deste arquivo (DESIGN.md).
  */
 
-/* ---------- Primitivos (não use direto nos componentes) ---------- */
+/* ---------- Primitivos (os do site; não use direto nos componentes) ---------- */
 :root {
-  --placa-950: #071d15;
-  --placa-900: #0b2c20;
-  --placa-800: #0b4632;
-  --placa-700: #0e5a3f;
-  --placa-600: #137050;
-  --placa-200: #b9d6c6;
-  --placa-100: #dcece3;
-  --placa-50: #eef6f1;
+  --papel: #faf8f3; /* --paper do site: fundo */
+  --tinta-pura: #08090b; /* --ink do site */
+  --lima: #cdf22b; /* --lime do site: a única cor de destaque */
+  --lima-toque: #c0e51f;
+  --lima-aperto: #b2d614;
+  --lima-claro: #eef9c4;
+  --lima-claro-toque: #e4f5a3;
+  --muted: #484e45; /* --muted do site */
+  --linha-site: #d2d6cd; /* --line do site */
+  --areia: #f0efe9; /* --sand do site */
+  --ceu: #e9ebe5; /* --sky do site */
+  --pedra: #e6e9df; /* --stone do site */
+  --branco: #ffffff;
 
-  --lima-500: #c9ec2e;
-  --lima-400: #d8f74d;
-  --lima-300: #e5ff73;
-  --lima-200: #f0ffb3;
-  --lima-100: #f8ffd9;
-
-  --pedra-950: #0b1410;
-  --pedra-900: #121e19;
-  --pedra-850: #18261f;
-  --pedra-800: #20302a;
-  --pedra-700: #2c3d35;
-  --pedra-600: #4a5c53;
-  --pedra-500: #5b6b62;
-  --pedra-400: #7a8a81;
-  --pedra-300: #b4c0b8;
-  --pedra-200: #d9e1dc;
-  --pedra-150: #e6ece8;
-  --pedra-100: #eef2ef;
-  --pedra-50: #f5f8f5;
+  --noite: #08090b;
+  --noite-1: #111311;
+  --noite-2: #15171a;
+  --noite-3: #1d2020;
+  --noite-4: #2a2d29;
+  --noite-5: #3a3e38;
 
   --vermelho-700: #b42318;
   --vermelho-100: #fdecea;
@@ -48,64 +40,64 @@
   --violeta-300: #b9a0ff;
 }
 
-/* ---------- Semânticos: tema claro ---------- */
+/* ---------- Semânticos: tema claro (o do site) ---------- */
 :root,
 [data-theme='light'] {
-  /* Chão, folha e camadas. A folha é onde o trabalho acontece; o chão aparece pouco. */
-  --chao: var(--pedra-50);
-  --folha: #ffffff;
-  --toque: var(--pedra-100); /* fundo ao passar o mouse */
-  --aperto: var(--pedra-150); /* fundo ao apertar */
-  --escolha: var(--placa-50); /* linha ou item selecionado */
-  --escolha-toque: var(--placa-100);
-  --campo: #ffffff;
-  --campo-foco: #ffffff;
-  --papel: #ffffff; /* sempre branco nos dois temas: QR code, folha de documento */
-  --off: var(--pedra-100);
-  --flutuante: #ffffff; /* menu, popover, diálogo */
-  --esqueleto: var(--pedra-150);
-  --esqueleto-brilho: var(--pedra-100);
-  --veu: rgb(7 29 21 / 0.48);
+  /* Chão de papel, folha branca onde o trabalho acontece, superfícies de areia e pedra. */
+  --chao: var(--papel);
+  --folha: var(--branco);
+  --toque: var(--areia); /* fundo ao passar o mouse */
+  --aperto: var(--pedra); /* fundo ao apertar */
+  --escolha: var(--lima-claro); /* linha ou item selecionado */
+  --escolha-toque: var(--lima-claro-toque);
+  --campo: var(--branco);
+  --campo-foco: var(--branco);
+  --off: var(--areia);
+  --flutuante: var(--branco);
+  --esqueleto: var(--ceu);
+  --esqueleto-brilho: var(--areia);
+  --veu: rgb(8 9 11 / 0.48);
 
-  /* Trilho de navegação: a placa. */
-  --trilho: var(--placa-800);
-  --trilho-texto: #ffffff;
-  --trilho-texto-2: var(--placa-200);
-  --trilho-toque: rgb(255 255 255 / 0.08);
-  --trilho-regra: rgb(255 255 255 / 0.14);
+  /* Trilho de navegação: areia do site, tinta preta, item ativo em lima. */
+  --trilho: var(--areia);
+  --trilho-texto: var(--tinta-pura);
+  --trilho-texto-2: var(--muted);
+  --trilho-toque: rgb(8 9 11 / 0.06);
+  --trilho-regra: var(--linha-site);
 
-  /* Tinta (texto). Secundária esverdeada, nunca cinza puro. */
-  --tinta: #0f1f18;
-  --tinta-2: #3f5047;
-  --tinta-3: var(--pedra-500);
-  --tinta-off: var(--pedra-400);
-  --tinta-inversa: #ffffff;
+  /* Tinta (texto). */
+  --tinta: var(--tinta-pura);
+  --tinta-2: var(--muted); /* 8,1:1 no papel */
+  --tinta-3: #5f665b; /* 5,6:1 no papel */
+  --tinta-off: #8b9086;
+  --tinta-inversa: var(--branco);
   --icone: var(--tinta);
   --icone-2: var(--tinta-3);
 
-  /* Regras (linhas do quadro). */
-  --regra: var(--pedra-200);
-  --regra-leve: var(--pedra-150);
-  --regra-forte: var(--pedra-300);
-  --campo-borda: var(--pedra-400);
-  --campo-borda-ativa: var(--placa-700);
-  --foco: var(--placa-700);
-  --foco-anel: var(--lima-300);
+  /* Regras. */
+  --regra: var(--linha-site);
+  --regra-leve: var(--ceu);
+  --regra-forte: #b9beb2;
+  --campo-borda: #7d8478; /* 3,6:1: contorno de controle */
+  --campo-borda-ativa: var(--tinta-pura);
+  --foco: var(--tinta-pura);
+  --foco-anel: var(--lima);
 
-  /* Ação principal: botão verde-placa com letra branca. */
-  --acao: var(--placa-700);
-  --acao-toque: var(--placa-600);
-  --acao-aperto: var(--placa-800);
-  --acao-texto: #ffffff;
-  --link: var(--placa-700);
-  --marca-linha: var(--placa-700); /* aba ativa, item ativo, passo atual */
-  --estacao-feita: var(--placa-700); /* estação concluída da trilha e da linha de trajeto */
+  /* Ação principal: pílula verde-lima com tinta preta, como os botões do site. */
+  --acao: var(--lima);
+  --acao-toque: var(--lima-toque);
+  --acao-aperto: var(--lima-aperto);
+  --acao-texto: var(--tinta-pura);
+  /* No claro, o lima não tem contraste como linha ou texto (1,2:1): marca e link são tinta. */
+  --link: var(--tinta-pura);
+  --marca-linha: var(--tinta-pura); /* aba ativa, traço do placar, passo atual */
+  --estacao-feita: var(--tinta-pura);
 
-  /* Sinal: o verde-lima do logotipo. "Agora", hoje, o que pede atenção positiva. */
-  --sinal: var(--lima-300);
-  --sinal-toque: var(--lima-400);
-  --sinal-fundo: var(--lima-200);
-  --sinal-texto: var(--tinta);
+  /* Sinal: o verde-lima. "Agora", hoje, item ativo; sempre como preenchimento com tinta. */
+  --sinal: var(--lima);
+  --sinal-toque: var(--lima-toque);
+  --sinal-fundo: var(--lima-claro);
+  --sinal-texto: var(--tinta-pura);
 
   /* Estados. Sempre com palavra ou forma junto; a cor nunca é o único sinal. */
   --atraso: var(--vermelho-700);
@@ -116,85 +108,85 @@
   --alerta-texto: var(--ambar-700);
   --alerta-fundo: var(--ambar-100);
   --alerta-borda: #f0cf8f;
-  --ok-texto: #0e6b45;
-  --ok-fundo: var(--placa-50);
-  --ok-borda: var(--placa-200);
+  /* Ok sem verde-escuro: palavra em tinta com a marca em lima (Selo "sucesso"). */
+  --ok-texto: var(--tinta-pura);
+  --ok-fundo: var(--lima-claro);
+  --ok-borda: var(--linha-site);
   --andamento-texto: var(--azul-700);
   --andamento-fundo: var(--azul-100);
   --revisao-texto: #6d3fc8;
   --revisao-fundo: #f1ebff;
   --neutro-texto: var(--tinta-2);
-  --neutro-fundo: var(--pedra-100);
+  --neutro-fundo: var(--areia);
 
   /* IA: o que a IA propôs é marcado em violeta, só isso. */
   --ia: var(--violeta-600);
   --ia-destaque: color-mix(in srgb, #8b5cf6 28%, transparent);
 
-  /* Cores de empreendimento (sigla), em tons do mundo da placa e do campo. */
-  --sigla-1: #dcece3;
-  --sigla-2: #f0ffb3;
-  --sigla-3: #e6edff;
-  --sigla-4: #fff3dc;
+  /* Cores de empreendimento (sigla): superfícies do site. */
+  --sigla-1: var(--areia);
+  --sigla-2: var(--lima-claro);
+  --sigla-3: var(--azul-100);
+  --sigla-4: var(--ambar-100);
   --sigla-5: #f1ebff;
-  --sigla-6: #fdecea;
+  --sigla-6: var(--vermelho-100);
 
-  --sombra-flutuante: 0 12px 32px -8px rgb(7 29 21 / 0.22), 0 2px 6px rgb(7 29 21 / 0.08);
-  --sombra-dialogo: 0 32px 64px -16px rgb(7 29 21 / 0.36), 0 4px 12px rgb(7 29 21 / 0.1);
+  --sombra-flutuante: 0 12px 32px -8px rgb(8 9 11 / 0.2), 0 2px 6px rgb(8 9 11 / 0.08);
+  --sombra-dialogo: 0 32px 64px -16px rgb(8 9 11 / 0.34), 0 4px 12px rgb(8 9 11 / 0.1);
 
   color-scheme: light;
 }
 
-/* ---------- Semânticos: tema escuro (campo à noite, escritório com luz baixa) ---------- */
+/* ---------- Semânticos: tema escuro (tinta do site como fundo, lima como destaque) ---------- */
 [data-theme='dark'] {
-  --chao: var(--pedra-950);
-  --folha: var(--pedra-900);
-  --toque: var(--pedra-850);
-  --aperto: var(--pedra-800);
-  --escolha: #1a2d1f;
-  --escolha-toque: #213a27;
-  --campo: var(--pedra-950);
-  --campo-foco: var(--pedra-950);
-  --off: var(--pedra-850);
-  --flutuante: var(--pedra-850);
-  --esqueleto: var(--pedra-800);
-  --esqueleto-brilho: var(--pedra-850);
-  --veu: rgb(0 0 0 / 0.64);
+  --chao: var(--noite);
+  --folha: var(--noite-2);
+  --toque: var(--noite-3);
+  --aperto: var(--noite-4);
+  --escolha: #22290b;
+  --escolha-toque: #2c3510;
+  --campo: var(--noite);
+  --campo-foco: var(--noite);
+  --off: var(--noite-3);
+  --flutuante: var(--noite-3);
+  --esqueleto: var(--noite-4);
+  --esqueleto-brilho: var(--noite-3);
+  --veu: rgb(0 0 0 / 0.66);
 
-  --trilho: #0e2a20;
-  --trilho-texto: #ffffff;
-  --trilho-texto-2: var(--placa-200);
-  --trilho-toque: rgb(255 255 255 / 0.07);
-  --trilho-regra: rgb(255 255 255 / 0.1);
+  --trilho: var(--noite-1);
+  --trilho-texto: var(--papel);
+  --trilho-texto-2: #a9ada4;
+  --trilho-toque: rgb(250 248 243 / 0.07);
+  --trilho-regra: var(--noite-4);
 
-  --tinta: #e7efe9;
-  --tinta-2: #a7b7ad;
-  --tinta-3: #8a9b91;
-  --tinta-off: #5f7067;
-  --tinta-inversa: #0f1f18;
+  --tinta: var(--papel);
+  --tinta-2: #a9ada4;
+  --tinta-3: #8b9086;
+  --tinta-off: #5f645c;
+  --tinta-inversa: var(--tinta-pura);
   --icone: var(--tinta);
   --icone-2: var(--tinta-3);
 
-  --regra: var(--pedra-800);
-  --regra-leve: var(--pedra-850);
-  --regra-forte: var(--pedra-700);
-  --campo-borda: #6b7d73;
-  --campo-borda-ativa: var(--lima-300);
-  --foco: var(--lima-300);
-  --foco-anel: var(--lima-300);
+  --regra: var(--noite-4);
+  --regra-leve: var(--noite-3);
+  --regra-forte: var(--noite-5);
+  --campo-borda: #6b7068;
+  --campo-borda-ativa: var(--lima);
+  --foco: var(--lima);
+  --foco-anel: var(--lima);
 
-  /* No escuro a ação vira o sinal: verde-placa some no chão quase preto. */
-  --acao: var(--lima-300);
-  --acao-toque: var(--lima-400);
-  --acao-aperto: var(--lima-500);
-  --acao-texto: #0f1f18;
-  --link: #b8e64a;
-  --marca-linha: var(--lima-300);
-  --estacao-feita: var(--placa-200);
+  --acao: var(--lima);
+  --acao-toque: var(--lima-toque);
+  --acao-aperto: var(--lima-aperto);
+  --acao-texto: var(--tinta-pura);
+  --link: var(--lima);
+  --marca-linha: var(--lima);
+  --estacao-feita: var(--linha-site); /* diferente do lima do passo atual */
 
-  --sinal: var(--lima-300);
-  --sinal-toque: var(--lima-400);
-  --sinal-fundo: #26330f;
-  --sinal-texto: #0f1f18;
+  --sinal: var(--lima);
+  --sinal-toque: var(--lima-toque);
+  --sinal-fundo: #22290b;
+  --sinal-texto: var(--tinta-pura);
 
   --atraso: #e5483a;
   --atraso-toque: #f05a4c;
@@ -204,68 +196,63 @@
   --alerta-texto: var(--ambar-300);
   --alerta-fundo: #33240a;
   --alerta-borda: #6a4a12;
-  --ok-texto: #7dd9a8;
-  --ok-fundo: #10291d;
-  --ok-borda: #1f4a35;
+  --ok-texto: var(--lima);
+  --ok-fundo: #22290b;
+  --ok-borda: #3a4514;
   --andamento-texto: var(--azul-300);
   --andamento-fundo: #16223f;
   --revisao-texto: var(--violeta-300);
   --revisao-fundo: #241a3d;
   --neutro-texto: var(--tinta-2);
-  --neutro-fundo: var(--pedra-800);
+  --neutro-fundo: var(--noite-4);
 
   --ia: var(--violeta-300);
 
-  --sigla-1: #1a3a2b;
-  --sigla-2: #2d3a0f;
+  --sigla-1: var(--noite-4);
+  --sigla-2: #2c3510;
   --sigla-3: #1b2747;
   --sigla-4: #3a2a0c;
   --sigla-5: #2a1f45;
   --sigla-6: #3f1a16;
 
-  --sombra-flutuante: 0 12px 32px -8px rgb(0 0 0 / 0.6), 0 0 0 1px var(--pedra-700);
-  --sombra-dialogo: 0 32px 64px -16px rgb(0 0 0 / 0.7), 0 0 0 1px var(--pedra-700);
+  --sombra-flutuante: 0 12px 32px -8px rgb(0 0 0 / 0.6), 0 0 0 1px var(--noite-4);
+  --sombra-dialogo: 0 32px 64px -16px rgb(0 0 0 / 0.7), 0 0 0 1px var(--noite-4);
 
   color-scheme: dark;
 }
 
-/* ---------- Tipo: Overpass, desenhada a partir da letra das placas de rodovia ---------- */
-/* O ponto médio "·" da Overpass encosta na palavra seguinte: só esse caractere vem do sistema. */
-@font-face {
-  font-family: 'Grama Ponto';
-  src: local('Segoe UI'), local('Helvetica Neue'), local('Arial'), local('Roboto');
-  unicode-range: U+00B7;
-}
+/* ---------- Tipo: as fontes do site (Outfit e, nos destaques, Anton) ---------- */
 :root {
-  --fonte: 'Grama Ponto', 'Overpass Variable', 'Segoe UI', system-ui, sans-serif;
+  --fonte: 'Outfit Variable', 'Segoe UI', system-ui, sans-serif;
+  --fonte-destaque: 'Anton', 'Impact', 'Arial Narrow', sans-serif;
   --fonte-mono: ui-monospace, 'Cascadia Mono', 'SFMono-Regular', Consolas, monospace;
 
   --tam-legenda: 12px; /* rótulo de coluna, metadado */
   --tam-corpo: 14px; /* corpo e tabela (CLAUDE.md) */
   --tam-secao: 16px;
   --tam-painel: 20px;
-  --tam-tela: 28px; /* título de tela */
-  --tam-contagem: 22px; /* coluna "Faltam" do quadro */
-  --tam-numero: 40px; /* número de destaque */
+  --tam-tela: 34px; /* título de tela, em Anton */
+  --tam-contagem: 26px; /* coluna "Faltam", em Anton */
+  --tam-numero: 46px; /* número de destaque do placar, em Anton */
 
   --entrelinha-legenda: 16px;
   --entrelinha-corpo: 20px;
   --entrelinha-secao: 22px;
   --entrelinha-painel: 26px;
-  --entrelinha-tela: 32px;
+  --entrelinha-tela: 38px;
 
   /* Papéis compostos */
-  --tipo-tela: 800 var(--tam-tela) / var(--entrelinha-tela) var(--fonte);
-  --tipo-painel: 750 var(--tam-painel) / var(--entrelinha-painel) var(--fonte);
-  --tipo-secao: 700 var(--tam-secao) / var(--entrelinha-secao) var(--fonte);
+  --tipo-tela: 400 var(--tam-tela) / var(--entrelinha-tela) var(--fonte-destaque);
+  --tipo-painel: 650 var(--tam-painel) / var(--entrelinha-painel) var(--fonte);
+  --tipo-secao: 650 var(--tam-secao) / var(--entrelinha-secao) var(--fonte);
   --tipo-corpo: 400 var(--tam-corpo) / var(--entrelinha-corpo) var(--fonte);
-  --tipo-corpo-forte: 650 var(--tam-corpo) / var(--entrelinha-corpo) var(--fonte);
-  --tipo-rotulo: 650 var(--tam-legenda) / var(--entrelinha-legenda) var(--fonte);
-  --tipo-coluna: 750 11px / 16px var(--fonte); /* cabeçalho do quadro, em maiúsculas */
-  --tipo-contagem: 800 var(--tam-contagem) / 1 var(--fonte);
-  --tipo-numero: 800 var(--tam-numero) / 1 var(--fonte);
+  --tipo-corpo-forte: 600 var(--tam-corpo) / var(--entrelinha-corpo) var(--fonte);
+  --tipo-rotulo: 600 var(--tam-legenda) / var(--entrelinha-legenda) var(--fonte);
+  --tipo-coluna: 650 11px / 16px var(--fonte); /* cabeçalho do quadro, em maiúsculas */
+  --tipo-contagem: 400 var(--tam-contagem) / 1 var(--fonte-destaque);
+  --tipo-numero: 400 var(--tam-numero) / 1 var(--fonte-destaque);
 
-  --tracking-tela: -0.02em;
+  --tracking-tela: 0.01em;
   --tracking-coluna: 0.08em;
 }
 
@@ -285,23 +272,23 @@
   --e-12: 48px;
   --e-16: 64px;
 
-  --controle: 36px; /* botão, campo, seleção */
-  --controle-mini: 28px; /* ícone em barra densa */
+  --controle: 38px; /* botão, campo, seleção */
+  --controle-mini: 30px; /* ícone em barra densa */
   --controle-toque: 44px; /* alvo mínimo no celular */
   --linha: 48px; /* linha do quadro */
   --linha-densa: 40px;
   --trilho-largura: 232px;
   --trilho-largura-recolhido: 64px;
-  --barra-altura: 56px;
+  --barra-altura: 60px;
   --conteudo-max: 1440px;
 }
 
-/* ---------- Forma: cantos de placa, sem sombra em painel ---------- */
+/* ---------- Forma: botões em pílula como no site; painéis arredondados, sem sombra ---------- */
 :root {
-  --raio-mini: 3px;
-  --raio: 6px; /* controle */
-  --raio-painel: 10px; /* painel, diálogo, menu */
-  --raio-redondo: 999px; /* avatar, interruptor */
+  --raio-mini: 4px;
+  --raio: 10px; /* campo, item de menu */
+  --raio-painel: 16px; /* painel, diálogo, menu */
+  --raio-redondo: 999px; /* botão, avatar, interruptor */
   --borda: 1px;
   --borda-foco: 2px;
 }
@@ -326,8 +313,8 @@
   }
 }
 
-/* ---------- Superfície do trilho: dentro dele, a tinta é branca ---------- */
-/* Os componentes não precisam saber onde estão: o trilho redefine os semânticos para o fundo verde. */
+/* ---------- Superfície do trilho ---------- */
+/* Os componentes não precisam saber onde estão: o trilho redefine os semânticos para o fundo dele. */
 [data-superficie='trilho'] {
   --tinta: var(--trilho-texto);
   --tinta-2: var(--trilho-texto-2);
@@ -335,12 +322,8 @@
   --icone: var(--trilho-texto);
   --icone-2: var(--trilho-texto-2);
   --toque: var(--trilho-toque);
-  --aperto: rgb(255 255 255 / 0.14);
-  --escolha: rgb(255 255 255 / 0.12);
+  --aperto: var(--trilho-toque);
   --regra: var(--trilho-regra);
-  --regra-forte: rgb(255 255 255 / 0.28);
-  --foco: var(--lima-300);
-  --marca-linha: var(--lima-300);
   background-color: var(--trilho);
   color: var(--tinta);
 }
