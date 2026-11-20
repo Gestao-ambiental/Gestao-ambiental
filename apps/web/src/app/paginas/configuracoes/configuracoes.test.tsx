@@ -64,15 +64,24 @@ describe('Configurações', () => {
       await screen.findByRole('heading', { level: 1, name: 'Configurações' }),
     ).toBeInTheDocument()
     await aba('Orçamentos')
-    expect(abasDaTela()).toEqual(['Equipe', 'Plano e cobrança', 'Orçamentos', 'Modelos'])
+    expect(abasDaTela()).toEqual([
+      'Equipe',
+      'Plano e cobrança',
+      'Orçamentos',
+      'Modelos',
+      'Importar',
+    ])
     const abas = screen.getByRole('navigation', { name: 'Configurações' })
     expect(within(abas).getByRole('link', { name: 'Equipe' })).toHaveAttribute(
       'aria-current',
       'page',
     )
     expect(screen.getByRole('button', { name: 'Convidar pessoa' })).toBeInTheDocument()
-    // A aba Importar chega com o pacote seguinte; aqui não aparece.
-    expect(within(abas).queryByRole('link', { name: 'Importar' })).not.toBeInTheDocument()
+    // A aba Importar (ADR-0043) entrou com uma linha na lista.
+    expect(within(abas).getByRole('link', { name: 'Importar' })).toHaveAttribute(
+      'href',
+      '/configuracoes/importar',
+    )
     // O menu principal marca Configurações em qualquer aba.
     const menu = screen.getByRole('navigation', { name: 'Menu principal' })
     expect(within(menu).getByRole('link', { name: 'Configurações' })).toHaveAttribute(
@@ -115,7 +124,7 @@ describe('Configurações', () => {
     expect(await aba('Modelos')).toHaveAttribute('aria-current', 'page')
     // A resposta do plano chega depois; a aba não aparece em nenhum momento.
     await new Promise((resolver) => setTimeout(resolver, 50))
-    expect(abasDaTela()).toEqual(['Equipe', 'Plano e cobrança', 'Modelos'])
+    expect(abasDaTela()).toEqual(['Equipe', 'Plano e cobrança', 'Modelos', 'Importar'])
   })
 
   it('/configuracoes no desktop abre a primeira aba', async () => {
@@ -137,7 +146,7 @@ describe('Configurações', () => {
       within(lista)
         .getAllByRole('link')
         .map((l) => l.textContent),
-    ).toEqual(['Equipe', 'Plano e cobrança', 'Orçamentos', 'Modelos'])
+    ).toEqual(['Equipe', 'Plano e cobrança', 'Orçamentos', 'Modelos', 'Importar'])
     expect(router.state.location.pathname).toBe('/configuracoes')
 
     await usuario.click(within(lista).getByRole('link', { name: 'Plano e cobrança' }))
@@ -170,23 +179,26 @@ describe('lista das abas de Configurações', () => {
     expect(abaDoCaminho('/configuracoes/equipe')?.rotulo).toBe('Equipe')
     expect(abaDoCaminho('/configuracoes/proposta')?.rotulo).toBe('Orçamentos')
     expect(abaDoCaminho('/configuracoes/modelos/md1')?.rotulo).toBe('Modelos')
+    expect(abaDoCaminho('/configuracoes/importar/nova')?.rotulo).toBe('Importar')
+    expect(abaDoCaminho('/configuracoes/importar/i1')?.rotulo).toBe('Importar')
     expect(abaDoCaminho('/configuracoes')).toBeUndefined()
     expect(abaDoCaminho('/configuracoes/equipe-x')).toBeUndefined()
   })
 
   it('aba nova entra com uma linha e aparece conforme o recurso', () => {
-    const comImportar = [
+    const comAvisos = [
       ...ABAS_DE_CONFIGURACOES,
-      { para: '/configuracoes/importar', rotulo: 'Importar', icone: 'upload' as const },
+      { para: '/configuracoes/avisos', rotulo: 'Avisos', icone: 'bell' as const },
     ]
-    expect(abasDeConfiguracoesVisiveis(new Set(), comImportar).map((a) => a.rotulo)).toEqual([
+    expect(abasDeConfiguracoesVisiveis(new Set(), comAvisos).map((a) => a.rotulo)).toEqual([
       'Equipe',
       'Plano e cobrança',
       'Modelos',
       'Importar',
+      'Avisos',
     ])
     expect(
-      abasDeConfiguracoesVisiveis(new Set(['orcamentos']), comImportar).map((a) => a.rotulo),
+      abasDeConfiguracoesVisiveis(new Set(['orcamentos']), comAvisos).map((a) => a.rotulo),
     ).toContain('Orçamentos')
   })
 })

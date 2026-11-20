@@ -7,6 +7,7 @@ import { SeloSituacaoLicenca } from '@/app/paginas/licenca/SeloSituacaoLicenca'
 import { EstadoVazio } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
 import { Icone } from '@/components/ui/icone'
+import { Selo } from '@/components/ui/selo'
 import type { LicencaNaLista } from '@/lib/api/licencas'
 import { formatarInstanteComoData } from '@/lib/datas'
 import { useCelular } from '@/lib/usar-celular'
@@ -64,8 +65,14 @@ function Situacao({
   )
 }
 
+/** Licença importada sem condicionantes (ADR-0043). */
+export function SeloSemCondicionantes() {
+  return <Selo>Sem condicionantes</Selo>
+}
+
 function Condicionantes({ licenca }: { licenca: LicencaNaLista }) {
   if (licenca.situacao === 'rascunho') return <span className="text-(--tinta-3)">—</span>
+  if (licenca.somenteValidade && licenca.condicionantes === 0) return <SeloSemCondicionantes />
   return <span className="numero">{licenca.condicionantes}</span>
 }
 
@@ -123,6 +130,9 @@ export function TabelaLicencas({
               </span>
             </span>
             <Situacao licenca={licenca} hoje={hoje} podeEditar={podeEditar} />
+            {licenca.somenteValidade && licenca.condicionantes === 0 ? (
+              <SeloSemCondicionantes />
+            ) : null}
             <span className="truncate text-xs text-(--tinta-2)">
               {[licenca.tipoNome, licenca.orgao, licenca.unidadeNome].filter(Boolean).join(' · ')}
             </span>

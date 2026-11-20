@@ -33,6 +33,7 @@ describe('atalhos do Ctrl+K (ADR-0041)', () => {
         'Equipe',
         'Plano e cobrança',
         'Modelos de documento',
+        'Importar planilha',
         'Cadastrar licença',
         'Novo modelo de documento',
       ]),

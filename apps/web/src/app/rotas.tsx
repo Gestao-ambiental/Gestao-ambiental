@@ -320,6 +320,31 @@ export const rotas: RouteObject[] = [
               },
               { path: 'configuracoes/modelos', element: <PaginaModelos /> },
               { path: 'configuracoes/modelos/:id', element: <PaginaModelo /> },
+              // Importar planilha (ADR-0043): sob demanda, para o SheetJS ficar fora do pacote inicial.
+              {
+                path: 'configuracoes/importar',
+                lazy: carregarRota(() =>
+                  import('./paginas/configuracoes/importar/PaginaImportacoes').then((m) => ({
+                    Component: m.PaginaImportacoes,
+                  })),
+                ),
+              },
+              {
+                path: 'configuracoes/importar/nova',
+                lazy: carregarRota(() =>
+                  import('./paginas/configuracoes/importar/PaginaNovaImportacao').then((m) => ({
+                    Component: m.PaginaNovaImportacao,
+                  })),
+                ),
+              },
+              {
+                path: 'configuracoes/importar/:id',
+                lazy: carregarRota(() =>
+                  import('./paginas/configuracoes/importar/PaginaImportacao').then((m) => ({
+                    Component: m.PaginaImportacao,
+                  })),
+                ),
+              },
               { path: 'perfil', element: <PaginaPerfil /> },
               { path: 'seguranca', element: <PaginaSeguranca /> },
               { path: '*', element: <PaginaNaoEncontrada /> },

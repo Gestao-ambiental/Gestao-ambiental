@@ -100,6 +100,29 @@ describe('carteira de empreendimentos (EMP-01)', () => {
     expect(await screen.findByText('Nenhum empreendimento ainda')).toBeInTheDocument()
   })
 
+  it('carteira vazia: a Gestão também pode importar planilha; a Equipe não vê', async () => {
+    falso.reiniciar(
+      cenario({
+        rpc: {
+          listar_empreendimentos: { data: [] },
+          meus_vinculos: { data: [vinculoFalso('Filtroville', 'gestao')] },
+        },
+      }),
+    )
+    const { unmount } = renderizarApp('/empreendimentos')
+    const vazio = await screen.findByRole('region', { name: 'Nenhum empreendimento ainda' })
+    expect(within(vazio).getByRole('link', { name: 'Importar planilha' })).toHaveAttribute(
+      'href',
+      '/configuracoes/importar/nova',
+    )
+    unmount()
+
+    falso.reiniciar(cenario({ rpc: { listar_empreendimentos: { data: [] } } }))
+    renderizarApp('/empreendimentos')
+    expect(await screen.findByText('Nenhum empreendimento ainda')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Importar planilha' })).not.toBeInTheDocument()
+  })
+
   it('Equipe cria: só o nome é obrigatório, CNPJ incompleto é recusado, e abre a tela nova', async () => {
     const usuario = userEvent.setup()
     const { router } = renderizarApp('/empreendimentos')
@@ -299,6 +322,41 @@ describe('tela do empreendimento (EMP-02)', () => {
       screen.getByRole('link', { name: 'Continuar o cadastro de LAO 4821/2023' }),
     ).toHaveAttribute('href', '/licencas/i1/prazos')
     expect(screen.getAllByText(/Rascunho no passo/)).toHaveLength(1)
+  })
+
+  it('licença importada sem condicionantes leva o selo "Sem condicionantes"', async () => {
+    const licenca = (id: string, numero: string, extra: Record<string, unknown>) => ({
+      id,
+      numero,
+      orgao: 'IMA',
+      situacao: 'ativo',
+      validade: '2027-02-15',
+      criado_em: '2026-10-01T12:00:00Z',
+      antecedencia_renovacao_dias: 30,
+      unidade_id: 'u1',
+      tipo_id: 't-lao',
+      marco: 'emissao',
+      tipo: { sigla: 'LAO', nome: 'Licença Ambiental de Operação' },
+      unidade: { nome: 'Matriz' },
+      plano: null,
+      ...extra,
+    })
+    falso.reiniciar(
+      cenario({
+        tabelas: {
+          instrumento: [
+            licenca('i1', '4821/2023', { somente_validade: true, condicionante: [{ count: 0 }] }),
+            licenca('i2', '1000/2020', { somente_validade: false, condicionante: [{ count: 3 }] }),
+          ],
+        },
+      }),
+    )
+    renderizarApp('/empreendimentos/e1')
+    const importada = await screen.findByRole('row', { name: /LAO 4821\/2023/ })
+    expect(within(importada).getByText('Sem condicionantes')).toBeInTheDocument()
+    const cadastrada = screen.getByRole('row', { name: /LAO 1000\/2020/ })
+    expect(within(cadastrada).queryByText('Sem condicionantes')).not.toBeInTheDocument()
+    expect(within(cadastrada).getByText('3')).toBeInTheDocument()
   })
 
   it('no celular as licenças viram lista, com o rascunho e o Continuar', async () => {
