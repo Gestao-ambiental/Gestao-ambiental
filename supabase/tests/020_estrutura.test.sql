@@ -136,20 +136,30 @@ select is(
 
 -- Planos e cobrança (ADR-0026): toda tabela de public com consultoria_id (e a consultoria) tem a
 -- trigger da barreira comercial (só leitura por atraso ou teste acabado; orçamento fora do plano).
--- Exceções: o que o pagamento e a central precisam e a trilha da plataforma. As tabelas de
+-- As exceções ficam só na lista `excecoes` abaixo, cada uma com o motivo. As tabelas de
 -- orçamento passam 'orcamentos' como segundo argumento. Uma tabela nova sem a trigger quebra
 -- este teste.
 select is(
-  (select coalesce(array_agg(c.relname::text order by c.relname), '{}')
+  (with excecoes (tabela) as (values
+     -- Pagamento e central: a consultoria inadimplente precisa conseguir pagar.
+     ('assinatura'), ('cobranca'), ('consultoria_condicao_comercial'),
+     ('condicao_comercial_historico'), ('consultoria_situacao_historico'),
+     -- Acesso de suporte: escrito pela plataforma, não pela consultoria.
+     ('acesso_suporte'), ('acesso_suporte_evento'),
+     -- Trilha da plataforma.
+     ('uso_diario'), ('auditoria'),
+     -- Avisos (P5, tabelas futuras): consultoria inadimplente não pode impedir alguém de parar de
+     -- receber aviso nem de desligar o feed do calendário.
+     ('preferencia_aviso'), ('feed_calendario')
+   )
+   select coalesce(array_agg(c.relname::text order by c.relname), '{}')
    from pg_catalog.pg_class as c
    join pg_catalog.pg_namespace as n on n.oid = c.relnamespace
    where n.nspname = 'public' and c.relkind in ('r', 'p')
      and (c.relname = 'consultoria' or exists (
        select 1 from pg_catalog.pg_attribute as a
        where a.attrelid = c.oid and a.attname = 'consultoria_id' and not a.attisdropped))
-     and c.relname not in ('assinatura', 'cobranca', 'consultoria_condicao_comercial',
-       'condicao_comercial_historico', 'consultoria_situacao_historico', 'acesso_suporte',
-       'acesso_suporte_evento', 'uso_diario', 'auditoria')
+     and c.relname not in (select e.tabela from excecoes as e)
      and not exists (
        select 1 from pg_catalog.pg_trigger as t
        join pg_catalog.pg_proc as p on p.oid = t.tgfoid

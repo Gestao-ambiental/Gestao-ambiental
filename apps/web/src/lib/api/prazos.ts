@@ -27,12 +27,15 @@ export interface Filtros {
   semResponsavel: boolean
   tipoId: string | null
   empreendimentoId: string | null
+  /** Cliente do empreendimento. Opcional: quem não filtra por cliente não passa. */
+  clienteId?: string | null
 }
 
 export interface LinhaDePrazo {
   tipo: TipoLinhaDePrazo
   id: string
-  instrumentoId: string
+  /** Licença da linha; nula no alvará e na exigência ou no vencimento sem licença ligada. */
+  instrumentoId: string | null
   prazo: DataCivil
   dias: number
   codigo: string | null
@@ -60,6 +63,7 @@ function argumentosDosFiltros(consultoriaId: string, filtros: Filtros) {
     p_sem_responsavel: filtros.semResponsavel,
     ...(filtros.tipoId ? { p_tipo_id: filtros.tipoId } : {}),
     ...(filtros.empreendimentoId ? { p_empreendimento_id: filtros.empreendimentoId } : {}),
+    ...(filtros.clienteId ? { p_cliente_id: filtros.clienteId } : {}),
   }
 }
 
@@ -83,7 +87,7 @@ export async function listarPrazos(
     itens: data.map((linha) => ({
       tipo: linha.tipo_linha as TipoLinhaDePrazo,
       id: linha.id,
-      instrumentoId: linha.instrumento_id,
+      instrumentoId: anulavel(linha.instrumento_id),
       prazo: linha.prazo as DataCivil,
       dias: linha.dias,
       codigo: anulavel(linha.codigo),
@@ -123,6 +127,21 @@ export async function contarPrazos(consultoriaId: string, filtros: Filtros): Pro
   }
 }
 
+/** Nome do cliente do filtro da Visão (`?cliente=`). Nulo quando não existe ou a RLS não mostra. */
+export async function obterNomeDoCliente(
+  consultoriaId: string,
+  clienteId: string,
+): Promise<string | null> {
+  const { data, error } = await obterSupabase()
+    .from('cliente')
+    .select('nome')
+    .eq('consultoria_id', consultoriaId)
+    .eq('id', clienteId)
+    .maybeSingle()
+  if (error) throw error
+  return data?.nome ?? null
+}
+
 export async function atribuirOcorrencia(
   ocorrenciaId: string,
   membroId: string,
@@ -157,7 +176,9 @@ export async function listarTiposEmUso(
 // Calendário (EQ-04)
 // ---------------------------------------------------------------------------
 
-export type TipoEvento = 'prazo' | 'meta' | 'validade' | 'limite_protocolo' | 'tarefa'
+/** `prazo` é a ocorrência; exigência e vencimento vêm das fontes do P3 e do P4 (vazias até lá). */
+export type TipoEvento =
+  'prazo' | 'meta' | 'validade' | 'limite_protocolo' | 'exigencia' | 'vencimento' | 'tarefa'
 
 export interface EventoDoCalendario {
   tipo: TipoEvento

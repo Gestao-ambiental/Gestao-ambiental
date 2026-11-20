@@ -25,13 +25,14 @@ Portado de `dist/domain.js` do repositório `nexo-gestao-ambiental`, commit `c06
 | `renewalPlanningLeadDays`                          | `antecedenciaPreparacao`                                    | `renovacao.ts`  |
 | `laoRenewalDates` (`protocolDue`, `planningStart`) | `datasRenovacaoLao` (`limiteProtocolo`, `inicioPreparacao`) | `renovacao.ts`  |
 | `laoRenewalSteps`                                  | `etapasRenovacaoLao`                                        | `renovacao.ts`  |
-| `businessDay`                                      | `ehDiaUtil`                                                 | `dias-uteis.ts` |
+| `businessDay` / `previousBusinessDay`              | `ehDiaUtil` / `diaUtilAnterior`                             | `dias-uteis.ts` |
+| `letterDeadline` (`official`, `internal`)          | `prazoDeOficio` (`oficial`, `interno`)                      | `dias-uteis.ts` |
 
 Única diferença de comportamento: data inexistente (ex.: `2026-02-30`) agora lança erro. No protótipo, o `Date` do V8 a convertia silenciosamente em outra data.
 
 ## Testes portados (tests/domain.test.mjs e tests/clock.test.mjs)
 
-`domain.test.mjs`: linha 195 (as demais portadas saíram com o código sem uso: `ocorrencias`, `primeiraOcorrenciaSugerida`, `sugerirDatasDeDependencia`, `diaUtilAnterior` e `prazoDeOficio`; a série de prazos vive em `prazo.ts`). `clock.test.mjs`: linhas 14 e 38.
+`domain.test.mjs`: linhas 195, 231 e 237 (as demais portadas saíram com o código sem uso: `ocorrencias`, `primeiraOcorrenciaSugerida` e `sugerirDatasDeDependencia`; a série de prazos vive em `prazo.ts`). `diaUtilAnterior` e `prazoDeOficio` voltaram (ADR-0041): as exigências do órgão contam o prazo de resposta com eles. `clock.test.mjs`: linhas 14 e 38.
 
 ## TODO: o que ainda não foi portado, e por quê
 

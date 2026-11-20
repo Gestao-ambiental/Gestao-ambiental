@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
-import { faixaDeAtraso, rotuloDaSituacaoDoPrazo, situacaoDoPrazo } from './situacao-prazo'
+import {
+  ROTULO_DO_TIPO_DE_LINHA,
+  TIPOS_COM_RESPONSAVEL,
+  TIPOS_LINHA_DE_PRAZO,
+  faixaDeAtraso,
+  rotuloDaSituacaoDoPrazo,
+  situacaoDoPrazo,
+  tipoAceitaResponsavel,
+} from './situacao-prazo'
 
 describe('situação do prazo (EQ-03)', () => {
   it('faixas de atraso: até 7, de 8 a 30 e mais de 30 dias', () => {
@@ -50,5 +58,49 @@ describe('situação do prazo (EQ-03)', () => {
     expect(rotuloDaSituacaoDoPrazo(situacaoDoPrazo({ tipo: 'ocorrencia', dias: -12 }))).toBe(
       'Atrasada 12 dias',
     )
+  })
+})
+
+describe('exigência e vencimento (base das oito funções)', () => {
+  it('exigência é prazo com responsável: atrasa por faixa, sem "em conferência"', () => {
+    expect(situacaoDoPrazo({ tipo: 'exigencia', dias: -10 })).toEqual({
+      tipo: 'atrasada',
+      dias: 10,
+      faixa: 'de_8_a_30',
+    })
+    expect(situacaoDoPrazo({ tipo: 'exigencia', dias: 0 })).toEqual({ tipo: 'hoje' })
+    expect(situacaoDoPrazo({ tipo: 'exigencia', dias: 1 })).toEqual({ tipo: 'amanha' })
+    expect(situacaoDoPrazo({ tipo: 'exigencia', dias: 3, emConferencia: true })).toEqual({
+      tipo: 'em_dias',
+      dias: 3,
+    })
+  })
+
+  it('vencimento é como validade: vence em vez de atrasar', () => {
+    expect(situacaoDoPrazo({ tipo: 'vencimento', dias: -2 })).toEqual({ tipo: 'vencida', dias: 2 })
+    expect(rotuloDaSituacaoDoPrazo(situacaoDoPrazo({ tipo: 'vencimento', dias: -1 }))).toBe(
+      'Vencida há 1 dia',
+    )
+    expect(rotuloDaSituacaoDoPrazo(situacaoDoPrazo({ tipo: 'vencimento', dias: 30 }))).toBe(
+      'Em 30 dias',
+    )
+    expect(situacaoDoPrazo({ tipo: 'vencimento', dias: 0 })).toEqual({ tipo: 'hoje' })
+  })
+
+  it('todo tipo tem rótulo próprio, sem repetir', () => {
+    const rotulos = TIPOS_LINHA_DE_PRAZO.map((tipo) => ROTULO_DO_TIPO_DE_LINHA[tipo])
+    expect(rotulos).toEqual([
+      'Condicionante',
+      'Validade',
+      'Limite de protocolo',
+      'Exigência',
+      'Vencimento',
+    ])
+    expect(new Set(rotulos).size).toBe(rotulos.length)
+  })
+
+  it('no P0 só a ocorrência aceita responsável (o P3 acrescenta a exigência)', () => {
+    expect(TIPOS_COM_RESPONSAVEL).toEqual(['ocorrencia'])
+    expect(TIPOS_LINHA_DE_PRAZO.filter(tipoAceitaResponsavel)).toEqual(['ocorrencia'])
   })
 })

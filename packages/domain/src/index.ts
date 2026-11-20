@@ -42,7 +42,8 @@ export {
 } from './renovacao'
 export type { DatasRenovacaoLao, EtapaRenovacaoLao, SituacaoDaRenovacao } from './renovacao'
 
-export { ehDiaUtil } from './dias-uteis'
+export { diaUtilAnterior, ehDiaUtil, prazoDeOficio } from './dias-uteis'
+export type { PrazoDeOficio, UnidadePrazo } from './dias-uteis'
 
 export {
   VALIDADE_CONVITE_DIAS,
@@ -79,7 +80,15 @@ export type { LicencaResumo, Prazo, Recorrencia, SituacaoDaLicenca, UnidadeCiclo
 export { recorrenciaSugerida } from './recorrencia-sugerida'
 export type { RecorrenciaSugerida } from './recorrencia-sugerida'
 
-export { faixaDeAtraso, rotuloDaSituacaoDoPrazo, situacaoDoPrazo } from './situacao-prazo'
+export {
+  ROTULO_DO_TIPO_DE_LINHA,
+  TIPOS_COM_RESPONSAVEL,
+  TIPOS_LINHA_DE_PRAZO,
+  faixaDeAtraso,
+  rotuloDaSituacaoDoPrazo,
+  situacaoDoPrazo,
+  tipoAceitaResponsavel,
+} from './situacao-prazo'
 export type { FaixaDeAtraso, SituacaoDoPrazo, TipoLinhaDePrazo } from './situacao-prazo'
 
 export { dataForaDoCiclo, janelaDoCiclo, proximaAcao, situacaoExibida } from './ocorrencia'

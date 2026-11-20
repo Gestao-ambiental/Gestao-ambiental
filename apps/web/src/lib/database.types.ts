@@ -2226,7 +2226,7 @@ isOneToOne: false
             }[]
                            },
 "contar_prazos":
-{ Args: { "p_aba"?: string,"p_consultoria_id": string,"p_empreendimento_id"?: string,"p_responsavel_id"?: string,"p_sem_responsavel"?: boolean,"p_tipo_id"?: string }; Returns: {
+{ Args: { "p_aba"?: string,"p_cliente_id"?: string,"p_consultoria_id": string,"p_empreendimento_id"?: string,"p_responsavel_id"?: string,"p_sem_responsavel"?: boolean,"p_tipo_id"?: string }; Returns: {
               "atrasadas": number,"hoje": number,"proximos_7": number,"sem_responsavel": number,"total": number
             }[]
                            },
@@ -2465,7 +2465,7 @@ isOneToOne: false
             }[]
                            },
 "listar_prazos":
-{ Args: { "p_aba"?: string,"p_consultoria_id": string,"p_deslocamento"?: number,"p_empreendimento_id"?: string,"p_faixa"?: string,"p_limite"?: number,"p_ordem"?: string,"p_responsavel_id"?: string,"p_sem_responsavel"?: boolean,"p_tipo_id"?: string }; Returns: {
+{ Args: { "p_aba"?: string,"p_cliente_id"?: string,"p_consultoria_id": string,"p_deslocamento"?: number,"p_empreendimento_id"?: string,"p_faixa"?: string,"p_limite"?: number,"p_ordem"?: string,"p_responsavel_id"?: string,"p_sem_responsavel"?: boolean,"p_tipo_id"?: string }; Returns: {
               "codigo": string,"dias": number,"empreendimento_id": string,"empreendimento_nome": string,"id": string,"instrumento_id": string,"licenca": string,"prazo": string,"responsavel_id": string,"responsavel_nome": string,"row_version": number,"situacao_ocorrencia": Database["public"]['Enums']["situacao_ocorrencia"],"tipo_linha": string,"titulo": string,"total": number,"unidade_nome": string
             }[]
                            },

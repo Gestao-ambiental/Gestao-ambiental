@@ -3,25 +3,34 @@
 
 import { obterSupabase } from '@/lib/supabase'
 
-export type TipoResultadoBusca = 'empreendimento' | 'licenca' | 'condicionante' | 'orcamento'
+export type TipoResultadoBusca =
+  'empreendimento' | 'licenca' | 'condicionante' | 'orcamento' | 'exigencia' | 'vencimento'
 
 export interface ResultadoBusca {
   tipo: TipoResultadoBusca
   id: string
   titulo: string
   detalhe: string | null
-  /** Id que monta a rota: o empreendimento (licença e condicionante) ou o próprio registro. */
+  /**
+   * Id que monta a rota: o empreendimento (licença, condicionante e vencimento) ou o próprio
+   * registro (orçamento). A exigência abre pela própria id.
+   */
   referenciaId: string
 }
 
 /** Abaixo disto o banco devolve vazio; a tela nem chama. */
 export const TAMANHO_MINIMO_DA_BUSCA = 2
 
+/** O banco devolve até 5 por grupo (buscar_no_grama, ADR-0041). */
+export const RESULTADOS_POR_GRUPO = 5
+
 const TIPOS: readonly TipoResultadoBusca[] = [
   'empreendimento',
   'licenca',
   'condicionante',
   'orcamento',
+  'exigencia',
+  'vencimento',
 ]
 
 function ehTipo(valor: string): valor is TipoResultadoBusca {
