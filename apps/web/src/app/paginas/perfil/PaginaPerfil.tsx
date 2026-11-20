@@ -24,6 +24,7 @@ import { ehSemPermissao, mensagemDoErro } from '@/lib/erros'
 
 import { CamposProfissaoECargo } from '../equipe/CamposProfissaoECargo'
 import { Pagina } from '../Pagina'
+import { SecaoCadastroFederal, SecaoRegistros } from './SecaoRegistros'
 
 const PROBLEMAS_DA_FOTO: Record<ProblemaDaFoto, string> = {
   tipo: 'Envie uma imagem PNG ou JPEG.',
@@ -83,6 +84,8 @@ function Perfil({ perfil }: { perfil: MembroAtivo }) {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ['meu-perfil', atual.membroId] }),
       queryClient.invalidateQueries({ queryKey: ['membros-ativos', atual.consultoriaId] }),
+      // Tirar uma profissão tira o registro dela (no banco).
+      queryClient.invalidateQueries({ queryKey: ['registros-do-membro', perfil.id] }),
     ])
   }
 
@@ -292,6 +295,9 @@ function Perfil({ perfil }: { perfil: MembroAtivo }) {
           </div>
         </form>
       </section>
+
+      <SecaoRegistros perfil={perfil} />
+      <SecaoCadastroFederal perfil={perfil} />
     </div>
   )
 }

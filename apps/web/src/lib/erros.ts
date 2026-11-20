@@ -144,6 +144,14 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   formacoes_demais: 'Informe no máximo 10 outras formações.',
   cargo_invalido: 'Escolha o cargo na lista.',
   genero_invalido: 'Escolha o gênero.',
+  // Registro profissional e Cadastro Técnico Federal
+  profissao_fora_do_perfil: 'Escolha uma profissão concluída do perfil.',
+  conselho_invalido: 'Escolha o conselho.',
+  numero_do_registro_obrigatorio: 'Informe o número do registro.',
+  registro_longo_demais: 'O número do registro tem no máximo 30 caracteres.',
+  uf_invalida: 'Escolha a UF na lista.',
+  registro_removido: 'Este registro foi removido. Recarregue a página.',
+  ctf_invalido: 'O número do Cadastro Técnico Federal tem só dígitos.',
   horas_de_venda_invalidas:
     'Confira a tabela de preços: profissão, serviço, unidade, preço e faixas de cada linha.',
   deslocamento_invalido:

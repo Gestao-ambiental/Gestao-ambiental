@@ -50,6 +50,7 @@ import { AcessosDoSuporte } from '@/app/suporte/AcessosDoSuporte'
 
 import { CamposProfissaoECargo } from './CamposProfissaoECargo'
 import { DialogoConvidar, type ResultadoConvite } from './DialogoConvidar'
+import { RegistrosAConfirmar } from './RegistrosAConfirmar'
 
 const MOTIVO_ULTIMA_GESTAO = 'A consultoria precisa de pelo menos uma pessoa na Gestão.'
 
@@ -481,6 +482,8 @@ function EquipeDaGestao() {
           </div>
         )}
       </section>
+
+      <RegistrosAConfirmar />
 
       {/* Sem convites pendentes, a seção some (um vazio a menos na tela). */}
       {convitesVisiveis ? (

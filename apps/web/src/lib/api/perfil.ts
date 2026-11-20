@@ -11,6 +11,7 @@ import {
   rotuloDoCargo,
   type CodigoCargo,
   type CodigoProfissao,
+  type DataCivil,
   type GeneroDaPessoa,
   type PapelMembro,
 } from '@gestao-ambiental/domain'
@@ -48,6 +49,9 @@ export interface MembroAtivo {
   genero: GeneroDaPessoa | null
   /** URL assinada da foto; null mostra as iniciais. */
   fotoUrl: string | null
+  /** Cadastro Técnico Federal do Ibama: número (só dígitos) e validade. */
+  ctfNumero: string | null
+  ctfValidoAte: DataCivil | null
 }
 
 interface LinhaMembro {
@@ -61,10 +65,12 @@ interface LinhaMembro {
   outras_profissoes?: readonly unknown[] | null
   profissao_em_curso?: boolean | null
   genero?: string | null
+  ctf_numero?: string | null
+  ctf_valido_ate?: string | null
   foto?: { excluido_em: string | null; versao: { caminho: string } | null } | null
 }
 
-const COLUNAS_MEMBRO = `id, nome, papel, cargo, cargo_antigo, profissao, outras_profissoes, profissao_em_curso, genero,
+const COLUNAS_MEMBRO = `id, nome, papel, cargo, cargo_antigo, profissao, outras_profissoes, profissao_em_curso, genero, ctf_numero, ctf_valido_ate,
   foto:documento!membro_foto_fk(excluido_em, versao:documento_versao!documento_versao_vigente_fk(caminho))`
 
 function caminhoDaFoto(linha: LinhaMembro): string | null {
@@ -97,6 +103,8 @@ async function comFotos(linhas: readonly LinhaMembro[]): Promise<MembroAtivo[]> 
       ...profissaoECargo(linha),
       genero: generoDoCodigo(linha.genero),
       fotoUrl: caminho ? (urls.get(caminho) ?? null) : null,
+      ctfNumero: linha.ctf_numero ?? null,
+      ctfValidoAte: (linha.ctf_valido_ate ?? null) as DataCivil | null,
     }
   })
 }
