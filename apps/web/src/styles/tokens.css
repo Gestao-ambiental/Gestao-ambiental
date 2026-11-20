@@ -60,6 +60,7 @@
   --escolha-toque: var(--placa-100);
   --campo: #ffffff;
   --campo-foco: #ffffff;
+  --papel: #ffffff; /* sempre branco nos dois temas: QR code, folha de documento */
   --off: var(--pedra-100);
   --flutuante: #ffffff; /* menu, popover, diálogo */
   --esqueleto: var(--pedra-150);
@@ -98,6 +99,7 @@
   --acao-texto: #ffffff;
   --link: var(--placa-700);
   --marca-linha: var(--placa-700); /* aba ativa, item ativo, passo atual */
+  --estacao-feita: var(--placa-700); /* estação concluída da trilha e da linha de trajeto */
 
   /* Sinal: o verde-lima do logotipo. "Agora", hoje, o que pede atenção positiva. */
   --sinal: var(--lima-300);
@@ -187,6 +189,7 @@
   --acao-texto: #0f1f18;
   --link: #b8e64a;
   --marca-linha: var(--lima-300);
+  --estacao-feita: var(--placa-200);
 
   --sinal: var(--lima-300);
   --sinal-toque: var(--lima-400);
@@ -227,8 +230,14 @@
 }
 
 /* ---------- Tipo: Overpass, desenhada a partir da letra das placas de rodovia ---------- */
+/* O ponto médio "·" da Overpass encosta na palavra seguinte: só esse caractere vem do sistema. */
+@font-face {
+  font-family: 'Grama Ponto';
+  src: local('Segoe UI'), local('Helvetica Neue'), local('Arial'), local('Roboto');
+  unicode-range: U+00B7;
+}
 :root {
-  --fonte: 'Overpass Variable', 'Segoe UI', system-ui, sans-serif;
+  --fonte: 'Grama Ponto', 'Overpass Variable', 'Segoe UI', system-ui, sans-serif;
   --fonte-mono: ui-monospace, 'Cascadia Mono', 'SFMono-Regular', Consolas, monospace;
 
   --tam-legenda: 12px; /* rótulo de coluna, metadado */

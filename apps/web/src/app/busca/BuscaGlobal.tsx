@@ -123,7 +123,7 @@ export function BuscaGlobal() {
       />
       <Dialog.Root open={aberto} onOpenChange={setAberto}>
         <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-50 bg-(--veu) data-[state=open]:animate-in data-[state=open]:fade-in-0" />
+          <Dialog.Overlay className="fixed inset-0 z-50 bg-(--veu)" />
           <div className="pointer-events-none fixed inset-0 z-50 flex items-start justify-center px-(--e-4) py-(--e-16) max-md:px-(--e-2) max-md:py-(--e-4)">
             <Dialog.Content
               aria-describedby={undefined}
@@ -134,7 +134,7 @@ export function BuscaGlobal() {
                 devolverFocoA.current = null
                 if (alvo?.isConnected) alvo.focus()
               }}
-              className="pointer-events-auto flex max-h-full w-full max-w-[640px] flex-col overflow-hidden rounded-(--raio-painel) bg-(--flutuante) text-(--tinta) shadow-dialogo outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0"
+              className="pointer-events-auto flex max-h-full w-full max-w-[640px] flex-col overflow-hidden rounded-(--raio-painel) bg-(--flutuante) text-(--tinta) shadow-dialogo outline-none"
             >
               <Dialog.Title className="sr-only">Buscar no Grama</Dialog.Title>
               <PaletaDeBusca

@@ -33,7 +33,7 @@ export function BotaoIcone({
       aria-label={rotulo}
       title={rotulo}
       className={cn(
-        'inline-flex shrink-0 cursor-pointer items-center justify-center rounded-(--raio) border p-0 transicao-estado active:translate-y-px',
+        'inline-flex shrink-0 cursor-pointer items-center justify-center rounded-(--raio) border p-0 transicao-estado active:scale-[0.94]',
         'disabled:cursor-not-allowed disabled:text-(--tinta-off)',
         compacto ? 'size-(--controle-mini)' : 'size-(--controle)',
         // Alvo de 44px no celular (WCAG 2.5.8 com folga para o campo).

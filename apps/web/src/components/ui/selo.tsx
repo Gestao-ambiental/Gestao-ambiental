@@ -55,14 +55,14 @@ export function Selo({ tom = 'padrao', className, children, ...rest }: Props) {
       className={cn(
         'inline-flex max-w-full items-center gap-(--e-15) overflow-hidden text-xs font-[750] whitespace-nowrap',
         forte
-          ? 'h-6 rounded-(--raio-mini) bg-(--atraso) px-(--e-2) text-(--tinta-inversa) uppercase tracking-[0.04em]'
+          ? 'min-h-6 rounded-(--raio-mini) bg-(--atraso) px-(--e-2) py-(--e-1) text-(--tinta-inversa) uppercase tracking-[0.04em] whitespace-normal'
           : cn('h-5', t.texto),
         className,
       )}
       {...rest}
     >
       {forte ? null : <span aria-hidden className={cn('inline-block shrink-0', t.marca)} />}
-      <span className="truncate">{children}</span>
+      <span className={forte ? undefined : 'truncate'}>{children}</span>
     </span>
   )
 }

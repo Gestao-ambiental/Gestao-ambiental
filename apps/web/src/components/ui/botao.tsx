@@ -14,8 +14,8 @@ export const variantesBotao = cva(
   [
     'inline-flex items-center justify-center gap-(--e-2) whitespace-nowrap',
     'h-(--controle) max-md:min-h-(--controle-toque) px-(--e-4) rounded-(--raio) border corpo-medio',
-    'cursor-pointer transicao-estado select-none active:translate-y-px',
-    'disabled:cursor-not-allowed disabled:text-(--tinta-off) disabled:active:translate-y-0',
+    'cursor-pointer transicao-estado select-none active:scale-[0.98]',
+    'disabled:cursor-not-allowed disabled:text-(--tinta-off) disabled:active:scale-100',
   ],
   {
     variants: {

@@ -214,5 +214,10 @@
   }
 }
 @utility virar-placa {
-  animation: virar-placa var(--dur-lenta) var(--saida) both;
+  animation: virar-placa 260ms var(--saida) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .virar-placa {
+    animation: none;
+  }
 }

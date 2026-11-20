@@ -13,13 +13,16 @@ export interface PassoDaTrilha {
  * Trilha como linha de trajeto: estações ligadas por uma linha de 3px. Feito = estação cheia com
  * check e linha contínua; atual = estação verde-lima com aro e rótulo forte (aria-current="step");
  * futuro = estação vazada e linha tracejada. A forma da linha também diz o estado, não só a cor.
- * Com `aoEscolher`, cada passo é um botão e a pessoa pode ir e voltar à vontade.
+ * Com `aoEscolher`, os passos viram botões (só os que `podeEscolher` aceitar, se informado).
+ * `compactaNoCelular` mostra no celular só as estações e o nome do passo atual.
  */
 export function Trilha({
   rotulo,
   passos,
   atual,
   aoEscolher,
+  podeEscolher,
+  compactaNoCelular = false,
   className,
 }: {
   rotulo: string
@@ -27,6 +30,8 @@ export function Trilha({
   /** Índice do passo atual (0 é o primeiro). */
   atual: number
   aoEscolher?: (indice: number) => void
+  podeEscolher?: (indice: number) => boolean
+  compactaNoCelular?: boolean
   className?: string
 }) {
   return (
@@ -46,14 +51,20 @@ export function Trilha({
                   'inline-flex size-7 shrink-0 items-center justify-center rounded-(--raio-redondo) text-xs font-[800] numero',
                   estado === 'atual' &&
                     'bg-(--sinal) text-(--sinal-texto) shadow-[0_0_0_2px_var(--folha),0_0_0_4px_var(--marca-linha)]',
-                  estado === 'feito' && 'bg-(--marca-linha) text-(--folha)',
+                  estado === 'feito' && 'bg-(--estacao-feita) text-(--folha)',
                   estado === 'futuro' &&
                     'border-2 border-(--regra-forte) bg-(--folha) text-(--tinta-2)',
                 )}
               >
                 {estado === 'feito' ? <Icone nome="check" tamanho={12} /> : indice + 1}
               </span>
-              <span aria-hidden className="flex min-w-0 flex-col text-left">
+              <span
+                aria-hidden
+                className={cn(
+                  'flex min-w-0 flex-col text-left',
+                  compactaNoCelular && estado !== 'atual' && 'max-md:hidden',
+                )}
+              >
                 <span
                   className={cn(
                     'truncate',
@@ -73,7 +84,7 @@ export function Trilha({
           )
           return (
             <li key={passo.id} className="flex min-w-0 flex-1 items-center gap-(--e-2)">
-              {aoEscolher ? (
+              {aoEscolher && (podeEscolher?.(indice) ?? true) ? (
                 <button
                   type="button"
                   aria-current={estado === 'atual' ? 'step' : undefined}
@@ -100,7 +111,7 @@ export function Trilha({
                   className={cn(
                     'h-[3px] min-w-(--e-4) flex-1 rounded-full',
                     estado === 'feito'
-                      ? 'bg-(--marca-linha)'
+                      ? 'bg-(--estacao-feita)'
                       : 'bg-[repeating-linear-gradient(90deg,var(--regra-forte)_0_6px,transparent_6px_10px)]',
                   )}
                 />

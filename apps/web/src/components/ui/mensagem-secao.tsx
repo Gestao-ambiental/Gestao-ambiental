@@ -56,7 +56,7 @@ export function MensagemSecao({
       <Icone nome={icone} tamanho={18} className="mt-px text-(--cor-icone)" />
       <div className="flex flex-1 flex-col gap-(--e-1) text-(--tinta)">
         {titulo ? <div className="corpo-medio">{titulo}</div> : null}
-        {children ? <div className="corpo text-pretty">{children}</div> : null}
+        {children ? <div className="max-w-[75ch] corpo text-pretty">{children}</div> : null}
         {acoes ? <div className="mt-(--e-1) flex gap-(--e-2)">{acoes}</div> : null}
       </div>
     </div>

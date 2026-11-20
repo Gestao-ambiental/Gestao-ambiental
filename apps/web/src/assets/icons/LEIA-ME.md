@@ -27,3 +27,5 @@ Os arquivos mantêm os nomes que o app já usa (`NomeIcone`). Correspondência c
 | `flag`           | `flag-banner`        |                    |                           |
 
 Os demais têm o mesmo nome nos dois lados.
+
+| `text-*`, `list-numbers`, `list-bullets`, `table` | iguais (barra do editor de modelos) | | |
