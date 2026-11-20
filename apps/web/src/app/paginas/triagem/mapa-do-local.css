@@ -39,7 +39,7 @@
 .mapa-do-local .leaflet-control-attribution a {
   color: var(--link);
 }
-/* Ponto marcado: anel verde-placa (lima no escuro) com miolo lima, o "agora". */
+/* Ponto marcado: anel de tinta (lima no escuro) com miolo lima, o "agora". */
 .mapa-do-local .marcador-do-local {
   stroke: var(--marca-linha);
   fill: var(--sinal);

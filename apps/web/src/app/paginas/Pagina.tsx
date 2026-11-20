@@ -17,7 +17,7 @@ interface Props {
 }
 
 /**
- * Moldura de página: título grande (Overpass 800, 28px) com a ação principal ao lado. O título
+ * Moldura de página: título grande (Anton em caixa alta, como o herói do site) com a ação principal ao lado. O título
  * também vai para a aba do navegador.
  */
 export function Pagina({ titulo, prefixo, children, acao, meta, voltar }: Props) {

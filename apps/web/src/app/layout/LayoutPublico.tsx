@@ -6,21 +6,16 @@ import { MarcaGrama } from '@/components/ui/marca-grama'
 import { BotaoTema } from './BotaoTema'
 
 /**
- * Layout das rotas públicas: a placa verde com o logotipo grande (no celular, uma faixa no topo)
+ * Layout das rotas públicas: o campo verde-lima com o logotipo preto (no celular, uma faixa no topo)
  * e o formulário sobre a folha. Com `children`, mostra esse conteúdo no lugar da rota
  * (ex.: "Complete seu cadastro").
  */
 export function LayoutPublico({ children }: { children?: ReactNode }) {
   return (
     <div className="flex min-h-dvh flex-col bg-(--folha) md:flex-row">
-      <div
-        data-superficie="trilho"
-        className="relative flex shrink-0 items-center justify-between px-(--e-5) py-(--e-4) md:w-[44%] md:max-w-[620px] md:flex-col md:items-start md:justify-between md:p-(--e-12)"
-      >
-        <MarcaGrama clara largura={112} className="md:hidden" />
-        <MarcaGrama clara largura={248} className="hidden md:inline-flex" />
-        {/* A marca de trilha do logotipo, em escala de placa: o sinal verde-lima. */}
-        <span aria-hidden className="hidden size-24 bg-(--sinal) md:block" />
+      <div className="relative flex shrink-0 bg-(--sinal) text-(--sinal-texto) items-center justify-between px-(--e-5) py-(--e-4) md:w-[44%] md:max-w-[620px] md:flex-col md:items-start md:justify-between md:p-(--e-12)">
+        <MarcaGrama escura largura={112} className="md:hidden" />
+        <MarcaGrama escura largura={248} className="hidden md:inline-flex" />
       </div>
       <main
         id="conteudo"

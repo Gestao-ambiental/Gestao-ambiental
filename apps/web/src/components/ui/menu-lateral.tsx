@@ -15,7 +15,7 @@ interface PropsMenu {
 }
 
 /**
- * Trilho de navegação: a placa verde. Dentro dele os semânticos viram tinta branca
+ * Trilho de navegação em areia (noite no escuro). Dentro dele os semânticos seguem o trilho
  * (data-superficie="trilho"), então qualquer peça posta aqui se ajusta sozinha.
  */
 export function MenuLateral({ rotulo, cabecalho, rodape, children, className }: PropsMenu) {

@@ -1,9 +1,10 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
-@import '@fontsource-variable/overpass/wght.css';
+@import '@fontsource-variable/outfit/wght.css';
+@import '@fontsource/anton/400.css';
 
 /*
- * Design system do Grama: "quadro de partidas" (apps/web/DESIGN.md).
+ * Design system do Grama: "quadro de partidas", nas cores e fontes do site (apps/web/DESIGN.md).
  * Os tokens vivem em tokens.css; componentes usam só os nomes semânticos (--folha, --tinta,
  * --acao, --sinal, --atraso-texto, --e-*, --raio…), nunca primitivos nem hexadecimal.
  */
@@ -80,9 +81,11 @@
 }
 
 /* Papéis de tipo. */
+/* Título de tela em Anton, caixa alta, como o herói do site. */
 @utility titulo-tela {
   font: var(--tipo-tela);
   letter-spacing: var(--tracking-tela);
+  text-transform: uppercase;
   text-wrap: balance;
 }
 @utility titulo-painel {
@@ -114,12 +117,12 @@
 @utility numero-contagem {
   font: var(--tipo-contagem);
   font-variant-numeric: tabular-nums lining-nums;
-  letter-spacing: -0.02em;
+  letter-spacing: 0.01em;
 }
 @utility numero-grande {
   font: var(--tipo-numero);
   font-variant-numeric: tabular-nums lining-nums;
-  letter-spacing: -0.03em;
+  letter-spacing: 0.01em;
 }
 @utility transicao-estado {
   transition: var(--transicao);

@@ -55,7 +55,7 @@ export function CadastroDoisFatores({ aoAtivar, aoCancelar }: Props) {
           alt="QR code para o aplicativo autenticador"
           width={176}
           height={176}
-          className="size-44 shrink-0 rounded-(--raio) border bg-(--papel) p-(--e-2)"
+          className="size-44 shrink-0 rounded-(--raio) border bg-(--branco) p-(--e-2)"
         />
         <dl className="flex min-w-0 flex-col gap-(--e-05)">
           <dt className="rotulo">Chave</dt>

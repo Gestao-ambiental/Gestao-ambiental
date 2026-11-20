@@ -7,8 +7,8 @@ import { cn } from '@/lib/utils'
 interface Props {
   /** Abaixo de 640px mostra o G aberto no lugar da palavra completa (áreas pequenas). */
   compactaNoCelular?: boolean
-  /** Sobre o trilho verde: sempre a versão clara, em qualquer tema. */
-  clara?: boolean
+  /** Sobre o verde-lima: sempre a versão preta, em qualquer tema. */
+  escura?: boolean
   /** Largura da palavra em px (mínimo do manual: 120). */
   largura?: number
   className?: string
@@ -22,7 +22,7 @@ interface Props {
  */
 export function MarcaGrama({
   compactaNoCelular = false,
-  clara = false,
+  escura = false,
   largura = 120,
   className,
 }: Props) {
@@ -36,7 +36,7 @@ export function MarcaGrama({
             aria-hidden="true"
             width={160}
             height={160}
-            className={clara ? 'hidden' : 'size-8 dark:hidden'}
+            className={escura ? 'size-8' : 'size-8 dark:hidden'}
           />
           <img
             src={simboloClaro}
@@ -44,7 +44,7 @@ export function MarcaGrama({
             aria-hidden="true"
             width={160}
             height={160}
-            className={clara ? 'size-8' : 'hidden size-8 dark:block'}
+            className={escura ? 'hidden' : 'hidden size-8 dark:block'}
           />
         </span>
       ) : null}
@@ -56,7 +56,7 @@ export function MarcaGrama({
           width={616}
           height={150}
           style={{ width: largura }}
-          className={clara ? 'hidden' : 'h-auto max-w-none dark:hidden'}
+          className={escura ? 'h-auto max-w-none' : 'h-auto max-w-none dark:hidden'}
         />
         <img
           src={palavraClara}
@@ -65,7 +65,7 @@ export function MarcaGrama({
           width={616}
           height={150}
           style={{ width: largura }}
-          className={clara ? 'h-auto max-w-none' : 'hidden h-auto max-w-none dark:block'}
+          className={escura ? 'hidden' : 'hidden h-auto max-w-none dark:block'}
         />
       </span>
     </span>
