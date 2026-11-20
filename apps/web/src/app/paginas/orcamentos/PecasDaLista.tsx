@@ -1,4 +1,4 @@
-// Peças da lista de orçamentos (Protótipo 19): indicadores do topo e abas por situação.
+// Peças da lista de orçamentos (Protótipo 19): placar do topo e abas por situação.
 
 import { formatarReais } from '@gestao-ambiental/domain'
 import { useEffect, useRef } from 'react'
@@ -14,8 +14,16 @@ import {
 } from '@/lib/api/orcamentos'
 import { cn } from '@/lib/utils'
 
-const classeCartao =
-  'flex min-w-0 flex-col gap-(--e-1) rounded-(--raio-painel) border bg-(--folha) p-(--e-3) shadow-cartao sm:p-(--e-4)'
+/** Faixa do placar: uma folha só, dividida por regras (como na Visão). */
+const classePlacar =
+  'grid grid-cols-1 divide-y overflow-hidden rounded-(--raio-painel) border bg-(--folha) md:grid-cols-3 md:divide-x md:divide-y-0'
+
+/**
+ * Cada casa: no celular, rótulo e detalhe à esquerda e o número à direita; a partir de md, o
+ * número em cima, grande.
+ */
+const classeCasa =
+  'grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-(--e-3) px-(--e-4) py-(--e-3) md:grid-cols-1 md:content-start md:items-start md:gap-y-(--e-1) md:px-(--e-5) md:py-(--e-4)'
 
 function plural(quantidade: number, singular: string, varios: string): string {
   return `${String(quantidade)} ${quantidade === 1 ? singular : varios}`
@@ -35,17 +43,41 @@ function detalheDoIndicador(indicador: IndicadorDeOrcamentos): string {
     : propostas
 }
 
-function Indicador({ titulo, valor, detalhe }: { titulo: string; valor: string; detalhe: string }) {
+function Indicador({
+  titulo,
+  valor,
+  detalhe,
+  tom,
+  apagado,
+}: {
+  titulo: string
+  valor: string
+  detalhe: string
+  tom?: 'ok'
+  apagado: boolean
+}) {
   return (
-    <div className={classeCartao}>
-      <dt className="corpo text-(--tinta-2)">{titulo}</dt>
-      <dd className="titulo-tela text-(--tinta) tabular-nums">{valor}</dd>
-      <dd className="corpo text-(--tinta)">{detalhe}</dd>
+    <div className={classeCasa}>
+      <dt className="col-start-1 row-start-1 corpo-medio text-(--tinta) md:row-start-2">
+        {titulo}
+      </dt>
+      <dd
+        className={cn(
+          'col-start-2 row-span-2 row-start-1 numero-contagem whitespace-nowrap md:col-start-1 md:row-span-1 xl:numero-grande',
+          apagado ? 'text-(--tinta-3)' : tom === 'ok' ? 'text-(--ok-texto)' : 'text-(--tinta)',
+        )}
+      >
+        {valor}
+      </dd>
+      <dd className="col-start-1 row-start-2 rotulo md:row-start-3">{detalhe}</dd>
     </div>
   )
 }
 
-/** Indicadores do topo: em elaboração, aguardando decisão e aprovados (fora da lixeira). */
+/**
+ * Placar do topo: em elaboração, aguardando decisão e aprovados (fora da lixeira). Números
+ * grandes numa faixa só; o valor em reais é o que se lê de relance.
+ */
 export function IndicadoresDosOrcamentos({
   resumo,
   carregando,
@@ -73,15 +105,10 @@ export function IndicadoresDosOrcamentos({
   }
   if (carregando || !resumo) {
     return (
-      <div
-        role="status"
-        aria-label="Carregando indicadores"
-        className="grid grid-cols-1 gap-(--e-3) sm:grid-cols-3"
-      >
+      <div role="status" aria-label="Carregando indicadores" className={classePlacar}>
         {[0, 1, 2].map((i) => (
-          <div key={i} className={classeCartao}>
-            <Esqueleto largura="50%" />
-            <Esqueleto largura="70%" altura={24} />
+          <div key={i} className={classeCasa}>
+            <Esqueleto largura="60%" altura={32} />
             <Esqueleto largura="40%" />
           </div>
         ))}
@@ -89,21 +116,25 @@ export function IndicadoresDosOrcamentos({
     )
   }
   return (
-    <dl aria-label="Indicadores" className="grid grid-cols-1 gap-(--e-3) sm:grid-cols-3">
+    <dl aria-label="Indicadores" className={classePlacar}>
       <Indicador
         titulo="Em elaboração"
         valor={String(resumo.emElaboracao)}
         detalhe={resumo.emElaboracao === 1 ? 'rascunho' : 'rascunhos'}
+        apagado={resumo.emElaboracao === 0}
       />
       <Indicador
         titulo="Aguardando decisão"
         valor={valorDoIndicador(resumo.aguardandoDecisao)}
         detalhe={detalheDoIndicador(resumo.aguardandoDecisao)}
+        apagado={resumo.aguardandoDecisao.quantidade === 0}
       />
       <Indicador
         titulo="Aprovados"
         valor={valorDoIndicador(resumo.aprovados)}
         detalhe={detalheDoIndicador(resumo.aprovados)}
+        tom="ok"
+        apagado={resumo.aprovados.quantidade === 0}
       />
     </dl>
   )
@@ -154,9 +185,9 @@ export function AbasDeSituacao({
       ref={grupo}
       role="group"
       aria-label="Situação"
-      className="relative max-w-full min-w-0 overflow-x-auto px-1 pt-1"
+      className="relative -mx-1 max-w-[calc(100%+8px)] min-w-0 overflow-x-auto px-1 pt-1 [scrollbar-width:none]"
     >
-      <div className="flex min-w-max gap-(--e-4) border-b">
+      <div className="flex w-max min-w-full gap-(--e-5) border-b border-(--regra-forte)">
         {ABAS.map((aba) => {
           const ativa = situacao === aba
           const rotulo = aba ? ROTULO_DA_SITUACAO[aba] : 'Todas'
@@ -170,10 +201,10 @@ export function AbasDeSituacao({
                 aoEscolher(aba)
               }}
               className={cn(
-                '-mb-px inline-flex cursor-pointer items-center gap-(--e-15) whitespace-nowrap border-b-2 pb-(--e-2) transicao-estado',
+                '-mb-px inline-flex h-11 cursor-pointer items-center gap-(--e-2) border-b-[3px] whitespace-nowrap titulo-secao transicao-estado',
                 ativa
-                  ? 'border-(--marca-linha) corpo-medio text-(--link)'
-                  : 'border-transparent corpo text-(--tinta-2) hover:text-(--tinta)',
+                  ? 'border-(--marca-linha) text-(--tinta)'
+                  : 'border-transparent text-(--tinta-2) hover:text-(--tinta)',
               )}
             >
               {rotulo}
@@ -181,7 +212,10 @@ export function AbasDeSituacao({
                 <>
                   <span
                     aria-hidden="true"
-                    className="rounded-(--raio) bg-(--toque) px-1.5 text-xs tabular-nums"
+                    className={cn(
+                      'min-w-6 rounded-(--raio-mini) px-(--e-1) text-center text-xs font-[800] numero',
+                      ativa ? 'bg-(--tinta) text-(--folha)' : 'bg-(--aperto) text-(--tinta-2)',
+                    )}
                   >
                     {quantidade}
                   </span>

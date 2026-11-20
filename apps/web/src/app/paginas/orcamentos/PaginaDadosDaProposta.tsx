@@ -4,7 +4,6 @@
 import { mascararCnpj } from '@gestao-ambiental/domain'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useId, useRef, useState } from 'react'
-import { Link } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Pagina } from '@/app/paginas/Pagina'
@@ -22,7 +21,7 @@ import {
 import { conferirFoto, type ProblemaDaFoto } from '@/lib/api/perfil'
 import { mensagemDoErro } from '@/lib/erros'
 
-import { classeCampo } from './comum'
+import { classeAreaTexto, classeCampo } from '@/components/ui/estilos-campo'
 
 const PROBLEMAS_DA_LOGO: Record<ProblemaDaFoto, string> = {
   tipo: 'Envie uma imagem PNG ou JPEG.',
@@ -40,12 +39,8 @@ export function PaginaDadosDaProposta() {
     )
   }
   return (
-    <Pagina titulo="Dados da proposta">
-      <div className="flex max-w-3xl flex-col gap-(--e-4)">
-        <p className="text-(--tinta-2)">
-          Aparecem no topo de toda proposta. Só a gestão edita. O texto de apresentação é o padrão;
-          cada orçamento pode ter o seu. <Link to="/orcamentos">Voltar aos orçamentos</Link>
-        </p>
+    <Pagina titulo="Dados da proposta" voltar={{ para: '/orcamentos', rotulo: 'Orçamentos' }}>
+      <div className="max-w-3xl rounded-(--raio-painel) border bg-(--folha) p-(--e-4) md:p-(--e-6)">
         <DadosDaProposta consultoriaId={atual.consultoriaId} />
       </div>
     </Pagina>
@@ -159,9 +154,9 @@ function Formulario({
   }
 
   return (
-    <div className="flex flex-col gap-(--e-4)">
-      <section aria-label="Logo" className="flex flex-col gap-(--e-2)">
-        <Titulo className="corpo-medio">Logo</Titulo>
+    <div className="flex flex-col gap-(--e-6)">
+      <section aria-label="Logo" className="flex flex-col gap-(--e-3)">
+        <Titulo className="titulo-secao text-(--tinta)">Logo</Titulo>
         <div className="flex flex-wrap items-center gap-(--e-3)">
           {identidade.logoUrl ? (
             <img
@@ -170,7 +165,7 @@ function Formulario({
               className="h-16 max-w-48 object-contain"
             />
           ) : (
-            <span className="text-xs text-(--tinta-2)">Sem logo.</span>
+            <span className="corpo text-(--tinta-2)">Sem logo</span>
           )}
           <input
             ref={entrada}
@@ -215,10 +210,10 @@ function Formulario({
               {tirar.isPending ? 'Tirando…' : 'Tirar logo'}
             </Botao>
           ) : null}
-          <span className="rotulo">PNG ou JPEG, até 2 MB.</span>
+          <span className="rotulo numero">PNG ou JPEG, até 2 MB</span>
         </div>
         {identidade.rowVersion === 0 ? (
-          <p className="text-xs text-(--tinta-2)">
+          <p className="corpo-medio text-(--alerta-texto)">
             Salve os dados abaixo para habilitar o envio da logo.
           </p>
         ) : null}
@@ -229,8 +224,11 @@ function Formulario({
         ) : null}
       </section>
 
-      <section aria-label="Dados da consultoria" className="flex flex-col gap-(--e-3)">
-        <Titulo className="corpo-medio">Dados da consultoria</Titulo>
+      <section
+        aria-label="Dados da consultoria"
+        className="flex flex-col gap-(--e-3) border-t pt-(--e-6)"
+      >
+        <Titulo className="titulo-secao text-(--tinta)">Dados da consultoria</Titulo>
         <div className="grid gap-(--e-3) sm:grid-cols-2">
           <Campo rotulo="Razão social" {...campo('razaoSocial')} />
           <Campo rotulo="CNPJ" inputMode="text" {...campo('cnpj')} />
@@ -256,7 +254,7 @@ function Formulario({
           {aviso}
         </MensagemSecao>
       ) : null}
-      <div>
+      <div className="flex justify-end max-md:[&>*]:w-full">
         <Botao
           aparencia="primario"
           disabled={!alterado || ocupado}
@@ -321,7 +319,7 @@ function CampoTexto({
         rows={4}
         maxLength={4000}
         aria-describedby={idApoio}
-        className={classeCampo}
+        className={classeAreaTexto}
         value={value}
         onChange={onChange}
       />

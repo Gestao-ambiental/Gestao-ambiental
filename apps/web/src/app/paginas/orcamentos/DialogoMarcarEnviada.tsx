@@ -9,7 +9,7 @@ import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { mudarSituacaoOrcamento, type Orcamento } from '@/lib/api/orcamentos'
 import { mensagemDoErro } from '@/lib/erros'
 
-import { classeCampo } from './comum'
+import { classeAreaTexto } from '@/components/ui/estilos-campo'
 
 export function DialogoMarcarEnviada({
   orcamento,
@@ -85,7 +85,7 @@ export function DialogoMarcarEnviada({
             id={idObservacao}
             rows={3}
             maxLength={500}
-            className={classeCampo}
+            className={classeAreaTexto}
             placeholder="Ex.: enviada por e-mail; aprovada por telefone com o Sr. Cliente"
             value={observacao}
             onChange={(e) => {

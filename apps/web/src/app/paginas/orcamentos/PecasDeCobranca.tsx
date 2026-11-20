@@ -270,7 +270,7 @@ function LinhaDeProfissional({
           aria-label={`Preço por hora do profissional ${n}`}
           inputMode="decimal"
           aria-invalid={lerReaisOuZero(l.valor) === null || undefined}
-          className={`${classeCampo} text-right tabular-nums`}
+          className={`${classeCampo} text-right numero`}
           value={l.valor}
           onChange={(e) => {
             const valor = reaisDigitados(e)
@@ -284,7 +284,7 @@ function LinhaDeProfissional({
           inputMode="decimal"
           placeholder="Opcional"
           aria-invalid={lerEstimativa(l.minimo) === undefined || undefined}
-          className={`${classeCampo} text-right tabular-nums`}
+          className={`${classeCampo} text-right numero`}
           value={l.minimo}
           onChange={(e) => {
             const valor = reaisDigitados(e)
@@ -374,7 +374,7 @@ function LinhaDeServico({
               aria-label={`Preço do serviço ${n}`}
               inputMode="decimal"
               aria-invalid={lerReaisOuZero(l.valor) === null || undefined}
-              className={`${classeCampo} text-right tabular-nums`}
+              className={`${classeCampo} text-right numero`}
               value={l.valor}
               onChange={(e) => {
                 const valor = reaisDigitados(e)
@@ -403,7 +403,7 @@ function LinhaDeServico({
               inputMode="decimal"
               placeholder="Opcional"
               aria-invalid={lerEstimativa(l.minimo) === undefined || undefined}
-              className={`${classeCampo} text-right tabular-nums`}
+              className={`${classeCampo} text-right numero`}
               value={l.minimo}
               onChange={(e) => {
                 const valor = reaisDigitados(e)
@@ -418,7 +418,7 @@ function LinhaDeServico({
             inputMode="decimal"
             placeholder="Opcional"
             aria-invalid={(l.tempo.trim() !== '' && lerDuracao(l.tempo) === null) || undefined}
-            className={`${classeCampo} text-right tabular-nums`}
+            className={`${classeCampo} text-right numero`}
             value={l.tempo}
             onChange={(e) => {
               const valor = e.target.value
@@ -484,7 +484,7 @@ function LinhaDeServico({
                           aria-label={`Até quanto vale a faixa ${k} do serviço ${n}`}
                           inputMode="decimal"
                           aria-invalid={ateInvalido || undefined}
-                          className={`${classeCampo} w-24 text-right tabular-nums`}
+                          className={`${classeCampo} w-24 text-right numero`}
                           value={f.ate}
                           onChange={(e) => {
                             const valor = e.target.value
@@ -502,7 +502,7 @@ function LinhaDeServico({
                         aria-label={`Valor por unidade da faixa ${k} do serviço ${n}`}
                         inputMode="decimal"
                         aria-invalid={lerEstimativa(f.valor) === undefined || undefined}
-                        className={`${classeCampo} w-28 text-right tabular-nums`}
+                        className={`${classeCampo} w-28 text-right numero`}
                         value={f.valor}
                         onChange={(e) => {
                           const valor = reaisDigitados(e)
@@ -611,7 +611,7 @@ export function Deslocamento({
             id={`${prefixo}-visita`}
             inputMode="decimal"
             aria-invalid={lerEstimativa(campos.visita) === undefined || undefined}
-            className={`${classeCampo} text-right tabular-nums`}
+            className={`${classeCampo} text-right numero`}
             value={campos.visita}
             onChange={(e) => {
               const valor = reaisDigitados(e)
@@ -626,7 +626,7 @@ export function Deslocamento({
               id={`${prefixo}-consumo`}
               inputMode="decimal"
               aria-invalid={consumoInvalido || undefined}
-              className={`${classeCampo} text-right tabular-nums`}
+              className={`${classeCampo} text-right numero`}
               value={campos.consumo}
               onChange={(e) => {
                 const valor = e.target.value
@@ -639,7 +639,7 @@ export function Deslocamento({
               id={`${prefixo}-combustivel`}
               inputMode="decimal"
               aria-invalid={lerEstimativa(campos.combustivel) === undefined || undefined}
-              className={`${classeCampo} text-right tabular-nums`}
+              className={`${classeCampo} text-right numero`}
               value={campos.combustivel}
               onChange={(e) => {
                 const valor = reaisDigitados(e)
@@ -653,7 +653,7 @@ export function Deslocamento({
               inputMode="decimal"
               placeholder="Opcional"
               aria-invalid={lerEstimativa(campos.acrescimo) === undefined || undefined}
-              className={`${classeCampo} text-right tabular-nums`}
+              className={`${classeCampo} text-right numero`}
               value={campos.acrescimo}
               onChange={(e) => {
                 const valor = reaisDigitados(e)
@@ -663,7 +663,7 @@ export function Deslocamento({
           </Linha>
           <p aria-live="polite" className="corpo text-(--tinta)">
             Valor do km:{' '}
-            <span className="corpo-medio tabular-nums">
+            <span className="corpo-medio numero">
               {!digitouKm
                 ? 'não cadastrado'
                 : km === null

@@ -17,7 +17,7 @@ import {
 import { formatarInstanteComoData } from '@/lib/datas'
 import { mensagemDoErro } from '@/lib/erros'
 
-import { classeCampo } from './comum'
+import { classeAreaTexto } from '@/components/ui/estilos-campo'
 import { DialogoAprovarOrcamento } from './DialogoAprovarOrcamento'
 
 /** Rótulo do botão de cada mudança. */
@@ -171,7 +171,7 @@ export function SituacaoDoOrcamento({
               id={idObservacao}
               rows={3}
               maxLength={500}
-              className={classeCampo}
+              className={classeAreaTexto}
               placeholder="Ex.: enviada por e-mail; aprovada por telefone com o Sr. Cliente"
               value={observacao}
               onChange={(e) => {

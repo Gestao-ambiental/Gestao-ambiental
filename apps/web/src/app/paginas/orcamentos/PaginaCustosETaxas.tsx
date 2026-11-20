@@ -380,16 +380,14 @@ function Formulario({
   }
 
   return (
-    <div className="flex flex-col gap-(--e-4)">
-      <div className="flex flex-wrap items-end justify-between gap-(--e-3)">
-        <Pagina titulo="Custos e taxas">{null}</Pagina>
-        <div className="flex flex-wrap items-center gap-(--e-3)">
-          <Link
-            to="/orcamentos/primeiros-passos"
-            className="corpo-medio text-(--link) no-underline hover:underline"
-          >
-            Configurar em passos
-          </Link>
+    <Pagina
+      titulo="Custos e taxas"
+      voltar={{ para: '/orcamentos', rotulo: 'Orçamentos' }}
+      acao={
+        <>
+          <Botao aparencia="sutil" asChild>
+            <Link to="/orcamentos/primeiros-passos">Configurar em passos</Link>
+          </Botao>
           <Botao
             aparencia="primario"
             disabled={salvando}
@@ -398,9 +396,9 @@ function Formulario({
           >
             {salvando ? 'Salvando…' : 'Salvar'}
           </Botao>
-        </div>
-      </div>
-
+        </>
+      }
+    >
       {falha ? (
         <MensagemSecao role="alert" tom="perigo">
           {falha}
@@ -413,7 +411,7 @@ function Formulario({
       ) : null}
       <FaltaConfigurar itens={pendencias} baseSalva={base !== null} />
 
-      <div className="overflow-hidden rounded-(--raio-painel) border bg-(--folha) shadow-cartao">
+      <div className="overflow-hidden rounded-(--raio-painel) border bg-(--folha)">
         <Grupo id="grupo-custos" titulo="Custos e capacidade">
           {pelaEquipe ? (
             <Equipe
@@ -445,10 +443,6 @@ function Formulario({
                     Calcular pela equipe
                   </Botao>
                 </div>
-                <p className="max-w-3xl text-xs text-(--tinta-2)">
-                  Recomendado: a hora de custo de cada pessoa sai de como ela recebe, e cada serviço
-                  usa a hora do responsável. Ou digite abaixo o custo médio da hora e as horas.
-                </p>
               </div>
               <Linha
                 id="base-hora"
@@ -458,7 +452,7 @@ function Formulario({
                 <input
                   id="base-hora"
                   inputMode="decimal"
-                  className={`${classeCampo} text-right tabular-nums`}
+                  className={`${classeCampo} text-right numero`}
                   {...campo('horaTecnica')}
                 />
               </Linha>
@@ -470,7 +464,7 @@ function Formulario({
                 <input
                   id="base-horas"
                   inputMode="decimal"
-                  className={`${classeCampo} text-right tabular-nums`}
+                  className={`${classeCampo} text-right numero`}
                   {...campo('horas')}
                 />
               </Linha>
@@ -496,7 +490,7 @@ function Formulario({
               <input
                 id="base-fixos"
                 inputMode="decimal"
-                className={`${classeCampo} text-right tabular-nums`}
+                className={`${classeCampo} text-right numero`}
                 {...campo('custosFixos')}
               />
             </Linha>
@@ -506,7 +500,6 @@ function Formulario({
             <span className="corpo-medio text-(--tinta)">
               {porHora === null ? 'pendente' : `${formatarReais(porHora)} por hora`}
             </span>
-            . Já entra no custo de cada serviço do orçamento, pelas horas dele.
           </p>
         </Grupo>
 
@@ -529,7 +522,7 @@ function Formulario({
             <input
               id="base-tributos"
               inputMode="decimal"
-              className={`${classeCampo} text-right tabular-nums`}
+              className={`${classeCampo} text-right numero`}
               {...campo('tributos')}
             />
           </Linha>
@@ -541,7 +534,7 @@ function Formulario({
             <input
               id="base-taxas"
               inputMode="decimal"
-              className={`${classeCampo} text-right tabular-nums`}
+              className={`${classeCampo} text-right numero`}
               {...campo('taxas')}
             />
           </Linha>
@@ -553,7 +546,7 @@ function Formulario({
             <input
               id="base-cobranca"
               inputMode="decimal"
-              className={`${classeCampo} text-right tabular-nums`}
+              className={`${classeCampo} text-right numero`}
               {...campo('taxaPorCobranca')}
             />
           </Linha>
@@ -565,7 +558,7 @@ function Formulario({
             <input
               id="base-assinatura"
               inputMode="decimal"
-              className={`${classeCampo} text-right tabular-nums`}
+              className={`${classeCampo} text-right numero`}
               {...campo('taxaPorAssinatura')}
             />
           </Linha>
@@ -588,10 +581,6 @@ function Formulario({
               />
             </div>
           ) : null}
-          <p className="max-w-3xl text-xs text-(--tinta-2)">
-            Desejada: meta usada no cálculo pela margem. Mínima: referência de alerta, não bloqueia.
-            Que sobra: resultado estimado de cada orçamento depois de custos, tributos e taxas.
-          </p>
           <AvisoDeMargemBaixa desejada={margem} minima={minima} />
           <Linha
             id="base-margem"
@@ -605,7 +594,7 @@ function Formulario({
             <input
               id="base-margem"
               inputMode="decimal"
-              className={`${classeCampo} text-right tabular-nums`}
+              className={`${classeCampo} text-right numero`}
               {...campo('margemDesejada')}
             />
           </Linha>
@@ -617,7 +606,7 @@ function Formulario({
             <input
               id="base-minima"
               inputMode="decimal"
-              className={`${classeCampo} text-right tabular-nums`}
+              className={`${classeCampo} text-right numero`}
               {...campo('margemMinima')}
             />
           </Linha>
@@ -634,7 +623,7 @@ function Formulario({
           />
         </Grupo>
       </div>
-    </div>
+    </Pagina>
   )
 }
 
@@ -662,14 +651,13 @@ function FaltaConfigurar({ itens, baseSalva }: { itens: Pendencia[]; baseSalva: 
   return (
     <section
       aria-labelledby="falta-configurar"
-      className="flex flex-col gap-(--e-2) rounded-(--raio-painel) border bg-(--folha) p-(--e-4) shadow-cartao"
+      className="flex flex-col gap-(--e-2) rounded-(--raio-painel) border bg-(--folha) p-(--e-4)"
     >
-      <h2 id="falta-configurar" className="corpo-medio text-(--tinta)">
+      <h2 id="falta-configurar" className="titulo-secao text-(--tinta)">
         Falta configurar para calcular o preço
       </h2>
-      <p className="text-xs text-(--tinta-2)">
-        {faltam === 1 ? 'Falta 1 item.' : `Faltam ${String(faltam)} itens.`} Enquanto isso, os
-        orçamentos podem ser montados, mas ficam sem preço calculado.
+      <p className="corpo numero text-(--tinta-2)">
+        {faltam === 1 ? 'Falta 1 item.' : `Faltam ${String(faltam)} itens.`}
       </p>
       <ul className="flex flex-col gap-(--e-1) corpo">
         {itens.map((i) => (

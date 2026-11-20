@@ -243,7 +243,7 @@ export function Equipe({
                       inputMode={opcoesDoCampo.reais ? 'decimal' : 'numeric'}
                       placeholder={opcoesDoCampo.placeholder}
                       aria-invalid={invalido || undefined}
-                      className={`${classeCampo} flex-1 text-right tabular-nums ${opcoesDoCampo.reais ? 'min-w-24' : 'min-w-20'}`}
+                      className={`${classeCampo} flex-1 text-right numero ${opcoesDoCampo.reais ? 'min-w-24' : 'min-w-20'}`}
                       value={valor}
                       onChange={(e) => {
                         const novo = opcoesDoCampo.reais ? reaisDigitados(e) : e.target.value
@@ -377,7 +377,7 @@ export function Equipe({
                   </td>
                   <td className={celula}>{custo}</td>
                   <td className={celula}>{horas}</td>
-                  <td className={`${celula} tabular-nums text-(--tinta-2)`}>
+                  <td className={`${celula} numero text-(--tinta-2)`}>
                     {resumo?.horaDeCustoCentavos == null
                       ? '—'
                       : formatarCentavos(resumo.horaDeCustoCentavos)}{' '}
@@ -416,10 +416,7 @@ export function Equipe({
           Digitar o custo da hora e as horas
         </Botao>
       </div>
-      <dl
-        aria-label="Resultado da equipe"
-        className="grid max-w-3xl gap-(--e-2) sm:grid-cols-2 lg:grid-cols-3"
-      >
+      <dl aria-label="Resultado da equipe" className={classeFaixaDoResultado}>
         <CartaoDoResultado
           rotulo="Custo médio por hora da equipe"
           valor={
@@ -432,24 +429,31 @@ export function Equipe({
           rotulo="Horas da equipe por mês"
           valor={previa ? `${textoDasHoras(previa.horasFaturaveisMes)} h` : 'pendente'}
         />
-        {custoPorProfissao.map((c) => (
-          <CartaoDoResultado
-            key={c.profissao}
-            rotulo={`Custo por hora de ${c.profissao}`}
-            valor={formatarReais(c.horaTecnicaCentavos)}
-          />
-        ))}
+        {/* Por profissão, só o que difere da média: o mesmo valor repetido não diz nada. */}
+        {custoPorProfissao
+          .filter((c) => c.horaTecnicaCentavos !== previa?.horaTecnicaCentavos)
+          .map((c) => (
+            <CartaoDoResultado
+              key={c.profissao}
+              rotulo={`Custo por hora de ${c.profissao}`}
+              valor={formatarReais(c.horaTecnicaCentavos)}
+            />
+          ))}
       </dl>
     </div>
   )
 }
 
-/** Um número do resultado da equipe, em cartão (rótulo em cima, valor grande embaixo). */
+/** Faixa do placar de resultados: números lado a lado, separados por espaço e uma regra em cima. */
+export const classeFaixaDoResultado =
+  'flex flex-wrap gap-x-(--e-8) gap-y-(--e-4) border-t pt-(--e-4)'
+
+/** Um número do placar de resultados: valor grande em cima, rótulo embaixo. */
 export function CartaoDoResultado({ rotulo, valor }: { rotulo: string; valor: string }) {
   return (
-    <div className="flex flex-col gap-(--e-05) rounded-(--raio) border p-(--e-3)">
-      <dt className="text-xs text-(--tinta-2)">{rotulo}</dt>
-      <dd className="titulo-secao tabular-nums text-(--tinta)">{valor}</dd>
+    <div className="flex min-w-0 flex-col gap-(--e-05)">
+      <dt className="order-2 corpo-medio text-(--tinta-2)">{rotulo}</dt>
+      <dd className="order-1 numero-contagem text-(--tinta)">{valor}</dd>
     </div>
   )
 }
@@ -576,7 +580,7 @@ export function ContasDoMes({
                       inputMode="decimal"
                       placeholder="0,00"
                       aria-invalid={lerReaisOuZero(l.valor) === null || undefined}
-                      className={`${classeCampo} text-right tabular-nums`}
+                      className={`${classeCampo} text-right numero`}
                       value={l.valor}
                       onChange={(e) => {
                         const valor = reaisDigitados(e)
@@ -602,7 +606,7 @@ export function ContasDoMes({
               <th scope="row" className={`${classeCelula} text-left corpo-medio`}>
                 Total do mês
               </th>
-              <td className={`${classeCelula} text-right corpo-medio tabular-nums`}>
+              <td className={`${classeCelula} text-right corpo-medio numero`}>
                 {formatarCentavos(total)}
               </td>
               <td className={classeCelula} />

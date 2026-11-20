@@ -177,7 +177,8 @@ describe('orçamento rápido, sem custos e taxas configurados', () => {
     await digitarReais(usuario, screen.getByLabelText('Valor de cada visita (R$)'), '200')
 
     // O total aparece; custo e margem não são calculados (nunca zero).
-    const numeros = screen.getByRole('group', { name: /Etapa 1 de 3/ })
+    // Os números ficam no resumo de valores, sempre à vista (lateral ou rodapé fixo).
+    const numeros = screen.getByRole('region', { name: 'Resumo de valores' })
     expect(within(numeros).getByText('R$ 1.900,00')).toBeInTheDocument()
     expect(within(numeros).getByText('não calculado')).toBeInTheDocument()
     expect(screen.queryByText(/Custos e taxas ainda não configurados/)).not.toBeInTheDocument()
@@ -327,7 +328,7 @@ describe('orçamento rápido, sem custos e taxas configurados', () => {
     expect(screen.getByLabelText('Serviço do item 1')).toHaveValue('Requerimento da AUA')
     expect(screen.getByLabelText('Preço digitado do item 1')).toHaveValue('1.500,00')
     expect(
-      within(screen.getByRole('group', { name: /Etapa 1 de 3/ })).getByText('R$ 1.500,00'),
+      within(screen.getByRole('region', { name: 'Resumo de valores' })).getByText('R$ 1.500,00'),
     ).toBeInTheDocument()
   })
 

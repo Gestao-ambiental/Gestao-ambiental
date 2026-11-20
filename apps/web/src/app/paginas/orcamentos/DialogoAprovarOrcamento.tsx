@@ -307,7 +307,7 @@ function FormularioDeAprovacao({
               >
                 Adicionar tarefa
               </Botao>
-              <p className="corpo tabular-nums" aria-live="polite">
+              <p className="corpo numero" aria-live="polite">
                 {roteiro.length} {roteiro.length === 1 ? 'tarefa' : 'tarefas'} ·{' '}
                 {formatarDuracao(minutosTotais)} estimadas
                 {semHoras > 0 ? ` · ${String(semHoras)} sem horas` : ''}

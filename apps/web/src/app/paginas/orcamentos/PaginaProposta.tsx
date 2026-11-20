@@ -86,18 +86,19 @@ export function PaginaProposta() {
 /** Barra de cima (não sai na impressão) e o conteúdo. */
 function Moldura({ id, acoes, children }: { id: string; acoes?: ReactNode; children: ReactNode }) {
   return (
-    <div className="min-h-dvh bg-(--background) print:min-h-0 print:bg-[#fff]">
-      <div className="relative z-20 flex flex-wrap items-center justify-between gap-(--e-2) border-b bg-(--folha) px-(--e-4) py-(--e-2) print:hidden">
+    <div className="min-h-dvh bg-(--chao) print:min-h-0 print:bg-[#fff]">
+      {/* Moldura do app (some na impressão): barra fina com a volta e as ações da proposta. */}
+      <div className="sticky top-0 z-20 flex min-h-(--barra-altura) flex-wrap items-center justify-between gap-(--e-2) border-b bg-(--folha) px-(--e-4) py-(--e-2) md:px-(--e-8) print:hidden">
         <Link
           to={`/orcamentos/${id}?etapa=parcelas`}
-          className="inline-flex items-center gap-(--e-1) corpo-medio text-(--link) no-underline hover:underline"
+          className="inline-flex items-center gap-(--e-1) rounded-(--raio-mini) corpo-medio text-(--tinta-2) no-underline hover:text-(--tinta) hover:no-underline max-md:min-h-(--controle-toque)"
         >
-          <Icone nome="arrow-left" />
+          <Icone nome="chevron-left" />
           Voltar ao orçamento
         </Link>
         {acoes ? <div className="flex flex-wrap gap-(--e-2)">{acoes}</div> : null}
       </div>
-      <div className="mx-auto flex max-w-[880px] flex-col gap-(--e-4) px-(--e-4) py-(--e-6) print:max-w-none print:p-0">
+      <div className="mx-auto flex max-w-[880px] flex-col gap-(--e-4) px-(--e-4) py-(--e-6) md:py-(--e-8) print:max-w-none print:p-0">
         {children}
       </div>
     </div>
@@ -322,7 +323,7 @@ function Proposta({ orcamento: o }: { orcamento: Orcamento }) {
 
       <article
         aria-label={`Proposta ${numero}`}
-        className="proposta-folha relative flex flex-col gap-(--e-5) rounded-(--raio-painel) border bg-(--folha) p-(--e-4) corpo text-(--tinta) shadow-cartao sm:p-(--e-8) print:rounded-none print:border-0 print:p-0 print:shadow-none"
+        className="proposta-folha relative flex flex-col gap-(--e-5) rounded-(--raio-painel) border bg-(--folha) p-(--e-4) corpo text-(--tinta) sm:p-(--e-8) print:rounded-none print:border-0 print:p-0"
       >
         {rascunho ? (
           <p className="flex flex-wrap items-center gap-x-(--e-2) rounded-(--raio) border-2 border-(--alerta-borda) bg-(--alerta-fundo) px-(--e-3) py-(--e-2) text-(--tinta) print:border-[#000] print:bg-[#fff]">

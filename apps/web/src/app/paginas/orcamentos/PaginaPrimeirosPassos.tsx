@@ -75,7 +75,14 @@ import {
 } from './campos-da-base'
 import { classeCampo, reaisDigitados } from './comum'
 import { DadosDaProposta } from './PaginaDadosDaProposta'
-import { AvisoDeMargemBaixa, CartaoDoResultado, ContasDoMes, Equipe, Linha } from './PecasDaBase'
+import {
+  AvisoDeMargemBaixa,
+  CartaoDoResultado,
+  ContasDoMes,
+  Equipe,
+  Linha,
+  classeFaixaDoResultado,
+} from './PecasDaBase'
 import { Deslocamento, TabelaDePrecos } from './PecasDeCobranca'
 
 type Etapa = 1 | 2 | 3 | 4 | 5 | 6
@@ -696,20 +703,22 @@ function Fluxo({
   const pendencias = etapa <= 4 ? pendenciasDoPasso(etapa) : []
 
   return (
-    <div className="flex flex-col gap-(--e-4)">
-      <div className="flex flex-wrap items-end justify-between gap-(--e-3)">
-        <Pagina titulo="Primeiros passos do orçamento">{null}</Pagina>
+    <Pagina
+      titulo="Primeiros passos do orçamento"
+      meta={
+        rascunho?.atualizadoPorNome && rascunho.atualizadoEm ? (
+          <span className="numero">
+            Última alteração por {rascunho.atualizadoPorNome} em{' '}
+            {formatarInstanteComHora(rascunho.atualizadoEm, fuso)}
+          </span>
+        ) : undefined
+      }
+      acao={
         <Botao aparencia="sutil" onClick={() => void verOrcamentos()}>
           Ver orçamentos mesmo assim
         </Botao>
-      </div>
-      {rascunho?.atualizadoPorNome && rascunho.atualizadoEm ? (
-        <p className="text-xs text-(--tinta-2)">
-          Última alteração por {rascunho.atualizadoPorNome} em{' '}
-          {formatarInstanteComHora(rascunho.atualizadoEm, fuso)}
-        </p>
-      ) : null}
-
+      }
+    >
       <ProgressoDosPassos
         atual={etapa}
         salvo={salvoNoRascunho}
@@ -719,7 +728,7 @@ function Fluxo({
 
       <section
         aria-labelledby="titulo-do-passo"
-        className="flex flex-col gap-(--e-4) rounded-(--raio-painel) border bg-(--folha) p-(--e-4) shadow-cartao"
+        className="flex flex-col gap-(--e-4) rounded-(--raio-painel) border bg-(--folha) p-(--e-4) md:p-(--e-5)"
       >
         <h2
           id="titulo-do-passo"
@@ -820,7 +829,7 @@ function Fluxo({
         sujo={algoNaoSalvo}
         descricao="Há passos com mudanças que ainda não foram salvas. Se sair agora, elas se perdem; o que já foi salvo continua guardado."
       />
-    </div>
+    </Pagina>
   )
 }
 
@@ -837,8 +846,10 @@ function ProgressoDosPassos({
   aoIrPara: (e: Etapa) => void
 }) {
   return (
-    <nav aria-label="Passos da configuração">
-      <ol className="grid grid-cols-2 gap-(--e-2) sm:grid-cols-3 lg:grid-cols-6">
+    <nav aria-label="Passos da configuração" className="overflow-x-auto">
+      {/* Linha de trajeto como a Trilha: estação lima com aro (atual), cheia com check (salvo),
+          vazada (não salvo). Cada estação é um botão: dá para ir e voltar à vontade. */}
+      <ol className="flex items-center gap-(--e-2)">
         {ETAPAS.map((e) => {
           const ehAtual = e === atual
           const feito = salvo(e) && !alterado(e)
@@ -852,38 +863,68 @@ function ProgressoDosPassos({
                   ? ''
                   : 'não salvo'
           return (
-            <li key={e}>
+            <li key={e} className="flex min-w-0 flex-1 items-center gap-(--e-2) last:flex-none">
               <button
                 type="button"
                 aria-current={ehAtual ? 'step' : undefined}
                 onClick={() => {
                   aoIrPara(e)
                 }}
-                className={cn(
-                  'flex w-full items-start gap-(--e-2) rounded-(--raio) border p-(--e-2) text-left transicao-estado hover:bg-(--toque)',
-                  ehAtual ? 'border-(--marca-linha)' : 'border-(--regra-leve)',
-                )}
+                className="flex min-w-0 cursor-pointer items-center gap-(--e-2) rounded-(--raio) px-(--e-1) py-(--e-1) text-left transicao-estado hover:bg-(--toque) max-md:min-h-(--controle-toque)"
               >
                 <span
                   aria-hidden="true"
                   className={cn(
-                    'inline-flex size-6 shrink-0 items-center justify-center rounded-(--raio) border rotulo',
-                    ehAtual && 'border-(--acao) bg-(--acao) text-(--acao-texto)',
-                    !ehAtual && feito && 'border-(--escolha) bg-(--escolha) text-(--link)',
-                    !ehAtual && !feito && 'border-(--regra-forte) text-(--tinta-2)',
+                    'inline-flex size-7 shrink-0 items-center justify-center rounded-(--raio-redondo) text-xs font-[800] numero',
+                    ehAtual &&
+                      'bg-(--sinal) text-(--sinal-texto) shadow-[0_0_0_2px_var(--folha),0_0_0_4px_var(--marca-linha)]',
+                    !ehAtual && feito && 'bg-(--marca-linha) text-(--folha)',
+                    !ehAtual &&
+                      !feito &&
+                      'border-2 border-(--regra-forte) bg-(--folha) text-(--tinta-2)',
                   )}
                 >
                   {feito && !ehAtual ? <Icone nome="check" tamanho={12} /> : e}
                 </span>
-                <span className="flex min-w-0 flex-col">
-                  <span className={ehAtual ? 'corpo-medio text-(--tinta)' : 'corpo text-(--tinta)'}>
+                <span
+                  className={cn(
+                    'min-w-0 flex-col',
+                    ehAtual ? 'flex' : 'sr-only lg:not-sr-only lg:flex',
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'truncate',
+                      ehAtual ? 'corpo-medio text-(--tinta)' : 'corpo text-(--tinta)',
+                    )}
+                  >
                     {/* Espaços fora do sr-only: dentro dele, somem do nome acessível. */}
                     <span className="sr-only">Passo {e}:</span> {TITULO_DA_ETAPA[e]}
                     {situacao ? <span className="sr-only">,</span> : null}
                   </span>{' '}
-                  {situacao ? <span className="text-xs text-(--tinta-2)">{situacao}</span> : null}
+                  {situacao ? (
+                    <span
+                      className={cn(
+                        'truncate text-xs',
+                        alterado(e) && !ehAtual ? 'text-(--alerta-texto)' : 'text-(--tinta-2)',
+                      )}
+                    >
+                      {situacao}
+                    </span>
+                  ) : null}
                 </span>
               </button>
+              {e < 6 ? (
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    'h-[3px] min-w-(--e-3) flex-1 rounded-full',
+                    feito
+                      ? 'bg-(--marca-linha)'
+                      : 'bg-[repeating-linear-gradient(90deg,var(--regra-forte)_0_6px,transparent_6px_10px)]',
+                  )}
+                />
+              ) : null}
             </li>
           )
         })}
@@ -966,7 +1007,7 @@ function PassoDaEquipe({
               id="pp-hora"
               inputMode="decimal"
               aria-invalid={lerEstimativa(form.horaTecnica) === undefined || undefined}
-              className={`${classeCampo} text-right tabular-nums`}
+              className={`${classeCampo} text-right numero`}
               value={form.horaTecnica}
               onChange={(e) => {
                 const valor = reaisDigitados(e)
@@ -1029,7 +1070,7 @@ function PassoDasContas({
             id="pp-total"
             inputMode="decimal"
             aria-invalid={lerEstimativa(form.total) === undefined || undefined}
-            className={`${classeCampo} text-right tabular-nums`}
+            className={`${classeCampo} text-right numero`}
             value={form.total}
             onChange={(e) => {
               const valor = reaisDigitados(e)
@@ -1057,7 +1098,7 @@ function PassoDasContas({
             id="pp-horas"
             inputMode="decimal"
             aria-invalid={(form.horas.trim() !== '' && lerHoras(form.horas) === null) || undefined}
-            className={`${classeCampo} text-right tabular-nums`}
+            className={`${classeCampo} text-right numero`}
             value={form.horas}
             onChange={(e) => {
               const valor = e.target.value
@@ -1140,7 +1181,7 @@ function PassoDosTributos({
       value: valor,
       inputMode: 'decimal' as const,
       'aria-invalid': invalido || undefined,
-      className: `${classeCampo} text-right tabular-nums`,
+      className: `${classeCampo} text-right numero`,
       onChange: (e: { target: { value: string } }) => {
         const novo = e.target.value
         aoMudar((f) => ({
@@ -1242,7 +1283,7 @@ function PassoDoResumo({
   const pronto = rascunho !== null && pendencias.length === 0 && !baseMudou
   return (
     <div className="flex flex-col gap-(--e-4)">
-      <dl aria-label="Resumo da configuração" className="grid max-w-3xl gap-(--e-2) sm:grid-cols-2">
+      <dl aria-label="Resumo da configuração" className={classeFaixaDoResultado}>
         <CartaoDoResultado
           rotulo={pelaEquipe ? 'Custo médio por hora da equipe' : 'Custo da hora técnica'}
           valor={

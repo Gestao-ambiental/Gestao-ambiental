@@ -399,7 +399,9 @@ describe('orçamentos (onda 5)', () => {
     })
     expect(await screen.findByText('ORC-2026-041 foi para a lixeira.')).toBeInTheDocument()
 
-    await usuario.click(screen.getByRole('button', { name: 'Lixeira' }))
+    // Lixeira e configurações ficam no menu "…" do cabeçalho (uma ação principal por tela).
+    await usuario.click(screen.getByRole('button', { name: 'Mais opções' }))
+    await usuario.click(await screen.findByRole('menuitem', { name: 'Lixeira' }))
     expect(
       await screen.findByRole('heading', { name: 'Lixeira de orçamentos' }),
     ).toBeInTheDocument()
@@ -1177,7 +1179,9 @@ describe('orçamentos (onda 5)', () => {
     falso.reiniciar(cenario('gestao', { rpc: { salvar_modelo_de_orcamento: { data: 'm9' } } }))
     const usuario = userEvent.setup()
     renderizarApp('/orcamentos/o1')
-    await usuario.click(await screen.findByRole('button', { name: 'Salvar como modelo' }))
+    // Duplicar e Salvar como modelo ficam no menu "…" do cabeçalho.
+    await usuario.click(await screen.findByRole('button', { name: 'Mais ações do orçamento' }))
+    await usuario.click(await screen.findByRole('menuitem', { name: 'Salvar como modelo' }))
     const nome = screen.getByLabelText('Nome do modelo')
     expect(nome).toHaveValue('Licenciamento (LO)')
     expect(screen.getByText(/Sem cliente, responsáveis nem meses/)).toBeInTheDocument()
@@ -1196,12 +1200,21 @@ describe('orçamentos (onda 5)', () => {
     const usuario = userEvent.setup()
     renderizarApp('/orcamentos/o1')
     await usuario.type(await screen.findByLabelText('Horas do item 1'), '0')
-    expect(screen.getByRole('button', { name: 'Duplicar' })).toBeDisabled()
+    const mais = screen.getByRole('button', { name: 'Mais ações do orçamento' })
+    await usuario.click(mais)
+    expect(await screen.findByRole('menuitem', { name: 'Duplicar' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    )
+    await usuario.keyboard('{Escape}')
     await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Duplicar' })).toBeEnabled()
+      expect(screen.getByRole('button', { name: 'Salvar' })).toBeDisabled()
     })
-    await usuario.click(screen.getByRole('button', { name: 'Duplicar' }))
+    await usuario.click(screen.getByRole('button', { name: 'Mais ações do orçamento' }))
+    const duplicar = await screen.findByRole('menuitem', { name: 'Duplicar' })
+    expect(duplicar).not.toHaveAttribute('aria-disabled')
+    await usuario.click(duplicar)
     expect(screen.getByText(/as despesas voltam a cotar/)).toBeInTheDocument()
     await usuario.click(screen.getByRole('button', { name: 'Duplicar sem os preços' }))
     const chamada = falso.cliente.rpc.mock.calls.find(([nome]) => nome === 'duplicar_orcamento')

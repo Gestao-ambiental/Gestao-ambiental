@@ -10,9 +10,16 @@ import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/
 import { Botao } from '@/components/ui/botao'
 import { BotaoIcone } from '@/components/ui/botao-icone'
 import { Dialogo } from '@/components/ui/dialogo'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { classeCampo } from '@/components/ui/estilos-campo'
 import { Icone } from '@/components/ui/icone'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
-import { Selo } from '@/components/ui/selo'
 import {
   ROTULO_DA_SITUACAO,
   TAMANHO_PAGINA_ORCAMENTOS,
@@ -225,7 +232,7 @@ function ListaDaGestao() {
       )
     }
     return (
-      <span className="inline-flex items-center gap-(--e-1)">
+      <span className="inline-flex items-center gap-(--e-05)">
         <BotaoIcone
           icone="eye"
           rotulo={`Ver proposta ${numero}`}
@@ -247,6 +254,41 @@ function ListaDaGestao() {
           />
         )}
       </span>
+    )
+  }
+
+  /** Celular: as ações da linha num menu "…" (um alvo só, ao lado do valor). */
+  function menuDaLinha(item: OrcamentoNaLista) {
+    const numero = numeroComRevisao(item.ano, item.sequencia, item.revisao)
+    if (lixeira) return acoes(item)
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <BotaoIcone icone="ellipsis" rotulo={`Ações de ${numero}`} />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            onSelect={() => {
+              void navegar(`/orcamentos/${item.id}/proposta`)
+            }}
+          >
+            <Icone nome="eye" />
+            Ver proposta
+          </DropdownMenuItem>
+          {item.situacao === 'aprovada' ? null : (
+            <DropdownMenuItem
+              disabled={ocupado}
+              onSelect={() => {
+                setAviso(null)
+                setAExcluir(item)
+              }}
+            >
+              <Icone nome="trash-2" />
+              Excluir
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
     )
   }
 
@@ -292,27 +334,27 @@ function ListaDaGestao() {
     )
   } else {
     conteudo = (
-      <div className="flex flex-col gap-(--e-2)">
-        <div className="hidden overflow-x-auto rounded-(--raio-painel) border bg-(--folha) shadow-cartao md:block">
+      <div className="flex flex-col overflow-hidden rounded-(--raio-painel) border bg-(--folha)">
+        <div className="hidden max-h-[calc(100dvh-300px)] overflow-auto md:block">
           <table className="w-full border-collapse corpo">
-            <thead>
+            <thead className="sticky top-0 z-10 bg-(--folha)">
               <tr>
-                <th scope="col" className={classeCabecalho}>
-                  Empreendimento
-                </th>
                 <th scope="col" className={classeCabecalho}>
                   Número
                 </th>
-                <th scope="col" className={`${classeCabecalho} text-right`}>
-                  Valor (R$)
+                <th scope="col" className={classeCabecalho}>
+                  Empreendimento
                 </th>
                 <th scope="col" className={classeCabecalho}>
                   Situação
                 </th>
                 <th scope="col" className={`${classeCabecalho} text-right`}>
+                  Valor (R$)
+                </th>
+                <th scope="col" className={`${classeCabecalho} text-right`}>
                   {lixeira ? 'Excluído em' : 'Atualizado'}
                 </th>
-                <th scope="col" className={`${classeCabecalho} w-28 text-right`}>
+                <th scope="col" className={`${classeCabecalho} w-24 text-right`}>
                   <span className="sr-only">Ações</span>
                 </th>
               </tr>
@@ -326,6 +368,9 @@ function ListaDaGestao() {
                     void navegar(`/orcamentos/${item.id}`)
                   }}
                 >
+                  <td className={`${classeCelula} whitespace-nowrap corpo-medio numero`}>
+                    {numeroComRevisao(item.ano, item.sequencia, item.revisao)}
+                  </td>
                   <td className={classeCelula}>
                     <Link
                       to={`/orcamentos/${item.id}`}
@@ -336,27 +381,30 @@ function ListaDaGestao() {
                     >
                       {item.empreendimentoNome}
                     </Link>
-                    {item.deProspecto ? (
-                      <Selo tom="revisao" className="ml-(--e-2) align-middle">
-                        Prospecto
-                      </Selo>
-                    ) : null}
-                    <span className="block text-xs text-(--tinta-2)">{item.objeto}</span>
-                  </td>
-                  <td className={`${classeCelula} whitespace-nowrap tabular-nums`}>
-                    {numeroComRevisao(item.ano, item.sequencia, item.revisao)}
-                  </td>
-                  <td className={`${classeCelula} text-right tabular-nums`}>
-                    {item.totalCentavos === null ? (
-                      <span className="text-(--tinta-2)">pendente</span>
-                    ) : (
-                      formatarCentavos(item.totalCentavos)
-                    )}
+                    <span className="block text-xs text-(--tinta-2)">
+                      {item.deProspecto ? (
+                        <>
+                          <span className="corpo-medio">Prospecto</span> ·{' '}
+                        </>
+                      ) : null}
+                      {item.objeto}
+                    </span>
                   </td>
                   <td className={classeCelula}>
                     <SeloSituacaoOrcamento situacao={item.situacao} />
                   </td>
-                  <td className={`${classeCelula} text-right text-(--tinta-2)`}>
+                  <td
+                    className={`${classeCelula} text-right text-lg font-[750] whitespace-nowrap numero`}
+                  >
+                    {item.totalCentavos === null ? (
+                      <span className="corpo text-(--tinta-3)">pendente</span>
+                    ) : (
+                      formatarCentavos(item.totalCentavos)
+                    )}
+                  </td>
+                  <td
+                    className={`${classeCelula} text-right whitespace-nowrap text-(--tinta-2) numero`}
+                  >
                     {formatarInstanteComoData(
                       lixeira && item.excluidoEm ? item.excluidoEm : item.atualizadoEm,
                       atual.fuso,
@@ -367,121 +415,125 @@ function ListaDaGestao() {
               ))}
             </tbody>
           </table>
-          <p className="border-t px-(--e-3) py-(--e-2) text-xs text-(--tinta-2)">
-            {lixeira
-              ? `${String(total)} ${total === 1 ? 'orçamento' : 'orçamentos'} na lixeira`
-              : `${String(total)} ${total === 1 ? 'orçamento' : 'orçamentos'}`}
-          </p>
         </div>
 
-        <ul className="flex flex-col gap-(--e-2) md:hidden" aria-label="Orçamentos">
+        <ul className="flex flex-col md:hidden" aria-label="Orçamentos">
           {itens.map((item) => (
             <li
               key={item.id}
-              className="flex flex-col rounded-(--raio-painel) border bg-(--folha) shadow-cartao"
+              className="flex items-center gap-(--e-1) border-b border-(--regra-leve) pr-(--e-1)"
             >
               <Link
                 to={`/orcamentos/${item.id}`}
-                className="flex flex-col gap-(--e-1) rounded-t-(--raio-painel) p-(--e-3) text-(--tinta) no-underline hover:bg-(--toque) hover:text-(--tinta) hover:no-underline"
+                className="flex min-w-0 flex-1 items-start justify-between gap-(--e-3) py-(--e-3) pl-(--e-4) text-(--tinta) no-underline hover:text-(--tinta) hover:no-underline"
               >
-                <span className="flex items-center justify-between gap-(--e-2)">
-                  <SeloSituacaoOrcamento situacao={item.situacao} />
-                  <Icone nome="chevron-right" className="text-(--icone)" />
-                </span>
-                <span className="flex min-w-0 items-center gap-(--e-2)">
+                <span className="flex min-w-0 flex-col gap-(--e-05)">
                   <span className="truncate corpo-medio">{item.empreendimentoNome}</span>
-                  {item.deProspecto ? <Selo tom="revisao">Prospecto</Selo> : null}
+                  <span className="truncate text-xs text-(--tinta-2)">
+                    {item.deProspecto ? (
+                      <>
+                        <span className="corpo-medio">Prospecto</span> ·{' '}
+                      </>
+                    ) : null}
+                    {item.objeto}
+                  </span>
+                  <span className="text-xs text-(--tinta-2) numero">
+                    {numeroComRevisao(item.ano, item.sequencia, item.revisao)}
+                  </span>
                 </span>
-                <span className="text-xs text-(--tinta-2)">
-                  {item.objeto} ·{' '}
-                  {item.totalCentavos === null
-                    ? 'preço pendente'
-                    : `R$ ${formatarCentavos(item.totalCentavos)}`}
+                <span className="flex shrink-0 flex-col items-end gap-(--e-05)">
+                  <span className="text-lg font-[750] whitespace-nowrap numero">
+                    {item.totalCentavos === null ? (
+                      <span className="corpo text-(--tinta-3)">preço pendente</span>
+                    ) : (
+                      <>
+                        <span className="text-xs font-[650] text-(--tinta-2)">R$ </span>
+                        {formatarCentavos(item.totalCentavos)}
+                      </>
+                    )}
+                  </span>
+                  <SeloSituacaoOrcamento situacao={item.situacao} />
                 </span>
               </Link>
-              <div className="flex justify-end border-t px-(--e-2) py-(--e-1)">{acoes(item)}</div>
+              {menuDaLinha(item)}
             </li>
           ))}
         </ul>
 
-        {consulta.hasNextPage ? (
-          <Botao
-            className="self-start"
-            disabled={consulta.isFetchingNextPage}
-            onClick={() => void consulta.fetchNextPage()}
-          >
-            Mostrar mais orçamentos
-          </Botao>
-        ) : null}
+        <div className="flex flex-wrap items-center gap-(--e-2) px-(--e-4) py-(--e-2)">
+          <span className="flex-1 rotulo numero" aria-live="polite">
+            {lixeira
+              ? `${String(total)} ${total === 1 ? 'orçamento' : 'orçamentos'} na lixeira`
+              : `${String(total)} ${total === 1 ? 'orçamento' : 'orçamentos'}`}
+          </span>
+          {consulta.hasNextPage ? (
+            <Botao
+              tamanho="compacto"
+              disabled={consulta.isFetchingNextPage}
+              onClick={() => void consulta.fetchNextPage()}
+            >
+              Mostrar mais orçamentos
+            </Botao>
+          ) : null}
+        </div>
       </div>
     )
   }
 
+  const campoDeBusca = (
+    <label className="relative flex w-full items-center md:w-[320px]">
+      <span className="sr-only">Buscar orçamentos</span>
+      <Icone nome="search" className="pointer-events-none absolute left-(--e-3) text-(--icone-2)" />
+      <input
+        ref={campoBusca}
+        type="search"
+        value={busca}
+        placeholder="Buscar nome, objeto ou número"
+        onChange={(evento) => {
+          setBusca(evento.target.value)
+        }}
+        className={`${classeCampo} pl-(--e-10)`}
+      />
+    </label>
+  )
+
   return (
-    <div className="flex flex-col gap-(--e-4)">
-      <div className="flex flex-wrap items-center justify-between gap-(--e-2)">
-        <Pagina titulo={lixeira ? 'Lixeira de orçamentos' : 'Orçamentos'}>{null}</Pagina>
-        <div className="flex flex-wrap items-center gap-(--e-2)">
-          <label className="relative flex items-center">
-            <span className="sr-only">Buscar orçamentos</span>
-            <Icone
-              nome="search"
-              className="pointer-events-none absolute left-(--e-2) text-(--icone-2)"
-            />
-            <input
-              ref={campoBusca}
-              type="search"
-              value={busca}
-              placeholder="Buscar nome, objeto ou número"
-              onChange={(evento) => {
-                setBusca(evento.target.value)
-              }}
-              className="h-(--controle) w-[280px] max-w-full rounded-(--raio) border border-(--campo-borda) border-b-(--campo-borda) bg-(--campo) pr-(--e-2) pl-(--e-8) corpo text-(--tinta) outline-none transicao-estado focus:border-b-(--campo-borda-ativa) focus:shadow-[inset_0_-1px_0_0_var(--campo-borda-ativa)] focus:bg-(--campo-foco)"
-            />
-          </label>
-          {lixeira ? (
-            <Botao
-              iconeAntes="arrow-left"
-              onClick={() => {
-                verLixeira(false)
-              }}
-            >
-              Voltar aos orçamentos
-            </Botao>
-          ) : (
-            <>
-              <Botao
-                aparencia="sutil"
-                iconeAntes="trash-2"
-                onClick={() => {
-                  verLixeira(true)
-                }}
-              >
-                Lixeira
-              </Botao>
-              <Link
-                to="/orcamentos/primeiros-passos"
-                className="corpo-medio text-(--link) no-underline hover:underline"
-              >
-                Primeiros passos
-              </Link>
-              <Link
-                to="/configuracoes/custos"
-                className="corpo-medio text-(--link) no-underline hover:underline"
-              >
-                Custos e taxas
-              </Link>
-              <Link
-                to="/configuracoes/proposta"
-                className="corpo-medio text-(--link) no-underline hover:underline"
-              >
-                Dados da proposta
-              </Link>
-              {botaoNovo}
-            </>
-          )}
-        </div>
-      </div>
+    <Pagina
+      titulo={lixeira ? 'Lixeira de orçamentos' : 'Orçamentos'}
+      voltar={lixeira ? { para: '/orcamentos', rotulo: 'Orçamentos' } : undefined}
+      acao={
+        lixeira ? null : (
+          <>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <BotaoIcone icone="ellipsis" aparencia="padrao" rotulo="Mais opções" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onSelect={() => {
+                    verLixeira(true)
+                  }}
+                >
+                  <Icone nome="trash-2" />
+                  Lixeira
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/orcamentos/primeiros-passos">Primeiros passos</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/configuracoes/custos">Custos e taxas</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/configuracoes/proposta">Dados da proposta</Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            {botaoNovo}
+          </>
+        )
+      }
+    >
       <AvisoOrcamentosForaDoPlano />
 
       {falha ? (
@@ -506,25 +558,30 @@ function ListaDaGestao() {
       ) : null}
 
       {lixeira || semNenhum ? null : (
-        <>
-          <IndicadoresDosOrcamentos
-            resumo={resumo.data}
-            carregando={resumo.isPending}
-            falhou={resumo.isError}
-            aoTentarDeNovo={() => void resumo.refetch()}
-          />
-          <div className="flex flex-wrap items-end justify-between gap-(--e-2)">
-            <AbasDeSituacao
-              situacao={situacao}
-              contagem={contagem.data}
-              aoEscolher={escolherSituacao}
-            />
-            {comFiltro ? botaoLimpar : null}
-          </div>
-        </>
+        <IndicadoresDosOrcamentos
+          resumo={resumo.data}
+          carregando={resumo.isPending}
+          falhou={resumo.isError}
+          aoTentarDeNovo={() => void resumo.refetch()}
+        />
       )}
 
-      {conteudo}
+      <div className="flex flex-col gap-(--e-3)">
+        {lixeira || semNenhum ? null : (
+          <AbasDeSituacao
+            situacao={situacao}
+            contagem={contagem.data}
+            aoEscolher={escolherSituacao}
+          />
+        )}
+        {semNenhum ? null : (
+          <div className="flex flex-wrap items-center gap-(--e-2)">
+            {campoDeBusca}
+            {comFiltro && !lixeira ? botaoLimpar : null}
+          </div>
+        )}
+        {conteudo}
+      </div>
 
       <DialogoNovoOrcamento
         aberto={novoAberto}
@@ -579,6 +636,6 @@ function ListaDaGestao() {
           </>
         }
       />
-    </div>
+    </Pagina>
   )
 }

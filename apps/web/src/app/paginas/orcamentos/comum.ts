@@ -90,12 +90,14 @@ export function numeroComRevisao(ano: number, sequencia: number, revisao: number
   return revisao > 1 ? `${numero} · rev. ${String(revisao)}` : numero
 }
 
-export const classeCampo =
-  'h-(--controle) w-full rounded-(--raio) border border-(--campo-borda) border-b-(--campo-borda) bg-(--campo) px-(--e-2) corpo text-(--tinta) outline-none transicao-estado focus:border-b-(--campo-borda-ativa) focus:shadow-[inset_0_-1px_0_0_var(--campo-borda-ativa)] focus:bg-(--campo-foco) disabled:bg-(--off) disabled:text-(--tinta-off) aria-invalid:border-(--atraso)'
+/** Campo nativo de uma linha: o mesmo do design system (estilos-campo), num lugar só. */
+export { classeCampo } from '@/components/ui/estilos-campo'
 
+/** Cabeçalho e célula das tabelas de orçamento, no padrão do quadro. */
 export const classeCabecalho =
-  'h-10 border-b px-(--e-2) text-left rotulo whitespace-nowrap first:pl-(--e-3) last:pr-(--e-3)'
-export const classeCelula = 'h-11 border-b px-(--e-2) align-middle first:pl-(--e-3) last:pr-(--e-3)'
+  'h-10 border-b px-(--e-2) text-left rotulo-maiusculo text-(--tinta-2) whitespace-nowrap first:pl-(--e-4) last:pr-(--e-4)'
+export const classeCelula =
+  'h-(--linha) border-b border-(--regra-leve) px-(--e-2) py-(--e-15) align-middle first:pl-(--e-4) last:pr-(--e-4)'
 
 /**
  * Valor de um campo de reais depois da tecla: com o ponto de milhar (40000 → 40.000). O cursor

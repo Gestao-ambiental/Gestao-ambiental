@@ -16,7 +16,6 @@ import { textoDoPrazo } from '@/app/paginas/tarefas/texto-do-prazo'
 import { Carregando, EstadoErro } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
-import { Selo } from '@/components/ui/selo'
 import type { SituacaoOrcamento } from '@/lib/api/orcamentos'
 import { listarMembrosAtivos } from '@/lib/api/perfil'
 import {
@@ -74,11 +73,11 @@ export function TarefasDoOrcamento({
   return (
     <section
       aria-label="Tarefas da execução"
-      className="flex flex-col gap-(--e-3) rounded-(--raio-painel) border bg-(--folha) p-(--e-4) shadow-cartao"
+      className="flex flex-col gap-(--e-3) rounded-(--raio-painel) border bg-(--folha) p-(--e-4)"
     >
       <div className="flex flex-wrap items-center justify-between gap-(--e-2)">
         <h2 className="titulo-secao">Tarefas da execução</h2>
-        <span className="corpo tabular-nums text-(--tinta-2)">
+        <span className="corpo numero text-(--tinta-2)">
           {concluidas} de {tarefas.data.length} concluídas · {formatarDuracao(minutos)} estimadas
         </span>
       </div>
@@ -115,9 +114,13 @@ export function TarefasDoOrcamento({
                       {t.titulo}
                     </span>
                     <SeloDaTarefa situacao={t.situacao} />
-                    {t.foraDaRevisao ? <Selo tom="atencao">Fora da revisão aprovada</Selo> : null}
+                    {t.foraDaRevisao ? (
+                      <span className="text-xs font-[750] text-(--alerta-texto)">
+                        Fora da revisão aprovada
+                      </span>
+                    ) : null}
                   </span>
-                  <span className="text-xs tabular-nums text-(--tinta-2)">
+                  <span className="text-xs numero text-(--tinta-2)">
                     {t.responsavelNome ?? 'Sem responsável'} ·{' '}
                     {t.prazoInterno ? `Prazo ${formatarDataCivil(t.prazoInterno)}` : 'Sem prazo'}
                     {prazo ? ` (${prazo})` : ''} ·{' '}
