@@ -434,7 +434,7 @@ select testes.autenticar_como('gustavo@verdesul.test');
 select results_eq(
   $$select (select count(*) from public.vistoria) + (select count(*) from public.vistoria_item)
          + (select count(*) from public.vistoria_foto) + (select count(*) from public.vistoria_decisao)
-         + (select count(*) from public.listar_vistorias('c0000000-0000-4000-8000-00000000000a'))
+         + (select count(*) from public.listar_vistorias(p_consultoria_id => 'c0000000-0000-4000-8000-00000000000a'))
          + (select count(*) from public.listar_vistorias('c0000000-0000-4000-8000-00000000000a', current_setting('testes.o1')::uuid))
          + (select count(*) from public.obter_vistoria('e4850000-0000-4000-8000-000000000001'))$$,
   $$values (0::bigint)$$,
