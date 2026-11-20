@@ -381,7 +381,7 @@ describe('primeiros passos do orçamento (ADR-0020)', () => {
     expect(within(resumo).getByText('R$ 0,00 por hora')).toBeInTheDocument()
     expect(within(resumo).getByText('2 linhas')).toBeInTheDocument()
     await usuario.click(screen.getByRole('button', { name: 'Criar o primeiro orçamento' }))
-    expect(await screen.findByRole('dialog', { name: 'Novo orçamento' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Novo orçamento' })).toBeInTheDocument()
     expect(chamadas('publicar_configuracao_orcamento')).toEqual([
       { p_consultoria_id: 'c-Filtroville', p_row_version: 5 },
     ])
@@ -645,7 +645,7 @@ describe('primeiros passos do orçamento (ADR-0020)', () => {
     await usuario.click(
       await screen.findByRole('button', { name: 'Criar orçamento sem preço calculado' }),
     )
-    expect(await screen.findByRole('dialog', { name: 'Novo orçamento' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Novo orçamento' })).toBeInTheDocument()
     expect(chamadas('publicar_configuracao_orcamento')).toHaveLength(0)
   })
 

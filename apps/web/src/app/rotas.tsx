@@ -269,6 +269,14 @@ export const rotas: RouteObject[] = [
                 ),
               },
               {
+                path: 'orcamentos/novo',
+                lazy: carregarRota(() =>
+                  import('./paginas/orcamentos/PaginaNovoOrcamento').then((m) => ({
+                    Component: m.PaginaNovoOrcamento,
+                  })),
+                ),
+              },
+              {
                 path: 'orcamentos/:id',
                 lazy: carregarRota(() =>
                   import('./paginas/orcamentos/PaginaOrcamento').then((m) => ({

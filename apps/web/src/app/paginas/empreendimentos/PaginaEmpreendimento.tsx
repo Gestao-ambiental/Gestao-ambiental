@@ -5,7 +5,7 @@ import {
 } from '@gestao-ambiental/domain'
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Link, useLocation, useParams } from 'react-router'
+import { Link, useLocation, useNavigate, useParams } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { BotaoGerarRelatorio } from '@/app/paginas/modelos/GerarRelatorio'
@@ -15,6 +15,12 @@ import { SecaoResiduosDoEmpreendimento } from '@/app/paginas/residuos/registro/S
 import { Carregando, EstadoErro, EstadoVazio } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
 import { BotaoIcone } from '@/components/ui/botao-icone'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { classeCampo } from '@/components/ui/estilos-campo'
 import { Icone } from '@/components/ui/icone'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
@@ -57,6 +63,7 @@ function Meta({ empreendimento }: { empreendimento: Empreendimento }) {
 export function PaginaEmpreendimento() {
   const { id = '' } = useParams()
   const { atual } = useConsultoria()
+  const navegar = useNavigate()
   const local = useLocation()
   const queryClient = useQueryClient()
   const aviso = (local.state as { aviso?: string } | null)?.aviso
@@ -173,6 +180,27 @@ export function PaginaEmpreendimento() {
           >
             Editar
           </Botao>
+          {ehGestao ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <BotaoIcone
+                  icone="ellipsis"
+                  aparencia="padrao"
+                  rotulo="Mais ações do empreendimento"
+                />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onSelect={() => {
+                    void navegar(`/orcamentos/novo?empreendimento=${dados.id}`)
+                  }}
+                >
+                  <Icone nome="file-plus" />
+                  Novo orçamento
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
           {cadastrarPara ? (
             <Botao aparencia="primario" asChild>
               <Link to={cadastrarPara}>
