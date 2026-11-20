@@ -10,6 +10,7 @@ import { Link, useLocation, useParams } from 'react-router'
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { BotaoGerarRelatorio } from '@/app/paginas/modelos/GerarRelatorio'
 import { Pagina } from '@/app/paginas/Pagina'
+import { RelatoriosEscritos } from '@/app/paginas/relatorios/RelatoriosEscritos'
 import { SecaoResiduosDoEmpreendimento } from '@/app/paginas/residuos/registro/SecaoResiduosDoEmpreendimento'
 import { Carregando, EstadoErro, EstadoVazio } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
@@ -327,6 +328,7 @@ export function PaginaEmpreendimento() {
         ) : null}
       </section>
 
+      <RelatoriosEscritos empreendimentoId={id} comTitulo />
       <SecaoResiduosDoEmpreendimento empreendimentoId={id} />
 
       <DialogoEmpreendimento

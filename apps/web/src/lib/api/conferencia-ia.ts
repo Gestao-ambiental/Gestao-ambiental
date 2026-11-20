@@ -21,12 +21,17 @@ export interface Apontamento {
 
 export interface ConferenciaIa {
   id: string
-  evidenciaId: string
+  evidenciaId: string | null
   situacao: 'em_andamento' | 'concluida' | 'falhou'
   motivo: string | null
   resumo: string | null
   apontamentos: Apontamento[]
   iniciadaEm: string
+  relatorioId: string | null
+  /** Versão do relatório conferida (nulo na evidência anexada). */
+  relatorioVersao: number | null
+  /** Índices dos apontamentos marcados como "Ignorar". */
+  ignorados: number[]
 }
 
 const CATEGORIAS = new Set<string>([
@@ -66,24 +71,68 @@ export async function listarConferenciasIa(
   if (evidenciaIds.length === 0) return resultado
   const { data, error } = await obterSupabase()
     .from('conferencia_ia')
-    .select('id, evidencia_id, situacao, motivo, resumo, apontamentos, iniciada_em')
+    .select(COLUNAS)
     .in('evidencia_id', [...evidenciaIds])
     .order('iniciada_em', { ascending: false })
     .range(0, 199)
   if (error) throw error
   for (const c of data) {
-    if (resultado.has(c.evidencia_id)) continue
-    resultado.set(c.evidencia_id, {
-      id: c.id,
-      evidenciaId: c.evidencia_id,
-      situacao: c.situacao as ConferenciaIa['situacao'],
-      motivo: c.motivo,
-      resumo: c.resumo,
-      apontamentos: lerApontamentos(c.apontamentos),
-      iniciadaEm: c.iniciada_em,
-    })
+    if (!c.evidencia_id || resultado.has(c.evidencia_id)) continue
+    resultado.set(c.evidencia_id, comoConferencia(c))
   }
   return resultado
+}
+
+const COLUNAS =
+  'id, evidencia_id, relatorio_id, relatorio_versao, ignorados, situacao, motivo, resumo, apontamentos, iniciada_em'
+
+function comoConferencia(c: {
+  id: string
+  evidencia_id: string | null
+  relatorio_id: string | null
+  relatorio_versao: number | null
+  ignorados: number[]
+  situacao: string
+  motivo: string | null
+  resumo: string | null
+  apontamentos: unknown
+  iniciada_em: string
+}): ConferenciaIa {
+  return {
+    id: c.id,
+    evidenciaId: c.evidencia_id,
+    relatorioId: c.relatorio_id,
+    relatorioVersao: c.relatorio_versao,
+    ignorados: c.ignorados,
+    situacao: c.situacao as ConferenciaIa['situacao'],
+    motivo: c.motivo,
+    resumo: c.resumo,
+    apontamentos: lerApontamentos(c.apontamentos),
+    iniciadaEm: c.iniciada_em,
+  }
+}
+
+/** A conferência mais recente do relatório (de qualquer versão; a tela diz qual). */
+export async function conferenciaDoRelatorio(relatorioId: string): Promise<ConferenciaIa | null> {
+  const { data, error } = await obterSupabase()
+    .from('conferencia_ia')
+    .select(COLUNAS)
+    .eq('relatorio_id', relatorioId)
+    .order('relatorio_versao', { ascending: false })
+    .order('iniciada_em', { ascending: false })
+    .range(0, 0)
+  if (error) throw error
+  const primeira = data[0]
+  return primeira ? comoConferencia(primeira) : null
+}
+
+/** "Ignorar" um apontamento do relatório (fica gravado para quem escreve e para quem revisa). */
+export async function ignorarApontamento(conferenciaId: string, indice: number): Promise<void> {
+  const { error } = await obterSupabase().rpc('ignorar_apontamento', {
+    p_conferencia_id: conferenciaId,
+    p_indice: indice,
+  })
+  if (error) throw error
 }
 
 /** O que conferir: a evidência anexada ou uma versão do relatório escrito no Grama. */

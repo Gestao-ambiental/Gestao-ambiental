@@ -207,7 +207,7 @@ select throws_ok(
 );
 select throws_ok(
   $$select public.aprovar_relatorio('80000000-0000-4000-8000-000000000701', 3)$$,
-  'P0001', 'conferencia_independente',
+  'P0001', 'autor_nao_revisa',
   'com a conferência independente, o autor não aprova'
 );
 

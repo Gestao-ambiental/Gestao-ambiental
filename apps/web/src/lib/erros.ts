@@ -103,6 +103,15 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   transicao_invalida: 'Essa mudança de situação não é permitida a partir da situação atual.',
   identidade_nao_salva: 'Salve os dados da consultoria antes de enviar a logo.',
   modelo_com_mesmo_nome: 'Já existe um modelo com esse nome. Escolha outro nome.',
+  titulo_invalido: 'Informe um título de até 200 caracteres.',
+  autor_nao_revisa:
+    'Quem escreveu o relatório não pode aprovar nem devolver. Outra pessoa precisa revisar.',
+  relatorio_aprovado: 'Este relatório já foi aprovado e não pode mais ser editado.',
+  relatorio_ja_enviado: 'Este relatório já foi enviado para revisão.',
+  relatorio_fora_da_revisao:
+    'Este relatório não está em revisão. Recarregue para ver a situação atual.',
+  versao_inexistente: 'Salve o relatório antes de conferir.',
+  apontamento_inexistente: 'Este apontamento não existe mais. Recarregue a conferência.',
   modelo_arquivado: 'Este modelo foi arquivado. Crie um novo ou duplique outro.',
   conteudo_invalido: 'O texto do modelo não pôde ser salvo. Recarregue a página e tente de novo.',
   modelo_sem_itens: 'Salve ao menos um serviço antes de guardar como modelo.',

@@ -295,6 +295,14 @@ export const rotas: RouteObject[] = [
                 ),
               },
               { path: 'configuracoes/plano', element: <PaginaPlano /> },
+              {
+                path: 'relatorios/:id',
+                lazy: carregarRota(() =>
+                  import('./paginas/relatorios/PaginaRelatorio').then((m) => ({
+                    Component: m.PaginaRelatorio,
+                  })),
+                ),
+              },
               { path: 'configuracoes/modelos', element: <PaginaModelos /> },
               { path: 'configuracoes/modelos/:id', element: <PaginaModelo /> },
               { path: 'perfil', element: <PaginaPerfil /> },

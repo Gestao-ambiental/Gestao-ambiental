@@ -1,4 +1,4 @@
-// Gerar relatório a partir do modelo (ADR-0036, fatia 2): escolhe o modelo, preenche com o cadastro e
+// Novo relatório a partir do modelo (ADR-0036, ADR-0040): escolhe o modelo, preenche com o cadastro e
 // baixa o .docx; campo sem dado é avisado; erro do banco aparece; sem modelo, o diálogo diz isso.
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -57,6 +57,7 @@ function cenario(extra: Partial<Cenario> = {}): Cenario {
       ...extra.rpc,
     },
     tabelas: {
+      relatorio: [],
       empreendimento: [
         { id: 'e1', nome: 'Metalúrgica Rio Cubatão', cnpj: '12345678000190', cliente: null },
       ],
@@ -88,8 +89,8 @@ afterEach(() => {
 async function abrirDialogo() {
   const usuario = userEvent.setup()
   renderizarApp('/empreendimentos/e1')
-  await usuario.click(await screen.findByRole('button', { name: 'Gerar relatório' }))
-  const dialogo = await screen.findByRole('dialog', { name: 'Gerar relatório' })
+  await usuario.click(await screen.findByRole('button', { name: 'Novo relatório' }))
+  const dialogo = await screen.findByRole('dialog', { name: 'Novo relatório' })
   return { usuario, dialogo }
 }
 
@@ -126,5 +127,26 @@ describe('gerar relatório no empreendimento', () => {
     const { dialogo } = await abrirDialogo()
     expect(await within(dialogo).findByText('Nenhum modelo cadastrado.')).toBeInTheDocument()
     expect(within(dialogo).getByRole('button', { name: 'Baixar .docx' })).toBeDisabled()
+  })
+
+  it('"Escrever no Grama" cria o relatório preenchido e abre o editor', async () => {
+    falso.reiniciar(cenario({ rpc: { criar_relatorio: { data: 1 } } }))
+    const { usuario, dialogo } = await abrirDialogo()
+    await within(dialogo).findByRole('radio', { name: 'Relatório semestral' })
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Escrever no Grama' }))
+    await waitFor(() => {
+      expect(falso.cliente.rpc).toHaveBeenCalledWith(
+        'criar_relatorio',
+        expect.objectContaining({
+          p_empreendimento_id: 'e1',
+          p_modelo_id: 'md1',
+          p_titulo: 'Relatório semestral',
+        }),
+      )
+    })
+    const chamada = falso.cliente.rpc.mock.calls.find((c) => c[0] === 'criar_relatorio')
+    const [, args] = chamada as [string, Record<string, unknown>]
+    expect(JSON.stringify(args.p_conteudo)).toContain('Metalúrgica Rio Cubatão')
+    expect(baixados).toEqual([])
   })
 })

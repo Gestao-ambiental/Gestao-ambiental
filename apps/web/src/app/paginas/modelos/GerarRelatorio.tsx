@@ -1,6 +1,6 @@
-// Gerar relatório a partir de um modelo (ADR-0036, fatia 2): escolhe o modelo, o Grama preenche os
-// campos com o cadastro e baixa o .docx. Nada fica guardado: a pessoa edita no Word e anexa o
-// arquivo final como evidência.
+// Novo relatório a partir de um modelo (ADR-0036, ADR-0040): escolhe o modelo, o Grama preenche os
+// campos com o cadastro e abre o relatório para escrever no Grama (com versões, revisão e IA). Baixar
+// o .docx direto continua possível, para quem prefere escrever no Word e anexar o arquivo.
 import {
   nomeDoArquivoDoRelatorio,
   preencherModelo,
@@ -9,7 +9,7 @@ import {
 } from '@gestao-ambiental/domain'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useId, useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Carregando } from '@/components/estados'
@@ -21,6 +21,7 @@ import {
   listarModelosDeDocumento,
   obterModeloDeDocumento,
 } from '@/lib/api/modelos-de-documento'
+import { criarRelatorio } from '@/lib/api/relatorios'
 import { mensagemDoErro } from '@/lib/erros'
 
 interface Props {
@@ -51,6 +52,31 @@ export function DialogoGerarRelatorio({
   const lista = modelos.data ?? []
   const selecionado = escolhido ?? lista[0]?.id ?? null
 
+  const navegar = useNavigate()
+  const escrever = useMutation({
+    mutationFn: async (modeloId: string) => {
+      const [modelo, dados] = await Promise.all([
+        obterModeloDeDocumento(modeloId),
+        dadosParaRelatorio(empreendimentoId, ocorrenciaId ?? null),
+      ])
+      if (!modelo || modelo.arquivado) throw new Error('modelo_arquivado')
+      const preenchido = preencherModelo(modelo.conteudo, valoresDoRelatorio(dados))
+      const id = crypto.randomUUID()
+      await criarRelatorio({
+        id,
+        empreendimentoId,
+        ocorrenciaId: ocorrenciaId ?? null,
+        modeloId,
+        titulo: modelo.nome,
+        conteudo: preenchido.documento,
+      })
+      return id
+    },
+    onSuccess: (id) => {
+      void navegar(`/relatorios/${id}`)
+    },
+  })
+
   const gerar = useMutation({
     mutationFn: async (modeloId: string) => {
       const [modelo, dados, word] = await Promise.all([
@@ -77,6 +103,7 @@ export function DialogoGerarRelatorio({
     if (!valor) {
       setSemValor(null)
       gerar.reset()
+      escrever.reset()
     }
     aoMudar(valor)
   }
@@ -87,7 +114,7 @@ export function DialogoGerarRelatorio({
     <Dialogo
       aberto={aberto}
       aoMudar={mudar}
-      titulo="Gerar relatório"
+      titulo="Novo relatório"
       acoes={
         semValor ? (
           <Botao
@@ -108,14 +135,23 @@ export function DialogoGerarRelatorio({
               Cancelar
             </Botao>
             <Botao
-              aparencia="primario"
               iconeAntes="download"
-              disabled={!selecionado || gerar.isPending}
+              disabled={!selecionado || gerar.isPending || escrever.isPending}
               onClick={() => {
                 if (selecionado) gerar.mutate(selecionado)
               }}
             >
               {gerar.isPending ? 'Gerando' : 'Baixar .docx'}
+            </Botao>
+            <Botao
+              aparencia="primario"
+              iconeAntes="pencil"
+              disabled={!selecionado || gerar.isPending || escrever.isPending}
+              onClick={() => {
+                if (selecionado) escrever.mutate(selecionado)
+              }}
+            >
+              {escrever.isPending ? 'Abrindo' : 'Escrever no Grama'}
             </Botao>
           </>
         )
@@ -165,9 +201,9 @@ export function DialogoGerarRelatorio({
           </div>
         </fieldset>
       )}
-      {gerar.isError ? (
+      {gerar.isError || escrever.isError ? (
         <MensagemSecao tom="perigo" role="alert">
-          {mensagemDoErro(gerar.error)}
+          {mensagemDoErro(gerar.error ?? escrever.error)}
         </MensagemSecao>
       ) : null}
     </Dialogo>
@@ -186,7 +222,7 @@ export function BotaoGerarRelatorio(props: Omit<Props, 'aberto' | 'aoMudar'>) {
           setAberto(true)
         }}
       >
-        Gerar relatório
+        Novo relatório
       </Botao>
       <DialogoGerarRelatorio {...props} aberto={aberto} aoMudar={setAberto} />
     </>

@@ -352,7 +352,7 @@ begin
   end if;
   if not private.pode_revisar_relatorio(r) then
     if r.autor_id = private.membro_atual(r.consultoria_id) then
-      raise exception 'conferencia_independente' using errcode = 'P0001';
+      raise exception 'autor_nao_revisa' using errcode = 'P0001';
     end if;
     raise exception 'sem_permissao' using errcode = '42501';
   end if;
@@ -383,7 +383,7 @@ begin
   end if;
   if not private.pode_revisar_relatorio(r) then
     if r.autor_id = private.membro_atual(r.consultoria_id) then
-      raise exception 'conferencia_independente' using errcode = 'P0001';
+      raise exception 'autor_nao_revisa' using errcode = 'P0001';
     end if;
     raise exception 'sem_permissao' using errcode = '42501';
   end if;

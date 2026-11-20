@@ -26,6 +26,8 @@ import { formatarInstanteComHora } from '@/lib/datas'
 import { mensagemDoErro } from '@/lib/erros'
 import { tamanhoLegivel } from '@/lib/texto'
 
+import { RelatoriosEscritos } from '@/app/paginas/relatorios/RelatoriosEscritos'
+
 import { ConferenciaDaIa } from './ConferenciaDaIa'
 import { CabecalhoDeSecao, VazioDeSecao } from './pecas'
 
@@ -292,6 +294,7 @@ export function SecaoEvidencia({
       {ultima ? (
         <ConferenciaDaIa key={ultima.id} ocorrencia={ocorrencia} evidencia={ultima} />
       ) : null}
+      <RelatoriosEscritos ocorrenciaId={ocorrencia.id} />
     </section>
   )
 }

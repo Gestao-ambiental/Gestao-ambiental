@@ -6,8 +6,9 @@ import {
   type ChaveDoCampo,
   type NoDoDocumento,
 } from '@gestao-ambiental/domain'
+import type { Extensions } from '@tiptap/core'
 import { EditorContent, useEditor, useEditorState, type Editor } from '@tiptap/react'
-import { Fragment } from 'react'
+import { Fragment, useEffect } from 'react'
 
 import { Botao } from '@/components/ui/botao'
 import { BotaoIcone } from '@/components/ui/botao-icone'
@@ -30,11 +31,27 @@ interface Props {
   conteudoInicial: NoDoDocumento
   aoMudar: (conteudo: NoDoDocumento) => void
   somenteLeitura?: boolean
+  /** Nome acessível da área de texto. */
+  rotulo?: string
+  /** "Inserir campo" só no modelo; o relatório já nasce preenchido. */
+  comCampos?: boolean
+  /** Extensões a mais (o relatório sublinha os apontamentos da IA). */
+  extensoesExtras?: Extensions
+  /** Recebe a instância do editor (aplicar sugestão, ir ao trecho). */
+  aoCriar?: (editor: Editor) => void
 }
 
-export function EditorDeModelo({ conteudoInicial, aoMudar, somenteLeitura = false }: Props) {
+export function EditorDeModelo({
+  conteudoInicial,
+  aoMudar,
+  somenteLeitura = false,
+  rotulo = 'Texto do modelo',
+  comCampos = true,
+  extensoesExtras = [],
+  aoCriar,
+}: Props) {
   const editor = useEditor({
-    extensions: extensoesDoModelo(),
+    extensions: [...extensoesDoModelo(), ...extensoesExtras],
     content: conteudoInicial,
     editable: !somenteLeitura,
     immediatelyRender: true,
@@ -43,18 +60,27 @@ export function EditorDeModelo({ conteudoInicial, aoMudar, somenteLeitura = fals
         class: 'editor-modelo',
         role: 'textbox',
         'aria-multiline': 'true',
-        'aria-label': 'Texto do modelo',
+        'aria-label': rotulo,
       },
     },
-    onUpdate: ({ editor: atual }) => {
+    onUpdate: ({ editor: atual, transaction }) => {
+      if (!transaction.docChanged) return
       aoMudar(atual.getJSON() as NoDoDocumento)
     },
   })
 
+  useEffect(() => {
+    // Sem emitir 'update': trocar de modo não muda o texto (senão a tela acusa "Não salvo").
+    editor.setEditable(!somenteLeitura, false)
+  }, [editor, somenteLeitura])
+  useEffect(() => {
+    aoCriar?.(editor)
+  }, [editor, aoCriar])
+
   return (
     // Sem rolagem interna: a página rola e a barra fica presa no topo (sticky).
     <div className="flex min-w-0 flex-col rounded-(--raio-painel) border bg-(--chao)">
-      {somenteLeitura ? null : <BarraDoEditor editor={editor} />}
+      {somenteLeitura ? null : <BarraDoEditor editor={editor} comCampos={comCampos} />}
       <div className="px-(--e-2) py-(--e-3) sm:px-(--e-6) sm:py-(--e-8)">
         {/* Folha A4 (794px a 96 dpi), margens largas como no Word. */}
         <div className="mx-auto w-full max-w-[794px] rounded-(--raio-mini) border border-(--regra) bg-(--folha) px-(--e-5) py-(--e-6) sm:px-[72px] sm:py-[64px]">
@@ -115,7 +141,7 @@ function estiloAtual(e: Editor): Estilo {
   return 'paragrafo'
 }
 
-function BarraDoEditor({ editor }: { editor: Editor }) {
+function BarraDoEditor({ editor, comCampos }: { editor: Editor; comCampos: boolean }) {
   const estado = useEditorState({
     editor,
     selector: ({ editor: e }) => ({
@@ -260,31 +286,38 @@ function BarraDoEditor({ editor }: { editor: Editor }) {
         </DropdownMenuContent>
       </DropdownMenu>
       <span className="flex-1 max-md:hidden" />
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Botao iconeAntes="plus" className="max-md:order-first max-md:mr-(--e-1) max-md:shrink-0">
-            Inserir campo
-          </Botao>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="max-h-[60vh] overflow-y-auto">
-          {GRUPOS_DE_CAMPO.map((grupo, indice) => (
-            <Fragment key={grupo}>
-              {indice > 0 ? <DropdownMenuSeparator /> : null}
-              <DropdownMenuLabel>{grupo}</DropdownMenuLabel>
-              {CAMPOS_DO_MODELO.filter((c) => c.grupo === grupo).map((campo) => (
-                <DropdownMenuItem
-                  key={campo.chave}
-                  onSelect={() => {
-                    inserirCampo(campo.chave)
-                  }}
-                >
-                  {campo.rotulo}
-                </DropdownMenuItem>
+      {comCampos ? (
+        <>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Botao
+                iconeAntes="plus"
+                className="max-md:order-first max-md:mr-(--e-1) max-md:shrink-0"
+              >
+                Inserir campo
+              </Botao>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="max-h-[60vh] overflow-y-auto">
+              {GRUPOS_DE_CAMPO.map((grupo, indice) => (
+                <Fragment key={grupo}>
+                  {indice > 0 ? <DropdownMenuSeparator /> : null}
+                  <DropdownMenuLabel>{grupo}</DropdownMenuLabel>
+                  {CAMPOS_DO_MODELO.filter((c) => c.grupo === grupo).map((campo) => (
+                    <DropdownMenuItem
+                      key={campo.chave}
+                      onSelect={() => {
+                        inserirCampo(campo.chave)
+                      }}
+                    >
+                      {campo.rotulo}
+                    </DropdownMenuItem>
+                  ))}
+                </Fragment>
               ))}
-            </Fragment>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </>
+      ) : null}
     </div>
   )
 }

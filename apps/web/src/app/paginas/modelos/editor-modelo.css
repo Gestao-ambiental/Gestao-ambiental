@@ -89,3 +89,23 @@
   outline: var(--borda-foco) solid var(--foco);
   outline-offset: 1px;
 }
+
+/* Trecho apontado pela IA no relatório (ADR-0040): sublinhado ondulado, com a cor do estado e a
+   forma (ondulado = corrigir, pontilhado = verificar), para não depender só da cor. */
+.editor-modelo .trecho-apontado {
+  text-decoration-line: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.editor-modelo .trecho-apontado-corrigir {
+  text-decoration-style: wavy;
+  text-decoration-color: var(--atraso-texto);
+}
+.editor-modelo .trecho-apontado-verificar {
+  text-decoration-style: dotted;
+  text-decoration-color: var(--alerta-texto);
+}
+.editor-modelo .trecho-apontado-ativo {
+  background: var(--sinal-fundo);
+}
