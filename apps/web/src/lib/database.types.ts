@@ -2393,7 +2393,7 @@ isOneToOne: false
                            },
 "iniciar_conferencia_relatorio":
 { Args: { "p_id": string,"p_relatorio_id": string,"p_versao": number }; Returns: {
-              "conferencia_id": string,"contexto": Json,"conteudo": Json,"ia_liberada": boolean,"motivo": string,"nova": boolean,"situacao": string
+              "conferencia_id": string,"conteudo": Json,"contexto": Json,"ia_liberada": boolean,"motivo": string,"nova": boolean,"situacao": string
             }[]
                            },
 "iniciar_extracao_ia":
