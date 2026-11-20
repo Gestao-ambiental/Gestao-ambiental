@@ -2311,11 +2311,11 @@ isOneToOne: false
 "remover_foto_membro":
 { Args: { "p_membro_id": string }; Returns: undefined
                            },
-"remover_registro_profissional":
-{ Args: { "p_registro_id": string,"p_row_version": number }; Returns: undefined
-                           },
 "remover_logo_da_consultoria":
 { Args: { "p_consultoria_id": string }; Returns: undefined
+                           },
+"remover_registro_profissional":
+{ Args: { "p_registro_id": string,"p_row_version": number }; Returns: undefined
                            },
 "responder_linha_de_base":
 { Args: { "p_consultoria_id": string,"p_horas_semana_conferindo": number,"p_licencas_ativas": number,"p_minutos_por_condicionante": number,"p_surpresas_por_mes": number }; Returns: string
