@@ -16,6 +16,8 @@ import { codigoDoErro, ehMuitasTentativas, mensagemDoErro } from '@/lib/erros'
 import { obterSupabase } from '@/lib/supabase'
 
 import { CabecalhoAcesso, RodapeAcesso } from './CabecalhoAcesso'
+import { EntrarComGoogle } from './EntrarComGoogle'
+import { erroDoRetornoDoGoogle } from './retorno-do-google'
 import { campoEmail } from './esquemas'
 
 const esquema = z.object({
@@ -26,7 +28,7 @@ const esquema = z.object({
 
 type Dados = z.infer<typeof esquema>
 
-/** /entrar (Protótipo 01, ACC-01). E-mail e senha; sem Google (ADR-0004). */
+/** /entrar (Protótipo 01, ACC-01). Google (ADR-0040) ou e-mail e senha. */
 export function PaginaEntrar() {
   const { sessao, sessaoExpirou, avisoDeSaida } = useSessao()
   const [busca] = useSearchParams()
@@ -34,6 +36,8 @@ export function PaginaEntrar() {
   const para = destinoSeguro(busca.get('para'))
   const aviso = (local.state as AvisoDeAcesso | null)?.aviso ?? avisoDeSaida
   const [falha, setFalha] = useState<string | null>(null)
+  // Voltou do Google com erro (cancelou, e-mail não verificado, provedor desligado): lido uma vez.
+  const [falhaGoogle] = useState(() => erroDoRetornoDoGoogle(local.search, local.hash))
   const [muitasTentativas, setMuitasTentativas] = useState(false)
 
   const {
@@ -84,6 +88,13 @@ export function PaginaEntrar() {
           {falha}
         </MensagemSecao>
       ) : null}
+      {falhaGoogle && !falha ? (
+        <MensagemSecao role="alert" tom="atencao">
+          {falhaGoogle}
+        </MensagemSecao>
+      ) : null}
+
+      <EntrarComGoogle voltarPara={`/entrar${sufixo}`} />
 
       <form
         noValidate
