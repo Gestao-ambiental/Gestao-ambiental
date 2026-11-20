@@ -579,7 +579,7 @@ function Fluxo({
         queryClient.invalidateQueries({ queryKey: [CHAVE_DA_CONFIGURACAO, consultoriaId] }),
         queryClient.invalidateQueries({ queryKey: ['base-de-custos', consultoriaId] }),
       ])
-      void navegar('/orcamentos?novo=1')
+      void navegar('/orcamentos/novo')
     } catch (erro) {
       setFalha({ texto: mensagemDoErro(erro), codigo: codigoDoErro(erro) })
       setSalvando(false)
@@ -689,7 +689,7 @@ function Fluxo({
         aoIrPara={irPara}
         aoPublicar={() => void publicar()}
         aoRecomecar={() => void recomecar()}
-        aoCriarSemPreco={() => void navegar('/orcamentos?novo=1')}
+        aoCriarSemPreco={() => void navegar('/orcamentos/novo')}
       />
     )
   }

@@ -5,6 +5,8 @@ import {
   formatarDuracao,
   hojeNoFuso,
   mesesDeExecucao,
+  objetoAindaAutomatico,
+  objetoAutomatico,
   rotuloDoMes,
   formatarPontosBase,
   formatarReais,
@@ -71,6 +73,7 @@ import {
   textoDoPercentual,
 } from './calculo'
 import {
+  ETAPAS,
   ROTULO_DA_UNIDADE,
   SUFIXO_DA_UNIDADE,
   campoDaQuantidade,
@@ -94,11 +97,6 @@ import { SeloSituacaoOrcamento } from './SeloSituacaoOrcamento'
 const classeTextoQueCresce = `${classeCampoBase} min-h-(--controle) resize-none py-(--e-15) [field-sizing:content] max-md:min-h-(--controle-toque)`
 
 /** Etapas do orçamento, na ordem em que ele se forma (pedido do Eduardo, 11/11/2026). */
-const ETAPAS = [
-  { id: 'servicos', titulo: 'Serviços' },
-  { id: 'preco', titulo: 'Preço e margem' },
-  { id: 'parcelas', titulo: 'Parcelas' },
-] as const
 type IdDaEtapa = (typeof ETAPAS)[number]['id']
 
 /** Valor da opção "Preço digitado" na lista da tabela de preços (nunca é id de linha da tabela). */
@@ -192,6 +190,10 @@ interface LinhaParcela {
 }
 interface Rascunho {
   objeto: string
+  /** O objeto segue o modelo ou o primeiro serviço até alguém escrever outro. */
+  objetoAutomatico: boolean
+  /** Último modelo aplicado nesta edição (nome), para o objeto automático. */
+  modelo: string | null
   destinatario: string
   prazos: string
   validade: string
@@ -220,6 +222,11 @@ function rascunhoDe(o: Orcamento): Rascunho {
     semTabela || (i.horaVendaId === null && i.precoFechadoCentavos !== null)
   return {
     objeto: o.objeto,
+    objetoAutomatico: objetoAindaAutomatico(
+      o.objeto,
+      o.itens.map((i) => i.descricao),
+    ),
+    modelo: null,
     destinatario: o.destinatario,
     prazos: o.prazos,
     validade: String(o.validadeDias),
@@ -296,9 +303,17 @@ function lerVisitas(r: Rascunho) {
   }
 }
 
+/** O que será orçado: o automático (modelo ou primeiro serviço) ou o escrito à mão. */
+function objetoDoRascunho(r: Rascunho): string {
+  const automatico = objetoAutomatico({
+    modelo: r.modelo,
+    servicos: r.itens.map((i) => i.descricao),
+  })
+  return r.objetoAutomatico || !r.objeto.trim() ? automatico : r.objeto.trim()
+}
+
 /** Converte o rascunho para o formato da RPC. Devolve a primeira mensagem de erro, se houver. */
 function paraSalvar(r: Rascunho, deProspecto: boolean): DadosDoRascunho | string {
-  if (!r.objeto.trim()) return 'Diga o que está sendo orçado.'
   let prospecto: DadosDoRascunho['prospecto']
   if (deProspecto) {
     const lido = lerProspecto(r.prospecto)
@@ -378,7 +393,7 @@ function paraSalvar(r: Rascunho, deProspecto: boolean): DadosDoRascunho | string
     parcelas.push({ id: p.id, descricao: p.descricao, dias, percentualPb: percentual })
   }
   return {
-    objeto: r.objeto,
+    objeto: objetoDoRascunho(r),
     destinatario: r.destinatario,
     prazos: r.prazos,
     validadeDias: validade,
@@ -671,6 +686,7 @@ function Editor({
       ],
       premissas: juntarLinhas(a.premissas, selecao.premissas),
       exclusoes: juntarLinhas(a.exclusoes, selecao.exclusoes),
+      modelo: selecao.modelo,
     }))
     setAplicado(
       `Modelo "${selecao.modelo}" aplicado: ${String(selecao.etapas.length)} etapas e ${String(selecao.despesas.length)} despesas. Revise o escopo e informe as horas.`,
@@ -2048,10 +2064,10 @@ function Editor({
                       rotulo="O que está sendo orçado"
                       apoio="Descreva o escopo. Se quiser, cite a metodologia e a legislação aplicável, conferindo a fonte."
                       linhas={1}
-                      valor={r.objeto}
+                      valor={r.objetoAutomatico ? objetoDoRascunho(r) : r.objeto}
                       desabilitado={!editavel}
                       aoMudar={(valor) => {
-                        mudar((a) => ({ ...a, objeto: valor }))
+                        mudar((a) => ({ ...a, objeto: valor, objetoAutomatico: false }))
                       }}
                     />
                     <CampoArea

@@ -1356,36 +1356,32 @@ describe('orçamentos (onda 5)', () => {
     expect(screen.getByRole('button', { name: '25%' })).toBeDisabled()
   })
 
-  it('cria orçamento para prospecto, sem empreendimento cadastrado', async () => {
+  it('cria orçamento para prospecto, sem empreendimento cadastrado nem diálogo', async () => {
     falso.reiniciar(
       cenario('gestao', {
         rpc: { listar_empreendimentos: { data: [] }, criar_orcamento: { data: 'o2' } },
       }),
     )
     const usuario = userEvent.setup()
-    renderizarApp('/orcamentos')
+    const { router } = renderizarApp('/orcamentos')
     await usuario.click(await screen.findByRole('button', { name: 'Novo orçamento' }))
-    await usuario.click(screen.getByRole('radio', { name: 'Prospecto, ainda não cadastrado' }))
-    await usuario.type(screen.getByLabelText(/Nome da empresa ou do cliente/), 'Padaria Pão Quente')
-    await usuario.type(screen.getByLabelText(/^CNPJ ou CPF/), '11222333')
-    await usuario.type(screen.getByLabelText(/O que será orçado/), 'AUA da padaria')
-    await usuario.click(screen.getByRole('button', { name: 'Criar rascunho' }))
-    expect(screen.getByText('CNPJ ou CPF incompleto')).toBeInTheDocument()
-    expect(falso.cliente.rpc.mock.calls.some(([nome]) => nome === 'criar_orcamento')).toBe(false)
-
-    await usuario.type(screen.getByLabelText(/^CNPJ/), '000181')
-    expect(screen.getByLabelText(/^CNPJ/)).toHaveValue('11.222.333/0001-81')
-    await usuario.type(screen.getByLabelText(/^E-mail/), 'compras@padaria.test')
-    await usuario.click(screen.getByRole('button', { name: 'Criar rascunho' }))
+    expect(await screen.findByRole('heading', { name: 'Novo orçamento' })).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/O que será orçado/)).not.toBeInTheDocument()
+    await usuario.type(screen.getByRole('combobox', { name: 'Cliente' }), 'Padaria Pão Quente')
+    await usuario.click(await screen.findByRole('option', { name: /^Novo: Padaria Pão Quente/ }))
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/orcamentos/o2')
+    })
     const chamada = falso.cliente.rpc.mock.calls.find(([nome]) => nome === 'criar_orcamento')
     expect(chamada?.[1]).toMatchObject({
       p_empreendimento_id: null,
-      p_objeto: 'AUA da padaria',
+      p_objeto: 'Serviços ambientais',
       p_prospecto: {
         nome: 'Padaria Pão Quente',
-        cnpj: '11222333000181',
+        cnpj: null,
         contato: null,
-        email: 'compras@padaria.test',
+        email: null,
         telefone: null,
       },
     })

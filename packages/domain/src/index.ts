@@ -589,3 +589,4 @@ export {
   titularEncontrado,
 } from './titular-da-licenca'
 export type { TitularDaLicenca } from './titular-da-licenca'
+export { OBJETO_INICIAL, objetoAindaAutomatico, objetoAutomatico } from './objeto-do-orcamento'

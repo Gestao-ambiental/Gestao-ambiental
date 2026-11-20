@@ -123,3 +123,10 @@ export function reaisDigitados(evento: { target: HTMLInputElement }): string {
   })
   return formatado
 }
+
+/** Etapas do editor de orçamento, na ordem em que o orçamento se forma. */
+export const ETAPAS = [
+  { id: 'servicos', titulo: 'Serviços' },
+  { id: 'preco', titulo: 'Preço e margem' },
+  { id: 'parcelas', titulo: 'Parcelas' },
+] as const

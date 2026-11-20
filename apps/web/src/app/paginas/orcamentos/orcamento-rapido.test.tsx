@@ -155,10 +155,11 @@ describe('orçamento rápido, sem custos e taxas configurados', () => {
       await screen.findByRole('link', { name: 'Calcular preço pelos custos' }),
     ).toHaveAttribute('href', '/orcamentos/primeiros-passos')
     await usuario.click(primeiro(screen.getAllByRole('button', { name: 'Novo orçamento' })))
-    await usuario.click(screen.getByRole('radio', { name: 'Prospecto, ainda não cadastrado' }))
-    await usuario.type(screen.getByLabelText(/Nome da empresa ou do cliente/), 'Padaria Pão Quente')
-    await usuario.type(screen.getByLabelText(/O que será orçado/), 'AUA da padaria')
-    await usuario.click(screen.getByRole('button', { name: 'Criar rascunho' }))
+    await usuario.type(
+      await screen.findByRole('combobox', { name: 'Cliente' }),
+      'Padaria Pão Quente',
+    )
+    await usuario.click(await screen.findByRole('option', { name: /^Novo: Padaria Pão Quente/ }))
 
     // Serviço com preço digitado: sem tabela de preços, é o único preço.
     await screen.findByRole('heading', { name: 'Padaria Pão Quente' })
@@ -272,11 +273,13 @@ describe('orçamento rápido, sem custos e taxas configurados', () => {
     const usuario = userEvent.setup()
     renderizarApp('/orcamentos')
     await usuario.click(primeiro(await screen.findAllByRole('button', { name: 'Novo orçamento' })))
-    await usuario.click(screen.getByRole('radio', { name: 'Prospecto, ainda não cadastrado' }))
-    await usuario.type(screen.getByLabelText(/Nome da empresa ou do cliente/), 'Padaria Pão Quente')
-    await usuario.type(screen.getByLabelText(/O que será orçado/), 'AUA da padaria')
-    await usuario.click(screen.getByRole('button', { name: 'Criar rascunho' }))
-    await usuario.click(await screen.findByRole('button', { name: 'Adicionar item' }))
+    await usuario.type(
+      await screen.findByRole('combobox', { name: 'Cliente' }),
+      'Padaria Pão Quente',
+    )
+    await usuario.click(await screen.findByRole('option', { name: /^Novo: Padaria Pão Quente/ }))
+    await screen.findByRole('heading', { name: 'Padaria Pão Quente' })
+    await usuario.click(screen.getByRole('button', { name: 'Adicionar item' }))
     await usuario.type(screen.getByLabelText('Serviço do item 1'), 'Diagnóstico')
     await digitarReais(usuario, screen.getByLabelText('Preço digitado do item 1'), '900')
     await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
