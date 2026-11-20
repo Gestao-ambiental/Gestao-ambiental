@@ -1162,7 +1162,7 @@ function Editor({
 
       {alteradoEmOutroLugar ? (
         <MensagemSecao role="status" tom="atencao">
-          <span className="flex flex-wrap items-center justify-between gap-(--space-100)">
+          <span className="flex flex-wrap items-center justify-between gap-(--e-2)">
             <span>
               Este orçamento foi alterado em outro lugar. Suas mudanças continuam aqui; recarregue
               para ver a versão nova (o que não foi salvo se perde).
