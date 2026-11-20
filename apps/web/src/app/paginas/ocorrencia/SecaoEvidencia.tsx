@@ -8,6 +8,7 @@ import {
 import { useMutation } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 
+import { BotaoGerarRelatorio } from '@/app/paginas/modelos/GerarRelatorio'
 import { Botao } from '@/components/ui/botao'
 import { CampoData } from '@/components/ui/campo-data'
 import { CampoTexto } from '@/components/ui/campo-texto'
@@ -247,9 +248,18 @@ export function SecaoEvidencia({
 
   return (
     <section aria-labelledby="titulo-evidencia" className="flex flex-col gap-(--space-100)">
-      <h2 id="titulo-evidencia" className="rotulo-maiusculo text-(--text-subtle)">
-        Evidência
-      </h2>
+      <div className="flex flex-wrap items-center justify-between gap-(--space-100)">
+        <h2 id="titulo-evidencia" className="rotulo-maiusculo text-(--text-subtle)">
+          Evidência
+        </h2>
+        {possoEnviar ? (
+          <BotaoGerarRelatorio
+            empreendimentoId={ocorrencia.empreendimentoId}
+            empreendimentoNome={ocorrencia.empreendimentoNome}
+            ocorrenciaId={ocorrencia.id}
+          />
+        ) : null}
+      </div>
       {conferir.isError ? (
         <MensagemSecao role="alert" tom="perigo">
           {mensagemDoErro(conferir.error)}

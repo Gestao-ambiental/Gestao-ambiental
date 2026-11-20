@@ -1,0 +1,83 @@
+/* Área de texto do editor de modelo: o preflight do Tailwind zera títulos e listas; aqui eles voltam
+   com a escala do design system, perto do que sai no Word. */
+.editor-modelo {
+  outline: none;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 320px;
+}
+.editor-modelo > * + * {
+  margin-top: var(--space-100);
+}
+.editor-modelo h1 {
+  font-size: 24px;
+  line-height: 1.3;
+  font-weight: 600;
+  margin-top: var(--space-300);
+}
+.editor-modelo h2 {
+  font-size: 20px;
+  line-height: 1.3;
+  font-weight: 600;
+  margin-top: var(--space-250);
+}
+.editor-modelo h3 {
+  font-size: 16px;
+  line-height: 1.4;
+  font-weight: 600;
+  margin-top: var(--space-200);
+}
+.editor-modelo > :first-child {
+  margin-top: 0;
+}
+.editor-modelo ul {
+  list-style: disc;
+  padding-left: var(--space-300);
+}
+.editor-modelo ol {
+  list-style: decimal;
+  padding-left: var(--space-300);
+}
+.editor-modelo blockquote {
+  border-left: 2px solid var(--border-strong);
+  padding-left: var(--space-150);
+  color: var(--text-subtle);
+}
+.editor-modelo hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin-block: var(--space-200);
+}
+.editor-modelo table {
+  border-collapse: collapse;
+  width: 100%;
+  table-layout: fixed;
+}
+.editor-modelo th,
+.editor-modelo td {
+  border: 1px solid var(--border-strong);
+  padding: var(--space-050) var(--space-100);
+  vertical-align: top;
+}
+.editor-modelo th {
+  font-weight: 600;
+  text-align: left;
+}
+.editor-modelo .selectedCell {
+  background: var(--surface-selected);
+}
+/* Campo: marcador neutro, distinto do texto sem usar o lima (reservado à ação principal). */
+.editor-modelo .campo-do-modelo {
+  display: inline-block;
+  padding: 0 var(--space-050);
+  border: 1px dashed var(--border-strong);
+  border-radius: 4px;
+  background: var(--surface-sunken);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.editor-modelo .campo-do-modelo.ProseMirror-selectednode {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 1px;
+}

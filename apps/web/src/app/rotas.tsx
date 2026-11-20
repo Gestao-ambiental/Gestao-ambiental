@@ -34,6 +34,8 @@ import { PaginaCentralListaDeEspera } from './paginas/central/PaginaCentralLista
 import { PaginaCentralParametros } from './paginas/central/PaginaCentralParametros'
 import { PaginaCentralValor } from './paginas/central/PaginaCentralValor'
 import { PaginaCentralConsultoria } from './paginas/central/PaginaCentralConsultoria'
+import { PaginaModelo } from './paginas/modelos/PaginaModelo'
+import { PaginaModelos } from './paginas/modelos/PaginaModelos'
 import { PaginaOcorrencia } from './paginas/ocorrencia/PaginaOcorrencia'
 import { PaginaCustosETaxas } from './paginas/orcamentos/PaginaCustosETaxas'
 import { PaginaDadosDaProposta } from './paginas/orcamentos/PaginaDadosDaProposta'
@@ -146,6 +148,8 @@ export const rotas: RouteObject[] = [
               { path: 'configuracoes/custos', element: <PaginaCustosETaxas /> },
               { path: 'configuracoes/proposta', element: <PaginaDadosDaProposta /> },
               { path: 'configuracoes/plano', element: <PaginaPlano /> },
+              { path: 'configuracoes/modelos', element: <PaginaModelos /> },
+              { path: 'configuracoes/modelos/:id', element: <PaginaModelo /> },
               { path: 'perfil', element: <PaginaPerfil /> },
               { path: 'seguranca', element: <PaginaSeguranca /> },
               { path: '*', element: <PaginaNaoEncontrada /> },

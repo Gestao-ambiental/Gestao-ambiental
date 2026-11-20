@@ -91,6 +91,16 @@ export function MenuConta() {
           <Icone nome="settings" />
           Segurança
         </DropdownMenuItem>
+        {!suporte && atual.papel === 'gestao' ? (
+          <DropdownMenuItem
+            onSelect={() => {
+              void navegar('/configuracoes/modelos')
+            }}
+          >
+            <Icone nome="file-text" />
+            Modelos de documento
+          </DropdownMenuItem>
+        ) : null}
         {operador.data === true ? (
           <DropdownMenuItem
             onSelect={() => {
