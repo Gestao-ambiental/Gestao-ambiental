@@ -112,6 +112,41 @@ describe('Resíduos no app', () => {
     expect(router.state.location.pathname).toBe('/residuos/conferencia')
   })
 
+  it('a aba Conferência mostra as pendências e o leitor de tela ouve quantas são', async () => {
+    const pendencia = (mtrId: string) => ({
+      tipo: 'mtr_sem_cdf',
+      mtr_id: mtrId,
+      numero: mtrId,
+      emitido_em: '2026-09-01',
+      empreendimento_id: 'e1',
+      empreendimento_nome: 'Metalúrgica Rio Cubatão',
+      dias: 74,
+      mtr_item_id: null,
+      residuo_codigo: null,
+      residuo_descricao: null,
+      unidade: null,
+      quantidade_mtr: null,
+      quantidade_cdf: null,
+      diferenca: null,
+      cdfs: [],
+      unidades_cdf: [],
+    })
+    falso.reiniciar(
+      cenario({ conferencia_residuos: { data: [pendencia('240001'), pendencia('240002')] } }),
+    )
+    renderizarApp('/residuos/prazos')
+
+    const abas = await screen.findByRole('navigation', { name: 'Resíduos' })
+    const conferencia = await within(abas).findByRole('link', {
+      name: 'Conferência CDF x MTR: 2 pendências',
+    })
+    expect(conferencia).toHaveAttribute('href', '/residuos/conferencia')
+    expect(within(abas).getByRole('link', { name: 'Prazos' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
+  })
+
   it('a página do empreendimento lista os CDFs e exclui com confirmação', async () => {
     falso.reiniciar(cenario({ listar_cdfs: { data: [cdf] }, excluir_cdf: { data: null } }))
     const usuario = userEvent.setup()

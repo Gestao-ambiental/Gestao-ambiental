@@ -1,8 +1,8 @@
 // Peças da lista de orçamentos (Protótipo 19): placar do topo e abas por situação.
 
 import { formatarReais } from '@gestao-ambiental/domain'
-import { useEffect, useRef } from 'react'
 
+import { AbasDeFiltro } from '@/components/ui/abas'
 import { Botao } from '@/components/ui/botao'
 import { Esqueleto } from '@/components/ui/esqueleto'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
@@ -13,7 +13,6 @@ import {
   type ResumoDosOrcamentos,
   type SituacaoOrcamento,
 } from '@/lib/api/orcamentos'
-import { cn } from '@/lib/utils'
 
 /** "R$ 19.100,00"; sem nenhum com preço (mas com orçamentos), "Sem preço": nunca vira zero. */
 function valorDoIndicador(indicador: IndicadorDeOrcamentos): string {
@@ -100,6 +99,9 @@ export function IndicadoresDosOrcamentos({
   )
 }
 
+/** Valor da aba "Todas" (a situação nula). */
+const TODAS = 'todas'
+
 /** Abas da lista, na ordem do protótipo. Nula = todas. */
 const ABAS: readonly (SituacaoOrcamento | null)[] = [
   null,
@@ -111,9 +113,9 @@ const ABAS: readonly (SituacaoOrcamento | null)[] = [
 ]
 
 /**
- * Abas por situação, com a contagem de cada uma (segue a busca; zero não aparece). Grupo de botões
- * com aria-pressed: filtram a mesma lista, não trocam de painel. A contagem é lida junto com o nome
- * da aba.
+ * Abas por situação, com a contagem de cada uma (segue a busca; zero não aparece). Filtram a mesma
+ * lista abaixo (grupo de botões com aria-pressed, não trocam de painel). A contagem é lida junto com o
+ * nome da aba.
  */
 export function AbasDeSituacao({
   situacao,
@@ -125,68 +127,20 @@ export function AbasDeSituacao({
   aoEscolher: (situacao: SituacaoOrcamento | null) => void
 }) {
   const todas = contagem ? Object.values(contagem).reduce((soma, n) => soma + n, 0) : null
-  const grupo = useRef<HTMLDivElement>(null)
-
-  // No celular, a aba escolhida (ex.: aberta pela URL) entra na área visível da faixa, sem mexer
-  // na rolagem da página (scrollIntoView rolaria a página até as abas).
-  useEffect(() => {
-    const faixa = grupo.current
-    const ativa = faixa?.querySelector<HTMLElement>('[aria-pressed="true"]')
-    if (!faixa || !ativa) return
-    const fora =
-      ativa.offsetLeft < faixa.scrollLeft ||
-      ativa.offsetLeft + ativa.offsetWidth > faixa.scrollLeft + faixa.clientWidth
-    if (fora) faixa.scrollLeft = Math.max(0, ativa.offsetLeft - 8)
-    // As contagens mudam a largura das abas: refaz quando chegam.
-  }, [situacao, todas])
-
+  const lerContagem = (n: number) => plural(n, 'orçamento', 'orçamentos')
   return (
-    // Rola na própria região no celular; o respiro em volta deixa o foco visível inteiro.
-    <div
-      ref={grupo}
-      role="group"
-      aria-label="Situação"
-      className="relative -mx-1 max-w-[calc(100%+8px)] min-w-0 overflow-x-auto px-1 pt-1 [scrollbar-width:none]"
-    >
-      <div className="flex w-max min-w-full gap-(--e-5) border-b border-(--regra-forte)">
-        {ABAS.map((aba) => {
-          const ativa = situacao === aba
-          const rotulo = aba ? ROTULO_DA_SITUACAO[aba] : 'Todas'
-          const quantidade = aba ? (contagem?.[aba] ?? null) : todas
-          return (
-            <button
-              key={aba ?? 'todas'}
-              type="button"
-              aria-pressed={ativa}
-              onClick={() => {
-                aoEscolher(aba)
-              }}
-              className={cn(
-                '-mb-px inline-flex h-11 cursor-pointer items-center gap-(--e-2) border-b-[3px] whitespace-nowrap titulo-secao transicao-estado',
-                ativa
-                  ? 'border-(--marca-linha) text-(--tinta)'
-                  : 'border-transparent text-(--tinta-2) hover:text-(--tinta)',
-              )}
-            >
-              {rotulo}
-              {quantidade === null || quantidade === 0 ? null : (
-                <>
-                  <span
-                    aria-hidden="true"
-                    className={cn(
-                      'min-w-6 rounded-(--raio-mini) px-(--e-1) text-center text-xs font-[800] numero',
-                      ativa ? 'bg-(--tinta) text-(--folha)' : 'bg-(--aperto) text-(--tinta-2)',
-                    )}
-                  >
-                    {quantidade}
-                  </span>
-                  <span className="sr-only">: {plural(quantidade, 'orçamento', 'orçamentos')}</span>
-                </>
-              )}
-            </button>
-          )
-        })}
-      </div>
-    </div>
+    <AbasDeFiltro<SituacaoOrcamento | typeof TODAS>
+      rotulo="Situação"
+      valor={situacao ?? TODAS}
+      aoMudar={(valor) => {
+        aoEscolher(valor === TODAS ? null : valor)
+      }}
+      abas={ABAS.map((aba) => ({
+        valor: aba ?? TODAS,
+        rotulo: aba ? ROTULO_DA_SITUACAO[aba] : 'Todas',
+        contagem: aba ? contagem?.[aba] : todas,
+        lerContagem,
+      }))}
+    />
   )
 }

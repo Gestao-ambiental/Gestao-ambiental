@@ -28,19 +28,13 @@ import { AvisoDeSaida } from '@/components/aviso-de-saida'
 import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
 import { BotaoIcone } from '@/components/ui/botao-icone'
+import { BotaoMais } from '@/components/ui/botao-mais'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { Segmentado, type OpcaoSegmentada } from '@/components/ui/segmentado'
 import { Trilha } from '@/components/ui/trilha'
 import { OpcaoRadio } from '@/components/ui/caixa-selecao'
 import { CampoTexto } from '@/components/ui/campo-texto'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { classeAreaTexto, classeCampoBase } from '@/components/ui/estilos-campo'
-import { Icone } from '@/components/ui/icone'
 import {
   ROTULO_DO_TRATAMENTO,
   cadastrarEmpreendimentoDoProspecto,
@@ -1083,32 +1077,35 @@ function Editor({
       acao={
         <>
           {naLixeira ? null : (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <BotaoIcone icone="ellipsis" aparencia="padrao" rotulo="Mais ações do orçamento" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {/* A cópia e o modelo partem do que está salvo: com mudanças pendentes, esperam. */}
-                <DropdownMenuItem
-                  disabled={alterado}
-                  onSelect={() => {
+            // A cópia e o modelo partem do que está salvo: com mudanças pendentes, esperam.
+            <BotaoMais
+              itens={[
+                {
+                  rotulo: 'Duplicar',
+                  icone: 'copy',
+                  desabilitado: alterado,
+                  aoEscolher: () => {
                     setDuplicarAberto(true)
-                  }}
-                >
-                  <Icone nome="copy" />
-                  Duplicar
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  disabled={alterado}
-                  onSelect={() => {
+                  },
+                },
+                {
+                  rotulo: 'Salvar como modelo',
+                  icone: 'star',
+                  desabilitado: alterado,
+                  aoEscolher: () => {
                     setSalvarModeloAberto(true)
-                  }}
-                >
-                  <Icone nome="star" />
-                  Salvar como modelo
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  },
+                },
+                {
+                  rotulo: 'Triagem de licenciamento',
+                  icone: 'signpost',
+                  separadoAntes: true,
+                  para: orcamento.empreendimentoId
+                    ? `/triagem?empreendimento=${orcamento.empreendimentoId}`
+                    : '/triagem',
+                },
+              ]}
+            />
           )}
           {verProposta(editavel ? 'padrao' : 'primario')}
           {editavel ? (

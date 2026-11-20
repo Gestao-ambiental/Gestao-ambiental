@@ -2,6 +2,7 @@
 // o botão de lupa) que abre um diálogo de comando. Combobox com listbox agrupada e
 // aria-activedescendant: o foco fica no campo; setas movem, Enter abre, Esc fecha e devolve o foco.
 // O que volta é decidido pela RLS; esconder orçamento e itens da Gestão aqui é só apresentação.
+// Atalhos (destinos e ações) vêm de ATALHOS_DA_BUSCA, não do menu (ADR-0041).
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Dialog } from 'radix-ui'
 import {
@@ -19,6 +20,7 @@ import { BotaoIcone } from '@/components/ui/botao-icone'
 import { Esqueleto } from '@/components/ui/esqueleto'
 import {
   buscarNoGrama,
+  RESULTADOS_POR_GRUPO,
   TAMANHO_MINIMO_DA_BUSCA,
   type ResultadoBusca,
   type TipoResultadoBusca,
@@ -27,7 +29,8 @@ import { mensagemDoErro } from '@/lib/erros'
 import { cn } from '@/lib/utils'
 
 import { useConsultoria } from '../consultoria/contexto-consultoria'
-import { ITENS_NAVEGACAO } from '../navegacao'
+import { useRecursosLiberados } from '../consultoria/recurso-liberado'
+import { atalhosVisiveis, RECURSOS_DOS_ATALHOS, ROTULO_DO_TIPO_DE_ATALHO } from './atalhos'
 
 const ESPERA_AO_DIGITAR_MS = 200
 const PLACEHOLDER = 'Buscar licença, condicionante, orçamento'
@@ -37,13 +40,23 @@ const GRUPOS: readonly { tipo: TipoResultadoBusca; rotulo: string; icone: NomeIc
   { tipo: 'licenca', rotulo: 'Licenças', icone: 'file-check' },
   { tipo: 'condicionante', rotulo: 'Condicionantes', icone: 'list' },
   { tipo: 'orcamento', rotulo: 'Orçamentos', icone: 'file-text' },
+  { tipo: 'exigencia', rotulo: 'Exigências', icone: 'flag' },
+  { tipo: 'vencimento', rotulo: 'Vencimentos', icone: 'calendar-check' },
 ]
 
-/** Licença e condicionante não têm página própria: abrem o empreendimento. */
+/**
+ * Orçamento e exigência têm página própria. Licença, condicionante e vencimento não: abrem o
+ * empreendimento.
+ */
 function destinoDoResultado(resultado: ResultadoBusca): string {
-  return resultado.tipo === 'orcamento'
-    ? `/orcamentos/${resultado.referenciaId}`
-    : `/empreendimentos/${resultado.referenciaId}`
+  switch (resultado.tipo) {
+    case 'orcamento':
+      return `/orcamentos/${resultado.referenciaId}`
+    case 'exigencia':
+      return `/exigencias/${resultado.id}`
+    default:
+      return `/empreendimentos/${resultado.referenciaId}`
+  }
 }
 
 function semAcento(texto: string): string {
@@ -159,6 +172,7 @@ function PaletaDeBusca({ aoEscolher }: { aoEscolher: () => void }) {
   const [termoBuscado, setTermoBuscado] = useState('')
   const [ativoChave, setAtivoChave] = useState<string | null>(null)
   const ehGestao = atual.papel === 'gestao'
+  const liberados = useRecursosLiberados(RECURSOS_DOS_ATALHOS)
 
   useEffect(() => {
     const espera = window.setTimeout(() => {
@@ -184,6 +198,7 @@ function PaletaDeBusca({ aoEscolher }: { aoEscolher: () => void }) {
   const grupos: Grupo[] = GRUPOS.flatMap(({ tipo, rotulo, icone }) => {
     const opcoes = resultados
       .filter((r) => r.tipo === tipo)
+      .slice(0, RESULTADOS_POR_GRUPO)
       .map((r) => ({
         chave: `${r.tipo}:${r.id}`,
         grupo: rotulo,
@@ -195,17 +210,23 @@ function PaletaDeBusca({ aoEscolher }: { aoEscolher: () => void }) {
     return opcoes.length ? [{ rotulo, opcoes }] : []
   })
   const filtro = semAcento(termo)
-  const destinos = ITENS_NAVEGACAO.filter(
-    (item) => (ehGestao || !item.somenteGestao) && semAcento(item.rotulo).includes(filtro),
-  ).map((item) => ({
-    chave: `ir:${item.para}`,
-    grupo: 'Ir para',
-    titulo: item.rotulo,
-    detalhe: null,
-    icone: item.icone,
-    destino: item.para,
-  }))
-  if (destinos.length) grupos.push({ rotulo: 'Ir para', opcoes: destinos })
+  const atalhos = atalhosVisiveis(atual.papel, liberados).filter((a) =>
+    semAcento(a.rotulo).includes(filtro),
+  )
+  for (const tipo of ['destino', 'acao'] as const) {
+    const rotulo = ROTULO_DO_TIPO_DE_ATALHO[tipo]
+    const opcoes = atalhos
+      .filter((a) => a.tipo === tipo)
+      .map((a) => ({
+        chave: `${tipo}:${a.para}`,
+        grupo: rotulo,
+        titulo: a.rotulo,
+        detalhe: null,
+        icone: a.icone,
+        destino: a.para,
+      }))
+    if (opcoes.length) grupos.push({ rotulo, opcoes })
+  }
 
   const opcoes = grupos.flatMap((g) => g.opcoes)
   const indiceAtivo = Math.max(

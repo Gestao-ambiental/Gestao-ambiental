@@ -400,7 +400,7 @@ describe('orçamentos (onda 5)', () => {
     expect(await screen.findByText('ORC-2026-041 foi para a lixeira.')).toBeInTheDocument()
 
     // Lixeira e configurações ficam no menu "…" do cabeçalho (uma ação principal por tela).
-    await usuario.click(screen.getByRole('button', { name: 'Mais opções' }))
+    await usuario.click(screen.getByRole('button', { name: 'Mais ações' }))
     await usuario.click(await screen.findByRole('menuitem', { name: 'Lixeira' }))
     expect(
       await screen.findByRole('heading', { name: 'Lixeira de orçamentos' }),
@@ -637,7 +637,12 @@ describe('orçamentos (onda 5)', () => {
     falso.reiniciar(cenario('gestao', { rpc: { salvar_identidade_da_consultoria: { data: 1 } } }))
     const usuario = userEvent.setup()
     const { container } = renderizarApp('/configuracoes/proposta')
-    await screen.findByRole('heading', { name: 'Dados da proposta' })
+    // Dados da proposta é a segunda seção da aba Orçamentos de Configurações (ADR-0041).
+    await screen.findByRole('heading', { level: 1, name: 'Configurações' })
+    expect(screen.getByRole('button', { name: 'Dados da proposta' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
     const acessibilidade = await axe.run(container, {
       rules: { 'color-contrast': { enabled: false } },
     })
@@ -1337,7 +1342,7 @@ describe('orçamentos (onda 5)', () => {
     const usuario = userEvent.setup()
     renderizarApp('/orcamentos/o1')
     // Duplicar e Salvar como modelo ficam no menu "…" do cabeçalho.
-    await usuario.click(await screen.findByRole('button', { name: 'Mais ações do orçamento' }))
+    await usuario.click(await screen.findByRole('button', { name: 'Mais ações' }))
     await usuario.click(await screen.findByRole('menuitem', { name: 'Salvar como modelo' }))
     const nome = screen.getByLabelText('Nome do modelo')
     expect(nome).toHaveValue('Licenciamento (LO)')
@@ -1357,7 +1362,7 @@ describe('orçamentos (onda 5)', () => {
     const usuario = userEvent.setup()
     renderizarApp('/orcamentos/o1')
     await usuario.type(await screen.findByLabelText('Horas do item 1'), '0')
-    const mais = screen.getByRole('button', { name: 'Mais ações do orçamento' })
+    const mais = screen.getByRole('button', { name: 'Mais ações' })
     await usuario.click(mais)
     expect(await screen.findByRole('menuitem', { name: 'Duplicar' })).toHaveAttribute(
       'aria-disabled',
@@ -1368,7 +1373,7 @@ describe('orçamentos (onda 5)', () => {
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Salvar' })).toBeDisabled()
     })
-    await usuario.click(screen.getByRole('button', { name: 'Mais ações do orçamento' }))
+    await usuario.click(screen.getByRole('button', { name: 'Mais ações' }))
     const duplicar = await screen.findByRole('menuitem', { name: 'Duplicar' })
     expect(duplicar).not.toHaveAttribute('aria-disabled')
     await usuario.click(duplicar)
@@ -2273,6 +2278,16 @@ describe('orçamentos (onda 5)', () => {
     await usuario.click(screen.getByRole('button', { name: 'Calcular pela equipe' }))
     const resultado = await axe.run(container, { rules: { 'color-contrast': { enabled: false } } })
     expect(resultado.violations.map((v) => v.id)).toEqual([])
+  })
+
+  it('"Triagem de licenciamento" no "…" do orçamento abre a triagem do empreendimento', async () => {
+    const usuario = userEvent.setup()
+    const { router } = renderizarApp('/orcamentos/o1')
+    await screen.findByRole('heading', { name: 'Indústria Horizonte' })
+    await usuario.click(screen.getByRole('button', { name: 'Mais ações' }))
+    await usuario.click(await screen.findByRole('menuitem', { name: 'Triagem de licenciamento' }))
+    expect(router.state.location.pathname).toBe('/triagem')
+    expect(router.state.location.search).toBe('?empreendimento=e1')
   })
 
   it('o editor não tem violações de acessibilidade detectáveis em nenhuma etapa', async () => {

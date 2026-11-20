@@ -136,3 +136,35 @@ describe('calendário: visões e hoje (EQ-04)', () => {
     expect(resultado.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([])
   })
 })
+
+describe('calendário: exigência e vencimento (base das oito funções)', () => {
+  it('a lista escreve o tipo, desenha a forma e leva a exigência à página dela', async () => {
+    falso.reiniciar(
+      cenario({
+        listar_calendario: {
+          data: [
+            { ...evento(hoje, 'exigencia', 'Apresentar laudo complementar'), id: 'x1' },
+            { ...evento(hoje, 'vencimento', 'AVCB'), id: 'v1', responsavel_nome: null },
+          ],
+        },
+      }),
+    )
+    const usuario = userEvent.setup()
+    renderizarApp('/calendario')
+    await screen.findByRole('table', { name: /Calendário de/ })
+
+    await usuario.click(screen.getByRole('button', { name: 'Lista' }))
+    const agenda = await screen.findByRole('region', { name: 'Agenda' })
+    const dia = within(agenda).getByRole('list', { name: new RegExp(formatarDataCivil(hoje)) })
+
+    expect(within(dia).getByText('Exigência')).toBeInTheDocument()
+    expect(within(dia).getByText('Apresentar laudo complementar').closest('a')).toHaveAttribute(
+      'href',
+      '/exigencias/x1',
+    )
+    expect(within(dia).getByText('Vencimento')).toBeInTheDocument()
+    expect(within(dia).getByText('AVCB').closest('a')).toBeNull()
+    expect(dia.querySelector('[data-tipo="exigencia"]')).not.toBeNull()
+    expect(dia.querySelector('[data-tipo="vencimento"]')).not.toBeNull()
+  })
+})

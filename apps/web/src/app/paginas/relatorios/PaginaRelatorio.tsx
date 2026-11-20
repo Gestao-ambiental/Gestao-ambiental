@@ -19,16 +19,10 @@ import { EditorDeModelo } from '@/app/paginas/modelos/EditorDeModelo'
 import { AvisoDeSaida } from '@/components/aviso-de-saida'
 import { Carregando, EstadoErro, EstadoVazio } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
-import { BotaoIcone } from '@/components/ui/botao-icone'
+import { BotaoMais } from '@/components/ui/botao-mais'
 import { CampoData } from '@/components/ui/campo-data'
 import { CampoTexto } from '@/components/ui/campo-texto'
 import { Dialogo } from '@/components/ui/dialogo'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { Selo, type TomSelo } from '@/components/ui/selo'
 import { pedirConferenciaIa } from '@/lib/api/conferencia-ia'
@@ -316,21 +310,17 @@ function EdicaoDoRelatorio({
               Devolver
             </Botao>
           ) : null}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <BotaoIcone icone="ellipsis" rotulo="Mais ações do relatório" aparencia="padrao" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                disabled={exportar.isPending}
-                onSelect={() => {
+          <BotaoMais
+            itens={[
+              {
+                rotulo: 'Exportar .docx',
+                desabilitado: exportar.isPending,
+                aoEscolher: () => {
                   exportar.mutate()
-                }}
-              >
-                Exportar .docx
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                },
+              },
+            ]}
+          />
           {principal}
         </>
       }

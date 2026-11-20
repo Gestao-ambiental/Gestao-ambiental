@@ -8,15 +8,9 @@ import { useMutation } from '@tanstack/react-query'
 import { useState, type ReactNode } from 'react'
 
 import { Botao } from '@/components/ui/botao'
-import { BotaoIcone } from '@/components/ui/botao-icone'
+import { BotaoMais } from '@/components/ui/botao-mais'
 import { CampoTexto } from '@/components/ui/campo-texto'
 import { Dialogo } from '@/components/ui/dialogo'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { Selo, type TomSelo } from '@/components/ui/selo'
 import {
@@ -298,22 +292,17 @@ export function PainelAgora({
           <div className="flex flex-wrap items-center gap-(--e-2) max-md:[&>button:not([aria-haspopup])]:flex-1">
             {principal}
             {secundaria}
-            {menu ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <BotaoIcone icone="ellipsis" rotulo="Mais ações" aparencia="padrao" />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onSelect={() => {
-                      setDialogo('sem_evidencia')
-                    }}
-                  >
-                    Concluir sem evidência
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : null}
+            <BotaoMais
+              itens={[
+                {
+                  rotulo: 'Concluir sem evidência',
+                  oculto: !menu,
+                  aoEscolher: () => {
+                    setDialogo('sem_evidencia')
+                  },
+                },
+              ]}
+            />
           </div>
         ) : null}
       </div>

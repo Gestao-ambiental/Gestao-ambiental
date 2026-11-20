@@ -268,6 +268,34 @@ describe('plano de renovação (REN-01)', () => {
     ).toBeInTheDocument()
   })
 
+  it('"Triar atividades" no "…" abre a triagem com o empreendimento, sem segundo botão principal', async () => {
+    falso.reiniciar(cenario('equipe'))
+    const usuario = userEvent.setup()
+    const { router } = renderizarApp('/renovacoes/i2')
+    await screen.findByRole('heading', { level: 1, name: 'Renovação da LAO 2207/2023' })
+    await usuario.click(screen.getByRole('button', { name: 'Mais ações' }))
+    await usuario.click(await screen.findByRole('menuitem', { name: 'Triar atividades' }))
+    expect(router.state.location.pathname).toBe('/triagem')
+    expect(router.state.location.search).toBe('?empreendimento=e1')
+  })
+
+  it('Gestão: "Registrar protocolo" continua a única ação principal, ao lado do "…"', async () => {
+    falso.reiniciar(cenario('gestao'))
+    renderizarApp('/renovacoes/i2')
+    const titulo = await screen.findByRole('heading', {
+      level: 1,
+      name: 'Renovação da LAO 2207/2023',
+    })
+    const cabecalho = titulo.closest('header')
+    if (!cabecalho) throw new Error('cabeçalho ausente')
+    expect(
+      within(cabecalho)
+        .getAllByRole('button')
+        .map((b) => b.textContent),
+    ).toEqual(['', 'Registrar protocolo'])
+    expect(within(cabecalho).getByRole('button', { name: 'Mais ações' })).toBeInTheDocument()
+  })
+
   it('licença sem plano ou de outra consultoria', async () => {
     falso.reiniciar(cenario('gestao', { obter_plano_renovacao: { data: [] } }))
     renderizarApp('/renovacoes/i9')

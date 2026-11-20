@@ -12,6 +12,7 @@ import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Pagina } from '@/app/paginas/Pagina'
 import { Contagem } from '@/app/paginas/visao/Contagem'
 import { Carregando, EstadoErro, EstadoVazio } from '@/components/estados'
+import { Abas, PainelDeAba } from '@/components/ui/abas'
 import { Avatar } from '@/components/ui/avatar'
 import { BotaoIcone } from '@/components/ui/botao-icone'
 import { Icone } from '@/components/ui/icone'
@@ -25,9 +26,8 @@ import {
 import { tempoDesde } from '@/lib/datas'
 import { cn } from '@/lib/utils'
 
+import { abasDeAcompanhamentosVisiveis } from './abas-de-acompanhamentos'
 import { SeloRenovacao } from './SeloRenovacao'
-
-type Aba = 'renovacoes' | 'conferencia'
 
 const classeCelula = 'h-(--linha) border-b border-(--regra-leve) px-(--e-3) align-middle'
 const classeCabecalho =
@@ -143,15 +143,20 @@ function Faltam({ dias, ordem }: { dias: number | null; ordem: number }) {
 }
 
 /**
- * /acompanhamentos (Protótipo 17, artboard 01; EQ-05): duas abas. Renovações no radar como quadro
- * de partidas (quanto falta para o limite de protocolo) e evidências aguardando conferência.
+ * /acompanhamentos (Protótipo 17, artboard 01; EQ-05): abas de abas-de-acompanhamentos.ts.
+ * Renovações no radar como quadro de partidas (quanto falta para o limite de protocolo) e
+ * evidências aguardando conferência.
  */
 export function PaginaAcompanhamentos() {
   const { atual } = useConsultoria()
   const cid = atual.consultoriaId
   const ids = useId()
   const [parametros, setParametros] = useSearchParams()
-  const aba: Aba = parametros.get('aba') === 'conferencia' ? 'conferencia' : 'renovacoes'
+  const visiveis = abasDeAcompanhamentosVisiveis(atual.papel === 'gestao')
+  const primeira = visiveis[0]?.valor ?? 'renovacoes'
+  const pedida = parametros.get('aba')
+  const aba = visiveis.find((a) => a.valor === pedida)?.valor ?? primeira
+  const PainelDaAba = visiveis.find((a) => a.valor === aba)?.Painel
   const [paginaConferencia, setPaginaConferencia] = useState(0)
   const [paginaRenovacao, setPaginaRenovacao] = useState(0)
 
@@ -167,26 +172,16 @@ export function PaginaAcompanhamentos() {
   })
   const agora = new Date()
 
-  const abas: { aba: Aba; rotulo: string; curto: string; total: number | undefined }[] = [
-    {
-      aba: 'renovacoes',
-      rotulo: 'Renovações no radar',
-      curto: 'Renovações',
-      total: renovacoes.data?.total,
-    },
-    {
-      aba: 'conferencia',
-      rotulo: 'Aguardando conferência',
-      curto: 'Conferência',
-      total: conferencias.data?.total,
-    },
-  ]
+  const totais: Record<string, number | undefined> = {
+    renovacoes: renovacoes.data?.total,
+    conferencia: conferencias.data?.total,
+  }
 
-  function trocar(nova: Aba) {
+  function trocar(nova: string) {
     setParametros(
       (p) => {
         const proximo = new URLSearchParams(p)
-        if (nova === 'renovacoes') proximo.delete('aba')
+        if (nova === primeira) proximo.delete('aba')
         else proximo.set('aba', nova)
         return proximo
       },
@@ -197,52 +192,24 @@ export function PaginaAcompanhamentos() {
   return (
     <Pagina titulo="Acompanhamentos">
       <div className="flex flex-col gap-(--e-4)">
-        <div
-          role="tablist"
-          aria-label="Acompanhamentos"
-          className="flex gap-(--e-5) overflow-x-auto overflow-y-hidden border-b border-(--regra-forte) [scrollbar-width:none]"
-        >
-          {abas.map((a) => {
-            const ativa = aba === a.aba
-            return (
-              <button
-                key={a.aba}
-                id={`${ids}-aba-${a.aba}`}
-                type="button"
-                role="tab"
-                aria-selected={ativa}
-                aria-controls={`${ids}-painel-${a.aba}`}
-                onClick={() => {
-                  trocar(a.aba)
-                }}
-                className={cn(
-                  '-mb-px inline-flex h-11 shrink-0 cursor-pointer items-center gap-(--e-2) border-b-[3px] titulo-secao whitespace-nowrap transicao-estado',
-                  ativa
-                    ? 'border-(--marca-linha) text-(--tinta)'
-                    : 'border-transparent text-(--tinta-2) hover:text-(--tinta)',
-                )}
-              >
-                {/* No celular cabe só a palavra curta; o nome completo segue para o leitor. */}
-                <span aria-hidden className="md:hidden">
-                  {a.curto}
-                </span>
-                <span className="max-md:sr-only">{a.rotulo}</span>
-                {a.total === undefined ? null : (
-                  <span
-                    className={cn(
-                      'min-w-6 rounded-(--raio-mini) px-(--e-1) text-center text-xs font-[800] numero',
-                      ativa ? 'bg-(--tinta) text-(--folha)' : 'bg-(--aperto) text-(--tinta-2)',
-                    )}
-                  >
-                    {a.total}
-                  </span>
-                )}
-              </button>
-            )
-          })}
-        </div>
+        <Abas
+          rotulo="Acompanhamentos"
+          idBase={ids}
+          valor={aba}
+          aoMudar={trocar}
+          abas={visiveis.map((a) => ({
+            valor: a.valor,
+            rotulo: a.rotulo,
+            curto: a.curto,
+            contagem: totais[a.valor],
+          }))}
+        />
 
-        {aba === 'renovacoes' ? (
+        {PainelDaAba ? (
+          <PainelDeAba idBase={ids} valor={aba}>
+            <PainelDaAba />
+          </PainelDeAba>
+        ) : aba === 'renovacoes' ? (
           <div
             role="tabpanel"
             id={`${ids}-painel-renovacoes`}

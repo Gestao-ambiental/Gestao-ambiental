@@ -24,7 +24,7 @@ import { meuPerfil } from '@/lib/api/perfil'
 /**
  * Menu da conta (Protótipo 04): nome e e-mail, Meu perfil (foto e cargo), Segurança (dois fatores,
  * ADR-0024), troca de consultoria, Bloquear tela e Sair. Para operador da plataforma, o link da
- * central administrativa (ADM-01).
+ * central administrativa (ADM-01). Modelos de documento ficam em Configurações (ADR-0041).
  */
 export function MenuConta() {
   const { sessao, sair } = useSessao()
@@ -91,16 +91,6 @@ export function MenuConta() {
           <Icone nome="settings" />
           Segurança
         </DropdownMenuItem>
-        {!suporte && atual.papel === 'gestao' ? (
-          <DropdownMenuItem
-            onSelect={() => {
-              void navegar('/configuracoes/modelos')
-            }}
-          >
-            <Icone nome="file-text" />
-            Modelos de documento
-          </DropdownMenuItem>
-        ) : null}
         {operador.data === true ? (
           <DropdownMenuItem
             onSelect={() => {

@@ -10,16 +10,9 @@ import { Pagina } from '@/app/paginas/Pagina'
 import { AvisoDeSaida } from '@/components/aviso-de-saida'
 import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
-import { BotaoIcone } from '@/components/ui/botao-icone'
+import { BotaoMais } from '@/components/ui/botao-mais'
 import { CampoTexto } from '@/components/ui/campo-texto'
 import { Dialogo } from '@/components/ui/dialogo'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import {
   arquivarModeloDeDocumento,
@@ -195,31 +188,26 @@ function EdicaoDoModelo({ modelo }: { modelo: ModeloDeDocumento | null }) {
       acao={
         <>
           {modelo ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <BotaoIcone icone="ellipsis" rotulo="Mais ações do modelo" aparencia="padrao" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  disabled={ocupado}
-                  onSelect={() => {
+            <BotaoMais
+              itens={[
+                {
+                  rotulo: 'Duplicar',
+                  desabilitado: ocupado,
+                  aoEscolher: () => {
                     duplicar.mutate()
-                  }}
-                >
-                  Duplicar
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  disabled={ocupado}
-                  className="text-(--atraso-texto)"
-                  onSelect={() => {
+                  },
+                },
+                {
+                  rotulo: 'Arquivar',
+                  perigo: true,
+                  separadoAntes: true,
+                  desabilitado: ocupado,
+                  aoEscolher: () => {
                     setArquivarAberto(true)
-                  }}
-                >
-                  Arquivar
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  },
+                },
+              ]}
+            />
           ) : null}
           <Botao aparencia="primario" iconeAntes="check" disabled={ocupado} onClick={aoSalvar}>
             {salvar.isPending ? 'Salvando' : 'Salvar'}

@@ -306,7 +306,8 @@ describe('tela do empreendimento (EMP-02)', () => {
       expect(
         within(lista).getByRole('link', { name: 'Continuar o cadastro de LAO 4821/2023' }),
       ).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: 'Gerenciar unidades' })).toBeInTheDocument()
+      // Unidades foram para o "…" do cabeçalho (uma ação principal por tela, ADR-0041).
+      expect(screen.getByRole('button', { name: 'Mais ações' })).toBeInTheDocument()
     } finally {
       vi.unstubAllGlobals()
     }
@@ -317,7 +318,8 @@ describe('tela do empreendimento (EMP-02)', () => {
     const usuario = userEvent.setup()
     renderizarApp('/empreendimentos/e1')
 
-    await usuario.click(await screen.findByRole('button', { name: 'Gerenciar unidades' }))
+    await usuario.click(await screen.findByRole('button', { name: 'Mais ações' }))
+    await usuario.click(await screen.findByRole('menuitem', { name: 'Gerenciar unidades' }))
     const dialogo = await screen.findByRole('dialog', { name: 'Unidades' })
     expect(within(dialogo).getByText('Endereço não informado')).toBeInTheDocument()
 

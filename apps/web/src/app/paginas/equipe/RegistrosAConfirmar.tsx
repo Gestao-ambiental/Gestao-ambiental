@@ -56,14 +56,19 @@ export function RegistrosAConfirmar() {
   const ocupado = confirmar.isPending || recusar.isPending
   const erro = confirmar.error ?? recusar.error
 
+  // Nada a confirmar: a seção some, como os convites pendentes.
+  if (pendentes.isSuccess && pendentes.data.length === 0 && !erro) return null
+
   return (
-    <section aria-labelledby="titulo-registros" className="flex flex-col gap-(--space-100)">
-      <div className="flex items-baseline gap-(--space-100)">
-        <h2 id="titulo-registros" className="titulo-secao text-(--text)">
+    <section aria-labelledby="titulo-registros" className="flex flex-col gap-(--e-3)">
+      <div className="flex items-center gap-(--e-2)">
+        <h2 id="titulo-registros" className="titulo-secao text-(--tinta)">
           Registros a confirmar
         </h2>
         {pendentes.isSuccess ? (
-          <span className="text-xs text-(--text-subtle)">{pendentes.data.length}</span>
+          <span className="min-w-6 rounded-(--raio-mini) bg-(--aperto) px-(--e-1) text-center text-xs font-[800] text-(--tinta-2) numero">
+            {pendentes.data.length}
+          </span>
         ) : null}
       </div>
       {erro ? (
@@ -75,26 +80,24 @@ export function RegistrosAConfirmar() {
         <Carregando rotulo="Carregando registros" linhas={2} />
       ) : pendentes.isError ? (
         <EstadoErro aoTentarDeNovo={() => void pendentes.refetch()} />
-      ) : pendentes.data.length === 0 ? (
-        <p className="corpo text-(--text-subtle)">Nenhum registro aguardando confirmação.</p>
-      ) : (
-        <ul className="flex flex-col rounded-(--radius-large) border bg-(--surface) shadow-cartao">
+      ) : pendentes.data.length === 0 ? null : (
+        <ul className="flex flex-col overflow-hidden rounded-(--raio-painel) border bg-(--folha)">
           {pendentes.data.map((registro) => {
             const situacao = situacaoDoRegistro(registro, hoje)
             const descricao = `${rotuloDaProfissao(registro.profissao)} de ${registro.membroNome}`
             return (
               <li
                 key={registro.id}
-                className="flex flex-wrap items-center gap-(--space-150) border-b px-(--space-150) py-(--space-100) last:border-b-0"
+                className="flex min-h-(--linha) flex-wrap items-center gap-x-(--e-3) gap-y-(--e-2) border-b border-(--regra-leve) px-(--e-4) py-(--e-2) last:border-b-0"
               >
                 <div className="flex min-w-0 flex-1 flex-col">
-                  <span className="corpo-medio text-(--text)">{registro.membroNome}</span>
-                  <span className="rotulo">
+                  <span className="truncate corpo-medio text-(--tinta)">{registro.membroNome}</span>
+                  <span className="rotulo numero">
                     {rotuloDaProfissao(registro.profissao)} · {detalheDoRegistro(registro)}
                   </span>
                 </div>
                 <Selo tom={TOM_DA_SITUACAO[situacao]}>{rotuloDaSituacaoDoRegistro(situacao)}</Selo>
-                <div className="flex gap-(--space-100)">
+                <div className="flex gap-(--e-1)">
                   <Botao
                     tamanho="compacto"
                     disabled={ocupado}

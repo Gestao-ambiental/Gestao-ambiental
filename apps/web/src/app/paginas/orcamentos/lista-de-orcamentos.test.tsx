@@ -119,6 +119,28 @@ describe('Lista de orçamentos: filtros e indicadores', () => {
     expect(screen.queryByRole('button', { name: 'Limpar filtros' })).toBeNull()
   })
 
+  it('"Novo orçamento" no Ctrl+K abre o diálogo mesmo já estando na lista', async () => {
+    falso.reiniciar(
+      cenario('gestao', { recurso_liberado: { data: true }, buscar_no_grama: { data: [] } }),
+    )
+    const usuario = userEvent.setup()
+    const { router } = renderizarApp('/orcamentos')
+    await screen.findByRole('group', { name: 'Situação' })
+    expect(screen.queryByRole('dialog', { name: 'Novo orçamento' })).toBeNull()
+
+    await usuario.keyboard('{Control>}k{/Control}')
+    await usuario.click(await screen.findByRole('option', { name: 'Novo orçamento' }))
+    expect(await screen.findByRole('dialog', { name: 'Novo orçamento' })).toBeInTheDocument()
+    expect(router.state.location.search).toBe('?novo=1')
+
+    // Fechar tira o ?novo=1 e não reabre.
+    await usuario.keyboard('{Escape}')
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: 'Novo orçamento' })).toBeNull()
+    })
+    expect(router.state.location.search).toBe('')
+  })
+
   it('a aba filtra a lista pelo banco e fica na URL; limpar volta para todas', async () => {
     const usuario = userEvent.setup()
     const { router } = renderizarApp('/orcamentos')

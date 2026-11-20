@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -123,5 +123,32 @@ describe('alvarás do empreendimento (ALV-01 e ALV-02)', () => {
     falso.reiniciar(cenario('gestao'))
     renderizarApp('/empreendimentos/e1')
     expect(await screen.findByText('Nenhum alvará cadastrado.')).toBeInTheDocument()
+  })
+
+  it('sem alvará, a Equipe nem vê a seção', async () => {
+    falso.reiniciar(cenario('equipe'))
+    renderizarApp('/empreendimentos/e1')
+    await screen.findByRole('region', { name: 'Licenças' })
+    await waitFor(() => {
+      expect(screen.queryByRole('region', { name: 'Alvarás' })).not.toBeInTheDocument()
+    })
+    expect(screen.queryByText('Nenhum alvará cadastrado.')).not.toBeInTheDocument()
+  })
+
+  it('exclusão recusada pelo banco: avisa e mantém o alvará', async () => {
+    const base = cenario('gestao', [alvara('a1', '1234/2026', '2999-05-31')])
+    falso.reiniciar({
+      ...base,
+      rpc: { ...base.rpc, excluir_alvara: { error: { code: '42501', message: 'sem_permissao' } } },
+    })
+    const usuario = userEvent.setup()
+    renderizarApp('/empreendimentos/e1')
+
+    const secao = await screen.findByRole('region', { name: 'Alvarás' })
+    await usuario.click(
+      await within(secao).findByRole('button', { name: 'Excluir Alvará 1234/2026' }),
+    )
+    expect(await within(secao).findByRole('alert')).toBeInTheDocument()
+    expect(within(secao).getByText('Alvará 1234/2026')).toBeInTheDocument()
   })
 })

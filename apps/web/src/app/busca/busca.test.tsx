@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter } from 'react-router'
 import { RouterProvider } from 'react-router/dom'
@@ -225,5 +225,127 @@ describe('busca global', () => {
     expect(
       screen.queryByRole('option', { name: /Licenciamento da Metalúrgica/ }),
     ).not.toBeInTheDocument()
+  })
+
+  it('a Triagem de licenciamento, fora do menu, é achada pelo Ctrl+K', async () => {
+    falso.reiniciar({ rpc: { buscar_no_grama: { data: [] } } })
+    const { usuario, router } = renderizar('equipe')
+    await usuario.keyboard('{Control>}k{/Control}')
+    await usuario.type(await screen.findByRole('combobox'), 'triagem')
+    const irPara = await screen.findByRole('group', { name: 'Ir para' })
+    await waitFor(() => {
+      expect(
+        within(irPara)
+          .getAllByRole('option')
+          .map((o) => o.textContent),
+      ).toEqual(['Triagem de licenciamento'])
+    })
+    await usuario.keyboard('{Enter}')
+    expect(router.state.location.pathname).toBe('/triagem')
+  })
+
+  it('a Gestão acha as abas de Configurações e as ações; a Equipe não', async () => {
+    falso.reiniciar({ rpc: { buscar_no_grama: { data: [] } } })
+    const { usuario, router } = renderizar('gestao')
+    await usuario.keyboard('{Control>}k{/Control}')
+    const irPara = await screen.findByRole('group', { name: 'Ir para' })
+    for (const nome of ['Painel', 'Configurações', 'Plano e cobrança', 'Modelos de documento']) {
+      expect(within(irPara).getByRole('option', { name: nome })).toBeInTheDocument()
+    }
+    const acoes = screen.getByRole('group', { name: 'Ações' })
+    await usuario.click(within(acoes).getByRole('option', { name: 'Cadastrar licença' }))
+    expect(router.state.location.pathname).toBe('/licencas/nova')
+  })
+
+  it('a Equipe não vê ações nem abas de Configurações', async () => {
+    falso.reiniciar({ rpc: { buscar_no_grama: { data: [] } } })
+    const { usuario } = renderizar('equipe')
+    await usuario.keyboard('{Control>}k{/Control}')
+    const irPara = await screen.findByRole('group', { name: 'Ir para' })
+    expect(within(irPara).getByRole('option', { name: 'Meu perfil' })).toBeInTheDocument()
+    expect(within(irPara).queryByRole('option', { name: 'Configurações' })).not.toBeInTheDocument()
+    expect(
+      within(irPara).queryByRole('option', { name: 'Plano e cobrança' }),
+    ).not.toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: 'Ações' })).not.toBeInTheDocument()
+  })
+
+  it('Custos e taxas e Novo orçamento só aparecem com orçamentos no plano', async () => {
+    falso.reiniciar({ rpc: { buscar_no_grama: { data: [] }, recurso_liberado: { data: false } } })
+    const primeiro = renderizar('gestao')
+    await primeiro.usuario.keyboard('{Control>}k{/Control}')
+    await screen.findByRole('group', { name: 'Ir para' })
+    expect(screen.queryByRole('option', { name: 'Custos e taxas' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: 'Novo orçamento' })).not.toBeInTheDocument()
+    cleanup()
+
+    falso.reiniciar({ rpc: { buscar_no_grama: { data: [] }, recurso_liberado: { data: true } } })
+    const segundo = renderizar('gestao')
+    await segundo.usuario.keyboard('{Control>}k{/Control}')
+    expect(await screen.findByRole('option', { name: 'Custos e taxas' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'Dados da proposta' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'Novo orçamento' })).toBeInTheDocument()
+  })
+
+  it('exigências e vencimentos vêm em grupos próprios: exigência abre a dela, vencimento o empreendimento', async () => {
+    falso.reiniciar({
+      rpc: {
+        buscar_no_grama: {
+          data: [
+            {
+              tipo: 'exigencia',
+              id: 'x1',
+              titulo: 'Ofício 112/2026',
+              detalhe: 'Metalúrgica São João',
+              referencia_id: 'e1',
+            },
+            {
+              tipo: 'vencimento',
+              id: 'v1',
+              titulo: 'Alvará sanitário',
+              detalhe: 'Vence em 10/12/2026',
+              referencia_id: 'e7',
+            },
+          ],
+        },
+      },
+    })
+    const { usuario, router } = renderizar()
+    await usuario.keyboard('{Control>}k{/Control}')
+    await usuario.type(await screen.findByRole('combobox'), 'ofi')
+    const exigencias = await screen.findByRole('group', { name: 'Exigências' })
+    const vencimentos = screen.getByRole('group', { name: 'Vencimentos' })
+    expect(
+      within(vencimentos).getByRole('option', { name: /Alvará sanitário/ }),
+    ).toBeInTheDocument()
+
+    await usuario.click(within(exigencias).getByRole('option', { name: /Ofício 112\/2026/ }))
+    expect(router.state.location.pathname).toBe('/exigencias/x1')
+
+    await usuario.keyboard('{Control>}k{/Control}')
+    await usuario.type(await screen.findByRole('combobox'), 'alv')
+    await usuario.click(await screen.findByRole('option', { name: /Alvará sanitário/ }))
+    expect(router.state.location.pathname).toBe('/empreendimentos/e7')
+  })
+
+  it('mostra até 5 resultados por grupo, o limite do banco', async () => {
+    falso.reiniciar({
+      rpc: {
+        buscar_no_grama: {
+          data: Array.from({ length: 7 }, (_, i) => ({
+            tipo: 'licenca',
+            id: `i${String(i)}`,
+            titulo: `LAO ${String(i)}/2026`,
+            detalhe: null,
+            referencia_id: 'e1',
+          })),
+        },
+      },
+    })
+    const { usuario } = renderizar()
+    await usuario.keyboard('{Control>}k{/Control}')
+    await usuario.type(await screen.findByRole('combobox'), 'lao')
+    const licencas = await screen.findByRole('group', { name: 'Licenças' })
+    expect(within(licencas).getAllByRole('option')).toHaveLength(5)
   })
 })

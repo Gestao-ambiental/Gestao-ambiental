@@ -89,7 +89,9 @@ afterEach(() => {
 async function abrirDialogo() {
   const usuario = userEvent.setup()
   renderizarApp('/empreendimentos/e1')
-  await usuario.click(await screen.findByRole('button', { name: 'Novo relatório' }))
+  // "Gerar relatório" fica no "…" do cabeçalho do empreendimento (uma ação principal, ADR-0041).
+  await usuario.click(await screen.findByRole('button', { name: 'Mais ações' }))
+  await usuario.click(await screen.findByRole('menuitem', { name: 'Gerar relatório' }))
   const dialogo = await screen.findByRole('dialog', { name: 'Novo relatório' })
   return { usuario, dialogo }
 }

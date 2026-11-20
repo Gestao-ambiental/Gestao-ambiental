@@ -15,7 +15,7 @@ export type TipoDoItem = EventoDoCalendario['tipo'] | 'residuo'
 export interface ItemDoDia {
   chave: string
   tipo: TipoDoItem
-  /** Palavra que antecede o texto ("Meta", "Serviço", "Resíduos"): a marca também é escrita. */
+  /** Palavra que antecede o texto ("Meta", "Exigência", "Resíduos"): a marca também é escrita. */
   prefixo: string | null
   texto: string
   /** Linha de apoio na lista e no diálogo do dia (empreendimento, unidade, responsável). */
@@ -26,51 +26,112 @@ export interface ItemDoDia {
   link: string | null
 }
 
-const ROTULO_DO_TIPO: Record<TipoDoItem, string> = {
+/** Todos os tipos que o calendário desenha, na ordem em que a tela os apresenta. */
+export const TIPOS_DO_ITEM: readonly TipoDoItem[] = [
+  'prazo',
+  'meta',
+  'limite_protocolo',
+  'validade',
+  'exigencia',
+  'vencimento',
+  'tarefa',
+  'residuo',
+]
+
+export const ROTULO_DO_TIPO: Readonly<Record<TipoDoItem, string>> = {
   prazo: 'Prazo oficial',
   meta: 'Meta interna',
   limite_protocolo: 'Limite de protocolo',
   validade: 'Validade',
+  exigencia: 'Exigência',
+  vencimento: 'Vencimento',
   tarefa: 'Serviço',
   residuo: 'Resíduos',
 }
 
 function textoDoEvento(evento: EventoDoCalendario): string {
-  if (evento.tipo === 'limite_protocolo') return `Protocolo ${evento.licenca ?? ''}`.trim()
-  if (evento.tipo === 'validade') return `Validade ${evento.licenca ?? ''}`.trim()
-  return [evento.codigo, evento.titulo].filter(Boolean).join(' ')
+  switch (evento.tipo) {
+    case 'limite_protocolo':
+      return `Protocolo ${evento.licenca ?? ''}`.trim()
+    case 'validade':
+      return `Validade ${evento.licenca ?? ''}`.trim()
+    case 'prazo':
+    case 'meta':
+    case 'exigencia':
+    case 'vencimento':
+    case 'tarefa':
+      return [evento.codigo, evento.titulo].filter(Boolean).join(' ')
+  }
+}
+
+/** Palavra antes do texto quando o texto sozinho não diz o tipo (a marca também é escrita). */
+function prefixoDoEvento(tipo: EventoDoCalendario['tipo']): string | null {
+  switch (tipo) {
+    case 'meta':
+      return 'Meta'
+    case 'tarefa':
+      return 'Serviço'
+    case 'exigencia':
+      return 'Exigência'
+    case 'vencimento':
+      return 'Vencimento'
+    case 'prazo':
+    case 'limite_protocolo':
+    case 'validade':
+      return null
+  }
+}
+
+/** Tipos cuja linha tem responsável (o apoio diz quem é, ou "sem responsável"). */
+function temResponsavel(tipo: EventoDoCalendario['tipo']): boolean {
+  switch (tipo) {
+    case 'prazo':
+    case 'meta':
+    case 'exigencia':
+    case 'tarefa':
+      return true
+    case 'limite_protocolo':
+    case 'validade':
+    case 'vencimento':
+      return false
+  }
 }
 
 /**
- * Prazo e meta abrem a ocorrência; o limite de protocolo abre o plano de renovação; a tarefa de
- * serviço abre o orçamento só para a Gestão; a validade não abre nada.
+ * Prazo e meta abrem a ocorrência; a exigência abre a própria página; o limite de protocolo abre o
+ * plano de renovação; a tarefa de serviço abre o orçamento só para a Gestão; validade e
+ * vencimento não abrem nada (o evento do calendário não traz o empreendimento).
  */
+function linkDoEvento(evento: EventoDoCalendario, ehGestao: boolean): string | null {
+  switch (evento.tipo) {
+    case 'prazo':
+    case 'meta':
+      return `/ocorrencias/${evento.id}`
+    case 'exigencia':
+      return `/exigencias/${evento.id}`
+    case 'limite_protocolo':
+      return `/renovacoes/${evento.id}`
+    case 'tarefa':
+      return ehGestao ? `/orcamentos/${evento.orcamentoId ?? ''}` : null
+    case 'validade':
+    case 'vencimento':
+      return null
+  }
+}
+
 export function itemDoEvento(evento: EventoDoCalendario, ehGestao: boolean): ItemDoDia {
-  const quem =
-    evento.tipo === 'prazo' || evento.tipo === 'meta' || evento.tipo === 'tarefa'
-      ? (evento.responsavelNome ?? 'sem responsável')
-      : null
+  const quem = temResponsavel(evento.tipo) ? (evento.responsavelNome ?? 'sem responsável') : null
   const texto = textoDoEvento(evento)
-  const link =
-    evento.tipo === 'limite_protocolo'
-      ? `/renovacoes/${evento.id}`
-      : evento.tipo === 'tarefa'
-        ? ehGestao
-          ? `/orcamentos/${evento.orcamentoId ?? ''}`
-          : null
-        : evento.tipo === 'validade'
-          ? null
-          : `/ocorrencias/${evento.id}`
   const apoio = [evento.empreendimentoNome, evento.unidadeNome, quem].filter(Boolean).join(' · ')
   return {
     chave: `${evento.tipo}:${evento.id}`,
     tipo: evento.tipo,
-    prefixo: evento.tipo === 'meta' ? 'Meta' : evento.tipo === 'tarefa' ? 'Serviço' : null,
+    prefixo: prefixoDoEvento(evento.tipo),
     texto,
     apoio,
     descricao: [ROTULO_DO_TIPO[evento.tipo], texto, apoio].filter(Boolean).join(' · '),
     semResponsavel: evento.semResponsavel,
-    link,
+    link: linkDoEvento(evento, ehGestao),
   }
 }
 

@@ -1,4 +1,4 @@
-import type { RouteObject } from 'react-router'
+import { Navigate, type RouteObject } from 'react-router'
 
 import { carregarRota } from './carregar-rota'
 import { RequerConsultoria } from './consultoria/RequerConsultoria'
@@ -19,6 +19,7 @@ import { PaginaAcompanhamentos } from './paginas/acompanhamentos/PaginaAcompanha
 import { PaginaPlanoRenovacao } from './paginas/acompanhamentos/PaginaPlanoRenovacao'
 import { PaginaCalendario } from './paginas/calendario/PaginaCalendario'
 import { PaginaChecklist } from './paginas/campo/PaginaChecklist'
+import { PaginaConfiguracoes } from './paginas/configuracoes/PaginaConfiguracoes'
 import { PaginaDetalheVistoria } from './paginas/campo/PaginaDetalheVistoria'
 import { PaginaEnvio } from './paginas/campo/PaginaEnvio'
 import { PaginaFoto } from './paginas/campo/PaginaFoto'
@@ -31,7 +32,7 @@ import { PaginaPlanejamento } from './paginas/planejamento/PaginaPlanejamento'
 import { PaginaPerfil } from './paginas/perfil/PaginaPerfil'
 import { PaginaSeguranca } from './paginas/perfil/PaginaSeguranca'
 import { PaginaVisaoEquipe } from './paginas/visao/PaginaVisaoEquipe'
-import { PaginaResumoDoMes } from './indicadores/PaginaResumoDoMes'
+import { PaginaPainel } from './indicadores/PaginaPainel'
 import { PaginaTriagem } from './paginas/triagem/PaginaTriagem'
 import { PaginaPlano } from './plano/PaginaPlano'
 import { RequerSessao } from './sessao/RequerSessao'
@@ -277,8 +278,12 @@ export const rotas: RouteObject[] = [
                   })),
                 ),
               },
-              { path: 'resumo-do-mes', element: <PaginaResumoDoMes /> },
+              { path: 'painel', element: <PaginaPainel /> },
+              // Endereço antigo do Painel (ADR-0041).
+              { path: 'resumo-do-mes', element: <Navigate to="/painel" replace /> },
               { path: 'planejamento', element: <PaginaPlanejamento /> },
+              // Configurações com abas (ADR-0041; abas-de-configuracoes.ts). Cada aba é uma rota.
+              { path: 'configuracoes', element: <PaginaConfiguracoes /> },
               { path: 'configuracoes/equipe', element: <PaginaEquipe /> },
               {
                 path: 'configuracoes/custos',

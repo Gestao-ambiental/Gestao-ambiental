@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -56,6 +56,22 @@ describe('Equipe: registros profissionais a confirmar', () => {
     expect(screen.getByText('Vencido')).toBeInTheDocument()
   })
 
+  it('sem registro a confirmar, a seção some', async () => {
+    falso.reiniciar({
+      sessao: eduardo,
+      rpc: { meus_vinculos: { data: [vinculoFalso('Filtroville', 'gestao')] } },
+      tabelas: { membro: [], convite: [], registro_profissional: [] },
+    })
+    renderizarApp('/configuracoes/equipe')
+
+    await screen.findByRole('heading', { name: /^Membros/ })
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('heading', { name: /^Registros a confirmar/ }),
+      ).not.toBeInTheDocument()
+    })
+  })
+
   it('a Gestão confirma ou recusa com a versão que leu', async () => {
     const usuario = userEvent.setup()
     renderizarApp('/configuracoes/equipe')
@@ -79,5 +95,30 @@ describe('Equipe: registros profissionais a confirmar', () => {
       p_registro_id: 'r2',
       p_row_version: 1,
     })
+  })
+
+  it('versão desatualizada: avisa e mantém a lista', async () => {
+    falso.reiniciar({
+      sessao: eduardo,
+      rpc: {
+        meus_vinculos: { data: [vinculoFalso('Filtroville', 'gestao')] },
+        confirmar_registro_profissional: { error: { message: 'conflito_de_versao' } },
+      },
+      tabelas: {
+        membro: [],
+        convite: [],
+        registro_profissional: [registro('r1', 'Bruno Tavares')],
+      },
+    })
+    const usuario = userEvent.setup()
+    renderizarApp('/configuracoes/equipe')
+
+    await usuario.click(
+      await screen.findByRole('button', {
+        name: 'Confirmar registro de Engenheiro ambiental de Bruno Tavares',
+      }),
+    )
+    expect(await screen.findByRole('alert')).toHaveTextContent(/alterado em outro lugar/)
+    expect(screen.getByText('Bruno Tavares')).toBeInTheDocument()
   })
 })

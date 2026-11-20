@@ -2,17 +2,18 @@ import { type DataCivil } from '@gestao-ambiental/domain'
 import { useMutation } from '@tanstack/react-query'
 import { useId, useRef, useState } from 'react'
 
-import { classeCampo } from '@/app/paginas/orcamentos/comum'
 import { Botao } from '@/components/ui/botao'
 import { CampoData } from '@/components/ui/campo-data'
 import { CampoTexto } from '@/components/ui/campo-texto'
 import { Dialogo } from '@/components/ui/dialogo'
+import { classeCampo } from '@/components/ui/estilos-campo'
 import { Icone } from '@/components/ui/icone'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { editarAlvara, registrarAlvara, type Alvara } from '@/lib/api/alvaras'
 import type { Unidade } from '@/lib/api/empreendimentos'
 import { conferirPdf, type ProblemaDoPdf } from '@/lib/api/licencas'
 import { mensagemDoErro } from '@/lib/erros'
+import { cn } from '@/lib/utils'
 
 const PROBLEMAS: Record<ProblemaDoPdf, string> = {
   nao_pdf: 'Este arquivo não é um PDF válido.',
@@ -116,14 +117,17 @@ export function DialogoAlvara({
         </>
       }
     >
-      <div className="flex flex-col gap-(--space-150)">
+      <div className="flex flex-col gap-(--e-3)">
         {salvar.isError ? (
           <MensagemSecao role="alert" tom="perigo">
             {mensagemDoErro(salvar.error)}
           </MensagemSecao>
         ) : null}
-        <div className="flex flex-col gap-(--space-050)">
-          <label htmlFor={`${id}-unidade`} className="rotulo">
+        <div className="flex flex-col gap-(--e-1)">
+          <label
+            htmlFor={`${id}-unidade`}
+            className="flex min-h-5 items-center rotulo text-(--tinta)"
+          >
             Unidade *
           </label>
           <select
@@ -132,6 +136,7 @@ export function DialogoAlvara({
             value={unidadeId}
             disabled={modo.tipo !== 'novo'}
             aria-invalid={erros.unidade ? true : undefined}
+            aria-describedby={erros.unidade ? `${id}-unidade-erro` : undefined}
             onChange={(evento) => {
               setUnidadeId(evento.target.value)
               setErros((e) => ({ ...e, unidade: undefined }))
@@ -145,7 +150,11 @@ export function DialogoAlvara({
             ))}
           </select>
           {erros.unidade ? (
-            <span role="alert" className="text-xs text-(--text-danger)">
+            <span
+              id={`${id}-unidade-erro`}
+              role="alert"
+              className="text-xs font-[650] text-(--atraso-texto)"
+            >
               {erros.unidade}
             </span>
           ) : null}
@@ -185,13 +194,26 @@ export function DialogoAlvara({
           }}
         />
         {modo.tipo === 'editar' ? null : (
-          <div className="flex flex-col gap-(--space-050)">
-            <span className="rotulo" id={`${id}-rotulo-pdf`}>
+          <div className="flex flex-col gap-(--e-1)">
+            <span
+              className="flex min-h-5 items-center rotulo text-(--tinta)"
+              id={`${id}-rotulo-pdf`}
+            >
               PDF do alvará *
             </span>
-            <div className="flex items-center gap-(--space-100) rounded-(--radius) border border-dashed border-(--border-strong) p-(--space-100)">
-              <Icone nome="paperclip" className="text-(--icon)" />
-              <span className="min-w-0 flex-1 truncate corpo">
+            <div
+              className={cn(
+                'flex items-center gap-(--e-2) rounded-(--raio) border border-dashed p-(--e-2) pl-(--e-3)',
+                erros.arquivo ? 'border-(--atraso)' : 'border-(--campo-borda)',
+              )}
+            >
+              <Icone nome="paperclip" className="shrink-0 text-(--icone-2)" />
+              <span
+                className={cn(
+                  'min-w-0 flex-1 truncate corpo',
+                  arquivo ? 'text-(--tinta)' : 'text-(--tinta-2)',
+                )}
+              >
                 {arquivo ? arquivo.name : 'PDF até 25 MB'}
               </span>
               <Botao
@@ -218,7 +240,7 @@ export function DialogoAlvara({
               />
             </div>
             {erros.arquivo ? (
-              <span role="alert" className="text-xs text-(--text-danger)">
+              <span role="alert" className="text-xs font-[650] text-(--atraso-texto)">
                 {erros.arquivo}
               </span>
             ) : null}

@@ -15,13 +15,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useId, useState } from 'react'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
-import { classeCampo } from '@/app/paginas/orcamentos/comum'
 import { Carregando, EstadoErro } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
 import { BotaoIcone } from '@/components/ui/botao-icone'
 import { CampoData } from '@/components/ui/campo-data'
 import { CampoTexto } from '@/components/ui/campo-texto'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
+import { classeCampo } from '@/components/ui/estilos-campo'
 import { Selo } from '@/components/ui/selo'
 import type { MembroAtivo } from '@/lib/api/perfil'
 import {
@@ -109,9 +109,15 @@ export function SecaoRegistros({ perfil }: { perfil: MembroAtivo }) {
     return rotuloDaProfissaoDaPessoa(codigo, perfil.genero)
   }
 
+  // Sem registro salvo e sem profissão concluída (formação em curso), não há o que mostrar.
+  if (registros.isSuccess && registros.data.length === 0 && elegiveis.length === 0) return null
+
   return (
-    <section aria-labelledby="titulo-registros" className="flex flex-col gap-(--space-150)">
-      <h2 id="titulo-registros" className="titulo-secao">
+    <section
+      aria-labelledby="titulo-registros"
+      className="flex flex-col gap-(--e-3) border-t pt-(--e-6)"
+    >
+      <h2 id="titulo-registros" className="titulo-secao text-(--tinta)">
         Registro profissional
       </h2>
 
@@ -119,22 +125,20 @@ export function SecaoRegistros({ perfil }: { perfil: MembroAtivo }) {
         <Carregando rotulo="Carregando registros" linhas={2} />
       ) : registros.isError ? (
         <EstadoErro aoTentarDeNovo={() => void registros.refetch()} />
-      ) : registros.data.length === 0 ? (
-        <p className="corpo text-(--text-subtle)">Nenhum registro informado.</p>
-      ) : (
-        <ul className="flex flex-col rounded-(--radius) border bg-(--surface)">
+      ) : registros.data.length === 0 ? null : (
+        <ul className="flex flex-col overflow-hidden rounded-(--raio-painel) border bg-(--folha)">
           {registros.data.map((registro) => {
             const situacao = situacaoDoRegistro(registro, hoje)
             return (
               <li
                 key={registro.id}
-                className="flex items-center gap-(--space-150) border-b px-(--space-150) py-(--space-100) last:border-b-0"
+                className="flex min-h-(--linha) items-center gap-(--e-3) border-b border-(--regra-leve) py-(--e-2) pr-(--e-2) pl-(--e-4) last:border-b-0"
               >
                 <div className="flex min-w-0 flex-1 flex-col">
-                  <span className="corpo-medio text-(--text)">
+                  <span className="truncate corpo-medio text-(--tinta)">
                     {nomeDaProfissao(registro.profissao)}
                   </span>
-                  <span className="rotulo">{detalheDoRegistro(registro)}</span>
+                  <span className="rotulo numero">{detalheDoRegistro(registro)}</span>
                 </div>
                 <Selo tom={TOM_DA_SITUACAO[situacao]}>{rotuloDaSituacaoDoRegistro(situacao)}</Selo>
                 <BotaoIcone
@@ -159,7 +163,7 @@ export function SecaoRegistros({ perfil }: { perfil: MembroAtivo }) {
 
       {elegiveis.length === 0 ? null : (
         <form
-          className="grid grid-cols-1 gap-(--space-150) sm:grid-cols-2"
+          className="grid grid-cols-1 gap-(--e-3) sm:grid-cols-2"
           noValidate
           onSubmit={(evento) => {
             evento.preventDefault()
@@ -174,8 +178,11 @@ export function SecaoRegistros({ perfil }: { perfil: MembroAtivo }) {
             }
           }}
         >
-          <div className="flex flex-col gap-(--space-050)">
-            <label htmlFor={`${id}-profissao`} className="rotulo">
+          <div className="flex flex-col gap-(--e-1)">
+            <label
+              htmlFor={`${id}-profissao`}
+              className="flex min-h-5 items-center rotulo text-(--tinta)"
+            >
               Profissão do registro
             </label>
             <select
@@ -196,13 +203,19 @@ export function SecaoRegistros({ perfil }: { perfil: MembroAtivo }) {
               ))}
             </select>
             {falta === 'profissao' ? (
-              <span id={`${id}-profissao-erro`} className="text-xs text-(--text-danger)">
+              <span
+                id={`${id}-profissao-erro`}
+                className="text-xs font-[650] text-(--atraso-texto)"
+              >
                 Escolha a profissão
               </span>
             ) : null}
           </div>
-          <div className="flex flex-col gap-(--space-050)">
-            <label htmlFor={`${id}-conselho`} className="rotulo">
+          <div className="flex flex-col gap-(--e-1)">
+            <label
+              htmlFor={`${id}-conselho`}
+              className="flex min-h-5 items-center rotulo text-(--tinta)"
+            >
               Conselho
             </label>
             <select
@@ -224,7 +237,7 @@ export function SecaoRegistros({ perfil }: { perfil: MembroAtivo }) {
               ))}
             </select>
             {falta === 'conselho' ? (
-              <span id={`${id}-conselho-erro`} className="text-xs text-(--text-danger)">
+              <span id={`${id}-conselho-erro`} className="text-xs font-[650] text-(--atraso-texto)">
                 Escolha o conselho
               </span>
             ) : null}
@@ -239,8 +252,8 @@ export function SecaoRegistros({ perfil }: { perfil: MembroAtivo }) {
               setFalta(null)
             }}
           />
-          <div className="flex flex-col gap-(--space-050)">
-            <label htmlFor={`${id}-uf`} className="rotulo">
+          <div className="flex flex-col gap-(--e-1)">
+            <label htmlFor={`${id}-uf`} className="flex min-h-5 items-center rotulo text-(--tinta)">
               UF do registro
             </label>
             <select
@@ -266,7 +279,11 @@ export function SecaoRegistros({ perfil }: { perfil: MembroAtivo }) {
             aoMudar={setValidoAte}
           />
           <div className="flex items-end">
-            <Botao type="submit" aparencia="primario" disabled={salvar.isPending}>
+            <Botao
+              type="submit"
+              aparencia={profissao ? 'primario' : 'padrao'}
+              disabled={salvar.isPending}
+            >
               {salvar.isPending ? 'Salvando…' : 'Salvar registro'}
             </Botao>
           </div>
@@ -295,12 +312,12 @@ export function SecaoCadastroFederal({ perfil }: { perfil: MembroAtivo }) {
   const mudou = numero.trim() !== (perfil.ctfNumero ?? '') || validoAte !== perfil.ctfValidoAte
 
   return (
-    <section aria-labelledby="titulo-ctf" className="flex flex-col gap-(--space-150)">
-      <h2 id="titulo-ctf" className="titulo-secao">
+    <section aria-labelledby="titulo-ctf" className="flex flex-col gap-(--e-3) border-t pt-(--e-6)">
+      <h2 id="titulo-ctf" className="titulo-secao text-(--tinta)">
         Cadastro Técnico Federal
       </h2>
       <form
-        className="grid grid-cols-1 gap-(--space-150) sm:grid-cols-2"
+        className="grid grid-cols-1 gap-(--e-3) sm:grid-cols-2"
         onSubmit={(evento) => {
           evento.preventDefault()
           if (mudou) salvar.mutate()
@@ -326,8 +343,12 @@ export function SecaoCadastroFederal({ perfil }: { perfil: MembroAtivo }) {
             setSalvo(false)
           }}
         />
-        <div className="flex items-center gap-(--space-150) sm:col-span-2">
-          <Botao type="submit" aparencia="primario" disabled={!mudou || salvar.isPending}>
+        <div className="flex items-center gap-(--e-3) sm:col-span-2">
+          <Botao
+            type="submit"
+            aparencia={mudou ? 'primario' : 'padrao'}
+            disabled={!mudou || salvar.isPending}
+          >
             {salvar.isPending ? 'Salvando…' : 'Salvar cadastro'}
           </Botao>
           {salvo && !mudou ? (

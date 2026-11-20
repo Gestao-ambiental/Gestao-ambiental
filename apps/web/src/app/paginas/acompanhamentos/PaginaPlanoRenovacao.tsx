@@ -13,6 +13,7 @@ import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Pagina } from '@/app/paginas/Pagina'
 import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
+import { BotaoMais } from '@/components/ui/botao-mais'
 import { classeCampo } from '@/components/ui/estilos-campo'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { urlDoArquivo } from '@/lib/api/ocorrencias'
@@ -244,16 +245,27 @@ export function PaginaPlanoRenovacao() {
         </span>
       }
       acao={
-        podeEditar ? (
-          <Botao
-            aparencia="primario"
-            onClick={() => {
-              setProtocoloAberto(true)
-            }}
-          >
-            Registrar protocolo
-          </Botao>
-        ) : null
+        <>
+          <BotaoMais
+            itens={[
+              {
+                rotulo: 'Triar atividades',
+                icone: 'signpost',
+                para: `/triagem?empreendimento=${dados.empreendimentoId}`,
+              },
+            ]}
+          />
+          {podeEditar ? (
+            <Botao
+              aparencia="primario"
+              onClick={() => {
+                setProtocoloAberto(true)
+              }}
+            >
+              Registrar protocolo
+            </Botao>
+          ) : null}
+        </>
       }
     >
       {protocolado && dados.protocoladoEm ? (

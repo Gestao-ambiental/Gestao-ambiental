@@ -16,18 +16,12 @@ import { useState, type ReactNode } from 'react'
 
 import { CHAVE_MEUS_VINCULOS, useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { NOMES_PAPEL } from '@/app/papeis'
-import { Pagina } from '@/app/paginas/Pagina'
+import { PaginaDeConfiguracoes } from '@/app/paginas/configuracoes/PaginaDeConfiguracoes'
 import { Carregando, EstadoErro, SemPermissao } from '@/components/estados'
 import { Avatar } from '@/components/ui/avatar'
 import { Botao } from '@/components/ui/botao'
 import { Dialogo } from '@/components/ui/dialogo'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { BotaoIcone } from '@/components/ui/botao-icone'
+import { BotaoMais } from '@/components/ui/botao-mais'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { Selo } from '@/components/ui/selo'
 import {
@@ -110,9 +104,9 @@ export function PaginaEquipe() {
   const { atual } = useConsultoria()
   if (atual.papel !== 'gestao') {
     return (
-      <Pagina titulo="Equipe">
+      <PaginaDeConfiguracoes>
         <SemPermissao descricao="Só a gestão da consultoria administra a equipe e os convites." />
-      </Pagina>
+      </PaginaDeConfiguracoes>
     )
   }
   return <EquipeDaGestao />
@@ -213,9 +207,9 @@ function EquipeDaGestao() {
 
   if (ehSemPermissao(membros.error) || ehSemPermissao(convites.error)) {
     return (
-      <Pagina titulo="Equipe">
+      <PaginaDeConfiguracoes>
         <SemPermissao />
-      </Pagina>
+      </PaginaDeConfiguracoes>
     )
   }
 
@@ -236,49 +230,37 @@ function EquipeDaGestao() {
     )
     const impedimentoDesligar = impedimentoDoVinculo(vinculos, membro.id, 'desligar')
     return (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <BotaoIcone icone="ellipsis" rotulo={`Ações de ${membro.nome}`} disabled={ocupado} />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="max-w-[280px]">
-          <DropdownMenuItem
-            disabled={impedimentoPapel !== null}
-            onSelect={() => {
+      <BotaoMais
+        de={membro.nome}
+        desabilitado={ocupado}
+        itens={[
+          {
+            rotulo: `Passar para ${NOMES_PAPEL[novo]}`,
+            detalhe: impedimentoPapel === 'ultima_gestao' ? MOTIVO_ULTIMA_GESTAO : undefined,
+            desabilitado: impedimentoPapel !== null,
+            aoEscolher: () => {
               setAviso(null)
               papel.mutate({ membro, novo })
-            }}
-          >
-            <span className="flex flex-col">
-              <span>Passar para {NOMES_PAPEL[novo]}</span>
-              {impedimentoPapel === 'ultima_gestao' ? (
-                <span className="text-xs text-(--tinta-2)">{MOTIVO_ULTIMA_GESTAO}</span>
-              ) : null}
-            </span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onSelect={() => {
+            },
+          },
+          {
+            rotulo: 'Profissão e cargo',
+            aoEscolher: () => {
               setAviso(null)
               setEditando(membro)
-            }}
-          >
-            Profissão e cargo
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            disabled={impedimentoDesligar !== null}
-            onSelect={() => {
+            },
+          },
+          {
+            rotulo: 'Desligar',
+            detalhe: impedimentoDesligar === 'ultima_gestao' ? MOTIVO_ULTIMA_GESTAO : undefined,
+            desabilitado: impedimentoDesligar !== null,
+            aoEscolher: () => {
               setAviso(null)
               setDesligando(membro)
-            }}
-          >
-            <span className="flex flex-col">
-              <span>Desligar</span>
-              {impedimentoDesligar === 'ultima_gestao' ? (
-                <span className="text-xs text-(--tinta-2)">{MOTIVO_ULTIMA_GESTAO}</span>
-              ) : null}
-            </span>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+            },
+          },
+        ]}
+      />
     )
   }
 
@@ -378,8 +360,7 @@ function EquipeDaGestao() {
   const convitesVisiveis = !convites.isSuccess || listaConvites.total > 0
 
   return (
-    <Pagina
-      titulo="Equipe"
+    <PaginaDeConfiguracoes
       acao={
         suporte ? null : (
           <Botao
@@ -628,7 +609,7 @@ function EquipeDaGestao() {
       >
         <p className="text-(--tinta-2)">Nada é apagado nem cancelado.</p>
       </Dialogo>
-    </Pagina>
+    </PaginaDeConfiguracoes>
   )
 }
 

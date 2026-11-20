@@ -1,11 +1,10 @@
-// /configuracoes/modelos (ADR-0036, fatia 1): modelos de documento da consultoria. Fica fora do menu
-// do dia a dia (entra pelo menu da conta). Só a Gestão cria e edita; a Equipe usa os modelos ao
-// gerar o relatório.
+// /configuracoes/modelos (ADR-0036, fatia 1): modelos de documento da consultoria, na aba Modelos de
+// Configurações (ADR-0041). Só a Gestão cria e edita; a Equipe usa os modelos ao gerar o relatório.
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
-import { Pagina } from '@/app/paginas/Pagina'
+import { PaginaDeConfiguracoes } from '@/app/paginas/configuracoes/PaginaDeConfiguracoes'
 import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
 import { Icone } from '@/components/ui/icone'
@@ -20,9 +19,9 @@ export function PaginaModelos() {
   const { atual } = useConsultoria()
   if (atual.papel !== 'gestao') {
     return (
-      <Pagina titulo="Modelos de documento">
+      <PaginaDeConfiguracoes>
         <SemPermissao />
-      </Pagina>
+      </PaginaDeConfiguracoes>
     )
   }
   return <ListaDeModelos />
@@ -51,17 +50,9 @@ function ListaDeModelos() {
   const vazio = modelos.isSuccess && total === 0
 
   return (
-    <Pagina
-      titulo="Modelos de documento"
+    <PaginaDeConfiguracoes
       // No vazio, a ação fica no próprio estado vazio (uma só na tela).
       acao={vazio ? undefined : novo}
-      meta={
-        total > 0 ? (
-          <span className="numero">
-            {total} {total === 1 ? 'modelo' : 'modelos'}
-          </span>
-        ) : undefined
-      }
     >
       {modelos.isPending ? (
         <Carregando rotulo="Carregando modelos" />
@@ -116,6 +107,6 @@ function ListaDeModelos() {
           </table>
         </div>
       )}
-    </Pagina>
+    </PaginaDeConfiguracoes>
   )
 }

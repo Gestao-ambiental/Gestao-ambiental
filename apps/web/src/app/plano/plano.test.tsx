@@ -71,9 +71,14 @@ describe('Plano e cobrança (ADR-0026)', () => {
     const usuario = userEvent.setup()
     renderizarApp('/configuracoes/plano')
 
+    // Plano e cobrança é uma aba de Configurações (ADR-0041).
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Plano e cobrança' }),
+      await screen.findByRole('heading', { level: 1, name: 'Configurações' }),
     ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Plano e cobrança' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
     expect(await screen.findByText('Em teste até 10/03/2027')).toBeInTheDocument()
 
     await usuario.click(screen.getByRole('button', { name: 'Anual' }))
@@ -161,7 +166,8 @@ describe('Plano e cobrança (ADR-0026)', () => {
     renderizarApp('/configuracoes/plano')
     expect(await screen.findByText('Somente leitura até o pagamento')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Pagar' })).not.toBeInTheDocument()
-    expect(screen.getByRole('heading', { level: 1, name: 'Plano e cobrança' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Configurações' })).toBeInTheDocument()
+    expect(screen.queryByRole('navigation', { name: 'Configurações' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Assinar' })).not.toBeInTheDocument()
   })
 })

@@ -13,7 +13,7 @@ import { useState } from 'react'
 import { Link } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
-import { Pagina } from '@/app/paginas/Pagina'
+import { PaginaDeConfiguracoes } from '@/app/paginas/configuracoes/PaginaDeConfiguracoes'
 import { Carregando, EstadoErro, SemPermissao } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
 import { CaixaSelecao } from '@/components/ui/caixa-selecao'
@@ -202,20 +202,20 @@ export function PaginaCustosETaxas() {
 
   if (atual.papel !== 'gestao') {
     return (
-      <Pagina titulo="Custos e taxas">
+      <PaginaDeConfiguracoes>
         <SemPermissao descricao="Custos e margens são dados restritos: só a gestão acessa." />
-      </Pagina>
+      </PaginaDeConfiguracoes>
     )
   }
   if (consulta.isPending) return <Carregando rotulo="Carregando custos e taxas" linhas={6} />
   if (consulta.isError) {
     return (
-      <Pagina titulo="Custos e taxas">
+      <PaginaDeConfiguracoes>
         <EstadoErro
           titulo="Não foi possível carregar custos e taxas."
           aoTentarDeNovo={() => void consulta.refetch()}
         />
-      </Pagina>
+      </PaginaDeConfiguracoes>
     )
   }
   return <Formulario consultoriaId={cid} base={consulta.data} />
@@ -380,9 +380,7 @@ function Formulario({
   }
 
   return (
-    <Pagina
-      titulo="Custos e taxas"
-      voltar={{ para: '/orcamentos', rotulo: 'Orçamentos' }}
+    <PaginaDeConfiguracoes
       acao={
         <>
           <Botao aparencia="sutil" asChild>
@@ -623,7 +621,7 @@ function Formulario({
           />
         </Grupo>
       </div>
-    </Pagina>
+    </PaginaDeConfiguracoes>
   )
 }
 

@@ -30,18 +30,18 @@ export function GraficoCarga({ meses, capacidade }: { meses: MesDoGrafico[]; cap
   const marcas = [0, 0.25, 0.5, 0.75, 1].map((fracao) => Math.round((maior * fracao) / 50) * 50)
 
   return (
-    <figure className="flex min-w-0 flex-col gap-(--space-100)">
-      <figcaption className="flex flex-wrap gap-x-(--space-200) gap-y-(--space-050) rotulo text-(--text-subtle)">
-        <Legenda classe="bg-(--border-input)" texto="Posição recomendada" />
-        <Legenda classe="bg-(--brand)" texto="Com antecipação" />
-        <Legenda classe="bg-(--danger)" texto="Acima da capacidade" />
+    <figure className="flex min-w-0 flex-col gap-(--e-3)">
+      <figcaption className="flex flex-wrap gap-x-(--e-4) gap-y-(--e-1) rotulo text-(--tinta-2)">
+        <Legenda classe="bg-(--campo-borda)" texto="Posição recomendada" />
+        <Legenda classe="bg-(--tinta)" texto="Com antecipação" />
+        <Legenda classe="bg-(--atraso)" texto="Acima da capacidade" />
       </figcaption>
       <div className="overflow-x-auto">
         <svg
           viewBox={`0 0 ${String(LARGURA)} ${String(ALTURA)}`}
           role="img"
           aria-label="Carga mensal em horas, na posição recomendada e com antecipação"
-          className="h-auto w-full min-w-[640px]"
+          className="h-auto w-full min-w-[640px] numero"
         >
           {marcas.map((horas) => (
             <g key={horas}>
@@ -50,7 +50,7 @@ export function GraficoCarga({ meses, capacidade }: { meses: MesDoGrafico[]; cap
                 x2={LARGURA - MARGEM.direita}
                 y1={y(horas)}
                 y2={y(horas)}
-                stroke="var(--border)"
+                stroke="var(--regra)"
                 strokeWidth="1"
               />
               <text
@@ -58,7 +58,7 @@ export function GraficoCarga({ meses, capacidade }: { meses: MesDoGrafico[]; cap
                 y={y(horas) + 4}
                 textAnchor="end"
                 fontSize="11"
-                fill="var(--text-subtle)"
+                fill="var(--tinta-3)"
               >
                 {formatarHoras(horas)}
               </text>
@@ -74,7 +74,7 @@ export function GraficoCarga({ meses, capacidade }: { meses: MesDoGrafico[]; cap
                   y={y(m.recomendada)}
                   width={barra}
                   height={base - y(m.recomendada)}
-                  fill="var(--border-input)"
+                  fill="var(--campo-borda)"
                 >
                   <title>{`${m.mes}, posição recomendada: ${formatarHoras(m.recomendada)}`}</title>
                 </rect>
@@ -83,7 +83,7 @@ export function GraficoCarga({ meses, capacidade }: { meses: MesDoGrafico[]; cap
                   y={y(m.antecipada)}
                   width={barra}
                   height={base - y(m.antecipada)}
-                  fill="var(--brand)"
+                  fill="var(--tinta)"
                 >
                   <title>{`${m.mes}, com antecipação: ${formatarHoras(m.antecipada)}`}</title>
                 </rect>
@@ -93,7 +93,7 @@ export function GraficoCarga({ meses, capacidade }: { meses: MesDoGrafico[]; cap
                     y={y(m.antecipada)}
                     width={barra}
                     height={y(capacidade) - y(m.antecipada)}
-                    fill="var(--danger)"
+                    fill="var(--atraso)"
                   />
                 ) : null}
                 <text
@@ -101,7 +101,7 @@ export function GraficoCarga({ meses, capacidade }: { meses: MesDoGrafico[]; cap
                   y={ALTURA - 8}
                   textAnchor="middle"
                   fontSize="11"
-                  fill="var(--text-subtle)"
+                  fill="var(--tinta-3)"
                 >
                   {nomeCurtoDoMes(m.mes)}
                 </text>
@@ -113,7 +113,7 @@ export function GraficoCarga({ meses, capacidade }: { meses: MesDoGrafico[]; cap
             x2={LARGURA - MARGEM.direita}
             y1={y(capacidade)}
             y2={y(capacidade)}
-            stroke="var(--text)"
+            stroke="var(--tinta)"
             strokeWidth="1.5"
             strokeDasharray="5 4"
           />
@@ -123,7 +123,7 @@ export function GraficoCarga({ meses, capacidade }: { meses: MesDoGrafico[]; cap
             textAnchor="end"
             fontSize="11"
             fontWeight="600"
-            fill="var(--text)"
+            fill="var(--tinta)"
           >
             Capacidade
           </text>
@@ -154,7 +154,7 @@ export function GraficoCarga({ meses, capacidade }: { meses: MesDoGrafico[]; cap
 
 function Legenda({ classe, texto }: { classe: string; texto: string }) {
   return (
-    <span className="inline-flex items-center gap-(--space-075)">
+    <span className="inline-flex items-center gap-(--e-15)">
       <span aria-hidden="true" className={`size-2.5 rounded-[2px] ${classe}`} />
       {texto}
     </span>

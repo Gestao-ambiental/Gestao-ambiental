@@ -212,11 +212,15 @@ describe('primeiros passos do orçamento (ADR-0020)', () => {
     // Não bloqueia: dá para criar orçamento direto.
     expect(screen.getAllByRole('button', { name: 'Novo orçamento' }).length).toBeGreaterThan(0)
     // O atalho continua na lista, no menu "…" do cabeçalho.
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Mais opções' }))
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Mais ações' }))
     expect(await screen.findByRole('menuitem', { name: 'Primeiros passos' })).toHaveAttribute(
       'href',
       '/orcamentos/primeiros-passos',
     )
+    // Custos e taxas e Dados da proposta moraram aqui; agora são a aba Orçamentos de Configurações.
+    expect(screen.getByRole('menuitem', { name: 'Lixeira' })).toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Custos e taxas' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Dados da proposta' })).not.toBeInTheDocument()
   })
 
   it('com rascunho, o link continua; com a base publicada, some', async () => {

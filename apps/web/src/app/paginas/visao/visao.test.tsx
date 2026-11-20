@@ -2,7 +2,7 @@ import { adicionarDias, hojeNoFuso } from '@gestao-ambiental/domain'
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import axe from 'axe-core'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { renderizarApp, vinculoFalso } from '@/test/renderizar'
 import { falso, sessaoDe, type Cenario } from '@/test/supabase-falso'
@@ -203,6 +203,202 @@ describe('visão da equipe (EQ-01 a EQ-03)', () => {
   it('não tem violações de acessibilidade detectáveis pelo axe', async () => {
     const { container } = renderizarApp('/')
     await screen.findByRole('table')
+    const resultado = await axe.run(container, { rules: { 'color-contrast': { enabled: false } } })
+    expect(resultado.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([])
+  })
+})
+
+describe('visão: filtro por cliente e tipos novos (base das oito funções)', () => {
+  const fromOriginal = falso.cliente.from.getMockImplementation()
+
+  afterEach(() => {
+    if (fromOriginal) falso.cliente.from.mockImplementation(fromOriginal)
+  })
+
+  /** Faz a leitura do nome do cliente falhar (as tabelas do Supabase falso não erram sozinhas). */
+  function nomeDoClienteFalha() {
+    const falha: Record<string, unknown> = {}
+    falha.select = () => falha
+    falha.eq = () => falha
+    falha.maybeSingle = () =>
+      Promise.resolve({ data: null, error: { message: 'falhou', code: '500' } })
+    falso.cliente.from.mockImplementation(((tabela: string) =>
+      tabela === 'cliente' ? falha : fromOriginal?.(tabela)) as never)
+  }
+
+  const CLIENTE = '5f0c7a9e-2b1d-4c3e-9f8a-1b2c3d4e5f60'
+  const CLIENTE_DE_OUTRA = '9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d'
+
+  const chamadasDe = (nome: string) =>
+    falso.cliente.rpc.mock.calls.filter(([n]) => n === nome).map(([, args]) => args ?? {})
+
+  it('?cliente= que não é uuid não vai ao banco: a lista carrega e o filtro diz não encontrado', async () => {
+    falso.reiniciar(cenario('gestao'))
+    const usuario = userEvent.setup()
+    const { router } = renderizarApp('/?cliente=abc')
+    await screen.findByRole('table')
+    expect(screen.queryByText('Não foi possível carregar os prazos.')).toBeNull()
+    for (const args of chamadasDe('listar_prazos')) {
+      expect(args).not.toHaveProperty('p_cliente_id')
+    }
+    expect(chamadasDe('contar_prazos')[0]).not.toHaveProperty('p_cliente_id')
+    expect(falso.cliente.from).not.toHaveBeenCalledWith('cliente')
+
+    const filtro = screen.getByRole('group', { name: 'Filtro de cliente' })
+    expect(within(filtro).getByText('não encontrado')).toBeInTheDocument()
+    await usuario.click(screen.getByRole('button', { name: 'Limpar filtros' }))
+    expect(screen.queryByRole('group', { name: 'Filtro de cliente' })).toBeNull()
+    expect(router.state.location.search).toBe('')
+  })
+
+  it('?cliente= vai para a lista, os contadores e os totais das abas, com o nome no filtro', async () => {
+    falso.reiniciar(
+      cenario('gestao', { tabelas: { cliente: [{ id: CLIENTE, nome: 'Grupo Açores' }] } }),
+    )
+    renderizarApp(`/?cliente=${CLIENTE}`)
+    await screen.findByRole('table')
+
+    const filtro = await screen.findByRole('group', { name: 'Filtro de cliente' })
+    expect(await within(filtro).findByText('Grupo Açores')).toBeInTheDocument()
+    expect(chamadasDe('listar_prazos').length).toBeGreaterThan(0)
+    for (const args of chamadasDe('listar_prazos')) {
+      expect(args).toMatchObject({ p_cliente_id: CLIENTE })
+    }
+    expect(chamadasDe('contar_prazos')[0]).toMatchObject({ p_cliente_id: CLIENTE })
+  })
+
+  it('remover o filtro de cliente consulta de novo sem p_cliente_id', async () => {
+    falso.reiniciar(
+      cenario('gestao', { tabelas: { cliente: [{ id: CLIENTE, nome: 'Grupo Açores' }] } }),
+    )
+    const usuario = userEvent.setup()
+    const { router } = renderizarApp(`/?cliente=${CLIENTE}`)
+    await screen.findByRole('table')
+
+    await usuario.click(
+      await screen.findByRole('button', { name: 'Remover filtro do cliente Grupo Açores' }),
+    )
+
+    expect(screen.queryByRole('group', { name: 'Filtro de cliente' })).toBeNull()
+    expect(router.state.location.search).toBe('')
+    await waitFor(() => {
+      expect(chamadasDe('listar_prazos').at(-1)).not.toHaveProperty('p_cliente_id')
+    })
+    expect(chamadasDe('contar_prazos').at(-1)).not.toHaveProperty('p_cliente_id')
+  })
+
+  it('Limpar filtros também tira o cliente', async () => {
+    falso.reiniciar(
+      cenario('gestao', { tabelas: { cliente: [{ id: CLIENTE, nome: 'Grupo Açores' }] } }),
+    )
+    const usuario = userEvent.setup()
+    renderizarApp(`/?cliente=${CLIENTE}`)
+    await screen.findByRole('group', { name: 'Filtro de cliente' })
+
+    await usuario.click(screen.getByRole('button', { name: 'Limpar filtros' }))
+    expect(screen.queryByRole('group', { name: 'Filtro de cliente' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Limpar filtros' })).toBeDisabled()
+  })
+
+  it('erro da lista filtrada mostra tentar de novo e o filtro continua removível', async () => {
+    falso.reiniciar(
+      cenario('gestao', {
+        rpc: { listar_prazos: { error: { message: 'falhou', code: '500' } } },
+        tabelas: { cliente: [{ id: CLIENTE, nome: 'Grupo Açores' }] },
+      }),
+    )
+    renderizarApp(`/?cliente=${CLIENTE}`)
+    expect(await screen.findByText('Não foi possível carregar os prazos.')).toBeInTheDocument()
+    expect(
+      await screen.findByRole('button', { name: 'Remover filtro do cliente Grupo Açores' }),
+    ).toBeInTheDocument()
+  })
+
+  it('nome do cliente que não carrega não esconde o filtro', async () => {
+    nomeDoClienteFalha()
+    falso.reiniciar(cenario('gestao'))
+    const usuario = userEvent.setup()
+    renderizarApp(`/?cliente=${CLIENTE}`)
+    await screen.findByRole('table')
+
+    const filtro = screen.getByRole('group', { name: 'Filtro de cliente' })
+    expect(await within(filtro).findByText('nome indisponível')).toBeInTheDocument()
+    await usuario.click(within(filtro).getByRole('button', { name: 'Remover filtro do cliente' }))
+    expect(screen.queryByRole('group', { name: 'Filtro de cliente' })).toBeNull()
+  })
+
+  it('cliente que não existe (ou de outra consultoria) aparece como não encontrado', async () => {
+    falso.reiniciar(cenario('gestao', { tabelas: { cliente: [] } }))
+    renderizarApp(`/?cliente=${CLIENTE_DE_OUTRA}`)
+    await screen.findByRole('table')
+    const filtro = screen.getByRole('group', { name: 'Filtro de cliente' })
+    expect(await within(filtro).findByText('não encontrado')).toBeInTheDocument()
+  })
+
+  it('exigência leva à exigência e vencimento ao empreendimento; Atribuir só na ocorrência', async () => {
+    const tiposNovos = [
+      linha('o9', 2, 'Relatório sem dono', { responsavel_id: null, responsavel_nome: null }),
+      linha('x1', 3, 'Apresentar laudo complementar', {
+        tipo_linha: 'exigencia',
+        codigo: null,
+        instrumento_id: null,
+        situacao_ocorrencia: null,
+        responsavel_id: null,
+        responsavel_nome: null,
+      }),
+      linha('v1', -2, 'AVCB', {
+        tipo_linha: 'vencimento',
+        codigo: null,
+        instrumento_id: null,
+        licenca: null,
+        empreendimento_id: 'e7',
+        situacao_ocorrencia: null,
+        responsavel_id: null,
+        responsavel_nome: null,
+      }),
+    ]
+    falso.reiniciar(
+      cenario('gestao', {
+        rpc: {
+          listar_prazos: (args) => ({
+            data:
+              args.p_limite === 1 ? [{ total: 3 }] : tiposNovos.map((l) => ({ ...l, total: 3 })),
+          }),
+        },
+      }),
+    )
+    renderizarApp('/')
+    const tabela = await screen.findByRole('table')
+    const linhas = within(tabela).getAllByRole('row').slice(1)
+    expect(linhas).toHaveLength(3)
+
+    const [ocorrencia, exigencia, vencimento] = linhas as [HTMLElement, HTMLElement, HTMLElement]
+    expect(within(ocorrencia).getByRole('button', { name: /Atribuir/ })).toBeInTheDocument()
+
+    expect(within(exigencia).getByRole('link', { name: /Apresentar laudo/ })).toHaveAttribute(
+      'href',
+      '/exigencias/x1',
+    )
+    expect(within(exigencia).getByText(/Exigência/)).toBeInTheDocument()
+    expect(within(exigencia).queryByRole('button', { name: /Atribuir/ })).toBeNull()
+    expect(within(exigencia).getByText('Em 3 dias')).toBeInTheDocument()
+
+    expect(within(vencimento).getByRole('link', { name: /AVCB/ })).toHaveAttribute(
+      'href',
+      '/empreendimentos/e7',
+    )
+    expect(within(vencimento).getByText(/Vencimento/)).toBeInTheDocument()
+    expect(within(vencimento).queryByRole('button', { name: /Atribuir/ })).toBeNull()
+    expect(within(vencimento).getByText('Vencida há 2 dias')).toBeInTheDocument()
+  })
+
+  it('com o filtro de cliente não tem violações de acessibilidade detectáveis pelo axe', async () => {
+    falso.reiniciar(
+      cenario('gestao', { tabelas: { cliente: [{ id: CLIENTE, nome: 'Grupo Açores' }] } }),
+    )
+    const { container } = renderizarApp(`/?cliente=${CLIENTE}`)
+    await screen.findByRole('table')
+    await screen.findByText('Grupo Açores')
     const resultado = await axe.run(container, { rules: { 'color-contrast': { enabled: false } } })
     expect(resultado.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([])
   })

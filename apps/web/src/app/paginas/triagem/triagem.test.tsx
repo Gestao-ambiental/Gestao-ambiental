@@ -1,6 +1,6 @@
 import { FunctionsHttpError } from '@supabase/supabase-js'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import axe from 'axe-core'
 import { MemoryRouter } from 'react-router'
@@ -50,12 +50,14 @@ beforeEach(() => {
   falso.reiniciar({ funcoes: { 'consultar-local': { data: CENTRO } } })
 })
 
-function montar() {
+function montar(caminho = '/triagem') {
   const usuario = userEvent.setup()
-  const cliente = new QueryClient({ defaultOptions: { mutations: { retry: false } } })
+  const cliente = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  })
   const tela = render(
     <QueryClientProvider client={cliente}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[caminho]}>
         <PaginaTriagem />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -218,6 +220,38 @@ describe('o que o simulador do IMA mostra: taxa, IN e TFASC', () => {
         /O simulador do IMA ainda usa potencial poluidor G; a resolução vigente diz M\./,
       ),
     ).toBeInTheDocument()
+  })
+})
+
+describe('triagem aberta com ?empreendimento=', () => {
+  const ID = '3c1d2e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f'
+
+  it('mostra o empreendimento no link de volta', async () => {
+    falso.reiniciar({
+      tabelas: { empreendimento: [{ id: ID, nome: 'Metalúrgica Rio Cubatão', cnpj: null }] },
+    })
+    montar(`/triagem?empreendimento=${ID}`)
+    expect(await screen.findByRole('link', { name: 'Metalúrgica Rio Cubatão' })).toHaveAttribute(
+      'href',
+      `/empreendimentos/${ID}`,
+    )
+    expect(falso.cliente.from).toHaveBeenCalledWith('empreendimento')
+  })
+
+  it('empreendimento que não vem (outra consultoria ou erro) abre a triagem sem ele', async () => {
+    falso.reiniciar({ tabelas: { empreendimento: [] } })
+    montar(`/triagem?empreendimento=${ID}`)
+    await waitFor(() => {
+      expect(falso.cliente.from).toHaveBeenCalledWith('empreendimento')
+    })
+    expect(screen.getByRole('heading', { name: 'Triagem de licenciamento' })).toBeInTheDocument()
+    expect(screen.queryByRole('link')).toBeNull()
+  })
+
+  it('id que não é uuid nem consulta o banco', () => {
+    montar('/triagem?empreendimento=abc')
+    expect(falso.cliente.from).not.toHaveBeenCalledWith('empreendimento')
+    expect(screen.queryByRole('link')).toBeNull()
   })
 })
 

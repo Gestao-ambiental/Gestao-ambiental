@@ -70,14 +70,15 @@ describe('lista de modelos', () => {
     ).toBeInTheDocument()
   })
 
-  it('o menu da conta leva aos modelos', async () => {
+  it('os modelos são uma aba de Configurações, não um item do menu da conta', async () => {
     const usuario = userEvent.setup()
     renderizarApp('/configuracoes/modelos')
     await screen.findByRole('link', { name: 'Relatório semestral' })
+    expect(screen.getByRole('heading', { level: 1, name: 'Configurações' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Modelos' })).toHaveAttribute('aria-current', 'page')
     await usuario.click(screen.getByRole('button', { name: 'Conta de Eduardo Karnopp' }))
-    expect(
-      await screen.findByRole('menuitem', { name: 'Modelos de documento' }),
-    ).toBeInTheDocument()
+    expect(await screen.findByRole('menuitem', { name: 'Meu perfil' })).toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Modelos de documento' })).not.toBeInTheDocument()
   })
 })
 

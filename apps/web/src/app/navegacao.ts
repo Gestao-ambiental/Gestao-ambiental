@@ -16,7 +16,11 @@ export interface ItemNavegacao {
 
 export const ROTULO_DO_GRUPO = { trabalho: 'Trabalho', gestao: 'Gestão' } as const
 
-/** Itens do menu principal, na ordem do Protótipo 05, em grupos curtos. */
+/**
+ * Itens do menu principal (ADR-0041): a Gestão vê 9, a Equipe 6. A Triagem de licenciamento e o
+ * Planejamento ficam fora do menu (as rotas continuam); o Ctrl+K tem lista própria
+ * (busca/atalhos.ts), então tirar um item daqui não o tira da busca.
+ */
 export const ITENS_NAVEGACAO: readonly ItemNavegacao[] = [
   {
     para: '/',
@@ -30,7 +34,6 @@ export const ITENS_NAVEGACAO: readonly ItemNavegacao[] = [
   { para: '/acompanhamentos', rotulo: 'Acompanhamentos', icone: 'hourglass', grupo: 'trabalho' },
   { para: '/campo', rotulo: 'Campo', icone: 'clipboard', grupo: 'trabalho', naBarraInferior: true },
   { para: '/residuos', rotulo: 'Resíduos', icone: 'recycle', grupo: 'trabalho' },
-  { para: '/triagem', rotulo: 'Triagem de licenciamento', icone: 'signpost', grupo: 'trabalho' },
   {
     para: '/orcamentos',
     rotulo: 'Orçamentos',
@@ -39,23 +42,16 @@ export const ITENS_NAVEGACAO: readonly ItemNavegacao[] = [
     grupo: 'gestao',
   },
   {
-    para: '/resumo-do-mes',
-    rotulo: 'Resumo do mês',
+    para: '/painel',
+    rotulo: 'Painel',
     icone: 'chart-column',
     somenteGestao: true,
     grupo: 'gestao',
   },
   {
-    para: '/configuracoes/equipe',
-    rotulo: 'Equipe',
-    icone: 'users',
-    somenteGestao: true,
-    grupo: 'gestao',
-  },
-  {
-    para: '/configuracoes/plano',
-    rotulo: 'Plano e cobrança',
-    icone: 'tag',
+    para: '/configuracoes',
+    rotulo: 'Configurações',
+    icone: 'settings',
     somenteGestao: true,
     grupo: 'gestao',
   },

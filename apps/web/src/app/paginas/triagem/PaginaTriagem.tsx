@@ -34,7 +34,9 @@ import {
   type ResultadoDoEnquadramento,
   type TaxaDoIma,
 } from '@gestao-ambiental/domain'
+import { useQuery } from '@tanstack/react-query'
 import { useId, useMemo, useState, type ReactNode } from 'react'
+import { useSearchParams } from 'react-router'
 
 import { Pagina } from '@/app/paginas/Pagina'
 import { EstadoVazio } from '@/components/estados'
@@ -46,6 +48,8 @@ import { Icone } from '@/components/ui/icone'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { ItemDoPlacar, Placar } from '@/components/ui/placar'
 import { Selo } from '@/components/ui/selo'
+import { obterEmpreendimento } from '@/lib/api/empreendimentos'
+import { ehUuid } from '@/lib/texto'
 import { cn } from '@/lib/utils'
 
 import { LocalDoEmpreendimento } from './LocalDoEmpreendimento'
@@ -674,8 +678,23 @@ function Fontes() {
   )
 }
 
-/** /triagem: enquadramento das atividades de um empreendimento pelas CONSEMA 250 e 251/2024. */
+/**
+ * /triagem: enquadramento das atividades de um empreendimento pelas CONSEMA 250 e 251/2024.
+ * `?empreendimento=<id>` (Empreendimento, plano de renovação, orçamento) põe o nome dele no link de
+ * volta, acima do título. Id inválido, de outra consultoria ou que falhou: a triagem abre sem ele.
+ */
 export function PaginaTriagem() {
+  const [parametros] = useSearchParams()
+  const parametroEmpreendimento = parametros.get('empreendimento')
+  const empreendimentoId = ehUuid(parametroEmpreendimento) ? parametroEmpreendimento : null
+  const empreendimento = useQuery({
+    queryKey: ['empreendimento', empreendimentoId],
+    queryFn: () => obterEmpreendimento(empreendimentoId ?? ''),
+    enabled: empreendimentoId !== null,
+  })
+  const voltar = empreendimento.data
+    ? { para: `/empreendimentos/${empreendimento.data.id}`, rotulo: empreendimento.data.nome }
+    : undefined
   const [itens, setItens] = useState<ItemEmEdicao[]>([])
   const [nivel, setNivel] = useState<NivelMunicipal | null>(null)
   /** Área do lote em ha, já no formato do campo, para preencher o AU(3) das atividades. */
@@ -711,6 +730,7 @@ export function PaginaTriagem() {
     <Pagina
       titulo="Triagem de licenciamento"
       meta={<span>Triagem, não enquadramento oficial</span>}
+      voltar={voltar}
     >
       <div className="flex max-w-[1120px] flex-col">
         <Passo numero={1} titulo="Onde fica">

@@ -39,6 +39,66 @@ describe('shell do app', () => {
     expect(linkVisao).not.toHaveAttribute('aria-current')
   })
 
+  it('a Gestão vê 9 itens em três grupos; Triagem e Planejamento ficam fora do menu', async () => {
+    renderizarApp('/')
+    const menu = await screen.findByRole('navigation', { name: 'Menu principal' })
+    expect(
+      within(menu)
+        .getAllByRole('link')
+        .map((link) => link.textContent),
+    ).toEqual([
+      'Visão da equipe',
+      'Calendário',
+      'Empreendimentos',
+      'Acompanhamentos',
+      'Campo',
+      'Resíduos',
+      'Orçamentos',
+      'Painel',
+      'Configurações',
+    ])
+    expect(within(menu).getByText('Trabalho')).toBeInTheDocument()
+    expect(within(menu).getByText('Gestão')).toBeInTheDocument()
+    expect(within(menu).getByRole('link', { name: 'Painel' })).toHaveAttribute('href', '/painel')
+    expect(within(menu).getByRole('link', { name: 'Configurações' })).toHaveAttribute(
+      'href',
+      '/configuracoes',
+    )
+    expect(
+      within(menu).queryByRole('link', { name: 'Triagem de licenciamento' }),
+    ).not.toBeInTheDocument()
+    expect(within(menu).queryByRole('link', { name: 'Planejamento' })).not.toBeInTheDocument()
+  })
+
+  it('a Equipe vê 6 itens, sem o grupo Gestão', async () => {
+    falso.reiniciar({
+      sessao: sessaoDe('ana@filtroville.test', 'Ana Ribeiro'),
+      rpc: { meus_vinculos: { data: [vinculoFalso('Filtroville', 'equipe')] } },
+    })
+    renderizarApp('/')
+    const menu = await screen.findByRole('navigation', { name: 'Menu principal' })
+    expect(
+      within(menu)
+        .getAllByRole('link')
+        .map((link) => link.textContent),
+    ).toEqual([
+      'Visão da equipe',
+      'Calendário',
+      'Empreendimentos',
+      'Acompanhamentos',
+      'Campo',
+      'Resíduos',
+    ])
+    expect(within(menu).queryByText('Gestão')).not.toBeInTheDocument()
+  })
+
+  it('a rota da Triagem continua abrindo, mesmo fora do menu', async () => {
+    renderizarApp('/triagem')
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Triagem de licenciamento' }),
+    ).toBeInTheDocument()
+  })
+
   it('o menu principal é navegável por teclado (Tab chega aos links na ordem)', async () => {
     const usuario = userEvent.setup()
     renderizarApp('/')
@@ -77,6 +137,12 @@ describe('shell do app', () => {
     const usuario = userEvent.setup()
     renderizarApp('/')
     const atalhos = await screen.findByRole('navigation', { name: 'Atalhos' })
+    expect(
+      within(atalhos)
+        .getAllByRole('link')
+        .map((link) => link.textContent),
+    ).toEqual(['Início', 'Calendário', 'Campo'])
+    expect(within(atalhos).getByRole('button', { name: 'Mais' })).toBeInTheDocument()
     expect(within(atalhos).getByRole('link', { name: 'Início' })).toHaveAttribute(
       'aria-current',
       'page',

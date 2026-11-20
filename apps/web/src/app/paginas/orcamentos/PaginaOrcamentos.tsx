@@ -9,14 +9,8 @@ import { AvisoOrcamentosForaDoPlano } from '@/app/plano/AvisoOrcamentosForaDoPla
 import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
 import { BotaoIcone } from '@/components/ui/botao-icone'
+import { BotaoMais } from '@/components/ui/botao-mais'
 import { Dialogo } from '@/components/ui/dialogo'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { classeCampo } from '@/components/ui/estilos-campo'
 import { Icone } from '@/components/ui/icone'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
@@ -79,7 +73,14 @@ function ListaDaGestao() {
   const [busca, setBusca] = useState('')
   const buscaAdiada = useDeferredValue(busca.trim())
   const campoBusca = useRef<HTMLInputElement>(null)
-  const [novoAberto, setNovoAberto] = useState(() => parametros.get('novo') === '1')
+  const pedeNovo = parametros.get('novo') === '1'
+  const [novoAberto, setNovoAberto] = useState(pedeNovo)
+  // ?novo=1 que chega com a página já aberta (ex.: "Novo orçamento" no Ctrl+K) também abre o diálogo.
+  const [pedidoVisto, setPedidoVisto] = useState(pedeNovo)
+  if (pedeNovo !== pedidoVisto) {
+    setPedidoVisto(pedeNovo)
+    if (pedeNovo) setNovoAberto(true)
+  }
   const [aExcluir, setAExcluir] = useState<OrcamentoNaLista | null>(null)
   const [ocupado, setOcupado] = useState(false)
   const [falha, setFalha] = useState<string | null>(null)
@@ -262,33 +263,29 @@ function ListaDaGestao() {
     const numero = numeroComRevisao(item.ano, item.sequencia, item.revisao)
     if (lixeira) return acoes(item)
     return (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <BotaoIcone icone="ellipsis" rotulo={`Ações de ${numero}`} />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem
-            onSelect={() => {
+      <BotaoMais
+        de={numero}
+        itens={[
+          {
+            rotulo: 'Ver proposta',
+            icone: 'eye',
+            aoEscolher: () => {
               void navegar(`/orcamentos/${item.id}/proposta`)
-            }}
-          >
-            <Icone nome="eye" />
-            Ver proposta
-          </DropdownMenuItem>
-          {item.situacao === 'aprovada' ? null : (
-            <DropdownMenuItem
-              disabled={ocupado}
-              onSelect={() => {
-                setAviso(null)
-                setAExcluir(item)
-              }}
-            >
-              <Icone nome="trash-2" />
-              Excluir
-            </DropdownMenuItem>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
+            },
+          },
+          {
+            rotulo: 'Excluir',
+            icone: 'trash-2',
+            perigo: true,
+            oculto: item.situacao === 'aprovada',
+            desabilitado: ocupado,
+            aoEscolher: () => {
+              setAviso(null)
+              setAExcluir(item)
+            },
+          },
+        ]}
+      />
     )
   }
 
@@ -504,31 +501,22 @@ function ListaDaGestao() {
       acao={
         lixeira ? null : (
           <>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <BotaoIcone icone="ellipsis" aparencia="padrao" rotulo="Mais opções" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onSelect={() => {
+            <BotaoMais
+              itens={[
+                {
+                  rotulo: 'Lixeira',
+                  icone: 'trash-2',
+                  aoEscolher: () => {
                     verLixeira(true)
-                  }}
-                >
-                  <Icone nome="trash-2" />
-                  Lixeira
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link to="/orcamentos/primeiros-passos">Primeiros passos</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/configuracoes/custos">Custos e taxas</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/configuracoes/proposta">Dados da proposta</Link>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  },
+                },
+                {
+                  rotulo: 'Primeiros passos',
+                  para: '/orcamentos/primeiros-passos',
+                  separadoAntes: true,
+                },
+              ]}
+            />
             {botaoNovo}
           </>
         )

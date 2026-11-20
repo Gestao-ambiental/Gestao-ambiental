@@ -108,7 +108,7 @@ describe('linha de base (ADR-0027)', () => {
   })
 })
 
-describe('Resumo do mês (ADR-0027)', () => {
+describe('Painel, o antigo Resumo do mês (ADR-0027, ADR-0041)', () => {
   const linha = (mes: string, extra: Record<string, unknown> = {}) => ({
     mes,
     horas_total: 23,
@@ -139,10 +139,8 @@ describe('Resumo do mês (ADR-0027)', () => {
         },
       },
     })
-    renderizarApp('/resumo-do-mes')
-    expect(
-      await screen.findByRole('heading', { level: 1, name: 'Resumo do mês' }),
-    ).toBeInTheDocument()
+    renderizarApp('/painel')
+    expect(await screen.findByRole('heading', { level: 1, name: 'Painel' })).toBeInTheDocument()
     expect(await screen.findByText('23,0 h')).toBeInTheDocument()
     expect(screen.getByText(/R\$\s?2\.300,00/)).toBeInTheDocument()
     expect(screen.getByText('Estimado')).toBeInTheDocument()
@@ -168,9 +166,27 @@ describe('Resumo do mês (ADR-0027)', () => {
         },
       },
     })
-    renderizarApp('/resumo-do-mes')
+    renderizarApp('/painel')
     expect(await screen.findByText('Desceu 2,5 h contra o mês anterior')).toBeInTheDocument()
     expect(screen.getAllByText('Igual ao mês anterior')).toHaveLength(2)
+  })
+
+  it('o endereço antigo /resumo-do-mes abre o Painel', async () => {
+    falso.reiniciar({
+      sessao: gestao,
+      rpc: {
+        meus_vinculos: { data: [vinculoFalso('Filtroville', 'gestao')] },
+        resumo_do_mes: { data: [linha('2026-10-01')] },
+      },
+    })
+    const { router } = renderizarApp('/resumo-do-mes')
+    expect(await screen.findByRole('heading', { level: 1, name: 'Painel' })).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/painel')
+    const menu = screen.getByRole('navigation', { name: 'Menu principal' })
+    expect(within(menu).getByRole('link', { name: 'Painel' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
   })
 
   it('erro do banco mostra "Tentar de novo"; a Equipe vê sem permissão', async () => {
@@ -181,7 +197,7 @@ describe('Resumo do mês (ADR-0027)', () => {
         resumo_do_mes: { error: { message: 'falha' } },
       },
     })
-    const { unmount } = renderizarApp('/resumo-do-mes')
+    const { unmount } = renderizarApp('/painel')
     expect(await screen.findByText('Não foi possível carregar o resumo.')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Tentar de novo/ })).toBeInTheDocument()
     unmount()
@@ -190,7 +206,7 @@ describe('Resumo do mês (ADR-0027)', () => {
       sessao: sessaoDe('ana@filtroville.test', 'Ana Ribeiro'),
       rpc: { meus_vinculos: { data: [vinculoFalso('Filtroville', 'equipe')] } },
     })
-    renderizarApp('/resumo-do-mes')
+    renderizarApp('/painel')
     expect(await screen.findByText('Você não tem acesso a esta área')).toBeInTheDocument()
     expect(chamadas('resumo_do_mes')).toEqual([])
   })

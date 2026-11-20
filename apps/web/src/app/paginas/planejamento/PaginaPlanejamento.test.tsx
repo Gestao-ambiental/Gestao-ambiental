@@ -44,11 +44,15 @@ describe('planejamento', () => {
     })
   })
 
-  it('abre pelo menu e mostra o cenário simulado com carga, alertas e triagem', async () => {
+  it('fora do menu (ADR-0041), abre pelo Ctrl+K e mostra o cenário simulado com carga, alertas e triagem', async () => {
     const usuario = userEvent.setup()
     renderizarApp('/')
     const menu = await screen.findByRole('navigation', { name: 'Menu principal' })
-    await usuario.click(await within(menu).findByRole('link', { name: 'Planejamento' }))
+    expect(within(menu).queryByRole('link', { name: 'Planejamento' })).not.toBeInTheDocument()
+    await usuario.keyboard('{Control>}k{/Control}')
+    await usuario.type(await screen.findByRole('combobox'), 'planejamento')
+    const irPara = await screen.findByRole('group', { name: 'Ir para' })
+    await usuario.click(await within(irPara).findByRole('option', { name: 'Planejamento' }))
 
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Planejamento' }),

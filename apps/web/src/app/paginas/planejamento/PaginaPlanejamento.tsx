@@ -19,9 +19,19 @@ import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/
 import { Botao } from '@/components/ui/botao'
 import { CampoData } from '@/components/ui/campo-data'
 import { CampoTexto } from '@/components/ui/campo-texto'
+import { classeCampo } from '@/components/ui/estilos-campo'
+import { ItemDoPlacar, Placar } from '@/components/ui/placar'
 import { Selo } from '@/components/ui/selo'
 
 import { Pagina } from '../Pagina'
+import {
+  RodapeDoQuadro,
+  TituloDoPainel,
+  classeCabecalho,
+  classeCelula,
+  classeLinha,
+  classePainel,
+} from '../residuos/quadro'
 import { formatarHoras, NOMES_DOS_MESES, nomeDoMes } from './formatos'
 import { GraficoCarga, type MesDoGrafico } from './GraficoCarga'
 
@@ -161,15 +171,20 @@ function simular(
   }
 }
 
-const classeCabecalho = 'h-10 border-b px-(--space-100) text-left whitespace-nowrap rotulo'
-const classeCelula = 'h-10 border-b px-(--space-100) whitespace-nowrap'
+// Quadro (DESIGN.md): primeira coluna é o que se escaneia; números em coluna tabular.
+const classeCabecalhoPrimeiro = `${classeCabecalho} pl-(--e-4)`
+const classeCabecalhoNumero = `${classeCabecalho} text-right`
+const classeTitulo = `${classeCelula} pl-(--e-4) text-left corpo-medio whitespace-nowrap`
+const classeNumero = `${classeCelula} text-right whitespace-nowrap numero`
+const classeTexto = `${classeCelula} whitespace-nowrap`
+const classeTabela = 'w-full border-collapse corpo'
 
 /**
  * /planejamento: o método de planejamento antecipado rodando sobre uma carteira simulada (prazos
  * constantes por mês e um pico em março). Nenhum dado da consultoria entra aqui; a tela existe
- * para experimentar as regras antes de ligá-las às licenças.
+ * para experimentar as regras antes de ligá-las às licenças. Só para a Gestão e só nos planos com
+ * o recurso "capacidade" (ADR-0030).
  */
-/** /planejamento: só para a Gestão e só nos planos com o recurso "capacidade" (ADR-0030). */
 export function PaginaPlanejamento() {
   const { atual } = useConsultoria()
   const capacidade = useRecursoLiberado('capacidade')
@@ -239,13 +254,10 @@ function PlanejamentoDaGestao() {
   }
 
   return (
-    <Pagina titulo="Planejamento">
-      <div>
-        <Selo tom="andamento">Cenário simulado</Selo>
-      </div>
-
+    <Pagina titulo="Planejamento" meta={<Selo tom="andamento">Cenário simulado</Selo>}>
       <form
-        className="grid grid-cols-2 gap-(--space-150) rounded-(--radius) border bg-(--surface) p-(--space-150) md:grid-cols-3 xl:grid-cols-5 [&>*]:min-w-0"
+        aria-label="Cenário"
+        className="grid grid-cols-1 gap-(--e-3) rounded-(--raio-painel) border bg-(--folha) p-(--e-4) min-[420px]:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 [&>*]:min-w-0"
         onSubmit={(evento) => {
           evento.preventDefault()
         }}
@@ -289,13 +301,13 @@ function PlanejamentoDaGestao() {
             mudar(setNoPico)(evento.target.value)
           }}
         />
-        <div className="flex flex-col gap-(--space-050)">
-          <label htmlFor="mes-do-pico" className="flex min-h-5 items-center rotulo">
+        <div className="flex flex-col gap-(--e-1)">
+          <label htmlFor="mes-do-pico" className="flex min-h-5 items-center rotulo text-(--tinta)">
             Mês do pico
           </label>
           <select
             id="mes-do-pico"
-            className="h-(--size-control) w-full rounded-(--radius) border border-(--border-input) bg-(--surface-input) px-(--space-100) corpo text-(--text) outline-none focus:border-(--border-focus) focus:shadow-[0_0_0_1px_var(--border-focus)]"
+            className={classeCampo}
             value={mesDePico}
             onChange={(evento) => {
               setMesDePico(Number(evento.target.value))
@@ -345,72 +357,68 @@ function Resultado({
 
   return (
     <>
-      <dl className="grid grid-cols-2 gap-(--space-150) md:grid-cols-4">
-        <Numero
+      <Placar rotulo="Resumo do cenário" tamanho="medio">
+        <ItemDoPlacar
           rotulo="Pico na posição recomendada"
           valor={formatarHoras(simulacao.picoRecomendado)}
         />
-        <Numero rotulo="Pico com antecipação" valor={formatarHoras(simulacao.picoAntecipado)} />
-        <Numero
+        <ItemDoPlacar
+          rotulo="Pico com antecipação"
+          valor={formatarHoras(simulacao.picoAntecipado)}
+        />
+        <ItemDoPlacar
           rotulo="Meses acima da capacidade"
-          valor={String(simulacao.mesesAcima)}
+          valor={simulacao.mesesAcima}
+          tom="atraso"
           detalhe={simulacao.horasAcima > 0 ? formatarHoras(simulacao.horasAcima) : undefined}
         />
-        <Numero rotulo="Para iniciar já" valor={String(triagem.length)} />
-      </dl>
+        <ItemDoPlacar rotulo="Para iniciar já" valor={triagem.length} tom="alerta" />
+      </Placar>
 
-      <section
-        aria-labelledby="titulo-carga"
-        className="flex flex-col gap-(--space-150) rounded-(--radius) border bg-(--surface) p-(--space-150)"
-      >
-        <h2 id="titulo-carga" className="titulo-secao text-(--text)">
-          Carga mensal
-        </h2>
-        <GraficoCarga meses={simulacao.meses} capacidade={capacidade} />
+      <section aria-labelledby="titulo-carga" className={classePainel}>
+        <TituloDoPainel id="titulo-carga">Carga mensal</TituloDoPainel>
+        <div className="p-(--e-4)">
+          <GraficoCarga meses={simulacao.meses} capacidade={capacidade} />
+        </div>
       </section>
 
-      <section aria-labelledby="titulo-estrategias" className="flex flex-col gap-(--space-100)">
-        <h2 id="titulo-estrategias" className="titulo-secao text-(--text)">
-          Estratégias
-        </h2>
-        <div className="overflow-auto rounded-(--radius) border bg-(--surface)">
-          <table className="w-full border-collapse corpo">
+      <section aria-labelledby="titulo-estrategias" className={classePainel}>
+        <TituloDoPainel id="titulo-estrategias">Estratégias</TituloDoPainel>
+        <div className="overflow-x-auto">
+          <table className={classeTabela}>
             <thead>
               <tr>
-                <th scope="col" className={`${classeCabecalho} pl-(--space-150)`}>
+                <th scope="col" className={classeCabecalhoPrimeiro}>
                   Estratégia
                 </th>
-                <th scope="col" className={classeCabecalho}>
+                <th scope="col" className={classeCabecalhoNumero}>
                   Pico mensal
                 </th>
-                <th scope="col" className={classeCabecalho}>
+                <th scope="col" className={classeCabecalhoNumero}>
                   Meses acima
                 </th>
-                <th scope="col" className={classeCabecalho}>
+                <th scope="col" className={classeCabecalhoNumero}>
                   Horas acima
                 </th>
-                <th scope="col" className={classeCabecalho}>
+                <th scope="col" className={classeCabecalhoNumero}>
                   Terminam dentro da margem
                 </th>
-                <th scope="col" className={classeCabecalho}>
+                <th scope="col" className={`${classeCabecalhoNumero} pr-(--e-4)`}>
                   Atrasadas
                 </th>
               </tr>
             </thead>
             <tbody>
               {simulacao.estrategias.map((linha) => (
-                <tr key={linha.id}>
-                  <th
-                    scope="row"
-                    className={`${classeCelula} pl-(--space-150) text-left corpo-medio`}
-                  >
+                <tr key={linha.id} className={classeLinha}>
+                  <th scope="row" className={classeTitulo}>
                     {linha.rotulo}
                   </th>
-                  <td className={classeCelula}>{formatarHoras(linha.pico)}</td>
-                  <td className={classeCelula}>{linha.mesesAcima}</td>
-                  <td className={classeCelula}>{formatarHoras(linha.horasAcima)}</td>
-                  <td className={classeCelula}>{linha.zonaCritica}</td>
-                  <td className={classeCelula}>{linha.atrasadas}</td>
+                  <td className={classeNumero}>{formatarHoras(linha.pico)}</td>
+                  <td className={classeNumero}>{linha.mesesAcima}</td>
+                  <td className={classeNumero}>{formatarHoras(linha.horasAcima)}</td>
+                  <td className={classeNumero}>{linha.zonaCritica}</td>
+                  <td className={`${classeNumero} pr-(--e-4)`}>{linha.atrasadas}</td>
                 </tr>
               ))}
             </tbody>
@@ -418,46 +426,40 @@ function Resultado({
         </div>
       </section>
 
-      <section aria-labelledby="titulo-travas" className="flex flex-col gap-(--space-100)">
-        <h2 id="titulo-travas" className="titulo-secao text-(--text)">
-          Prazos do pico por trava
-        </h2>
+      <section aria-labelledby="titulo-travas" className={classePainel}>
+        <TituloDoPainel id="titulo-travas">Prazos do pico por trava</TituloDoPainel>
         {simulacao.travasDoPico.length === 0 ? (
-          <EstadoVazio
-            titulo="Nenhum prazo no mês de pico"
-            className="rounded-(--radius) border bg-(--surface)"
-          />
+          <EstadoVazio titulo="Nenhum prazo no mês de pico" />
         ) : (
-          <div className="overflow-auto rounded-(--radius) border bg-(--surface)">
-            <table className="w-full border-collapse corpo">
+          <div className="overflow-x-auto">
+            <table className={classeTabela}>
               <thead>
                 <tr>
-                  <th scope="col" className={`${classeCabecalho} pl-(--space-150)`}>
+                  <th scope="col" className={classeCabecalhoPrimeiro}>
                     Trava
                   </th>
-                  <th scope="col" className={classeCabecalho}>
+                  <th scope="col" className={classeCabecalhoNumero}>
                     Atividades
                   </th>
-                  <th scope="col" className={classeCabecalho}>
+                  <th scope="col" className={classeCabecalhoNumero}>
                     Horas
                   </th>
-                  <th scope="col" className={classeCabecalho}>
+                  <th scope="col" className={`${classeCabecalhoNumero} pr-(--e-4)`}>
                     Horas que podem ser adiantadas
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {simulacao.travasDoPico.map((linha) => (
-                  <tr key={linha.trava}>
-                    <th
-                      scope="row"
-                      className={`${classeCelula} pl-(--space-150) text-left corpo-medio`}
-                    >
+                  <tr key={linha.trava} className={classeLinha}>
+                    <th scope="row" className={classeTitulo}>
                       {linha.trava}
                     </th>
-                    <td className={classeCelula}>{linha.atividades}</td>
-                    <td className={classeCelula}>{formatarHoras(linha.horas)}</td>
-                    <td className={classeCelula}>{formatarHoras(linha.horasMoveis)}</td>
+                    <td className={classeNumero}>{linha.atividades}</td>
+                    <td className={classeNumero}>{formatarHoras(linha.horas)}</td>
+                    <td className={`${classeNumero} pr-(--e-4)`}>
+                      {formatarHoras(linha.horasMoveis)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -466,57 +468,48 @@ function Resultado({
         )}
       </section>
 
-      <section aria-labelledby="titulo-alertas" className="flex flex-col gap-(--space-100)">
-        <h2 id="titulo-alertas" className="titulo-secao text-(--text)">
-          Alertas de aglomeração
-        </h2>
+      <section aria-labelledby="titulo-alertas" className={classePainel}>
+        <TituloDoPainel id="titulo-alertas">Alertas de aglomeração</TituloDoPainel>
         {aglomeracoes.length === 0 ? (
-          <EstadoVazio
-            titulo="Nenhum mês acima da capacidade"
-            icone="circle-check"
-            className="rounded-(--radius) border bg-(--surface)"
-          />
+          <EstadoVazio titulo="Nenhum mês acima da capacidade" icone="circle-check" />
         ) : (
-          <div className="overflow-auto rounded-(--radius) border bg-(--surface)">
-            <table className="w-full border-collapse corpo">
+          <div className="overflow-x-auto">
+            <table className={classeTabela}>
               <thead>
                 <tr>
-                  <th scope="col" className={`${classeCabecalho} pl-(--space-150)`}>
+                  <th scope="col" className={classeCabecalhoPrimeiro}>
                     Mês
                   </th>
-                  <th scope="col" className={classeCabecalho}>
+                  <th scope="col" className={classeCabecalhoNumero}>
                     Previsto
                   </th>
-                  <th scope="col" className={classeCabecalho}>
+                  <th scope="col" className={classeCabecalhoNumero}>
                     Acima da capacidade
                   </th>
                   <th scope="col" className={classeCabecalho}>
                     Começar a antecipar até
                   </th>
-                  <th scope="col" className={classeCabecalho}>
+                  <th scope="col" className={classeCabecalhoNumero}>
                     Atividades a antecipar
                   </th>
-                  <th scope="col" className={classeCabecalho}>
+                  <th scope="col" className={`${classeCabecalho} pr-(--e-4)`}>
                     Situação
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {aglomeracoes.map((alerta) => (
-                  <tr key={alerta.mes}>
-                    <th
-                      scope="row"
-                      className={`${classeCelula} pl-(--space-150) text-left corpo-medio`}
-                    >
+                  <tr key={alerta.mes} className={classeLinha}>
+                    <th scope="row" className={classeTitulo}>
                       {nomeDoMes(alerta.mes)}
                     </th>
-                    <td className={classeCelula}>{formatarHoras(alerta.horasPrevistas)}</td>
-                    <td className={classeCelula}>{formatarHoras(alerta.horasAcima)}</td>
-                    <td className={classeCelula}>
+                    <td className={classeNumero}>{formatarHoras(alerta.horasPrevistas)}</td>
+                    <td className={classeNumero}>{formatarHoras(alerta.horasAcima)}</td>
+                    <td className={`${classeTexto} numero`}>
                       {alerta.comecarAte ? formatarDataCivil(alerta.comecarAte as DataCivil) : '—'}
                     </td>
-                    <td className={classeCelula}>{alerta.atividadesAAntecipar}</td>
-                    <td className={classeCelula}>
+                    <td className={classeNumero}>{alerta.atividadesAAntecipar}</td>
+                    <td className={`${classeTexto} pr-(--e-4)`}>
                       {alerta.resolvida ? (
                         <Selo tom="sucesso">Cabe</Selo>
                       ) : (
@@ -533,23 +526,17 @@ function Resultado({
         )}
       </section>
 
-      <section aria-labelledby="titulo-triagem" className="flex flex-col gap-(--space-100)">
-        <h2 id="titulo-triagem" className="titulo-secao text-(--text)">
-          Iniciar já
-        </h2>
+      <section aria-labelledby="titulo-triagem" className={classePainel}>
+        <TituloDoPainel id="titulo-triagem">Iniciar já</TituloDoPainel>
         {triagem.length === 0 ? (
-          <EstadoVazio
-            titulo="Nenhuma atividade para iniciar já"
-            icone="circle-check"
-            className="rounded-(--radius) border bg-(--surface)"
-          />
+          <EstadoVazio titulo="Nenhuma atividade para iniciar já" icone="circle-check" />
         ) : (
-          <div className="flex flex-col overflow-hidden rounded-(--radius) border bg-(--surface)">
-            <div className="overflow-auto">
-              <table className="w-full border-collapse corpo">
+          <>
+            <div className="overflow-x-auto">
+              <table className={classeTabela}>
                 <thead>
                   <tr>
-                    <th scope="col" className={`${classeCabecalho} pl-(--space-150)`}>
+                    <th scope="col" className={classeCabecalhoPrimeiro}>
                       Atividade
                     </th>
                     <th scope="col" className={classeCabecalho}>
@@ -567,30 +554,27 @@ function Resultado({
                     <th scope="col" className={classeCabecalho}>
                       Gravidade
                     </th>
-                    <th scope="col" className={classeCabecalho}>
+                    <th scope="col" className={`${classeCabecalho} pr-(--e-4)`}>
                       Situação
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {visiveis.map(({ item, atividade }) => (
-                    <tr key={item.atividadeId}>
-                      <th
-                        scope="row"
-                        className={`${classeCelula} pl-(--space-150) text-left corpo-medio`}
-                      >
+                    <tr key={item.atividadeId} className={classeLinha}>
+                      <th scope="row" className={`${classeTitulo} numero`}>
                         {item.atividadeId}
                       </th>
-                      <td className={classeCelula}>{atividade.rotulo}</td>
-                      <td className={classeCelula}>{rotuloDaTrava(atividade)}</td>
-                      <td className={classeCelula}>
+                      <td className={classeTexto}>{atividade.rotulo}</td>
+                      <td className={classeTexto}>{rotuloDaTrava(atividade)}</td>
+                      <td className={`${classeTexto} numero`}>
                         {formatarDataCivil((atividade.prazo ?? '') as DataCivil | '')}
                       </td>
-                      <td className={classeCelula}>
+                      <td className={`${classeTexto} numero`}>
                         {formatarDataCivil(item.inicioRecomendado as DataCivil)}
                       </td>
-                      <td className={classeCelula}>{rotuloDaGravidade(atividade.gravidade)}</td>
-                      <td className={classeCelula}>
+                      <td className={classeTexto}>{rotuloDaGravidade(atividade.gravidade)}</td>
+                      <td className={`${classeTexto} pr-(--e-4)`}>
                         {item.estado === 'inviavel' ? (
                           <Selo tom="perigo">Prazo em risco</Selo>
                         ) : (
@@ -602,12 +586,10 @@ function Resultado({
                 </tbody>
               </table>
             </div>
-            <div className="flex items-center justify-between gap-(--space-100) px-(--space-150) py-(--space-100)">
-              <span className="rotulo text-(--text-subtle)">
-                Página {pagina + 1} de {paginas}
-              </span>
-              <div className="flex gap-(--space-100)">
+            <RodapeDoQuadro texto={`Página ${String(pagina + 1)} de ${String(paginas)}`}>
+              <div className="flex gap-(--e-2)">
                 <Botao
+                  tamanho="compacto"
                   disabled={pagina === 0}
                   onClick={() => {
                     aoMudarPagina(pagina - 1)
@@ -616,6 +598,7 @@ function Resultado({
                   Anterior
                 </Botao>
                 <Botao
+                  tamanho="compacto"
                   disabled={pagina >= paginas - 1}
                   onClick={() => {
                     aoMudarPagina(pagina + 1)
@@ -624,8 +607,8 @@ function Resultado({
                   Próxima
                 </Botao>
               </div>
-            </div>
-          </div>
+            </RodapeDoQuadro>
+          </>
         )}
       </section>
     </>
@@ -634,18 +617,4 @@ function Resultado({
 
 function rotuloDaGravidade(id: string): string {
   return provisorios.niveis.find((nivel) => nivel.id === id)?.rotulo ?? id
-}
-
-function Numero({ rotulo, valor, detalhe }: { rotulo: string; valor: string; detalhe?: string }) {
-  return (
-    <div className="flex flex-col gap-(--space-050) rounded-(--radius) border bg-(--surface) p-(--space-150)">
-      <dt className="rotulo text-(--text-subtle)">{rotulo}</dt>
-      <dd className="titulo-tela text-(--text)">
-        {valor}
-        {detalhe ? (
-          <span className="ml-(--space-100) corpo text-(--text-subtle)">{detalhe}</span>
-        ) : null}
-      </dd>
-    </div>
-  )
 }

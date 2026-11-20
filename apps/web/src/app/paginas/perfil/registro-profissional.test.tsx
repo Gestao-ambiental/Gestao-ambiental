@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import axe from 'axe-core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -141,11 +141,16 @@ describe('meu perfil: registro profissional e Cadastro Técnico Federal', () => 
     expect(screen.getByRole('combobox', { name: 'UF do registro' })).toHaveDisplayValue('SC')
   })
 
-  it('formação em curso não tem registro: sem profissão concluída, sem formulário', async () => {
+  it('formação em curso sem registro salvo: a seção some', async () => {
     falso.reiniciar(cenario({ outras_profissoes: [], profissao_em_curso: true }))
     renderizarApp('/perfil')
 
-    expect(await screen.findByText('Nenhum registro informado.')).toBeInTheDocument()
+    await screen.findByRole('heading', { name: 'Cadastro Técnico Federal' })
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('heading', { name: 'Registro profissional' }),
+      ).not.toBeInTheDocument()
+    })
     expect(
       screen.queryByRole('combobox', { name: 'Profissão do registro' }),
     ).not.toBeInTheDocument()

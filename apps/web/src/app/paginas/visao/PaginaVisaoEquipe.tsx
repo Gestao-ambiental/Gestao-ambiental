@@ -1,13 +1,19 @@
-import { hojeNoFuso, situacaoDoPrazo } from '@gestao-ambiental/domain'
+import {
+  ROTULO_DO_TIPO_DE_LINHA,
+  hojeNoFuso,
+  situacaoDoPrazo,
+  tipoAceitaResponsavel,
+} from '@gestao-ambiental/domain'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
-import { Link } from 'react-router'
+import { useId, useState } from 'react'
+import { Link, useSearchParams } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Pagina } from '@/app/paginas/Pagina'
 import { ProximosPrazosDeResiduos } from '@/app/paginas/residuos/prazos/ProximosPrazosDeResiduos'
 import { TarefasNaVisao } from '@/app/paginas/tarefas/TarefasNaVisao'
 import { Carregando, EstadoErro, EstadoVazio } from '@/components/estados'
+import { Abas, PainelDeAba } from '@/components/ui/abas'
 import { Avatar } from '@/components/ui/avatar'
 import { Botao } from '@/components/ui/botao'
 import { BotaoIcone } from '@/components/ui/botao-icone'
@@ -30,7 +36,7 @@ import {
   contarPrazos,
   listarPrazos,
   listarTiposEmUso,
-  type Aba,
+  obterNomeDoCliente,
   type Faixa,
   type Filtros,
   type LinhaDePrazo,
@@ -38,6 +44,7 @@ import {
 } from '@/lib/api/prazos'
 import { formatarDataCurta } from '@/lib/datas'
 import { mensagemDoErro } from '@/lib/erros'
+import { ehUuid } from '@/lib/texto'
 import { cn } from '@/lib/utils'
 
 import { Contagem } from './Contagem'
@@ -56,35 +63,71 @@ const COLUNAS: { chave: Ordem; rotulo: string }[] = [
   { chave: 'responsavel', rotulo: 'Responsável' },
 ]
 
+/** Licença ao lado do título, quando a linha tem. */
+function Licenca({ linha }: { linha: LinhaDePrazo }) {
+  return linha.licenca ? <span className="text-(--tinta-2)"> · {linha.licenca}</span> : null
+}
+
+/**
+ * Para onde a demanda leva: ocorrência e exigência abrem a própria página; o limite de protocolo,
+ * o plano de renovação; o vencimento, o empreendimento; a validade não abre nada.
+ */
+function destinoDaDemanda(linha: LinhaDePrazo): string | null {
+  switch (linha.tipo) {
+    case 'ocorrencia':
+      return `/ocorrencias/${linha.id}`
+    case 'exigencia':
+      return `/exigencias/${linha.id}`
+    case 'limite_protocolo':
+      return linha.instrumentoId ? `/renovacoes/${linha.instrumentoId}` : null
+    case 'vencimento':
+      return `/empreendimentos/${linha.empreendimentoId}`
+    case 'validade':
+      return null
+  }
+}
+
 function Demanda({ linha }: { linha: LinhaDePrazo }) {
-  if (linha.tipo === 'limite_protocolo') {
-    return (
-      <Link to={`/renovacoes/${linha.instrumentoId}`} className="text-(--tinta) hover:underline">
-        <span className="corpo-medio">{linha.titulo}</span>
-        {linha.licenca ? <span className="text-(--tinta-2)"> · {linha.licenca}</span> : null}
-      </Link>
-    )
+  const destino = destinoDaDemanda(linha)
+  switch (linha.tipo) {
+    case 'ocorrencia':
+    case 'exigencia':
+      return (
+        <Link
+          to={destino ?? ''}
+          className="block max-w-[360px] truncate text-(--tinta) hover:underline"
+          title={linha.titulo}
+        >
+          {linha.tipo === 'exigencia' ? (
+            <span className="text-(--tinta-2)">{ROTULO_DO_TIPO_DE_LINHA.exigencia} · </span>
+          ) : null}
+          {linha.codigo ? (
+            <span className="font-mono text-xs text-(--tinta-2)">{linha.codigo} · </span>
+          ) : null}
+          {linha.titulo}
+        </Link>
+      )
+    case 'vencimento':
+    case 'limite_protocolo':
+    case 'validade': {
+      const conteudo = (
+        <>
+          {linha.tipo === 'vencimento' ? (
+            <span className="text-(--tinta-2)">{ROTULO_DO_TIPO_DE_LINHA.vencimento} · </span>
+          ) : null}
+          <span className="corpo-medio">{linha.titulo}</span>
+          <Licenca linha={linha} />
+        </>
+      )
+      return destino ? (
+        <Link to={destino} className="text-(--tinta) hover:underline">
+          {conteudo}
+        </Link>
+      ) : (
+        <span>{conteudo}</span>
+      )
+    }
   }
-  if (linha.tipo !== 'ocorrencia') {
-    return (
-      <span>
-        <span className="corpo-medio">{linha.titulo}</span>
-        {linha.licenca ? <span className="text-(--tinta-2)"> · {linha.licenca}</span> : null}
-      </span>
-    )
-  }
-  return (
-    <Link
-      to={`/ocorrencias/${linha.id}`}
-      className="block max-w-[360px] truncate text-(--tinta) hover:underline"
-      title={linha.titulo}
-    >
-      {linha.codigo ? (
-        <span className="font-mono text-xs text-(--tinta-2)">{linha.codigo} · </span>
-      ) : null}
-      {linha.titulo}
-    </Link>
-  )
 }
 
 function Responsavel({
@@ -98,7 +141,6 @@ function Responsavel({
   membros: readonly { id: string; nome: string }[]
   aoAtribuir: (membroId: string) => void
 }) {
-  if (linha.tipo !== 'ocorrencia') return <span className="text-(--tinta-2)">—</span>
   if (linha.responsavelNome) {
     return (
       <span className="flex items-center gap-(--e-2)">
@@ -107,6 +149,8 @@ function Responsavel({
       </span>
     )
   }
+  // Só os tipos de TIPOS_COM_RESPONSAVEL (domínio) aceitam responsável e a ação Atribuir.
+  if (!tipoAceitaResponsavel(linha.tipo)) return <span className="text-(--tinta-2)">—</span>
   // "Sem responsável" não é segunda situação de atraso: é uma ação (EQ-03).
   if (!podeAtribuir) return <span className="text-(--tinta-2)">Sem responsável</span>
   return (
@@ -137,10 +181,44 @@ function Responsavel({
   )
 }
 
+/** Filtro de cliente que veio pela URL (`?cliente=`), com o nome e o botão de remover. */
+function FiltroDeCliente({
+  nome,
+  aoRemover,
+}: {
+  nome: { carregando: boolean; erro: boolean; valor: string | null | undefined }
+  aoRemover: () => void
+}) {
+  const texto = nome.carregando
+    ? null
+    : nome.erro
+      ? 'nome indisponível'
+      : (nome.valor ?? 'não encontrado')
+  return (
+    <span
+      role="group"
+      aria-label="Filtro de cliente"
+      className="inline-flex h-(--controle) shrink-0 items-center gap-(--e-1) rounded-(--raio-redondo) border border-(--regra-forte) bg-(--escolha) pr-(--e-05) pl-(--e-3) corpo max-md:h-(--controle-toque)"
+    >
+      <span className="whitespace-nowrap">
+        <span className="text-(--tinta-2)">Cliente</span>
+        {texto ? <span className="corpo-medio text-(--tinta)"> {texto}</span> : null}
+      </span>
+      <BotaoIcone
+        icone="x"
+        tamanho="compacto"
+        rotulo={`Remover filtro do cliente${nome.valor ? ` ${nome.valor}` : ''}`}
+        onClick={aoRemover}
+      />
+    </span>
+  )
+}
+
 /**
  * Página inicial (Protótipo 05, versão em tabela; EQ-01 a EQ-03): contadores que filtram, abas
  * "Toda a equipe" e "Minhas ações", filtros combinados e a tabela paginada no servidor, com a
- * situação calculada. Atualiza sozinha a cada minuto.
+ * situação calculada. Atualiza sozinha a cada minuto. Aceita `?cliente=<id>` (o Painel abre a
+ * Visão filtrada por cliente): o filtro aparece com o nome e sai ao remover.
  */
 export function PaginaVisaoEquipe() {
   const { atual } = useConsultoria()
@@ -157,6 +235,31 @@ export function PaginaVisaoEquipe() {
   const [faixa, setFaixa] = useState<Faixa | null>(null)
   const [ordem, setOrdem] = useState<Ordem>('prazo')
   const [pagina, setPagina] = useState(0)
+  const [busca, setBusca] = useSearchParams()
+  const parametroCliente = busca.get('cliente')
+  /** Há `?cliente=` na URL: o filtro aparece (e pode ser removido) mesmo com um id inválido. */
+  const comFiltroDeCliente = parametroCliente !== null && parametroCliente !== ''
+  // Só um uuid vai ao banco (p_cliente_id é uuid); outro valor seria erro 400 na lista inteira.
+  const clienteId = ehUuid(parametroCliente) ? parametroCliente : null
+  // Cliente trocado pela URL (link do Painel com a Visão aberta) volta à primeira página.
+  const [clienteDaPagina, setClienteDaPagina] = useState(clienteId)
+  if (clienteDaPagina !== clienteId) {
+    setClienteDaPagina(clienteId)
+    setPagina(0)
+  }
+  const filtrosDaConsulta: Filtros = { ...filtros, clienteId }
+
+  function removerCliente() {
+    setBusca(
+      (atual) => {
+        const nova = new URLSearchParams(atual)
+        nova.delete('cliente')
+        return nova
+      },
+      { replace: true },
+    )
+    setPagina(0)
+  }
 
   function mudarFiltros(parcial: Partial<Filtros>) {
     setFiltros((f) => ({ ...f, ...parcial }))
@@ -164,21 +267,22 @@ export function PaginaVisaoEquipe() {
   }
 
   const linhas = useQuery({
-    queryKey: ['prazos', cid, filtros, faixa, ordem, pagina],
-    queryFn: () => listarPrazos(cid, filtros, faixa, ordem, pagina),
+    queryKey: ['prazos', cid, filtrosDaConsulta, faixa, ordem, pagina],
+    queryFn: () => listarPrazos(cid, filtrosDaConsulta, faixa, ordem, pagina),
     placeholderData: keepPreviousData,
     refetchInterval: ATUALIZAR_A_CADA,
   })
   const contadores = useQuery({
-    queryKey: ['prazos-contadores', cid, filtros],
-    queryFn: () => contarPrazos(cid, filtros),
+    queryKey: ['prazos-contadores', cid, filtrosDaConsulta],
+    queryFn: () => contarPrazos(cid, filtrosDaConsulta),
     refetchInterval: ATUALIZAR_A_CADA,
   })
+  const idAbas = useId()
   const totais = useQuery({
-    queryKey: ['prazos-totais', cid],
+    queryKey: ['prazos-totais', cid, clienteId],
     queryFn: async () => {
       const base: Filtros = {
-        ...filtros,
+        ...filtrosDaConsulta,
         aba: 'todos',
         responsavelId: null,
         semResponsavel: false,
@@ -192,6 +296,11 @@ export function PaginaVisaoEquipe() {
       return { todos: todos.total, minhas: minhas.total }
     },
     refetchInterval: ATUALIZAR_A_CADA,
+  })
+  const nomeDoCliente = useQuery({
+    queryKey: ['cliente-nome', cid, clienteId],
+    queryFn: () => obterNomeDoCliente(cid, clienteId ?? ''),
+    enabled: clienteId !== null,
   })
   const membros = useQuery({
     queryKey: ['membros-ativos', cid],
@@ -217,8 +326,10 @@ export function PaginaVisaoEquipe() {
     filtros.semResponsavel ||
     filtros.tipoId !== null ||
     filtros.empreendimentoId !== null ||
+    comFiltroDeCliente ||
     faixa !== null
   function limpar() {
+    if (comFiltroDeCliente) removerCliente()
     mudarFiltros({
       responsavelId: null,
       semResponsavel: false,
@@ -523,52 +634,18 @@ export function PaginaVisaoEquipe() {
       ) : null}
 
       <div className="flex flex-col gap-(--e-3)">
-        <div className="flex flex-wrap items-end justify-between gap-(--e-3) border-b border-(--regra-forte)">
-          <div role="tablist" aria-label="Recorte" className="flex gap-(--e-5)">
-            {(
-              [
-                ['todos', 'Toda a equipe'],
-                ['minhas', 'Minhas ações'],
-              ] as [Aba, string][]
-            ).map(([aba, rotulo]) => {
-              const ativa = filtros.aba === aba
-              const contagem = totais.data
-                ? aba === 'todos'
-                  ? totais.data.todos
-                  : totais.data.minhas
-                : null
-              return (
-                <button
-                  key={aba}
-                  type="button"
-                  role="tab"
-                  aria-selected={ativa}
-                  onClick={() => {
-                    mudarFiltros({ aba })
-                  }}
-                  className={cn(
-                    '-mb-px inline-flex h-11 cursor-pointer items-center gap-(--e-2) border-b-[3px] titulo-secao transicao-estado',
-                    ativa
-                      ? 'border-(--marca-linha) text-(--tinta)'
-                      : 'border-transparent text-(--tinta-2) hover:text-(--tinta)',
-                  )}
-                >
-                  {rotulo}
-                  {contagem === null ? null : (
-                    <span
-                      className={cn(
-                        'min-w-6 rounded-(--raio-mini) px-(--e-1) text-center text-xs font-[800] numero',
-                        ativa ? 'bg-(--tinta) text-(--folha)' : 'bg-(--aperto) text-(--tinta-2)',
-                      )}
-                    >
-                      {contagem}
-                    </span>
-                  )}
-                </button>
-              )
-            })}
-          </div>
-        </div>
+        <Abas
+          rotulo="Recorte"
+          idBase={idAbas}
+          valor={filtros.aba}
+          aoMudar={(aba) => {
+            mudarFiltros({ aba })
+          }}
+          abas={[
+            { valor: 'todos', rotulo: 'Toda a equipe', contagem: totais.data?.todos },
+            { valor: 'minhas', rotulo: 'Minhas ações', contagem: totais.data?.minhas },
+          ]}
+        />
         <div className="-mx-(--e-4) flex items-center gap-(--e-2) overflow-x-auto px-(--e-4) pb-(--e-05) md:mx-0 md:flex-wrap md:overflow-visible md:px-0">
           <label>
             <span className="sr-only">Responsável</span>
@@ -626,17 +703,24 @@ export function PaginaVisaoEquipe() {
               ))}
             </select>
           </label>
+          {comFiltroDeCliente ? (
+            <FiltroDeCliente
+              nome={{
+                carregando: clienteId !== null && nomeDoCliente.isPending,
+                erro: nomeDoCliente.isError,
+                valor: nomeDoCliente.data,
+              }}
+              aoRemover={removerCliente}
+            />
+          ) : null}
           <Botao aparencia="sutil" disabled={!filtrando} onClick={limpar}>
             Limpar filtros
           </Botao>
         </div>
 
-        <div
-          role="tabpanel"
-          aria-label={filtros.aba === 'todos' ? 'Toda a equipe' : 'Minhas ações'}
-        >
+        <PainelDeAba idBase={idAbas} valor={filtros.aba}>
           {tabela}
-        </div>
+        </PainelDeAba>
       </div>
 
       <TarefasNaVisao aba={filtros.aba} />

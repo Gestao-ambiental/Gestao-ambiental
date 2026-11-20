@@ -21,7 +21,7 @@ import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-q
 import { useId, useState, type SyntheticEvent, type ReactNode } from 'react'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
-import { Pagina } from '@/app/paginas/Pagina'
+import { PaginaDeConfiguracoes } from '@/app/paginas/configuracoes/PaginaDeConfiguracoes'
 import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
 import { classeRadio } from '@/components/ui/caixa-selecao'
@@ -703,5 +703,5 @@ export function PaginaPlano() {
     )
   }
 
-  return <Pagina titulo="Plano e cobrança">{conteudo}</Pagina>
+  return <PaginaDeConfiguracoes>{conteudo}</PaginaDeConfiguracoes>
 }

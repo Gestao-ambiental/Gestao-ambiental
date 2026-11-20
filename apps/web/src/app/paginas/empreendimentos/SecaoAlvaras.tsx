@@ -18,6 +18,7 @@ import type { Unidade } from '@/lib/api/empreendimentos'
 import { urlDoPdf } from '@/lib/api/licencas'
 import { mensagemDoErro } from '@/lib/erros'
 
+import { TituloDoPainel, classePainel } from '../residuos/quadro'
 import { DialogoAlvara, type ModoDoAlvara } from './DialogoAlvara'
 
 const TOM: Record<SituacaoDoAlvara, TomSelo> = {
@@ -70,50 +71,67 @@ export function SecaoAlvaras({
     return alvara.numero ? `Alvará ${alvara.numero}` : 'Alvará sem número'
   }
 
+  // Para quem não cadastra, uma seção vazia não serve de nada: some.
+  if (!ehGestao && (alvaras.isPending || (alvaras.isSuccess && alvaras.data.length === 0))) {
+    return null
+  }
+
   return (
-    <section aria-labelledby="titulo-alvaras" className="flex flex-col gap-(--space-100)">
-      <div className="flex items-center gap-(--space-100)">
-        <h2 id="titulo-alvaras" className="titulo-secao flex-1 text-(--text)">
-          Alvarás
-        </h2>
-        {ehGestao ? (
-          <Botao
-            iconeAntes="plus"
-            disabled={unidades.length === 0}
-            onClick={() => {
-              setModo({ tipo: 'novo' })
-            }}
-          >
-            Novo alvará
-          </Botao>
-        ) : null}
-      </div>
+    <section aria-labelledby="titulo-alvaras" className={classePainel}>
+      <TituloDoPainel
+        id="titulo-alvaras"
+        acoes={
+          ehGestao ? (
+            <Botao
+              tamanho="compacto"
+              iconeAntes="plus"
+              disabled={unidades.length === 0}
+              onClick={() => {
+                setModo({ tipo: 'novo' })
+              }}
+            >
+              Novo alvará
+            </Botao>
+          ) : null
+        }
+      >
+        Alvarás
+      </TituloDoPainel>
       {erro ? (
-        <MensagemSecao role="alert" tom="perigo">
+        <MensagemSecao role="alert" tom="perigo" className="m-(--e-3)">
           {mensagemDoErro(erro)}
         </MensagemSecao>
       ) : null}
       {alvaras.isPending ? (
-        <Carregando rotulo="Carregando alvarás" linhas={2} />
+        <Carregando rotulo="Carregando alvarás" linhas={2} className="border-0" />
       ) : alvaras.isError ? (
         <EstadoErro
           titulo="Não foi possível carregar os alvarás."
           aoTentarDeNovo={() => void alvaras.refetch()}
+          className="m-(--e-3)"
         />
       ) : alvaras.data.length === 0 ? (
-        <p className="corpo text-(--text-subtle)">Nenhum alvará cadastrado.</p>
+        <p className="px-(--e-4) py-(--e-3) corpo text-(--tinta-2)">Nenhum alvará cadastrado.</p>
       ) : (
-        <ul className="flex flex-col rounded-(--radius-large) border bg-(--surface) shadow-cartao">
+        <ul aria-label="Alvarás do empreendimento" className="flex flex-col">
           {alvaras.data.map((alvara) => {
             const situacao = situacaoDoAlvara(alvara, hoje)
             return (
               <li
                 key={alvara.id}
-                className="flex flex-wrap items-center gap-(--space-150) border-b px-(--space-150) py-(--space-100) last:border-b-0"
+                className="flex min-h-(--linha) flex-wrap items-center gap-x-(--e-4) gap-y-(--e-2) border-b border-(--regra-leve) px-(--e-4) py-(--e-2) last:border-b-0"
               >
-                <div className="flex min-w-0 flex-1 flex-col">
-                  <span className="corpo-medio text-(--text)">{descricao(alvara)}</span>
-                  <span className="rotulo">
+                <div className="flex min-w-0 flex-1 basis-56 flex-col">
+                  <span
+                    className={
+                      alvara.renovado
+                        ? 'corpo-medio text-(--tinta-2) numero'
+                        : 'corpo-medio text-(--tinta) numero'
+                    }
+                  >
+                    {descricao(alvara)}
+                  </span>
+                  <span className="rotulo numero">
                     {[
                       alvara.unidadeNome,
                       alvara.orgao,
@@ -125,7 +143,7 @@ export function SecaoAlvaras({
                   {alvara.notas ? <span className="rotulo">{alvara.notas}</span> : null}
                 </div>
                 <Selo tom={TOM[situacao]}>{rotuloDaSituacaoDoAlvara(situacao)}</Selo>
-                <div className="flex flex-wrap gap-(--space-050)">
+                <div className="flex flex-wrap gap-(--e-1)">
                   {alvara.pdf ? (
                     <Botao
                       tamanho="compacto"

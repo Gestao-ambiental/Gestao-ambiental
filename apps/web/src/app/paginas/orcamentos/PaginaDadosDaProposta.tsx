@@ -6,7 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useId, useRef, useState } from 'react'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
-import { Pagina } from '@/app/paginas/Pagina'
+import { PaginaDeConfiguracoes } from '@/app/paginas/configuracoes/PaginaDeConfiguracoes'
 import { Carregando, EstadoErro, SemPermissao } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
@@ -33,17 +33,17 @@ export function PaginaDadosDaProposta() {
   const { atual } = useConsultoria()
   if (atual.papel !== 'gestao') {
     return (
-      <Pagina titulo="Dados da proposta">
+      <PaginaDeConfiguracoes>
         <SemPermissao descricao="Os dados da proposta são editados pela gestão." />
-      </Pagina>
+      </PaginaDeConfiguracoes>
     )
   }
   return (
-    <Pagina titulo="Dados da proposta" voltar={{ para: '/orcamentos', rotulo: 'Orçamentos' }}>
+    <PaginaDeConfiguracoes>
       <div className="max-w-3xl rounded-(--raio-painel) border bg-(--folha) p-(--e-4) md:p-(--e-6)">
         <DadosDaProposta consultoriaId={atual.consultoriaId} />
       </div>
-    </Pagina>
+    </PaginaDeConfiguracoes>
   )
 }
 

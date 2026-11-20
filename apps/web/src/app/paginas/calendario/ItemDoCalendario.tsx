@@ -6,10 +6,10 @@ import type { ItemDoDia, TipoDoItem } from './itens-do-calendario'
 
 /*
  * Cada tipo tem uma forma própria além da cor (WCAG 1.4.1): quadrado cheio = prazo oficial,
- * quadrado vazado = meta interna, triângulo = limite de protocolo, anel = validade, losango =
- * serviço, círculo cheio = resíduos.
+ * quadrado vazado = meta interna, triângulo = limite de protocolo, anel = validade, losango
+ * vazado = exigência, traço = vencimento, losango cheio = serviço, círculo cheio = resíduos.
  */
-const FORMAS: Record<TipoDoItem, { forma: string; tinta: string }> = {
+const FORMAS: Readonly<Record<TipoDoItem, { forma: string; tinta: string }>> = {
   prazo: { forma: 'size-2 bg-current', tinta: 'text-(--tinta)' },
   meta: {
     forma: 'size-2 rounded-[1px] border-[1.5px] border-current',
@@ -23,6 +23,11 @@ const FORMAS: Record<TipoDoItem, { forma: string; tinta: string }> = {
     forma: 'size-2 rounded-full border-[1.5px] border-current',
     tinta: 'text-(--andamento-texto)',
   },
+  exigencia: {
+    forma: 'size-[7px] rotate-45 border-[1.5px] border-current',
+    tinta: 'text-(--tinta)',
+  },
+  vencimento: { forma: 'h-[3px] w-2.5 rounded-full bg-current', tinta: 'text-(--andamento-texto)' },
   tarefa: { forma: 'size-[7px] rotate-45 bg-current', tinta: 'text-(--tinta)' },
   residuo: {
     forma: 'size-2 rounded-full bg-current',
@@ -30,12 +35,18 @@ const FORMAS: Record<TipoDoItem, { forma: string; tinta: string }> = {
   },
 }
 
+/** Tipos em que o texto vai em peso forte: o que a equipe entrega ou protocola. */
+const FORTES: readonly TipoDoItem[] = ['prazo', 'limite_protocolo', 'exigencia']
+/** Tipos em que o texto vai na cor do tipo: o que vence ou tem limite. */
+const NA_COR_DO_TIPO: readonly TipoDoItem[] = ['limite_protocolo', 'validade', 'vencimento']
+
 /** Marca de forma do tipo, na cor do tipo. Decorativa: o tipo também vai escrito. */
 export function MarcaDoTipo({ tipo, className }: { tipo: TipoDoItem; className?: string }) {
   const f = FORMAS[tipo]
   return (
     <span
       aria-hidden
+      data-tipo={tipo}
       className={cn(
         'inline-flex size-2.5 shrink-0 items-center justify-center',
         f.tinta,
@@ -47,7 +58,7 @@ export function MarcaDoTipo({ tipo, className }: { tipo: TipoDoItem; className?:
   )
 }
 
-/** Evento: marca de forma, prefixo escrito ("Meta", "Serviço", "Resíduos") e texto. */
+/** Evento: marca de forma, prefixo escrito ("Meta", "Exigência", "Resíduos") e texto. */
 export function EventoDoDia({
   item,
   modo = 'linha',
@@ -57,7 +68,7 @@ export function EventoDoDia({
   modo?: 'linha' | 'quebra' | 'inteiro'
 }) {
   const f = FORMAS[item.tipo]
-  const forte = item.tipo === 'prazo' || item.tipo === 'limite_protocolo'
+  const forte = FORTES.includes(item.tipo)
   const classes = cn(
     'flex min-w-0 gap-(--e-15) rounded-(--raio-mini) text-(--tinta) no-underline',
     modo === 'linha' && 'h-5 items-center px-(--e-1) text-xs',
@@ -82,7 +93,7 @@ export function EventoDoDia({
           modo === 'inteiro' && 'break-words',
           forte && 'font-[650]',
           item.tipo === 'meta' && 'text-(--tinta-2)',
-          (item.tipo === 'limite_protocolo' || item.tipo === 'validade') && f.tinta,
+          NA_COR_DO_TIPO.includes(item.tipo) && f.tinta,
         )}
       >
         {item.texto}

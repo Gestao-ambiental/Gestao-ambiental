@@ -109,11 +109,12 @@ function PlacarDoMes({
 }
 
 /**
- * /resumo-do-mes (ADR-0027): só a Gestão, só totais da consultoria. Horas devolvidas à equipe
+ * /painel (ADR-0027; antes /resumo-do-mes, que redireciona para cá, ADR-0041): só a Gestão, só
+ * totais da consultoria. Horas devolvidas à equipe
  * (com R$ quando há custo da hora), entregas no prazo e renovações protegidas, contra o mês
  * anterior. Seletor com o mês atual e os 5 anteriores; abre no último mês fechado.
  */
-export function PaginaResumoDoMes() {
+export function PaginaPainel() {
   const { atual } = useConsultoria()
   const ehGestao = atual.papel === 'gestao'
   const [meses] = useState(() => mesesDoResumo(hojeNoFuso(new Date(), atual.fuso)))
@@ -127,8 +128,8 @@ export function PaginaResumoDoMes() {
 
   if (!ehGestao) {
     return (
-      <Pagina titulo="Resumo do mês">
-        <SemPermissao descricao="O resumo do mês é da gestão." />
+      <Pagina titulo="Painel">
+        <SemPermissao descricao="O painel é da gestão." />
       </Pagina>
     )
   }
@@ -137,7 +138,7 @@ export function PaginaResumoDoMes() {
 
   return (
     <Pagina
-      titulo="Resumo do mês"
+      titulo="Painel"
       acao={
         <label>
           <span className="sr-only">Mês</span>
@@ -161,7 +162,7 @@ export function PaginaResumoDoMes() {
         <Carregando rotulo="Carregando o resumo" linhas={3} />
       ) : consulta.isError ? (
         ehSemPermissao(consulta.error) ? (
-          <SemPermissao descricao="O resumo do mês é da gestão." />
+          <SemPermissao descricao="O painel é da gestão." />
         ) : (
           <EstadoErro
             titulo="Não foi possível carregar o resumo."
