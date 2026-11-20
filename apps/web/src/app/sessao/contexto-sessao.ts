@@ -30,11 +30,15 @@ export interface UsuarioDaSessao {
   nome: string
 }
 
-/** Nome e e-mail da conta logada (o nome vem do cadastro, em user_metadata.nome). */
+/**
+ * Nome e e-mail da conta logada. O nome vem do cadastro (user_metadata.nome) ou do Google
+ * (full_name ou name, ADR-0040); sem nenhum, o pedaço do e-mail antes do @.
+ */
 export function usuarioDaSessao(sessao: Session): UsuarioDaSessao {
   const email = sessao.user.email ?? ''
   const metadados: Record<string, unknown> = sessao.user.user_metadata
-  const informado = typeof metadados.nome === 'string' ? metadados.nome.trim() : ''
+  const texto = (valor: unknown) => (typeof valor === 'string' ? valor.trim() : '')
+  const informado = texto(metadados.nome) || texto(metadados.full_name) || texto(metadados.name)
   const parteLocal = email.split('@')[0] ?? ''
   const nome = informado !== '' ? informado : parteLocal !== '' ? parteLocal : email
   return { id: sessao.user.id, email, nome }
