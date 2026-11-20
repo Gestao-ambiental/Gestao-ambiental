@@ -27,7 +27,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Icone } from '@/components/ui/icone'
+import { BotaoIcone } from '@/components/ui/botao-icone'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { Selo } from '@/components/ui/selo'
 import {
@@ -77,19 +77,28 @@ function achatar<T>(dados: InfiniteData<PaginaDeDados<T>> | undefined): {
 
 function TituloSecao({ id, children, total }: { id: string; children: ReactNode; total?: number }) {
   return (
-    <div className="flex items-baseline gap-(--e-2)">
+    <div className="flex items-center gap-(--e-2)">
       <h2 id={id} className="titulo-secao text-(--tinta)">
         {children}
       </h2>
-      {total === undefined ? null : <span className="text-xs text-(--tinta-2)">{total}</span>}
+      {total === undefined ? null : (
+        <span className="min-w-6 rounded-(--raio-mini) bg-(--aperto) px-(--e-1) text-center text-xs font-[800] text-(--tinta-2) numero">
+          {total}
+        </span>
+      )}
     </div>
   )
 }
 
+// Quadro (DESIGN.md): painel com regra de 1px, cabeçalho em maiúsculas, linhas de 48px.
+const classePainel = 'rounded-(--raio-painel) border bg-(--folha)'
 const classeTabela = 'w-full border-collapse corpo'
 const classeCabecalho =
-  'h-10 border-b px-(--e-2) text-left rotulo whitespace-nowrap first:pl-(--e-3)'
-const classeCelula = 'h-10 border-b px-(--e-2) align-middle first:pl-(--e-3)'
+  'h-10 border-b px-(--e-3) text-left rotulo-maiusculo whitespace-nowrap text-(--tinta-2)'
+const classeCelula = 'h-(--linha) border-b border-(--regra-leve) px-(--e-3) align-middle'
+const classeLinha = 'transicao-estado hover:bg-(--toque) last:[&>td]:border-b-0'
+const classeItemCelular =
+  'flex items-center gap-(--e-3) border-b border-(--regra-leve) px-(--e-4) py-(--e-3) last:border-b-0'
 
 /**
  * /configuracoes/equipe (Protótipo 07; ACC-02, ACC-03). Só a Gestão administra: membros com
@@ -227,12 +236,8 @@ function EquipeDaGestao() {
     const impedimentoDesligar = impedimentoDoVinculo(vinculos, membro.id, 'desligar')
     return (
       <DropdownMenu>
-        <DropdownMenuTrigger
-          aria-label={`Ações de ${membro.nome}`}
-          disabled={ocupado}
-          className="inline-flex size-(--controle) cursor-pointer items-center justify-center rounded-(--raio) text-(--icone) transicao-estado hover:bg-(--toque) disabled:cursor-not-allowed max-md:size-11"
-        >
-          <Icone nome="ellipsis" />
+        <DropdownMenuTrigger asChild>
+          <BotaoIcone icone="ellipsis" rotulo={`Ações de ${membro.nome}`} disabled={ocupado} />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="max-w-[280px]">
           <DropdownMenuItem
@@ -276,13 +281,12 @@ function EquipeDaGestao() {
     )
   }
 
+  // Papel é texto; só o desligamento é situação (Selo).
   function seloPapel(membro: Membro) {
     return membro.situacao === 'desligado' ? (
       <Selo tom="padrao">Desligado</Selo>
     ) : (
-      <Selo tom={membro.papel === 'gestao' ? 'sucesso' : 'padrao'}>
-        {NOMES_PAPEL[membro.papel]}
-      </Selo>
+      <span className="text-(--tinta-2)">{NOMES_PAPEL[membro.papel]}</span>
     )
   }
 
@@ -303,7 +307,7 @@ function EquipeDaGestao() {
               ].join(' · ')
             : 'Profissão não informada'}
         </span>
-        <span className="truncate text-xs text-(--tinta-2)">
+        <span className="truncate rotulo">
           {membro.cargoCodigo
             ? membro.cargo
             : membro.cargoAntigo
@@ -322,9 +326,7 @@ function EquipeDaGestao() {
         <span className={desligado ? 'truncate text-(--tinta-2)' : 'truncate corpo-medio'}>
           {membro.nome}
         </span>
-        {membro.id === atual.membroId ? (
-          <span className="text-xs text-(--tinta-2)">você</span>
-        ) : null}
+        {membro.id === atual.membroId ? <span className="shrink-0 rotulo">você</span> : null}
       </span>
     )
   }
@@ -334,7 +336,7 @@ function EquipeDaGestao() {
       situacaoDoConvite({ situacao: convite.situacao, expiraEm: convite.expiraEm }, agora) ===
       'expirado'
     return (
-      <span className="inline-flex items-center gap-(--e-2) whitespace-nowrap">
+      <span className="inline-flex items-center gap-(--e-2) whitespace-nowrap numero">
         {formatarInstanteComoData(convite.expiraEm, atual.fuso)}
         {expirado ? <Selo tom="perigo">Expirado</Selo> : null}
       </span>
@@ -347,7 +349,6 @@ function EquipeDaGestao() {
       <span className="flex items-center justify-end gap-(--e-1)">
         <Botao
           tamanho="compacto"
-          iconeAntes="send"
           disabled={ocupado}
           aria-label={`Reenviar convite para ${convite.email}`}
           onClick={() => {
@@ -373,11 +374,13 @@ function EquipeDaGestao() {
     )
   }
 
+  const convitesVisiveis = !convites.isSuccess || listaConvites.total > 0
+
   return (
-    <div className="flex flex-col gap-(--e-6)">
-      <div className="flex flex-wrap items-start justify-between gap-(--e-2)">
-        <Pagina titulo="Equipe">{null}</Pagina>
-        {suporte ? null : (
+    <Pagina
+      titulo="Equipe"
+      acao={
+        suporte ? null : (
           <Botao
             aparencia="primario"
             iconeAntes="plus"
@@ -388,16 +391,16 @@ function EquipeDaGestao() {
           >
             Convidar pessoa
           </Botao>
-        )}
-      </div>
-
+        )
+      }
+    >
       {aviso ? (
         <MensagemSecao role={aviso.tom === 'sucesso' ? 'status' : 'alert'} tom={aviso.tom}>
           {aviso.texto}
         </MensagemSecao>
       ) : null}
 
-      <section aria-labelledby="titulo-membros" className="flex flex-col gap-(--e-2)">
+      <section aria-labelledby="titulo-membros" className="flex flex-col gap-(--e-3)">
         <TituloSecao id="titulo-membros" total={membros.isSuccess ? listaMembros.total : undefined}>
           Membros
         </TituloSecao>
@@ -406,8 +409,8 @@ function EquipeDaGestao() {
         ) : membros.isError ? (
           <EstadoErro aoTentarDeNovo={() => void membros.refetch()} />
         ) : (
-          <>
-            <div className="hidden overflow-x-auto rounded-(--raio-painel) border bg-(--folha) shadow-cartao md:block">
+          <div className={`flex flex-col overflow-hidden ${classePainel}`}>
+            <div className="hidden overflow-x-auto md:block">
               <table className={classeTabela}>
                 <thead>
                   <tr>
@@ -426,147 +429,141 @@ function EquipeDaGestao() {
                     <th scope="col" className={classeCabecalho}>
                       Desde
                     </th>
-                    <th scope="col" className={classeCabecalho}>
+                    <th scope="col" className={`${classeCabecalho} w-14`}>
                       <span className="sr-only">Ações</span>
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {listaMembros.itens.map((membro) => (
-                    <tr key={membro.id} className="last:[&>td]:border-b-0">
+                    <tr key={membro.id} className={classeLinha}>
                       <td className={classeCelula}>{nomeDoMembro(membro)}</td>
                       <td className={`${classeCelula} text-(--tinta-2)`}>{membro.email}</td>
-                      <td className={`${classeCelula} max-w-56`}>
+                      <td className={`${classeCelula} max-w-64 py-(--e-1)`}>
                         {profissaoECargoDoMembro(membro)}
                       </td>
                       <td className={classeCelula}>{seloPapel(membro)}</td>
-                      <td className={`${classeCelula} whitespace-nowrap text-(--tinta-2)`}>
+                      <td className={`${classeCelula} whitespace-nowrap text-(--tinta-2) numero`}>
                         {formatarInstanteComoData(membro.criadoEm, atual.fuso)}
                       </td>
-                      <td className={`${classeCelula} w-12 text-right`}>{acoesDoMembro(membro)}</td>
+                      <td className={`${classeCelula} text-right`}>{acoesDoMembro(membro)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <ul
-              className="flex flex-col rounded-(--raio-painel) border bg-(--folha) shadow-cartao md:hidden"
-              aria-label="Membros"
-            >
+            <ul className="flex flex-col md:hidden" aria-label="Membros">
               {listaMembros.itens.map((membro) => (
-                <li
-                  key={membro.id}
-                  className="flex items-center gap-(--e-2) border-b px-(--e-3) py-(--e-2) last:border-b-0"
-                >
-                  <span className="flex min-w-0 flex-1 flex-col gap-(--e-05)">
-                    {nomeDoMembro(membro)}
-                    <span className="truncate text-xs text-(--tinta-2)">{membro.email}</span>
+                <li key={membro.id} className={classeItemCelular}>
+                  <span className="flex min-w-0 flex-1 flex-col gap-(--e-1)">
+                    <span className="flex items-center justify-between gap-(--e-2)">
+                      {nomeDoMembro(membro)}
+                      {seloPapel(membro)}
+                    </span>
+                    <span className="truncate rotulo">{membro.email}</span>
                     {profissaoECargoDoMembro(membro)}
-                    <span>{seloPapel(membro)}</span>
                   </span>
                   {acoesDoMembro(membro)}
                 </li>
               ))}
             </ul>
             {membros.hasNextPage ? (
-              <Botao
-                className="self-start"
-                disabled={membros.isFetchingNextPage}
-                onClick={() => void membros.fetchNextPage()}
-              >
-                Mostrar mais membros
-              </Botao>
-            ) : null}
-          </>
-        )}
-      </section>
-
-      <section aria-labelledby="titulo-convites" className="flex flex-col gap-(--e-2)">
-        <TituloSecao
-          id="titulo-convites"
-          total={convites.isSuccess ? listaConvites.total : undefined}
-        >
-          Convites pendentes
-        </TituloSecao>
-        {convites.isPending ? (
-          <Carregando rotulo="Carregando convites" linhas={2} />
-        ) : convites.isError ? (
-          <EstadoErro aoTentarDeNovo={() => void convites.refetch()} />
-        ) : listaConvites.itens.length === 0 ? (
-          <p className="corpo text-(--tinta-2)">
-            Nenhum convite pendente. Use “Convidar pessoa” para chamar alguém da equipe.
-          </p>
-        ) : (
-          <>
-            <div className="hidden overflow-x-auto rounded-(--raio-painel) border bg-(--folha) shadow-cartao md:block">
-              <table className={classeTabela}>
-                <thead>
-                  <tr>
-                    <th scope="col" className={classeCabecalho}>
-                      E-mail
-                    </th>
-                    <th scope="col" className={classeCabecalho}>
-                      Papel
-                    </th>
-                    <th scope="col" className={classeCabecalho}>
-                      Enviado em
-                    </th>
-                    <th scope="col" className={classeCabecalho}>
-                      Expira em
-                    </th>
-                    <th scope="col" className={classeCabecalho}>
-                      <span className="sr-only">Ações</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {listaConvites.itens.map((convite) => (
-                    <tr key={convite.id} className="last:[&>td]:border-b-0">
-                      <td className={classeCelula}>{convite.email}</td>
-                      <td className={classeCelula}>
-                        <Selo>{NOMES_PAPEL[convite.papel]}</Selo>
-                      </td>
-                      <td className={`${classeCelula} whitespace-nowrap text-(--tinta-2)`}>
-                        {formatarInstanteComoData(convite.enviadoEm, atual.fuso)}
-                      </td>
-                      <td className={`${classeCelula} text-(--tinta-2)`}>{expiraEm(convite)}</td>
-                      <td className={classeCelula}>{acoesDoConvite(convite)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <ul
-              className="flex flex-col rounded-(--raio-painel) border bg-(--folha) shadow-cartao md:hidden"
-              aria-label="Convites pendentes"
-            >
-              {listaConvites.itens.map((convite) => (
-                <li
-                  key={convite.id}
-                  className="flex flex-col gap-(--e-1) border-b px-(--e-3) py-(--e-2) last:border-b-0"
+              <div className="border-t px-(--e-4) py-(--e-2)">
+                <Botao
+                  aparencia="sutil"
+                  disabled={membros.isFetchingNextPage}
+                  onClick={() => void membros.fetchNextPage()}
                 >
-                  <span className="truncate corpo-medio">{convite.email}</span>
-                  <span className="flex flex-wrap items-center gap-(--e-2) text-xs text-(--tinta-2)">
-                    <Selo>{NOMES_PAPEL[convite.papel]}</Selo>
-                    Expira em {expiraEm(convite)}
-                  </span>
-                  {acoesDoConvite(convite)}
-                </li>
-              ))}
-            </ul>
-            {convites.hasNextPage ? (
-              <Botao
-                className="self-start"
-                disabled={convites.isFetchingNextPage}
-                onClick={() => void convites.fetchNextPage()}
-              >
-                Mostrar mais convites
-              </Botao>
+                  Mostrar mais membros
+                </Botao>
+              </div>
             ) : null}
-          </>
+          </div>
         )}
       </section>
 
+      {/* Sem convites pendentes, a seção some (um vazio a menos na tela). */}
+      {convitesVisiveis ? (
+        <section aria-labelledby="titulo-convites" className="flex flex-col gap-(--e-3)">
+          <TituloSecao
+            id="titulo-convites"
+            total={convites.isSuccess ? listaConvites.total : undefined}
+          >
+            Convites pendentes
+          </TituloSecao>
+          {convites.isPending ? (
+            <Carregando rotulo="Carregando convites" linhas={2} />
+          ) : convites.isError ? (
+            <EstadoErro aoTentarDeNovo={() => void convites.refetch()} />
+          ) : (
+            <div className={`flex flex-col overflow-hidden ${classePainel}`}>
+              <div className="hidden overflow-x-auto md:block">
+                <table className={classeTabela}>
+                  <thead>
+                    <tr>
+                      <th scope="col" className={classeCabecalho}>
+                        E-mail
+                      </th>
+                      <th scope="col" className={classeCabecalho}>
+                        Papel
+                      </th>
+                      <th scope="col" className={classeCabecalho}>
+                        Enviado em
+                      </th>
+                      <th scope="col" className={classeCabecalho}>
+                        Expira em
+                      </th>
+                      <th scope="col" className={classeCabecalho}>
+                        <span className="sr-only">Ações</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {listaConvites.itens.map((convite) => (
+                      <tr key={convite.id} className={classeLinha}>
+                        <td className={`${classeCelula} corpo-medio`}>{convite.email}</td>
+                        <td className={`${classeCelula} text-(--tinta-2)`}>
+                          {NOMES_PAPEL[convite.papel]}
+                        </td>
+                        <td className={`${classeCelula} whitespace-nowrap text-(--tinta-2) numero`}>
+                          {formatarInstanteComoData(convite.enviadoEm, atual.fuso)}
+                        </td>
+                        <td className={`${classeCelula} text-(--tinta-2)`}>{expiraEm(convite)}</td>
+                        <td className={classeCelula}>{acoesDoConvite(convite)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <ul className="flex flex-col md:hidden" aria-label="Convites pendentes">
+                {listaConvites.itens.map((convite) => (
+                  <li
+                    key={convite.id}
+                    className="flex flex-col gap-(--e-1) border-b border-(--regra-leve) px-(--e-4) py-(--e-3) last:border-b-0"
+                  >
+                    <span className="truncate corpo-medio">{convite.email}</span>
+                    <span className="flex flex-wrap items-center gap-x-(--e-2) gap-y-(--e-1) rotulo">
+                      {NOMES_PAPEL[convite.papel]} · expira em {expiraEm(convite)}
+                    </span>
+                    {acoesDoConvite(convite)}
+                  </li>
+                ))}
+              </ul>
+              {convites.hasNextPage ? (
+                <div className="border-t px-(--e-4) py-(--e-2)">
+                  <Botao
+                    aparencia="sutil"
+                    disabled={convites.isFetchingNextPage}
+                    onClick={() => void convites.fetchNextPage()}
+                  >
+                    Mostrar mais convites
+                  </Botao>
+                </div>
+              ) : null}
+            </div>
+          )}
+        </section>
+      ) : null}
       <AcessosDoSuporte />
 
       <DialogoConvidar
@@ -628,7 +625,7 @@ function EquipeDaGestao() {
       >
         <p className="text-(--tinta-2)">Nada é apagado nem cancelado.</p>
       </Dialogo>
-    </div>
+    </Pagina>
   )
 }
 

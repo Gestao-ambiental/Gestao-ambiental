@@ -1,6 +1,6 @@
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Link, useLocation, useParams } from 'react-router'
+import { useLocation, useParams } from 'react-router'
 
 import type { AvisoDaCentral } from '@/app/consultoria/RequerConsultoria'
 
@@ -28,7 +28,16 @@ import { PlanoNaCentral } from './PlanoNaCentral'
 import { RelerDoisFatores } from './ExigeDoisFatores'
 import { UsoPorModulo } from './UsoNaCentral'
 import { ValorDaConsultoria } from './ValorNaCentral'
-import { TOM_DA_SITUACAO, classeCabecalho, classeCelula, plural, ultimoUsoComHora } from './comum'
+import { Placar } from './Placar'
+import {
+  TOM_DA_SITUACAO,
+  classeCabecalho,
+  classeCelula,
+  classeLinha,
+  classePainel,
+  plural,
+  ultimoUsoComHora,
+} from './comum'
 
 function proximaPagina<T>(
   ultima: PaginaDaCentral<T>,
@@ -40,26 +49,18 @@ function proximaPagina<T>(
     : undefined
 }
 
-const classeCartao =
-  'flex min-w-0 flex-col gap-(--e-1) rounded-(--raio-painel) border bg-(--folha) p-(--e-3) shadow-cartao sm:p-(--e-4)'
-
 function Numeros({ consultoria }: { consultoria: ConsultoriaDetalhada }) {
-  const numeros: [string, number][] = [
-    ['Pessoas ativas', consultoria.pessoasAtivas],
-    ['Orçamentos', consultoria.orcamentos],
-    ['Empreendimentos', consultoria.empreendimentos],
-    ['Licenças', consultoria.licencas],
-  ]
   return (
     <section aria-label="Números">
-      <dl className="grid grid-cols-2 gap-(--e-3) lg:grid-cols-4">
-        {numeros.map(([titulo, valor]) => (
-          <div key={titulo} className={classeCartao}>
-            <dt className="corpo text-(--tinta-2)">{titulo}</dt>
-            <dd className="titulo-tela text-(--tinta) tabular-nums">{valor}</dd>
-          </div>
-        ))}
-      </dl>
+      <Placar
+        colunas={4}
+        casas={[
+          { rotulo: 'Pessoas ativas', valor: consultoria.pessoasAtivas },
+          { rotulo: 'Orçamentos', valor: consultoria.orcamentos },
+          { rotulo: 'Empreendimentos', valor: consultoria.empreendimentos },
+          { rotulo: 'Licenças', valor: consultoria.licencas },
+        ]}
+      />
     </section>
   )
 }
@@ -92,8 +93,8 @@ function Pessoas({ consultoria }: { consultoria: ConsultoriaDetalhada }) {
     const seloSituacao = (situacao: 'ativo' | 'desligado') =>
       situacao === 'ativo' ? <Selo tom="sucesso">Ativo</Selo> : <Selo>Desligado</Selo>
     conteudo = (
-      <div className="flex flex-col gap-(--e-2)">
-        <div className="hidden overflow-x-auto rounded-(--raio-painel) border bg-(--folha) shadow-cartao md:block">
+      <div className={`flex flex-col overflow-hidden ${classePainel}`}>
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full border-collapse corpo">
             <thead>
               <tr>
@@ -116,49 +117,45 @@ function Pessoas({ consultoria }: { consultoria: ConsultoriaDetalhada }) {
                   Último uso
                 </th>
                 <th scope="col" className={`${classeCabecalho} text-right`}>
-                  Dias com uso em 30 dias
+                  Dias com uso (30 d)
                 </th>
               </tr>
             </thead>
             <tbody>
               {itens.map((pessoa) => (
-                <tr key={pessoa.membroId} className="last:[&>td]:border-b-0">
-                  <td className={classeCelula}>{pessoa.nome}</td>
+                <tr key={pessoa.membroId} className={classeLinha}>
+                  <td className={`${classeCelula} corpo-medio`}>{pessoa.nome}</td>
                   <td className={`${classeCelula} text-(--tinta-2)`}>{pessoa.email}</td>
-                  <td className={classeCelula}>
-                    <Selo>{NOMES_PAPEL[pessoa.papel]}</Selo>
+                  <td className={`${classeCelula} text-(--tinta-2)`}>
+                    {NOMES_PAPEL[pessoa.papel]}
                   </td>
                   <td className={classeCelula}>{seloSituacao(pessoa.situacao)}</td>
-                  <td className={`${classeCelula} whitespace-nowrap text-(--tinta-2)`}>
+                  <td className={`${classeCelula} whitespace-nowrap text-(--tinta-2) numero`}>
                     {formatarInstanteComoData(pessoa.criadoEm, consultoria.fuso)}
                   </td>
-                  <td className={`${classeCelula} whitespace-nowrap`}>
+                  <td className={`${classeCelula} whitespace-nowrap numero`}>
                     {ultimoUsoComHora(pessoa.ultimoUsoEm, consultoria.fuso, agora)}
                   </td>
-                  <td className={`${classeCelula} text-right tabular-nums`}>
-                    {pessoa.diasComUso30}
-                  </td>
+                  <td className={`${classeCelula} text-right numero`}>{pessoa.diasComUso30}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <ul
-          aria-label="Pessoas"
-          className="flex flex-col rounded-(--raio-painel) border bg-(--folha) shadow-cartao md:hidden"
-        >
+        <ul aria-label="Pessoas" className="flex flex-col md:hidden">
           {itens.map((pessoa) => (
             <li
               key={pessoa.membroId}
-              className="flex flex-col gap-(--e-1) border-b px-(--e-3) py-(--e-2) last:border-b-0"
+              className="flex flex-col gap-(--e-1) border-b border-(--regra-leve) px-(--e-4) py-(--e-3) last:border-b-0"
             >
-              <span className="corpo-medio">{pessoa.nome}</span>
-              <span className="truncate text-xs text-(--tinta-2)">{pessoa.email}</span>
-              <span className="flex flex-wrap gap-(--e-15)">
-                <Selo>{NOMES_PAPEL[pessoa.papel]}</Selo>
+              <span className="flex items-center justify-between gap-(--e-2)">
+                <span className="truncate corpo-medio">{pessoa.nome}</span>
                 {seloSituacao(pessoa.situacao)}
               </span>
-              <span className="text-xs text-(--tinta)">
+              <span className="truncate rotulo">
+                {pessoa.email} · {NOMES_PAPEL[pessoa.papel]}
+              </span>
+              <span className="corpo numero">
                 Último uso: {ultimoUsoComHora(pessoa.ultimoUsoEm, consultoria.fuso, agora)} ·{' '}
                 {plural(pessoa.diasComUso30, 'dia', 'dias')} com uso em 30 dias
               </span>
@@ -166,25 +163,32 @@ function Pessoas({ consultoria }: { consultoria: ConsultoriaDetalhada }) {
           ))}
         </ul>
         {consulta.hasNextPage ? (
-          <Botao
-            className="self-start"
-            disabled={consulta.isFetchingNextPage}
-            onClick={() => void consulta.fetchNextPage()}
-          >
-            Mostrar mais pessoas
-          </Botao>
+          <div className="border-t px-(--e-4) py-(--e-2)">
+            <Botao
+              aparencia="sutil"
+              tamanho="compacto"
+              disabled={consulta.isFetchingNextPage}
+              onClick={() => void consulta.fetchNextPage()}
+            >
+              Mostrar mais pessoas
+            </Botao>
+          </div>
         ) : null}
       </div>
     )
   }
 
   return (
-    <section aria-labelledby="central-pessoas" className="flex flex-col gap-(--e-2)">
-      <div className="flex items-baseline gap-(--e-2)">
+    <section aria-labelledby="central-pessoas" className="flex flex-col gap-(--e-3)">
+      <div className="flex items-center gap-(--e-2)">
         <h2 id="central-pessoas" className="titulo-secao text-(--tinta)">
           Pessoas
         </h2>
-        {consulta.isSuccess ? <span className="text-(--tinta-2) tabular-nums">{total}</span> : null}
+        {consulta.isSuccess ? (
+          <span className="min-w-6 rounded-(--raio-mini) bg-(--aperto) px-(--e-1) text-center text-xs font-[800] text-(--tinta-2) numero">
+            {total}
+          </span>
+        ) : null}
       </div>
       {conteudo}
     </section>
@@ -212,15 +216,15 @@ function Historico({ consultoria }: { consultoria: ConsultoriaDetalhada }) {
       />
     )
   } else if (itens.length === 0) {
-    conteudo = <EstadoVazio icone="clock" titulo="Nenhuma mudança de situação" />
+    conteudo = <p className="corpo text-(--tinta-2)">Nenhuma mudança de situação</p>
   } else {
     conteudo = (
       <div className="flex flex-col gap-(--e-2)">
-        <ol className="flex flex-col rounded-(--raio-painel) border bg-(--folha) shadow-cartao">
+        <ol className={`flex flex-col ${classePainel}`}>
           {itens.map((mudanca) => (
             <li
               key={mudanca.id}
-              className="flex flex-col gap-(--e-1) border-b px-(--e-3) py-(--e-2) last:border-b-0"
+              className="flex flex-col gap-(--e-1) border-b border-(--regra-leve) px-(--e-4) py-(--e-3) last:border-b-0"
             >
               <span className="flex flex-wrap items-center gap-(--e-15)">
                 <Selo tom={TOM_DA_SITUACAO[mudanca.anterior]}>
@@ -233,7 +237,7 @@ function Historico({ consultoria }: { consultoria: ConsultoriaDetalhada }) {
                 </Selo>
               </span>
               <span className="whitespace-pre-wrap break-words">{mudanca.motivo}</span>
-              <span className="text-xs text-(--tinta-2)">
+              <span className="rotulo numero">
                 {formatarInstanteComHora(mudanca.alteradaEm, consultoria.fuso)} ·{' '}
                 {mudanca.alteradaPorNome}
               </span>
@@ -242,6 +246,7 @@ function Historico({ consultoria }: { consultoria: ConsultoriaDetalhada }) {
         </ol>
         {consulta.hasNextPage ? (
           <Botao
+            aparencia="sutil"
             className="self-start"
             disabled={consulta.isFetchingNextPage}
             onClick={() => void consulta.fetchNextPage()}
@@ -254,7 +259,7 @@ function Historico({ consultoria }: { consultoria: ConsultoriaDetalhada }) {
   }
 
   return (
-    <section aria-labelledby="central-historico" className="flex flex-col gap-(--e-2)">
+    <section aria-labelledby="central-historico" className="flex flex-col gap-(--e-3)">
       <h2 id="central-historico" className="titulo-secao text-(--tinta)">
         Histórico de situações
       </h2>
@@ -263,14 +268,7 @@ function Historico({ consultoria }: { consultoria: ConsultoriaDetalhada }) {
   )
 }
 
-const linkVoltar = (
-  <Link
-    to="/admin"
-    className="inline-flex items-center gap-(--e-1) self-start corpo-medio text-(--link) no-underline hover:underline"
-  >
-    <span aria-hidden="true">←</span> Consultorias
-  </Link>
-)
+const VOLTAR = { para: '/admin', rotulo: 'Consultorias' }
 
 /**
  * /admin/consultorias/:id (ADM-01; ADR-0022): números, Gestão, pessoas (só leitura), situação com
@@ -294,16 +292,14 @@ export function PaginaCentralConsultoria() {
 
   if (consulta.isPending) {
     return (
-      <div className="flex flex-col gap-(--e-4)">
-        {linkVoltar}
+      <Pagina titulo="Consultoria" voltar={VOLTAR}>
         <Carregando rotulo="Carregando a consultoria" linhas={5} />
-      </div>
+      </Pagina>
     )
   }
   if (consulta.isError) {
     return (
-      <div className="flex flex-col gap-(--e-4)">
-        {linkVoltar}
+      <Pagina titulo="Consultoria" voltar={VOLTAR}>
         {ehDoisFatoresNecessarios(consulta.error) ? (
           <RelerDoisFatores />
         ) : ehSemPermissao(consulta.error) ? (
@@ -315,72 +311,72 @@ export function PaginaCentralConsultoria() {
             aoTentarDeNovo={() => void consulta.refetch()}
           />
         )}
-      </div>
+      </Pagina>
     )
   }
   const consultoria = consulta.data
   if (!consultoria) {
     return (
-      <div className="flex flex-col gap-(--e-4)">
-        {linkVoltar}
+      <Pagina titulo="Consultoria" voltar={VOLTAR}>
         <EstadoVazio icone="search" titulo="Consultoria não encontrada" />
-      </div>
+      </Pagina>
     )
   }
 
   return (
-    <div className="flex flex-col gap-(--e-6)">
-      <div className="flex flex-col gap-(--e-3)">
-        {linkVoltar}
-        <div className="flex flex-wrap items-center justify-between gap-(--e-2)">
-          <div className="flex min-w-0 flex-wrap items-center gap-(--e-2)">
-            <Pagina titulo={consultoria.nome}>{null}</Pagina>
-            <Selo tom={TOM_DA_SITUACAO[consultoria.situacao]}>
-              {ROTULO_SITUACAO_CONSULTORIA[consultoria.situacao]}
-            </Selo>
-          </div>
-          <Botao
-            onClick={() => {
-              setAviso(null)
-              setMudarAberto(true)
-            }}
-          >
-            Mudar situação
-          </Botao>
+    <Pagina
+      titulo={consultoria.nome}
+      voltar={VOLTAR}
+      meta={
+        <span className="flex flex-wrap items-center gap-x-(--e-3) gap-y-(--e-1)">
+          <Selo tom={TOM_DA_SITUACAO[consultoria.situacao]}>
+            {ROTULO_SITUACAO_CONSULTORIA[consultoria.situacao]}
+          </Selo>
+          <span className="numero">
+            Criada em {formatarInstanteComoData(consultoria.criadaEm, consultoria.fuso)}
+          </span>
+        </span>
+      }
+      acao={
+        <Botao
+          onClick={() => {
+            setAviso(null)
+            setMudarAberto(true)
+          }}
+        >
+          Mudar situação
+        </Botao>
+      }
+    >
+      <dl className="grid grid-cols-1 gap-x-(--e-8) gap-y-(--e-3) sm:grid-cols-2">
+        <div className="flex min-w-0 flex-col gap-(--e-05)">
+          <dt className="rotulo">Gestão</dt>
+          <dd className="min-w-0">
+            {consultoria.gestao.length === 0
+              ? 'Sem Gestão ativa'
+              : consultoria.gestao.map((p) => (
+                  <span key={p.email} className="block truncate">
+                    <span className="corpo-medio">{p.nome}</span>
+                    <span className="text-(--tinta-2)"> · {p.email}</span>
+                  </span>
+                ))}
+          </dd>
         </div>
-        <dl className="grid grid-cols-1 gap-(--e-3) sm:grid-cols-2">
-          <div className="flex flex-col gap-(--e-05)">
-            <dt className="rotulo">Criada em</dt>
-            <dd>{formatarInstanteComoData(consultoria.criadaEm, consultoria.fuso)}</dd>
-          </div>
+        {consultoria.situacaoMotivo && consultoria.situacaoAlteradaEm ? (
           <div className="flex min-w-0 flex-col gap-(--e-05)">
-            <dt className="rotulo">Gestão</dt>
-            <dd className="min-w-0">
-              {consultoria.gestao.length === 0
-                ? 'Sem Gestão ativa'
-                : consultoria.gestao.map((p) => (
-                    <span key={p.email} className="block truncate">
-                      {p.nome} · {p.email}
-                    </span>
-                  ))}
+            <dt className="rotulo">Motivo da situação</dt>
+            <dd className="whitespace-pre-wrap break-words">
+              {consultoria.situacaoMotivo}
+              <span className="block rotulo numero">
+                {formatarInstanteComHora(consultoria.situacaoAlteradaEm, consultoria.fuso)}
+                {consultoria.situacaoAlteradaPorNome
+                  ? ` · ${consultoria.situacaoAlteradaPorNome}`
+                  : ''}
+              </span>
             </dd>
           </div>
-          {consultoria.situacaoMotivo && consultoria.situacaoAlteradaEm ? (
-            <div className="flex min-w-0 flex-col gap-(--e-05) sm:col-span-2">
-              <dt className="rotulo">Motivo da situação</dt>
-              <dd className="whitespace-pre-wrap break-words">
-                {consultoria.situacaoMotivo}
-                <span className="block text-xs text-(--tinta-2)">
-                  {formatarInstanteComHora(consultoria.situacaoAlteradaEm, consultoria.fuso)}
-                  {consultoria.situacaoAlteradaPorNome
-                    ? ` · ${consultoria.situacaoAlteradaPorNome}`
-                    : ''}
-                </span>
-              </dd>
-            </div>
-          ) : null}
-        </dl>
-      </div>
+        ) : null}
+      </dl>
 
       {aviso ? (
         <MensagemSecao role="status" tom="sucesso">
@@ -412,6 +408,6 @@ export function PaginaCentralConsultoria() {
           void queryClient.invalidateQueries({ queryKey: ['central', 'consultoria', id] })
         }}
       />
-    </div>
+    </Pagina>
   )
 }

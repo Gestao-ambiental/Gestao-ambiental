@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { Pagina } from '@/app/paginas/Pagina'
 import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
+import { CaixaSelecao } from '@/components/ui/caixa-selecao'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { TAMANHO_PAGINA_CENTRAL } from '@/lib/api/central'
 import {
@@ -19,7 +20,7 @@ import { formatarInstanteComHora, formatarInstanteComoData } from '@/lib/datas'
 import { ehDoisFatoresNecessarios, ehSemPermissao, mensagemDoErro } from '@/lib/erros'
 
 import { RelerDoisFatores } from './ExigeDoisFatores'
-import { classeCabecalho, classeCelula, plural } from './comum'
+import { classeCabecalho, classeCelula, classeLinha, classePainel, plural } from './comum'
 
 const FUSO_DA_CENTRAL = 'America/Sao_Paulo'
 
@@ -132,10 +133,10 @@ export function PaginaCentralListaDeEspera() {
     )
   } else {
     conteudo = (
-      <div className="flex flex-col gap-(--e-2)">
-        <div className="overflow-x-auto rounded-(--raio-painel) border bg-(--folha) shadow-cartao">
+      <div className={`flex flex-col overflow-hidden ${classePainel}`}>
+        <div className="max-h-[calc(100dvh-280px)] min-h-[240px] overflow-auto">
           <table className="w-full border-collapse corpo">
-            <thead>
+            <thead className="sticky top-0 z-10 bg-(--folha)">
               <tr>
                 <th scope="col" className={classeCabecalho}>
                   Nome
@@ -158,7 +159,7 @@ export function PaginaCentralListaDeEspera() {
               {itens.map((item) => {
                 const convidando = convite.isPending && convite.variables.id === item.id
                 return (
-                  <tr key={item.id} className="last:[&>td]:border-b-0">
+                  <tr key={item.id} className={classeLinha}>
                     <td className={`${classeCelula} corpo-medio text-(--tinta)`}>{item.nome}</td>
                     <td className={`${classeCelula} whitespace-nowrap`}>
                       <span className="rotulo mr-(--e-15)">
@@ -172,14 +173,14 @@ export function PaginaCentralListaDeEspera() {
                         {formatarContato(item.contato)}
                       </a>
                     </td>
-                    <td className={`${classeCelula} whitespace-nowrap`}>
+                    <td className={`${classeCelula} whitespace-nowrap text-(--tinta-2) numero`}>
                       {formatarInstanteComHora(item.criadaEm, FUSO_DA_CENTRAL)}
                     </td>
-                    <td className={`${classeCelula} whitespace-nowrap`}>
-                      <label className="flex items-center gap-(--e-15)">
+                    <td className={`${classeCelula} whitespace-nowrap numero`}>
+                      <label className="flex min-h-(--controle-mini) cursor-pointer items-center gap-(--e-2)">
                         <input
                           type="checkbox"
-                          className="accent-(--acao)"
+                          className="size-4 cursor-pointer accent-(--acao)"
                           checked={item.contatadoEm !== null}
                           disabled={contatado.isPending}
                           aria-label={`Contatado: ${item.nome}`}
@@ -194,10 +195,10 @@ export function PaginaCentralListaDeEspera() {
                         </span>
                       </label>
                     </td>
-                    <td className={`${classeCelula} whitespace-nowrap`}>
+                    <td className={`${classeCelula} whitespace-nowrap numero`}>
                       <div className="flex items-center gap-(--e-2)">
                         {item.convidadoEm ? (
-                          <span>
+                          <span className="text-(--tinta-2)">
                             Convidado em{' '}
                             {formatarInstanteComoData(item.convidadoEm, FUSO_DA_CENTRAL)}
                           </span>
@@ -224,43 +225,43 @@ export function PaginaCentralListaDeEspera() {
               })}
             </tbody>
           </table>
-          <p className="border-t px-(--e-3) py-(--e-2) text-xs text-(--tinta-2)">
-            {plural(total, 'pessoa', 'pessoas')}
-          </p>
         </div>
-        {consulta.hasNextPage ? (
-          <Botao
-            className="self-start"
-            disabled={consulta.isFetchingNextPage}
-            onClick={() => void consulta.fetchNextPage()}
-          >
-            Mostrar mais
-          </Botao>
-        ) : null}
+        <div className="flex items-center gap-(--e-2) border-t px-(--e-4) py-(--e-2)">
+          <span className="flex-1 rotulo numero">{plural(total, 'pessoa', 'pessoas')}</span>
+          {consulta.hasNextPage ? (
+            <Botao
+              aparencia="sutil"
+              tamanho="compacto"
+              disabled={consulta.isFetchingNextPage}
+              onClick={() => void consulta.fetchNextPage()}
+            >
+              Mostrar mais
+            </Botao>
+          ) : null}
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col gap-(--e-6)">
-      <Pagina titulo="Lista de espera">{null}</Pagina>
-      <label className="flex items-center gap-(--e-15) self-start">
-        <input
-          type="checkbox"
-          className="accent-(--acao)"
+    <Pagina
+      titulo="Lista de espera"
+      acao={
+        <CaixaSelecao
+          rotulo="Só quem falta contatar"
           checked={soPendentes}
           onChange={(e) => {
             setSoPendentes(e.target.checked)
           }}
         />
-        <span>Só quem falta contatar</span>
-      </label>
+      }
+    >
       {aviso ? (
         <MensagemSecao role={aviso.tom === 'perigo' ? 'alert' : 'status'} tom={aviso.tom}>
           {aviso.texto}
         </MensagemSecao>
       ) : null}
       {conteudo}
-    </div>
+    </Pagina>
   )
 }

@@ -1,4 +1,4 @@
-import { Link, Outlet, useNavigate } from 'react-router'
+import { Link, NavLink, Outlet, useNavigate } from 'react-router'
 
 import { BotaoTema } from '@/app/layout/BotaoTema'
 import { Pagina } from '@/app/paginas/Pagina'
@@ -15,9 +15,18 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Icone } from '@/components/ui/icone'
 import { MarcaGrama } from '@/components/ui/marca-grama'
+import { cn } from '@/lib/utils'
 
 import { ExigeDoisFatores } from './ExigeDoisFatores'
 import { useSouOperador } from './operador'
+
+const ABAS: [string, string][] = [
+  ['/admin', 'Consultorias'],
+  ['/admin/financeiro', 'Financeiro'],
+  ['/admin/valor', 'Valor'],
+  ['/admin/parametros', 'Parâmetros'],
+  ['/admin/lista-de-espera', 'Lista de espera'],
+]
 
 function MenuContaCentral() {
   const { sessao, sair } = useSessao()
@@ -89,12 +98,27 @@ export function LayoutCentral() {
   } else {
     conteudo = (
       <ExigeDoisFatores>
-        <nav aria-label="Central" className="mb-(--e-4) flex flex-wrap gap-(--e-2)">
-          <Link to="/admin">Consultorias</Link>
-          <Link to="/admin/financeiro">Financeiro</Link>
-          <Link to="/admin/valor">Valor</Link>
-          <Link to="/admin/parametros">Parâmetros</Link>
-          <Link to="/admin/lista-de-espera">Lista de espera</Link>
+        <nav
+          aria-label="Central"
+          className="-mx-(--e-4) mb-(--e-6) flex gap-(--e-5) overflow-x-auto overflow-y-hidden border-b border-(--regra-forte) px-(--e-4) [scrollbar-width:none] md:mx-0 md:px-0"
+        >
+          {ABAS.map(([para, rotulo]) => (
+            <NavLink
+              key={para}
+              to={para}
+              end={para === '/admin'}
+              className={({ isActive }) =>
+                cn(
+                  '-mb-px inline-flex h-11 shrink-0 items-center border-b-[3px] titulo-secao whitespace-nowrap no-underline transicao-estado hover:no-underline',
+                  isActive
+                    ? 'border-(--marca-linha) text-(--tinta)'
+                    : 'border-transparent text-(--tinta-2) hover:text-(--tinta)',
+                )
+              }
+            >
+              {rotulo}
+            </NavLink>
+          ))}
         </nav>
         <Outlet />
       </ExigeDoisFatores>

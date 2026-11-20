@@ -6,6 +6,7 @@ import { useId, useRef, useState } from 'react'
 
 import { Botao } from '@/components/ui/botao'
 import { Dialogo } from '@/components/ui/dialogo'
+import { classeAreaTexto, classeCampo } from '@/components/ui/estilos-campo'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import {
   ROTULO_SITUACAO_CONSULTORIA,
@@ -15,8 +16,6 @@ import {
   type SituacaoConsultoria,
 } from '@/lib/api/central'
 import { codigoDoErro, mensagemDoErro } from '@/lib/erros'
-
-import { classeCampo } from './comum'
 
 const LIMITE_MOTIVO = 500
 /** Clique que chega logo depois de Continuar (duplo clique) não confirma: Confirmar fica no mesmo lugar. */
@@ -163,7 +162,7 @@ export function DialogoMudarSituacao({
                 if (valor) setNova(valor)
                 setChave(crypto.randomUUID())
               }}
-              className={`${classeCampo} h-(--controle)`}
+              className={classeCampo}
             >
               {opcoes.map((s) => (
                 <option key={s} value={s}>
@@ -189,7 +188,7 @@ export function DialogoMudarSituacao({
                 setChave(crypto.randomUUID())
                 if (erroMotivo && evento.target.value.trim() !== '') setErroMotivo(null)
               }}
-              className={`${classeCampo} py-(--e-15)`}
+              className={classeAreaTexto}
             />
             {erroMotivo ? (
               <span id={idErroMotivo} className="text-xs text-(--atraso-texto)">

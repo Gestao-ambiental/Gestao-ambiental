@@ -109,11 +109,7 @@ export function PaginaSeguranca() {
       setModo(proximo)
     }
     conteudo = (
-      <div className="flex flex-col gap-(--e-3)">
-        <div className="flex flex-wrap items-center gap-(--e-2)">
-          <span className="corpo text-(--tinta)">Situação</span>
-          {fatorId ? <Selo tom="sucesso">Ativados</Selo> : <Selo>Desativados</Selo>}
-        </div>
+      <div className="flex flex-col gap-(--e-4)">
         {aviso ? (
           <MensagemSecao role="status" tom="sucesso">
             {aviso}
@@ -151,11 +147,20 @@ export function PaginaSeguranca() {
     <Pagina titulo="Segurança">
       <section
         aria-labelledby="titulo-dois-fatores"
-        className="flex max-w-2xl flex-col gap-(--e-3)"
+        className="flex max-w-2xl flex-col gap-(--e-4)"
       >
-        <h2 id="titulo-dois-fatores" className="titulo-secao">
-          Dois fatores
-        </h2>
+        <div className="flex flex-wrap items-center gap-x-(--e-3) gap-y-(--e-1)">
+          <h2 id="titulo-dois-fatores" className="titulo-secao text-(--tinta)">
+            Dois fatores
+          </h2>
+          {estado.isSuccess ? (
+            estado.data.fatorId ? (
+              <Selo tom="sucesso">Ativados</Selo>
+            ) : (
+              <Selo>Desativados</Selo>
+            )
+          ) : null}
+        </div>
         {conteudo}
       </section>
     </Pagina>

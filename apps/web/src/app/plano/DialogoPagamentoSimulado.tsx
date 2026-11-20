@@ -69,9 +69,9 @@ export function DialogoPagamentoSimulado({
       {cobranca ? (
         <dl className="grid grid-cols-[1fr_auto] gap-x-(--e-4) gap-y-(--e-15)">
           <dt>Valor</dt>
-          <dd className="text-right tabular-nums">{formatarReais(cobranca.valorCentavos)}</dd>
+          <dd className="text-right numero">{formatarReais(cobranca.valorCentavos)}</dd>
           <dt>Vencimento</dt>
-          <dd className="text-right tabular-nums">
+          <dd className="text-right numero">
             {formatarDataCivil(cobranca.vencimento as DataCivil)}
           </dd>
         </dl>

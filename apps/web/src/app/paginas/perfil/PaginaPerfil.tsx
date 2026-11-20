@@ -124,17 +124,17 @@ function Perfil({ perfil }: { perfil: MembroAtivo }) {
     outras.join() !== perfil.outrasProfissoes.join()
 
   return (
-    <div className="flex max-w-[560px] flex-col gap-(--e-6)">
-      <section aria-labelledby="titulo-foto" className="flex flex-col gap-(--e-3)">
-        <h2 id="titulo-foto" className="titulo-secao">
+    <div className="flex max-w-[640px] flex-col gap-(--e-8)">
+      <section aria-labelledby="titulo-foto" className="flex flex-col gap-(--e-4)">
+        <h2 id="titulo-foto" className="sr-only">
           Foto
         </h2>
         <div className="flex items-center gap-(--e-4)">
           <Avatar nome={perfil.nome} fotoUrl={perfil.fotoUrl} tamanho="perfil" />
-          <div className="flex min-w-0 flex-col gap-(--e-1)">
-            <span className="corpo-medio text-(--tinta)">{perfil.nome}</span>
-            <span className="rotulo">{email}</span>
-            <span className="rotulo">
+          <div className="flex min-w-0 flex-col gap-(--e-05)">
+            <span className="titulo-painel text-(--tinta)">{perfil.nome}</span>
+            <span className="truncate corpo text-(--tinta-2)">{email}</span>
+            <span className="corpo text-(--tinta-2)">
               {perfil.cargo ?? (perfil.papel ? NOMES_PAPEL[perfil.papel] : '')}
             </span>
           </div>
@@ -187,8 +187,12 @@ function Perfil({ perfil }: { perfil: MembroAtivo }) {
         ) : null}
       </section>
 
-      <section aria-labelledby="titulo-genero" className="flex flex-col gap-(--e-3)">
-        <h2 id="titulo-genero" className="titulo-secao">
+      <section
+        aria-labelledby="titulo-genero"
+        className="flex flex-col gap-(--e-3) border-t pt-(--e-6)"
+      >
+        {/* A legenda do campo já diz "Gênero" na tela; o título fica só para leitor de tela. */}
+        <h2 id="titulo-genero" className="sr-only">
           Gênero
         </h2>
         <form
@@ -214,7 +218,7 @@ function Perfil({ perfil }: { perfil: MembroAtivo }) {
           <div className="flex items-center gap-(--e-3)">
             <Botao
               type="submit"
-              aparencia="primario"
+              aparencia={generoMudou ? 'primario' : 'padrao'}
               disabled={!genero || !generoMudou || salvarGenero.isPending}
             >
               {salvarGenero.isPending ? 'Salvando…' : 'Salvar gênero'}
@@ -228,8 +232,11 @@ function Perfil({ perfil }: { perfil: MembroAtivo }) {
         </form>
       </section>
 
-      <section aria-labelledby="titulo-cargo" className="flex flex-col gap-(--e-3)">
-        <h2 id="titulo-cargo" className="titulo-secao">
+      <section
+        aria-labelledby="titulo-cargo"
+        className="flex flex-col gap-(--e-3) border-t pt-(--e-6)"
+      >
+        <h2 id="titulo-cargo" className="titulo-secao text-(--tinta)">
           Profissão e cargo
         </h2>
         <form
@@ -270,7 +277,11 @@ function Perfil({ perfil }: { perfil: MembroAtivo }) {
             </MensagemSecao>
           ) : null}
           <div className="flex items-center gap-(--e-3)">
-            <Botao type="submit" aparencia="primario" disabled={!mudou || salvar.isPending}>
+            <Botao
+              type="submit"
+              aparencia={mudou ? 'primario' : 'padrao'}
+              disabled={!mudou || salvar.isPending}
+            >
               {salvar.isPending ? 'Salvando…' : 'Salvar profissão e cargo'}
             </Botao>
             {salvo && !mudou ? (

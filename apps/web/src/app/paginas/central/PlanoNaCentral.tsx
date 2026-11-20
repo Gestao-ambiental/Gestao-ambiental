@@ -18,6 +18,7 @@ import { Botao } from '@/components/ui/botao'
 import { CampoData } from '@/components/ui/campo-data'
 import { CampoTexto } from '@/components/ui/campo-texto'
 import { Dialogo } from '@/components/ui/dialogo'
+import { classeCampo } from '@/components/ui/estilos-campo'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { Selo } from '@/components/ui/selo'
 import {
@@ -34,7 +35,8 @@ import {
 import { formatarInstanteComHora } from '@/lib/datas'
 import { mensagemDoErro } from '@/lib/erros'
 
-import { classeCabecalho, classeCelula } from './comum'
+import { Placar } from './Placar'
+import { classeCabecalho, classeCelula, classeLinha } from './comum'
 
 type Acao = 'dias' | 'interna' | 'contrato' | 'encerrar_contrato' | null
 
@@ -128,10 +130,9 @@ export function PlanoNaCentral({ consultoriaId, fuso }: { consultoriaId: string;
       <h2 id="central-plano" className="titulo-secao text-(--tinta)">
         Plano e cobrança
       </h2>
-      <div className="flex flex-col gap-(--e-3) rounded-(--raio-painel) border bg-(--folha) p-(--e-4) shadow-cartao">
-        <div className="flex flex-wrap items-center gap-(--e-2)">
-          <Selo tom={TOM_DA_SITUACAO_COMERCIAL[s.situacao]}>{rotuloDaSituacao(s)}</Selo>
-          <span>
+      <div className="flex flex-col gap-(--e-3)">
+        <div className="flex flex-wrap items-center gap-x-(--e-3) gap-y-(--e-1)">
+          <span className="corpo-medio numero">
             {s.situacao === 'contrato' && s.planoVigente
               ? `${nomes[s.planoVigente] ?? s.planoVigente} por contrato · ${
                   d.contrato?.ate ? `até ${formatarDataCivil(d.contrato.ate)}` : 'sem prazo'
@@ -140,31 +141,29 @@ export function PlanoNaCentral({ consultoriaId, fuso }: { consultoriaId: string;
                 ? `${catalogo.data.planos[s.planoVigente].nome} · ${ROTULO_DO_CICLO[s.cicloVigente]}`
                 : 'Sem plano'}
           </span>
+          <Selo tom={TOM_DA_SITUACAO_COMERCIAL[s.situacao]}>{rotuloDaSituacao(s)}</Selo>
         </div>
-        <dl className="grid grid-cols-1 gap-(--e-2) sm:grid-cols-3">
-          <div>
-            <dt className="rotulo">Pessoas</dt>
-            <dd className="tabular-nums">
-              {s.limites
+        <Placar
+          colunas={3}
+          casas={[
+            {
+              rotulo: 'Pessoas',
+              valor: s.limites
                 ? `${String(d.uso.pessoas)} de ${String(s.limites.pessoas)}`
-                : d.uso.pessoas}
-            </dd>
-          </div>
-          <div>
-            <dt className="rotulo">Empreendimentos ativos</dt>
-            <dd className="tabular-nums">
-              {s.limites
+                : d.uso.pessoas,
+            },
+            {
+              rotulo: 'Empreendimentos ativos',
+              valor: s.limites
                 ? `${String(d.uso.empreendimentos)} de ${String(s.limites.empreendimentos)}`
-                : d.uso.empreendimentos}
-            </dd>
-          </div>
-          <div>
-            <dt className="rotulo">Teste</dt>
-            <dd>
-              {String(d.diasDeTeste)} dias úteis, até {formatarDataCivil(s.testeAte)}
-            </dd>
-          </div>
-        </dl>
+                : d.uso.empreendimentos,
+            },
+            {
+              rotulo: `Teste, até ${formatarDataCivil(s.testeAte)}`,
+              valor: `${String(d.diasDeTeste)} dias úteis`,
+            },
+          ]}
+        />
 
         <div className="flex flex-wrap gap-(--e-2)">
           <Botao
@@ -238,7 +237,7 @@ export function PlanoNaCentral({ consultoriaId, fuso }: { consultoriaId: string;
           <div
             role="region"
             aria-label="Cobranças da consultoria"
-            className="overflow-x-auto rounded-(--raio) border"
+            className="overflow-x-auto rounded-(--raio-painel) border bg-(--folha)"
           >
             <table className="w-full border-collapse corpo">
               <thead>
@@ -256,12 +255,12 @@ export function PlanoNaCentral({ consultoriaId, fuso }: { consultoriaId: string;
               </thead>
               <tbody>
                 {cobrancas.data.itens.map((c) => (
-                  <tr key={c.id} className="last:[&>td]:border-b-0">
-                    <td className={classeCelula}>
+                  <tr key={c.id} className={classeLinha}>
+                    <td className={`${classeCelula} numero`}>
                       {formatarDataCivil(c.vencimento as DataCivil)}
                       {c.tipo === 'adicionais' ? ' · Adicionais' : ''}
                     </td>
-                    <td className={`${classeCelula} text-right tabular-nums`}>
+                    <td className={`${classeCelula} text-right numero`}>
                       {formatarReais(c.valorCentavos)}
                     </td>
                     <td className={classeCelula}>{ROTULO_DA_COBRANCA[c.situacao]}</td>
@@ -273,10 +272,16 @@ export function PlanoNaCentral({ consultoriaId, fuso }: { consultoriaId: string;
         ) : null}
 
         {historico.data && historico.data.length > 0 ? (
-          <ul aria-label="Histórico comercial" className="flex flex-col gap-(--e-15)">
+          <ul aria-label="Histórico comercial" className="flex flex-col">
             {historico.data.map((h) => (
-              <li key={h.id}>
-                {formatarInstanteComHora(h.alteradaEm, fuso)} · {h.alteradaPorNome} ·{' '}
+              <li
+                key={h.id}
+                className="border-b border-(--regra-leve) py-(--e-2) corpo numero last:border-b-0"
+              >
+                <span className="text-(--tinta-2)">
+                  {formatarInstanteComHora(h.alteradaEm, fuso)} · {h.alteradaPorNome}
+                </span>{' '}
+                ·{' '}
                 {h.tipo === 'interna'
                   ? h.valorNovo === 'true'
                     ? 'Marcou conta interna'
@@ -337,7 +342,7 @@ export function PlanoNaCentral({ consultoriaId, fuso }: { consultoriaId: string;
             <label className="flex flex-col gap-(--e-1)">
               <span className="rotulo">Plano</span>
               <select
-                className="h-(--controle) rounded-(--raio) border bg-(--folha) px-(--e-2)"
+                className={classeCampo}
                 value={planoDoContrato}
                 onChange={(e) => {
                   if (ehCodigoPlano(e.target.value)) setPlanoDoContrato(e.target.value)

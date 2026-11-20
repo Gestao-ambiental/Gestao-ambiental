@@ -13,7 +13,6 @@ export function PaginaNaoEncontrada() {
       <EstadoVazio
         icone="search"
         titulo="Este endereço não existe"
-        descricao="Confira o link ou volte para a Visão da equipe."
         acaoPrincipal={
           <Botao aparencia="primario" asChild>
             <Link to="/">Ir para a Visão da equipe</Link>

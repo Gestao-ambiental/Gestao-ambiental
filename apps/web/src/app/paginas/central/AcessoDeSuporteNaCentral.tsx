@@ -12,6 +12,7 @@ import { useAbrirModoSuporte } from '@/app/consultoria/modo-suporte'
 import { HistoricoDeAcessos } from '@/app/suporte/HistoricoDeAcessos'
 import { textoDoAcessoValendo } from '@/app/suporte/texto'
 import { Botao } from '@/components/ui/botao'
+import { classeAreaTexto } from '@/components/ui/estilos-campo'
 import { OpcaoRadio } from '@/components/ui/caixa-selecao'
 import { Dialogo } from '@/components/ui/dialogo'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
@@ -25,8 +26,6 @@ import {
   proximaPaginaDeAcessos,
 } from '@/lib/api/suporte'
 import { mensagemDoErro } from '@/lib/erros'
-
-import { classeCampo } from './comum'
 
 const CHAVE = 'acessos-de-suporte'
 
@@ -208,7 +207,7 @@ function DialogoEmergencia({
                 setErros((atual) => ({ ...atual, motivo: undefined }))
               }
             }}
-            className={`${classeCampo} py-(--e-15)`}
+            className={classeAreaTexto}
           />
           {erros.motivo ? (
             <span id={idErroMotivo} className="text-xs text-(--atraso-texto)">
@@ -257,7 +256,7 @@ export function AcessoDeSuporteNaCentral({
   const valendo = consulta.isSuccess ? acessoValendo(itens, new Date()) : null
 
   return (
-    <section aria-labelledby="central-suporte" className="flex flex-col gap-(--e-2)">
+    <section aria-labelledby="central-suporte" className="flex flex-col gap-(--e-3)">
       <div className="flex flex-wrap items-center justify-between gap-(--e-2)">
         <h2 id="central-suporte" className="titulo-secao text-(--tinta)">
           Acesso de suporte
@@ -287,8 +286,9 @@ export function AcessoDeSuporteNaCentral({
         ) : null}
       </div>
 
-      {consulta.isSuccess ? (
-        <p className="flex flex-wrap items-center gap-(--e-15)">
+      {/* Sem acesso nenhum, o histórico vazio já diz tudo: um vazio só por seção. */}
+      {consulta.isSuccess && (valendo !== null || itens.length > 0) ? (
+        <p className="flex flex-wrap items-center gap-(--e-15) numero">
           {valendo ? <Selo tom="sucesso">Valendo</Selo> : null}
           <span>{textoDoAcessoValendo(valendo, fuso)}</span>
         </p>

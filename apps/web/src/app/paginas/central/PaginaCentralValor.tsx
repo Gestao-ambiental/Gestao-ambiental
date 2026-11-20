@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router'
 
 import { Pagina } from '@/app/paginas/Pagina'
+import { classeSelecao } from '@/components/ui/estilos-campo'
 import { listarConsultoriasDaCentral } from '@/lib/api/central'
 
 import { HorasDevolvidas, ResumoDeTeste } from './HorasNaCentral'
@@ -23,9 +24,9 @@ export function PaginaCentralValor() {
   const metricas = useMetricasDeValor(consultoriaId)
 
   return (
-    <div className="flex flex-col gap-(--e-6)">
-      <div className="flex flex-wrap items-center justify-between gap-(--e-2)">
-        <Pagina titulo="Valor">{null}</Pagina>
+    <Pagina
+      titulo="Valor"
+      acao={
         <label className="flex min-w-0 flex-1 sm:flex-none">
           <span className="sr-only">Consultoria</span>
           <select
@@ -34,7 +35,7 @@ export function PaginaCentralValor() {
               const nova = evento.target.value
               setParametros(nova ? { consultoria: nova } : {}, { replace: true })
             }}
-            className="h-(--controle) w-full min-w-0 rounded-(--raio) border border-(--campo-borda) bg-(--campo) px-(--e-2) corpo text-(--tinta) sm:w-auto"
+            className={`${classeSelecao} max-sm:w-full max-sm:max-w-none`}
           >
             <option value="">Todas</option>
             {(consultorias.data?.itens ?? []).map((c) => (
@@ -44,7 +45,8 @@ export function PaginaCentralValor() {
             ))}
           </select>
         </label>
-      </div>
+      }
+    >
       <HorasDevolvidas consultoriaId={consultoriaId} />
       {consultoriaId ? <ResumoDeTeste consultoriaId={consultoriaId} /> : null}
       <EstadoDasMetricas consulta={metricas}>
@@ -65,6 +67,6 @@ export function PaginaCentralValor() {
           </>
         )}
       </EstadoDasMetricas>
-    </div>
+    </Pagina>
   )
 }

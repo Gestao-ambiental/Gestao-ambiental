@@ -8,7 +8,7 @@ import { Pagina } from '@/app/paginas/Pagina'
 import { Carregando, EstadoErro } from '@/components/estados'
 
 const classeCartao =
-  'flex max-w-xl flex-col gap-(--e-4) rounded-(--raio-painel) border bg-(--folha) p-(--e-4) shadow-cartao sm:p-(--e-6)'
+  'flex max-w-xl flex-col gap-(--e-4) rounded-(--raio-painel) border bg-(--folha) p-(--e-4) sm:p-(--e-6)'
 
 /**
  * A central exige dois fatores (ADR-0024). Sem fator cadastrado: cadastra o aplicativo

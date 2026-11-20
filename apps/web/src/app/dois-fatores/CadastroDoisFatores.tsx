@@ -49,13 +49,13 @@ export function CadastroDoisFatores({ aoAtivar, aoCancelar }: Props) {
   return (
     <div className="flex flex-col gap-(--e-4)">
       <div className="flex flex-col gap-(--e-3) sm:flex-row sm:items-start">
-        {/* Fundo branco nos dois temas: o leitor do aplicativo precisa do contraste do QR code. */}
+        {/* Fundo branco nos dois temas (--trilho-texto é branco em ambos): o leitor precisa do contraste. */}
         <img
           src={novo.qrCode}
           alt="QR code para o aplicativo autenticador"
           width={176}
           height={176}
-          className="size-44 shrink-0 rounded-(--raio) border bg-white p-(--e-2)"
+          className="size-44 shrink-0 rounded-(--raio) border bg-(--papel) p-(--e-2)"
         />
         <dl className="flex min-w-0 flex-col gap-(--e-05)">
           <dt className="rotulo">Chave</dt>

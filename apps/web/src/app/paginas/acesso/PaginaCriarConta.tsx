@@ -100,9 +100,7 @@ export function PaginaCriarConta() {
 
   return (
     <div className="flex flex-col gap-(--e-6)">
-      <CabecalhoAcesso titulo="Criar conta">
-        É a sua conta pessoal. Depois você cria a consultoria ou entra por convite.
-      </CabecalhoAcesso>
+      <CabecalhoAcesso titulo="Criar conta" />
       {falha ? (
         <MensagemSecao role="alert" tom="perigo">
           {falha}

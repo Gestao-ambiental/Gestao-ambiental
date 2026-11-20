@@ -12,7 +12,6 @@ import { Carregando, EstadoErro } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
 import { Icone } from '@/components/ui/icone'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
-import { Selo } from '@/components/ui/selo'
 import { listarMeusVinculos } from '@/lib/api/acesso'
 import { formatarInstanteComoData } from '@/lib/datas'
 
@@ -93,20 +92,20 @@ export function PaginaEscolherConsultoria() {
       {corpo}
       {consulta.isSuccess && vinculos.length > 0 ? (
         <ul
-          className="flex flex-col overflow-hidden rounded-(--raio) border"
+          className="flex flex-col overflow-hidden rounded-(--raio-painel) border bg-(--folha)"
           aria-label="Suas consultorias"
         >
           {vinculos.map((vinculo) => {
             const encerrado = vinculo.situacao === 'desligado'
             return (
-              <li key={vinculo.membroId} className="border-b last:border-b-0">
+              <li key={vinculo.membroId} className="border-b border-(--regra-leve) last:border-b-0">
                 <button
                   type="button"
                   disabled={encerrado}
                   onClick={() => {
                     entrar(vinculo.consultoriaId)
                   }}
-                  className="flex min-h-11 w-full cursor-pointer items-center gap-(--e-3) px-(--e-3) py-(--e-2) text-left transicao-estado hover:bg-(--toque) disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                  className="flex min-h-(--linha) w-full cursor-pointer items-center gap-(--e-3) px-(--e-4) py-(--e-2) text-left transicao-estado hover:bg-(--toque) disabled:cursor-not-allowed disabled:hover:bg-transparent"
                 >
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span
@@ -117,7 +116,7 @@ export function PaginaEscolherConsultoria() {
                       {vinculo.consultoriaNome}
                     </span>
                     {encerrado && vinculo.desligadoEm ? (
-                      <span className="text-xs text-(--tinta-2)">
+                      <span className="rotulo numero">
                         Acesso encerrado em{' '}
                         {formatarInstanteComoData(vinculo.desligadoEm, vinculo.fuso)}
                       </span>
@@ -125,7 +124,7 @@ export function PaginaEscolherConsultoria() {
                   </span>
                   {encerrado ? null : (
                     <>
-                      <Selo>{NOMES_PAPEL[vinculo.papel]}</Selo>
+                      <span className="corpo text-(--tinta-2)">{NOMES_PAPEL[vinculo.papel]}</span>
                       <Icone nome="chevron-right" className="text-(--icone)" />
                     </>
                   )}

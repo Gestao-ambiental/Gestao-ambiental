@@ -5,6 +5,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router'
 import { Pagina } from '@/app/paginas/Pagina'
 import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
+import { classeCampo, classeSelecao } from '@/components/ui/estilos-campo'
 import { Icone } from '@/components/ui/icone'
 import { Selo } from '@/components/ui/selo'
 import {
@@ -21,10 +22,15 @@ import { ehDoisFatoresNecessarios, ehSemPermissao } from '@/lib/erros'
 
 import { RelerDoisFatores } from './ExigeDoisFatores'
 import { AlertasDeSemUso, ResumoDeUsoNaCentral } from './UsoNaCentral'
-import { TOM_DA_SITUACAO, classeCabecalho, classeCelula, plural, ultimoUsoComoData } from './comum'
-
-const classeCampoFiltro =
-  'h-(--controle) rounded-(--raio) border border-(--campo-borda) border-b-(--campo-borda) bg-(--campo) corpo text-(--tinta) outline-none transicao-estado focus:border-b-(--campo-borda-ativa) focus:shadow-[inset_0_-1px_0_0_var(--campo-borda-ativa)] focus:bg-(--campo-foco)'
+import {
+  TOM_DA_SITUACAO,
+  classeCabecalho,
+  classeCelula,
+  classeLinha,
+  classePainel,
+  plural,
+  ultimoUsoComoData,
+} from './comum'
 
 function Gestao({ item }: { item: ConsultoriaNaCentral }) {
   if (item.gestao.length === 0) return <span className="text-(--tinta-2)">Sem Gestão ativa</span>
@@ -33,7 +39,7 @@ function Gestao({ item }: { item: ConsultoriaNaCentral }) {
       {item.gestao.map((pessoa) => (
         <li key={pessoa.email} className="flex min-w-0 flex-col">
           <span className="truncate">{pessoa.nome}</span>
-          <span className="truncate text-xs text-(--tinta-2)">{pessoa.email}</span>
+          <span className="truncate rotulo">{pessoa.email}</span>
         </li>
       ))}
     </ul>
@@ -120,10 +126,10 @@ export function PaginaCentral() {
     )
   } else {
     conteudo = (
-      <div className="flex flex-col gap-(--e-2)">
-        <div className="hidden overflow-x-auto rounded-(--raio-painel) border bg-(--folha) shadow-cartao md:block">
+      <div className={`flex flex-col overflow-hidden ${classePainel}`}>
+        <div className="hidden max-h-[calc(100dvh-320px)] min-h-[240px] overflow-auto md:block">
           <table className="w-full border-collapse corpo">
-            <thead>
+            <thead className="sticky top-0 z-10 bg-(--folha)">
               <tr>
                 <th scope="col" className={classeCabecalho}>
                   Consultoria
@@ -155,12 +161,12 @@ export function PaginaCentral() {
               {itens.map((item) => (
                 <tr
                   key={item.id}
-                  className="cursor-pointer transicao-estado hover:bg-(--toque) last:[&>td]:border-b-0"
+                  className={`cursor-pointer ${classeLinha}`}
                   onClick={() => {
                     void navegar(`/admin/consultorias/${item.id}`)
                   }}
                 >
-                  <td className={`${classeCelula} py-(--e-2)`}>
+                  <td className={`${classeCelula} py-(--e-1)`}>
                     <Link
                       to={`/admin/consultorias/${item.id}`}
                       className="corpo-medio text-(--tinta) hover:text-(--tinta)"
@@ -170,22 +176,18 @@ export function PaginaCentral() {
                     >
                       {item.nome}
                     </Link>
-                    <span className="block text-xs text-(--tinta-2)">
+                    <span className="block rotulo numero">
                       Criada em {formatarInstanteComoData(item.criadaEm, item.fuso)}
                     </span>
                   </td>
-                  <td className={`${classeCelula} max-w-64 py-(--e-2)`}>
+                  <td className={`${classeCelula} max-w-64 py-(--e-1)`}>
                     <Gestao item={item} />
                   </td>
-                  <td className={`${classeCelula} text-right tabular-nums`}>
-                    {item.pessoasAtivas}
-                  </td>
-                  <td className={`${classeCelula} text-right tabular-nums`}>{item.orcamentos}</td>
-                  <td className={`${classeCelula} text-right tabular-nums`}>
-                    {item.empreendimentos}
-                  </td>
-                  <td className={`${classeCelula} text-right tabular-nums`}>{item.licencas}</td>
-                  <td className={`${classeCelula} whitespace-nowrap`}>
+                  <td className={`${classeCelula} text-right numero`}>{item.pessoasAtivas}</td>
+                  <td className={`${classeCelula} text-right numero`}>{item.orcamentos}</td>
+                  <td className={`${classeCelula} text-right numero`}>{item.empreendimentos}</td>
+                  <td className={`${classeCelula} text-right numero`}>{item.licencas}</td>
+                  <td className={`${classeCelula} whitespace-nowrap numero`}>
                     {ultimoUsoComoData(item.ultimoUsoEm, item.fuso, agora)}
                   </td>
                   <td className={classeCelula}>
@@ -197,40 +199,34 @@ export function PaginaCentral() {
               ))}
             </tbody>
           </table>
-          <p className="border-t px-(--e-3) py-(--e-2) text-xs text-(--tinta-2)">
-            {plural(total, 'consultoria', 'consultorias')}
-          </p>
         </div>
 
-        <ul className="flex flex-col gap-(--e-2) md:hidden" aria-label="Consultorias">
+        <ul className="flex flex-col md:hidden" aria-label="Consultorias">
           {itens.map((item) => (
-            <li
-              key={item.id}
-              className="flex flex-col rounded-(--raio-painel) border bg-(--folha) shadow-cartao"
-            >
+            <li key={item.id} className="border-b border-(--regra-leve) last:border-b-0">
               <Link
                 to={`/admin/consultorias/${item.id}`}
-                className="flex flex-col gap-(--e-15) rounded-(--raio-painel) p-(--e-3) text-(--tinta) no-underline hover:bg-(--toque) hover:text-(--tinta) hover:no-underline"
+                className="flex flex-col gap-(--e-1) px-(--e-4) py-(--e-3) text-(--tinta) no-underline hover:bg-(--toque) hover:text-(--tinta) hover:no-underline"
               >
                 <span className="flex items-center justify-between gap-(--e-2)">
-                  <Selo tom={TOM_DA_SITUACAO[item.situacao]}>
-                    {ROTULO_SITUACAO_CONSULTORIA[item.situacao]}
-                  </Selo>
-                  <Icone nome="chevron-right" className="text-(--icone)" />
+                  <span className="truncate corpo-medio">{item.nome}</span>
+                  <Icone nome="chevron-right" className="shrink-0 text-(--icone)" />
                 </span>
-                <span className="corpo-medio">{item.nome}</span>
-                <span className="text-xs text-(--tinta-2)">
+                <Selo tom={TOM_DA_SITUACAO[item.situacao]}>
+                  {ROTULO_SITUACAO_CONSULTORIA[item.situacao]}
+                </Selo>
+                <span className="rotulo">
                   {item.gestao.length > 0
                     ? item.gestao.map((p) => `${p.nome} · ${p.email}`).join(', ')
                     : 'Sem Gestão ativa'}
                 </span>
-                <span className="text-xs text-(--tinta)">
+                <span className="corpo numero">
                   {plural(item.pessoasAtivas, 'pessoa', 'pessoas')} ·{' '}
                   {plural(item.orcamentos, 'orçamento', 'orçamentos')} ·{' '}
                   {plural(item.empreendimentos, 'empreendimento', 'empreendimentos')} ·{' '}
                   {plural(item.licencas, 'licença', 'licenças')}
                 </span>
-                <span className="text-xs text-(--tinta-2)">
+                <span className="rotulo numero">
                   Criada em {formatarInstanteComoData(item.criadaEm, item.fuso)} · Último uso:{' '}
                   {ultimoUsoComoData(item.ultimoUsoEm, item.fuso, agora)}
                 </span>
@@ -238,26 +234,30 @@ export function PaginaCentral() {
             </li>
           ))}
         </ul>
-        <p className="text-xs text-(--tinta-2) md:hidden">
-          {plural(total, 'consultoria', 'consultorias')}
-        </p>
 
-        {consulta.hasNextPage ? (
-          <Botao
-            className="self-start"
-            disabled={consulta.isFetchingNextPage}
-            onClick={() => void consulta.fetchNextPage()}
-          >
-            Mostrar mais consultorias
-          </Botao>
-        ) : null}
+        <div className="flex items-center gap-(--e-2) border-t px-(--e-4) py-(--e-2)">
+          <span className="flex-1 rotulo numero" aria-live="polite">
+            {itens.length < total
+              ? `${String(itens.length)} de ${plural(total, 'consultoria', 'consultorias')}`
+              : plural(total, 'consultoria', 'consultorias')}
+          </span>
+          {consulta.hasNextPage ? (
+            <Botao
+              aparencia="sutil"
+              tamanho="compacto"
+              disabled={consulta.isFetchingNextPage}
+              onClick={() => void consulta.fetchNextPage()}
+            >
+              Mostrar mais consultorias
+            </Botao>
+          ) : null}
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col gap-(--e-6)">
-      <Pagina titulo="Consultorias">{null}</Pagina>
+    <Pagina titulo="Consultorias">
       <ResumoDeUsoNaCentral />
       <AlertasDeSemUso />
       <section aria-labelledby="central-lista" className="flex flex-col gap-(--e-3)">
@@ -266,7 +266,7 @@ export function PaginaCentral() {
             Todas as consultorias
           </h2>
           <div className="flex w-full flex-wrap items-center gap-(--e-2) sm:w-auto">
-            <label className="relative flex min-w-0 flex-1 items-center sm:flex-none">
+            <label className="relative flex min-w-0 basis-full items-center sm:basis-auto">
               <span className="sr-only">Buscar consultoria pelo nome</span>
               <Icone
                 nome="search"
@@ -280,7 +280,7 @@ export function PaginaCentral() {
                 onChange={(evento) => {
                   setBusca(evento.target.value)
                 }}
-                className={`${classeCampoFiltro} w-full pr-(--e-2) pl-(--e-8) sm:w-[260px]`}
+                className={`${classeCampo} pl-(--e-8) sm:w-[260px]`}
               />
             </label>
             <label className="flex min-w-0 flex-1 sm:flex-none">
@@ -290,7 +290,7 @@ export function PaginaCentral() {
                 onChange={(evento) => {
                   escolherSituacao(situacaoConsultoriaOuNula(evento.target.value))
                 }}
-                className={`${classeCampoFiltro} w-full px-(--e-2) sm:w-auto`}
+                className={`${classeSelecao} max-sm:w-full max-sm:max-w-none`}
               >
                 <option value="">Todas as situações</option>
                 {SITUACOES_CONSULTORIA.map((s) => (
@@ -305,6 +305,6 @@ export function PaginaCentral() {
 
         {conteudo}
       </section>
-    </div>
+    </Pagina>
   )
 }

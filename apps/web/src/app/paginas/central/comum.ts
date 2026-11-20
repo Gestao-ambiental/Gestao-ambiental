@@ -6,11 +6,15 @@ import type { TomSelo } from '@/components/ui/selo'
 import type { SituacaoConsultoria } from '@/lib/api/central'
 import { formatarInstanteComHora, formatarInstanteComoData } from '@/lib/datas'
 
+// Quadro denso da central (uso interno): cabeçalho em maiúsculas, linhas de 40px com regra leve.
 export const classeCabecalho =
-  'h-10 border-b px-(--e-2) text-left rotulo whitespace-nowrap first:pl-(--e-3) last:pr-(--e-3)'
-export const classeCelula = 'h-11 border-b px-(--e-2) align-middle first:pl-(--e-3) last:pr-(--e-3)'
-export const classeCampo =
-  'w-full rounded-(--raio) border border-(--campo-borda) border-b-(--campo-borda) bg-(--campo) px-(--e-2) corpo text-(--tinta) outline-none transicao-estado focus:border-b-(--campo-borda-ativa) focus:shadow-[inset_0_-1px_0_0_var(--campo-borda-ativa)] focus:bg-(--campo-foco) aria-invalid:border-(--atraso)'
+  'h-9 border-b px-(--e-2) text-left rotulo-maiusculo whitespace-nowrap text-(--tinta-2) first:pl-(--e-4) last:pr-(--e-4)'
+export const classeCelula =
+  'h-(--linha-densa) border-b border-(--regra-leve) px-(--e-2) align-middle first:pl-(--e-4) last:pr-(--e-4)'
+/** Linha do quadro com hover; a última não repete a regra da moldura. */
+export const classeLinha = 'transicao-estado hover:bg-(--toque) last:[&>td]:border-b-0'
+/** Moldura de painel do quadro (sem sombra). */
+export const classePainel = 'rounded-(--raio-painel) border bg-(--folha)'
 
 /** Cor do selo de cada situação (a palavra vai sempre junto). */
 export const TOM_DA_SITUACAO: Record<SituacaoConsultoria, TomSelo> = {

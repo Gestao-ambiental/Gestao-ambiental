@@ -7,7 +7,8 @@ import { ehDoisFatoresNecessarios, ehSemPermissao } from '@/lib/erros'
 
 import { RelerDoisFatores } from './ExigeDoisFatores'
 import { HorasDevolvidas, ResumoDeTeste } from './HorasNaCentral'
-import { classeCabecalho, classeCelula } from './comum'
+import { Placar } from './Placar'
+import { classeCabecalho, classeCelula, classeLinha } from './comum'
 import { GRUPOS, formatarValor, formatarVariacao, semNenhumDado, useMetricasDeValor } from './valor'
 
 /** Cartões do mês atual com a variação contra o mês anterior. */
@@ -23,36 +24,23 @@ export function CartoesDeValor({ meses }: { meses: readonly MetricasDoMes[] }) {
           className="flex flex-col gap-(--e-15)"
         >
           <h3 className="corpo-medio text-(--tinta)">{grupo.titulo}</h3>
-          <dl className="grid grid-cols-1 gap-(--e-2) sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {grupo.metricas.map((metrica) => {
+          <Placar
+            colunas={4}
+            casas={grupo.metricas.map((metrica) => {
               const valor = metrica.valor(atual)
               const mudanca = formatarVariacao(
                 variacao(valor, anterior ? metrica.valor(anterior) : null),
                 metrica.unidade,
               )
-              return (
-                <div
-                  key={metrica.rotulo}
-                  className="flex min-w-0 flex-col gap-(--e-05) rounded-(--raio-painel) border bg-(--folha) p-(--e-3) shadow-cartao"
-                >
-                  <dt className="rotulo">{metrica.rotulo}</dt>
-                  <dd className="flex flex-wrap items-baseline gap-x-(--e-2)">
-                    <span className="titulo-secao text-(--tinta) tabular-nums">
-                      {formatarValor(valor, metrica.unidade)}
-                    </span>
-                    {mudanca ? (
-                      <span
-                        className="corpo text-(--tinta) tabular-nums"
-                        aria-label={`${mudanca} contra o mês anterior`}
-                      >
-                        {mudanca}
-                      </span>
-                    ) : null}
-                  </dd>
-                </div>
-              )
+              return {
+                rotulo: metrica.rotulo,
+                valor: formatarValor(valor, metrica.unidade),
+                detalhe: mudanca ? (
+                  <span aria-label={`${mudanca} contra o mês anterior`}>{mudanca} no mês</span>
+                ) : undefined,
+              }
             })}
-          </dl>
+          />
         </section>
       ))}
     </div>
@@ -65,7 +53,7 @@ export function TabelaDeValor({ meses }: { meses: readonly MetricasDoMes[] }) {
     <div
       role="region"
       aria-label="Métricas por mês"
-      className="overflow-x-auto rounded-(--raio-painel) border bg-(--folha) shadow-cartao"
+      className="overflow-x-auto rounded-(--raio-painel) border bg-(--folha)"
     >
       <table className="w-full border-collapse corpo">
         <thead>
@@ -82,15 +70,12 @@ export function TabelaDeValor({ meses }: { meses: readonly MetricasDoMes[] }) {
         </thead>
         <tbody>
           {GRUPOS.flatMap((grupo) => grupo.metricas).map((metrica) => (
-            <tr key={metrica.rotulo} className="last:[&>td]:border-b-0 last:[&>th]:border-b-0">
+            <tr key={metrica.rotulo} className={`${classeLinha} last:[&>th]:border-b-0`}>
               <th scope="row" className={`${classeCelula} text-left font-normal whitespace-nowrap`}>
                 {metrica.rotulo}
               </th>
               {meses.map((m) => (
-                <td
-                  key={m.mes}
-                  className={`${classeCelula} text-right whitespace-nowrap tabular-nums`}
-                >
+                <td key={m.mes} className={`${classeCelula} text-right whitespace-nowrap numero`}>
                   {formatarValor(metrica.valor(m), metrica.unidade)}
                 </td>
               ))}
@@ -129,7 +114,7 @@ export function EstadoDasMetricas({
 export function ValorDaConsultoria({ consultoriaId }: { consultoriaId: string }) {
   const consulta = useMetricasDeValor(consultoriaId)
   return (
-    <section aria-labelledby="central-valor" className="flex flex-col gap-(--e-2)">
+    <section aria-labelledby="central-valor" className="flex flex-col gap-(--e-3)">
       <h2 id="central-valor" className="titulo-secao text-(--tinta)">
         Valor
       </h2>

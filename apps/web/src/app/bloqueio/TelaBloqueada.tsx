@@ -86,13 +86,13 @@ export function TelaBloqueada({
           }}
           className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-(--chao) px-(--e-4) pt-[12vh] pb-(--e-8) outline-none"
         >
-          <div className="flex w-full max-w-[400px] flex-col gap-(--e-4) rounded-(--raio-painel) border bg-(--folha) p-(--e-6) shadow-sobreposicao">
+          <div className="flex w-full max-w-[400px] flex-col gap-(--e-4) rounded-(--raio-painel) border bg-(--folha) p-(--e-6)">
             <MarcaGrama className="self-start" />
             <div className="flex items-center gap-(--e-3)">
               <Avatar nome={usuario.nome} />
               <span className="flex min-w-0 flex-col">
                 <span className="truncate corpo-medio">{usuario.nome}</span>
-                <span className="truncate text-xs text-(--tinta-2)">{usuario.email}</span>
+                <span className="truncate rotulo">{usuario.email}</span>
               </span>
             </div>
             <div className="flex flex-col gap-(--e-1)">

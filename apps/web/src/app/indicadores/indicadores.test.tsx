@@ -146,12 +146,31 @@ describe('Resumo do mês (ADR-0027)', () => {
     expect(await screen.findByText('23,0 h')).toBeInTheDocument()
     expect(screen.getByText(/R\$\s?2\.300,00/)).toBeInTheDocument()
     expect(screen.getByText('Estimado')).toBeInTheDocument()
-    expect(screen.getByText('+2,5 h contra o mês anterior')).toBeInTheDocument()
+    expect(screen.getByText('Subiu 2,5 h contra o mês anterior')).toBeInTheDocument()
     expect(screen.getByText('75%')).toBeInTheDocument()
-    expect(screen.getByText('+25 p.p. contra o mês anterior')).toBeInTheDocument()
+    expect(screen.getByText('Subiu 25 p.p. contra o mês anterior')).toBeInTheDocument()
+    expect(screen.getByText('Subiu 1 contra o mês anterior')).toBeInTheDocument()
     expect(screen.getByText('2 de 2')).toBeInTheDocument()
     expect(screen.getByRole('combobox', { name: 'Mês' })).toBeInTheDocument()
     expect(chamadas('resumo_do_mes')[0]).toMatchObject({ p_consultoria_id: 'c-Filtroville' })
+  })
+
+  it('escreve "Desceu" e "Igual" na comparação, não só pela cor', async () => {
+    falso.reiniciar({
+      sessao: gestao,
+      rpc: {
+        meus_vinculos: { data: [vinculoFalso('Filtroville', 'gestao')] },
+        resumo_do_mes: {
+          data: [
+            linha('2026-10-01', { horas_total: 18 }),
+            linha('2026-09-01', { horas_total: 20.5, prazo_cumpridas: 3 }),
+          ],
+        },
+      },
+    })
+    renderizarApp('/resumo-do-mes')
+    expect(await screen.findByText('Desceu 2,5 h contra o mês anterior')).toBeInTheDocument()
+    expect(screen.getAllByText('Igual ao mês anterior')).toHaveLength(2)
   })
 
   it('erro do banco mostra "Tentar de novo"; a Equipe vê sem permissão', async () => {

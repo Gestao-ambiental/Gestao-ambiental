@@ -66,9 +66,7 @@ export function PaginaEntrar() {
 
   return (
     <div className="flex flex-col gap-(--e-6)">
-      <CabecalhoAcesso titulo="Entrar no Grama" tituloDaAba="Entrar">
-        Licenças, condicionantes e prazos dos empreendimentos dos seus clientes, num lugar só.
-      </CabecalhoAcesso>
+      <CabecalhoAcesso titulo="Entrar no Grama" tituloDaAba="Entrar" />
 
       {aviso ? <MensagemSecao tom="atencao">{aviso}</MensagemSecao> : null}
       {!aviso && sessaoExpirou ? (

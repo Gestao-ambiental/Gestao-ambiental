@@ -13,6 +13,7 @@ import { useCatalogoComercial } from '@/app/plano/catalogo'
 import { TOM_DA_SITUACAO_COMERCIAL } from '@/app/plano/situacao'
 import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
+import { classeSelecao } from '@/components/ui/estilos-campo'
 import { Selo } from '@/components/ui/selo'
 import {
   GRUPOS_FINANCEIROS,
@@ -27,7 +28,8 @@ import {
 import { ehDoisFatoresNecessarios, ehSemPermissao } from '@/lib/erros'
 
 import { RelerDoisFatores } from './ExigeDoisFatores'
-import { classeCabecalho, classeCelula, plural } from './comum'
+import { Placar } from './Placar'
+import { classeCabecalho, classeCelula, classeLinha, classePainel, plural } from './comum'
 
 const ROTULO_CURTO_DA_SITUACAO: Record<string, string> = {
   interna: 'Conta interna',
@@ -40,46 +42,45 @@ const ROTULO_CURTO_DA_SITUACAO: Record<string, string> = {
   cancelada: 'Cancelada',
 }
 
-function Cartao({ rotulo, valor }: { rotulo: string; valor: string }) {
-  return (
-    <div className="flex flex-col gap-(--e-05) rounded-(--raio-painel) border bg-(--folha) p-(--e-3) shadow-cartao">
-      <dt className="rotulo">{rotulo}</dt>
-      <dd className="titulo-secao text-(--tinta) tabular-nums">{valor}</dd>
-    </div>
-  )
-}
-
 function Numeros({ r, catalogo }: { r: ResumoFinanceiro; catalogo: CatalogoComercial }) {
   return (
-    <section aria-label="Números do Financeiro" className="flex flex-col gap-(--e-3)">
-      <dl className="grid grid-cols-2 gap-(--e-2) md:grid-cols-4">
-        <Cartao rotulo="MRR" valor={formatarReais(r.mrrCentavos)} />
-        <Cartao rotulo="Ticket médio" valor={formatarReais(r.ticketMedioCentavos)} />
-        <Cartao rotulo="Mensal × anual" valor={`${String(r.mensais)} × ${String(r.anuais)}`} />
-        <Cartao rotulo="Pagantes" valor={String(r.pagantes)} />
-        <Cartao rotulo="Em teste" valor={String(r.emTeste)} />
-        <Cartao rotulo="Teste acabando" valor={String(r.testeAcabando)} />
-        <Cartao rotulo="Beta" valor={String(r.beta)} />
-        <Cartao rotulo="Contas internas" valor={String(r.internas)} />
-        <Cartao rotulo="Por contrato" valor={String(r.porContrato)} />
-        <Cartao rotulo="Em atraso" valor={String(r.emAtraso)} />
-        <Cartao rotulo="Somente leitura" valor={String(r.bloqueadas)} />
-        <Cartao rotulo="Cancelados" valor={String(r.cancelados)} />
-        <Cartao rotulo="Teste encerrado" valor={String(r.testeEncerrado)} />
-      </dl>
-      <section aria-labelledby="receita-por-plano" className="flex flex-col gap-(--e-15)">
+    <section aria-label="Números do Financeiro" className="flex flex-col gap-(--e-6)">
+      <div className="flex flex-col gap-(--e-3)">
+        <Placar
+          colunas={4}
+          casas={[
+            { rotulo: 'MRR', valor: formatarReais(r.mrrCentavos) },
+            { rotulo: 'Ticket médio', valor: formatarReais(r.ticketMedioCentavos) },
+            { rotulo: 'Mensal × anual', valor: `${String(r.mensais)} × ${String(r.anuais)}` },
+            { rotulo: 'Pagantes', valor: r.pagantes },
+          ]}
+        />
+        <Placar
+          colunas={5}
+          casas={[
+            { rotulo: 'Em teste', valor: r.emTeste },
+            { rotulo: 'Teste acabando', valor: r.testeAcabando },
+            { rotulo: 'Beta', valor: r.beta },
+            { rotulo: 'Contas internas', valor: r.internas },
+            { rotulo: 'Por contrato', valor: r.porContrato },
+            { rotulo: 'Em atraso', valor: r.emAtraso },
+            { rotulo: 'Somente leitura', valor: r.bloqueadas },
+            { rotulo: 'Cancelados', valor: r.cancelados },
+            { rotulo: 'Teste encerrado', valor: r.testeEncerrado },
+          ]}
+        />
+      </div>
+      <section aria-labelledby="receita-por-plano" className="flex flex-col gap-(--e-3)">
         <h2 id="receita-por-plano" className="titulo-secao text-(--tinta)">
           Receita mensal por plano
         </h2>
-        <dl className="grid grid-cols-1 gap-(--e-2) sm:grid-cols-3">
-          {(['essencial', 'equipe', 'escala'] as const).map((p) => (
-            <Cartao
-              key={p}
-              rotulo={catalogo.planos[p].nome}
-              valor={formatarReais(r.receitaPorPlano[p])}
-            />
-          ))}
-        </dl>
+        <Placar
+          colunas={3}
+          casas={(['essencial', 'equipe', 'escala'] as const).map((p) => ({
+            rotulo: catalogo.planos[p].nome,
+            valor: formatarReais(r.receitaPorPlano[p]),
+          }))}
+        />
       </section>
     </section>
   )
@@ -124,12 +125,8 @@ function Lista({
     return <EstadoVazio icone="briefcase" titulo="Nenhuma consultoria neste grupo" />
 
   return (
-    <div className="flex flex-col gap-(--e-2)">
-      <div
-        role="region"
-        aria-label="Consultorias do Financeiro"
-        className="overflow-x-auto rounded-(--raio-painel) border bg-(--folha) shadow-cartao"
-      >
+    <div className={`flex flex-col overflow-hidden ${classePainel}`}>
+      <div role="region" aria-label="Consultorias do Financeiro" className="overflow-x-auto">
         <table className="w-full border-collapse corpo">
           <thead>
             <tr>
@@ -149,13 +146,13 @@ function Lista({
           </thead>
           <tbody>
             {itens.map((l) => (
-              <tr key={l.id} className="last:[&>td]:border-b-0">
-                <td className={`${classeCelula} py-(--e-2)`}>
+              <tr key={l.id} className={classeLinha}>
+                <td className={`${classeCelula} py-(--e-1)`}>
                   <Link to={`/admin/consultorias/${l.id}`} className="corpo-medio">
                     {l.nome}
                   </Link>
                   {detalheDaLinha(l) ? (
-                    <span className="block text-xs">{detalheDaLinha(l)}</span>
+                    <span className="block rotulo numero">{detalheDaLinha(l)}</span>
                   ) : null}
                 </td>
                 <td className={classeCelula}>
@@ -165,12 +162,12 @@ function Lista({
                     </Selo>
                   ) : null}
                 </td>
-                <td className={`${classeCelula} whitespace-nowrap`}>
+                <td className={`${classeCelula} whitespace-nowrap text-(--tinta-2)`}>
                   {l.plano && l.ciclo
                     ? `${catalogo.planos[l.plano].nome} · ${ROTULO_DO_CICLO[l.ciclo]}`
                     : '—'}
                 </td>
-                <td className={`${classeCelula} text-right tabular-nums`}>
+                <td className={`${classeCelula} text-right numero`}>
                   {l.mensalCentavos > 0 ? formatarReais(l.mensalCentavos) : '—'}
                 </td>
               </tr>
@@ -178,16 +175,19 @@ function Lista({
           </tbody>
         </table>
       </div>
-      <p className="text-xs">{plural(total, 'consultoria', 'consultorias')}</p>
-      {consulta.hasNextPage ? (
-        <Botao
-          className="self-start"
-          disabled={consulta.isFetchingNextPage}
-          onClick={() => void consulta.fetchNextPage()}
-        >
-          Mostrar mais consultorias
-        </Botao>
-      ) : null}
+      <div className="flex items-center gap-(--e-2) border-t px-(--e-4) py-(--e-2)">
+        <span className="flex-1 rotulo numero">{plural(total, 'consultoria', 'consultorias')}</span>
+        {consulta.hasNextPage ? (
+          <Botao
+            aparencia="sutil"
+            tamanho="compacto"
+            disabled={consulta.isFetchingNextPage}
+            onClick={() => void consulta.fetchNextPage()}
+          >
+            Mostrar mais consultorias
+          </Botao>
+        ) : null}
+      </div>
     </div>
   )
 }
@@ -240,7 +240,7 @@ export function PaginaCentralFinanceiro() {
                   const novo = grupoOuNulo(evento.target.value)
                   setParametros(novo ? { grupo: novo } : {}, { replace: true })
                 }}
-                className="h-(--controle) w-full rounded-(--raio) border border-(--campo-borda) bg-(--campo) px-(--e-2) corpo text-(--tinta) sm:w-auto"
+                className={`${classeSelecao} max-sm:w-full max-sm:max-w-none`}
               >
                 <option value="">Todas</option>
                 {GRUPOS_FINANCEIROS.map((g) => (
@@ -256,10 +256,5 @@ export function PaginaCentralFinanceiro() {
       </>
     )
 
-  return (
-    <div className="flex flex-col gap-(--e-6)">
-      <Pagina titulo="Financeiro">{null}</Pagina>
-      {conteudo}
-    </div>
-  )
+  return <Pagina titulo="Financeiro">{conteudo}</Pagina>
 }

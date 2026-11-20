@@ -99,9 +99,7 @@ export function PaginaRecuperarSenha() {
 
   return (
     <div className="flex flex-col gap-(--e-6)">
-      <CabecalhoAcesso titulo="Recuperar senha">
-        Informe o e-mail da sua conta. Enviaremos um link para criar uma senha nova.
-      </CabecalhoAcesso>
+      <CabecalhoAcesso titulo="Recuperar senha" />
       {falha ? (
         <MensagemSecao role="alert" tom="atencao">
           {falha}

@@ -93,18 +93,16 @@ export function DialogoAdicional({ recurso, aberto, aoMudar, aoConfirmado }: Pro
       {passagem && catalogo && s?.planoVigente ? (
         <dl className="grid grid-cols-[1fr_auto] gap-x-(--e-4) gap-y-(--e-15)">
           <dt>{nome.titulo}</dt>
-          <dd className="text-right tabular-nums">
+          <dd className="text-right numero">
             {passagem.quantidade} de {passagem.limite} no plano{' '}
             {catalogo.planos[s.planoVigente].nome}
           </dd>
           <dt>Adicionais por mês</dt>
-          <dd className="text-right tabular-nums">{formatarReais(passagem.adicionaisDepois)}</dd>
+          <dd className="text-right numero">{formatarReais(passagem.adicionaisDepois)}</dd>
           <dt className="corpo-medio">
             {s.cicloVigente === 'anual' ? 'Novo valor mensal equivalente' : 'Novo valor mensal'}
           </dt>
-          <dd className="text-right corpo-medio tabular-nums">
-            {formatarReais(passagem.mensalDepois)}
-          </dd>
+          <dd className="text-right corpo-medio numero">{formatarReais(passagem.mensalDepois)}</dd>
         </dl>
       ) : null}
       {confirmar.isError ? (

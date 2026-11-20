@@ -1,7 +1,7 @@
 import { ROTULO_DA_CATEGORIA_DE_EMERGENCIA } from '@gestao-ambiental/domain'
 import type { InfiniteData, UseInfiniteQueryResult } from '@tanstack/react-query'
 
-import { Carregando, EstadoErro, EstadoVazio } from '@/components/estados'
+import { Carregando, EstadoErro } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
 import { Selo } from '@/components/ui/selo'
 import type { AcessoDeSuporte, PaginaDeAcessos } from '@/lib/api/suporte'
@@ -43,29 +43,29 @@ function Item({ acesso, fuso }: { acesso: AcessoDeSuporte; fuso: string }) {
   }
 
   return (
-    <li className="flex flex-col gap-(--e-2) border-b px-(--e-3) py-(--e-3) last:border-b-0">
+    <li className="flex flex-col gap-(--e-2) border-b border-(--regra-leve) px-(--e-4) py-(--e-3) last:border-b-0">
       <span className="flex flex-wrap items-center gap-(--e-15)">
         <Selo tom={emergencia ? 'perigo' : 'andamento'}>
           {emergencia ? 'Emergência' : 'Autorizado'}
         </Selo>
         {acesso.ativo ? <Selo tom="sucesso">Valendo</Selo> : <Selo>Encerrado</Selo>}
       </span>
-      <dl className="grid grid-cols-1 gap-x-(--e-4) gap-y-(--e-15) sm:grid-cols-2">
+      <dl className="grid grid-cols-1 gap-x-(--e-6) gap-y-(--e-2) sm:grid-cols-2 lg:grid-cols-4">
         {linhas.map(([rotulo, valor]) => (
           <div key={rotulo} className="flex min-w-0 flex-col">
             <dt className="rotulo">{rotulo}</dt>
-            <dd className="break-words">{valor}</dd>
+            <dd className="break-words numero">{valor}</dd>
           </div>
         ))}
         {acesso.motivo ? (
-          <div className="flex min-w-0 flex-col sm:col-span-2">
+          <div className="flex min-w-0 flex-col sm:col-span-2 lg:col-span-4">
             <dt className="rotulo">Motivo</dt>
             <dd className="break-words whitespace-pre-wrap">{acesso.motivo}</dd>
           </div>
         ) : null}
-        <div className="flex min-w-0 flex-col sm:col-span-2">
+        <div className="flex min-w-0 flex-col sm:col-span-2 lg:col-span-4">
           <dt className="rotulo">Entradas do suporte</dt>
-          <dd>
+          <dd className="numero">
             {acesso.entradas.length === 0 ? (
               'Nenhuma'
             ) : (
@@ -106,13 +106,13 @@ export function HistoricoDeAcessos({
     )
   }
   const itens = consulta.data.pages.flatMap((p) => p.itens)
-  if (itens.length === 0) return <EstadoVazio icone="clock" titulo="Nenhum acesso do suporte" />
+  if (itens.length === 0) return <p className="corpo text-(--tinta-2)">Nenhum acesso do suporte</p>
 
   return (
     <div className="flex flex-col gap-(--e-2)">
       <ol
         aria-label="Histórico de acessos do suporte"
-        className="flex flex-col rounded-(--raio-painel) border bg-(--folha) shadow-cartao"
+        className="flex flex-col rounded-(--raio-painel) border bg-(--folha)"
       >
         {itens.map((acesso) => (
           <Item key={acesso.id} acesso={acesso} fuso={fuso} />
@@ -120,6 +120,7 @@ export function HistoricoDeAcessos({
       </ol>
       {consulta.hasNextPage ? (
         <Botao
+          aparencia="sutil"
           className="self-start"
           disabled={consulta.isFetchingNextPage}
           onClick={() => void consulta.fetchNextPage()}

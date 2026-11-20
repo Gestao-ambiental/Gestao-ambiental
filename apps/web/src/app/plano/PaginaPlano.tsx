@@ -27,6 +27,7 @@ import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/
 import { Botao } from '@/components/ui/botao'
 import { CampoTexto } from '@/components/ui/campo-texto'
 import { Dialogo } from '@/components/ui/dialogo'
+import { Icone } from '@/components/ui/icone'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { Selo } from '@/components/ui/selo'
 import {
@@ -35,6 +36,7 @@ import {
   assinarPlanoSimulado,
   cancelarPlanoSimulado,
   listarCobrancas,
+  type Cobranca,
   type DadosComerciais,
 } from '@/lib/api/plano'
 import { ehSemPermissao, mensagemDoErro } from '@/lib/erros'
@@ -54,31 +56,41 @@ import {
   useDadosComerciais,
 } from './situacao'
 
+// Quadro (DESIGN.md): cabeçalho em maiúsculas, linhas de 48px com regra leve, número tabular.
 const classeCabecalho =
-  'h-10 border-b px-(--e-2) text-left rotulo whitespace-nowrap first:pl-(--e-3) last:pr-(--e-3)'
+  'h-10 border-b px-(--e-3) text-left rotulo-maiusculo whitespace-nowrap text-(--tinta-2)'
 const classeCelula =
-  'h-11 border-b px-(--e-2) align-middle whitespace-nowrap first:pl-(--e-3) last:pr-(--e-3)'
+  'h-(--linha) border-b border-(--regra-leve) px-(--e-3) align-middle whitespace-nowrap'
 
-function Secao({ titulo, children }: { titulo: string; children: ReactNode }) {
+function Secao({
+  titulo,
+  children,
+  acao,
+}: {
+  titulo: string
+  children: ReactNode
+  acao?: ReactNode
+}) {
   const id = useId()
   return (
-    <section
-      aria-labelledby={id}
-      className="flex flex-col gap-(--e-3) rounded-(--raio-painel) border bg-(--folha) p-(--e-4) shadow-cartao"
-    >
-      <h2 id={id} className="titulo-secao text-(--tinta)">
-        {titulo}
-      </h2>
+    <section aria-labelledby={id} className="flex min-w-0 flex-col gap-(--e-3)">
+      <div className="flex flex-wrap items-center justify-between gap-(--e-2)">
+        <h2 id={id} className="titulo-secao text-(--tinta)">
+          {titulo}
+        </h2>
+        {acao}
+      </div>
       {children}
     </section>
   )
 }
 
-function Linha({ rotulo, children }: { rotulo: string; children: ReactNode }) {
+/** Casa da faixa de uso: valor grande em cima, rótulo embaixo. */
+function Casa({ rotulo, children }: { rotulo: string; children: ReactNode }) {
   return (
-    <div className="flex flex-wrap items-baseline justify-between gap-x-(--e-4) gap-y-(--e-05) border-b py-(--e-15) last:border-b-0">
-      <dt className="rotulo">{rotulo}</dt>
-      <dd className="text-right tabular-nums">{children}</dd>
+    <div className="flex min-w-0 flex-col gap-(--e-05) px-(--e-5) py-(--e-4)">
+      <dt className="order-2 rotulo">{rotulo}</dt>
+      <dd className="order-1 numero-contagem text-(--tinta)">{children}</dd>
     </div>
   )
 }
@@ -109,56 +121,66 @@ function SituacaoEUso({
     s.limites,
     catalogo,
   )
+  const descricao =
+    s.situacao === 'contrato' && plano
+      ? `${catalogo.planos[plano].nome} por contrato · ${
+          dados.contrato?.ate ? `até ${formatarDataCivil(dados.contrato.ate)}` : 'sem prazo'
+        }`
+      : plano && ciclo
+        ? `${catalogo.planos[plano].nome} · ${ROTULO_DO_CICLO[ciclo]}${a?.forma ? ` · ${ROTULO_DA_FORMA[a.forma]}` : ''}`
+        : 'Sem plano'
+  const mudanca =
+    a?.mudancaEm && a.mudancaEm > dados.hoje && (a.planoAgendado || a.cicloAgendado)
+      ? `${catalogo.planos[a.planoAgendado ?? a.plano].nome} · ${ROTULO_DO_CICLO[a.cicloAgendado ?? a.ciclo]} a partir de ${formatarDataCivil(a.mudancaEm)}`
+      : null
+
   return (
-    <Secao titulo="Situação">
-      <div>
-        <Selo tom={TOM_DA_SITUACAO_COMERCIAL[s.situacao]}>{rotuloDaSituacao(s)}</Selo>
-      </div>
-      <dl className="flex flex-col">
-        <Linha rotulo="Plano">
-          {s.situacao === 'contrato' && plano
-            ? `${catalogo.planos[plano].nome} por contrato · ${
-                dados.contrato?.ate ? `até ${formatarDataCivil(dados.contrato.ate)}` : 'sem prazo'
-              }`
-            : plano && ciclo
-              ? `${catalogo.planos[plano].nome} · ${ROTULO_DO_CICLO[ciclo]}${a?.forma ? ` · ${ROTULO_DA_FORMA[a.forma]}` : ''}`
-              : 'Sem plano'}
-        </Linha>
-        {a?.mudancaEm && a.mudancaEm > dados.hoje && (a.planoAgendado || a.cicloAgendado) ? (
-          <Linha rotulo="Mudança agendada">
-            {catalogo.planos[a.planoAgendado ?? a.plano].nome} ·{' '}
-            {ROTULO_DO_CICLO[a.cicloAgendado ?? a.ciclo]} a partir de{' '}
-            {formatarDataCivil(a.mudancaEm)}
-          </Linha>
+    <section
+      aria-label="Plano atual"
+      className="flex flex-col overflow-hidden rounded-(--raio-painel) border bg-(--folha)"
+    >
+      <div className="flex flex-col gap-(--e-2) border-b px-(--e-5) py-(--e-4)">
+        <span className="rotulo">Plano atual</span>
+        <div className="flex flex-wrap items-center gap-x-(--e-3) gap-y-(--e-1)">
+          <h2 className="titulo-painel text-(--tinta) numero">{descricao}</h2>
+          <Selo tom={TOM_DA_SITUACAO_COMERCIAL[s.situacao]}>{rotuloDaSituacao(s)}</Selo>
+        </div>
+        {mudanca ? (
+          <p className="corpo numero">
+            <span className="corpo-medio">Mudança agendada:</span> {mudanca}
+          </p>
         ) : null}
         {a?.validaAte ? (
-          <Linha rotulo="Assinatura cancelada">Vale até {formatarDataCivil(a.validaAte)}</Linha>
+          <p className="corpo numero text-(--alerta-texto)">
+            <span className="corpo-medio">Assinatura cancelada:</span> vale até{' '}
+            {formatarDataCivil(a.validaAte)}
+          </p>
         ) : null}
-        {dados.proximoVencimento && !a?.validaAte ? (
-          <Linha rotulo="Próximo vencimento">{formatarDataCivil(dados.proximoVencimento)}</Linha>
-        ) : null}
-        <Linha rotulo="Pessoas">
+      </div>
+      <dl className="grid grid-cols-2 divide-x divide-y divide-(--regra-leve) md:flex md:divide-y-0 [&>*]:md:flex-1">
+        <Casa rotulo="Pessoas">
           {s.limites
             ? `${String(dados.uso.pessoas)} de ${String(s.limites.pessoas)}`
             : String(dados.uso.pessoas)}
-        </Linha>
-        <Linha rotulo="Empreendimentos ativos">
+        </Casa>
+        <Casa rotulo="Empreendimentos ativos">
           {s.limites
             ? `${String(dados.uso.empreendimentos)} de ${String(s.limites.empreendimentos)}`
             : String(dados.uso.empreendimentos)}
-        </Linha>
+        </Casa>
+        {dados.proximoVencimento && !a?.validaAte ? (
+          <Casa rotulo="Próximo vencimento">{formatarDataCivil(dados.proximoVencimento)}</Casa>
+        ) : null}
         {s.limites ? (
-          <Linha rotulo="Adicionais por mês">{formatarReais(adicionais.valorCentavos)}</Linha>
+          <Casa rotulo="Adicionais por mês">{formatarReais(adicionais.valorCentavos)}</Casa>
         ) : null}
         {plano && ciclo && s.limites ? (
-          <Linha rotulo={ciclo === 'anual' ? 'Valor mensal equivalente' : 'Valor mensal'}>
-            <span className="corpo-medio">
-              {formatarReais(equivalenteMensal(plano, ciclo, catalogo) + adicionais.valorCentavos)}
-            </span>
-          </Linha>
+          <Casa rotulo={ciclo === 'anual' ? 'Valor mensal equivalente' : 'Valor mensal'}>
+            {formatarReais(equivalenteMensal(plano, ciclo, catalogo) + adicionais.valorCentavos)}
+          </Casa>
         ) : null}
       </dl>
-    </Secao>
+    </section>
   )
 }
 
@@ -166,6 +188,7 @@ function OpcaoDePlano({
   plano,
   ciclo,
   escolhido,
+  atual,
   aoEscolher,
   nome,
   catalogo,
@@ -173,43 +196,90 @@ function OpcaoDePlano({
   plano: CodigoPlano
   ciclo: CicloDoPlano
   escolhido: boolean
+  /** É o plano assinado hoje. */
+  atual: boolean
   aoEscolher: () => void
   nome: string
   catalogo: CatalogoComercial
 }) {
   const p = catalogo.planos[plano]
+  const inclui: { texto: string; tem: boolean }[] = [
+    {
+      texto: p.orcamentos ? 'Orçamentos, aprovação e tarefas' : 'Sem orçamentos',
+      tem: p.orcamentos,
+    },
+    { texto: p.ia ? 'Leitura da licença por IA' : 'Sem leitura por IA', tem: p.ia },
+    ...RECURSOS_DO_PLANO.filter((r) => p.recursos.includes(r)).map((r) => ({
+      texto: ROTULO_DO_RECURSO[r],
+      tem: true,
+    })),
+  ]
+  // Seleção pela borda verde e pelo sinal (marca lima com check), sem sombra.
   return (
     <label
       className={cn(
-        'flex cursor-pointer flex-col gap-(--e-1) rounded-(--raio-painel) border p-(--e-3) transicao-estado hover:bg-(--toque) has-focus-visible:outline-2 has-focus-visible:outline-(--foco)',
-        escolhido && 'border-(--acao) bg-(--escolha)',
+        'relative flex cursor-pointer flex-col gap-(--e-3) rounded-(--raio-painel) border bg-(--folha) p-(--e-4) transicao-estado hover:border-(--regra-forte)',
+        'has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-(--foco)',
+        escolhido &&
+          'border-(--marca-linha) shadow-[inset_0_0_0_1px_var(--marca-linha)] hover:border-(--marca-linha)',
       )}
     >
-      <span className="flex items-center gap-(--e-2)">
-        <input
-          type="radio"
-          name={nome}
-          value={plano}
-          checked={escolhido}
-          onChange={aoEscolher}
-          className="accent-(--acao)"
-        />
-        <span className="corpo-medio">{p.nome}</span>
-      </span>
-      <span className="tabular-nums">{valorDoPlanoNoCiclo(plano, ciclo, catalogo)}</span>
-      {ciclo === 'anual' ? (
-        <span className="tabular-nums">
-          {catalogo.configuracao.mensalidadesNoAnual} mensalidades, pago de uma vez
+      <input
+        type="radio"
+        name={nome}
+        value={plano}
+        checked={escolhido}
+        onChange={aoEscolher}
+        className="sr-only"
+      />
+      <span className="flex items-start justify-between gap-(--e-2)">
+        <span className="flex flex-col gap-(--e-05)">
+          <span className="flex items-center gap-(--e-2)">
+            <span className="titulo-secao text-(--tinta)">{p.nome}</span>
+            {atual ? <Selo tom="sucesso">Atual</Selo> : null}
+          </span>
+          <span className="rotulo numero">
+            {p.pessoas} pessoas · {p.empreendimentos} empreendimentos ativos
+          </span>
         </span>
-      ) : null}
-      <span>
-        {p.pessoas} pessoas · {p.empreendimentos} empreendimentos ativos
+        {escolhido ? (
+          <span
+            aria-hidden
+            className="inline-flex size-6 shrink-0 items-center justify-center rounded-(--raio-mini) bg-(--sinal) text-(--sinal-texto)"
+          >
+            <Icone nome="check" tamanho={14} />
+          </span>
+        ) : null}
       </span>
-      <ul aria-label={`O que o ${p.nome} inclui`} className="flex flex-col gap-(--e-05)">
-        <li>{p.orcamentos ? 'Orçamentos, aprovação e tarefas' : 'Sem orçamentos'}</li>
-        <li>{p.ia ? 'Leitura da licença por IA' : 'Sem leitura por IA'}</li>
-        {RECURSOS_DO_PLANO.filter((r) => p.recursos.includes(r)).map((r) => (
-          <li key={r}>{ROTULO_DO_RECURSO[r]}</li>
+      <span className="flex flex-col gap-(--e-05)">
+        <span className="titulo-painel text-(--tinta) numero">
+          {valorDoPlanoNoCiclo(plano, ciclo, catalogo)}
+        </span>
+        {ciclo === 'anual' ? (
+          <span className="rotulo numero">
+            {catalogo.configuracao.mensalidadesNoAnual} mensalidades, pago de uma vez
+          </span>
+        ) : null}
+      </span>
+      <ul
+        aria-label={`O que o ${p.nome} inclui`}
+        className="flex flex-col gap-(--e-1) border-t border-(--regra-leve) pt-(--e-3)"
+      >
+        {inclui.map((item) => (
+          <li
+            key={item.texto}
+            className={cn(
+              'flex items-start gap-(--e-2) corpo',
+              item.tem ? 'text-(--tinta)' : 'text-(--tinta-3)',
+            )}
+          >
+            <Icone
+              nome={item.tem ? 'check' : 'minus'}
+              tamanho={16}
+              className={cn('mt-0.5', item.tem ? 'text-(--ok-texto)' : 'text-(--tinta-3)')}
+            />
+            {item.texto}
+          </li>
         ))}
       </ul>
     </label>
@@ -290,13 +360,16 @@ function EscolhaDePlano({
   const erro = assinar.error ?? trocar.error
 
   return (
-    <Secao titulo={ativa ? 'Trocar plano' : 'Escolher plano'}>
-      <form noValidate onSubmit={enviar} className="flex flex-col gap-(--e-4)">
-        <fieldset className="flex flex-wrap gap-(--e-2)">
-          <legend className="mb-(--e-15) rotulo">Ciclo</legend>
+    <Secao
+      titulo={ativa ? 'Trocar plano' : 'Escolher plano'}
+      acao={
+        <fieldset className="flex gap-(--e-1) rounded-(--raio) border border-(--regra-forte) bg-(--folha) p-(--e-05)">
+          <legend className="sr-only">Ciclo</legend>
           {(['mensal', 'anual'] as const).map((c) => (
             <Botao
               key={c}
+              aparencia="sutil"
+              tamanho="compacto"
               selecionado={ciclo === c}
               onClick={() => {
                 setCiclo(c)
@@ -306,9 +379,11 @@ function EscolhaDePlano({
             </Botao>
           ))}
         </fieldset>
-
-        <fieldset className="grid grid-cols-1 gap-(--e-2) md:grid-cols-3">
-          <legend className="mb-(--e-15) rotulo">Plano</legend>
+      }
+    >
+      <form noValidate onSubmit={enviar} className="flex min-w-0 flex-col gap-(--e-5)">
+        <fieldset className="grid min-w-0 grid-cols-1 gap-(--e-3) md:grid-cols-3">
+          <legend className="sr-only">Plano</legend>
           {CODIGOS_DE_PLANO.map((p) => (
             <OpcaoDePlano
               key={p}
@@ -317,6 +392,7 @@ function EscolhaDePlano({
               nome={nomeDoGrupo}
               catalogo={catalogo}
               escolhido={plano === p}
+              atual={ativa && dados.assinatura?.plano === p}
               aoEscolher={() => {
                 setPlano(p)
               }}
@@ -324,10 +400,13 @@ function EscolhaDePlano({
           ))}
         </fieldset>
 
-        <fieldset className="flex flex-wrap gap-(--e-4)">
-          <legend className="mb-(--e-15) rotulo">Forma de pagamento</legend>
+        <fieldset className="flex min-w-0 flex-wrap items-center gap-x-(--e-5) gap-y-(--e-2)">
+          <legend className="mb-(--e-2) rotulo">Forma de pagamento</legend>
           {(['pix', 'cartao'] as const).map((f) => (
-            <label key={f} className="flex items-center gap-(--e-15)">
+            <label
+              key={f}
+              className="flex min-h-(--controle) cursor-pointer items-center gap-(--e-2) corpo max-md:min-h-(--controle-toque)"
+            >
               <input
                 type="radio"
                 name={nomeDaForma}
@@ -336,7 +415,7 @@ function EscolhaDePlano({
                 onChange={() => {
                   setForma(f)
                 }}
-                className="accent-(--acao)"
+                className="size-4 accent-(--acao)"
               />
               {ROTULO_DA_FORMA[f]}
             </label>
@@ -395,10 +474,7 @@ function EscolhaDePlano({
           </MensagemSecao>
         ) : null}
 
-        <div className="flex flex-wrap gap-(--e-2)">
-          <Botao type="submit" aparencia="primario" disabled={ocupado}>
-            {ativa ? 'Trocar plano' : 'Assinar e pagar'}
-          </Botao>
+        <div className="flex flex-wrap items-center justify-end gap-(--e-2) border-t border-(--regra) pt-(--e-4) max-md:flex-col-reverse max-md:items-stretch">
           {ativa ? (
             <Botao
               aparencia="sutil"
@@ -410,6 +486,9 @@ function EscolhaDePlano({
               Cancelar assinatura
             </Botao>
           ) : null}
+          <Botao type="submit" aparencia="primario" disabled={ocupado}>
+            {ativa ? 'Trocar plano' : 'Assinar e pagar'}
+          </Botao>
         </div>
       </form>
 
@@ -458,6 +537,24 @@ function EscolhaDePlano({
   )
 }
 
+function SeloCobranca({ situacao }: { situacao: Cobranca['situacao'] }) {
+  return (
+    <Selo
+      tom={
+        situacao === 'paga'
+          ? 'sucesso'
+          : situacao === 'vencida'
+            ? 'perigo'
+            : situacao === 'pendente'
+              ? 'andamento'
+              : 'padrao'
+      }
+    >
+      {ROTULO_DA_COBRANCA[situacao]}
+    </Selo>
+  )
+}
+
 function Cobrancas() {
   const { atual, suporte } = useConsultoria()
   const consulta = useInfiniteQuery({
@@ -491,7 +588,7 @@ function Cobrancas() {
         <div
           role="region"
           aria-label="Cobranças"
-          className="overflow-x-auto rounded-(--raio-painel) border"
+          className="overflow-x-auto rounded-(--raio-painel) border bg-(--folha) max-md:hidden"
         >
           <table className="w-full border-collapse corpo">
             <thead>
@@ -518,33 +615,26 @@ function Cobrancas() {
             </thead>
             <tbody>
               {itens.map((c) => (
-                <tr key={c.id} className="last:[&>td]:border-b-0">
-                  <td className={classeCelula}>{formatarDataCivil(c.vencimento as DataCivil)}</td>
+                <tr
+                  key={c.id}
+                  className="transicao-estado hover:bg-(--toque) last:[&>td]:border-b-0"
+                >
+                  <td className={`${classeCelula} corpo-medio numero`}>
+                    {formatarDataCivil(c.vencimento as DataCivil)}
+                  </td>
                   <td className={classeCelula}>
                     {c.tipo === 'adicionais' ? 'Adicionais' : 'Plano'}
                   </td>
-                  <td className={`${classeCelula} text-right tabular-nums`}>
+                  <td className={`${classeCelula} text-right numero`}>
                     {formatarReais(c.valorCentavos)}
                   </td>
                   <td className={classeCelula}>
-                    <Selo
-                      tom={
-                        c.situacao === 'paga'
-                          ? 'sucesso'
-                          : c.situacao === 'vencida'
-                            ? 'perigo'
-                            : c.situacao === 'pendente'
-                              ? 'andamento'
-                              : 'padrao'
-                      }
-                    >
-                      {ROTULO_DA_COBRANCA[c.situacao]}
-                    </Selo>
+                    <SeloCobranca situacao={c.situacao} />
                   </td>
-                  <td className={classeCelula}>
+                  <td className={`${classeCelula} text-(--tinta-2) numero`}>
                     {c.pagoEm ? formatarDataCivil(c.pagoEm as DataCivil) : '—'}
                   </td>
-                  <td className={classeCelula}>
+                  <td className={`${classeCelula} text-right`}>
                     {!suporte && (c.situacao === 'pendente' || c.situacao === 'vencida') ? (
                       <BotaoPagarSimulado cobranca={c} />
                     ) : null}
@@ -554,8 +644,37 @@ function Cobrancas() {
             </tbody>
           </table>
         </div>
+        <ul
+          aria-label="Cobranças"
+          className="flex flex-col rounded-(--raio-painel) border bg-(--folha) md:hidden"
+        >
+          {itens.map((c) => (
+            <li
+              key={c.id}
+              className="flex items-center gap-(--e-3) border-b border-(--regra-leve) px-(--e-4) py-(--e-3) last:border-b-0"
+            >
+              <span className="flex min-w-0 flex-1 flex-col gap-(--e-05)">
+                <span className="flex flex-wrap items-center justify-between gap-x-(--e-2)">
+                  <span className="corpo-medio numero">
+                    {formatarDataCivil(c.vencimento as DataCivil)}
+                  </span>
+                  <span className="corpo-medio numero">{formatarReais(c.valorCentavos)}</span>
+                </span>
+                <span className="flex flex-wrap items-center gap-x-(--e-2) rotulo numero">
+                  <SeloCobranca situacao={c.situacao} />
+                  {c.tipo === 'adicionais' ? 'Adicionais' : 'Plano'}
+                  {c.pagoEm ? ` · paga em ${formatarDataCivil(c.pagoEm as DataCivil)}` : ''}
+                </span>
+              </span>
+              {!suporte && (c.situacao === 'pendente' || c.situacao === 'vencida') ? (
+                <BotaoPagarSimulado cobranca={c} />
+              ) : null}
+            </li>
+          ))}
+        </ul>
         {consulta.hasNextPage ? (
           <Botao
+            aparencia="sutil"
             className="self-start"
             disabled={consulta.isFetchingNextPage}
             onClick={() => void consulta.fetchNextPage()}
@@ -601,7 +720,7 @@ export function PaginaPlano() {
   else {
     const dados = consulta.data
     conteudo = (
-      <div className="flex flex-col gap-(--e-4)">
+      <div className="flex flex-col gap-(--e-8)">
         <SituacaoEUso dados={dados} catalogo={catalogo.data} />
         {dados.interna || dados.situacao.situacao === 'contrato' || suporte ? null : (
           <EscolhaDePlano dados={dados} catalogo={catalogo.data} />

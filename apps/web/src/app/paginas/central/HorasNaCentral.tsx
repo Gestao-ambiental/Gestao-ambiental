@@ -9,6 +9,7 @@ import { enviarResumoDeTeste, obterHorasPoupadas } from '@/lib/api/indicadores-d
 import { ehDoisFatoresNecessarios, ehSemPermissao } from '@/lib/erros'
 
 import { RelerDoisFatores } from './ExigeDoisFatores'
+import { Placar } from './Placar'
 
 const decimal = new Intl.NumberFormat('pt-BR', {
   minimumFractionDigits: 1,
@@ -50,7 +51,7 @@ export function HorasDevolvidas({ consultoriaId }: { consultoriaId: string | nul
   } else {
     const [atual, anterior] = consulta.data
     if (!atual || atual.consultoriasComDados === 0) {
-      conteudo = <p className="corpo text-(--tinta)">Juntando dados</p>
+      conteudo = <p className="corpo text-(--tinta-2)">Juntando dados</p>
     } else {
       const cartoes = [
         {
@@ -72,27 +73,16 @@ export function HorasDevolvidas({ consultoriaId }: { consultoriaId: string | nul
         },
       ]
       conteudo = (
-        <dl className="grid grid-cols-1 gap-(--e-2) sm:grid-cols-2 lg:grid-cols-4">
-          {cartoes.map((c) => (
-            <div
-              key={c.rotulo}
-              className="flex min-w-0 flex-col gap-(--e-05) rounded-(--raio-painel) border bg-(--folha) p-(--e-3) shadow-cartao"
-            >
-              <dt className="rotulo">{c.rotulo}</dt>
-              <dd className="flex flex-wrap items-baseline gap-x-(--e-2)">
-                <span className="titulo-secao text-(--tinta) tabular-nums">{c.valor}</span>
-                {c.variacao ? (
-                  <span
-                    className="corpo text-(--tinta) tabular-nums"
-                    aria-label={`${c.variacao} contra o mês anterior`}
-                  >
-                    {c.variacao}
-                  </span>
-                ) : null}
-              </dd>
-            </div>
-          ))}
-        </dl>
+        <Placar
+          colunas={4}
+          casas={cartoes.map((c) => ({
+            rotulo: c.rotulo,
+            valor: c.valor,
+            detalhe: c.variacao ? (
+              <span aria-label={`${c.variacao} contra o mês anterior`}>{c.variacao} no mês</span>
+            ) : undefined,
+          }))}
+        />
       )
       if (atual.estimado || atual.consultoriasJuntando > 0) {
         conteudo = (
@@ -111,7 +101,7 @@ export function HorasDevolvidas({ consultoriaId }: { consultoriaId: string | nul
   }
 
   return (
-    <section aria-label="Horas devolvidas" className="flex flex-col gap-(--e-15)">
+    <section aria-label="Horas devolvidas" className="flex flex-col gap-(--e-2)">
       <h3 className="corpo-medio text-(--tinta)">Horas devolvidas</h3>
       {conteudo}
     </section>

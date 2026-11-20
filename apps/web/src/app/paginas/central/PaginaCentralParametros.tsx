@@ -24,8 +24,9 @@ import { Pagina } from '@/app/paginas/Pagina'
 import { reaisDigitados } from '@/app/paginas/orcamentos/comum'
 import { CHAVE_CATALOGO_COMERCIAL, useCatalogoComercial } from '@/app/plano/catalogo'
 import { CHAVE_SITUACAO_COMERCIAL } from '@/app/plano/situacao'
-import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/estados'
+import { Carregando, EstadoErro, SemPermissao } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
+import { classeCampo } from '@/components/ui/estilos-campo'
 import { CampoData } from '@/components/ui/campo-data'
 import { CampoTexto } from '@/components/ui/campo-texto'
 import { Dialogo } from '@/components/ui/dialogo'
@@ -42,7 +43,7 @@ import {
 } from '@/lib/api/parametros'
 
 import { RelerDoisFatores } from './ExigeDoisFatores'
-import { classeCabecalho, classeCampo, classeCelula } from './comum'
+import { classeCabecalho, classeCelula, classeLinha, classePainel } from './comum'
 
 /** Fuso da plataforma (o histórico mostra a hora de quem opera, não de uma consultoria). */
 const FUSO_DA_PLATAFORMA = 'America/Sao_Paulo'
@@ -267,7 +268,7 @@ function ListaDeMudancas({ mudancas }: { mudancas: Mudanca[] }) {
   return (
     <ul className="flex flex-col gap-(--e-05)">
       {mudancas.map((m) => (
-        <li key={m.campo} className="tabular-nums">
+        <li key={m.campo} className="numero">
           {m.campo}: {m.antes} → {m.depois}
         </li>
       ))}
@@ -279,7 +280,7 @@ function ListaDeMudancas({ mudancas }: { mudancas: Mudanca[] }) {
 // Formulário
 // ---------------------------------------------------------------------------
 
-const classeCampoTabela = `${classeCampo} h-(--controle) min-w-24`
+const classeCampoTabela = `${classeCampo} min-w-24`
 
 function Formulario({
   catalogo,
@@ -352,7 +353,7 @@ function Formulario({
         <div
           role="region"
           aria-label="Planos"
-          className="overflow-x-auto rounded-(--raio-painel) border bg-(--folha) shadow-cartao"
+          className="overflow-x-auto rounded-(--raio-painel) border bg-(--folha)"
         >
           <table className="w-full border-collapse corpo">
             <thead>
@@ -390,7 +391,7 @@ function Formulario({
                 const p = rascunho.planos[codigo]
                 const nome = catalogo.planos[codigo].nome
                 return (
-                  <tr key={codigo} className="last:[&>td]:border-b-0">
+                  <tr key={codigo} className={classeLinha}>
                     <td className={`${classeCelula} py-(--e-15)`}>
                       <input
                         aria-label={`Nome do plano ${nome}`}
@@ -407,13 +408,13 @@ function Formulario({
                         aria-label={`Preço mensal do ${nome}`}
                         inputMode="decimal"
                         value={p.mensal}
-                        className={`${classeCampoTabela} text-right tabular-nums`}
+                        className={`${classeCampoTabela} text-right numero`}
                         onChange={(e) => {
                           mudarPlano(codigo, { mensal: reaisDigitados(e) })
                         }}
                       />
                     </td>
-                    <td className={`${classeCelula} text-right whitespace-nowrap tabular-nums`}>
+                    <td className={`${classeCelula} text-right whitespace-nowrap numero`}>
                       {novo ? formatarReais(valorDoCiclo(codigo, 'anual', novo)) : '—'}
                     </td>
                     <td className={classeCelula}>
@@ -421,7 +422,7 @@ function Formulario({
                         aria-label={`Pessoas no ${nome}`}
                         inputMode="numeric"
                         value={p.pessoas}
-                        className={`${classeCampoTabela} tabular-nums`}
+                        className={`${classeCampoTabela} numero`}
                         onChange={(e) => {
                           mudarPlano(codigo, { pessoas: soDigitos(e.target.value) })
                         }}
@@ -432,7 +433,7 @@ function Formulario({
                         aria-label={`Empreendimentos no ${nome}`}
                         inputMode="numeric"
                         value={p.empreendimentos}
-                        className={`${classeCampoTabela} tabular-nums`}
+                        className={`${classeCampoTabela} numero`}
                         onChange={(e) => {
                           mudarPlano(codigo, { empreendimentos: soDigitos(e.target.value) })
                         }}
@@ -443,7 +444,7 @@ function Formulario({
                         <input
                           type="checkbox"
                           checked={p.orcamentos}
-                          className="accent-(--acao)"
+                          className="size-4 cursor-pointer accent-(--acao)"
                           aria-label={`Orçamentos no ${nome}`}
                           onChange={(e) => {
                             mudarPlano(codigo, { orcamentos: e.target.checked })
@@ -457,7 +458,7 @@ function Formulario({
                         <input
                           type="checkbox"
                           checked={p.ia}
-                          className="accent-(--acao)"
+                          className="size-4 cursor-pointer accent-(--acao)"
                           aria-label={`IA no ${nome}`}
                           onChange={(e) => {
                             mudarPlano(codigo, { ia: e.target.checked })
@@ -474,7 +475,7 @@ function Formulario({
                             <input
                               type="checkbox"
                               checked={ligado}
-                              className="accent-(--acao)"
+                              className="size-4 cursor-pointer accent-(--acao)"
                               aria-label={`${ROTULO_DO_RECURSO[r]} no ${nome}`}
                               onChange={(e) => {
                                 mudarPlano(codigo, {
@@ -497,10 +498,7 @@ function Formulario({
         </div>
       </section>
 
-      <section
-        aria-labelledby="parametros-regras"
-        className="flex flex-col gap-(--e-3) rounded-(--raio-painel) border bg-(--folha) p-(--e-4) shadow-cartao"
-      >
+      <section aria-labelledby="parametros-regras" className="flex flex-col gap-(--e-3)">
         <h2 id="parametros-regras" className="titulo-secao text-(--tinta)">
           Regras
         </h2>
@@ -558,7 +556,7 @@ function Formulario({
           Parâmetros salvos.
         </MensagemSecao>
       ) : null}
-      <div className="flex flex-wrap gap-(--e-2)">
+      <div className="flex flex-wrap justify-end gap-(--e-2) border-t pt-(--e-4)">
         <Botao
           aparencia="primario"
           disabled={novo !== null && grupos.length === 0}
@@ -658,22 +656,24 @@ function Historico({
 }) {
   const itens = consulta.data?.pages.flatMap((p) => p.itens) ?? []
   return (
-    <section aria-labelledby="parametros-historico" className="flex flex-col gap-(--e-2)">
+    <section aria-labelledby="parametros-historico" className="flex flex-col gap-(--e-3)">
       <h2 id="parametros-historico" className="titulo-secao text-(--tinta)">
         Histórico
       </h2>
       {itens.length === 0 ? (
-        <EstadoVazio icone="clock" titulo="Nenhuma mudança" />
+        <p className="corpo text-(--tinta-2)">Nenhuma mudança</p>
       ) : (
-        <ul
-          aria-label="Histórico de parâmetros"
-          className="flex flex-col rounded-(--raio-painel) border bg-(--folha) shadow-cartao"
-        >
+        <ul aria-label="Histórico de parâmetros" className={`flex flex-col ${classePainel}`}>
           {itens.map((h) => (
-            <li key={h.id} className="flex flex-col gap-(--e-1) border-b p-(--e-3) last:border-b-0">
-              <span className="corpo-medio text-(--tinta)">
-                {rotuloDoAlvo(h.alvo, catalogo)} ·{' '}
-                {formatarInstanteComHora(h.alteradaEm, FUSO_DA_PLATAFORMA)} · {h.alteradaPorNome}
+            <li
+              key={h.id}
+              className="flex flex-col gap-(--e-1) border-b border-(--regra-leve) px-(--e-4) py-(--e-3) last:border-b-0"
+            >
+              <span className="flex flex-wrap items-baseline gap-x-(--e-2)">
+                <span className="corpo-medio text-(--tinta)">{rotuloDoAlvo(h.alvo, catalogo)}</span>
+                <span className="rotulo numero">
+                  {formatarInstanteComHora(h.alteradaEm, FUSO_DA_PLATAFORMA)} · {h.alteradaPorNome}
+                </span>
               </span>
               <ListaDeMudancas mudancas={mudancasEntre(h.antes, h.depois)} />
               <span>Motivo: {h.motivo}</span>
@@ -683,6 +683,7 @@ function Historico({
       )}
       {consulta.hasNextPage ? (
         <Botao
+          aparencia="sutil"
           className="self-start"
           disabled={consulta.isFetchingNextPage}
           onClick={() => void consulta.fetchNextPage()}
@@ -750,10 +751,5 @@ export function PaginaCentralParametros() {
       </>
     )
 
-  return (
-    <div className="flex flex-col gap-(--e-6)">
-      <Pagina titulo="Planos e parâmetros">{null}</Pagina>
-      {conteudo}
-    </div>
-  )
+  return <Pagina titulo="Planos e parâmetros">{conteudo}</Pagina>
 }

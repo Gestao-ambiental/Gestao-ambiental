@@ -99,8 +99,9 @@ describe('acesso de suporte: Gestão na Equipe (ADR-0025)', () => {
     renderizarApp('/configuracoes/equipe')
 
     const secao = await screen.findByRole('region', { name: 'Acessos do suporte' })
-    expect(await within(secao).findByText('Sem autorização')).toBeInTheDocument()
-    expect(within(secao).getByText('Nenhum acesso do suporte')).toBeInTheDocument()
+    // Um vazio só por seção: sem acesso nenhum, não repete "Sem autorização".
+    expect(await within(secao).findByText('Nenhum acesso do suporte')).toBeInTheDocument()
+    expect(within(secao).queryByText('Sem autorização')).not.toBeInTheDocument()
 
     await usuario.click(within(secao).getByRole('button', { name: 'Permitir acesso do suporte' }))
     const dialogo = await screen.findByRole('dialog', { name: 'Permitir acesso do suporte' })
@@ -452,7 +453,7 @@ describe('acesso de suporte: emergência pela central', () => {
     const usuario = userEvent.setup()
     const resultado = renderizarApp('/admin/consultorias/c-b')
     const secao = await screen.findByRole('region', { name: 'Acesso de suporte' })
-    expect(await within(secao).findByText('Sem autorização')).toBeInTheDocument()
+    expect(await within(secao).findByText('Nenhum acesso do suporte')).toBeInTheDocument()
     await usuario.click(within(secao).getByRole('button', { name: 'Acesso de emergência' }))
     const dialogo = await screen.findByRole('dialog', { name: 'Acesso de emergência' })
     return { usuario, dialogo, ...resultado }
