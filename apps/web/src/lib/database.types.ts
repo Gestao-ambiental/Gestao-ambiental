@@ -1793,6 +1793,11 @@ isOneToOne: false
               "categoria": string,"fim_previsto": string,"id": string,"inicio": string,"motivo": string,"operador_nome": string
             }[]
                            },
+"buscar_no_grama":
+{ Args: { "p_consultoria_id": string,"p_termo": string }; Returns: {
+              "detalhe": string,"id": string,"referencia_id": string,"tipo": string,"titulo": string
+            }[]
+                           },
 "cadastrar_empreendimento_do_prospecto":
 { Args: { "p_empreendimento_id": string,"p_orcamento_id": string }; Returns: string
                            },
