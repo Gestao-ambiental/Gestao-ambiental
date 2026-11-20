@@ -602,3 +602,15 @@ export type { TitularDaLicenca } from './titular-da-licenca'
 export { idsRenovados, rotuloDaSituacaoDoAlvara, situacaoDoAlvara } from './alvara'
 export type { SituacaoDoAlvara } from './alvara'
 export { OBJETO_INICIAL, objetoAindaAutomatico, objetoAutomatico } from './objeto-do-orcamento'
+
+export {
+  HORIZONTES_DA_RENOVACAO,
+  HORIZONTE_PADRAO_DA_RENOVACAO,
+  dentroDoHorizonte,
+  ehHorizonteDaRenovacao,
+  fimDoHorizonte,
+  objetoDaRenovacao,
+  orgaoEhIma,
+  taxaSugeridaDaRenovacao,
+} from './renovacao-orcamento'
+export type { AtividadeDaLicenca, HorizonteDaRenovacao } from './renovacao-orcamento'

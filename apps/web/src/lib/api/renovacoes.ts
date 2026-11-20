@@ -2,9 +2,15 @@
 // (só a Gestão muda a antecedência e registra o protocolo). O comprovante vai direto ao Storage e
 // vira versão imutável pela RPC.
 
-import type { DataCivil } from '@gestao-ambiental/domain'
+import {
+  HORIZONTE_PADRAO_DA_RENOVACAO,
+  numeroDoOrcamento,
+  type DataCivil,
+  type HorizonteDaRenovacao,
+} from '@gestao-ambiental/domain'
 
 import { EXTENSOES, TIPOS_DE_EVIDENCIA, sha256 } from '@/lib/api/ocorrencias'
+import type { SituacaoOrcamento } from '@/lib/api/orcamentos'
 import { obterSupabase } from '@/lib/supabase'
 
 export const TAMANHO_PAGINA_ACOMPANHAMENTOS = 20
@@ -23,6 +29,15 @@ export interface Pagina<T> {
 // Renovações no radar
 // ---------------------------------------------------------------------------
 
+/** Orçamento vivo (fora da lixeira e não recusado) ligado à licença (ADR-0044). */
+export interface OrcamentoDaRenovacao {
+  /** Nulo para a Equipe. */
+  id: string | null
+  /** numeroDoOrcamento(ano, sequencia); nulo para a Equipe. */
+  numero: string | null
+  situacao: SituacaoOrcamento
+}
+
 export interface Renovacao {
   instrumentoId: string
   licenca: string
@@ -40,14 +55,25 @@ export interface Renovacao {
   hoje: DataCivil
 }
 
+/** Renovação no radar, com o orçamento ligado à licença (nulo = sem orçamento vivo). */
+export interface RenovacaoNoRadar extends Renovacao {
+  orcamento: OrcamentoDaRenovacao | null
+}
+
+/**
+ * LAOs no radar cuja validade cai até o fim do horizonte (vencidas e protocoladas entram).
+ * Horizonte nulo: todas, como antes do ADR-0044.
+ */
 export async function listarRenovacoes(
   consultoriaId: string,
   pagina: number,
-): Promise<Pagina<Renovacao>> {
+  horizonteMeses: HorizonteDaRenovacao | null = HORIZONTE_PADRAO_DA_RENOVACAO,
+): Promise<Pagina<RenovacaoNoRadar>> {
   const { data, error } = await obterSupabase().rpc('listar_renovacoes', {
     p_consultoria_id: consultoriaId,
     p_limite: TAMANHO_PAGINA_ACOMPANHAMENTOS,
     p_deslocamento: pagina * TAMANHO_PAGINA_ACOMPANHAMENTOS,
+    ...(horizonteMeses === null ? {} : { p_horizonte_meses: horizonteMeses }),
   })
   if (error) throw error
   return {
@@ -66,7 +92,72 @@ export async function listarRenovacoes(
       protocoloNumero: anulavel(r.protocolo_numero),
       acompanhamentoDias: anulavel(r.acompanhamento_dias) ?? null,
       hoje: r.hoje as DataCivil,
+      orcamento: orcamentoDaLinha(r),
     })),
+  }
+}
+
+function orcamentoDaLinha(r: {
+  orcamento_id: string
+  orcamento_ano: number
+  orcamento_sequencia: number
+  orcamento_situacao: SituacaoOrcamento
+}): OrcamentoDaRenovacao | null {
+  const situacao = anulavel(r.orcamento_situacao)
+  if (!situacao) return null
+  const id = anulavel(r.orcamento_id)
+  const ano = anulavel(r.orcamento_ano)
+  const sequencia = anulavel(r.orcamento_sequencia)
+  return {
+    id,
+    numero: id && ano !== null && sequencia !== null ? numeroDoOrcamento(ano, sequencia) : null,
+    situacao,
+  }
+}
+
+/**
+ * Cria o rascunho do orçamento da renovação (só Gestão). Idempotente pelo id e pela licença: se a
+ * licença já tem orçamento vivo, devolve o id dele. Taxa nula vira despesa "a cotar".
+ */
+export async function criarOrcamentoDeRenovacao(
+  id: string,
+  consultoriaId: string,
+  instrumentoId: string,
+  taxaCentavos: number | null,
+): Promise<string> {
+  const { data, error } = await obterSupabase().rpc('criar_orcamento_de_renovacao', {
+    p_id: id,
+    p_consultoria_id: consultoriaId,
+    p_instrumento_id: instrumentoId,
+    ...(taxaCentavos === null ? {} : { p_taxa_centavos: taxaCentavos }),
+  })
+  if (error) throw error
+  return data
+}
+
+export interface OrcamentoDaLicenca {
+  id: string
+  numero: string
+  situacao: SituacaoOrcamento
+}
+
+/** Orçamento vivo da licença (RLS: só a Gestão lê orçamento). Nulo se não há. */
+export async function obterOrcamentoDaLicenca(
+  instrumentoId: string,
+): Promise<OrcamentoDaLicenca | null> {
+  const { data, error } = await obterSupabase()
+    .from('orcamento')
+    .select('id, ano, sequencia, situacao')
+    .eq('instrumento_id', instrumentoId)
+    .is('excluido_em', null)
+    .neq('situacao', 'recusada')
+    .maybeSingle()
+  if (error) throw error
+  if (!data) return null
+  return {
+    id: data.id,
+    numero: numeroDoOrcamento(data.ano, data.sequencia),
+    situacao: data.situacao,
   }
 }
 
