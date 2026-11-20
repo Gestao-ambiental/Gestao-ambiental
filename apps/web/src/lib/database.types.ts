@@ -2379,6 +2379,10 @@ isOneToOne: false
 { Args: { "p_consultoria_id": string,"p_deslocamento"?: number,"p_limite"?: number,"p_ocorrencia_id"?: string,"p_somente_minhas"?: boolean }; Returns: {
               "condicionante_codigo": string,"condicionante_titulo": string,"consultoria_id": string,"data_planejada": string,"duracao_minutos": number,"empreendimento_id": string,"empreendimento_nome": string,"enviada_em": string,"hoje": string,"hora_planejada": string,"id": string,"iniciada_em": string,"itens_registrados": number,"licenca": string,"ocorrencia_id": string,"responsavel_id": string,"responsavel_nome": string,"row_version": number,"situacao": Database["public"]['Enums']["situacao_vistoria"],"titulo": string,"total": number,"total_itens": number,"unidade_id": string,"unidade_nome": string
             }[]
+                           } |
+{ Args: { "p_deslocamento"?: number,"p_limite"?: number,"p_ocorrencia_id"?: string,"p_somente_minhas"?: boolean }; Returns: {
+              "condicionante_codigo": string,"condicionante_titulo": string,"consultoria_id": string,"data_planejada": string,"duracao_minutos": number,"empreendimento_id": string,"empreendimento_nome": string,"enviada_em": string,"hoje": string,"hora_planejada": string,"id": string,"iniciada_em": string,"itens_registrados": number,"licenca": string,"ocorrencia_id": string,"responsavel_id": string,"responsavel_nome": string,"row_version": number,"situacao": Database["public"]['Enums']["situacao_vistoria"],"titulo": string,"total": number,"total_itens": number,"unidade_id": string,"unidade_nome": string
+            }[]
                            },
 "marcar_aviso_de_emergencia_enviado":
 { Args: { "p_acesso_id": string }; Returns: undefined
