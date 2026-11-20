@@ -2105,7 +2105,7 @@ isOneToOne: false
 { Args: { "p_id": string,"p_row_version": number }; Returns: number
                            },
 "falhar_conferencia_ia":
-{ Args: { "p_apontamentos": Json,"p_custo_micros": number,"p_duracao_ms": number,"p_detalhe": string,"p_id": string,"p_modelo": string,"p_motivo": string,"p_tokens_entrada": number,"p_tokens_saida": number,"p_versao_prompt": string }; Returns: undefined
+{ Args: { "p_apontamentos": Json,"p_custo_micros": number,"p_detalhe": string,"p_duracao_ms": number,"p_id": string,"p_modelo": string,"p_motivo": string,"p_tokens_entrada": number,"p_tokens_saida": number,"p_versao_prompt": string }; Returns: undefined
                            },
 "falhar_extracao_ia":
 { Args: { "p_custo_micros": number,"p_detalhe": string,"p_duracao_ms": number,"p_id": string,"p_modelo": string,"p_motivo": string,"p_paginas": number,"p_tokens_entrada": number,"p_tokens_saida": number,"p_versao_prompt": string }; Returns: undefined
