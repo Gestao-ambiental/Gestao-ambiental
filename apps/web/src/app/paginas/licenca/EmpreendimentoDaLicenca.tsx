@@ -30,14 +30,14 @@ export type LeituraDoTitular =
   | { situacao: 'pronta'; titular: TitularDaLicenca }
   | { situacao: 'falhou' }
 
-interface Rascunho {
+export interface RascunhoDoEmpreendimento {
   nome: string
   cnpj: string
   unidade: string
   endereco: string
 }
 
-function rascunhoDoTitular(titular: TitularDaLicenca | null): Rascunho {
+function rascunhoDoTitular(titular: TitularDaLicenca | null): RascunhoDoEmpreendimento {
   return {
     nome: titular?.razaoSocial ?? '',
     cnpj: titular?.cnpj ? mascararCnpj(titular.cnpj) : '',
@@ -46,15 +46,18 @@ function rascunhoDoTitular(titular: TitularDaLicenca | null): Rascunho {
   }
 }
 
-/** Cadastro do empreendimento e da unidade sem sair da licença (uma transação no banco). */
-function NovoEmpreendimento({
+/**
+ * Cadastro do empreendimento e da unidade sem sair da tela (uma transação no banco). Usado na
+ * licença e no orçamento.
+ */
+export function NovoEmpreendimento({
   consultoriaId,
   inicial,
   aoCadastrar,
   aoCancelar,
 }: {
   consultoriaId: string
-  inicial: Rascunho
+  inicial: RascunhoDoEmpreendimento
   aoCadastrar: (empreendimentoId: string, unidadeId: string) => void
   aoCancelar: () => void
 }) {
@@ -297,7 +300,7 @@ export function EmpreendimentoDaLicenca({
   aoEscolherUnidade: (id: string) => void
   aoPedirPdf: () => void
 }) {
-  const [formulario, setFormulario] = useState<Rascunho | null>(null)
+  const [formulario, setFormulario] = useState<RascunhoDoEmpreendimento | null>(null)
   const titular =
     leitura.situacao === 'pronta' && titularEncontrado(leitura.titular) ? leitura.titular : null
   const vazio = empreendimentos.length === 0

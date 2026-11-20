@@ -601,3 +601,4 @@ export type { TitularDaLicenca } from './titular-da-licenca'
 
 export { idsRenovados, rotuloDaSituacaoDoAlvara, situacaoDoAlvara } from './alvara'
 export type { SituacaoDoAlvara } from './alvara'
+export { OBJETO_INICIAL, objetoAindaAutomatico, objetoAutomatico } from './objeto-do-orcamento'

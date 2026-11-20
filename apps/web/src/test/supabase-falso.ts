@@ -82,6 +82,8 @@ export interface Cenario {
     genero: string | null
     profissao_em_curso?: boolean
   } | null
+  /** Resposta de signInWithOAuth (Google); padrão: sai para o Google sem erro. */
+  oauth?: Resposta
   /** Resposta de signInWithPassword; padrão: entra com `sessaoAoEntrar`. */
   entrar?: Resposta
   sessaoAoEntrar?: Session
@@ -212,6 +214,13 @@ function criar() {
     resetPasswordForEmail: vi.fn(() => Promise.resolve({ data: {}, error: null })),
     updateUser: vi.fn(() => Promise.resolve({ data: { user: sessao?.user }, error: null })),
     signInWithOtp: vi.fn(() => Promise.resolve({ data: {}, error: null })),
+    signInWithOAuth: vi.fn(() =>
+      Promise.resolve({
+        data: { provider: 'google', url: 'https://accounts.google.test/' },
+        error: null,
+        ...cenario.oauth,
+      }),
+    ),
   }
   const auth = { ...funcoesDoAuth, mfa }
 

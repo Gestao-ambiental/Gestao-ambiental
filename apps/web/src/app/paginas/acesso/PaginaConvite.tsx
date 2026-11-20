@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { Link, useNavigate, useSearchParams } from 'react-router'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router'
 import { z } from 'zod'
 
 import {
@@ -28,6 +28,8 @@ import { obterSupabase } from '@/lib/supabase'
 
 import { CabecalhoAcesso, RodapeAcesso } from './CabecalhoAcesso'
 import { CamposGeneroEFormacao } from './CamposGeneroEFormacao'
+import { EntrarComGoogle } from './EntrarComGoogle'
+import { erroDoRetornoDoGoogle } from './retorno-do-google'
 import { campoNome, esquemaGeneroEFormacao, esquemaSenhaNova } from './esquemas'
 
 const esquemaConta = esquemaSenhaNova.and(z.object({ nome: campoNome }).and(esquemaGeneroEFormacao))
@@ -71,6 +73,8 @@ export function PaginaConvite() {
   const [linkReenviado, setLinkReenviado] = useState(false)
   const [falhaConta, setFalhaConta] = useState<string | null>(null)
   const aceiteAutomatico = useRef(false)
+  const local = useLocation()
+  const [falhaGoogle] = useState(() => erroDoRetornoDoGoogle(local.search, local.hash))
 
   const consulta = useQuery({
     queryKey: ['convite', token],
@@ -271,12 +275,20 @@ export function PaginaConvite() {
     )
   }
 
-  // Sem login
+  // Sem login. Pelo Google a pessoa volta para cá logada com o e-mail do Google e o aceite segue
+  // sozinho (aceitar=1); o banco recusa se o e-mail não for o do convite (ADR-0040).
   const voltarParaCa = `/convite?token=${encodeURIComponent(token)}&aceitar=1`
+  const avisoGoogle = falhaGoogle ? (
+    <MensagemSecao role="alert" tom="atencao">
+      {falhaGoogle}
+    </MensagemSecao>
+  ) : null
   if (convite.contaComSenha) {
     return (
       <div className="flex flex-col gap-(--e-6)">
         {cabecalho}
+        {avisoGoogle}
+        <EntrarComGoogle voltarPara={voltarParaCa} />
         <p className="corpo text-(--tinta-2)">
           Você já tem conta com <strong className="text-(--tinta)">{convite.email}</strong>.
         </p>
@@ -292,6 +304,8 @@ export function PaginaConvite() {
   return (
     <div className="flex flex-col gap-(--e-6)">
       {cabecalho}
+      {avisoGoogle}
+      <EntrarComGoogle voltarPara={voltarParaCa} />
       {linkReenviado ? (
         <MensagemSecao role="status" tom="sucesso">
           Enviamos um link novo para {convite.email}. Abra-o para criar sua conta.

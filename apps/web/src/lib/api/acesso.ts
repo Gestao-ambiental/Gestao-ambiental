@@ -12,6 +12,7 @@ import {
   type SituacaoMembro,
 } from '@gestao-ambiental/domain'
 
+import { lerAmbiente } from '@/lib/env'
 import { obterSupabase } from '@/lib/supabase'
 
 import { profissaoECargo } from './perfil'
@@ -243,5 +244,44 @@ export async function alterarPapel(membroId: string, papel: PapelMembro): Promis
 
 export async function desligarMembro(membroId: string): Promise<void> {
   const { error } = await obterSupabase().rpc('desligar_membro', { p_membro_id: membroId })
+  if (error) throw error
+}
+
+// ---------------------------------------------------------------------------
+// Entrar com Google (ADR-0040)
+// ---------------------------------------------------------------------------
+
+/**
+ * O provedor Google está ligado no Supabase? Lê as configurações públicas do Auth. Sem isso, o
+ * clique levaria a uma página de erro do Supabase fora do Grama. Se a leitura falhar (rede), não
+ * bloqueia: quem decide é o Supabase, e o erro volta para a tela pelo retorno.
+ */
+export async function googleDisponivel(): Promise<boolean> {
+  try {
+    const { VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY } = lerAmbiente()
+    const resposta = await fetch(`${VITE_SUPABASE_URL}/auth/v1/settings`, {
+      headers: { apikey: VITE_SUPABASE_ANON_KEY },
+    })
+    if (!resposta.ok) return true
+    const corpo = (await resposta.json()) as { external?: { google?: boolean } }
+    return corpo.external?.google !== false
+  } catch {
+    return true
+  }
+}
+
+/**
+ * Sai para o Google e volta para `voltarPara` (caminho interno) já com a sessão. Conta nova é
+ * criada pelo Supabase; e-mail já cadastrado com senha é vinculado pelo Supabase (mesmo e-mail
+ * verificado). Erros do Auth sobem como vieram.
+ */
+export async function entrarComGoogle(voltarPara: string): Promise<void> {
+  const { error } = await obterSupabase().auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `${window.location.origin}${voltarPara}`,
+      queryParams: { prompt: 'select_account' },
+    },
+  })
   if (error) throw error
 }

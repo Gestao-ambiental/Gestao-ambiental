@@ -13,8 +13,10 @@ const ITENS_DO_MENU = [
   'Editar empreendimento',
   'Gerenciar unidades',
   'Gerar relatório',
+  'Novo orçamento',
   'Triar atividades',
 ]
+const ITENS_DA_EQUIPE = ITENS_DO_MENU.filter((item) => item !== 'Novo orçamento')
 
 function cenario(papel: 'gestao' | 'equipe', tabelas: Cenario['tabelas'] = {}): Cenario {
   return {
@@ -90,7 +92,7 @@ describe('cabeçalho do empreendimento (uma ação principal + "…")', () => {
     expect(within(topo).queryByRole('link', { name: 'Cadastrar licença' })).not.toBeInTheDocument()
     await usuario.click(within(topo).getByRole('button', { name: 'Mais ações' }))
     const itens = await screen.findAllByRole('menuitem')
-    expect(itens.map((item) => item.textContent)).toEqual(ITENS_DO_MENU)
+    expect(itens.map((item) => item.textContent)).toEqual(ITENS_DA_EQUIPE)
   })
 
   it('"Triar atividades" abre a triagem com o empreendimento', async () => {

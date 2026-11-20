@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import axe from 'axe-core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -216,6 +216,40 @@ describe('tela do empreendimento (EMP-02)', () => {
       'href',
       '/empreendimentos',
     )
+  })
+
+  it('gestão abre Novo orçamento pelo menu "…", já com o empreendimento; equipe não vê', async () => {
+    falso.reiniciar(
+      cenario({
+        rpc: {
+          meus_vinculos: { data: [vinculoFalso('Filtroville', 'gestao')] },
+          criar_orcamento: () => ({ error: { message: 'Failed to fetch' } }),
+        },
+      }),
+    )
+    const usuario = userEvent.setup()
+    const { router } = renderizarApp('/empreendimentos/e1')
+    await usuario.click(await screen.findByRole('button', { name: 'Mais ações' }))
+    await usuario.click(await screen.findByRole('menuitem', { name: 'Novo orçamento' }))
+    // A rota pode carregar sob demanda: espera a navegação terminar.
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/orcamentos/novo')
+    })
+    expect(router.state.location.search).toBe('?empreendimento=e1')
+    await waitFor(() => {
+      expect(falso.cliente.rpc).toHaveBeenCalledWith(
+        'criar_orcamento',
+        expect.objectContaining({ p_empreendimento_id: 'e1' }) as unknown,
+      )
+    })
+  })
+
+  it('equipe não vê o menu de orçamento no empreendimento', async () => {
+    renderizarApp('/empreendimentos/e1')
+    await screen.findByRole('heading', { level: 1, name: 'Metalúrgica Rio Cubatão' })
+    expect(
+      screen.queryByRole('button', { name: 'Mais ações do empreendimento' }),
+    ).not.toBeInTheDocument()
   })
 
   it('rascunho mostra a linha de progresso do cadastro e continua no passo em que parou', async () => {

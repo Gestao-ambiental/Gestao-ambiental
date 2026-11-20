@@ -13,6 +13,7 @@ import { codigoDoErro, mensagemDoErro } from '@/lib/erros'
 import { obterSupabase } from '@/lib/supabase'
 
 import { CabecalhoAcesso, RodapeAcesso } from './CabecalhoAcesso'
+import { EntrarComGoogle } from './EntrarComGoogle'
 import { CamposGeneroEFormacao } from './CamposGeneroEFormacao'
 import { campoEmail, campoNome, esquemaGeneroEFormacao, esquemaSenhaNova } from './esquemas'
 
@@ -101,6 +102,12 @@ export function PaginaCriarConta() {
   return (
     <div className="flex flex-col gap-(--e-6)">
       <CabecalhoAcesso titulo="Criar conta" />
+
+      {/* Pelo Google a conta nasce no Supabase e volta pelo /entrar; o resto do cadastro (gênero e
+          formação) é pedido depois, em "Complete seu cadastro" (ADR-0040). */}
+      <EntrarComGoogle
+        voltarPara={`/entrar${para === '/' ? '' : `?para=${encodeURIComponent(para)}`}`}
+      />
       {falha ? (
         <MensagemSecao role="alert" tom="perigo">
           {falha}

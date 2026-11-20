@@ -82,6 +82,13 @@ const ACOES: readonly AcaoDoEmpreendimento[] = [
   },
   { id: 'relatorio', rotulo: 'Gerar relatório', icone: 'file-text', Dialogo: DialogoDoRelatorio },
   {
+    id: 'orcamento',
+    rotulo: 'Novo orçamento',
+    icone: 'file-plus',
+    somenteGestao: true,
+    para: ({ empreendimento }) => `/orcamentos/novo?empreendimento=${empreendimento.id}`,
+  },
+  {
     id: 'triagem',
     rotulo: 'Triar atividades',
     icone: 'signpost',

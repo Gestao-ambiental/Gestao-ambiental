@@ -1,7 +1,7 @@
 import { formatarCentavos } from '@gestao-ambiental/domain'
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useDeferredValue, useRef, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router'
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Pagina } from '@/app/paginas/Pagina'
@@ -33,7 +33,6 @@ import { mensagemDoErro } from '@/lib/erros'
 import { classeCabecalho, classeCelula, numeroComRevisao } from './comum'
 import { AbasDeSituacao, IndicadoresDosOrcamentos } from './PecasDaLista'
 import { SeloSituacaoOrcamento } from './SeloSituacaoOrcamento'
-import { DialogoNovoOrcamento } from './DialogoNovoOrcamento'
 
 /**
  * /orcamentos (onda 5; ORC-04). Lista paginada com busca. Nesta fatia o módulo é só da Gestão:
@@ -43,8 +42,8 @@ import { DialogoNovoOrcamento } from './DialogoNovoOrcamento'
  * lixeira dá para restaurar. ?lixeira=1 na URL mostra a lixeira.
  *
  * Primeiros passos (ADR-0020, ADR-0023): sem base publicada, só um link discreto "Calcular preço
- * pelos custos". O orçamento rápido (preço digitado) não depende dela. ?novo=1 abre o diálogo de
- * novo orçamento (fim dos primeiros passos).
+ * pelos custos". O orçamento rápido (preço digitado) não depende dela. Novo orçamento vai direto
+ * para o editor (/orcamentos/novo); o antigo ?novo=1 leva para lá.
  *
  * Filtros (Protótipo 19): abas por situação com a contagem de cada uma (seguem a busca), a aba em
  * ?situacao=…, busca também pelo número e indicadores do topo vindos do banco (resumo_dos_orcamentos).
@@ -52,6 +51,9 @@ import { DialogoNovoOrcamento } from './DialogoNovoOrcamento'
  */
 export function PaginaOrcamentos() {
   const { atual } = useConsultoria()
+  const [parametros] = useSearchParams()
+  // Links antigos (?novo=1) abriam o diálogo; agora vão para o editor do orçamento novo.
+  if (parametros.get('novo') === '1') return <Navigate to="/orcamentos/novo" replace />
   if (atual.papel !== 'gestao') {
     return (
       <Pagina titulo="Orçamentos">
@@ -73,14 +75,6 @@ function ListaDaGestao() {
   const [busca, setBusca] = useState('')
   const buscaAdiada = useDeferredValue(busca.trim())
   const campoBusca = useRef<HTMLInputElement>(null)
-  const pedeNovo = parametros.get('novo') === '1'
-  const [novoAberto, setNovoAberto] = useState(pedeNovo)
-  // ?novo=1 que chega com a página já aberta (ex.: "Novo orçamento" no Ctrl+K) também abre o diálogo.
-  const [pedidoVisto, setPedidoVisto] = useState(pedeNovo)
-  if (pedeNovo !== pedidoVisto) {
-    setPedidoVisto(pedeNovo)
-    if (pedeNovo) setNovoAberto(true)
-  }
   const [aExcluir, setAExcluir] = useState<OrcamentoNaLista | null>(null)
   const [ocupado, setOcupado] = useState(false)
   const [falha, setFalha] = useState<string | null>(null)
@@ -207,7 +201,7 @@ function ListaDaGestao() {
       aparencia="primario"
       iconeAntes="plus"
       onClick={() => {
-        setNovoAberto(true)
+        void navegar('/orcamentos/novo')
       }}
     >
       Novo orçamento
@@ -570,28 +564,6 @@ function ListaDaGestao() {
         )}
         {conteudo}
       </div>
-
-      <DialogoNovoOrcamento
-        aberto={novoAberto}
-        aoMudar={(aberto) => {
-          setNovoAberto(aberto)
-          // O ?novo=1 dos primeiros passos sai da URL ao fechar, para não reabrir ao voltar.
-          if (!aberto && parametros.has('novo')) {
-            setParametros(
-              (atuais) => {
-                const novos = new URLSearchParams(atuais)
-                novos.delete('novo')
-                return novos
-              },
-              { replace: true },
-            )
-          }
-        }}
-        consultoriaId={cid}
-        aoCriar={(id) => {
-          void navegar(`/orcamentos/${id}`)
-        }}
-      />
 
       <Dialogo
         aberto={aExcluir !== null}

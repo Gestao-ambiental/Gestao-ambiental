@@ -66,7 +66,7 @@ export const ATALHOS_DA_BUSCA: readonly AtalhoDaBusca[] = [
     somenteGestao: true,
   },
   {
-    para: '/orcamentos?novo=1',
+    para: '/orcamentos/novo',
     rotulo: 'Novo orçamento',
     icone: 'file-plus',
     tipo: 'acao',
