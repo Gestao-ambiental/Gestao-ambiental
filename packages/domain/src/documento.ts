@@ -31,7 +31,7 @@ export function cpfValido(texto: string): boolean {
 }
 
 /** CNPJ (numérico ou alfanumérico) com os dois verificadores certos. */
-function cnpjValido(texto: string): boolean {
+export function cnpjValido(texto: string): boolean {
   const cnpj = normalizarCnpj(texto)
   if (!/^[0-9A-Z]{12}[0-9]{2}$/.test(cnpj) || /^(\d)\1{13}$/.test(cnpj)) return false
   const valores = cnpj.split('').map(valorDoCaractere)
