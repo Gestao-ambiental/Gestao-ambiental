@@ -821,14 +821,14 @@ isOneToOne: false
                   ]
                 },"importacao": {
                   Row: {
-                    "conferida_em": string | null,"consultoria_id": string,"criado_em": string,"criado_por": string,"desfeita_em": string | null,"desfeita_por": string | null,"efetivada_em": string | null,"efetivada_por": string | null,"entidade": string,"id": string,"mapeamento": Json,"nome_arquivo": string,"resultado": Json | null,"resultado_desfazer": Json | null,"resumo": Json | null,"row_version": number,"situacao": string,"total_linhas": number
+                    "conferida_em": string | null,"consultoria_id": string,"criado_em": string,"criado_por": string,"desfeita_em": string | null,"desfeita_por": string | null,"efetivada_em": string | null,"efetivada_por": string | null,"entidade": string,"id": string,"mapeamento": NonNullable<Json>,"nome_arquivo": string,"resultado": Json | null,"resultado_desfazer": Json | null,"resumo": Json | null,"row_version": number,"situacao": string,"total_linhas": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "conferida_em"?: string | null,"consultoria_id": string,"criado_em"?: string,"criado_por": string,"desfeita_em"?: string | null,"desfeita_por"?: string | null,"efetivada_em"?: string | null,"efetivada_por"?: string | null,"entidade": string,"id": string,"mapeamento": Json,"nome_arquivo": string,"resultado"?: Json | null,"resultado_desfazer"?: Json | null,"resumo"?: Json | null,"row_version"?: number,"situacao"?: string,"total_linhas": number
+                    "conferida_em"?: string | null,"consultoria_id": string,"criado_em"?: string,"criado_por": string,"desfeita_em"?: string | null,"desfeita_por"?: string | null,"efetivada_em"?: string | null,"efetivada_por"?: string | null,"entidade": string,"id": string,"mapeamento": NonNullable<Json>,"nome_arquivo": string,"resultado"?: Json | null,"resultado_desfazer"?: Json | null,"resumo"?: Json | null,"row_version"?: number,"situacao"?: string,"total_linhas": number
                   }
                   Update: {
-                    "conferida_em"?: string | null,"consultoria_id"?: string,"criado_em"?: string,"criado_por"?: string,"desfeita_em"?: string | null,"desfeita_por"?: string | null,"efetivada_em"?: string | null,"efetivada_por"?: string | null,"entidade"?: string,"id"?: string,"mapeamento"?: Json,"nome_arquivo"?: string,"resultado"?: Json | null,"resultado_desfazer"?: Json | null,"resumo"?: Json | null,"row_version"?: number,"situacao"?: string,"total_linhas"?: number
+                    "conferida_em"?: string | null,"consultoria_id"?: string,"criado_em"?: string,"criado_por"?: string,"desfeita_em"?: string | null,"desfeita_por"?: string | null,"efetivada_em"?: string | null,"efetivada_por"?: string | null,"entidade"?: string,"id"?: string,"mapeamento"?: NonNullable<Json>,"nome_arquivo"?: string,"resultado"?: Json | null,"resultado_desfazer"?: Json | null,"resumo"?: Json | null,"row_version"?: number,"situacao"?: string,"total_linhas"?: number
                   }
                   Relationships: [
                     {
@@ -859,14 +859,14 @@ isOneToOne: false
                   ]
                 },"importacao_linha": {
                   Row: {
-                    "atualizado_em": string,"avisos": Json,"consultoria_id": string,"criado_em": string,"dados": Json,"empreendimento_criado": boolean,"empreendimento_id": string | null,"erros": Json,"grupo": string | null,"id": string,"importacao_id": string,"instrumento_id": string | null,"instrumento_row_version": number | null,"motivo_mantida": string | null,"numero_linha": number,"resultado": string | null,"unidade_criada": boolean,"unidade_id": string | null
+                    "atualizado_em": string,"avisos": NonNullable<Json>,"consultoria_id": string,"criado_em": string,"dados": NonNullable<Json>,"empreendimento_criado": boolean,"empreendimento_id": string | null,"erros": NonNullable<Json>,"grupo": string | null,"id": string,"importacao_id": string,"instrumento_id": string | null,"instrumento_row_version": number | null,"motivo_mantida": string | null,"numero_linha": number,"resultado": string | null,"unidade_criada": boolean,"unidade_id": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "atualizado_em"?: string,"avisos"?: Json,"consultoria_id": string,"criado_em"?: string,"dados": Json,"empreendimento_criado"?: boolean,"empreendimento_id"?: string | null,"erros"?: Json,"grupo"?: never,"id"?: string,"importacao_id": string,"instrumento_id"?: string | null,"instrumento_row_version"?: number | null,"motivo_mantida"?: string | null,"numero_linha": number,"resultado"?: string | null,"unidade_criada"?: boolean,"unidade_id"?: string | null
+                    "atualizado_em"?: string,"avisos"?: NonNullable<Json>,"consultoria_id": string,"criado_em"?: string,"dados": NonNullable<Json>,"empreendimento_criado"?: boolean,"empreendimento_id"?: string | null,"erros"?: NonNullable<Json>,"grupo"?: never,"id"?: string,"importacao_id": string,"instrumento_id"?: string | null,"instrumento_row_version"?: number | null,"motivo_mantida"?: string | null,"numero_linha": number,"resultado"?: string | null,"unidade_criada"?: boolean,"unidade_id"?: string | null
                   }
                   Update: {
-                    "atualizado_em"?: string,"avisos"?: Json,"consultoria_id"?: string,"criado_em"?: string,"dados"?: Json,"empreendimento_criado"?: boolean,"empreendimento_id"?: string | null,"erros"?: Json,"grupo"?: never,"id"?: string,"importacao_id"?: string,"instrumento_id"?: string | null,"instrumento_row_version"?: number | null,"motivo_mantida"?: string | null,"numero_linha"?: number,"resultado"?: string | null,"unidade_criada"?: boolean,"unidade_id"?: string | null
+                    "atualizado_em"?: string,"avisos"?: NonNullable<Json>,"consultoria_id"?: string,"criado_em"?: string,"dados"?: NonNullable<Json>,"empreendimento_criado"?: boolean,"empreendimento_id"?: string | null,"erros"?: NonNullable<Json>,"grupo"?: never,"id"?: string,"importacao_id"?: string,"instrumento_id"?: string | null,"instrumento_row_version"?: number | null,"motivo_mantida"?: string | null,"numero_linha"?: number,"resultado"?: string | null,"unidade_criada"?: boolean,"unidade_id"?: string | null
                   }
                   Relationships: [
                     {
@@ -903,14 +903,14 @@ isOneToOne: false
                   ]
                 },"importacao_mapeamento": {
                   Row: {
-                    "atualizado_em": string,"atualizado_por": string,"consultoria_id": string,"entidade": string,"id": string,"mapeamento": Json,"row_version": number
+                    "atualizado_em": string,"atualizado_por": string,"consultoria_id": string,"entidade": string,"id": string,"mapeamento": NonNullable<Json>,"row_version": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "atualizado_em"?: string,"atualizado_por": string,"consultoria_id": string,"entidade": string,"id"?: string,"mapeamento": Json,"row_version"?: number
+                    "atualizado_em"?: string,"atualizado_por": string,"consultoria_id": string,"entidade": string,"id"?: string,"mapeamento": NonNullable<Json>,"row_version"?: number
                   }
                   Update: {
-                    "atualizado_em"?: string,"atualizado_por"?: string,"consultoria_id"?: string,"entidade"?: string,"id"?: string,"mapeamento"?: Json,"row_version"?: number
+                    "atualizado_em"?: string,"atualizado_por"?: string,"consultoria_id"?: string,"entidade"?: string,"id"?: string,"mapeamento"?: NonNullable<Json>,"row_version"?: number
                   }
                   Relationships: [
                     {
