@@ -1,6 +1,7 @@
 -- Lista de vistorias por consultoria: quem é membro de duas consultorias vê no Campo só as
 -- vistorias da consultoria selecionada (p_consultoria_id), mesmo que a RLS mostre as duas.
--- Outra consultoria lê zero; a assinatura antiga, sem consultoria, não existe mais.
+-- Outra consultoria lê zero. A assinatura antiga, sem consultoria, voltou ao lado da nova
+-- (20261120211810, compatibilidade); por isso as chamadas de um argumento usam o nome do parâmetro.
 begin;
 
 select plan(8);
@@ -67,7 +68,7 @@ select results_eq(
 
 select is(
   (select count(*) from public.listar_vistorias('c0000000-0000-4000-8000-00000000000b', null, true))
-  + (select count(*) from public.listar_vistorias('c0000000-0000-4000-8000-00000000000b')),
+  + (select count(*) from public.listar_vistorias(p_consultoria_id => 'c0000000-0000-4000-8000-00000000000b')),
   0::bigint,
   'na Verde Sul, a lista não traz a vistoria da Filtroville'
 );
@@ -80,7 +81,7 @@ select is(
 );
 
 select is(
-  (select count(*) from public.listar_vistorias(null)),
+  (select count(*) from public.listar_vistorias(p_consultoria_id => null)),
   0::bigint,
   'sem consultoria a lista vem vazia'
 );
@@ -91,7 +92,7 @@ select is(
 select testes.autenticar_como('gustavo@verdesul.test');
 
 select is(
-  (select count(*) from public.listar_vistorias('c0000000-0000-4000-8000-00000000000a')),
+  (select count(*) from public.listar_vistorias(p_consultoria_id => 'c0000000-0000-4000-8000-00000000000a')),
   0::bigint,
   'quem não é membro da Filtroville lê zero vistorias dela'
 );
@@ -99,8 +100,8 @@ select is(
 reset role;
 
 select ok(
-  to_regprocedure('public.listar_vistorias(uuid, boolean, integer, integer)') is null,
-  'a assinatura antiga, sem consultoria, foi removida'
+  to_regprocedure('public.listar_vistorias(uuid, uuid, boolean, integer, integer)') is not null,
+  'a assinatura nova, com a consultoria, existe'
 );
 
 select ok(
