@@ -101,18 +101,11 @@ describe('Acompanhamentos (EQ-05)', () => {
     falso.reiniciar(cenario())
   })
 
-  it('mostra as conferências pendentes e as renovações com limite e situação', async () => {
+  it('abre nas renovações (quadro com faltam, limite e situação) e troca para as conferências', async () => {
+    const usuario = userEvent.setup()
     renderizarApp('/acompanhamentos')
 
-    const conferencias = await screen.findByRole('region', { name: 'Aguardando conferência' })
-    const [linhaConferencia] = await within(conferencias).findAllByRole('link', {
-      name: /Relatório de automonitoramento/,
-    })
-    expect(linhaConferencia).toHaveAttribute('href', '/ocorrencias/o1')
-    expect(within(conferencias).getAllByText('Gestão').length).toBeGreaterThan(0)
-    expect(within(conferencias).getAllByText(/3 h/).length).toBeGreaterThan(0)
-
-    const renovacoes = await screen.findByRole('region', { name: 'Renovações no radar' })
+    const renovacoes = await screen.findByRole('tabpanel', { name: /Renovações no radar/ })
     await within(renovacoes).findAllByText('Protocolo em 6 dias')
     expect(within(renovacoes).getAllByText('Protocolo em 6 dias').length).toBeGreaterThan(0)
     expect(within(renovacoes).getAllByText(`Em preparação · ${dm(-3)}`).length).toBeGreaterThan(0)
@@ -123,18 +116,69 @@ describe('Acompanhamentos (EQ-05)', () => {
       'href',
       '/renovacoes/i1',
     )
+    // Coluna "Faltam": dias até o limite de protocolo.
+    expect(within(renovacoes).getAllByText('6').length).toBeGreaterThan(0)
+    expect(screen.getByRole('tab', { name: /Aguardando conferência/ })).toHaveAttribute(
+      'aria-selected',
+      'false',
+    )
+
+    await usuario.click(screen.getByRole('tab', { name: /Aguardando conferência/ }))
+    const conferencias = await screen.findByRole('tabpanel', { name: /Aguardando conferência/ })
+    const [linhaConferencia] = await within(conferencias).findAllByRole('link', {
+      name: /Relatório de automonitoramento/,
+    })
+    expect(linhaConferencia).toHaveAttribute('href', '/ocorrencias/o1')
+    expect(within(conferencias).getAllByText('Gestão').length).toBeGreaterThan(0)
+    expect(within(conferencias).getAllByText(/3 h/).length).toBeGreaterThan(0)
+    expect(screen.queryByRole('tabpanel', { name: /Renovações no radar/ })).toBeNull()
   })
 
-  it('listas vazias explicam o que aparece ali', async () => {
+  it('a aba de conferência abre direto pelo endereço', async () => {
+    renderizarApp('/acompanhamentos?aba=conferencia')
+    expect(
+      await screen.findByRole('tabpanel', { name: /Aguardando conferência/ }),
+    ).toBeInTheDocument()
+  })
+
+  it('renovação já protocolada mostra o visto no lugar da contagem', async () => {
+    falso.reiniciar(
+      cenario('gestao', {
+        listar_renovacoes: {
+          data: [renovacao({ protocolado_em: adicionarDias(hoje, -2), total: 1 })],
+        },
+      }),
+    )
+    renderizarApp('/acompanhamentos')
+    const renovacoes = await screen.findByRole('tabpanel', { name: /Renovações no radar/ })
+    expect((await within(renovacoes).findAllByText('Sem retorno do órgão')).length).toBeGreaterThan(
+      0,
+    )
+    expect(within(renovacoes).queryByText('6')).toBeNull()
+  })
+
+  it('listas vazias dizem o que aparece ali', async () => {
     falso.reiniciar(
       cenario('equipe', {
         listar_aguardando_conferencia: { data: [] },
         listar_renovacoes: { data: [] },
       }),
     )
+    const usuario = userEvent.setup()
     renderizarApp('/acompanhamentos')
-    expect(await screen.findByText('Nenhuma evidência aguardando conferência.')).toBeInTheDocument()
     expect(await screen.findByText('Nenhuma LAO ativa para renovar.')).toBeInTheDocument()
+    await usuario.click(screen.getByRole('tab', { name: /Aguardando conferência/ }))
+    expect(await screen.findByText('Nenhuma evidência aguardando conferência.')).toBeInTheDocument()
+  })
+
+  it('erro ao carregar as renovações oferece tentar de novo', async () => {
+    falso.reiniciar(
+      cenario('gestao', { listar_renovacoes: { error: { message: 'falhou', code: '500' } } }),
+    )
+    renderizarApp('/acompanhamentos')
+    expect(
+      await screen.findByText('Não foi possível carregar renovações no radar.'),
+    ).toBeInTheDocument()
   })
 
   it('não tem violações de acessibilidade detectáveis pelo axe', async () => {
@@ -152,9 +196,10 @@ describe('plano de renovação (REN-01)', () => {
 
   it('mostra preparação, limite e vencimento sem cálculo manual e as etapas', async () => {
     renderizarApp('/renovacoes/i2')
-    expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent(
-      'Renovação da LAO 2207/2023',
-    )
+    // Enquanto carrega o título é "Renovação"; o nome da licença chega com o plano.
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Renovação da LAO 2207/2023' }),
+    ).toBeInTheDocument()
     expect(screen.getByText(`Em preparação · ${dm(-3)}`)).toBeInTheDocument()
     expect(screen.getByText('Limite de protocolo')).toBeInTheDocument()
     expect(
@@ -170,6 +215,25 @@ describe('plano de renovação (REN-01)', () => {
         `Protocolar no prazo não prorroga a licença automaticamente. A validade original continua ${formatarDataCivil(adicionarDias(hoje, 147))}.`,
       ),
     ).toBeInTheDocument()
+  })
+
+  it('linha de trajeto: início passou, hoje é a estação atual, limite e vencimento vêm depois', async () => {
+    renderizarApp('/renovacoes/i2')
+    const trajeto = await screen.findByRole('list', { name: 'Linha do tempo da renovação' })
+    const estacoes = within(trajeto).getAllByRole('listitem')
+    expect(estacoes).toHaveLength(4)
+    expect(estacoes[0]).toHaveTextContent(
+      `Início da preparação, ${formatarDataCivil(adicionarDias(hoje, -3))}, já passou`,
+    )
+    expect(estacoes[1]).toHaveAttribute('aria-current', 'step')
+    expect(estacoes[1]).toHaveTextContent('Hoje')
+    expect(estacoes[2]).toHaveTextContent('Limite de protocolo')
+    expect(estacoes[3]).toHaveTextContent('Vencimento')
+    // Placar: dias até o limite (27) e até o vencimento (147).
+    const prazos = screen.getByRole('region', { name: 'Prazos da renovação' })
+    expect(within(prazos).getByText('até o limite de protocolo')).toBeInTheDocument()
+    expect(within(prazos).getByText('27')).toBeInTheDocument()
+    expect(within(prazos).getByText('147')).toBeInTheDocument()
   })
 
   it('trocar 30 por 60 move só o início da preparação; a Gestão salva', async () => {

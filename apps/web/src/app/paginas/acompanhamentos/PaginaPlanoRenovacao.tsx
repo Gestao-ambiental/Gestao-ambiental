@@ -4,17 +4,16 @@ import {
   etapasRenovacaoLao,
   formatarDataCivil,
   situacaoDaRenovacao,
-  type DataCivil,
 } from '@gestao-ambiental/domain'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
-import { SiglaEmpreendimento } from '@/app/paginas/empreendimentos/SiglaEmpreendimento'
+import { Pagina } from '@/app/paginas/Pagina'
 import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
-import { Icone } from '@/components/ui/icone'
+import { classeCampo } from '@/components/ui/estilos-campo'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { urlDoArquivo } from '@/lib/api/ocorrencias'
 import { definirAntecedencia, obterPlano, type PlanoRenovacao } from '@/lib/api/renovacoes'
@@ -24,106 +23,36 @@ import { cn } from '@/lib/utils'
 
 import { AcompanhamentoOrgao } from './AcompanhamentoOrgao'
 import { DialogoProtocolo } from './DialogoProtocolo'
+import { LinhaDoTrajeto } from './LinhaDoTrajeto'
 import { SeloRenovacao } from './SeloRenovacao'
+import { estacoesDaRenovacao } from './trajeto-da-renovacao'
 
-function Migalhas({ licenca }: { licenca?: string }) {
-  return (
-    <nav aria-label="Caminho" className="flex items-center gap-(--e-1) corpo">
-      <Link
-        to="/acompanhamentos"
-        aria-label="Voltar para Acompanhamentos"
-        title="Voltar para Acompanhamentos"
-        className="inline-flex size-(--controle) items-center justify-center rounded-(--raio) text-(--icone) transicao-estado hover:bg-(--toque)"
-      >
-        <Icone nome="chevron-left" />
-      </Link>
-      <Link to="/acompanhamentos">Acompanhamentos</Link>
-      {licenca ? (
-        <>
-          <span className="text-(--tinta-2)" aria-hidden="true">
-            /
-          </span>
-          <span className="text-(--tinta-2)" aria-current="page">
-            Renovação da {licenca}
-          </span>
-        </>
-      ) : null}
-    </nav>
-  )
-}
+const VOLTAR = { para: '/acompanhamentos', rotulo: 'Acompanhamentos' }
 
-/** Posição (0–100) de uma data entre o início da preparação e o vencimento. */
-function posicao(data: DataCivil, inicio: DataCivil, fim: DataCivil): number {
-  const total = Math.max(1, diferencaEmDias(fim, inicio))
-  return Math.max(0, Math.min(100, (diferencaEmDias(data, inicio) / total) * 100))
-}
-
-function deslocamento(percentual: number): string {
-  if (percentual < 12) return 'translate-x-0 items-start text-left'
-  if (percentual > 88) return '-translate-x-full items-end text-right'
-  return '-translate-x-1/2 items-center text-center'
-}
-
-/** Linha do tempo: início da preparação, hoje, limite de protocolo e vencimento (REN-01). */
-function LinhaDoTempo({
-  inicio,
-  limite,
-  vencimento,
-  hoje,
+/** Um número do placar: dias até o marco, hoje, ou dias depois dele (em vermelho). */
+function Marco({
+  dias,
+  rotulo,
+  rotuloPassou,
 }: {
-  inicio: DataCivil
-  limite: DataCivil
-  vencimento: DataCivil
-  hoje: DataCivil
+  dias: number
+  rotulo: string
+  rotuloPassou: string
 }) {
-  const pLimite = posicao(limite, inicio, vencimento)
-  const pHoje = posicao(hoje, inicio, vencimento)
-  const hojeVisivel = hoje >= inicio && hoje <= vencimento
+  const passou = dias < 0
   return (
-    <div className="flex flex-col gap-(--e-2)">
-      <div className="flex justify-between gap-(--e-4)">
-        <p className="flex flex-col">
-          <span className="text-xs text-(--tinta-2)">Início da preparação</span>
-          <span className="corpo-medio">{formatarDataCivil(inicio)}</span>
-        </p>
-        <p className="flex flex-col items-end text-right">
-          <span className="text-xs text-(--atraso-texto)">Vencimento</span>
-          <span className="corpo-medio">{formatarDataCivil(vencimento)}</span>
-        </p>
-      </div>
-      <div className="relative h-3" aria-hidden="true">
-        <div className="absolute top-1/2 right-0 left-0 h-1 -translate-y-1/2 rounded-full bg-(--regra)" />
-        <span className="absolute top-0 left-0 size-3 rounded-[2px] bg-(--andamento-texto)" />
-        {hojeVisivel ? (
-          <span
-            className="absolute top-0 h-3 w-1 -translate-x-1/2 rounded-full bg-(--marca-linha)"
-            style={{ left: `${String(pHoje)}%` }}
-          />
-        ) : null}
-        <span
-          className="absolute top-0 size-3 -translate-x-1/2 rounded-[2px] bg-(--alerta-texto)"
-          style={{ left: `${String(pLimite)}%` }}
-        />
-        <span className="absolute top-0 right-0 size-3 rounded-[2px] bg-(--atraso)" />
-      </div>
-      <div className="relative h-10">
-        {hojeVisivel && Math.abs(pHoje - pLimite) > 12 ? (
-          <p
-            className={cn('absolute top-0 flex flex-col', deslocamento(pHoje))}
-            style={{ left: `${String(pHoje)}%` }}
-          >
-            <span className="text-xs text-(--link)">Hoje</span>
-            <span className="corpo-medio">{formatarDataCivil(hoje).slice(0, 5)}</span>
-          </p>
-        ) : null}
-        <p
-          className={cn('absolute top-0 flex flex-col', deslocamento(pLimite))}
-          style={{ left: `${String(pLimite)}%` }}
-        >
-          <span className="text-xs text-(--alerta-texto)">Limite de protocolo</span>
-          <span className="corpo-medio">{formatarDataCivil(limite)}</span>
-        </p>
-      </div>
+    <div className="flex min-w-[150px] flex-1 flex-col items-start gap-(--e-1) px-(--e-5) py-(--e-4)">
+      {dias === 0 ? (
+        <span className="numero-grande rounded-(--raio-mini) bg-(--sinal) px-(--e-2) text-(--sinal-texto)">
+          Hoje
+        </span>
+      ) : (
+        <span className={cn('numero-grande', passou ? 'text-(--atraso-texto)' : 'text-(--tinta)')}>
+          {Math.abs(dias)}
+          <span className="ml-(--e-1) titulo-secao">{Math.abs(dias) === 1 ? 'dia' : 'dias'}</span>
+        </span>
+      )}
+      <span className="corpo-medio text-(--tinta-2)">{passou ? rotuloPassou : rotulo}</span>
     </div>
   )
 }
@@ -175,9 +104,12 @@ function Antecedencia({
           onChange={(evento) => {
             aoMudarRascunho(evento.target.value.replace(/\D/g, '').slice(0, 4))
           }}
-          className="h-(--controle) w-28 rounded-(--raio) border border-(--campo-borda) border-b-(--campo-borda) bg-(--campo) px-(--e-2) corpo text-(--tinta) outline-none transicao-estado focus:border-b-(--campo-borda-ativa) focus:shadow-[inset_0_-1px_0_0_var(--campo-borda-ativa)] disabled:bg-(--off) disabled:text-(--tinta-off)"
+          className={cn(classeCampo, 'w-28 numero')}
         />
-        <span id="antecedencia-nota" className="text-xs text-(--tinta-2)">
+        <span
+          id="antecedencia-nota"
+          className={cn('text-xs numero', valido ? 'text-(--tinta-2)' : 'text-(--atraso-texto)')}
+        >
           {valido
             ? `Início da preparação ${formatarDataCivil(inicioPreparacao)} · limite continua ${formatarDataCivil(limiteProtocolo)}`
             : 'Use um número inteiro de 0 ou mais.'}
@@ -200,9 +132,9 @@ function Antecedencia({
 }
 
 /**
- * /renovacoes/:instrumentoId (Protótipo 17, artboards 02 a 06; REN-01, REN-02): limite de
- * protocolo e início da preparação sem cálculo manual, etapas preparatórias calculadas e o
- * registro do protocolo. Protocolar não prorroga a licença.
+ * /renovacoes/:instrumentoId (Protótipo 17, artboards 02 a 06; REN-01, REN-02): quanto falta para
+ * o limite de protocolo e o vencimento, a linha de trajeto da renovação, a antecedência, as etapas
+ * preparatórias calculadas e o registro do protocolo. Protocolar não prorroga a licença.
  */
 export function PaginaPlanoRenovacao() {
   const { instrumentoId = '' } = useParams()
@@ -223,11 +155,6 @@ export function PaginaPlanoRenovacao() {
     },
   })
 
-  const licenca = plano.data?.licenca
-  useEffect(() => {
-    document.title = `${licenca ? `Renovação da ${licenca}` : 'Renovação'} · Grama`
-  }, [licenca])
-
   async function recarregar() {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ['plano-renovacao', instrumentoId] }),
@@ -237,16 +164,14 @@ export function PaginaPlanoRenovacao() {
 
   if (plano.isPending) {
     return (
-      <div className="flex flex-col gap-(--e-4)">
-        <Migalhas />
+      <Pagina titulo="Renovação" voltar={VOLTAR}>
         <Carregando rotulo="Carregando o plano de renovação" linhas={5} />
-      </div>
+      </Pagina>
     )
   }
   if (plano.isError) {
     return (
-      <div className="flex flex-col gap-(--e-4)">
-        <Migalhas />
+      <Pagina titulo="Renovação" voltar={VOLTAR}>
         {ehSemPermissao(plano.error) ? (
           <SemPermissao />
         ) : (
@@ -255,15 +180,13 @@ export function PaginaPlanoRenovacao() {
             aoTentarDeNovo={() => void plano.refetch()}
           />
         )}
-      </div>
+      </Pagina>
     )
   }
   if (!plano.data) {
     // Inexistente, de outra consultoria ou licença sem plano (só LAO ativa tem).
     return (
-      <div className="flex flex-col gap-(--e-4)">
-        <Migalhas />
-        <h1 className="sr-only">Plano de renovação não encontrado</h1>
+      <Pagina titulo="Renovação" voltar={VOLTAR}>
         <EstadoVazio
           icone="file-text"
           titulo="Plano de renovação não encontrado"
@@ -274,7 +197,7 @@ export function PaginaPlanoRenovacao() {
             </Botao>
           }
         />
-      </div>
+      </Pagina>
     )
   }
 
@@ -297,37 +220,42 @@ export function PaginaPlanoRenovacao() {
     acompanhamentoDias: dados.acompanhamentoDias,
     hoje: dados.hoje,
   })
+  const estacoes = estacoesDaRenovacao({
+    inicio: inicioPreparacao,
+    limite: limiteProtocolo,
+    vencimento: dados.validade,
+    protocoladoEm: dados.protocoladoEm,
+    hoje: dados.hoje,
+  })
 
   return (
-    <div className="flex flex-col gap-(--e-4)">
-      <Migalhas licenca={dados.licenca} />
-
-      <header className="flex flex-wrap items-start gap-(--e-3)">
-        <SiglaEmpreendimento nome={dados.empreendimentoNome} grande />
-        <div className="flex min-w-0 flex-1 flex-col gap-(--e-05)">
-          <h1 className="titulo-tela text-(--tinta)">Renovação da {dados.licenca}</h1>
-          <p className="corpo text-(--tinta-2)">
+    <Pagina
+      titulo={`Renovação da ${dados.licenca}`}
+      voltar={VOLTAR}
+      meta={
+        <span className="flex flex-wrap items-center gap-x-(--e-3) gap-y-(--e-1)">
+          <span>
             <Link to={`/empreendimentos/${dados.empreendimentoId}`}>
               {dados.empreendimentoNome}
             </Link>
             {dados.orgao ? ` · ${dados.orgao}` : ''}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-(--e-3)">
+          </span>
           <SeloRenovacao situacao={situacao} hoje={dados.hoje} />
-          {podeEditar ? (
-            <Botao
-              aparencia="primario"
-              onClick={() => {
-                setProtocoloAberto(true)
-              }}
-            >
-              Registrar protocolo
-            </Botao>
-          ) : null}
-        </div>
-      </header>
-
+        </span>
+      }
+      acao={
+        podeEditar ? (
+          <Botao
+            aparencia="primario"
+            onClick={() => {
+              setProtocoloAberto(true)
+            }}
+          >
+            Registrar protocolo
+          </Botao>
+        ) : null
+      }
+    >
       {protocolado && dados.protocoladoEm ? (
         <MensagemSecao
           tom="sucesso"
@@ -372,62 +300,67 @@ export function PaginaPlanoRenovacao() {
 
       <section
         aria-label="Prazos da renovação"
-        className="flex flex-col gap-(--e-3) rounded-(--raio-painel) border bg-(--folha) shadow-cartao p-(--e-3)"
+        className="flex flex-col overflow-hidden rounded-(--raio-painel) border bg-(--folha)"
       >
-        <LinhaDoTempo
-          inicio={inicioPreparacao}
-          limite={limiteProtocolo}
-          vencimento={dados.validade}
-          hoje={dados.hoje}
-        />
-        <p className="text-xs text-(--tinta-2)">
-          Limite = vencimento − {dados.diasLimite} dias corridos. Preparação = limite −
-          antecedência.
-        </p>
-        <Antecedencia
-          key={dados.rowVersion}
-          plano={dados}
-          podeEditar={podeEditar}
-          rascunho={textoRascunho}
-          aoMudarRascunho={setRascunho}
-          aoSalvar={async () => {
-            setRascunho(null)
-            await recarregar()
-          }}
-        />
-        {!ehGestao ? (
-          <p className="text-xs text-(--tinta-2)">
-            Só a Gestão muda a antecedência e registra o protocolo.
-          </p>
-        ) : null}
+        <div className="flex flex-wrap divide-x border-b">
+          {protocolado ? null : (
+            <Marco
+              dias={diferencaEmDias(limiteProtocolo, dados.hoje)}
+              rotulo="até o limite de protocolo"
+              rotuloPassou="depois do limite de protocolo"
+            />
+          )}
+          <Marco
+            dias={diferencaEmDias(dados.validade, dados.hoje)}
+            rotulo="até o vencimento"
+            rotuloPassou="de licença vencida"
+          />
+        </div>
+        <div className="px-(--e-5) py-(--e-5)">
+          <LinhaDoTrajeto estacoes={estacoes} />
+        </div>
+        <div className="flex flex-col gap-(--e-2) border-t px-(--e-5) py-(--e-4)">
+          <Antecedencia
+            key={dados.rowVersion}
+            plano={dados}
+            podeEditar={podeEditar}
+            rascunho={textoRascunho}
+            aoMudarRascunho={setRascunho}
+            aoSalvar={async () => {
+              setRascunho(null)
+              await recarregar()
+            }}
+          />
+          {!ehGestao ? (
+            <p className="text-xs text-(--tinta-2)">
+              Só a Gestão muda a antecedência e registra o protocolo.
+            </p>
+          ) : null}
+        </div>
       </section>
 
-      <section
-        aria-labelledby="titulo-etapas-renovacao"
-        className="flex flex-col overflow-hidden rounded-(--raio-painel) border bg-(--folha) shadow-cartao"
-      >
-        <header className="flex flex-wrap items-center justify-between gap-(--e-2) border-b px-(--e-3) py-(--e-3)">
-          <h2 id="titulo-etapas-renovacao" className="titulo-secao">
-            Etapas preparatórias
-          </h2>
-          <span className="text-xs text-(--tinta-2)">
-            {etapas.length} {etapas.length === 1 ? 'etapa' : 'etapas'} · antecedência de{' '}
-            {diasPrevia} {diasPrevia === 1 ? 'dia' : 'dias'}
-          </span>
-        </header>
-        <ol className="flex flex-col">
+      <section aria-labelledby="titulo-etapas-renovacao" className="flex flex-col gap-(--e-3)">
+        <h2 id="titulo-etapas-renovacao" className="titulo-secao text-(--tinta)">
+          Etapas preparatórias
+        </h2>
+        <ol className="flex flex-col overflow-hidden rounded-(--raio-painel) border bg-(--folha)">
           {etapas.map((etapa) => (
             <li
               key={etapa.titulo}
-              className="flex items-start gap-(--e-2) border-b px-(--e-3) py-(--e-2) last:border-b-0"
+              className={cn(
+                'flex min-h-(--linha) items-center gap-(--e-4) border-b border-(--regra-leve) px-(--e-4) py-(--e-2) last:border-b-0',
+                etapa.prazo === dados.hoje && 'bg-(--sinal-fundo)',
+              )}
             >
-              <Icone nome="clock" className="mt-0.5 text-(--icone)" />
-              <span className="flex flex-col">
-                <span className="corpo">{etapa.titulo}</span>
-                <span className="text-xs text-(--tinta-2)">
-                  Meta {formatarDataCivil(etapa.prazo)}
-                </span>
+              <span
+                className={cn(
+                  'w-[88px] shrink-0 corpo-medio numero',
+                  etapa.prazo < dados.hoje ? 'text-(--tinta-2)' : 'text-(--tinta)',
+                )}
+              >
+                {formatarDataCivil(etapa.prazo)}
               </span>
+              <span className="corpo text-(--tinta)">{etapa.titulo}</span>
             </li>
           ))}
         </ol>
@@ -450,6 +383,6 @@ export function PaginaPlanoRenovacao() {
           }}
         />
       ) : null}
-    </div>
+    </Pagina>
   )
 }

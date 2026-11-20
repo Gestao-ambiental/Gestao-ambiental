@@ -9,14 +9,13 @@ import { useMutation } from '@tanstack/react-query'
 import { useId, useState } from 'react'
 
 import { Botao } from '@/components/ui/botao'
+import { classeCampo, classeSelecao } from '@/components/ui/estilos-campo'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { definirAcompanhamento, type PlanoRenovacao } from '@/lib/api/renovacoes'
 import { mensagemDoErro } from '@/lib/erros'
+import { cn } from '@/lib/utils'
 
 const OUTRO = 'outro'
-
-const classeCampo =
-  'h-(--controle) rounded-(--raio) border border-(--campo-borda) border-b-(--campo-borda) bg-(--campo) px-(--e-2) corpo text-(--tinta) outline-none focus:border-b-(--campo-borda-ativa) focus:shadow-[inset_0_-1px_0_0_var(--campo-borda-ativa)]'
 
 /**
  * "Acompanhar o órgão a cada…" (Protótipo 17, artboard 05; decisão de 19/10/2026): intervalo por
@@ -69,7 +68,7 @@ export function AcompanhamentoOrgao({
         </MensagemSecao>
       ) : null}
       <div className="flex flex-wrap items-center gap-(--e-2)">
-        <label htmlFor={seletorId} className="corpo">
+        <label htmlFor={seletorId} className="corpo-medio">
           Acompanhar o órgão
         </label>
         <select
@@ -78,7 +77,7 @@ export function AcompanhamentoOrgao({
           onChange={(evento) => {
             setOpcao(evento.target.value)
           }}
-          className={classeCampo}
+          className={classeSelecao}
         >
           <option value="">Escolha</option>
           {INTERVALOS_ACOMPANHAMENTO.map((i) => (
@@ -98,7 +97,7 @@ export function AcompanhamentoOrgao({
               onChange={(evento) => {
                 setOutro(evento.target.value.replace(/\D/g, '').slice(0, 3))
               }}
-              className={`${classeCampo} w-20`}
+              className={cn(classeCampo, 'w-20 numero')}
             />
             dias
           </label>
@@ -114,7 +113,14 @@ export function AcompanhamentoOrgao({
           {salvar.isPending ? 'Salvando…' : 'Salvar'}
         </Botao>
       </div>
-      <p className="text-xs text-(--tinta-2)" aria-live="polite">
+      <p
+        className={
+          opcao === OUTRO && outro !== '' && !valido
+            ? 'text-xs text-(--atraso-texto)'
+            : 'text-xs text-(--tinta-2)'
+        }
+        aria-live="polite"
+      >
         {opcao === OUTRO && outro !== '' && !valido ? 'Use de 1 a 365 dias.' : resumo}
       </p>
     </div>

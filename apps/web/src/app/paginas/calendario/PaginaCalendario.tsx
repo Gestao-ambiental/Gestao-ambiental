@@ -10,23 +10,19 @@ import {
 } from '@gestao-ambiental/domain'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Link } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Pagina } from '@/app/paginas/Pagina'
-import { EventoPrazoDeResiduo } from '@/app/paginas/residuos/prazos/EventoPrazoDeResiduo'
 import {
   CHAVE_PRAZOS_RESIDUO,
   agruparPrazosDeResiduoPorDia,
-  descricaoDoPrazoDeResiduo,
 } from '@/app/paginas/residuos/prazos/prazos-de-residuos'
-import { EstadoErro, EstadoVazio } from '@/components/estados'
+import { Carregando, EstadoErro, EstadoVazio } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
 import { BotaoIcone } from '@/components/ui/botao-icone'
 import { CaixaSelecao } from '@/components/ui/caixa-selecao'
 import { Dialogo } from '@/components/ui/dialogo'
-import { Icone } from '@/components/ui/icone'
-import { EsqueletoLinhas } from '@/components/ui/esqueleto'
+import { classeSelecao } from '@/components/ui/estilos-campo'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { listarMembrosAtivos } from '@/lib/api/licencas'
 import {
@@ -40,13 +36,27 @@ import { CHAVE_TAREFAS, listarTarefasDeServico } from '@/lib/api/tarefas'
 import { nomeDoMes } from '@/lib/datas'
 import { cn } from '@/lib/utils'
 
+import { EventoDoDia, MarcaDoTipo } from './ItemDoCalendario'
+import { itemDoEvento, itemDoResiduo, type ItemDoDia } from './itens-do-calendario'
+
 const DIAS_DA_SEMANA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 const VISIVEIS_POR_DIA = 3
+const MARCAS_NO_CELULAR = 3
 
-const classeSelect =
-  'h-(--controle) max-w-[200px] rounded-(--raio) border border-(--campo-borda) border-b-(--campo-borda) bg-(--campo) px-(--e-2) corpo text-(--tinta) outline-none focus:border-b-(--campo-borda-ativa) focus:shadow-[inset_0_-1px_0_0_var(--campo-borda-ativa)]'
+type Modo = 'mes' | 'semana' | 'lista'
 
-type Modo = 'mes' | 'semana'
+const MODOS: { modo: Modo; rotulo: string }[] = [
+  { modo: 'lista', rotulo: 'Lista' },
+  { modo: 'mes', rotulo: 'Mês' },
+  { modo: 'semana', rotulo: 'Semana' },
+]
+
+/** No celular a lista vem primeiro. Sem matchMedia (jsdom), mês. */
+function modoInicial(): Modo {
+  return typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 767px)').matches
+    ? 'lista'
+    : 'mes'
+}
 
 function partes(data: DataCivil): [number, number, number] {
   const [a, m, d] = data.split('-').map(Number)
@@ -58,7 +68,10 @@ function primeiroDoMes(data: DataCivil): DataCivil {
   return `${String(a)}-${String(m).padStart(2, '0')}-01` as DataCivil
 }
 
-/** Intervalo visível: mês em semanas de domingo a sábado (Protótipo 06), ou uma semana. */
+/**
+ * Intervalo visível: mês em semanas de domingo a sábado (Protótipo 06), uma semana, ou o mês
+ * exato na lista.
+ */
 function intervalo(modo: Modo, referencia: DataCivil): { inicio: DataCivil; fim: DataCivil } {
   if (modo === 'semana') {
     const inicio = adicionarDias(referencia, -diaDaSemana(referencia))
@@ -67,6 +80,7 @@ function intervalo(modo: Modo, referencia: DataCivil): { inicio: DataCivil; fim:
   const primeiro = primeiroDoMes(referencia)
   const [a, m] = partes(primeiro)
   const ultimo = adicionarDias(primeiro, ultimoDiaDoMes(a, m) - 1)
+  if (modo === 'lista') return { inicio: primeiro, fim: ultimo }
   return {
     inicio: adicionarDias(primeiro, -diaDaSemana(primeiro)),
     fim: adicionarDias(ultimo, 6 - diaDaSemana(ultimo)),
@@ -79,96 +93,35 @@ function dias(inicio: DataCivil, fim: DataCivil): DataCivil[] {
   return lista
 }
 
-function textoDoEvento(evento: EventoDoCalendario): string {
-  if (evento.tipo === 'limite_protocolo') return `Protocolo ${evento.licenca ?? ''}`.trim()
-  if (evento.tipo === 'validade') return `Validade ${evento.licenca ?? ''}`.trim()
-  return [evento.codigo, evento.titulo].filter(Boolean).join(' ')
-}
-
-function descricaoDoEvento(evento: EventoDoCalendario): string {
-  const tipo =
-    evento.tipo === 'meta'
-      ? 'Meta interna'
-      : evento.tipo === 'limite_protocolo'
-        ? 'Limite de protocolo'
-        : evento.tipo === 'validade'
-          ? 'Validade'
-          : evento.tipo === 'tarefa'
-            ? 'Tarefa de serviço'
-            : 'Prazo oficial'
-  const quem =
-    evento.tipo === 'prazo' || evento.tipo === 'meta' || evento.tipo === 'tarefa'
-      ? (evento.responsavelNome ?? 'sem responsável')
-      : null
-  return [tipo, textoDoEvento(evento), evento.empreendimentoNome, evento.unidadeNome, quem]
-    .filter(Boolean)
-    .join(' · ')
-}
-
-/**
- * Prazo oficial, meta interna, validade e limite com marcas distintas (não só cor). Prazo e meta
- * são de uma ocorrência e abrem o detalhe; o limite de protocolo abre o plano de renovação.
- */
-function Evento({
-  evento,
-  inteiro = false,
-  linkDoOrcamento = true,
-}: {
-  evento: EventoDoCalendario
-  inteiro?: boolean
-  /** Tarefa de serviço só abre o orçamento para a Gestão. */
-  linkDoOrcamento?: boolean
-}) {
-  const classes = cn(
-    'flex min-w-0 items-center gap-(--e-1) rounded-(--raio) px-(--e-15) py-0.5 text-xs',
-    evento.tipo === 'prazo' && 'bg-(--neutro-fundo) text-(--tinta)',
-    evento.tipo === 'meta' && 'border border-dashed border-(--regra-forte) text-(--tinta-2)',
-    evento.tipo === 'limite_protocolo' && 'bg-(--alerta-fundo) text-(--alerta-texto)',
-    evento.tipo === 'validade' && 'bg-(--andamento-fundo) text-(--andamento-texto)',
-    evento.tipo === 'tarefa' && 'border border-(--regra-forte) text-(--tinta)',
-  )
-  const conteudo = (
-    <>
-      {evento.tipo === 'limite_protocolo' ? <Icone nome="clock" tamanho={12} /> : null}
-      {evento.tipo === 'meta' ? <span className="font-semibold">Meta</span> : null}
-      {evento.tipo === 'tarefa' ? <span className="font-semibold">Serviço</span> : null}
-      <span className={inteiro ? 'break-words' : 'truncate'}>{textoDoEvento(evento)}</span>
-      {evento.semResponsavel ? <span className="shrink-0 text-(--tinta-2)">sem resp.</span> : null}
-    </>
-  )
-  if (evento.tipo !== 'validade' && (evento.tipo !== 'tarefa' || linkDoOrcamento)) {
-    return (
-      <Link
-        to={
-          evento.tipo === 'limite_protocolo'
-            ? `/renovacoes/${evento.id}`
-            : evento.tipo === 'tarefa'
-              ? `/orcamentos/${evento.orcamentoId ?? ''}`
-              : `/ocorrencias/${evento.id}`
-        }
-        title={descricaoDoEvento(evento)}
-        className={cn(classes, 'no-underline hover:underline')}
-      >
-        {conteudo}
-      </Link>
-    )
-  }
+/** Eventos do dia em linhas: marca, texto e, embaixo, empreendimento e responsável. */
+function ListaDoDia({ itens, rotulo }: { itens: ItemDoDia[]; rotulo: string }) {
   return (
-    <span title={descricaoDoEvento(evento)} className={classes}>
-      {conteudo}
-    </span>
+    <ul className="flex min-w-0 flex-col" aria-label={rotulo}>
+      {itens.map((item) => (
+        <li
+          key={item.chave}
+          className="flex min-h-11 flex-col justify-center gap-(--e-05) border-b border-(--regra-leve) py-(--e-2) last:border-b-0"
+        >
+          <EventoDoDia item={item} modo="inteiro" />
+          {item.apoio ? (
+            <span className="pl-(--e-4) text-xs text-(--tinta-2)">{item.apoio}</span>
+          ) : null}
+        </li>
+      ))}
+    </ul>
   )
 }
 
 /**
- * /calendario (Protótipo 06; EQ-04): mês e semana, filtros por pessoa, unidade e "só sem
- * responsável". As datas são civis (o fuso do aparelho não move nada); no celular vira agenda.
+ * /calendario (Protótipo 06; EQ-04): mês, semana e lista, com filtros por pessoa, unidade e "só
+ * sem responsável". As datas são civis (o fuso do aparelho não move nada). Hoje acende em lima;
+ * cada tipo de evento tem forma própria. No celular, a lista vem primeiro.
  */
 export function PaginaCalendario() {
   const { atual } = useConsultoria()
   const cid = atual.consultoriaId
   const hoje = hojeNoFuso(new Date(), atual.fuso)
-  const [modo, setModo] = useState<Modo>('mes')
+  const [modo, setModo] = useState<Modo>(modoInicial)
   const [referencia, setReferencia] = useState<DataCivil>(hoje)
   const [filtros, setFiltros] = useState<FiltrosDoCalendario>({
     responsavelId: null,
@@ -220,7 +173,6 @@ export function PaginaCalendario() {
     queryFn: () => listarUnidadesDaConsultoria(cid),
   })
 
-  const porDia = new Map<string, EventoDoCalendario[]>()
   const eventosDeTarefa: EventoDoCalendario[] = filtros.unidadeId
     ? []
     : (tarefas.data ?? []).flatMap((t) =>
@@ -242,218 +194,190 @@ export function PaginaCalendario() {
             ]
           : [],
       )
+  // Eventos do banco e tarefas primeiro; os prazos de resíduos fecham o dia.
+  const porDia = new Map<string, ItemDoDia[]>()
   for (const evento of [...(eventos.data ?? []), ...eventosDeTarefa]) {
-    porDia.set(evento.data, [...(porDia.get(evento.data) ?? []), evento])
+    porDia.set(evento.data, [...(porDia.get(evento.data) ?? []), itemDoEvento(evento, ehGestao)])
   }
+  for (const [dia, prazos] of residuosPorDia) {
+    porDia.set(dia, [...(porDia.get(dia) ?? []), ...prazos.map(itemDoResiduo)])
+  }
+  const doDia = (d: DataCivil) => porDia.get(d) ?? []
 
   const [anoRef, mesRef] = partes(referencia)
   const titulo =
-    modo === 'mes'
-      ? nomeDoMes(anoRef, mesRef)
-      : `${formatarDataCivil(inicio)} a ${formatarDataCivil(fim)}`
+    modo === 'semana'
+      ? `${formatarDataCivil(inicio)} a ${formatarDataCivil(fim)}`
+      : nomeDoMes(anoRef, mesRef)
+  const porSemana = modo === 'semana'
 
   function andar(sentido: 1 | -1) {
     setReferencia((r) =>
-      modo === 'mes' ? adicionarMeses(primeiroDoMes(r), sentido) : adicionarDias(r, 7 * sentido),
+      porSemana ? adicionarDias(r, 7 * sentido) : adicionarMeses(primeiroDoMes(r), sentido),
     )
   }
 
   const diasVisiveis = dias(inicio, fim)
   const semanas: DataCivil[][] = []
   for (let i = 0; i < diasVisiveis.length; i += 7) semanas.push(diasVisiveis.slice(i, i + 7))
-  const quantosNoDia = (d: DataCivil) =>
-    (porDia.get(d)?.length ?? 0) + (residuosPorDia.get(d)?.length ?? 0)
-  const agenda = diasVisiveis.filter((d) => d >= hoje && quantosNoDia(d) > 0)
+  // Na lista, de hoje em diante; mês que já passou mostra tudo.
+  const agenda = diasVisiveis.filter((d) => (fim < hoje || d >= hoje) && doDia(d).length > 0)
 
-  return (
-    <div className="flex flex-col gap-(--e-4)">
-      <Pagina titulo="Calendário">{null}</Pagina>
-
-      <div className="flex flex-wrap items-center gap-(--e-2)">
-        <BotaoIcone
-          icone="chevron-left"
-          rotulo={modo === 'mes' ? 'Mês anterior' : 'Semana anterior'}
-          onClick={() => {
-            andar(-1)
-          }}
-        />
-        <h2 className="min-w-[180px] titulo-secao" aria-live="polite">
-          {titulo}
-        </h2>
-        <BotaoIcone
-          icone="chevron-right"
-          rotulo={modo === 'mes' ? 'Próximo mês' : 'Próxima semana'}
-          onClick={() => {
-            andar(1)
-          }}
-        />
-        <Botao
-          onClick={() => {
-            setReferencia(hoje)
-          }}
-        >
-          Hoje
-        </Botao>
-        <label>
-          <span className="sr-only">Pessoa</span>
-          <select
-            className={classeSelect}
-            value={filtros.responsavelId ?? ''}
-            onChange={(evento) => {
-              setFiltros((f) => ({ ...f, responsavelId: evento.target.value || null }))
-            }}
-          >
-            <option value="">Todas as pessoas</option>
-            {(membros.data ?? []).map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.nome}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          <span className="sr-only">Unidade</span>
-          <select
-            className={classeSelect}
-            value={filtros.unidadeId ?? ''}
-            onChange={(evento) => {
-              setFiltros((f) => ({ ...f, unidadeId: evento.target.value || null }))
-            }}
-          >
-            <option value="">Todas as unidades</option>
-            {(unidades.data ?? []).map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.empreendimentoNome} · {u.nome}
-              </option>
-            ))}
-          </select>
-        </label>
-        <CaixaSelecao
-          rotulo="Só sem responsável"
-          checked={filtros.semResponsavel}
-          onChange={(evento) => {
-            setFiltros((f) => ({ ...f, semResponsavel: evento.target.checked }))
-          }}
-        />
-        <div role="group" aria-label="Visualização" className="ml-auto flex gap-(--e-1)">
-          <Botao
-            selecionado={modo === 'mes'}
-            onClick={() => {
-              setModo('mes')
-            }}
-          >
-            Mês
-          </Botao>
-          <Botao
-            selecionado={modo === 'semana'}
-            onClick={() => {
-              setModo('semana')
-            }}
-          >
-            Semana
-          </Botao>
-        </div>
-      </div>
-
-      <p className="flex flex-wrap gap-x-(--e-4) gap-y-(--e-1) text-xs text-(--tinta-2)">
-        <span>Fundo cinza: prazo oficial</span>
-        <span>Tracejado “Meta”: meta interna</span>
-        <span>Âmbar com relógio: limite de protocolo</span>
-        <span>Azul: validade da licença</span>
-        <span>Verde com “Resíduos”: obrigação de resíduos</span>
-      </p>
-
-      {semFiltroDePessoa && residuos.isError ? (
-        <MensagemSecao role="alert" tom="atencao">
-          Não foi possível carregar os prazos de resíduos.
-        </MensagemSecao>
-      ) : null}
-
-      {eventos.isError ? (
-        <EstadoErro
-          titulo="Não foi possível carregar o calendário."
-          aoTentarDeNovo={() => void eventos.refetch()}
-        />
-      ) : eventos.isPending ? (
-        <div role="status" className="rounded-(--raio-painel) border bg-(--folha) shadow-cartao">
-          <span className="sr-only">Carregando o calendário</span>
-          <EsqueletoLinhas linhas={6} />
-        </div>
-      ) : (
-        <>
-          <div className="hidden overflow-x-auto rounded-(--raio-painel) border bg-(--folha) shadow-cartao md:block">
-            <table
-              className="w-full table-fixed border-collapse"
-              aria-label={`Calendário de ${titulo}`}
+  let conteudo
+  if (eventos.isError) {
+    conteudo = (
+      <EstadoErro
+        titulo="Não foi possível carregar o calendário."
+        aoTentarDeNovo={() => void eventos.refetch()}
+      />
+    )
+  } else if (eventos.isPending) {
+    conteudo = <Carregando rotulo="Carregando o calendário" linhas={6} />
+  } else if (modo === 'lista') {
+    conteudo =
+      agenda.length === 0 ? (
+        <EstadoVazio
+          icone="calendar"
+          titulo="Nada a partir de hoje neste período"
+          acaoPrincipal={
+            <Botao
+              iconeDepois="chevron-right"
+              onClick={() => {
+                andar(1)
+              }}
             >
-              <thead>
-                <tr>
-                  {DIAS_DA_SEMANA.map((d) => (
-                    <th
-                      key={d}
-                      scope="col"
-                      className="h-8 border-b px-(--e-2) text-left rotulo-maiusculo text-(--tinta-2)"
-                    >
-                      {d}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {semanas.map((semana) => (
-                  <tr key={semana[0]}>
-                    {semana.map((dia) => {
-                      const doDia = porDia.get(dia) ?? []
-                      const residuosDoDia = residuosPorDia.get(dia) ?? []
-                      const totalDoDia = doDia.length + residuosDoDia.length
-                      const foraDoMes = modo === 'mes' && partes(dia)[1] !== mesRef
-                      const ehHoje = dia === hoje
-                      const limite = modo === 'semana' ? totalDoDia : VISIVEIS_POR_DIA
-                      const restantes = totalDoDia - limite
-                      return (
-                        <td
-                          key={dia}
-                          className={cn(
-                            'border-r border-b p-(--e-15) align-top last:border-r-0',
-                            modo === 'mes' ? 'h-28' : 'h-64',
-                            foraDoMes && 'bg-(--chao)',
-                          )}
-                        >
-                          <div className="flex flex-col gap-(--e-1)">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setDiaAberto(dia)
-                              }}
-                              aria-label={`${formatarDataCivil(dia)}, ${String(totalDoDia)} ${totalDoDia === 1 ? 'evento' : 'eventos'}`}
+              Ver o mês seguinte
+            </Botao>
+          }
+        />
+      ) : (
+        <section
+          aria-label="Agenda"
+          className="overflow-hidden rounded-(--raio-painel) border bg-(--folha)"
+        >
+          <ol className="flex flex-col">
+            {agenda.map((dia) => {
+              const ehHoje = dia === hoje
+              const nomeDoDia = `${ehHoje ? 'Hoje, ' : ''}${nomeDoDiaDaSemana(dia)}, ${formatarDataCivil(dia)}`
+              return (
+                <li
+                  key={dia}
+                  className={cn(
+                    'grid grid-cols-[56px_1fr] gap-(--e-3) border-b px-(--e-4) last:border-b-0 md:grid-cols-[72px_1fr]',
+                    ehHoje && 'bg-(--sinal-fundo)',
+                  )}
+                >
+                  <h3 className="flex flex-col items-start gap-(--e-1) py-(--e-3)">
+                    <span className="sr-only">{nomeDoDia}</span>
+                    {ehHoje ? (
+                      <span
+                        aria-hidden
+                        className="rounded-(--raio-mini) bg-(--sinal) px-(--e-15) py-(--e-05) text-[11px] font-[850] tracking-[0.06em] text-(--sinal-texto) uppercase"
+                      >
+                        Hoje
+                      </span>
+                    ) : (
+                      <span aria-hidden className="text-xs font-[750] text-(--tinta-2)">
+                        {DIAS_DA_SEMANA[diaDaSemana(dia)]}
+                      </span>
+                    )}
+                    <span aria-hidden className="numero-contagem text-(--tinta)">
+                      {partes(dia)[2]}
+                    </span>
+                  </h3>
+                  <ListaDoDia itens={doDia(dia)} rotulo={nomeDoDia} />
+                </li>
+              )
+            })}
+          </ol>
+        </section>
+      )
+  } else {
+    conteudo = (
+      <div className="overflow-hidden rounded-(--raio-painel) border bg-(--folha)">
+        <div className="overflow-x-auto">
+          <table
+            className="w-full table-fixed border-collapse"
+            aria-label={`Calendário de ${titulo}`}
+          >
+            <thead>
+              <tr>
+                {semanas[0]?.map((dia) => (
+                  <th
+                    key={dia}
+                    scope="col"
+                    className={cn(
+                      'h-10 border-b px-(--e-1) text-left rotulo-maiusculo md:px-(--e-2)',
+                      porSemana && dia === hoje ? 'text-(--tinta)' : 'text-(--tinta-2)',
+                    )}
+                  >
+                    {DIAS_DA_SEMANA[diaDaSemana(dia)]}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {semanas.map((semana) => (
+                <tr key={semana[0]}>
+                  {semana.map((dia) => {
+                    const itens = doDia(dia)
+                    const total = itens.length
+                    const foraDoMes = !porSemana && partes(dia)[1] !== mesRef
+                    const ehHoje = dia === hoje
+                    const limite = porSemana ? total : VISIVEIS_POR_DIA
+                    const restantes = total - limite
+                    return (
+                      <td
+                        key={dia}
+                        className={cn(
+                          'border-r border-b p-(--e-05) align-top last:border-r-0 md:p-(--e-1)',
+                          porSemana ? 'h-24 md:h-64' : 'h-16 md:h-28',
+                          foraDoMes && 'bg-(--chao)',
+                          ehHoje && 'bg-(--sinal-fundo)',
+                        )}
+                      >
+                        <div className="flex flex-col gap-(--e-05)">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDiaAberto(dia)
+                            }}
+                            aria-label={`${formatarDataCivil(dia)}, ${String(total)} ${total === 1 ? 'evento' : 'eventos'}`}
+                            className="flex w-full cursor-pointer flex-col items-center gap-(--e-1) rounded-(--raio) py-(--e-05) transicao-estado hover:bg-(--toque) max-md:min-h-11 md:w-fit md:flex-row md:px-(--e-1)"
+                          >
+                            <span
                               className={cn(
-                                'inline-flex w-fit cursor-pointer items-center gap-(--e-1) rounded-(--raio) text-xs transicao-estado hover:underline',
-                                foraDoMes ? 'text-(--tinta-2)' : 'text-(--tinta)',
+                                'inline-flex h-6 min-w-6 items-center justify-center rounded-(--raio-mini) px-(--e-1) text-xs numero',
+                                foraDoMes ? 'text-(--tinta-3)' : 'font-[650] text-(--tinta)',
+                                ehHoje && 'bg-(--sinal) font-[850] text-(--sinal-texto)',
                               )}
                             >
-                              <span
-                                className={cn(
-                                  'inline-flex min-w-5 justify-center rounded-(--raio) px-1',
-                                  ehHoje && 'bg-(--acao) font-semibold text-(--acao-texto)',
-                                )}
-                              >
-                                {partes(dia)[2]}
+                              {partes(dia)[2]}
+                            </span>
+                            {ehHoje ? (
+                              <span className="text-xs font-[750] text-(--tinta) max-md:hidden">
+                                Hoje
                               </span>
-                              {ehHoje ? (
-                                <span className="font-semibold text-(--link)">Hoje</span>
-                              ) : null}
-                            </button>
-                            {doDia.slice(0, limite).map((evento) => (
-                              <Evento
-                                key={`${evento.tipo}:${evento.id}`}
-                                evento={evento}
-                                linkDoOrcamento={ehGestao}
-                              />
-                            ))}
-                            {residuosDoDia.slice(0, Math.max(0, limite - doDia.length)).map((p) => (
-                              <EventoPrazoDeResiduo
-                                key={`residuo:${p.obrigacaoId}:${p.prazo}`}
-                                prazo={p}
+                            ) : null}
+                            {total > 0 ? (
+                              <span className="flex items-center gap-(--e-05) md:hidden">
+                                {itens.slice(0, MARCAS_NO_CELULAR).map((item) => (
+                                  <MarcaDoTipo key={item.chave} tipo={item.tipo} />
+                                ))}
+                                {total > MARCAS_NO_CELULAR ? (
+                                  <span aria-hidden className="text-[10px] font-[750]">
+                                    +
+                                  </span>
+                                ) : null}
+                              </span>
+                            ) : null}
+                          </button>
+                          <div className="flex min-w-0 flex-col gap-(--e-05) max-md:hidden">
+                            {itens.slice(0, limite).map((item) => (
+                              <EventoDoDia
+                                key={item.chave}
+                                item={item}
+                                modo={porSemana ? 'quebra' : 'linha'}
                               />
                             ))}
                             {restantes > 0 ? (
@@ -462,56 +386,128 @@ export function PaginaCalendario() {
                                 onClick={() => {
                                   setDiaAberto(dia)
                                 }}
-                                className="w-fit cursor-pointer text-xs text-(--link) hover:underline"
+                                className="w-fit cursor-pointer rounded-(--raio-mini) px-(--e-1) text-xs font-[750] text-(--link) hover:underline"
                               >
                                 +{restantes} mais
                               </button>
                             ) : null}
                           </div>
-                        </td>
-                      )
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                        </div>
+                      </td>
+                    )
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    )
+  }
 
-          <section aria-label="Agenda" className="flex flex-col gap-(--e-3) md:hidden">
-            {agenda.length === 0 ? (
-              <EstadoVazio
-                icone="calendar"
-                titulo="Nada a partir de hoje neste período"
-                descricao="Use as setas para ver outro mês."
-              />
-            ) : (
-              agenda.map((dia) => (
-                <div key={dia} className="flex flex-col gap-(--e-1)">
-                  <h3 className="corpo-medio">
-                    {dia === hoje ? 'Hoje · ' : ''}
-                    {nomeDoDiaDaSemana(dia)}, {formatarDataCivil(dia)}
-                  </h3>
-                  {(porDia.get(dia) ?? []).map((evento) => (
-                    <Evento
-                      key={`${evento.tipo}:${evento.id}`}
-                      evento={evento}
-                      inteiro
-                      linkDoOrcamento={ehGestao}
-                    />
-                  ))}
-                  {(residuosPorDia.get(dia) ?? []).map((p) => (
-                    <EventoPrazoDeResiduo
-                      key={`residuo:${p.obrigacaoId}:${p.prazo}`}
-                      prazo={p}
-                      inteiro
-                    />
-                  ))}
-                </div>
-              ))
-            )}
-          </section>
-        </>
-      )}
+  return (
+    <Pagina
+      titulo="Calendário"
+      acao={
+        <div role="group" aria-label="Visualização" className="flex gap-(--e-1)">
+          {MODOS.map((m) => (
+            <Botao
+              key={m.modo}
+              selecionado={modo === m.modo}
+              onClick={() => {
+                setModo(m.modo)
+              }}
+            >
+              {m.rotulo}
+            </Botao>
+          ))}
+        </div>
+      }
+    >
+      <div className="flex flex-col gap-(--e-3)">
+        <div className="flex items-center gap-(--e-1) md:gap-(--e-2)">
+          <BotaoIcone
+            icone="chevron-left"
+            rotulo={porSemana ? 'Semana anterior' : 'Mês anterior'}
+            onClick={() => {
+              andar(-1)
+            }}
+          />
+          <h2
+            className="min-w-0 flex-1 truncate text-center titulo-secao text-(--tinta) numero first-letter:uppercase md:min-w-[220px] md:flex-none md:titulo-painel"
+            aria-live="polite"
+          >
+            {titulo}
+          </h2>
+          <BotaoIcone
+            icone="chevron-right"
+            rotulo={porSemana ? 'Próxima semana' : 'Próximo mês'}
+            onClick={() => {
+              andar(1)
+            }}
+          />
+          <Botao
+            className="ml-(--e-1) shrink-0"
+            onClick={() => {
+              setReferencia(hoje)
+            }}
+          >
+            Hoje
+          </Botao>
+        </div>
+        <div className="-mx-(--e-4) flex items-center gap-(--e-2) overflow-x-auto px-(--e-4) pb-(--e-05) [scrollbar-width:none] md:mx-0 md:flex-wrap md:overflow-visible md:px-0">
+          <label className="shrink-0">
+            <span className="sr-only">Pessoa</span>
+            <select
+              className={classeSelecao}
+              value={filtros.responsavelId ?? ''}
+              onChange={(evento) => {
+                setFiltros((f) => ({ ...f, responsavelId: evento.target.value || null }))
+              }}
+            >
+              <option value="">Todas as pessoas</option>
+              {(membros.data ?? []).map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.nome}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="shrink-0">
+            <span className="sr-only">Unidade</span>
+            <select
+              className={classeSelecao}
+              value={filtros.unidadeId ?? ''}
+              onChange={(evento) => {
+                setFiltros((f) => ({ ...f, unidadeId: evento.target.value || null }))
+              }}
+            >
+              <option value="">Todas as unidades</option>
+              {(unidades.data ?? []).map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.empreendimentoNome} · {u.nome}
+                </option>
+              ))}
+            </select>
+          </label>
+          <CaixaSelecao
+            className="shrink-0 whitespace-nowrap max-md:min-h-(--controle-toque)"
+            rotulo="Só sem responsável"
+            checked={filtros.semResponsavel}
+            onChange={(evento) => {
+              setFiltros((f) => ({ ...f, semResponsavel: evento.target.checked }))
+            }}
+          />
+        </div>
+      </div>
+
+      {semFiltroDePessoa && residuos.isError ? (
+        <MensagemSecao role="alert" tom="atencao">
+          Não foi possível carregar os prazos de resíduos.
+        </MensagemSecao>
+      ) : null}
+
+      {conteudo}
 
       <Dialogo
         aberto={diaAberto !== null}
@@ -519,31 +515,17 @@ export function PaginaCalendario() {
           if (!aberto) setDiaAberto(null)
         }}
         titulo={
-          diaAberto ? `${nomeDoDiaDaSemana(diaAberto)}, ${formatarDataCivil(diaAberto)}` : 'Dia'
+          diaAberto
+            ? `${diaAberto === hoje ? 'Hoje, ' : ''}${nomeDoDiaDaSemana(diaAberto)}, ${formatarDataCivil(diaAberto)}`
+            : 'Dia'
         }
       >
-        {diaAberto && quantosNoDia(diaAberto) > 0 ? (
-          <ul className="flex flex-col gap-(--e-2)" aria-label="Eventos do dia">
-            {(porDia.get(diaAberto) ?? []).map((evento) => (
-              <li key={`${evento.tipo}:${evento.id}`} className="flex flex-col gap-(--e-05)">
-                <Evento evento={evento} inteiro linkDoOrcamento={ehGestao} />
-                <span className="text-xs text-(--tinta-2)">{descricaoDoEvento(evento)}</span>
-              </li>
-            ))}
-            {(residuosPorDia.get(diaAberto) ?? []).map((p) => (
-              <li
-                key={`residuo:${p.obrigacaoId}:${p.prazo}`}
-                className="flex flex-col gap-(--e-05)"
-              >
-                <EventoPrazoDeResiduo prazo={p} inteiro />
-                <span className="text-xs text-(--tinta-2)">{descricaoDoPrazoDeResiduo(p)}</span>
-              </li>
-            ))}
-          </ul>
+        {diaAberto && doDia(diaAberto).length > 0 ? (
+          <ListaDoDia itens={doDia(diaAberto)} rotulo="Eventos do dia" />
         ) : (
-          <p className="text-(--tinta-2)">Nenhum evento neste dia.</p>
+          <p className="corpo text-(--tinta-2)">Nenhum evento neste dia.</p>
         )}
       </Dialogo>
-    </div>
+    </Pagina>
   )
 }
