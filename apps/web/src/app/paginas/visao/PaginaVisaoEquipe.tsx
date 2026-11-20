@@ -5,7 +5,6 @@ import { Link } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Pagina } from '@/app/paginas/Pagina'
-import { SiglaEmpreendimento } from '@/app/paginas/empreendimentos/SiglaEmpreendimento'
 import { ProximosPrazosDeResiduos } from '@/app/paginas/residuos/prazos/ProximosPrazosDeResiduos'
 import { TarefasNaVisao } from '@/app/paginas/tarefas/TarefasNaVisao'
 import { Carregando, EstadoErro, EstadoVazio } from '@/components/estados'
@@ -22,6 +21,7 @@ import {
 import { Icone } from '@/components/ui/icone'
 import { classeSelecao } from '@/components/ui/estilos-campo'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
+import { ItemDoPlacar, Placar } from '@/components/ui/placar'
 import { listarEmpreendimentos } from '@/lib/api/empreendimentos'
 import { listarMembrosAtivos } from '@/lib/api/licencas'
 import {
@@ -134,51 +134,6 @@ function Responsavel({
         ))}
       </DropdownMenuContent>
     </DropdownMenu>
-  )
-}
-
-function Contador({
-  rotulo,
-  valor,
-  ativo,
-  tom,
-  aoClicar,
-}: {
-  rotulo: string
-  valor: number
-  ativo: boolean
-  tom?: 'atraso' | 'hoje'
-  aoClicar: () => void
-}) {
-  const aceso = valor > 0
-  return (
-    <button
-      type="button"
-      aria-pressed={ativo}
-      onClick={aoClicar}
-      className={cn(
-        'group relative flex min-w-[140px] flex-1 cursor-pointer flex-col items-start gap-(--e-1) px-(--e-5) py-(--e-4) text-left transicao-estado hover:bg-(--toque)',
-        'after:absolute after:inset-x-(--e-5) after:bottom-0 after:h-[3px] after:rounded-t-full after:bg-transparent',
-        ativo && 'bg-(--escolha) after:bg-(--marca-linha) hover:bg-(--escolha-toque)',
-      )}
-    >
-      <span
-        className={cn(
-          'numero-grande',
-          !aceso && 'text-(--tinta-3)',
-          aceso && tom === 'atraso' && 'text-(--atraso-texto)',
-          aceso && tom !== 'atraso' && 'text-(--tinta)',
-          aceso &&
-            tom === 'hoje' &&
-            'rounded-(--raio-mini) bg-(--sinal) px-(--e-2) text-(--sinal-texto)',
-        )}
-      >
-        {valor}
-      </span>
-      <span className="corpo-medio text-(--tinta-2) group-aria-pressed:text-(--tinta)">
-        {rotulo}
-      </span>
-    </button>
   )
 }
 
@@ -403,7 +358,6 @@ export function PaginaVisaoEquipe() {
                   </td>
                   <td className={classeCelula}>
                     <span className="flex items-center gap-(--e-2)">
-                      <SiglaEmpreendimento nome={linha.empreendimentoNome} />
                       <Link
                         to={`/empreendimentos/${linha.empreendimentoId}`}
                         className="truncate text-(--tinta)"
@@ -522,12 +476,8 @@ export function PaginaVisaoEquipe() {
     >
       {/* Sem contadores quando não carregaram: zero não substitui dado ausente (Protótipo 05). */}
       {contadores.isSuccess ? (
-        <div
-          role="group"
-          aria-label="Contadores"
-          className="grid grid-cols-2 divide-x divide-y overflow-hidden rounded-(--raio-painel) border bg-(--folha) md:flex md:divide-y-0"
-        >
-          <Contador
+        <Placar rotulo="Contadores">
+          <ItemDoPlacar
             rotulo="Atrasadas"
             valor={contadores.data.atrasadas}
             tom="atraso"
@@ -536,7 +486,7 @@ export function PaginaVisaoEquipe() {
               alternarFaixa('atrasadas')
             }}
           />
-          <Contador
+          <ItemDoPlacar
             rotulo="Vencem hoje"
             valor={contadores.data.hoje}
             tom="hoje"
@@ -545,7 +495,7 @@ export function PaginaVisaoEquipe() {
               alternarFaixa('hoje')
             }}
           />
-          <Contador
+          <ItemDoPlacar
             rotulo="Próximos 7 dias"
             valor={contadores.data.proximos7}
             ativo={faixa === 'proximos_7'}
@@ -554,7 +504,7 @@ export function PaginaVisaoEquipe() {
             }}
           />
           {ehGestao ? (
-            <Contador
+            <ItemDoPlacar
               rotulo="Sem responsável"
               valor={contadores.data.semResponsavel}
               ativo={faixa === 'sem_responsavel'}
@@ -563,7 +513,7 @@ export function PaginaVisaoEquipe() {
               }}
             />
           ) : null}
-        </div>
+        </Placar>
       ) : null}
 
       {atribuir.isError ? (

@@ -46,7 +46,12 @@ export function Pagina({ titulo, prefixo, children, acao, meta, voltar }: Props)
             </h1>
             {meta ? <div className="corpo text-(--tinta-2)">{meta}</div> : null}
           </div>
-          {acao ? <div className="flex flex-wrap items-center gap-(--e-2)">{acao}</div> : null}
+          {acao ? (
+            // Um segmentado de largura total no celular (Calendário, Campo) leva a ação junto.
+            <div className="flex flex-wrap items-center gap-(--e-2) max-md:has-[[data-largura-total]]:w-full">
+              {acao}
+            </div>
+          ) : null}
         </div>
       </header>
       {children}

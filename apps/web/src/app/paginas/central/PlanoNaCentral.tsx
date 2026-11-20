@@ -144,6 +144,7 @@ export function PlanoNaCentral({ consultoriaId, fuso }: { consultoriaId: string;
           <Selo tom={TOM_DA_SITUACAO_COMERCIAL[s.situacao]}>{rotuloDaSituacao(s)}</Selo>
         </div>
         <Placar
+          rotulo="Uso do plano"
           colunas={3}
           casas={[
             {

@@ -23,25 +23,27 @@ O que isso recusa: cartões de KPI com sombra, selos em pílula colorida em toda
 
 Estratégia: **comprometida na casca, contida no trabalho.** O trilho é verde; a folha é branca; cor de estado só onde há estado.
 
-| Token                       | Claro                 | Escuro                | Uso                                        |
-| --------------------------- | --------------------- | --------------------- | ------------------------------------------ |
-| `--chao`                    | `#f5f8f5`             | `#0b1410`             | fundo da área de conteúdo                  |
-| `--folha`                   | `#ffffff`             | `#121e19`             | painel, tabela, campo                      |
-| `--trilho`                  | `#0b4632`             | `#0e2a20`             | navegação lateral, faixa do celular        |
-| `--tinta`                   | `#0f1f18`             | `#e7efe9`             | texto principal (17:1 / 16:1)              |
-| `--tinta-2`                 | `#3f5047`             | `#a7b7ad`             | texto secundário (8,6:1 / 8,9:1)           |
-| `--tinta-3`                 | `#5b6b62`             | `#8a9b91`             | metadado, rótulo de coluna (5,6:1 / 5,9:1) |
-| `--regra` / `--regra-forte` | `#d9e1dc` / `#b4c0b8` | `#20302a` / `#2c3d35` | linhas do quadro                           |
-| `--campo-borda`             | `#7a8a81`             | `#6b7d73`             | contorno de campo (3,6:1)                  |
-| `--acao`                    | verde-placa `#0e5a3f` | lima `#e5ff73`        | botão principal                            |
-| `--sinal`                   | lima `#e5ff73`        | lima `#e5ff73`        | "agora" (tinta escura sobre ele, 15:1)     |
-| `--sinal-fundo`             | `#f0ffb3`             | `#26330f`             | linha de hoje                              |
-| `--atraso-texto`            | `#b42318`             | `#ff8b7e`             | atrasado, erro (6,6:1 / 7,5:1)             |
-| `--alerta-texto`            | `#8a5300`             | `#f2b95a`             | vence em breve                             |
-| `--ok-texto`                | `#0e6b45`             | `#7dd9a8`             | concluído, vigente                         |
-| `--andamento-texto`         | `#1d4ed8`             | `#93b4ff`             | em andamento, espera externa               |
-| `--revisao-texto`           | `#6d3fc8`             | `#b9a0ff`             | em conferência                             |
-| `--ia`                      | `#7c4ddb`             | `#b9a0ff`             | o que a IA propôs (só isso)                |
+| Token                       | Claro                 | Escuro                | Uso                                                |
+| --------------------------- | --------------------- | --------------------- | -------------------------------------------------- |
+| `--chao`                    | `#f5f8f5`             | `#0b1410`             | fundo da área de conteúdo                          |
+| `--folha`                   | `#ffffff`             | `#121e19`             | painel, tabela, campo                              |
+| `--trilho`                  | `#0b4632`             | `#0e2a20`             | navegação lateral, faixa do celular                |
+| `--tinta`                   | `#0f1f18`             | `#e7efe9`             | texto principal (17:1 / 16:1)                      |
+| `--tinta-2`                 | `#3f5047`             | `#a7b7ad`             | texto secundário (8,6:1 / 8,9:1)                   |
+| `--tinta-3`                 | `#5b6b62`             | `#8a9b91`             | metadado, rótulo de coluna (5,6:1 / 5,9:1)         |
+| `--regra` / `--regra-forte` | `#d9e1dc` / `#b4c0b8` | `#20302a` / `#2c3d35` | linhas do quadro                                   |
+| `--campo-borda`             | `#7a8a81`             | `#6b7d73`             | contorno de campo (3,6:1)                          |
+| `--acao`                    | verde-placa `#0e5a3f` | lima `#e5ff73`        | botão principal                                    |
+| `--sinal`                   | lima `#e5ff73`        | lima `#e5ff73`        | "agora" (tinta escura sobre ele, 15:1)             |
+| `--sinal-fundo`             | `#f0ffb3`             | `#26330f`             | linha de hoje                                      |
+| `--atraso-texto`            | `#b42318`             | `#ff8b7e`             | atrasado, erro (6,6:1 / 7,5:1)                     |
+| `--alerta-texto`            | `#8a5300`             | `#f2b95a`             | vence em breve                                     |
+| `--ok-texto`                | `#0e6b45`             | `#7dd9a8`             | concluído, vigente                                 |
+| `--andamento-texto`         | `#1d4ed8`             | `#93b4ff`             | em andamento, espera externa                       |
+| `--revisao-texto`           | `#6d3fc8`             | `#b9a0ff`             | em conferência                                     |
+| `--ia`                      | `#7c4ddb`             | `#b9a0ff`             | o que a IA propôs (só isso)                        |
+| `--estacao-feita`           | `#0e5a3f`             | `#b9d6c6`             | estação concluída da trilha (não é lima no escuro) |
+| `--papel`                   | `#ffffff`             | `#ffffff`             | sempre branco: QR code, folha de documento         |
 
 Cada estado tem `-texto`, `-fundo` e, quando precisa, `-borda`. Superfícies de interação: `--toque` (hover), `--aperto` (pressionado), `--escolha` / `--escolha-toque` (selecionado), `--off` (desabilitado), `--flutuante`, `--veu`.
 
@@ -49,7 +51,7 @@ Cada estado tem `-texto`, `-fundo` e, quando precisa, `-borda`. Superfícies de 
 
 ## Tipo
 
-**Overpass** (variável, auto-hospedada via `@fontsource-variable/overpass`; CSP `font-src 'self'`). Uma família só, em várias medidas e pesos: o espécime manda.
+**Overpass** (variável, auto-hospedada via `@fontsource-variable/overpass`; CSP `font-src 'self'`). Uma família só, em várias medidas e pesos: o espécime manda. O ponto médio "·" vem de uma fonte do sistema (`Grama Ponto`, `unicode-range: U+00B7`), porque o da Overpass encosta na palavra seguinte.
 
 | Utilitário         | Medida         | Peso | Uso                           |
 | ------------------ | -------------- | ---- | ----------------------------- |
@@ -84,24 +86,28 @@ Curto, com saída exponencial (`--saida`), nunca atrasa um clique: `--dur-rapida
 
 ## Componentes
 
-| Componente            | Arquivo                                             | Notas                                                                                      |
-| --------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| Casca                 | `app/layout/AppShell.tsx`                           | trilho verde (desktop), faixa verde + barra inferior (celular), busca Ctrl+K               |
-| Página                | `app/paginas/Pagina.tsx`                            | `titulo`, `acao`, `meta`, `voltar`                                                         |
-| Botão                 | `components/ui/botao.tsx`                           | `primario`, `padrao`, `sutil`, `perigo`, `link`; `compacto`; `selecionado`                 |
-| Botão de ícone        | `components/ui/botao-icone.tsx`                     | nome acessível obrigatório; 44px no celular                                                |
-| Situação              | `components/ui/selo.tsx`                            | palavra + forma; `perigoForte` = plaqueta cheia                                            |
-| Campo                 | `components/ui/campo-texto.tsx`, `estilos-campo.ts` | `classeCampo`, `classeSelecao`, `classeAreaTexto` para nativos                             |
-| Trilha                | `components/ui/trilha.tsx`                          | linha de trajeto: estação cheia (feito), lima com aro (atual), vazada + tracejado (futuro) |
-| Contagem              | `app/paginas/visao/Contagem.tsx`                    | coluna "Faltam" do quadro                                                                  |
-| Mensagem              | `components/ui/mensagem-secao.tsx`                  | faixa no fundo do estado, sem borda                                                        |
-| Estados               | `components/estados/*`                              | vazio (ícone 32 + título), carregando (esqueleto 48px), erro, sem permissão                |
-| Menu, diálogo, gaveta | `dropdown-menu.tsx`, `dialogo.tsx`, `sheet.tsx`     | diálogo sobe do rodapé no celular                                                          |
+| Componente            | Arquivo                                             | Notas                                                                                                                                             |
+| --------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Casca                 | `app/layout/AppShell.tsx`                           | trilho verde (desktop), faixa verde + barra inferior (celular), busca Ctrl+K                                                                      |
+| Página                | `app/paginas/Pagina.tsx`                            | `titulo`, `acao`, `meta`, `voltar`                                                                                                                |
+| Botão                 | `components/ui/botao.tsx`                           | `primario`, `padrao`, `sutil`, `perigo`, `link`; `compacto`; `selecionado`                                                                        |
+| Botão de ícone        | `components/ui/botao-icone.tsx`                     | nome acessível obrigatório; 44px no celular                                                                                                       |
+| Situação              | `components/ui/selo.tsx`                            | palavra + forma; `perigoForte` = plaqueta cheia                                                                                                   |
+| Campo                 | `components/ui/campo-texto.tsx`, `estilos-campo.ts` | `classeCampo`, `classeSelecao`, `classeAreaTexto` para nativos                                                                                    |
+| Trilha                | `components/ui/trilha.tsx`                          | linha de trajeto: estação cheia `--estacao-feita` (feito), lima com aro (atual), vazada + tracejado (futuro); `podeEscolher`, `compactaNoCelular` |
+| Placar                | `components/ui/placar.tsx`                          | `Placar` + `ItemDoPlacar`: faixa única, número de 40px; botão quando filtra                                                                       |
+| Segmentado            | `components/ui/segmentado.tsx`                      | grupo colado, selecionado em tinta cheia; um só desenho no app                                                                                    |
+| Contagem              | `app/paginas/visao/Contagem.tsx`                    | coluna "Faltam" do quadro                                                                                                                         |
+| Mensagem              | `components/ui/mensagem-secao.tsx`                  | faixa no fundo do estado, sem borda                                                                                                               |
+| Estados               | `components/estados/*`                              | vazio (ícone 32 + título), carregando (esqueleto 48px), erro, sem permissão                                                                       |
+| Menu, diálogo, gaveta | `dropdown-menu.tsx`, `dialogo.tsx`, `sheet.tsx`     | diálogo sobe do rodapé no celular                                                                                                                 |
 
 ## Padrões de tela
 
 - **Quadro (lista de prazos, documentos, MTRs):** painel com regra de 1px; cabeçalho em `rotulo-maiusculo`; linhas de 48px com regra leve; primeira coluna é o que se escaneia (contagem, data, número do documento) em numeral tabular; hover em `--toque`; linha de hoje em `--sinal-fundo`. Paginação "1–20 de 54" no rodapé. No celular, cada linha vira item com a contagem à esquerda.
 - **Placar (contadores que filtram):** uma faixa só, dividida por regras, número de 40px e rótulo embaixo; ativo com fundo `--escolha` e traço de 3px embaixo. Não são cartões soltos.
-- **Abas:** texto 16/700, ativa com traço de 3px `--marca-linha`, contagem em plaqueta escura.
+- **Abas:** texto 16/700, ativa com traço de 3px `--marca-linha`, contagem em plaqueta escura. Contagem zerada não aparece.
+- **Situação longa:** a plaqueta cheia mostra o rótulo curto ("Vencida", "Protocolo vencido"); os dias ficam na coluna "Faltam" e o rótulo completo vai para o leitor de tela.
+- **Sem sigla em linha:** o nome do empreendimento já identifica; nada de quadradinho de iniciais repetido em toda linha.
 - **Detalhe:** título grande com o número do documento, linha `meta` com órgão e situação, conteúdo em coluna e dados laterais sem caixa.
 - **Formulário:** rótulo em cima, campo de 36px, erro em vermelho forte embaixo, ação principal no fim à direita (no celular, largura total).

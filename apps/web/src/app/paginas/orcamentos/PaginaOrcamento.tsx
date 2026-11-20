@@ -28,6 +28,7 @@ import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/
 import { Botao } from '@/components/ui/botao'
 import { BotaoIcone } from '@/components/ui/botao-icone'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
+import { Segmentado, type OpcaoSegmentada } from '@/components/ui/segmentado'
 import { Trilha } from '@/components/ui/trilha'
 import { OpcaoRadio } from '@/components/ui/caixa-selecao'
 import { CampoTexto } from '@/components/ui/campo-texto'
@@ -105,6 +106,8 @@ const PRECO_DIGITADO = '__preco_digitado__'
 
 /** Atalhos de margem, de 5 em 5 (as mais usadas); o campo aceita qualquer outra. */
 const MARGENS_RAPIDAS = [10, 15, 20, 25, 30] as const
+const OPCOES_DE_MARGEM: readonly OpcaoSegmentada<(typeof MARGENS_RAPIDAS)[number]>[] =
+  MARGENS_RAPIDAS.map((m) => ({ valor: m, rotulo: `${String(m)}%` }))
 
 const MENSAGEM_DA_PENDENCIA: Record<PendenciaDoPreco, string> = {
   sem_itens: 'Adicione os serviços para calcular o preço.',
@@ -1706,26 +1709,15 @@ function Editor({
                                   mudar((a) => ({ ...a, margem: valor }))
                                 }}
                               />
-                              <div
-                                role="group"
-                                aria-label="Margens mais usadas"
-                                className="flex flex-wrap gap-(--e-1)"
-                              >
-                                {MARGENS_RAPIDAS.map((m) => (
-                                  <Botao
-                                    key={m}
-                                    tamanho="compacto"
-                                    selecionado={margemLida === m * 100}
-                                    aria-pressed={margemLida === m * 100}
-                                    disabled={!editavel}
-                                    onClick={() => {
-                                      mudar((a) => ({ ...a, margem: String(m) }))
-                                    }}
-                                  >
-                                    {m}%
-                                  </Botao>
-                                ))}
-                              </div>
+                              <Segmentado
+                                rotulo="Margens mais usadas"
+                                opcoes={OPCOES_DE_MARGEM}
+                                valor={MARGENS_RAPIDAS.find((m) => margemLida === m * 100) ?? null}
+                                desabilitado={!editavel}
+                                aoMudar={(m) => {
+                                  mudar((a) => ({ ...a, margem: String(m) }))
+                                }}
+                              />
                             </div>
                           </CampoRotulado>
                         )}

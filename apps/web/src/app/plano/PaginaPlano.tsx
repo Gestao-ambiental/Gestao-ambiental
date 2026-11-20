@@ -25,10 +25,13 @@ import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Pagina } from '@/app/paginas/Pagina'
 import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
+import { classeRadio } from '@/components/ui/caixa-selecao'
 import { CampoTexto } from '@/components/ui/campo-texto'
 import { Dialogo } from '@/components/ui/dialogo'
 import { Icone } from '@/components/ui/icone'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
+import { ItemDoPlacar, Placar } from '@/components/ui/placar'
+import { Segmentado, type OpcaoSegmentada } from '@/components/ui/segmentado'
 import { Selo } from '@/components/ui/selo'
 import {
   ROTULO_DA_COBRANCA,
@@ -85,15 +88,9 @@ function Secao({
   )
 }
 
-/** Casa da faixa de uso: valor grande em cima, rótulo embaixo. */
-function Casa({ rotulo, children }: { rotulo: string; children: ReactNode }) {
-  return (
-    <div className="flex min-w-0 flex-col gap-(--e-05) px-(--e-5) py-(--e-4)">
-      <dt className="order-2 rotulo">{rotulo}</dt>
-      <dd className="order-1 numero-contagem text-(--tinta)">{children}</dd>
-    </div>
-  )
-}
+const CICLOS: readonly OpcaoSegmentada<CicloDoPlano>[] = (['mensal', 'anual'] as const).map(
+  (c) => ({ valor: c, rotulo: ROTULO_DO_CICLO[c] }),
+)
 
 function valorDoPlanoNoCiclo(
   plano: CodigoPlano,
@@ -157,29 +154,44 @@ function SituacaoEUso({
           </p>
         ) : null}
       </div>
-      <dl className="grid grid-cols-2 divide-x divide-y divide-(--regra-leve) md:flex md:divide-y-0 [&>*]:md:flex-1">
-        <Casa rotulo="Pessoas">
-          {s.limites
-            ? `${String(dados.uso.pessoas)} de ${String(s.limites.pessoas)}`
-            : String(dados.uso.pessoas)}
-        </Casa>
-        <Casa rotulo="Empreendimentos ativos">
-          {s.limites
-            ? `${String(dados.uso.empreendimentos)} de ${String(s.limites.empreendimentos)}`
-            : String(dados.uso.empreendimentos)}
-        </Casa>
+      <Placar rotulo="Uso e valores" tamanho="compacto" moldura={false}>
+        <ItemDoPlacar
+          rotulo="Pessoas"
+          valor={
+            s.limites
+              ? `${String(dados.uso.pessoas)} de ${String(s.limites.pessoas)}`
+              : String(dados.uso.pessoas)
+          }
+        />
+        <ItemDoPlacar
+          rotulo="Empreendimentos ativos"
+          valor={
+            s.limites
+              ? `${String(dados.uso.empreendimentos)} de ${String(s.limites.empreendimentos)}`
+              : String(dados.uso.empreendimentos)
+          }
+        />
         {dados.proximoVencimento && !a?.validaAte ? (
-          <Casa rotulo="Próximo vencimento">{formatarDataCivil(dados.proximoVencimento)}</Casa>
+          <ItemDoPlacar
+            rotulo="Próximo vencimento"
+            valor={formatarDataCivil(dados.proximoVencimento)}
+          />
         ) : null}
         {s.limites ? (
-          <Casa rotulo="Adicionais por mês">{formatarReais(adicionais.valorCentavos)}</Casa>
+          <ItemDoPlacar
+            rotulo="Adicionais por mês"
+            valor={formatarReais(adicionais.valorCentavos)}
+          />
         ) : null}
         {plano && ciclo && s.limites ? (
-          <Casa rotulo={ciclo === 'anual' ? 'Valor mensal equivalente' : 'Valor mensal'}>
-            {formatarReais(equivalenteMensal(plano, ciclo, catalogo) + adicionais.valorCentavos)}
-          </Casa>
+          <ItemDoPlacar
+            rotulo={ciclo === 'anual' ? 'Valor mensal equivalente' : 'Valor mensal'}
+            valor={formatarReais(
+              equivalenteMensal(plano, ciclo, catalogo) + adicionais.valorCentavos,
+            )}
+          />
         ) : null}
-      </dl>
+      </Placar>
     </section>
   )
 }
@@ -214,44 +226,40 @@ function OpcaoDePlano({
       tem: true,
     })),
   ]
-  // Seleção pela borda verde e pelo sinal (marca lima com check), sem sombra.
+  // Escolha exclusiva: rádio visível ao lado do nome; o cartão escolhido ganha a borda verde.
+  // O nome acessível é só o do plano; o preço e o que inclui entram como descrição.
+  const id = useId()
   return (
     <label
       className={cn(
-        'relative flex cursor-pointer flex-col gap-(--e-3) rounded-(--raio-painel) border bg-(--folha) p-(--e-4) transicao-estado hover:border-(--regra-forte)',
-        'has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-(--foco)',
-        escolhido &&
-          'border-(--marca-linha) shadow-[inset_0_0_0_1px_var(--marca-linha)] hover:border-(--marca-linha)',
+        'flex cursor-pointer flex-col gap-(--e-3) rounded-(--raio-painel) border bg-(--folha) p-(--e-4) transicao-estado hover:border-(--regra-forte)',
+        'has-checked:border-(--marca-linha) has-checked:bg-(--escolha) has-checked:shadow-[inset_0_0_0_1px_var(--marca-linha)]',
       )}
     >
-      <input
-        type="radio"
-        name={nome}
-        value={plano}
-        checked={escolhido}
-        onChange={aoEscolher}
-        className="sr-only"
-      />
-      <span className="flex items-start justify-between gap-(--e-2)">
-        <span className="flex flex-col gap-(--e-05)">
-          <span className="flex items-center gap-(--e-2)">
-            <span className="titulo-secao text-(--tinta)">{p.nome}</span>
+      <span className="flex items-start gap-(--e-2)">
+        <input
+          type="radio"
+          name={nome}
+          value={plano}
+          checked={escolhido}
+          onChange={aoEscolher}
+          aria-labelledby={`${id}-nome`}
+          aria-describedby={`${id}-preco ${id}-inclui`}
+          className={cn(classeRadio, 'mt-[3px]')}
+        />
+        <span className="flex min-w-0 flex-col gap-(--e-05)">
+          <span className="flex flex-wrap items-center gap-(--e-2)">
+            <span id={`${id}-nome`} className="titulo-secao text-(--tinta)">
+              {p.nome}
+            </span>
             {atual ? <Selo tom="sucesso">Atual</Selo> : null}
           </span>
           <span className="rotulo numero">
             {p.pessoas} pessoas · {p.empreendimentos} empreendimentos ativos
           </span>
         </span>
-        {escolhido ? (
-          <span
-            aria-hidden
-            className="inline-flex size-6 shrink-0 items-center justify-center rounded-(--raio-mini) bg-(--sinal) text-(--sinal-texto)"
-          >
-            <Icone nome="check" tamanho={14} />
-          </span>
-        ) : null}
       </span>
-      <span className="flex flex-col gap-(--e-05)">
+      <span id={`${id}-preco`} className="flex flex-col gap-(--e-05)">
         <span className="titulo-painel text-(--tinta) numero">
           {valorDoPlanoNoCiclo(plano, ciclo, catalogo)}
         </span>
@@ -262,21 +270,22 @@ function OpcaoDePlano({
         ) : null}
       </span>
       <ul
+        id={`${id}-inclui`}
         aria-label={`O que o ${p.nome} inclui`}
-        className="flex flex-col gap-(--e-1) border-t border-(--regra-leve) pt-(--e-3)"
+        className="flex flex-col gap-(--e-05) border-t border-(--regra-leve) pt-(--e-2)"
       >
         {inclui.map((item) => (
           <li
             key={item.texto}
             className={cn(
-              'flex items-start gap-(--e-2) corpo',
+              'flex items-center gap-(--e-15) text-xs leading-4 font-[650]',
               item.tem ? 'text-(--tinta)' : 'text-(--tinta-3)',
             )}
           >
             <Icone
               nome={item.tem ? 'check' : 'minus'}
-              tamanho={16}
-              className={cn('mt-0.5', item.tem ? 'text-(--ok-texto)' : 'text-(--tinta-3)')}
+              tamanho={12}
+              className={item.tem ? 'text-(--ok-texto)' : 'text-(--tinta-3)'}
             />
             {item.texto}
           </li>
@@ -363,22 +372,13 @@ function EscolhaDePlano({
     <Secao
       titulo={ativa ? 'Trocar plano' : 'Escolher plano'}
       acao={
-        <fieldset className="flex gap-(--e-1) rounded-(--raio) border border-(--regra-forte) bg-(--folha) p-(--e-05)">
-          <legend className="sr-only">Ciclo</legend>
-          {(['mensal', 'anual'] as const).map((c) => (
-            <Botao
-              key={c}
-              aparencia="sutil"
-              tamanho="compacto"
-              selecionado={ciclo === c}
-              onClick={() => {
-                setCiclo(c)
-              }}
-            >
-              {ROTULO_DO_CICLO[c]}
-            </Botao>
-          ))}
-        </fieldset>
+        <Segmentado
+          rotulo="Ciclo"
+          opcoes={CICLOS}
+          valor={ciclo}
+          aoMudar={setCiclo}
+          larguraTotalNoCelular
+        />
       }
     >
       <form noValidate onSubmit={enviar} className="flex min-w-0 flex-col gap-(--e-5)">

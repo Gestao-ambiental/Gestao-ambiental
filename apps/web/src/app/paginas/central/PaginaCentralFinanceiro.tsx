@@ -47,6 +47,7 @@ function Numeros({ r, catalogo }: { r: ResumoFinanceiro; catalogo: CatalogoComer
     <section aria-label="Números do Financeiro" className="flex flex-col gap-(--e-6)">
       <div className="flex flex-col gap-(--e-3)">
         <Placar
+          rotulo="Receita"
           colunas={4}
           casas={[
             { rotulo: 'MRR', valor: formatarReais(r.mrrCentavos) },
@@ -56,6 +57,7 @@ function Numeros({ r, catalogo }: { r: ResumoFinanceiro; catalogo: CatalogoComer
           ]}
         />
         <Placar
+          rotulo="Consultorias por situação"
           colunas={5}
           casas={[
             { rotulo: 'Em teste', valor: r.emTeste },
@@ -75,6 +77,7 @@ function Numeros({ r, catalogo }: { r: ResumoFinanceiro; catalogo: CatalogoComer
           Receita mensal por plano
         </h2>
         <Placar
+          rotulo="Receita mensal por plano"
           colunas={3}
           casas={(['essencial', 'equipe', 'escala'] as const).map((p) => ({
             rotulo: catalogo.planos[p].nome,

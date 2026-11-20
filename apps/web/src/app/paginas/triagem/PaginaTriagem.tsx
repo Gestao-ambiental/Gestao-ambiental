@@ -44,6 +44,7 @@ import { CampoTexto } from '@/components/ui/campo-texto'
 import { classeCampo } from '@/components/ui/estilos-campo'
 import { Icone } from '@/components/ui/icone'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
+import { ItemDoPlacar, Placar } from '@/components/ui/placar'
 import { Selo } from '@/components/ui/selo'
 import { cn } from '@/lib/utils'
 
@@ -507,34 +508,6 @@ function Atividade({
   )
 }
 
-/** Uma casa do resultado: rótulo, valor grande e uma linha de apoio. */
-function Casa({
-  rotulo,
-  valor,
-  apoio,
-  className,
-}: {
-  rotulo: string
-  valor: ReactNode
-  apoio?: ReactNode
-  className?: string
-}) {
-  return (
-    <div
-      className={cn(
-        'flex min-w-0 flex-col gap-(--e-1) border-(--regra) px-(--e-5) py-(--e-5)',
-        className,
-      )}
-    >
-      <dt className="corpo-medio text-(--tinta-2)">{rotulo}</dt>
-      <dd className="flex flex-col gap-(--e-1)">
-        <span className="titulo-tela text-(--tinta)">{valor}</span>
-        {apoio ? <span className="corpo text-(--tinta-2)">{apoio}</span> : null}
-      </dd>
-    </div>
-  )
-}
-
 function Conclusao({
   conclusao,
   orgao,
@@ -567,7 +540,7 @@ function Conclusao({
       ? separarSigla(ROTULO_DO_ESTUDO[conclusao.estudo])
       : ['Dispensado', 'Art. 22']
 
-    let taxa: { valor: ReactNode; apoio?: ReactNode }
+    let taxa: { valor: ReactNode; detalhe?: ReactNode }
     if (orgao === 'municipal') {
       taxa = { valor: 'Do município' }
     } else if (taxas.length === 1 && taxas[0]) {
@@ -575,7 +548,7 @@ function Conclusao({
     } else if (taxas.length > 1) {
       taxa = {
         valor: (
-          <span className="flex flex-col gap-(--e-05) titulo-painel">
+          <span className="flex flex-col gap-(--e-05)">
             {taxas.map((t) => (
               <span key={t.codigo} className="numero">
                 {formatarReais(t.centavos)}
@@ -586,15 +559,15 @@ function Conclusao({
         ),
       }
     } else {
-      taxa = { valor: '—', apoio: 'Sem valor calculado' }
+      taxa = { valor: '—', detalhe: 'Sem valor calculado' }
     }
 
     casas = (
-      <dl className="grid grid-cols-1 overflow-hidden rounded-(--raio-painel) border bg-(--folha) sm:grid-cols-2 xl:grid-cols-4">
-        <Casa
+      <Placar rotulo="Resultado" tamanho="compacto">
+        <ItemDoPlacar
           rotulo="Quem licencia"
           valor={orgao === 'municipal' ? 'Município' : orgao === 'estadual' ? 'Estado (IMA)' : '—'}
-          apoio={
+          detalhe={
             orgao === 'municipal' && nivel
               ? `Nível ${ROTULO_DO_NIVEL[nivel]}, impacto local`
               : orgao === 'estadual'
@@ -602,29 +575,22 @@ function Conclusao({
                 : undefined
           }
         />
-        <Casa
+        <ItemDoPlacar
           rotulo="Modalidade"
           valor={siglaDaModalidade || modalidade}
-          apoio={modalidade}
-          className="border-t sm:border-t-0 sm:border-l"
+          detalhe={modalidade}
         />
-        <Casa
+        <ItemDoPlacar
           rotulo="Estudo"
           valor={siglaDoEstudo}
-          apoio={
+          detalhe={
             conclusao.estudo
               ? `${nomeDoEstudo}, pela atividade ${conclusao.atividadeDoEstudo ?? ''}`
               : nomeDoEstudo
           }
-          className="border-t xl:border-t-0 xl:border-l"
         />
-        <Casa
-          rotulo="Taxa no IMA"
-          valor={taxa.valor}
-          apoio={taxa.apoio}
-          className="border-t sm:border-l xl:border-t-0"
-        />
-      </dl>
+        <ItemDoPlacar rotulo="Taxa no IMA" valor={taxa.valor} detalhe={taxa.detalhe} />
+      </Placar>
     )
   }
 

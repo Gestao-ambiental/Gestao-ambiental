@@ -13,7 +13,6 @@ import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Pagina } from '@/app/paginas/Pagina'
 import { AbasResiduos } from '@/app/paginas/residuos/LayoutResiduos'
 import {
-  Segmentos,
   TituloDoPainel,
   classeCabecalho,
   classeCelula,
@@ -22,6 +21,7 @@ import {
 } from '@/app/paginas/residuos/quadro'
 import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
+import { Segmentado } from '@/components/ui/segmentado'
 import {
   TAMANHO_PAGINA_RESIDUOS,
   painelDeResiduos,
@@ -86,7 +86,7 @@ function GraficoMensal({
           </span>
         </div>
         {unidades.length > 1 ? (
-          <Segmentos
+          <Segmentado
             rotulo="Unidade do gráfico"
             opcoes={unidades.map((u) => ({ valor: u, rotulo: ROTULO_DA_UNIDADE_DE_RESIDUO[u] }))}
             valor={unidade}
@@ -166,7 +166,7 @@ function TabelaAgrupada({
       <TituloDoPainel
         id="titulo-soma-residuos"
         acoes={
-          <Segmentos
+          <Segmentado
             rotulo="Somar por"
             opcoes={AGRUPAMENTOS}
             valor={por}
@@ -300,7 +300,7 @@ export function PaginaPainelResiduos() {
           rotuloTodos="Toda a consultoria"
         />
         <div className="max-w-full overflow-x-auto">
-          <Segmentos rotulo="Período" opcoes={PERIODOS} valor={periodo} aoMudar={setPeriodo} />
+          <Segmentado rotulo="Período" opcoes={PERIODOS} valor={periodo} aoMudar={setPeriodo} />
         </div>
       </div>
       {conteudo}

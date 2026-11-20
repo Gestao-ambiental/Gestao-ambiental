@@ -7,85 +7,38 @@ import {
   rotuloDoMes,
 } from '@gestao-ambiental/domain'
 import { useQuery } from '@tanstack/react-query'
-import { useState, type ReactNode } from 'react'
+import { useState } from 'react'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Pagina } from '@/app/paginas/Pagina'
 import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/estados'
 import { classeSelecao } from '@/components/ui/estilos-campo'
-import { Icone } from '@/components/ui/icone'
+import { ItemDoPlacar, Placar } from '@/components/ui/placar'
 import { Selo } from '@/components/ui/selo'
 import { obterResumoDoMes, type ResumoDoMes } from '@/lib/api/indicadores-de-valor'
 import { ehSemPermissao } from '@/lib/erros'
-import { cn } from '@/lib/utils'
 
 const decimal = new Intl.NumberFormat('pt-BR', {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
 })
 
-type Rumo = 'subiu' | 'desceu' | 'igual'
-
-/** Comparação escrita com o mês anterior: a palavra diz o rumo, a cor só reforça. */
-function Variacao({ diferenca, texto }: { diferenca: number; texto: string }) {
-  const rumo: Rumo = diferenca > 0 ? 'subiu' : diferenca < 0 ? 'desceu' : 'igual'
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-(--e-1) corpo-medio numero',
-        rumo === 'subiu' && 'text-(--ok-texto)',
-        rumo === 'desceu' && 'text-(--alerta-texto)',
-        rumo === 'igual' && 'text-(--tinta-2)',
-      )}
-    >
-      {rumo === 'igual' ? null : (
-        <Icone nome={rumo === 'subiu' ? 'chevron-up' : 'chevron-down'} tamanho={16} />
-      )}
-      <span>
-        {rumo === 'igual'
-          ? 'Igual ao mês anterior'
-          : `${rumo === 'subiu' ? 'Subiu' : 'Desceu'} ${texto} contra o mês anterior`}
-      </span>
-    </span>
-  )
+/**
+ * Comparação escrita com o mês anterior, como detalhe da casa: a palavra diz o rumo ("Subiu",
+ * "Desceu", "Igual"), sem seta nem cor.
+ */
+function variacao(diferenca: number, texto: string): string {
+  if (diferenca === 0) return 'Igual ao mês anterior'
+  return `${diferenca > 0 ? 'Subiu' : 'Desceu'} ${texto} contra o mês anterior`
 }
 
-/** Uma casa do placar: número de 40px, rótulo embaixo, detalhe e comparação. */
-function Casa({
-  rotulo,
-  valor,
-  vazio,
-  extra,
-  variacao,
+function PlacarDoMes({
+  atual,
+  anterior,
 }: {
-  rotulo: string
-  valor: string
-  /** Sem número para mostrar ("Juntando dados", "Sem entregas"): fica em tinta clara. */
-  vazio?: boolean
-  extra?: ReactNode
-  variacao: ReactNode
+  atual: ResumoDoMes
+  anterior: ResumoDoMes | undefined
 }) {
-  return (
-    <div className="flex min-w-0 flex-1 flex-col gap-(--e-1) px-(--e-5) py-(--e-5)">
-      {/* dt antes do dd no HTML; na tela, o número vem primeiro (placar). */}
-      <dt className="order-2 corpo-medio text-(--tinta-2)">{rotulo}</dt>
-      <dd
-        className={cn(
-          'order-1',
-          vazio ? 'titulo-painel text-(--tinta-3)' : 'numero-grande text-(--tinta)',
-        )}
-      >
-        {valor}
-      </dd>
-      {extra ? (
-        <dd className="order-3 flex flex-wrap items-center gap-(--e-2) corpo numero">{extra}</dd>
-      ) : null}
-      {variacao ? <dd className="order-4 mt-(--e-2)">{variacao}</dd> : null}
-    </div>
-  )
-}
-
-function Placar({ atual, anterior }: { atual: ResumoDoMes; anterior: ResumoDoMes | undefined }) {
   const noPrazo = proporcao(atual.prazoCumpridas, atual.prazoPrevistas)
   const noPrazoAntes = anterior ? proporcao(anterior.prazoCumpridas, anterior.prazoPrevistas) : null
   const horasVisiveis = !atual.juntandoDados
@@ -96,64 +49,62 @@ function Placar({ atual, anterior }: { atual: ResumoDoMes; anterior: ResumoDoMes
     ? atual.renovacoesProtegidas - anterior.renovacoesProtegidas
     : null
 
+  const detalheDasHoras =
+    horasVisiveis &&
+    (atual.reaisCentavos !== null || atual.horasEstimadas || diferencaHoras !== null) ? (
+      <>
+        {atual.reaisCentavos !== null ? <span>{formatarReais(atual.reaisCentavos)}</span> : null}
+        {atual.horasEstimadas ? <Selo tom="revisao">Estimado</Selo> : null}
+        {diferencaHoras === null ? null : (
+          <span className="basis-full">
+            {variacao(diferencaHoras, `${decimal.format(Math.abs(diferencaHoras))} h`)}
+          </span>
+        )}
+      </>
+    ) : undefined
+
   return (
-    <dl className="flex flex-col divide-y overflow-hidden rounded-(--raio-painel) border bg-(--folha) md:flex-row md:divide-x md:divide-y-0">
-      <Casa
+    <Placar rotulo="Resumo do mês">
+      <ItemDoPlacar
         rotulo="Horas devolvidas à equipe"
         valor={horasVisiveis ? formatarHoras(atual.horasTotal) : 'Juntando dados'}
-        vazio={!horasVisiveis}
-        extra={
-          horasVisiveis && (atual.reaisCentavos !== null || atual.horasEstimadas) ? (
-            <>
-              {atual.reaisCentavos !== null ? formatarReais(atual.reaisCentavos) : null}
-              {atual.horasEstimadas ? <Selo tom="revisao">Estimado</Selo> : null}
-            </>
-          ) : null
-        }
-        variacao={
-          diferencaHoras === null ? null : (
-            <Variacao
-              diferenca={diferencaHoras}
-              texto={`${decimal.format(Math.abs(diferencaHoras))} h`}
-            />
-          )
-        }
+        apagado={!horasVisiveis}
+        detalhe={detalheDasHoras}
       />
-      <Casa
+      <ItemDoPlacar
         rotulo="Entregas no prazo"
         valor={noPrazo === null ? 'Sem entregas' : `${String(Math.round(noPrazo * 100))}%`}
-        vazio={noPrazo === null}
-        extra={
-          noPrazo === null ? null : (
+        apagado={noPrazo === null}
+        detalhe={
+          noPrazo === null ? undefined : (
             <>
-              {atual.prazoCumpridas} de {atual.prazoPrevistas}
+              <span>
+                {atual.prazoCumpridas} de {atual.prazoPrevistas}
+              </span>
+              {pontos === null ? null : (
+                <span className="basis-full">
+                  {variacao(pontos, `${String(Math.abs(pontos))} p.p.`)}
+                </span>
+              )}
             </>
           )
         }
-        variacao={
-          pontos === null ? null : (
-            <Variacao diferenca={pontos} texto={`${String(Math.abs(pontos))} p.p.`} />
-          )
-        }
       />
-      <Casa
+      <ItemDoPlacar
         rotulo="Renovações protegidas pelos 120 dias"
         valor={
           atual.renovacoesVencendo === 0
             ? 'Sem vencimentos'
             : `${String(atual.renovacoesProtegidas)} de ${String(atual.renovacoesVencendo)}`
         }
-        vazio={atual.renovacoesVencendo === 0}
-        variacao={
-          diferencaRenovacoes === null ? null : (
-            <Variacao
-              diferenca={diferencaRenovacoes}
-              texto={String(Math.abs(diferencaRenovacoes))}
-            />
-          )
+        apagado={atual.renovacoesVencendo === 0}
+        detalhe={
+          diferencaRenovacoes === null
+            ? undefined
+            : variacao(diferencaRenovacoes, String(Math.abs(diferencaRenovacoes)))
         }
       />
-    </dl>
+    </Placar>
   )
 }
 
@@ -221,7 +172,7 @@ export function PaginaResumoDoMes() {
       ) : !doMes ? (
         <EstadoVazio icone="chart-column" titulo="Sem dados neste mês" />
       ) : (
-        <Placar atual={doMes} anterior={anterior} />
+        <PlacarDoMes atual={doMes} anterior={anterior} />
       )}
     </Pagina>
   )

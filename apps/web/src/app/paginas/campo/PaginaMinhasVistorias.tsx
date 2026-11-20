@@ -19,6 +19,7 @@ import { Pagina } from '@/app/paginas/Pagina'
 import { Contagem } from '@/app/paginas/visao/Contagem'
 import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
+import { Segmentado, type OpcaoSegmentada } from '@/components/ui/segmentado'
 import { listarVistorias, type VistoriaDaLista } from '@/lib/api/vistorias'
 import { formatarInstanteComHora } from '@/lib/datas'
 import { ehSemPermissao } from '@/lib/erros'
@@ -153,48 +154,11 @@ function LinhaDaVistoria({
   )
 }
 
-/** Alternador compacto Minhas/Todas: segmentado no desktop, largura total no celular. */
-function Alternador({
-  somenteMinhas,
-  aoMudar,
-}: {
-  somenteMinhas: boolean
-  aoMudar: (somenteMinhas: boolean) => void
-}) {
-  const opcoes: [boolean, string][] = [
-    [true, 'Minhas'],
-    [false, 'Todas'],
-  ]
-  return (
-    <div
-      role="group"
-      aria-label="Quais vistorias"
-      className="inline-flex rounded-(--raio) border border-(--regra-forte) bg-(--folha) p-(--e-05) max-md:w-[calc(100vw-2*var(--e-4))]"
-    >
-      {opcoes.map(([valor, rotulo]) => {
-        const ativo = somenteMinhas === valor
-        return (
-          <button
-            key={rotulo}
-            type="button"
-            aria-pressed={ativo}
-            onClick={() => {
-              aoMudar(valor)
-            }}
-            className={cn(
-              'h-8 min-w-24 flex-1 cursor-pointer rounded-[4px] px-(--e-4) corpo-medio transicao-estado max-md:h-11',
-              ativo
-                ? 'bg-(--tinta) text-(--folha)'
-                : 'text-(--tinta-2) hover:bg-(--toque) hover:text-(--tinta)',
-            )}
-          >
-            {rotulo}
-          </button>
-        )
-      })}
-    </div>
-  )
-}
+/** Minhas (padrão) ou Todas: as da equipe. */
+const QUAIS_VISTORIAS: readonly OpcaoSegmentada<boolean>[] = [
+  { valor: true, rotulo: 'Minhas' },
+  { valor: false, rotulo: 'Todas' },
+]
 
 /**
  * /campo (ADR-0033 §5): vistorias do responsável por padrão, com "Todas" para ver as da equipe.
@@ -316,7 +280,15 @@ export function PaginaMinhasVistorias() {
           {consulta.isSuccess ? ` · ${plural(abertas, 'aberta', 'abertas')}` : null}
         </span>
       }
-      acao={<Alternador somenteMinhas={somenteMinhas} aoMudar={setSomenteMinhas} />}
+      acao={
+        <Segmentado
+          rotulo="Quais vistorias"
+          opcoes={QUAIS_VISTORIAS}
+          valor={somenteMinhas}
+          aoMudar={setSomenteMinhas}
+          larguraTotalNoCelular
+        />
+      }
     >
       {conteudo}
     </Pagina>

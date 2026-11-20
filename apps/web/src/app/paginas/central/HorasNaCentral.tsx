@@ -74,6 +74,7 @@ export function HorasDevolvidas({ consultoriaId }: { consultoriaId: string | nul
       ]
       conteudo = (
         <Placar
+          rotulo="Horas devolvidas"
           colunas={4}
           casas={cartoes.map((c) => ({
             rotulo: c.rotulo,

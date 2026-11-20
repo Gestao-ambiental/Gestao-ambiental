@@ -6,6 +6,7 @@ import { useEffect, useRef } from 'react'
 import { Botao } from '@/components/ui/botao'
 import { Esqueleto } from '@/components/ui/esqueleto'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
+import { ItemDoPlacar, Placar } from '@/components/ui/placar'
 import {
   ROTULO_DA_SITUACAO,
   type IndicadorDeOrcamentos,
@@ -14,21 +15,6 @@ import {
 } from '@/lib/api/orcamentos'
 import { cn } from '@/lib/utils'
 
-/** Faixa do placar: uma folha só, dividida por regras (como na Visão). */
-const classePlacar =
-  'grid grid-cols-1 divide-y overflow-hidden rounded-(--raio-painel) border bg-(--folha) md:grid-cols-3 md:divide-x md:divide-y-0'
-
-/**
- * Cada casa: no celular, rótulo e detalhe à esquerda e o número à direita; a partir de md, o
- * número em cima, grande.
- */
-const classeCasa =
-  'grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-(--e-3) px-(--e-4) py-(--e-3) md:grid-cols-1 md:content-start md:items-start md:gap-y-(--e-1) md:px-(--e-5) md:py-(--e-4)'
-
-function plural(quantidade: number, singular: string, varios: string): string {
-  return `${String(quantidade)} ${quantidade === 1 ? singular : varios}`
-}
-
 /** "R$ 19.100,00"; sem nenhum com preço (mas com orçamentos), "Sem preço": nunca vira zero. */
 function valorDoIndicador(indicador: IndicadorDeOrcamentos): string {
   return indicador.quantidade > 0 && indicador.semPreco === indicador.quantidade
@@ -36,42 +22,15 @@ function valorDoIndicador(indicador: IndicadorDeOrcamentos): string {
     : formatarReais(indicador.valorCentavos)
 }
 
-function detalheDoIndicador(indicador: IndicadorDeOrcamentos): string {
-  const propostas = plural(indicador.quantidade, 'proposta', 'propostas')
-  return indicador.semPreco > 0
-    ? `${propostas} · ${String(indicador.semPreco)} sem preço`
-    : propostas
+/** Só o que falta: com parte das propostas sem preço, a soma não conta tudo. */
+function detalheDoIndicador(indicador: IndicadorDeOrcamentos): string | undefined {
+  return indicador.semPreco > 0 && indicador.semPreco < indicador.quantidade
+    ? `${String(indicador.semPreco)} sem preço`
+    : undefined
 }
 
-function Indicador({
-  titulo,
-  valor,
-  detalhe,
-  tom,
-  apagado,
-}: {
-  titulo: string
-  valor: string
-  detalhe: string
-  tom?: 'ok'
-  apagado: boolean
-}) {
-  return (
-    <div className={classeCasa}>
-      <dt className="col-start-1 row-start-1 corpo-medio text-(--tinta) md:row-start-2">
-        {titulo}
-      </dt>
-      <dd
-        className={cn(
-          'col-start-2 row-span-2 row-start-1 numero-contagem whitespace-nowrap md:col-start-1 md:row-span-1 xl:numero-grande',
-          apagado ? 'text-(--tinta-3)' : tom === 'ok' ? 'text-(--ok-texto)' : 'text-(--tinta)',
-        )}
-      >
-        {valor}
-      </dd>
-      <dd className="col-start-1 row-start-2 rotulo md:row-start-3">{detalhe}</dd>
-    </div>
-  )
+function plural(quantidade: number, singular: string, varios: string): string {
+  return `${String(quantidade)} ${quantidade === 1 ? singular : varios}`
 }
 
 /**
@@ -105,9 +64,16 @@ export function IndicadoresDosOrcamentos({
   }
   if (carregando || !resumo) {
     return (
-      <div role="status" aria-label="Carregando indicadores" className={classePlacar}>
+      <div
+        role="status"
+        aria-label="Carregando indicadores"
+        className="grid grid-cols-2 divide-x overflow-hidden rounded-(--raio-painel) border bg-(--folha) md:grid-cols-3"
+      >
         {[0, 1, 2].map((i) => (
-          <div key={i} className={classeCasa}>
+          <div
+            key={i}
+            className="flex flex-col gap-(--e-2) px-(--e-5) py-(--e-4) max-md:last:hidden"
+          >
             <Esqueleto largura="60%" altura={32} />
             <Esqueleto largura="40%" />
           </div>
@@ -116,27 +82,21 @@ export function IndicadoresDosOrcamentos({
     )
   }
   return (
-    <dl aria-label="Indicadores" className={classePlacar}>
-      <Indicador
-        titulo="Em elaboração"
-        valor={String(resumo.emElaboracao)}
-        detalhe={resumo.emElaboracao === 1 ? 'rascunho' : 'rascunhos'}
-        apagado={resumo.emElaboracao === 0}
-      />
-      <Indicador
-        titulo="Aguardando decisão"
+    <Placar rotulo="Indicadores" tamanho="medio">
+      <ItemDoPlacar rotulo="Em elaboração" valor={resumo.emElaboracao} />
+      <ItemDoPlacar
+        rotulo="Aguardando decisão"
         valor={valorDoIndicador(resumo.aguardandoDecisao)}
         detalhe={detalheDoIndicador(resumo.aguardandoDecisao)}
         apagado={resumo.aguardandoDecisao.quantidade === 0}
       />
-      <Indicador
-        titulo="Aprovados"
+      <ItemDoPlacar
+        rotulo="Aprovados"
         valor={valorDoIndicador(resumo.aprovados)}
         detalhe={detalheDoIndicador(resumo.aprovados)}
-        tom="ok"
         apagado={resumo.aprovados.quantidade === 0}
       />
-    </dl>
+    </Placar>
   )
 }
 
@@ -151,8 +111,9 @@ const ABAS: readonly (SituacaoOrcamento | null)[] = [
 ]
 
 /**
- * Abas por situação, com a contagem de cada uma (segue a busca). Grupo de botões com aria-pressed:
- * filtram a mesma lista, não trocam de painel. A contagem é lida junto com o nome da aba.
+ * Abas por situação, com a contagem de cada uma (segue a busca; zero não aparece). Grupo de botões
+ * com aria-pressed: filtram a mesma lista, não trocam de painel. A contagem é lida junto com o nome
+ * da aba.
  */
 export function AbasDeSituacao({
   situacao,
@@ -208,7 +169,7 @@ export function AbasDeSituacao({
               )}
             >
               {rotulo}
-              {quantidade === null ? null : (
+              {quantidade === null || quantidade === 0 ? null : (
                 <>
                   <span
                     aria-hidden="true"

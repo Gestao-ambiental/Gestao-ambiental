@@ -32,6 +32,7 @@ import { Botao } from '@/components/ui/botao'
 import { CaixaSelecao } from '@/components/ui/caixa-selecao'
 import { Icone } from '@/components/ui/icone'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
+import { ItemDoPlacar, Placar } from '@/components/ui/placar'
 import {
   obterBaseDeCustos,
   type BaseDeCustosDaConsultoria,
@@ -75,14 +76,7 @@ import {
 } from './campos-da-base'
 import { classeCampo, reaisDigitados } from './comum'
 import { DadosDaProposta } from './PaginaDadosDaProposta'
-import {
-  AvisoDeMargemBaixa,
-  CartaoDoResultado,
-  ContasDoMes,
-  Equipe,
-  Linha,
-  classeFaixaDoResultado,
-} from './PecasDaBase'
+import { AvisoDeMargemBaixa, ContasDoMes, Equipe, Linha } from './PecasDaBase'
 import { Deslocamento, TabelaDePrecos } from './PecasDeCobranca'
 
 type Etapa = 1 | 2 | 3 | 4 | 5 | 6
@@ -1283,32 +1277,40 @@ function PassoDoResumo({
   const pronto = rascunho !== null && pendencias.length === 0 && !baseMudou
   return (
     <div className="flex flex-col gap-(--e-4)">
-      <dl aria-label="Resumo da configuração" className={classeFaixaDoResultado}>
-        <CartaoDoResultado
+      <Placar
+        rotulo="Resumo da configuração"
+        tamanho="compacto"
+        moldura={false}
+        className="border-t"
+      >
+        <ItemDoPlacar
           rotulo={pelaEquipe ? 'Custo médio por hora da equipe' : 'Custo da hora técnica'}
           valor={
             resumo.horaTecnicaCentavos === null
               ? 'pendente'
               : formatarReais(resumo.horaTecnicaCentavos)
           }
+          apagado={resumo.horaTecnicaCentavos === null}
         />
-        <CartaoDoResultado
+        <ItemDoPlacar
           rotulo="Horas faturáveis por mês"
           valor={
             resumo.horasFaturaveisMes === null
               ? 'pendente'
               : `${textoDasHoras(resumo.horasFaturaveisMes)} h${horas !== null ? ', pela equipe' : ''}`
           }
+          apagado={resumo.horasFaturaveisMes === null}
         />
-        <CartaoDoResultado
+        <ItemDoPlacar
           rotulo="Contas do mês por hora"
           valor={
             resumo.contasPorHoraCentavos === null
               ? 'pendente'
               : `${formatarReais(resumo.contasPorHoraCentavos)} por hora`
           }
+          apagado={resumo.contasPorHoraCentavos === null}
         />
-        <CartaoDoResultado
+        <ItemDoPlacar
           rotulo="Preços cadastrados"
           valor={
             resumo.quantidadeDePrecos === 0
@@ -1317,8 +1319,9 @@ function PassoDoResumo({
                 ? '1 linha'
                 : `${String(resumo.quantidadeDePrecos)} linhas`
           }
+          apagado={resumo.quantidadeDePrecos === 0}
         />
-      </dl>
+      </Placar>
 
       {naoSalvos.length > 0 ? (
         <MensagemSecao tom="atencao">

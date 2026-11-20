@@ -22,6 +22,7 @@ import { Botao } from '@/components/ui/botao'
 import { BotaoIcone } from '@/components/ui/botao-icone'
 import { Icone } from '@/components/ui/icone'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
+import { ItemDoPlacar, Placar } from '@/components/ui/placar'
 import type { CustoDaProfissao } from '@/lib/api/orcamentos'
 import { definirProfissaoECargo, type MembroAtivo } from '@/lib/api/perfil'
 import { mensagemDoErro } from '@/lib/erros'
@@ -416,44 +417,32 @@ export function Equipe({
           Digitar o custo da hora e as horas
         </Botao>
       </div>
-      <dl aria-label="Resultado da equipe" className={classeFaixaDoResultado}>
-        <CartaoDoResultado
+      <Placar rotulo="Resultado da equipe" tamanho="compacto" moldura={false} className="border-t">
+        <ItemDoPlacar
           rotulo="Custo médio por hora da equipe"
           valor={
             previa?.horaTecnicaCentavos == null
               ? 'pendente'
               : formatarReais(previa.horaTecnicaCentavos)
           }
+          apagado={previa?.horaTecnicaCentavos == null}
         />
-        <CartaoDoResultado
+        <ItemDoPlacar
           rotulo="Horas da equipe por mês"
           valor={previa ? `${textoDasHoras(previa.horasFaturaveisMes)} h` : 'pendente'}
+          apagado={!previa}
         />
         {/* Por profissão, só o que difere da média: o mesmo valor repetido não diz nada. */}
         {custoPorProfissao
           .filter((c) => c.horaTecnicaCentavos !== previa?.horaTecnicaCentavos)
           .map((c) => (
-            <CartaoDoResultado
+            <ItemDoPlacar
               key={c.profissao}
               rotulo={`Custo por hora de ${c.profissao}`}
               valor={formatarReais(c.horaTecnicaCentavos)}
             />
           ))}
-      </dl>
-    </div>
-  )
-}
-
-/** Faixa do placar de resultados: números lado a lado, separados por espaço e uma regra em cima. */
-export const classeFaixaDoResultado =
-  'flex flex-wrap gap-x-(--e-8) gap-y-(--e-4) border-t pt-(--e-4)'
-
-/** Um número do placar de resultados: valor grande em cima, rótulo embaixo. */
-export function CartaoDoResultado({ rotulo, valor }: { rotulo: string; valor: string }) {
-  return (
-    <div className="flex min-w-0 flex-col gap-(--e-05)">
-      <dt className="order-2 corpo-medio text-(--tinta-2)">{rotulo}</dt>
-      <dd className="order-1 numero-contagem text-(--tinta)">{valor}</dd>
+      </Placar>
     </div>
   )
 }

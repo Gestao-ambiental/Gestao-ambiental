@@ -12,8 +12,6 @@ import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Pagina } from '@/app/paginas/Pagina'
 import { AbasResiduos } from '@/app/paginas/residuos/LayoutResiduos'
 import {
-  Contador,
-  Placar,
   classeCabecalho,
   classeCelula,
   classeItemCelular,
@@ -24,6 +22,7 @@ import {
 import { caminhoDosMtrs, caminhoParaRegistrarCdf } from '@/app/paginas/residuos/registro/comum'
 import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
+import { ItemDoPlacar, Placar } from '@/components/ui/placar'
 import {
   TAMANHO_PAGINA_RESIDUOS,
   conferenciaDeResiduos,
@@ -286,7 +285,7 @@ export function PaginaConferenciaResiduos() {
 
       {consulta.isSuccess && todas.length > 0 ? (
         <Placar rotulo="Pendências por tipo">
-          <Contador
+          <ItemDoPlacar
             rotulo="Pendências"
             valor={todas.length}
             ativo={tipo === null}
@@ -295,7 +294,7 @@ export function PaginaConferenciaResiduos() {
             }}
           />
           {TIPOS.map((t) => (
-            <Contador
+            <ItemDoPlacar
               key={t}
               rotulo={ROTULO_DA_PENDENCIA_DE_RESIDUO[t]}
               valor={contagem(t)}

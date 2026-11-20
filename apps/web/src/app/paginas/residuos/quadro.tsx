@@ -1,9 +1,8 @@
 // Peças do "quadro de partidas" (apps/web/DESIGN.md) usadas pelas telas de resíduos: painel,
-// cabeçalho e célula da tabela, placar de contadores que filtram e rodapé com a contagem.
+// cabeçalho e célula da tabela e rodapé com a contagem. O placar e o segmentado são os de
+// components/ui.
 
 import type { ReactNode } from 'react'
-
-import { cn } from '@/lib/utils'
 
 /** Painel do quadro: folha com regra de 1px, sem sombra. */
 export const classePainel =
@@ -64,109 +63,6 @@ export function RodapeDoQuadro({ texto, children }: { texto: string; children?: 
         {texto}
       </span>
       {children}
-    </div>
-  )
-}
-
-/**
- * Contador do placar (mesmo desenho do placar da Visão): número de 40px e rótulo embaixo; ativo
- * com fundo de escolha e traço de 3px. Zero fica apagado.
- */
-export function Contador({
-  rotulo,
-  valor,
-  ativo,
-  tom,
-  aoClicar,
-}: {
-  rotulo: string
-  valor: number
-  ativo: boolean
-  tom?: 'atraso' | 'alerta'
-  aoClicar: () => void
-}) {
-  const aceso = valor > 0
-  return (
-    <button
-      type="button"
-      aria-pressed={ativo}
-      onClick={aoClicar}
-      className={cn(
-        'group relative flex min-w-[140px] flex-1 cursor-pointer flex-col items-start gap-(--e-1) px-(--e-5) py-(--e-4) text-left transicao-estado hover:bg-(--toque)',
-        'after:absolute after:inset-x-(--e-5) after:bottom-0 after:h-[3px] after:rounded-t-full after:bg-transparent',
-        ativo && 'bg-(--escolha) after:bg-(--marca-linha) hover:bg-(--escolha-toque)',
-      )}
-    >
-      <span
-        className={cn(
-          'numero-grande',
-          !aceso && 'text-(--tinta-3)',
-          aceso && tom === 'atraso' && 'text-(--atraso-texto)',
-          aceso && tom === 'alerta' && 'text-(--alerta-texto)',
-          aceso && tom === undefined && 'text-(--tinta)',
-        )}
-      >
-        {valor}
-      </span>{' '}
-      <span className="corpo-medio text-(--tinta-2) group-aria-pressed:text-(--tinta)">
-        {rotulo}
-      </span>
-    </button>
-  )
-}
-
-/** Faixa do placar: uma peça só, dividida por regras (duas colunas no celular). */
-export function Placar({ rotulo, children }: { rotulo: string; children: ReactNode }) {
-  return (
-    <div
-      role="group"
-      aria-label={rotulo}
-      className="grid grid-cols-2 divide-x divide-y overflow-hidden rounded-(--raio-painel) border bg-(--folha) md:flex md:divide-y-0"
-    >
-      {children}
-    </div>
-  )
-}
-
-/** Escolha segmentada (poucas opções, um clique): botões com aria-pressed. */
-export function Segmentos<T extends string>({
-  rotulo,
-  opcoes,
-  valor,
-  aoMudar,
-}: {
-  rotulo: string
-  opcoes: readonly { valor: T; rotulo: string }[]
-  valor: T
-  aoMudar: (valor: T) => void
-}) {
-  return (
-    <div
-      role="group"
-      aria-label={rotulo}
-      className="inline-flex shrink-0 overflow-hidden rounded-(--raio) border border-(--regra-forte)"
-    >
-      {opcoes.map((opcao) => {
-        const ativo = opcao.valor === valor
-        return (
-          <button
-            key={opcao.valor}
-            type="button"
-            aria-pressed={ativo}
-            onClick={() => {
-              aoMudar(opcao.valor)
-            }}
-            className={cn(
-              'h-(--controle) cursor-pointer border-l border-(--regra-forte) px-(--e-3) corpo-medio transicao-estado first:border-l-0 max-md:h-(--controle-toque)',
-              ativo
-                ? 'bg-(--tinta) text-(--folha)'
-                : 'bg-(--folha) text-(--tinta-2) hover:bg-(--toque) hover:text-(--tinta)',
-            )}
-          >
-            {opcao.rotulo}
-          </button>
-        )
-      })}
     </div>
   )
 }

@@ -10,7 +10,6 @@ import { Link, useSearchParams } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Pagina } from '@/app/paginas/Pagina'
-import { SiglaEmpreendimento } from '@/app/paginas/empreendimentos/SiglaEmpreendimento'
 import { Contagem } from '@/app/paginas/visao/Contagem'
 import { Carregando, EstadoErro, EstadoVazio } from '@/components/estados'
 import { Avatar } from '@/components/ui/avatar'
@@ -301,7 +300,6 @@ export function PaginaAcompanhamentos() {
                               </td>
                               <td className={`${classeCelula} max-w-[320px]`}>
                                 <span className="flex items-center gap-(--e-2)">
-                                  <SiglaEmpreendimento nome={item.empreendimentoNome} />
                                   <span className="flex min-w-0 flex-col">
                                     <Link
                                       to={`/renovacoes/${item.instrumentoId}`}

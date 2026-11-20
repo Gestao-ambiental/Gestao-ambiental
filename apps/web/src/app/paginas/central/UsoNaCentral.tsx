@@ -60,7 +60,13 @@ export function ResumoDeUsoNaCentral() {
       ['Ativas em 7 dias', consulta.data.ultimos7Dias],
       ['Ativas em 30 dias', consulta.data.ultimos30Dias],
     ]
-    conteudo = <Placar colunas={3} casas={numeros.map(([rotulo, valor]) => ({ rotulo, valor }))} />
+    conteudo = (
+      <Placar
+        rotulo="Uso"
+        colunas={3}
+        casas={numeros.map(([rotulo, valor]) => ({ rotulo, valor }))}
+      />
+    )
   }
 
   return (
@@ -182,6 +188,7 @@ export function UsoPorModulo({ consultoriaId }: { consultoriaId: string }) {
   } else {
     conteudo = (
       <Placar
+        rotulo="Uso por área em 30 dias"
         colunas={4}
         casas={consulta.data.map((uso) => ({
           rotulo: ROTULO_DO_MODULO_DE_USO[uso.modulo],

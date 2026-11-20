@@ -25,6 +25,7 @@ export function CartoesDeValor({ meses }: { meses: readonly MetricasDoMes[] }) {
         >
           <h3 className="corpo-medio text-(--tinta)">{grupo.titulo}</h3>
           <Placar
+            rotulo={grupo.titulo}
             colunas={4}
             casas={grupo.metricas.map((metrica) => {
               const valor = metrica.valor(atual)

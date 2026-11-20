@@ -11,6 +11,12 @@ const baseControle =
   'hover:border-(--tinta-2) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--foco) ' +
   'disabled:cursor-not-allowed disabled:bg-(--off)'
 
+/** Rádio nativo no visual do Grama, para quem monta o próprio cartão (ex.: escolha do plano). */
+export const classeRadio = cn(
+  baseControle,
+  'rounded-full checked:border-[5px] checked:border-(--acao) checked:bg-(--folha)',
+)
+
 type Props = Omit<ComponentProps<'input'>, 'type' | 'id'> & {
   rotulo: ReactNode
   id?: string
@@ -71,10 +77,7 @@ export function OpcaoRadio({ rotulo, descricao, id, className, ...rest }: PropsR
           type="radio"
           aria-labelledby={`${campoId}-rotulo`}
           aria-describedby={descricao ? `${campoId}-descricao` : undefined}
-          className={cn(
-            baseControle,
-            'rounded-full checked:border-[5px] checked:border-(--acao) checked:bg-(--folha)',
-          )}
+          className={classeRadio}
           {...rest}
         />
         <span id={`${campoId}-rotulo`} className="corpo text-(--tinta)">

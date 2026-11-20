@@ -53,6 +53,7 @@ function Numeros({ consultoria }: { consultoria: ConsultoriaDetalhada }) {
   return (
     <section aria-label="Números">
       <Placar
+        rotulo="Números da consultoria"
         colunas={4}
         casas={[
           { rotulo: 'Pessoas ativas', valor: consultoria.pessoasAtivas },

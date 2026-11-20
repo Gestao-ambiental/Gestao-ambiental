@@ -24,6 +24,7 @@ import { CaixaSelecao } from '@/components/ui/caixa-selecao'
 import { Dialogo } from '@/components/ui/dialogo'
 import { classeSelecao } from '@/components/ui/estilos-campo'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
+import { Segmentado, type OpcaoSegmentada } from '@/components/ui/segmentado'
 import { listarMembrosAtivos } from '@/lib/api/licencas'
 import {
   listarCalendario,
@@ -45,10 +46,10 @@ const MARCAS_NO_CELULAR = 3
 
 type Modo = 'mes' | 'semana' | 'lista'
 
-const MODOS: { modo: Modo; rotulo: string }[] = [
-  { modo: 'lista', rotulo: 'Lista' },
-  { modo: 'mes', rotulo: 'Mês' },
-  { modo: 'semana', rotulo: 'Semana' },
+const MODOS: readonly OpcaoSegmentada<Modo>[] = [
+  { valor: 'lista', rotulo: 'Lista' },
+  { valor: 'mes', rotulo: 'Mês' },
+  { valor: 'semana', rotulo: 'Semana' },
 ]
 
 /** No celular a lista vem primeiro. Sem matchMedia (jsdom), mês. */
@@ -409,19 +410,13 @@ export function PaginaCalendario() {
     <Pagina
       titulo="Calendário"
       acao={
-        <div role="group" aria-label="Visualização" className="flex gap-(--e-1)">
-          {MODOS.map((m) => (
-            <Botao
-              key={m.modo}
-              selecionado={modo === m.modo}
-              onClick={() => {
-                setModo(m.modo)
-              }}
-            >
-              {m.rotulo}
-            </Botao>
-          ))}
-        </div>
+        <Segmentado
+          rotulo="Visualização"
+          opcoes={MODOS}
+          valor={modo}
+          aoMudar={setModo}
+          larguraTotalNoCelular
+        />
       }
     >
       <div className="flex flex-col gap-(--e-3)">

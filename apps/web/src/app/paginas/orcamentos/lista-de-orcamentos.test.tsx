@@ -85,10 +85,11 @@ describe('Lista de orçamentos: filtros e indicadores', () => {
     const { container } = renderizarApp('/orcamentos')
     const indicadores = await screen.findByLabelText('Indicadores')
     expect(within(indicadores).getByText('Em elaboração')).toBeInTheDocument()
-    expect(within(indicadores).getByText('rascunho')).toBeInTheDocument()
+    // Sem sublinha decorativa ("rascunho", "2 propostas"): só o que falta aparece embaixo.
+    expect(within(indicadores).queryByText(/rascunho|propostas?$/)).toBeNull()
     // Aguardando decisão: soma só a enviada com preço; a em negociação sem preço é contada à parte.
     expect(within(indicadores).getByText('R$ 1.600,00')).toBeInTheDocument()
-    expect(within(indicadores).getByText('2 propostas · 1 sem preço')).toBeInTheDocument()
+    expect(within(indicadores).getByText('1 sem preço')).toBeInTheDocument()
     // Aprovados: o único está sem preço; não aparece R$ 0,00.
     expect(within(indicadores).getByText('Sem preço')).toBeInTheDocument()
     expect(within(indicadores).queryByText('R$ 0,00')).toBeNull()
@@ -101,7 +102,7 @@ describe('Lista de orçamentos: filtros e indicadores', () => {
     expect(acessibilidade.violations.map((v) => v.id)).toEqual([])
   })
 
-  it('cada aba mostra a contagem lida pelo leitor de tela, com zero para a situação vazia', async () => {
+  it('cada aba mostra a contagem lida pelo leitor de tela; a situação vazia fica sem número', async () => {
     renderizarApp('/orcamentos')
     const abas = await screen.findByRole('group', { name: 'Situação' })
     expect(
@@ -114,7 +115,7 @@ describe('Lista de orçamentos: filtros e indicadores', () => {
     expect(
       within(abas).getByRole('button', { name: 'Em negociação: 1 orçamento' }),
     ).toBeInTheDocument()
-    expect(within(abas).getByRole('button', { name: 'Recusada: 0 orçamentos' })).toBeInTheDocument()
+    expect(within(abas).getByRole('button', { name: 'Recusada' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Limpar filtros' })).toBeNull()
   })
 
