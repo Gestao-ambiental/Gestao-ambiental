@@ -58,7 +58,7 @@ export function ComoCadastrar({
               aria-describedby="ia-descricao"
               className="size-[18px] shrink-0 accent-(--marca-linha) outline-none"
             />
-            <span id="como-ia" className={semIa ? 'text-(--tinta-off)' : 'text-(--tinta)'}>
+            <span id="como-ia" className={semIa ? 'text-(--tinta-2)' : 'text-(--tinta)'}>
               Extrair com IA
             </span>
             <Icone

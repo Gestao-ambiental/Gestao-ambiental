@@ -96,6 +96,36 @@ export async function buscarParecidos(
   }))
 }
 
+export interface EmpreendimentoComUnidade {
+  empreendimentoId: string
+  unidadeId: string
+  nome: string
+  cnpj: string
+  unidadeNome: string
+  unidadeEndereco: string
+}
+
+/**
+ * Cadastro rápido no passo Documento da licença: empreendimento e unidade numa transação
+ * (RPC cadastrar_empreendimento_com_unidade). Idempotente pelos dois ids; devolve o id da unidade.
+ */
+export async function cadastrarEmpreendimentoComUnidade(
+  consultoriaId: string,
+  dados: EmpreendimentoComUnidade,
+): Promise<string> {
+  const { data, error } = await obterSupabase().rpc('cadastrar_empreendimento_com_unidade', {
+    p_empreendimento_id: dados.empreendimentoId,
+    p_consultoria_id: consultoriaId,
+    p_nome: dados.nome,
+    p_cnpj: dados.cnpj,
+    p_unidade_id: dados.unidadeId,
+    p_unidade_nome: dados.unidadeNome,
+    p_unidade_endereco: dados.unidadeEndereco,
+  })
+  if (error) throw error
+  return data
+}
+
 export interface DadosEmpreendimento {
   nome: string
   cliente: string

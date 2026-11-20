@@ -1798,6 +1798,9 @@ isOneToOne: false
               "detalhe": string,"id": string,"referencia_id": string,"tipo": string,"titulo": string
             }[]
                            },
+"cadastrar_empreendimento_com_unidade":
+{ Args: { "p_cnpj": string,"p_consultoria_id": string,"p_empreendimento_id": string,"p_nome": string,"p_unidade_endereco"?: string,"p_unidade_id": string,"p_unidade_nome": string }; Returns: string
+                           },
 "cadastrar_empreendimento_do_prospecto":
 { Args: { "p_empreendimento_id": string,"p_orcamento_id": string }; Returns: string
                            },

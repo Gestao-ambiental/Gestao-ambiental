@@ -71,7 +71,7 @@ export function MolduraCadastro({
         <MarcaGrama compactaNoCelular />
         <span aria-hidden="true" className="h-6 border-l" />
         <div className="flex min-w-0 flex-1 flex-col">
-          <h1 className="truncate titulo-secao text-(--tinta)">{titulo}</h1>
+          <h1 className="truncate titulo-painel text-(--tinta) max-md:titulo-secao">{titulo}</h1>
           {contexto ? <span className="truncate text-xs text-(--tinta-2)">{contexto}</span> : null}
         </div>
         {salvoEm ? (

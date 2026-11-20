@@ -582,3 +582,10 @@ export type {
   ProblemaDoConteudo,
   ValoresDosCampos,
 } from './modelo-documento'
+export {
+  arrumarNome,
+  lerTitularDaLicenca,
+  nomeDaUnidadeSugerido,
+  titularEncontrado,
+} from './titular-da-licenca'
+export type { TitularDaLicenca } from './titular-da-licenca'
