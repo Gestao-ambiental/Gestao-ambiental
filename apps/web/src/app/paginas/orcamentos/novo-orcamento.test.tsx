@@ -128,8 +128,8 @@ describe('Novo orçamento, direto no editor', () => {
     const { router } = renderizarApp('/orcamentos')
     await usuario.click(await screen.findByRole('button', { name: 'Novo orçamento' }))
 
-    expect(router.state.location.pathname).toBe('/orcamentos/novo')
     expect(await screen.findByRole('heading', { level: 1, name: 'Novo orçamento' })).toBeVisible()
+    expect(router.state.location.pathname).toBe('/orcamentos/novo')
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(screen.queryByRole('radio')).not.toBeInTheDocument()
     expect(screen.queryByLabelText(/O que será orçado/)).not.toBeInTheDocument()
