@@ -1461,14 +1461,14 @@ isOneToOne: false
                   ]
                 },"relatorio": {
                   Row: {
-                    "atualizado_em": string,"atualizado_por": string,"autor_id": string,"consultoria_id": string,"conteudo": NonNullable<Json>,"criado_em": string,"decidido_em": string | null,"empreendimento_id": string,"enviado_em": string | null,"id": string,"modelo_id": string | null,"motivo_devolucao": string | null,"ocorrencia_id": string | null,"revisor_id": string | null,"row_version": number,"situacao": string,"titulo": string,"versao": number
+                    "atualizado_em": string,"atualizado_por": string,"autor_id": string,"consultoria_id": string,"conteudo": NonNullable<Json>,"criado_em": string,"decidido_em": string | null,"empreendimento_id": string,"enviado_em": string | null,"evidencia_id": string | null,"id": string,"modelo_id": string | null,"motivo_devolucao": string | null,"ocorrencia_id": string | null,"revisor_id": string | null,"row_version": number,"situacao": string,"titulo": string,"versao": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "atualizado_em"?: string,"atualizado_por": string,"autor_id": string,"consultoria_id": string,"conteudo": NonNullable<Json>,"criado_em"?: string,"decidido_em"?: string | null,"empreendimento_id": string,"enviado_em"?: string | null,"id": string,"modelo_id"?: string | null,"motivo_devolucao"?: string | null,"ocorrencia_id"?: string | null,"revisor_id"?: string | null,"row_version"?: number,"situacao"?: string,"titulo": string,"versao"?: number
+                    "atualizado_em"?: string,"atualizado_por": string,"autor_id": string,"consultoria_id": string,"conteudo": NonNullable<Json>,"criado_em"?: string,"decidido_em"?: string | null,"empreendimento_id": string,"enviado_em"?: string | null,"evidencia_id"?: string | null,"id": string,"modelo_id"?: string | null,"motivo_devolucao"?: string | null,"ocorrencia_id"?: string | null,"revisor_id"?: string | null,"row_version"?: number,"situacao"?: string,"titulo": string,"versao"?: number
                   }
                   Update: {
-                    "atualizado_em"?: string,"atualizado_por"?: string,"autor_id"?: string,"consultoria_id"?: string,"conteudo"?: NonNullable<Json>,"criado_em"?: string,"decidido_em"?: string | null,"empreendimento_id"?: string,"enviado_em"?: string | null,"id"?: string,"modelo_id"?: string | null,"motivo_devolucao"?: string | null,"ocorrencia_id"?: string | null,"revisor_id"?: string | null,"row_version"?: number,"situacao"?: string,"titulo"?: string,"versao"?: number
+                    "atualizado_em"?: string,"atualizado_por"?: string,"autor_id"?: string,"consultoria_id"?: string,"conteudo"?: NonNullable<Json>,"criado_em"?: string,"decidido_em"?: string | null,"empreendimento_id"?: string,"enviado_em"?: string | null,"evidencia_id"?: string | null,"id"?: string,"modelo_id"?: string | null,"motivo_devolucao"?: string | null,"ocorrencia_id"?: string | null,"revisor_id"?: string | null,"row_version"?: number,"situacao"?: string,"titulo"?: string,"versao"?: number
                   }
                   Relationships: [
                     {
@@ -1494,6 +1494,12 @@ isOneToOne: false
       columns: ["consultoria_id","empreendimento_id"]
 isOneToOne: false
       referencedRelation: "empreendimento"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "relatorio_evidencia_fk"
+      columns: ["consultoria_id","evidencia_id"]
+isOneToOne: false
+      referencedRelation: "evidencia"
       referencedColumns: ["consultoria_id","id"]
     },{
       foreignKeyName: "relatorio_modelo_fk"
@@ -1895,7 +1901,7 @@ isOneToOne: false
 { Args: { "p_aprovado_por": string,"p_data_aceite": string,"p_gerar_tarefas"?: boolean,"p_id": string,"p_metodo"?: string,"p_referencia": string,"p_row_version": number,"p_tarefas"?: Json }; Returns: number
                            },
 "aprovar_relatorio":
-{ Args: { "p_id": string,"p_row_version": number }; Returns: number
+{ Args: { "p_caminho"?: string,"p_data_execucao"?: string,"p_id": string,"p_nome_original"?: string,"p_row_version": number,"p_sha256"?: string,"p_versao_id"?: string }; Returns: number
                            },
 "arquivar_modelo_documento":
 { Args: { "p_id": string,"p_row_version": number }; Returns: undefined

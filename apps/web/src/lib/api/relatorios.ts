@@ -1,12 +1,13 @@
 // Relatório escrito no Grama (ADR-0040): nasce de um modelo já preenchido, é editado no editor dos
 // modelos, guarda versões e passa pela revisão. As RPCs decidem quem edita, envia, devolve e aprova;
 // a tela só mostra as ações que fazem sentido.
-import type { NoDoDocumento } from '@gestao-ambiental/domain'
+import type { DataCivil, NoDoDocumento } from '@gestao-ambiental/domain'
 
 import type { Json } from '@/lib/database.types'
 import { obterSupabase } from '@/lib/supabase'
 
 import { aceitaNulo } from './nulo'
+import { MIME_DOCX, sha256 } from './ocorrencias'
 
 export type SituacaoDoRelatorio = 'rascunho' | 'em_revisao' | 'devolvido' | 'aprovado'
 
@@ -36,6 +37,8 @@ export interface Relatorio extends RelatorioNaLista {
   autorId: string
   revisorNome: string | null
   motivoDevolucao: string | null
+  /** Evidência da ocorrência criada ao aprovar. */
+  evidenciaId: string | null
 }
 
 function situacao(valor: string): SituacaoDoRelatorio {
@@ -75,7 +78,7 @@ export async function obterRelatorio(id: string): Promise<Relatorio | null> {
     .from('relatorio')
     .select(
       `id, consultoria_id, empreendimento_id, ocorrencia_id, titulo, conteudo, situacao, versao,
-       row_version, atualizado_em, autor_id, motivo_devolucao,
+       row_version, atualizado_em, autor_id, motivo_devolucao, evidencia_id,
        empreendimento:empreendimento!relatorio_empreendimento_fk(nome),
        autor:membro!relatorio_autor_fk(nome),
        revisor:membro!relatorio_revisor_fk(nome)`,
@@ -100,6 +103,7 @@ export async function obterRelatorio(id: string): Promise<Relatorio | null> {
     autorNome: data.autor.nome,
     revisorNome: data.revisor?.nome ?? null,
     motivoDevolucao: data.motivo_devolucao,
+    evidenciaId: data.evidencia_id,
   }
 }
 
@@ -176,10 +180,49 @@ export async function devolverRelatorio(
   return data
 }
 
-export async function aprovarRelatorio(id: string, rowVersion: number): Promise<number> {
-  const { data, error } = await obterSupabase().rpc('aprovar_relatorio', {
+/** O .docx da versão aprovada e a data real de execução (só quando há ocorrência). */
+export interface EvidenciaDoRelatorio {
+  consultoriaId: string
+  arquivo: Blob
+  nomeOriginal: string
+  dataExecucao: DataCivil
+}
+
+/**
+ * Aprova. Com ocorrência, o .docx vai antes ao Storage como objeto novo e o banco registra, na mesma
+ * transação da aprovação, a evidência da ocorrência (ADR-0040). Se a aprovação falhar, o objeto
+ * enviado fica sem uso, como qualquer envio interrompido.
+ */
+export async function aprovarRelatorio(
+  id: string,
+  rowVersion: number,
+  evidencia: EvidenciaDoRelatorio | null,
+): Promise<number> {
+  const supabase = obterSupabase()
+  if (!evidencia) {
+    const { data, error } = await supabase.rpc('aprovar_relatorio', {
+      p_id: id,
+      p_row_version: rowVersion,
+    })
+    if (error) throw error
+    return data
+  }
+  const versaoId = crypto.randomUUID()
+  const caminho = `${evidencia.consultoriaId}/evidencia/${versaoId}.docx`
+  const arquivo = new File([evidencia.arquivo], evidencia.nomeOriginal, { type: MIME_DOCX })
+  const hash = await sha256(arquivo)
+  const envio = await supabase.storage
+    .from('arquivos')
+    .upload(caminho, arquivo, { contentType: MIME_DOCX, upsert: false })
+  if (envio.error) throw envio.error
+  const { data, error } = await supabase.rpc('aprovar_relatorio', {
     p_id: id,
     p_row_version: rowVersion,
+    p_versao_id: versaoId,
+    p_caminho: caminho,
+    p_nome_original: evidencia.nomeOriginal,
+    p_sha256: hash,
+    p_data_execucao: evidencia.dataExecucao,
   })
   if (error) throw error
   return data

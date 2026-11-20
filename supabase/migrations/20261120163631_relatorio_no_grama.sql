@@ -9,6 +9,8 @@
 --    ocorrência ou, sem ele, a Gestão). Com a conferência independente da consultoria, quem escreveu
 --    não revisa nem aprova. Aprovado não se edita.
 -- 3. RPCs: criar, salvar (versão nova numa transação, controle otimista), enviar, devolver, aprovar.
+--    Aprovar o relatório de uma ocorrência registra, na mesma transação, a evidência dela com o .docx
+--    da versão aprovada (decisão do Eduardo, 20/11/2026).
 -- 4. conferencia_ia passa a conferir uma versão do relatório (ou a evidência, nunca os dois) e guarda
 --    os apontamentos ignorados. iniciar_conferencia_relatorio devolve o conteúdo da versão e o contexto
 --    do cadastro; a Edge Function conferir-relatorio faz o resto, com a mesma cota.
@@ -36,6 +38,7 @@ create table public.relatorio (
   atualizado_em timestamptz not null default now(),
   enviado_em timestamptz,
   decidido_em timestamptz,
+  evidencia_id uuid,
   constraint relatorio_consultoria_id_id_key unique (consultoria_id, id),
   constraint relatorio_titulo check (length(btrim(titulo)) between 1 and 200),
   constraint relatorio_conteudo check (
@@ -54,12 +57,16 @@ create table public.relatorio (
   constraint relatorio_atualizado_por_fk foreign key (consultoria_id, atualizado_por)
     references public.membro (consultoria_id, id) on delete restrict,
   constraint relatorio_revisor_fk foreign key (consultoria_id, revisor_id)
-    references public.membro (consultoria_id, id) on delete restrict
+    references public.membro (consultoria_id, id) on delete restrict,
+  constraint relatorio_evidencia_fk foreign key (consultoria_id, evidencia_id)
+    references public.evidencia (consultoria_id, id) on delete restrict
 );
 
 comment on table public.relatorio is
   'Relatório escrito no Grama (ADR-0040): texto do editor com versões, revisão e conferência por IA.';
 comment on column public.relatorio.versao is 'Número da versão atual em relatorio_versao.';
+comment on column public.relatorio.evidencia_id is
+  'Evidência da ocorrência criada ao aprovar (ADR-0040): o .docx da versão aprovada.';
 
 create index relatorio_ocorrencia_idx on public.relatorio (consultoria_id, ocorrencia_id, atualizado_em desc);
 create index relatorio_empreendimento_idx
@@ -368,7 +375,23 @@ begin
 end;
 $$;
 
-create function public.aprovar_relatorio(p_id uuid, p_row_version integer)
+-- Aprovar. Com ocorrência, o relatório aprovado vira a evidência dela na mesma transação (decisão do
+-- Eduardo, 20/11/2026): a tela gera o .docx da versão aprovada e o envia ao Storage como objeto novo
+-- (consultoria_id/evidencia/<uuid>.docx); aqui o banco confere o objeto, registra a versão do
+-- documento (nome, MIME, tamanho, SHA-256, autor e instante), a evidência com a data real de execução
+-- informada por quem aprova e a conferência aprovada por quem revisou. É a mesma conferência de
+-- sempre (conferente designado ou Gestão, nunca o autor): a ocorrência segue as regras de hoje e só a
+-- Gestão conclui. A ocorrência precisa estar aberta (sem outra evidência esperando conferência).
+-- Sem ocorrência, só aprova.
+create function public.aprovar_relatorio(
+  p_id uuid,
+  p_row_version integer,
+  p_versao_id uuid default null,
+  p_caminho text default null,
+  p_nome_original text default null,
+  p_sha256 text default null,
+  p_data_execucao date default null
+)
 returns integer
 language plpgsql
 security definer
@@ -376,20 +399,99 @@ set search_path = ''
 as $$
 declare
   r public.relatorio;
+  eu uuid;
+  alvo public.ocorrencia%rowtype;
+  objeto record;
+  doc uuid;
+  proximo integer;
+  v_evidencia uuid := gen_random_uuid();
 begin
   r := private.relatorio_para_escrever(p_id, p_row_version);
   if r.situacao <> 'em_revisao' then
     raise exception 'relatorio_fora_da_revisao' using errcode = 'P0001';
   end if;
+  eu := private.membro_atual(r.consultoria_id);
   if not private.pode_revisar_relatorio(r) then
-    if r.autor_id = private.membro_atual(r.consultoria_id) then
+    if r.autor_id = eu then
       raise exception 'autor_nao_revisa' using errcode = 'P0001';
     end if;
     raise exception 'sem_permissao' using errcode = '42501';
   end if;
+
+  if r.ocorrencia_id is not null then
+    select * into alvo from public.ocorrencia as o
+    where o.consultoria_id = r.consultoria_id and o.id = r.ocorrencia_id for update;
+    if alvo.situacao = 'concluida' then
+      raise exception 'ocorrencia_concluida' using errcode = 'P0001';
+    end if;
+    if alvo.situacao = 'em_conferencia' then
+      raise exception 'aguardando_conferencia' using errcode = 'P0001';
+    end if;
+    if p_versao_id is null or p_caminho is null or p_sha256 is null then
+      raise exception 'arquivo_obrigatorio' using errcode = '22023';
+    end if;
+    if p_data_execucao is null then
+      raise exception 'data_execucao_obrigatoria' using errcode = '22023';
+    end if;
+    if p_data_execucao > private.hoje_da_consultoria(r.consultoria_id) then
+      raise exception 'data_execucao_futura' using errcode = '22023';
+    end if;
+    if split_part(p_caminho, '/', 1) <> r.consultoria_id::text
+       or p_caminho !~ '^[0-9a-f-]{36}/evidencia/[0-9a-f-]{36}\.docx$' then
+      raise exception 'caminho_invalido' using errcode = '22023';
+    end if;
+    select o.metadata ->> 'mimetype' as mime, (o.metadata ->> 'size')::bigint as tamanho
+    into objeto
+    from storage.objects as o
+    where o.bucket_id = 'arquivos' and o.name = p_caminho;
+    if not found then
+      raise exception 'arquivo_nao_encontrado' using errcode = 'P0001';
+    end if;
+    if objeto.mime is distinct from
+       'application/vnd.openxmlformats-officedocument.wordprocessingml.document' then
+      raise exception 'arquivo_tipo_invalido' using errcode = '22023';
+    end if;
+    if coalesce(objeto.tamanho, 0) <= 0 or objeto.tamanho > 26214400 then
+      raise exception 'arquivo_grande_demais' using errcode = '22023';
+    end if;
+
+    select ev.documento_versao_id into doc from public.evidencia as ev
+    where ev.ocorrencia_id = alvo.id order by ev.numero desc limit 1;
+    if found then
+      select v.documento_id into doc from public.documento_versao as v where v.id = doc;
+    else
+      insert into public.documento (consultoria_id, entidade) values (alvo.consultoria_id, 'evidencia')
+      returning id into doc;
+    end if;
+    select coalesce(max(ev.numero), 0) + 1 into proximo from public.evidencia as ev where ev.ocorrencia_id = alvo.id;
+
+    insert into public.documento_versao (id, consultoria_id, documento_id, numero, caminho, nome_original, mime,
+                                         tamanho_bytes, sha256, autor_id)
+    values (p_versao_id, alvo.consultoria_id, doc, proximo, p_caminho,
+            left(btrim(coalesce(nullif(btrim(p_nome_original), ''), r.titulo || '.docx')), 255),
+            objeto.mime, objeto.tamanho, lower(p_sha256), eu);
+    update public.documento as d set versao_vigente_id = p_versao_id where d.id = doc;
+
+    -- Quem enviou é quem escreveu; quem conferiu é quem revisou (a independência vale como sempre).
+    insert into public.evidencia (id, consultoria_id, ocorrencia_id, numero, documento_versao_id, data_execucao,
+                                  enviada_por, situacao)
+    values (v_evidencia, alvo.consultoria_id, alvo.id, proximo, p_versao_id, p_data_execucao, r.autor_id,
+            'aprovada');
+    insert into public.conferencia (consultoria_id, evidencia_id, decisao, conferente_id, motivo)
+    values (alvo.consultoria_id, v_evidencia, 'aprovada', eu, null);
+
+    update public.ocorrencia as o
+    set situacao = 'em_conferencia', row_version = o.row_version + 1
+    where o.id = alvo.id;
+    perform private.registrar_historico(alvo.consultoria_id, alvo.id, 'evidencia_enviada', proximo,
+      'Relatório aprovado no Grama: ' || r.titulo);
+    perform private.registrar_historico(alvo.consultoria_id, alvo.id, 'evidencia_aprovada', proximo);
+  end if;
+
   update public.relatorio as x
-  set situacao = 'aprovado', revisor_id = private.membro_atual(r.consultoria_id), decidido_em = now(),
-      atualizado_em = now(), row_version = x.row_version + 1
+  set situacao = 'aprovado', revisor_id = eu, decidido_em = now(), atualizado_em = now(),
+      evidencia_id = case when r.ocorrencia_id is null then null else v_evidencia end,
+      row_version = x.row_version + 1
   where x.id = r.id;
   return r.row_version + 1;
 end;
@@ -424,7 +526,7 @@ begin
     'public.salvar_relatorio(uuid, text, jsonb, integer)',
     'public.enviar_relatorio(uuid, integer)',
     'public.devolver_relatorio(uuid, text, integer)',
-    'public.aprovar_relatorio(uuid, integer)',
+    'public.aprovar_relatorio(uuid, integer, uuid, text, text, text, date)',
     'public.permissoes_do_relatorio(uuid)'
   ] loop
     execute format('revoke all on function %s from public, anon', assinatura);

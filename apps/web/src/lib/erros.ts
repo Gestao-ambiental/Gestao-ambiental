@@ -106,6 +106,7 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   titulo_invalido: 'Informe um título de até 200 caracteres.',
   autor_nao_revisa:
     'Quem escreveu o relatório não pode aprovar nem devolver. Outra pessoa precisa revisar.',
+  arquivo_obrigatorio: 'Não foi possível gerar o arquivo do relatório. Tente aprovar de novo.',
   relatorio_aprovado: 'Este relatório já foi aprovado e não pode mais ser editado.',
   relatorio_ja_enviado: 'Este relatório já foi enviado para revisão.',
   relatorio_fora_da_revisao:

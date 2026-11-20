@@ -34,6 +34,7 @@ function relatorio(extra: Record<string, unknown> = {}) {
     atualizado_em: '2026-11-20T13:00:00Z',
     autor_id: 'm-Filtroville',
     motivo_devolucao: null,
+    evidencia_id: null,
     empreendimento: { nome: 'Metalúrgica Rio Cubatão' },
     autor: { nome: 'Bruno Kist' },
     revisor: null,
@@ -191,11 +192,72 @@ describe('relatório escrito no Grama', () => {
         p_row_version: 3,
       })
     })
+  })
 
-    await usuario.click(screen.getByRole('button', { name: 'Aprovar' }))
+  it('aprovar com ocorrência pede a data real de execução e envia o .docx como evidência', async () => {
+    const usuario = userEvent.setup()
+    falso.reiniciar(cenario(revisor, { relatorio: relatorio({ situacao: 'em_revisao' }) }))
+    renderizarApp('/relatorios/r1')
+    await usuario.click(await screen.findByRole('button', { name: 'Aprovar' }))
+    const dialogo = await screen.findByRole('dialog', { name: 'Aprovar e registrar a evidência' })
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Aprovar' }))
+    expect(await within(dialogo).findByText('Informe a data real de execução')).toBeInTheDocument()
+    expect(falso.cliente.rpc).not.toHaveBeenCalledWith('aprovar_relatorio', expect.anything())
+
+    await usuario.type(within(dialogo).getByLabelText('Data real de execução *'), '18/11/2026')
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Aprovar' }))
     await waitFor(() => {
-      expect(falso.cliente.rpc).toHaveBeenCalledWith('aprovar_relatorio', expect.anything())
+      expect(falso.cliente.rpc).toHaveBeenCalledWith(
+        'aprovar_relatorio',
+        expect.objectContaining({
+          p_id: 'r1',
+          p_row_version: 3,
+          p_data_execucao: '2026-11-18',
+          p_nome_original: 'Relatório semestral - Metalúrgica Rio Cubatão.docx',
+          p_caminho: expect.stringMatching(
+            /^c-Filtroville\/evidencia\/[0-9a-f-]{36}\.docx$/,
+          ) as unknown,
+        }),
+      )
     })
+    const upload = falso.cliente.storage.from().upload
+    expect(upload).toHaveBeenCalledWith(
+      expect.stringMatching(/\.docx$/),
+      expect.any(File),
+      expect.objectContaining({ upsert: false }),
+    )
+  })
+
+  it('aprovado com ocorrência mostra que virou a evidência', async () => {
+    falso.reiniciar(
+      cenario(
+        { pode_editar: false, pode_revisar: false },
+        { relatorio: relatorio({ situacao: 'aprovado', evidencia_id: 'ev9' }) },
+      ),
+    )
+    renderizarApp('/relatorios/r1')
+    expect(await screen.findByText('Virou a evidência da ocorrência')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Abrir a ocorrência' })).toHaveAttribute(
+      'href',
+      '/ocorrencias/o1',
+    )
+    expect(screen.getByRole('button', { name: 'Exportar .docx' })).toBeInTheDocument()
+  })
+
+  it('sem ocorrência, aprovar não pede data nem envia arquivo', async () => {
+    const usuario = userEvent.setup()
+    falso.reiniciar(
+      cenario(revisor, { relatorio: relatorio({ situacao: 'em_revisao', ocorrencia_id: null }) }),
+    )
+    renderizarApp('/relatorios/r1')
+    await usuario.click(await screen.findByRole('button', { name: 'Aprovar' }))
+    await waitFor(() => {
+      expect(falso.cliente.rpc).toHaveBeenCalledWith('aprovar_relatorio', {
+        p_id: 'r1',
+        p_row_version: 3,
+      })
+    })
+    expect(falso.cliente.storage.from().upload).not.toHaveBeenCalled()
   })
 
   it('devolvido mostra o motivo para o autor', async () => {

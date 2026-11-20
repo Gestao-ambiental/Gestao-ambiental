@@ -1,18 +1,26 @@
 // /relatorios/:id (ADR-0040): o relatório escrito no Grama. Quem escreve edita e envia para revisão;
 // quem confere corrige no mesmo texto e devolve ou aprova. A IA aponta trechos sublinhados no texto,
 // com "Aplicar sugestão" e "Ignorar"; ela não bloqueia nada. O Word é só a saída (Exportar .docx).
-import { nomeDoArquivoDoRelatorio, type NoDoDocumento } from '@gestao-ambiental/domain'
+import {
+  ehDataCivil,
+  hojeNoFuso,
+  nomeDoArquivoDoRelatorio,
+  type DataCivil,
+  type NoDoDocumento,
+} from '@gestao-ambiental/domain'
 import type { Editor } from '@tiptap/core'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useParams } from 'react-router'
+import { Link, useParams } from 'react-router'
 
+import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Pagina } from '@/app/paginas/Pagina'
 import { EditorDeModelo } from '@/app/paginas/modelos/EditorDeModelo'
 import { AvisoDeSaida } from '@/components/aviso-de-saida'
 import { Carregando, EstadoErro, EstadoVazio } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
 import { BotaoIcone } from '@/components/ui/botao-icone'
+import { CampoData } from '@/components/ui/campo-data'
 import { CampoTexto } from '@/components/ui/campo-texto'
 import { Dialogo } from '@/components/ui/dialogo'
 import {
@@ -109,7 +117,12 @@ function EdicaoDoRelatorio({
   const [sujo, setSujo] = useState(false)
   const sujoRef = useRef(false)
   const [falha, setFalha] = useState<string | null>(null)
+  const { atual } = useConsultoria()
   const [devolvendo, setDevolvendo] = useState(false)
+  const [aprovando, setAprovando] = useState(false)
+  const [dataExecucao, setDataExecucao] = useState('')
+  const [erroData, setErroData] = useState<string | null>(null)
+  const hoje = hojeNoFuso(new Date(), atual.fuso)
   const [motivo, setMotivo] = useState('')
   const [erroMotivo, setErroMotivo] = useState<string | null>(null)
   const [editor, setEditor] = useState<Editor | null>(null)
@@ -182,13 +195,25 @@ function EdicaoDoRelatorio({
             })
           })
       } else if (acao === 'aprovar') {
-        await aprovarRelatorio(relatorio.id, rowVersion.current)
+        // Com ocorrência, o .docx da versão aprovada vira a evidência dela (ADR-0040).
+        let evidencia = null
+        if (relatorio.ocorrenciaId) {
+          const word = await import('@/lib/docx-do-modelo')
+          evidencia = {
+            consultoriaId: relatorio.consultoriaId,
+            arquivo: await word.gerarDocx(conteudo.current),
+            nomeOriginal: nomeDoArquivoDoRelatorio(titulo, relatorio.empreendimentoNome),
+            dataExecucao: dataExecucao as DataCivil,
+          }
+        }
+        await aprovarRelatorio(relatorio.id, rowVersion.current, evidencia)
       } else {
         await devolverRelatorio(relatorio.id, motivo, rowVersion.current)
       }
     },
     onSuccess: async () => {
       setDevolvendo(false)
+      setAprovando(false)
       setFalha(null)
       await atualizar()
     },
@@ -220,7 +245,8 @@ function EdicaoDoRelatorio({
       iconeAntes="check"
       disabled={ocupado}
       onClick={() => {
-        decidir.mutate('aprovar')
+        if (relatorio.ocorrenciaId) setAprovando(true)
+        else decidir.mutate('aprovar')
       }}
     >
       Aprovar
@@ -310,6 +336,11 @@ function EdicaoDoRelatorio({
       }
     >
       <div className="flex flex-col gap-(--e-4)">
+        {relatorio.evidenciaId && relatorio.ocorrenciaId ? (
+          <MensagemSecao tom="sucesso" titulo="Virou a evidência da ocorrência">
+            <Link to={`/ocorrencias/${relatorio.ocorrenciaId}`}>Abrir a ocorrência</Link>
+          </MensagemSecao>
+        ) : null}
         {relatorio.situacao === 'devolvido' && relatorio.motivoDevolucao ? (
           <MensagemSecao
             tom="atencao"
@@ -369,6 +400,57 @@ function EdicaoDoRelatorio({
         </div>
       </div>
 
+      <Dialogo
+        aberto={aprovando}
+        aoMudar={setAprovando}
+        titulo="Aprovar e registrar a evidência"
+        acoes={
+          <>
+            <Botao
+              onClick={() => {
+                setAprovando(false)
+              }}
+            >
+              Cancelar
+            </Botao>
+            <Botao
+              aparencia="primario"
+              disabled={decidir.isPending}
+              onClick={() => {
+                if (!ehDataCivil(dataExecucao)) {
+                  setErroData('Informe a data real de execução')
+                  return
+                }
+                if (dataExecucao > hoje) {
+                  setErroData('A data real de execução não pode estar no futuro')
+                  return
+                }
+                decidir.mutate('aprovar')
+              }}
+            >
+              {decidir.isPending ? 'Aprovando' : 'Aprovar'}
+            </Botao>
+          </>
+        }
+      >
+        <CampoData
+          rotulo="Data real de execução *"
+          hoje={hoje}
+          maximo={hoje}
+          motivoDoLimite="A data real de execução não pode estar no futuro"
+          valor={ehDataCivil(dataExecucao) ? dataExecucao : null}
+          erro={erroData ?? undefined}
+          aoMudar={(nova) => {
+            setDataExecucao(nova ?? '')
+            setErroData(null)
+          }}
+        />
+        {decidir.isError && aprovando ? (
+          <MensagemSecao tom="perigo" role="alert">
+            {mensagemDoErro(decidir.error)}
+          </MensagemSecao>
+        ) : null}
+      </Dialogo>
       <AvisoDeSaida
         bloquear={() => sujoRef.current}
         sujo={sujo}

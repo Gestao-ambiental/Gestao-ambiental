@@ -1,8 +1,9 @@
 -- Relatório escrito no Grama (ADR-0040): versões, revisão com conferência independente, conferência
--- por IA de uma versão e apontamento ignorado. Outra consultoria não vê, não cria nem edita.
+-- por IA de uma versão, apontamento ignorado e aprovação que vira a evidência da ocorrência. Outra
+-- consultoria não vê, não cria, não edita nem aprova.
 begin;
 
-select plan(33);
+select plan(40);
 
 select testes.criar_dados_sinteticos();
 select set_config('testes.hoje',
@@ -237,12 +238,89 @@ select is(
 select testes.autenticar_como('bruno@filtroville.test');
 select is(public.enviar_relatorio('80000000-0000-4000-8000-000000000701', 5), 6, 'o autor reenvia');
 
+select testes.autenticar_como('gustavo@verdesul.test');
+select throws_ok(
+  $$select public.aprovar_relatorio('80000000-0000-4000-8000-000000000701', 6)$$,
+  '42501', 'sem_permissao',
+  'outra consultoria não aprova pelo id conhecido'
+);
+
 select testes.autenticar_como('eduardo@filtroville.test');
-select is(public.aprovar_relatorio('80000000-0000-4000-8000-000000000701', 6), 7, 'a Gestão aprova');
+select throws_ok(
+  $$select public.aprovar_relatorio('80000000-0000-4000-8000-000000000701', 6)$$,
+  '22023', 'arquivo_obrigatorio',
+  'com ocorrência, aprovar exige o .docx da versão aprovada'
+);
+
+reset role;
+insert into storage.objects (bucket_id, name, metadata) values
+  ('arquivos', 'c0000000-0000-4000-8000-00000000000a/evidencia/50000000-0000-4000-8000-000000000701.docx',
+   '{"mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "size": 9000}');
+select testes.autenticar_como('eduardo@filtroville.test');
+
+select throws_ok(
+  $$select public.aprovar_relatorio('80000000-0000-4000-8000-000000000701', 6,
+    '51000000-0000-4000-8000-000000000701',
+    'c0000000-0000-4000-8000-00000000000a/evidencia/50000000-0000-4000-8000-000000000701.docx',
+    'Relatório semestral.docx', repeat('d', 64), current_setting('testes.hoje')::date + 1)$$,
+  '22023', 'data_execucao_futura',
+  'a data real de execução não pode estar no futuro'
+);
+
+select is(
+  public.aprovar_relatorio('80000000-0000-4000-8000-000000000701', 6,
+    '51000000-0000-4000-8000-000000000701',
+    'c0000000-0000-4000-8000-00000000000a/evidencia/50000000-0000-4000-8000-000000000701.docx',
+    'Relatório semestral.docx', repeat('d', 64), current_setting('testes.hoje')::date - 1),
+  7,
+  'a Gestão aprova e o relatório vira a evidência da ocorrência'
+);
+
+select results_eq(
+  $$select ev.numero, ev.situacao::text, ev.enviada_por, c.decisao::text, c.conferente_id, v.nome_original, v.mime,
+           v.autor_id, (select r.evidencia_id = ev.id from public.relatorio as r
+                        where r.id = '80000000-0000-4000-8000-000000000701')
+    from public.evidencia as ev
+    join public.conferencia as c on c.evidencia_id = ev.id
+    join public.documento_versao as v on v.id = ev.documento_versao_id
+    where ev.ocorrencia_id = current_setting('testes.oc')::uuid$$,
+  $$values (1, 'aprovada', 'd0000000-0000-4000-8000-0000000000a3'::uuid, 'aprovada',
+            'd0000000-0000-4000-8000-0000000000a1'::uuid, 'Relatório semestral.docx',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'd0000000-0000-4000-8000-0000000000a1'::uuid, true)$$,
+  'evidência aprovada: enviada por quem escreveu, conferida por quem revisou, com o arquivo versionado'
+);
+
 select throws_ok(
   $$select public.salvar_relatorio('80000000-0000-4000-8000-000000000701', 'X', '{"type": "doc"}', 7)$$,
   'P0001', 'relatorio_aprovado',
   'relatório aprovado não se edita'
+);
+
+select lives_ok(
+  $$select public.concluir_ocorrencia(current_setting('testes.oc')::uuid,
+    (select row_version from public.ocorrencia where id = current_setting('testes.oc')::uuid))$$,
+  'a Gestão conclui a ocorrência com essa evidência, pelas regras de sempre'
+);
+
+-- ---------------------------------------------------------------- sem ocorrência
+select testes.autenticar_como('bruno@filtroville.test');
+select public.criar_relatorio('80000000-0000-4000-8000-000000000703', 'e0000000-0000-4000-8000-000000000700',
+  null, null, 'Ofício', '{"type": "doc", "content": [{"type": "paragraph"}]}');
+select public.enviar_relatorio('80000000-0000-4000-8000-000000000703', 1);
+
+select testes.autenticar_como('eduardo@filtroville.test');
+select is(
+  public.aprovar_relatorio('80000000-0000-4000-8000-000000000703', 2),
+  3,
+  'sem ocorrência, só aprova'
+);
+select is(
+  (select count(*)::integer from public.evidencia) || ':'
+    || (select coalesce(evidencia_id::text, 'sem evidência') from public.relatorio
+        where id = '80000000-0000-4000-8000-000000000703'),
+  '1:sem evidência',
+  'sem ocorrência, nenhuma evidência é criada'
 );
 
 select * from finish();

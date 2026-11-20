@@ -24,10 +24,15 @@ O pedido do Eduardo, nas palavras dele: "um módulo de texto integrado pra poder
    - O apontamento ganha `substituicao`: o texto exato que troca o trecho (prompt `conferencia-v2`).
    - Na tela, o trecho fica sublinhado no editor. "Aplicar sugestão" troca o trecho, e "Ignorar" grava o índice em `conferencia_ia.ignorados` (`ignorar_apontamento`).
    - "Conferir antes de enviar" salva e confere enquanto a pessoa escreve. Enviar para revisão também confere. A IA não bloqueia nada.
-5. **Relatório aprovado não vira evidência sozinho.** A conclusão da ocorrência continua exigindo a evidência anexada. Assim a regra de conclusão (DEM-03, DEM-09) não muda nesta camada.
+5. **O relatório aprovado vira a evidência da ocorrência sozinho** (decisão do Eduardo, 20/11/2026: "vira evidência da ocorrencia sozinho").
+   - **Arquivo:** ao aprovar, a tela gera o .docx da versão aprovada, com o mesmo gerador do "Exportar .docx", e o envia ao Storage como objeto novo e imutável em `consultoria_id/evidencia/<uuid>.docx`. Gerar o .docx no Postgres não é possível, e numa Edge Function seria outro motor de conversão para manter igual ao do navegador. Por isso a evidência é um arquivo de verdade, e não um ponteiro para a versão do relatório. Assim nada muda em quem lê evidência (lista, download, conferência por IA, conclusão).
+   - **Banco:** `aprovar_relatorio` confere o objeto (caminho, MIME .docx, tamanho) e, na mesma transação da aprovação, registra a versão do documento (nome original, MIME, tamanho, SHA-256, autor e instante), a evidência com a data real de execução informada por quem aprova (DEM-09) e a conferência aprovada por quem revisou. `relatorio.evidencia_id` aponta para ela.
+   - **Sem atalho:** a evidência sai "enviada" por quem escreveu e "conferida" por quem revisou, com o mesmo critério de `conferir_evidencia` (conferente designado ou Gestão, nunca o autor com a independência ligada). A ocorrência fica em conferência com a última evidência aprovada, e só a Gestão conclui, por `concluir_ocorrencia`, como hoje.
+   - **Ocorrência fechada ou ocupada:** com a ocorrência concluída (`ocorrencia_concluida`) ou com outra evidência esperando conferência (`aguardando_conferencia`), a aprovação é recusada. Primeiro se resolve a ocorrência.
+   - **Sem ocorrência:** o relatório só fica aprovado, com "Exportar .docx".
+   - Se a aprovação falhar depois do envio, o objeto fica sem uso no Storage, como qualquer envio interrompido.
 
 ## Consequências
 
 - Tabelas novas com RLS forçada, auditoria e travas de suporte e de só leitura. O pgTAP 700 cobre o negativo de outra consultoria.
 - As migrations precisam ir ao banco do beta para as telas novas funcionarem na prévia: `20261120163631_relatorio_no_grama` e as que vêm junto (ver o PR).
-- Em aberto: relatório aprovado virar evidência e concluir a ocorrência. Fica para quando o Eduardo decidir.
