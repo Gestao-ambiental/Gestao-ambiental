@@ -589,3 +589,6 @@ export {
   titularEncontrado,
 } from './titular-da-licenca'
 export type { TitularDaLicenca } from './titular-da-licenca'
+
+export { idsRenovados, rotuloDaSituacaoDoAlvara, situacaoDoAlvara } from './alvara'
+export type { SituacaoDoAlvara } from './alvara'

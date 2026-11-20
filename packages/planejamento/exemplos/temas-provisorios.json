@@ -1,0 +1,447 @@
+{
+  "versao": "0.1-provisorio",
+  "observacao": "Travas e gravidades vêm da matriz de antecipação, ainda não validada. Durações, esforços, esperas e frações de preparo são valores sintéticos por trava, só para simulação.",
+  "travas": {
+    "nenhuma": {
+      "rotulo": "Nenhuma",
+      "antecipabilidade": "antecipavel",
+      "duracaoDias": 3,
+      "esforcoHoras": 8,
+      "esperaDeTerceirosDias": 15,
+      "janelaDias": 180
+    },
+    "documental": {
+      "rotulo": "Documental",
+      "antecipabilidade": "antecipavel",
+      "duracaoDias": 10,
+      "esforcoHoras": 20,
+      "esperaDeTerceirosDias": 0
+    },
+    "ciclo_de_dados": {
+      "rotulo": "Ciclo de dados",
+      "antecipabilidade": "parcial",
+      "fracaoDePreparo": 0.5,
+      "duracaoDias": 10,
+      "esforcoHoras": 16,
+      "esperaDeTerceirosDias": 20,
+      "janelaDias": 60
+    },
+    "janela_sazonal": {
+      "rotulo": "Janela sazonal ou biológica",
+      "antecipabilidade": "parcial",
+      "fracaoDePreparo": 0.3,
+      "duracaoDias": 10,
+      "esforcoHoras": 30,
+      "esperaDeTerceirosDias": 10
+    },
+    "cronograma_aprovado": {
+      "rotulo": "Cronograma aprovado",
+      "antecipabilidade": "parcial",
+      "fracaoDePreparo": 0.2,
+      "duracaoDias": 20,
+      "esforcoHoras": 40,
+      "esperaDeTerceirosDias": 10
+    },
+    "janela_legal": {
+      "rotulo": "Janela legal",
+      "antecipabilidade": "parcial",
+      "fracaoDePreparo": 0.8,
+      "duracaoDias": 6,
+      "esforcoHoras": 12,
+      "esperaDeTerceirosDias": 0,
+      "aPartirDoInicioDoAno": true
+    },
+    "prazo_de_terceiro": {
+      "rotulo": "Prazo do órgão ou de terceiro",
+      "antecipabilidade": "fixa",
+      "duracaoDias": 5,
+      "esforcoHoras": 10,
+      "esperaDeTerceirosDias": 0
+    },
+    "condicao_continua": {
+      "rotulo": "Condição contínua",
+      "foraDaCarteira": true
+    }
+  },
+  "temas": [
+    {
+      "id": "laudo_ruido",
+      "area": "Ruído, vibração e ar",
+      "rotulo": "Laudo de ruído ambiental",
+      "trava": "nenhuma",
+      "gravidade": "media",
+      "esperaDeTerceiros": true
+    },
+    {
+      "id": "emissoes_chamine",
+      "area": "Ruído, vibração e ar",
+      "rotulo": "Amostragem de emissões em chaminé",
+      "trava": "nenhuma",
+      "gravidade": "alta",
+      "esperaDeTerceiros": true
+    },
+    {
+      "id": "opacidade_frota",
+      "area": "Ruído, vibração e ar",
+      "rotulo": "Opacidade e fumaça preta da frota",
+      "trava": "nenhuma",
+      "gravidade": "baixa",
+      "esperaDeTerceiros": false
+    },
+    {
+      "id": "vibracao",
+      "area": "Ruído, vibração e ar",
+      "rotulo": "Vibração em detonação ou obra",
+      "trava": "cronograma_aprovado",
+      "gravidade": "media",
+      "esperaDeTerceiros": true
+    },
+    {
+      "id": "qualidade_ar",
+      "area": "Ruído, vibração e ar",
+      "rotulo": "Campanhas de qualidade do ar",
+      "trava": "ciclo_de_dados",
+      "gravidade": "media",
+      "esperaDeTerceiros": true
+    },
+    {
+      "id": "inventario_emissoes",
+      "area": "Ruído, vibração e ar",
+      "rotulo": "Inventário de emissões ou de gases de efeito estufa",
+      "trava": "ciclo_de_dados",
+      "gravidade": "baixa",
+      "esperaDeTerceiros": false
+    },
+    {
+      "id": "automonitoramento_efluentes",
+      "area": "Efluentes e recursos hídricos",
+      "rotulo": "Automonitoramento de efluentes",
+      "trava": "ciclo_de_dados",
+      "gravidade": "alta",
+      "esperaDeTerceiros": true
+    },
+    {
+      "id": "agua_subterranea",
+      "area": "Efluentes e recursos hídricos",
+      "rotulo": "Monitoramento de água subterrânea",
+      "trava": "ciclo_de_dados",
+      "gravidade": "alta",
+      "esperaDeTerceiros": true
+    },
+    {
+      "id": "corpo_receptor",
+      "area": "Efluentes e recursos hídricos",
+      "rotulo": "Monitoramento de corpo receptor",
+      "trava": "ciclo_de_dados",
+      "gravidade": "media",
+      "esperaDeTerceiros": true
+    },
+    {
+      "id": "carga_poluidora",
+      "area": "Efluentes e recursos hídricos",
+      "rotulo": "Declaração de carga poluidora",
+      "trava": "janela_legal",
+      "gravidade": "media",
+      "esperaDeTerceiros": false,
+      "prazoFixo": "03-31"
+    },
+    {
+      "id": "estanqueidade",
+      "area": "Efluentes e recursos hídricos",
+      "rotulo": "Teste de estanqueidade de tanques",
+      "trava": "nenhuma",
+      "gravidade": "alta",
+      "esperaDeTerceiros": true
+    },
+    {
+      "id": "limpeza_fossa",
+      "area": "Efluentes e recursos hídricos",
+      "rotulo": "Limpeza de fossa, caixa de gordura e manutenção da estação de tratamento",
+      "trava": "nenhuma",
+      "gravidade": "baixa",
+      "esperaDeTerceiros": true
+    },
+    {
+      "id": "outorga",
+      "area": "Efluentes e recursos hídricos",
+      "rotulo": "Outorga de uso da água: renovação",
+      "trava": "documental",
+      "gravidade": "critica",
+      "esperaDeTerceiros": false
+    },
+    {
+      "id": "pgrs",
+      "area": "Resíduos",
+      "rotulo": "Plano de gerenciamento de resíduos: elaboração e revisão",
+      "trava": "documental",
+      "gravidade": "media",
+      "esperaDeTerceiros": false
+    },
+    {
+      "id": "inventario_residuos",
+      "area": "Resíduos",
+      "rotulo": "Inventário anual de resíduos",
+      "trava": "janela_legal",
+      "gravidade": "media",
+      "esperaDeTerceiros": false,
+      "prazoFixo": "03-31"
+    },
+    {
+      "id": "declaracao_movimentacao",
+      "area": "Resíduos",
+      "rotulo": "Declarações periódicas de movimentação",
+      "trava": "ciclo_de_dados",
+      "gravidade": "media",
+      "esperaDeTerceiros": false
+    },
+    {
+      "id": "certificados_destinacao",
+      "area": "Resíduos",
+      "rotulo": "Certificados de destinação final",
+      "trava": "prazo_de_terceiro",
+      "gravidade": "media",
+      "esperaDeTerceiros": false
+    },
+    {
+      "id": "licencas_prestadores",
+      "area": "Resíduos",
+      "rotulo": "Licenças de transportadores e destinadores",
+      "trava": "condicao_continua",
+      "gravidade": "alta",
+      "esperaDeTerceiros": false
+    },
+    {
+      "id": "logistica_reversa",
+      "area": "Resíduos",
+      "rotulo": "Comprovação de logística reversa",
+      "trava": "ciclo_de_dados",
+      "gravidade": "baixa",
+      "esperaDeTerceiros": false
+    },
+    {
+      "id": "passivo_preliminar",
+      "area": "Solo, áreas contaminadas e recuperação",
+      "rotulo": "Passivo ambiental: avaliação preliminar",
+      "trava": "documental",
+      "gravidade": "alta",
+      "esperaDeTerceiros": false
+    },
+    {
+      "id": "passivo_investigacao",
+      "area": "Solo, áreas contaminadas e recuperação",
+      "rotulo": "Passivo ambiental: investigação confirmatória e detalhada",
+      "trava": "cronograma_aprovado",
+      "gravidade": "critica",
+      "esperaDeTerceiros": true
+    },
+    {
+      "id": "passivo_remediacao",
+      "area": "Solo, áreas contaminadas e recuperação",
+      "rotulo": "Passivo ambiental: remediação",
+      "trava": "cronograma_aprovado",
+      "gravidade": "critica",
+      "esperaDeTerceiros": true
+    },
+    {
+      "id": "passivo_monitoramento",
+      "area": "Solo, áreas contaminadas e recuperação",
+      "rotulo": "Passivo ambiental: monitoramento após a remediação",
+      "trava": "ciclo_de_dados",
+      "gravidade": "alta",
+      "esperaDeTerceiros": true
+    },
+    {
+      "id": "prad_plano",
+      "area": "Solo, áreas contaminadas e recuperação",
+      "rotulo": "Recuperação de área degradada: elaboração do plano",
+      "trava": "documental",
+      "gravidade": "alta",
+      "esperaDeTerceiros": false
+    },
+    {
+      "id": "prad_plantio",
+      "area": "Solo, áreas contaminadas e recuperação",
+      "rotulo": "Recuperação de área degradada: plantio e execução",
+      "trava": "janela_sazonal",
+      "gravidade": "alta",
+      "esperaDeTerceiros": true
+    },
+    {
+      "id": "prad_monitoramento",
+      "area": "Solo, áreas contaminadas e recuperação",
+      "rotulo": "Recuperação de área degradada: manutenção e monitoramento",
+      "trava": "janela_sazonal",
+      "gravidade": "media",
+      "esperaDeTerceiros": false
+    },
+    {
+      "id": "erosao_drenagem",
+      "area": "Solo, áreas contaminadas e recuperação",
+      "rotulo": "Controle de erosão e drenagem",
+      "trava": "cronograma_aprovado",
+      "gravidade": "alta",
+      "esperaDeTerceiros": true
+    },
+    {
+      "id": "fauna",
+      "area": "Fauna e flora",
+      "rotulo": "Monitoramento de fauna",
+      "trava": "janela_sazonal",
+      "gravidade": "media",
+      "esperaDeTerceiros": true
+    },
+    {
+      "id": "biota_aquatica",
+      "area": "Fauna e flora",
+      "rotulo": "Monitoramento de peixes e biota aquática",
+      "trava": "janela_sazonal",
+      "gravidade": "media",
+      "esperaDeTerceiros": false
+    },
+    {
+      "id": "resgate_fauna",
+      "area": "Fauna e flora",
+      "rotulo": "Resgate e afugentamento de fauna",
+      "trava": "cronograma_aprovado",
+      "gravidade": "alta",
+      "esperaDeTerceiros": true
+    },
+    {
+      "id": "supressao",
+      "area": "Fauna e flora",
+      "rotulo": "Supressão de vegetação e relatório",
+      "trava": "cronograma_aprovado",
+      "gravidade": "critica",
+      "esperaDeTerceiros": true
+    },
+    {
+      "id": "plantio_compensacao",
+      "area": "Fauna e flora",
+      "rotulo": "Plantio de compensação ou reposição florestal",
+      "trava": "janela_sazonal",
+      "gravidade": "alta",
+      "esperaDeTerceiros": true
+    },
+    {
+      "id": "flora_pegamento",
+      "area": "Fauna e flora",
+      "rotulo": "Monitoramento de flora e de pegamento das mudas",
+      "trava": "janela_sazonal",
+      "gravidade": "media",
+      "esperaDeTerceiros": false
+    },
+    {
+      "id": "plano_emergencia",
+      "area": "Programas, emergência e meio socioeconômico",
+      "rotulo": "Plano de emergência e gerenciamento de riscos: elaboração e revisão",
+      "trava": "documental",
+      "gravidade": "alta",
+      "esperaDeTerceiros": false
+    },
+    {
+      "id": "simulados",
+      "area": "Programas, emergência e meio socioeconômico",
+      "rotulo": "Simulados de emergência",
+      "trava": "nenhuma",
+      "gravidade": "media",
+      "esperaDeTerceiros": false
+    },
+    {
+      "id": "treinamentos",
+      "area": "Programas, emergência e meio socioeconômico",
+      "rotulo": "Treinamentos",
+      "trava": "nenhuma",
+      "gravidade": "baixa",
+      "esperaDeTerceiros": false
+    },
+    {
+      "id": "educacao_ambiental",
+      "area": "Programas, emergência e meio socioeconômico",
+      "rotulo": "Educação ambiental: ações e relatório",
+      "trava": "ciclo_de_dados",
+      "gravidade": "baixa",
+      "esperaDeTerceiros": false
+    },
+    {
+      "id": "comunicacao_social",
+      "area": "Programas, emergência e meio socioeconômico",
+      "rotulo": "Comunicação social: ações e relatório",
+      "trava": "ciclo_de_dados",
+      "gravidade": "baixa",
+      "esperaDeTerceiros": false
+    },
+    {
+      "id": "arqueologia",
+      "area": "Programas, emergência e meio socioeconômico",
+      "rotulo": "Arqueologia e patrimônio",
+      "trava": "prazo_de_terceiro",
+      "gravidade": "alta",
+      "esperaDeTerceiros": false
+    },
+    {
+      "id": "relatorio_programas",
+      "area": "Programas, emergência e meio socioeconômico",
+      "rotulo": "Relatório consolidado dos programas ambientais",
+      "trava": "ciclo_de_dados",
+      "gravidade": "media",
+      "esperaDeTerceiros": false
+    },
+    {
+      "id": "renovacao_licenca",
+      "area": "Administrativo e declarações",
+      "rotulo": "Renovação da licença de operação",
+      "trava": "documental",
+      "gravidade": "critica",
+      "esperaDeTerceiros": false
+    },
+    {
+      "id": "relatorio_ibama",
+      "area": "Administrativo e declarações",
+      "rotulo": "Relatório anual de atividades ao Ibama",
+      "trava": "janela_legal",
+      "gravidade": "media",
+      "esperaDeTerceiros": false,
+      "prazoFixo": "03-31"
+    },
+    {
+      "id": "relatorio_condicionantes",
+      "area": "Administrativo e declarações",
+      "rotulo": "Relatório anual de atendimento das condicionantes",
+      "trava": "ciclo_de_dados",
+      "gravidade": "alta",
+      "esperaDeTerceiros": false
+    },
+    {
+      "id": "alvaras",
+      "area": "Administrativo e declarações",
+      "rotulo": "Alvarás, certidões e auto de vistoria dos bombeiros",
+      "trava": "documental",
+      "gravidade": "media",
+      "esperaDeTerceiros": false
+    },
+    {
+      "id": "art",
+      "area": "Administrativo e declarações",
+      "rotulo": "Anotação de responsabilidade técnica",
+      "trava": "documental",
+      "gravidade": "baixa",
+      "esperaDeTerceiros": false
+    },
+    {
+      "id": "publicacoes",
+      "area": "Administrativo e declarações",
+      "rotulo": "Publicações obrigatórias",
+      "trava": "prazo_de_terceiro",
+      "gravidade": "baixa",
+      "esperaDeTerceiros": false
+    },
+    {
+      "id": "resposta_oficio",
+      "area": "Administrativo e declarações",
+      "rotulo": "Resposta a ofício ou pedido de informação complementar",
+      "trava": "prazo_de_terceiro",
+      "gravidade": "critica",
+      "esperaDeTerceiros": false
+    }
+  ]
+}

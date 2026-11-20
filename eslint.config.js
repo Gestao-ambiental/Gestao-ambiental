@@ -62,7 +62,7 @@ export default defineConfig(
 
   // Domínio: TypeScript puro, sem React, Supabase, rede, DOM ou relógio (ADR-0007)
   {
-    files: ['packages/domain/src/**/*.ts'],
+    files: ['packages/domain/src/**/*.ts', 'packages/planejamento/src/**/*.ts'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -94,6 +94,28 @@ export default defineConfig(
         {
           selector: "NewExpression[callee.name='Date'][arguments.length=0]",
           message: 'Receba "hoje" ou o instante como argumento.',
+        },
+      ],
+    },
+  },
+
+  // Motor de planejamento: puro como o domínio e, além disso, sem depender de nada do produto,
+  // para poder ser testado e publicado sozinho.
+  {
+    files: ['packages/planejamento/src/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            { group: ['react', 'react-dom', 'react/*'], message: 'O motor não depende de React.' },
+            { group: ['@supabase/*'], message: 'O motor não depende de Supabase.' },
+            { group: ['node:*'], message: 'O motor não depende de APIs do Node.' },
+            {
+              group: ['@gestao-ambiental/*'],
+              message: 'O motor não depende de outros pacotes do produto.',
+            },
+          ],
         },
       ],
     },

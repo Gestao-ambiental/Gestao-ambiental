@@ -1,0 +1,13 @@
+{
+  "versao": "0.1-provisorio",
+  "niveis": [
+    { "id": "baixa", "rotulo": "Baixa (administrativa)", "margemDias": 7 },
+    { "id": "media", "rotulo": "Média", "margemDias": 14 },
+    { "id": "alta", "rotulo": "Alta", "margemDias": 28 },
+    { "id": "critica", "rotulo": "Crítica", "margemDias": 42 }
+  ],
+  "niveisGraves": ["alta", "critica"],
+  "margemUnicaDias": 14,
+  "alertaDias": 30,
+  "passoNivelamentoDias": 7
+}

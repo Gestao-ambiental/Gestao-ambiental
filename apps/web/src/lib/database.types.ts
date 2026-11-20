@@ -89,6 +89,56 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"alvara": {
+                  Row: {
+                    "anterior_id": string | null,"consultoria_id": string,"criado_em": string,"criado_por": string,"documento_id": string,"empreendimento_id": string,"excluido_em": string | null,"excluido_por": string | null,"id": string,"notas": string | null,"numero": string | null,"orgao": string | null,"row_version": number,"unidade_id": string,"validade": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "anterior_id"?: string | null,"consultoria_id": string,"criado_em"?: string,"criado_por": string,"documento_id": string,"empreendimento_id": string,"excluido_em"?: string | null,"excluido_por"?: string | null,"id"?: string,"notas"?: string | null,"numero"?: string | null,"orgao"?: string | null,"row_version"?: number,"unidade_id": string,"validade": string
+                  }
+                  Update: {
+                    "anterior_id"?: string | null,"consultoria_id"?: string,"criado_em"?: string,"criado_por"?: string,"documento_id"?: string,"empreendimento_id"?: string,"excluido_em"?: string | null,"excluido_por"?: string | null,"id"?: string,"notas"?: string | null,"numero"?: string | null,"orgao"?: string | null,"row_version"?: number,"unidade_id"?: string,"validade"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "alvara_anterior_fk"
+      columns: ["consultoria_id","anterior_id"]
+isOneToOne: false
+      referencedRelation: "alvara"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "alvara_consultoria_id_fkey"
+      columns: ["consultoria_id"]
+isOneToOne: false
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "alvara_criado_por_fk"
+      columns: ["consultoria_id","criado_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "alvara_documento_fk"
+      columns: ["consultoria_id","documento_id"]
+isOneToOne: false
+      referencedRelation: "documento"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "alvara_excluido_por_fk"
+      columns: ["consultoria_id","excluido_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "alvara_unidade_fk"
+      columns: ["consultoria_id","empreendimento_id","unidade_id"]
+isOneToOne: false
+      referencedRelation: "unidade"
+      referencedColumns: ["consultoria_id","empreendimento_id","id"]
+    }
+                  ]
                 },"assinatura": {
                   Row: {
                     "asaas_assinatura_id": string | null,"asaas_cliente_id": string | null,"atualizada_em": string,"cancelada_em": string | null,"ciclo": string,"ciclo_agendado": string | null,"consultoria_id": string,"criada_em": string,"forma": string,"id": string,"moeda": string,"mudanca_em": string | null,"plano": string,"plano_agendado": string | null,"proximo_vencimento": string | null,"row_version": number,"situacao_asaas": string,"valida_ate": string | null
@@ -2265,6 +2315,9 @@ isOneToOne: false
 "duplicar_orcamento":
 { Args: { "p_copiar_precos"?: boolean,"p_id": string,"p_novo_id": string }; Returns: string
                            },
+"editar_alvara":
+{ Args: { "p_alvara_id": string,"p_notas"?: string,"p_numero"?: string,"p_orgao"?: string,"p_row_version": number,"p_validade": string }; Returns: number
+                           },
 "editar_cdf":
 { Args: { "p_destinador_cnpj": string,"p_destinador_nome": string,"p_emitido_em": string,"p_id": string,"p_mtrs": Json,"p_numero": string,"p_observacao"?: string,"p_periodo_fim": string,"p_periodo_inicio": string,"p_row_version": number }; Returns: number
                            },
@@ -2305,6 +2358,9 @@ isOneToOne: false
                            },
 "estado_do_aviso_de_emergencia":
 { Args: { "p_acesso_id": string }; Returns: string
+                           },
+"excluir_alvara":
+{ Args: { "p_alvara_id": string,"p_row_version": number }; Returns: undefined
                            },
 "excluir_cdf":
 { Args: { "p_id": string,"p_row_version": number }; Returns: undefined
@@ -2517,8 +2573,14 @@ isOneToOne: false
 "reabrir_ocorrencia":
 { Args: { "p_motivo": string,"p_ocorrencia_id": string,"p_row_version": number }; Returns: number
                            },
+"recurso_liberado":
+{ Args: { "p_consultoria_id": string,"p_recurso": string }; Returns: boolean
+                           },
 "reenviar_convite":
 { Args: { "p_convite_id": string }; Returns: string
+                           },
+"registrar_alvara":
+{ Args: { "p_anterior_id"?: string,"p_caminho": string,"p_nome_original": string,"p_notas"?: string,"p_numero"?: string,"p_orgao"?: string,"p_sha256": string,"p_unidade_id": string,"p_validade": string,"p_versao_id": string }; Returns: string
                            },
 "registrar_cdf":
 { Args: { "p_destinador_cnpj": string,"p_destinador_nome": string,"p_emitido_em": string,"p_empreendimento_id": string,"p_id": string,"p_mtrs": Json,"p_numero": string,"p_observacao"?: string,"p_periodo_fim": string,"p_periodo_inicio": string }; Returns: string
@@ -2637,6 +2699,9 @@ isOneToOne: false
                            },
 "sou_operador":
 { Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"trocar_pdf_alvara":
+{ Args: { "p_alvara_id": string,"p_caminho": string,"p_nome_original": string,"p_sha256": string,"p_versao_id": string }; Returns: string
                            },
 "ultima_linha_de_base":
 { Args: { "p_consultoria_id": string }; Returns: {

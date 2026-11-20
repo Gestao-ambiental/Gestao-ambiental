@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils'
 
 import { DialogoEmpreendimento } from './DialogoEmpreendimento'
 import { DialogoUnidades } from './DialogoUnidades'
+import { SecaoAlvaras } from './SecaoAlvaras'
 import { TabelaLicencas } from './TabelaLicencas'
 
 const VOLTAR = { para: '/empreendimentos', rotulo: 'Empreendimentos' }
@@ -329,6 +330,14 @@ export function PaginaEmpreendimento() {
       </section>
 
       <RelatoriosEscritos empreendimentoId={id} comTitulo />
+
+      <SecaoAlvaras
+        empreendimentoId={id}
+        unidades={listaUnidades}
+        hoje={hoje}
+        ehGestao={ehGestao}
+      />
+
       <SecaoResiduosDoEmpreendimento empreendimentoId={id} />
 
       <DialogoEmpreendimento
