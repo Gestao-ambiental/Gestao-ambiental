@@ -127,6 +127,29 @@
 @utility transicao-estado {
   transition: var(--transicao);
 }
+/* Indicador deslizante (menu, segmentado, abas): só transform e tamanho, nunca top/left. */
+@utility transicao-indicador {
+  transition:
+    transform var(--dur-indicador) var(--saida),
+    width var(--dur-indicador) var(--saida),
+    height var(--dur-indicador) var(--saida);
+}
+/* Chegada curta: mensagem, cartão, painel de etapa. */
+@utility entrar {
+  animation: entrar var(--dur-media) var(--saida) both;
+}
+/* O lima "acende": a estação atual da trilha se preenche ao avançar. */
+@utility acender {
+  animation: acender var(--dur-media) var(--saida) both;
+}
+/* Pulso lima breve: recém-salvo ou o "agora" (vence hoje). Só cor, uma vez. */
+@utility pulso-lima {
+  animation: pulso-lima var(--dur-pulso) var(--saida) both;
+}
+/* Check lima do "salvo": aparece de 60% para o tamanho real, sem quicar. */
+@utility marcar {
+  animation: marcar var(--dur-media) var(--saida) both;
+}
 
 @layer base {
   * {
@@ -198,6 +221,60 @@
     transform: none;
   }
 }
+@keyframes entrar {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes aparecer {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes acender {
+  from {
+    transform: scale(0.82);
+    background-color: var(--folha);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes acender-cor {
+  from {
+    background-color: var(--folha);
+  }
+}
+@keyframes pulso-lima {
+  from {
+    background-color: color-mix(in srgb, var(--sinal) 60%, transparent);
+  }
+}
+@keyframes marcar {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* Linhas de tabela entram com um fade curto ao chegar (página nova, "mostrar mais"). Só opacidade:
+   nada se mexe embaixo do ponteiro. */
+@layer base {
+  tbody tr {
+    animation: aparecer var(--dur-media) var(--saida) both;
+  }
+}
 @keyframes af-spin {
   to {
     transform: rotate(360deg);
@@ -220,7 +297,17 @@
   animation: virar-placa 260ms var(--saida) both;
 }
 @media (prefers-reduced-motion: reduce) {
-  .virar-placa {
+  .virar-placa,
+  .entrar,
+  .marcar {
     animation: none;
+  }
+  /* Sem movimento, só a troca de cor. */
+  .acender {
+    animation-name: acender-cor;
+    animation-duration: 200ms;
+  }
+  [data-esqueleto] {
+    animation: none !important;
   }
 }

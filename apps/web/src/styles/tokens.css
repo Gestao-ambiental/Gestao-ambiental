@@ -298,6 +298,8 @@
   --dur-rapida: 120ms;
   --dur-media: 200ms;
   --dur-lenta: 360ms;
+  --dur-indicador: 220ms; /* indicador que desliza: menu, segmentado, aba */
+  --dur-pulso: 640ms; /* pulso lima: só cor, uma vez */
   --saida: cubic-bezier(0.16, 1, 0.3, 1);
   --entra-sai: cubic-bezier(0.65, 0, 0.35, 1);
   --transicao:
@@ -310,6 +312,9 @@
     --dur-rapida: 0ms;
     --dur-media: 0ms;
     --dur-lenta: 0ms;
+    --dur-indicador: 0ms;
+    /* O pulso é só cor: fica, mais curto. */
+    --dur-pulso: 400ms;
   }
 }
 

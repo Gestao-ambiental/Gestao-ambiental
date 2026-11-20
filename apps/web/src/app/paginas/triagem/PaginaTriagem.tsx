@@ -1125,7 +1125,7 @@ export function PaginaTriagem() {
             </h2>
 
             {etapa === 0 ? (
-              <div className="p-(--e-4) sm:p-(--e-5)">
+              <div className="entrar p-(--e-4) sm:p-(--e-5)">
                 <LocalDoEmpreendimento
                   ponto={ponto}
                   erroDoPonto={erroDoPonto}
@@ -1146,7 +1146,7 @@ export function PaginaTriagem() {
             ) : null}
 
             {etapa === 1 ? (
-              <div className="flex flex-col gap-(--e-4) p-(--e-4) sm:p-(--e-5)">
+              <div className="entrar flex flex-col gap-(--e-4) p-(--e-4) sm:p-(--e-5)">
                 <BuscaDeAtividade
                   jaIncluidas={jaIncluidas}
                   aoIncluir={(codigo) => {
@@ -1195,7 +1195,7 @@ export function PaginaTriagem() {
             ) : null}
 
             {etapa === 2 ? (
-              <div className="flex flex-col gap-(--e-5) p-(--e-4) sm:p-(--e-5)">
+              <div className="entrar flex flex-col gap-(--e-5) p-(--e-4) sm:p-(--e-5)">
                 <section aria-label="Conclusão da triagem">
                   <Conclusao
                     conclusao={conclusao}

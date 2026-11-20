@@ -10,6 +10,7 @@ import { Carregando, EstadoErro, SemPermissao } from '@/components/estados'
 import { Avatar } from '@/components/ui/avatar'
 import { Botao } from '@/components/ui/botao'
 import { CampoTexto } from '@/components/ui/campo-texto'
+import { ConfirmacaoSalva } from '@/components/ui/confirmacao-salva'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import {
   conferirFoto,
@@ -261,11 +262,7 @@ function Perfil({ perfil }: { perfil: MembroAtivo }) {
             >
               {salvarNome.isPending ? 'Salvando…' : 'Salvar nome'}
             </Botao>
-            {nomeSalvo && !nomeMudou ? (
-              <span role="status" className="rotulo">
-                Nome salvo.
-              </span>
-            ) : null}
+            {nomeSalvo && !nomeMudou ? <ConfirmacaoSalva>Nome salvo.</ConfirmacaoSalva> : null}
           </div>
         </form>
       </section>
@@ -307,9 +304,7 @@ function Perfil({ perfil }: { perfil: MembroAtivo }) {
               {salvarGenero.isPending ? 'Salvando…' : 'Salvar gênero'}
             </Botao>
             {generoSalvo && !generoMudou ? (
-              <span role="status" className="rotulo">
-                Gênero salvo.
-              </span>
+              <ConfirmacaoSalva>Gênero salvo.</ConfirmacaoSalva>
             ) : null}
           </div>
         </form>
@@ -368,9 +363,7 @@ function Perfil({ perfil }: { perfil: MembroAtivo }) {
               {salvar.isPending ? 'Salvando…' : 'Salvar profissão e cargo'}
             </Botao>
             {salvo && !mudou ? (
-              <span role="status" className="rotulo">
-                Profissão e cargo salvos.
-              </span>
+              <ConfirmacaoSalva>Profissão e cargo salvos.</ConfirmacaoSalva>
             ) : null}
           </div>
         </form>

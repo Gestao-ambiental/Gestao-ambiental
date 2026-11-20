@@ -14,14 +14,15 @@ export const variantesBotao = cva(
   [
     'inline-flex items-center justify-center gap-(--e-2) whitespace-nowrap',
     'h-(--controle) max-md:min-h-(--controle-toque) px-(--e-5) rounded-(--raio-redondo) border corpo-medio',
-    'cursor-pointer transicao-estado select-none active:scale-[0.98]',
+    'cursor-pointer transicao-estado select-none active:scale-[0.97]',
     'disabled:cursor-not-allowed disabled:text-(--tinta-off) disabled:active:scale-100',
   ],
   {
     variants: {
       aparencia: {
         primario:
-          'border-transparent bg-(--acao) text-(--acao-texto) hover:bg-(--acao-toque) active:bg-(--acao-aperto) disabled:bg-(--off)',
+          // O lima "acende" no hover: um halo curto em volta, que some ao sair.
+          'border-transparent bg-(--acao) text-(--acao-texto) hover:bg-(--acao-toque) hover:shadow-[0_0_0_4px_color-mix(in_srgb,var(--sinal)_35%,transparent)] active:bg-(--acao-aperto) active:shadow-none disabled:bg-(--off) disabled:shadow-none',
         padrao:
           'border-(--regra-forte) bg-(--folha) text-(--tinta) hover:border-(--tinta-3) hover:bg-(--toque) active:bg-(--aperto) disabled:border-(--regra) disabled:bg-(--off)',
         sutil:

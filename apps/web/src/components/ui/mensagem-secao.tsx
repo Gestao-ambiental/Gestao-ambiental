@@ -51,7 +51,11 @@ export function MensagemSecao({
   return (
     <div
       role={role}
-      className={cn('flex gap-(--e-3) rounded-(--raio) px-(--e-4) py-(--e-3)', classes, className)}
+      className={cn(
+        'entrar flex gap-(--e-3) rounded-(--raio) px-(--e-4) py-(--e-3)',
+        classes,
+        className,
+      )}
     >
       <Icone nome={icone} tamanho={18} className="mt-px text-(--cor-icone)" />
       <div className="flex flex-1 flex-col gap-(--e-1) text-(--tinta)">

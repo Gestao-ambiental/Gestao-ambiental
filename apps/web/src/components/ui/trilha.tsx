@@ -49,8 +49,9 @@ export function Trilha({
                 aria-hidden
                 className={cn(
                   'inline-flex size-7 shrink-0 items-center justify-center rounded-(--raio-redondo) text-xs font-[800] numero',
+                  // Ao avançar, a estação nova "acende": preenche de lima (só a cor, sem movimento).
                   estado === 'atual' &&
-                    'bg-(--sinal) text-(--sinal-texto) shadow-[0_0_0_2px_var(--folha),0_0_0_4px_var(--marca-linha)]',
+                    'acender bg-(--sinal) text-(--sinal-texto) shadow-[0_0_0_2px_var(--folha),0_0_0_4px_var(--marca-linha)]',
                   estado === 'feito' && 'bg-(--estacao-feita) text-(--folha)',
                   estado === 'futuro' &&
                     'border-2 border-(--regra-forte) bg-(--folha) text-(--tinta-2)',

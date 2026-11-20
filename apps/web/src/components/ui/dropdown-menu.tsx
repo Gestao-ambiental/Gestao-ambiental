@@ -30,7 +30,8 @@ export function DropdownMenuContent({
         sideOffset={sideOffset}
         className={cn(
           'z-50 min-w-[220px] overflow-hidden rounded-(--raio-painel) border border-(--regra) bg-(--flutuante) p-(--e-1) text-(--tinta) shadow-sobreposicao origin-(--radix-dropdown-menu-content-transform-origin)',
-          'data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-top-1 duration-(--dur-media)',
+          // Abre de onde foi chamado (transform-origin do Radix) e fecha mais rápido do que abre.
+          'data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-97 duration-(--dur-media) ease-(--saida) data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-97 data-[state=closed]:duration-(--dur-rapida)',
           className,
         )}
         {...props}
