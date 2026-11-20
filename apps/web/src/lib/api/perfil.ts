@@ -204,6 +204,20 @@ export async function completarCadastro(
 }
 
 /** Só o gênero, em todos os vínculos ativos da pessoa logada (ninguém muda o gênero de outra). */
+/** Limite do nome da pessoa (o mesmo do cadastro). */
+export const LIMITE_DO_NOME = 120
+
+/**
+ * O nome que a pessoa escolheu, nos metadados da conta (user_metadata.nome). Ele vence o do Google
+ * e o pedaço do e-mail no front e no banco (private.nome_do_usuario), e a trigger
+ * membro_sincronizar_identidade copia para todos os vínculos: responsável, auditoria e propostas.
+ */
+export async function definirMeuNome(nome: string): Promise<void> {
+  const limpo = nome.replace(/\s+/g, ' ').trim()
+  const { error } = await obterSupabase().auth.updateUser({ data: { nome: limpo } })
+  if (error) throw error
+}
+
 export async function definirMeuGenero(genero: GeneroDaPessoa): Promise<void> {
   const { error } = await obterSupabase().rpc('definir_meu_genero', { p_genero: genero })
   if (error) throw error
