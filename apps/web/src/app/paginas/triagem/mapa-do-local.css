@@ -1,0 +1,53 @@
+/* Mapa da triagem com as peças do design system: controles na folha, regra fina, foco do tema. */
+.mapa-do-local.leaflet-container {
+  font: var(--tipo-rotulo);
+  background: var(--chao);
+}
+.mapa-do-local .leaflet-bar {
+  border: 1px solid var(--regra-forte);
+  border-radius: var(--raio);
+  box-shadow: none;
+}
+.mapa-do-local .leaflet-bar a {
+  width: 32px;
+  height: 32px;
+  line-height: 30px;
+  background: var(--folha);
+  color: var(--tinta);
+  border-bottom-color: var(--regra);
+}
+.mapa-do-local .leaflet-bar a:hover {
+  background: var(--toque);
+  color: var(--tinta);
+}
+.mapa-do-local .leaflet-bar a:first-child {
+  border-top-left-radius: var(--raio);
+  border-top-right-radius: var(--raio);
+}
+.mapa-do-local .leaflet-bar a:last-child {
+  border-bottom-left-radius: var(--raio);
+  border-bottom-right-radius: var(--raio);
+}
+.mapa-do-local .leaflet-bar a.leaflet-disabled {
+  background: var(--off);
+  color: var(--tinta-off);
+}
+.mapa-do-local .leaflet-control-attribution {
+  background: color-mix(in srgb, var(--folha) 85%, transparent);
+  color: var(--tinta-2);
+}
+.mapa-do-local .leaflet-control-attribution a {
+  color: var(--link);
+}
+/* Ponto marcado: anel verde-placa (lima no escuro) com miolo lima, o "agora". */
+.mapa-do-local .marcador-do-local {
+  stroke: var(--marca-linha);
+  fill: var(--sinal);
+}
+@media (max-width: 767px) {
+  .mapa-do-local .leaflet-bar a {
+    width: 44px;
+    height: 44px;
+    line-height: 42px;
+  }
+}

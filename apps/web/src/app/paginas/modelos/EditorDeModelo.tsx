@@ -1,4 +1,5 @@
 // Editor de texto do modelo (ADR-0036): barra de formatação, inserir campo e a área de texto.
+// A área de texto é uma folha de papel sóbria, no tamanho de uma página: é o que vira Word.
 import {
   CAMPOS_DO_MODELO,
   GRUPOS_DE_CAMPO,
@@ -6,8 +7,10 @@ import {
   type NoDoDocumento,
 } from '@gestao-ambiental/domain'
 import { EditorContent, useEditor, useEditorState, type Editor } from '@tiptap/react'
-import { Fragment, type ReactNode } from 'react'
+import { Fragment } from 'react'
 
+import { Botao } from '@/components/ui/botao'
+import { BotaoIcone } from '@/components/ui/botao-icone'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,7 +19,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Icone } from '@/components/ui/icone'
+import { classeSelecao } from '@/components/ui/estilos-campo'
+import type { NomeIcone } from '@/components/ui/icone'
 import { cn } from '@/lib/utils'
 
 import { extensoesDoModelo } from './extensoes'
@@ -48,48 +52,58 @@ export function EditorDeModelo({ conteudoInicial, aoMudar, somenteLeitura = fals
   })
 
   return (
-    <div className="flex min-w-0 flex-col rounded-(--raio) border bg-(--folha)">
+    // Sem rolagem interna: a página rola e a barra fica presa no topo (sticky).
+    <div className="flex min-w-0 flex-col rounded-(--raio-painel) border bg-(--chao)">
       {somenteLeitura ? null : <BarraDoEditor editor={editor} />}
-      <div className="max-h-[70vh] min-h-[360px] overflow-y-auto px-(--e-6) py-(--e-4)">
-        <EditorContent editor={editor} />
+      <div className="px-(--e-2) py-(--e-3) sm:px-(--e-6) sm:py-(--e-8)">
+        {/* Folha A4 (794px a 96 dpi), margens largas como no Word. */}
+        <div className="mx-auto w-full max-w-[794px] rounded-(--raio-mini) border border-(--regra) bg-(--folha) px-(--e-5) py-(--e-6) sm:px-[72px] sm:py-[64px]">
+          <EditorContent editor={editor} />
+        </div>
       </div>
     </div>
   )
 }
 
+/**
+ * Botão de ícone da barra que liga e desliga: aria-pressed acompanha o "selecionado", e o
+ * mousedown não tira o foco do texto (a seleção continua onde estava).
+ */
 function BotaoDaBarra({
+  icone,
   rotulo,
   ativo,
   aoClicar,
-  children,
 }: {
+  icone: NomeIcone
   rotulo: string
-  ativo?: boolean
+  ativo: boolean
   aoClicar: () => void
-  children: ReactNode
 }) {
   return (
-    <button
-      type="button"
-      aria-label={rotulo}
-      title={rotulo}
+    <BotaoIcone
+      icone={icone}
+      rotulo={rotulo}
+      selecionado={ativo}
       aria-pressed={ativo}
+      className="max-md:shrink-0"
       onMouseDown={(e) => {
         e.preventDefault()
       }}
       onClick={aoClicar}
-      className={cn(
-        'inline-flex h-(--controle-mini) min-w-(--controle-mini) cursor-pointer items-center justify-center rounded-(--raio) px-(--e-15) corpo-medio text-(--tinta) transicao-estado hover:bg-(--toque)',
-        ativo && 'bg-(--escolha) text-(--link) hover:bg-(--escolha-toque)',
-      )}
-    >
-      {children}
-    </button>
+    />
   )
 }
 
+const ALINHAMENTOS = [
+  { valor: 'left', rotulo: 'Alinhar à esquerda', icone: 'text-align-left' },
+  { valor: 'center', rotulo: 'Centralizar', icone: 'text-align-center' },
+  { valor: 'right', rotulo: 'Alinhar à direita', icone: 'text-align-right' },
+  { valor: 'justify', rotulo: 'Justificar', icone: 'text-align-justify' },
+] as const
+
 function Separador() {
-  return <span aria-hidden className="mx-(--e-1) h-5 w-px bg-(--regra)" />
+  return <span aria-hidden className="mx-(--e-1) h-5 w-px shrink-0 bg-(--regra)" />
 }
 
 type Estilo = 'paragrafo' | 'titulo1' | 'titulo2' | 'titulo3'
@@ -132,7 +146,8 @@ function BarraDoEditor({ editor }: { editor: Editor }) {
     <div
       role="toolbar"
       aria-label="Formatação"
-      className="flex flex-wrap items-center gap-(--e-05) border-b px-(--e-2) py-(--e-15)"
+      // No celular, uma linha só que rola de lado, com "Inserir campo" primeiro.
+      className="sticky top-0 z-10 flex flex-wrap items-center gap-(--e-05) rounded-t-(--raio-painel) border-b bg-(--folha) px-(--e-2) py-(--e-15) max-md:flex-nowrap max-md:overflow-x-auto"
     >
       <label className="sr-only" htmlFor="estilo-do-paragrafo">
         Estilo do parágrafo
@@ -143,7 +158,7 @@ function BarraDoEditor({ editor }: { editor: Editor }) {
         onChange={(e) => {
           trocarEstilo(e.target.value as Estilo)
         }}
-        className="h-(--controle-mini) rounded-(--raio) border border-(--campo-borda) bg-(--campo) px-(--e-15) corpo text-(--tinta)"
+        className={cn(classeSelecao, 'w-[124px] max-md:shrink-0')}
       >
         <option value="paragrafo">Texto</option>
         <option value="titulo1">Título 1</option>
@@ -152,64 +167,55 @@ function BarraDoEditor({ editor }: { editor: Editor }) {
       </select>
       <Separador />
       <BotaoDaBarra
+        icone="text-b"
         rotulo="Negrito"
         ativo={estado.negrito}
         aoClicar={() => editor.chain().focus().toggleBold().run()}
-      >
-        <span className="font-bold">N</span>
-      </BotaoDaBarra>
+      />
       <BotaoDaBarra
+        icone="text-italic"
         rotulo="Itálico"
         ativo={estado.italico}
         aoClicar={() => editor.chain().focus().toggleItalic().run()}
-      >
-        <span className="italic">I</span>
-      </BotaoDaBarra>
+      />
       <BotaoDaBarra
+        icone="text-underline"
         rotulo="Sublinhado"
         ativo={estado.sublinhado}
         aoClicar={() => editor.chain().focus().toggleUnderline().run()}
-      >
-        <span className="underline">S</span>
-      </BotaoDaBarra>
+      />
       <Separador />
       <BotaoDaBarra
+        icone="list-bullets"
         rotulo="Lista com marcadores"
         ativo={estado.marcadores}
         aoClicar={() => editor.chain().focus().toggleBulletList().run()}
-      >
-        <Icone nome="list" />
-      </BotaoDaBarra>
+      />
       <BotaoDaBarra
+        icone="list-numbers"
         rotulo="Lista numerada"
         ativo={estado.numerada}
         aoClicar={() => editor.chain().focus().toggleOrderedList().run()}
-      >
-        1.
-      </BotaoDaBarra>
+      />
       <Separador />
-      {(
-        [
-          ['left', 'Alinhar à esquerda', 'Esq.'],
-          ['center', 'Centralizar', 'Centro'],
-          ['right', 'Alinhar à direita', 'Dir.'],
-          ['justify', 'Justificar', 'Just.'],
-        ] as const
-      ).map(([valor, rotulo, curto]) => (
+      {ALINHAMENTOS.map(({ valor, rotulo, icone }) => (
         <BotaoDaBarra
           key={valor}
+          icone={icone}
           rotulo={rotulo}
           ativo={estado.alinhamento === valor}
           aoClicar={() => editor.chain().focus().setTextAlign(valor).run()}
-        >
-          {curto}
-        </BotaoDaBarra>
+        />
       ))}
       <Separador />
       <DropdownMenu>
-        <DropdownMenuTrigger className="inline-flex h-(--controle-mini) cursor-pointer items-center gap-(--e-1) rounded-(--raio) px-(--e-15) corpo-medio text-(--tinta) transicao-estado hover:bg-(--toque)">
-          Tabela
-          <Icone nome="chevron-down" />
+        <DropdownMenuTrigger asChild>
+          <BotaoIcone
+            icone="table"
+            rotulo="Tabela"
+            selecionado={estado.naTabela}
+            className="max-md:shrink-0"
+          />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
           <DropdownMenuItem
@@ -253,11 +259,12 @@ function BarraDoEditor({ editor }: { editor: Editor }) {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <span className="flex-1" />
+      <span className="flex-1 max-md:hidden" />
       <DropdownMenu>
-        <DropdownMenuTrigger className="inline-flex h-(--controle-mini) cursor-pointer items-center gap-(--e-1) rounded-(--raio) border border-(--regra-forte) bg-(--folha) px-(--e-2) corpo-medio text-(--tinta) transicao-estado hover:bg-(--toque)">
-          <Icone nome="plus" />
-          Inserir campo
+        <DropdownMenuTrigger asChild>
+          <Botao iconeAntes="plus" className="max-md:order-first max-md:mr-(--e-1) max-md:shrink-0">
+            Inserir campo
+          </Botao>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="max-h-[60vh] overflow-y-auto">
           {GRUPOS_DE_CAMPO.map((grupo, indice) => (

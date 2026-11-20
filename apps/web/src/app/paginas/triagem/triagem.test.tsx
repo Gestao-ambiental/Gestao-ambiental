@@ -246,6 +246,29 @@ describe('triagem de licenciamento (/triagem)', () => {
     expect(within(conclusao).getByText(/pela atividade 12\.80\.10/)).toBeInTheDocument()
   })
 
+  it('o resultado mostra grande quem licencia, a modalidade, o estudo e a taxa em reais', async () => {
+    const { usuario } = montar()
+    await incluir(usuario, '12.80.10', '12.80.10')
+    await usuario.type(
+      within(screen.getByRole('article', { name: /^12\.80\.10/ })).getByRole('textbox', {
+        name: /AU\(3\)/,
+      }),
+      '0,5',
+    )
+    const conclusao = screen.getByRole('region', { name: 'Conclusão da triagem' })
+    expect(within(conclusao).getByText('Estado (IMA)')).toBeInTheDocument()
+    expect(within(conclusao).getByText('LAP, LAI e LAO')).toBeInTheDocument()
+    expect(within(conclusao).getByText('RAP')).toBeInTheDocument()
+    // A mesma taxa total do cartão "No IMA", sem somar nada que a regra não some.
+    expect(within(conclusao).getByText('R$ 9.560,87')).toBeInTheDocument()
+  })
+
+  it('as fontes legais ficam depois do resultado, num detalhe recolhível', () => {
+    montar()
+    expect(screen.getByText('Sobre as fontes')).toBeInTheDocument()
+    expect(screen.getByText(/Confira com o órgão licenciador/)).not.toBeVisible()
+  })
+
   it('porte mínimo vira AuA com estudo dispensado', async () => {
     const { usuario } = montar()
     await incluir(usuario, '12.80.10', '12.80.10')
@@ -290,16 +313,16 @@ describe('triagem de licenciamento (/triagem)', () => {
     )
 
     const conclusao = screen.getByRole('region', { name: 'Conclusão da triagem' })
+    expect(within(conclusao).getByText('EAS')).toBeInTheDocument()
     expect(
-      within(conclusao).getByText(
-        /EAS \(Estudo Ambiental Simplificado\), pela atividade 17\.21\.00/,
-      ),
+      within(conclusao).getByText('Estudo Ambiental Simplificado, pela atividade 17.21.00'),
     ).toBeInTheDocument()
 
     await usuario.click(screen.getByRole('button', { name: 'Remover 17.21.00' }))
     expect(screen.queryByRole('article', { name: /^17\.21\.00/ })).not.toBeInTheDocument()
+    expect(within(conclusao).getByText('RAP')).toBeInTheDocument()
     expect(
-      within(conclusao).getByText(/RAP \(Relatório Ambiental Prévio\), pela atividade 12\.80\.10/),
+      within(conclusao).getByText('Relatório Ambiental Prévio, pela atividade 12.80.10'),
     ).toBeInTheDocument()
   })
 
@@ -319,7 +342,8 @@ describe('triagem de licenciamento (/triagem)', () => {
     )
     expect(within(cartao).getByText(/Quem licencia: município/)).toBeInTheDocument()
     const conclusao = screen.getByRole('region', { name: 'Conclusão da triagem' })
-    expect(within(conclusao).getByText('Órgão licenciador: município')).toBeInTheDocument()
+    expect(within(conclusao).getByText('Município')).toBeInTheDocument()
+    expect(within(conclusao).getByText('Do município')).toBeInTheDocument()
 
     await usuario.clear(campo)
     await usuario.type(campo, '2')
@@ -327,7 +351,7 @@ describe('triagem de licenciamento (/triagem)', () => {
     expect(
       within(cartao).getByText(/porte fora das faixas que o município pode licenciar/),
     ).toBeInTheDocument()
-    expect(within(conclusao).getByText('Órgão licenciador: Estado (IMA)')).toBeInTheDocument()
+    expect(within(conclusao).getByText('Estado (IMA)')).toBeInTheDocument()
   })
 
   it('não inclui a mesma atividade duas vezes', async () => {

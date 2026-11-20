@@ -12,6 +12,7 @@ import { useId, useState } from 'react'
 import { Link } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
+import { Carregando } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
 import { Dialogo } from '@/components/ui/dialogo'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
@@ -125,37 +126,40 @@ export function DialogoGerarRelatorio({
           {semValor.join(', ')}
         </MensagemSecao>
       ) : modelos.isPending ? (
-        <p role="status" className="corpo text-(--tinta-2)">
-          Carregando modelos
-        </p>
+        <Carregando rotulo="Carregando modelos" linhas={3} />
       ) : modelos.isError ? (
         <MensagemSecao tom="perigo" role="alert">
           {mensagemDoErro(modelos.error)}
         </MensagemSecao>
       ) : lista.length === 0 ? (
-        <div className="flex flex-col gap-(--e-2)">
+        <div className="flex flex-col items-start gap-(--e-3) py-(--e-2)">
           <p className="corpo-medio">Nenhum modelo cadastrado.</p>
-          {ehGestao ? <Link to="/configuracoes/modelos/novo">Criar modelo</Link> : null}
+          {ehGestao ? (
+            <Botao asChild>
+              <Link to="/configuracoes/modelos/novo">Criar modelo</Link>
+            </Botao>
+          ) : null}
         </div>
       ) : (
         <fieldset className="flex flex-col gap-(--e-1)">
-          <legend className="mb-(--e-1) rotulo">Modelo</legend>
-          <div className="flex max-h-[320px] flex-col overflow-y-auto rounded-(--raio) border">
+          <legend className="mb-(--e-1) rotulo text-(--tinta)">Modelo</legend>
+          <div className="flex max-h-[336px] flex-col overflow-y-auto rounded-(--raio-painel) border">
             {lista.map((modelo) => (
               <label
                 key={modelo.id}
-                className="flex cursor-pointer items-center gap-(--e-2) border-b px-(--e-3) py-(--e-2) last:border-b-0 hover:bg-(--toque)"
+                className="flex min-h-(--linha) cursor-pointer items-center gap-(--e-3) border-b border-(--regra-leve) px-(--e-3) transicao-estado last:border-b-0 hover:bg-(--toque) has-checked:bg-(--escolha) has-checked:hover:bg-(--escolha-toque)"
               >
                 <input
                   type="radio"
                   name={idDoGrupo}
                   value={modelo.id}
                   checked={selecionado === modelo.id}
+                  className="size-4 shrink-0 cursor-pointer accent-(--marca-linha)"
                   onChange={() => {
                     setEscolhido(modelo.id)
                   }}
                 />
-                <span className="corpo">{modelo.nome}</span>
+                <span className="corpo-medio text-(--tinta)">{modelo.nome}</span>
               </label>
             ))}
           </div>

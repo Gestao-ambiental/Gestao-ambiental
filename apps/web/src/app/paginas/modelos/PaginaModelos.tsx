@@ -13,8 +13,8 @@ import { listarModelosDeDocumento } from '@/lib/api/modelos-de-documento'
 import { formatarInstanteComoData } from '@/lib/datas'
 
 const classeCabecalho =
-  'h-10 border-b px-(--e-2) text-left rotulo whitespace-nowrap first:pl-(--e-3) last:pr-(--e-3)'
-const classeCelula = 'h-11 border-b px-(--e-2) align-middle first:pl-(--e-3) last:pr-(--e-3)'
+  'h-10 border-b px-(--e-3) text-left rotulo-maiusculo whitespace-nowrap text-(--tinta-2)'
+const classeCelula = 'h-(--linha) border-b border-(--regra-leve) px-(--e-3) align-middle'
 
 export function PaginaModelos() {
   const { atual } = useConsultoria()
@@ -39,17 +39,30 @@ function ListaDeModelos() {
   const novo = (
     <Botao
       aparencia="primario"
+      iconeAntes="plus"
       onClick={() => {
         void navegar('/configuracoes/modelos/novo')
       }}
     >
-      <Icone nome="plus" />
       Novo modelo
     </Botao>
   )
+  const total = modelos.data?.length ?? 0
+  const vazio = modelos.isSuccess && total === 0
 
   return (
-    <Pagina titulo="Modelos de documento">
+    <Pagina
+      titulo="Modelos de documento"
+      // No vazio, a ação fica no próprio estado vazio (uma só na tela).
+      acao={vazio ? undefined : novo}
+      meta={
+        total > 0 ? (
+          <span className="numero">
+            {total} {total === 1 ? 'modelo' : 'modelos'}
+          </span>
+        ) : undefined
+      }
+    >
       {modelos.isPending ? (
         <Carregando rotulo="Carregando modelos" />
       ) : modelos.isError ? (
@@ -57,34 +70,50 @@ function ListaDeModelos() {
       ) : modelos.data.length === 0 ? (
         <EstadoVazio icone="file-text" titulo="Nenhum modelo" acaoPrincipal={novo} />
       ) : (
-        <div className="flex flex-col gap-(--e-4)">
-          <div className="flex justify-end">{novo}</div>
-          <div className="overflow-x-auto rounded-(--raio) border bg-(--folha)">
-            <table className="w-full min-w-[520px] border-collapse">
-              <thead>
-                <tr>
-                  <th className={classeCabecalho}>Nome</th>
-                  <th className={classeCabecalho}>Alterado em</th>
-                  <th className={classeCabecalho}>Por</th>
-                </tr>
-              </thead>
-              <tbody>
-                {modelos.data.map((modelo) => (
-                  <tr key={modelo.id} className="hover:bg-(--toque)">
-                    <td className={classeCelula}>
-                      <Link to={`/configuracoes/modelos/${modelo.id}`} className="corpo-medio">
+        // Um quadro só: no celular, data e autor descem para baixo do nome e as colunas somem.
+        <div className="max-h-[calc(100dvh-280px)] overflow-auto rounded-(--raio-painel) border bg-(--folha)">
+          <table className="w-full border-collapse corpo">
+            <thead className="sticky top-0 z-10 bg-(--folha)">
+              <tr>
+                <th scope="col" className={classeCabecalho}>
+                  Nome
+                </th>
+                <th scope="col" className={`${classeCabecalho} w-[160px] max-md:hidden`}>
+                  Alterado em
+                </th>
+                <th scope="col" className={`${classeCabecalho} w-[240px] max-md:hidden`}>
+                  Por
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {modelos.data.map((modelo) => {
+                const quando = formatarInstanteComoData(modelo.atualizadoEm, atual.fuso)
+                return (
+                  <tr key={modelo.id} className="transicao-estado hover:bg-(--toque)">
+                    <td className={`${classeCelula} max-md:py-(--e-2)`}>
+                      <Link
+                        to={`/configuracoes/modelos/${modelo.id}`}
+                        className="inline-flex items-center gap-(--e-2) corpo-medio text-(--tinta) max-md:min-h-(--controle-toque)"
+                      >
+                        <Icone nome="file-doc" className="text-(--tinta-3)" />
                         {modelo.nome}
                       </Link>
+                      <span className="block text-xs text-(--tinta-2) md:hidden">
+                        <span className="numero">{quando}</span> · {modelo.atualizadoPorNome}
+                      </span>
                     </td>
-                    <td className={`${classeCelula} tabular-nums`}>
-                      {formatarInstanteComoData(modelo.atualizadoEm, atual.fuso)}
+                    <td className={`${classeCelula} whitespace-nowrap numero max-md:hidden`}>
+                      {quando}
                     </td>
-                    <td className={classeCelula}>{modelo.atualizadoPorNome}</td>
+                    <td className={`${classeCelula} text-(--tinta-2) max-md:hidden`}>
+                      {modelo.atualizadoPorNome}
+                    </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                )
+              })}
+            </tbody>
+          </table>
         </div>
       )}
     </Pagina>

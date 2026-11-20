@@ -10,7 +10,7 @@ import {
   type Coordenadas,
 } from '@gestao-ambiental/domain'
 import { useMutation } from '@tanstack/react-query'
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useState, type ReactNode } from 'react'
 
 import { Carregando } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
@@ -24,6 +24,15 @@ const MapaDoLocal = lazy(() => import('./MapaDoLocal'))
 const formatarNumero = (v: number, casas = 0) =>
   v.toLocaleString('pt-BR', { maximumFractionDigits: casas })
 
+function Dado({ rotulo, children }: { rotulo: string; children: ReactNode }) {
+  return (
+    <div className="flex min-w-0 flex-col gap-(--e-05)">
+      <dt className="rotulo text-(--tinta-2)">{rotulo}</dt>
+      <dd className="corpo-medio text-(--tinta)">{children}</dd>
+    </div>
+  )
+}
+
 function Resultado({
   resultado,
   aoUsarArea,
@@ -34,41 +43,34 @@ function Resultado({
   const areaHa =
     resultado.lote?.areaM2 != null ? metrosQuadradosParaHectares(resultado.lote.areaM2) : null
   return (
-    <div className="flex flex-col gap-(--e-2)">
-      <dl className="grid grid-cols-1 gap-x-(--e-4) gap-y-(--e-1) sm:grid-cols-3">
-        <div>
-          <dt className="rotulo text-(--tinta-2)">Município</dt>
-          <dd className="corpo-medio text-(--tinta)">
-            {resultado.municipio
-              ? `${resultado.municipio.nome} (IBGE ${resultado.municipio.codigoIbge})`
-              : 'Não identificado'}
-          </dd>
-        </div>
+    <div className="flex flex-col gap-(--e-4) rounded-(--raio-painel) border bg-(--folha) p-(--e-4) sm:p-(--e-5)">
+      <dl className="grid grid-cols-1 gap-x-(--e-6) gap-y-(--e-3) sm:grid-cols-3">
+        <Dado rotulo="Município">
+          {resultado.municipio
+            ? `${resultado.municipio.nome} (IBGE ${resultado.municipio.codigoIbge})`
+            : 'Não identificado'}
+        </Dado>
         {resultado.lote ? (
-          <div>
-            <dt className="rotulo text-(--tinta-2)">Inscrição imobiliária</dt>
-            <dd className="corpo-medio text-(--tinta)">
+          <Dado rotulo="Inscrição imobiliária">
+            <span className="numero">
               {resultado.lote.inscricaoImobiliaria ?? 'Sem inscrição'}
               {areaHa !== null && resultado.lote.areaM2 !== null
                 ? ` · lote de ${formatarNumero(resultado.lote.areaM2)} m² (${formatarNumero(areaHa, 4)} ha)`
                 : ''}
-            </dd>
-          </div>
+            </span>
+          </Dado>
         ) : null}
         {resultado.zoneamento || resultado.bairro ? (
-          <div>
-            <dt className="rotulo text-(--tinta-2)">Zoneamento</dt>
-            <dd className="corpo-medio text-(--tinta)">
-              {[
-                resultado.zoneamento
-                  ? `Setor ${resultado.zoneamento.setor}${resultado.zoneamento.macrozona ? `, ${resultado.zoneamento.macrozona}` : ''}`
-                  : null,
-                resultado.bairro ? `bairro ${resultado.bairro}` : null,
-              ]
-                .filter(Boolean)
-                .join(' · ')}
-            </dd>
-          </div>
+          <Dado rotulo="Zoneamento">
+            {[
+              resultado.zoneamento
+                ? `Setor ${resultado.zoneamento.setor}${resultado.zoneamento.macrozona ? `, ${resultado.zoneamento.macrozona}` : ''}`
+                : null,
+              resultado.bairro ? `bairro ${resultado.bairro}` : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </Dado>
         ) : null}
       </dl>
 
@@ -76,20 +78,21 @@ function Resultado({
         <div>
           <Botao
             tamanho="compacto"
+            iconeAntes="arrow-right"
             onClick={() => {
               aoUsarArea(areaHa)
             }}
           >
             Usar a área do lote como AU(3)
           </Botao>
-          <p className="corpo text-(--tinta-2)">
-            Ponto de partida: a área útil da atividade pode ser menor que o lote.
-          </p>
         </div>
       ) : null}
 
-      <section aria-label="Restrições do terreno" className="flex flex-col gap-(--e-1)">
-        <h3 className="rotulo text-(--tinta)">Restrições do terreno</h3>
+      <section
+        aria-label="Restrições do terreno"
+        className="flex flex-col gap-(--e-2) border-t border-(--regra-leve) pt-(--e-3)"
+      >
+        <h3 className="titulo-secao text-(--tinta)">Restrições do terreno</h3>
         {resultado.restricoes.length === 0 ? (
           <p className="corpo text-(--tinta)">
             Nenhuma restrição encontrada nas camadas consultadas.
@@ -99,10 +102,10 @@ function Resultado({
             {resultado.restricoes.map((r) => (
               <li
                 key={`${r.tipo}-${r.descricao}`}
-                className="flex flex-wrap items-center gap-(--e-1) corpo text-(--tinta)"
+                className="flex flex-wrap items-center gap-x-(--e-2) gap-y-(--e-05) corpo text-(--tinta)"
               >
                 <Selo tom="atencao">{r.descricao}</Selo>
-                <span className="text-(--tinta-2)">{r.fonte}</span>
+                <span className="text-xs text-(--tinta-2)">{r.fonte}</span>
               </li>
             ))}
           </ul>
@@ -143,14 +146,17 @@ export function LocalDoEmpreendimento({ aoUsarArea }: { aoUsarArea: (hectares: n
   }
 
   return (
-    <section aria-label="Local do empreendimento" className="flex flex-col gap-(--e-2)">
-      <h2 className="titulo-secao text-(--tinta)">Local do empreendimento</h2>
-      <div className="grid grid-cols-1 gap-(--e-3) lg:grid-cols-2">
-        <Suspense fallback={<Carregando rotulo="Carregando o mapa" linhas={3} />}>
+    <section aria-label="Local do empreendimento" className="flex flex-col gap-(--e-4)">
+      <div className="grid grid-cols-1 gap-(--e-4) lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <Suspense
+          fallback={
+            <Carregando rotulo="Carregando o mapa" linhas={4} className="h-[240px] md:h-[320px]" />
+          }
+        >
           <MapaDoLocal ponto={ponto} aoEscolher={consultar} />
         </Suspense>
         <form
-          className="flex flex-col gap-(--e-2)"
+          className="flex flex-col gap-(--e-2) lg:pt-(--e-1)"
           onSubmit={(e) => {
             e.preventDefault()
             const c = lerCoordenadas(texto)
@@ -163,16 +169,23 @@ export function LocalDoEmpreendimento({ aoUsarArea }: { aoUsarArea: (hectares: n
         >
           <CampoTexto
             rotulo="Coordenadas (latitude, longitude)"
-            ajuda="Clique no mapa ou cole do Google Maps, como -26.3044, -48.8487."
+            placeholder="-26.3044, -48.8487"
             value={texto}
             erro={erroDoCampo ?? undefined}
             autoComplete="off"
+            inputMode="text"
             onChange={(e) => {
               setTexto(e.target.value)
             }}
           />
           <div>
-            <Botao type="submit" aparencia="primario" disabled={consulta.isPending}>
+            <Botao
+              type="submit"
+              aparencia="primario"
+              iconeAntes="map-pin"
+              disabled={consulta.isPending}
+              className="max-md:w-full"
+            >
               {consulta.isPending ? 'Consultando' : 'Consultar local'}
             </Botao>
           </div>

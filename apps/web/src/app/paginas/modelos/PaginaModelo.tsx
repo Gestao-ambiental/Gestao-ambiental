@@ -31,12 +31,14 @@ import { mensagemDoErro } from '@/lib/erros'
 
 import { EditorDeModelo } from './EditorDeModelo'
 
+const VOLTAR = { para: '/configuracoes/modelos', rotulo: 'Modelos' }
+
 export function PaginaModelo() {
   const { atual } = useConsultoria()
   const { id = 'novo' } = useParams()
   if (atual.papel !== 'gestao') {
     return (
-      <Pagina titulo="Modelo de documento">
+      <Pagina titulo="Modelo de documento" voltar={VOLTAR}>
         <SemPermissao />
       </Pagina>
     )
@@ -52,21 +54,21 @@ function CarregarModelo({ id }: { id: string }) {
   })
   if (modelo.isPending) {
     return (
-      <Pagina titulo="Modelo de documento">
+      <Pagina titulo="Modelo de documento" voltar={VOLTAR}>
         <Carregando rotulo="Carregando modelo" />
       </Pagina>
     )
   }
   if (modelo.isError) {
     return (
-      <Pagina titulo="Modelo de documento">
+      <Pagina titulo="Modelo de documento" voltar={VOLTAR}>
         <EstadoErro aoTentarDeNovo={() => void modelo.refetch()} />
       </Pagina>
     )
   }
   if (!modelo.data || modelo.data.arquivado) {
     return (
-      <Pagina titulo="Modelo de documento">
+      <Pagina titulo="Modelo de documento" voltar={VOLTAR}>
         <EstadoVazio icone="file-text" titulo="Modelo não encontrado" />
       </Pagina>
     )
@@ -179,24 +181,19 @@ function EdicaoDoModelo({ modelo }: { modelo: ModeloDeDocumento | null }) {
   const ocupado = salvar.isPending || duplicar.isPending || arquivar.isPending
 
   return (
-    <Pagina titulo={modelo ? modelo.nome : 'Novo modelo'}>
-      <div className="flex flex-col gap-(--e-4)">
-        <div className="flex flex-wrap items-end gap-(--e-2)">
-          <CampoTexto
-            rotulo="Nome"
-            value={nome}
-            maxLength={120}
-            erro={erroNome ?? undefined}
-            className="min-w-[240px] flex-1"
-            onChange={(e) => {
-              setNome(e.target.value)
-              setErroNome(null)
-              marcarSujo(true)
-            }}
-          />
-          <span role="status" className="corpo text-(--tinta-2)">
-            {sujo ? 'Não salvo' : salvo ? 'Salvo' : ''}
-          </span>
+    <Pagina
+      titulo={modelo ? modelo.nome : 'Novo modelo'}
+      voltar={VOLTAR}
+      meta={
+        <span
+          role="status"
+          className={sujo ? 'corpo-medio text-(--alerta-texto)' : 'corpo text-(--tinta-2)'}
+        >
+          {sujo ? 'Não salvo' : salvo ? 'Salvo' : ''}
+        </span>
+      }
+      acao={
+        <>
           {modelo ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -224,10 +221,25 @@ function EdicaoDoModelo({ modelo }: { modelo: ModeloDeDocumento | null }) {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : null}
-          <Botao aparencia="primario" disabled={ocupado} onClick={aoSalvar}>
+          <Botao aparencia="primario" iconeAntes="check" disabled={ocupado} onClick={aoSalvar}>
             {salvar.isPending ? 'Salvando' : 'Salvar'}
           </Botao>
-        </div>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-(--e-4)">
+        <CampoTexto
+          rotulo="Nome"
+          value={nome}
+          maxLength={120}
+          erro={erroNome ?? undefined}
+          className="max-w-[560px]"
+          onChange={(e) => {
+            setNome(e.target.value)
+            setErroNome(null)
+            marcarSujo(true)
+          }}
+        />
         {falha ? (
           <MensagemSecao tom="perigo" role="alert">
             {falha}

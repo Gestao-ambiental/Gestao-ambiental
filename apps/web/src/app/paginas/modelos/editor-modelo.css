@@ -1,31 +1,32 @@
-/* Área de texto do editor de modelo: o preflight do Tailwind zera títulos e listas; aqui eles voltam
-   com a escala do design system, perto do que sai no Word. */
+/* Texto do modelo na folha: o preflight do Tailwind zera títulos e listas; aqui eles voltam numa
+   escala sóbria, perto do que sai no Word (Calibri 11 pt, títulos sem cor). Só tokens do tema. */
 .editor-modelo {
   outline: none;
   color: var(--tinta);
   font-size: 14px;
   line-height: 1.6;
-  min-height: 320px;
+  min-height: 480px;
 }
 .editor-modelo > * + * {
   margin-top: var(--e-2);
 }
 .editor-modelo h1 {
-  font-size: 24px;
+  font-size: 22px;
   line-height: 1.3;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   margin-top: var(--e-6);
 }
 .editor-modelo h2 {
-  font-size: 20px;
-  line-height: 1.3;
-  font-weight: 600;
+  font-size: 18px;
+  line-height: 1.35;
+  font-weight: 700;
   margin-top: var(--e-5);
 }
 .editor-modelo h3 {
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1.4;
-  font-weight: 600;
+  font-weight: 700;
   margin-top: var(--e-4);
 }
 .editor-modelo > :first-child {
@@ -39,14 +40,17 @@
   list-style: decimal;
   padding-left: var(--e-6);
 }
+.editor-modelo li + li {
+  margin-top: var(--e-05);
+}
 .editor-modelo blockquote {
-  border-left: 2px solid var(--regra-forte);
+  border-left: 3px solid var(--regra-forte);
   padding-left: var(--e-3);
   color: var(--tinta-2);
 }
 .editor-modelo hr {
   border: 0;
-  border-top: 1px solid var(--regra);
+  border-top: 1px solid var(--regra-forte);
   margin-block: var(--e-4);
 }
 .editor-modelo table {
@@ -61,23 +65,27 @@
   vertical-align: top;
 }
 .editor-modelo th {
-  font-weight: 600;
+  font-weight: 700;
   text-align: left;
 }
 .editor-modelo .selectedCell {
   background: var(--escolha);
 }
-/* Campo: marcador neutro, distinto do texto sem usar o lima (reservado à ação principal). */
+/* Campo inserido: plaqueta com fundo de seleção, contorno tracejado e texto no verde do link
+   (lima claro no escuro). Lê-se como "isto será preenchido", sem confundir com texto digitado. */
 .editor-modelo .campo-do-modelo {
   display: inline-block;
-  padding: 0 var(--e-1);
-  border: 1px dashed var(--regra-forte);
-  border-radius: 4px;
-  background: var(--chao);
-  font-weight: 500;
+  padding: 0 var(--e-15);
+  border: 1px dashed var(--campo-borda-ativa);
+  border-radius: var(--raio-mini);
+  background: var(--escolha);
+  color: var(--link);
+  font-weight: 650;
+  line-height: 1.45;
   white-space: nowrap;
 }
 .editor-modelo .campo-do-modelo.ProseMirror-selectednode {
-  outline: 2px solid var(--foco);
+  border-style: solid;
+  outline: var(--borda-foco) solid var(--foco);
   outline-offset: 1px;
 }

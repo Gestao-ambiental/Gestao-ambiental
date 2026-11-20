@@ -1,6 +1,6 @@
 // Modelos de documento (ADR-0036, fatia 1): lista na área de configuração, editor com campos,
 // salvar pela RPC, erro do banco na tela e Equipe sem acesso.
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -87,6 +87,30 @@ describe('editor do modelo', () => {
     expect(await screen.findByRole('heading', { name: 'Relatório semestral' })).toBeInTheDocument()
     expect(screen.getByLabelText('Nome')).toHaveValue('Relatório semestral')
     expect(await screen.findByText('Nome do empreendimento')).toHaveClass('campo-do-modelo')
+  })
+
+  it('a barra de formatação usa botões de ícone com nome acessível e volta para a lista', async () => {
+    renderizarApp('/configuracoes/modelos/md1')
+    await screen.findByText('Nome do empreendimento')
+    const barra = screen.getByRole('toolbar', { name: 'Formatação' })
+    for (const nome of [
+      'Negrito',
+      'Itálico',
+      'Sublinhado',
+      'Lista com marcadores',
+      'Lista numerada',
+      'Alinhar à esquerda',
+      'Centralizar',
+      'Alinhar à direita',
+      'Justificar',
+    ]) {
+      expect(within(barra).getByRole('button', { name: nome })).toHaveAttribute('aria-pressed')
+    }
+    expect(within(barra).getByRole('button', { name: 'Tabela' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Modelos' })).toHaveAttribute(
+      'href',
+      '/configuracoes/modelos',
+    )
   })
 
   it('cria um modelo novo com campo e salva pela RPC', async () => {

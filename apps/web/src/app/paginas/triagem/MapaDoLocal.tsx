@@ -5,6 +5,7 @@
 import type { Coordenadas } from '@gestao-ambiental/domain'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import './mapa-do-local.css'
 import { useEffect, useRef } from 'react'
 
 /** Centro de Joinville (piloto). */
@@ -56,11 +57,12 @@ export default function MapaDoLocal({ ponto, aoEscolher }: Props) {
     if (marcador.current) {
       marcador.current.setLatLng(latlng)
     } else {
+      // Cor pelo CSS (mapa-do-local.css), com os tokens do tema.
       marcador.current = L.circleMarker(latlng, {
-        radius: 8,
+        radius: 9,
         weight: 3,
-        color: '#0f6cbd',
-        fillOpacity: 0.4,
+        fillOpacity: 1,
+        className: 'marcador-do-local',
       }).addTo(m)
     }
     if (!m.getBounds().contains(latlng)) m.setView(latlng, Math.max(m.getZoom(), 16))
@@ -71,7 +73,7 @@ export default function MapaDoLocal({ ponto, aoEscolher }: Props) {
       ref={elemento}
       role="region"
       aria-label="Mapa: clique para marcar o local do empreendimento"
-      className="h-[320px] w-full overflow-hidden rounded-(--raio-painel) border"
+      className="mapa-do-local h-[240px] w-full overflow-hidden rounded-(--raio-painel) border md:h-[320px]"
     />
   )
 }
