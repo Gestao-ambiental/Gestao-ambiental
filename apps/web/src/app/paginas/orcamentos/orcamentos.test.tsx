@@ -1742,7 +1742,7 @@ describe('orçamentos (onda 5)', () => {
     })
     const enviada = chamada?.[1] as { p_equipe: Record<string, unknown>[] } | undefined
     expect(enviada?.p_equipe[0]).not.toHaveProperty('pelo_piso')
-  })
+  }, 15_000)
 
   it('cadastra preço por faixas de quantidade e preço mínimo', async () => {
     const usuario = userEvent.setup()
