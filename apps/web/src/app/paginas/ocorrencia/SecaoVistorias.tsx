@@ -17,14 +17,13 @@ import { BotaoIcone } from '@/components/ui/botao-icone'
 import { CampoData } from '@/components/ui/campo-data'
 import { CampoTexto } from '@/components/ui/campo-texto'
 import { Dialogo } from '@/components/ui/dialogo'
+import { classeAreaTexto, classeCampo } from '@/components/ui/estilos-campo'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { criarVistoria, listarVistorias } from '@/lib/api/vistorias'
 import { mensagemDoErroDaVistoria } from '@/lib/erros'
 
 import { SeloDaVistoria } from '../campo/pecas'
-
-const classeCampo =
-  'w-full rounded-(--raio) border border-(--campo-borda) border-b-(--campo-borda) bg-(--campo) px-(--e-2) corpo text-(--tinta) outline-none focus:border-b-(--campo-borda-ativa)'
+import { CabecalhoDeSecao, VazioDeSecao } from './pecas'
 
 interface ItemDoFormulario {
   chave: string
@@ -182,7 +181,7 @@ function DialogoAgendar({
       <label className="flex flex-col gap-(--e-1)">
         <span className="rotulo">Responsável</span>
         <select
-          className={`${classeCampo} h-(--controle)`}
+          className={classeCampo}
           value={responsavelId}
           aria-invalid={erros.responsavel ? true : undefined}
           onChange={(evento) => {
@@ -208,7 +207,7 @@ function DialogoAgendar({
           rows={2}
           maxLength={LIMITES_DA_VISTORIA.objetivo}
           value={objetivo}
-          className={`${classeCampo} py-(--e-15)`}
+          className={classeAreaTexto}
           onChange={(evento) => {
             setObjetivo(evento.target.value)
           }}
@@ -297,31 +296,47 @@ export function SecaoVistorias({
   const vistorias = consulta.data?.pages.flatMap((p) => p.itens) ?? []
 
   return (
-    <section aria-labelledby="titulo-vistorias" className="flex flex-col gap-(--e-2)">
-      <h2 id="titulo-vistorias" className="rotulo-maiusculo text-(--tinta-2)">
-        Vistorias
-      </h2>
+    <section aria-labelledby="titulo-vistorias" className="flex flex-col">
+      <CabecalhoDeSecao
+        id="titulo-vistorias"
+        titulo="Vistorias"
+        acao={
+          podeAgendar ? (
+            <Botao
+              aparencia="sutil"
+              tamanho="compacto"
+              iconeAntes="plus"
+              onClick={() => {
+                setAgendando(true)
+              }}
+            >
+              Agendar vistoria
+            </Botao>
+          ) : null
+        }
+      />
       {consulta.isPending ? (
-        <Carregando rotulo="Carregando as vistorias" linhas={2} />
+        <Carregando rotulo="Carregando as vistorias" linhas={2} className="mt-(--e-2)" />
       ) : consulta.isError ? (
         <EstadoErro
+          className="mt-(--e-2)"
           titulo="Não foi possível carregar as vistorias."
           aoTentarDeNovo={() => void consulta.refetch()}
         />
       ) : vistorias.length === 0 ? (
-        <p className="text-xs text-(--tinta-2)">Nenhuma vistoria.</p>
+        <VazioDeSecao>Nenhuma vistoria.</VazioDeSecao>
       ) : (
-        <ul className="flex flex-col rounded-(--raio) border" aria-label="Vistorias">
+        <ul className="flex flex-col" aria-label="Vistorias">
           {vistorias.map((v) => (
             <li
               key={v.id}
-              className="flex flex-wrap items-center gap-(--e-2) border-b px-(--e-3) py-(--e-2) last:border-b-0"
+              className="flex min-h-(--linha) flex-wrap items-center gap-x-(--e-3) gap-y-(--e-1) border-b border-(--regra-leve) py-(--e-2)"
             >
-              <span className="flex min-w-0 flex-1 flex-col">
-                <Link to={`/campo/${v.id}`} className="corpo">
+              <span className="flex min-w-0 flex-1 basis-[200px] flex-col">
+                <Link to={`/campo/${v.id}`} className="corpo-medio">
                   {v.titulo}
                 </Link>
-                <span className="text-xs text-(--tinta-2)">
+                <span className="text-xs text-(--tinta-2) numero">
                   {[
                     `${formatarDataCivil(v.dataPlanejada)}${v.horaPlanejada ? ` às ${v.horaPlanejada}` : ''}`,
                     v.responsavelNome,
@@ -337,26 +352,14 @@ export function SecaoVistorias({
         </ul>
       )}
       {consulta.hasNextPage ? (
-        <div>
+        <div className="pt-(--e-2)">
           <Botao
+            aparencia="sutil"
             tamanho="compacto"
             disabled={consulta.isFetchingNextPage}
             onClick={() => void consulta.fetchNextPage()}
           >
             Mostrar mais vistorias
-          </Botao>
-        </div>
-      ) : null}
-      {podeAgendar ? (
-        <div>
-          <Botao
-            tamanho="compacto"
-            iconeAntes="plus"
-            onClick={() => {
-              setAgendando(true)
-            }}
-          >
-            Agendar vistoria
           </Botao>
         </div>
       ) : null}

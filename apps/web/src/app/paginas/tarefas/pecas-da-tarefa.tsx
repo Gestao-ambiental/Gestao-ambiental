@@ -14,11 +14,11 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useId, useState } from 'react'
 
-import { classeCampo } from '@/app/paginas/orcamentos/comum'
 import { Botao } from '@/components/ui/botao'
 import { CampoData } from '@/components/ui/campo-data'
 import { CampoTexto } from '@/components/ui/campo-texto'
 import { Dialogo } from '@/components/ui/dialogo'
+import { classeCampo } from '@/components/ui/estilos-campo'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { Selo, type TomSelo } from '@/components/ui/selo'
 import {
@@ -70,7 +70,8 @@ export function AcoesDaTarefa({
         <Botao
           key={para}
           tamanho="compacto"
-          aparencia={para === 'concluida' ? 'primario' : 'padrao'}
+          aparencia={para === 'cancelada' ? 'sutil' : 'padrao'}
+          iconeAntes={para === 'concluida' ? 'check' : undefined}
           disabled={mudar.isPending}
           aria-label={`${rotuloDaAcaoDaTarefa(tarefa.situacao, para)}: ${tarefa.titulo}`}
           onClick={() => {

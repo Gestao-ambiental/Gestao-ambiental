@@ -1,22 +1,27 @@
 import {
   diferencaEmDias,
   formatarDataCivil,
-  proximaAcao,
-  situacaoDoPrazo,
   situacaoExibida,
   type DataCivil,
-  type SituacaoExibida,
 } from '@gestao-ambiental/domain'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
+import { Pagina } from '@/app/paginas/Pagina'
 import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/estados'
+import { Avatar } from '@/components/ui/avatar'
 import { Botao } from '@/components/ui/botao'
-import { Icone } from '@/components/ui/icone'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { classeCampo } from '@/components/ui/estilos-campo'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
-import { Selo, type TomSelo } from '@/components/ui/selo'
 import { listarMembrosAtivos } from '@/lib/api/licencas'
 import {
   designarConferente,
@@ -26,41 +31,15 @@ import {
   obterOcorrencia,
   type Ocorrencia,
 } from '@/lib/api/ocorrencias'
+import { atribuirOcorrencia } from '@/lib/api/prazos'
 import { ehSemPermissao, mensagemDoErro } from '@/lib/erros'
 
-import { SeloSituacaoPrazo } from '../visao/SeloSituacaoPrazo'
-import { SecaoConclusao } from './SecaoConclusao'
+import { PainelAgora } from './PainelAgora'
 import { SecaoEtapas } from './SecaoEtapas'
 import { SecaoEvidencia } from './SecaoEvidencia'
 import { SecaoHistorico } from './SecaoHistorico'
 import { SecaoVistorias } from './SecaoVistorias'
-
-const SITUACAO: Record<SituacaoExibida, { texto: string; tom: TomSelo }> = {
-  a_fazer: { texto: 'A fazer', tom: 'padrao' },
-  em_conferencia: { texto: 'Em conferência', tom: 'revisao' },
-  aprovada: { texto: 'Aprovada', tom: 'sucesso' },
-  devolvida: { texto: 'Devolvida', tom: 'perigo' },
-  concluida: { texto: 'Concluída', tom: 'sucesso' },
-}
-
-const classeSelect =
-  'h-(--controle) w-full rounded-(--raio) border border-(--campo-borda) border-b-(--campo-borda) bg-(--campo) px-(--e-2) corpo text-(--tinta)'
-
-function Voltar() {
-  return (
-    <nav aria-label="Caminho" className="flex items-center gap-(--e-1) corpo">
-      <Link
-        to="/"
-        aria-label="Voltar para a Visão da equipe"
-        title="Voltar para a Visão da equipe"
-        className="inline-flex size-(--controle) items-center justify-center rounded-(--raio) text-(--icone) transicao-estado hover:bg-(--toque)"
-      >
-        <Icone nome="chevron-left" />
-      </Link>
-      <Link to="/">Visão da equipe</Link>
-    </nav>
-  )
-}
+import { VoltarParaVisao } from './pecas'
 
 function emDias(data: DataCivil, hoje: DataCivil): string {
   const dias = diferencaEmDias(data, hoje)
@@ -73,24 +52,33 @@ function emDias(data: DataCivil, hoje: DataCivil): string {
 function Linha({ rotulo, children }: { rotulo: string; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-(--e-05)">
-      <dt className="text-xs text-(--tinta-2)">{rotulo}</dt>
-      <dd className="corpo">{children}</dd>
+      <dt className="rotulo">{rotulo}</dt>
+      <dd className="corpo-medio text-(--tinta)">{children}</dd>
     </div>
+  )
+}
+
+function Pessoa({ nome }: { nome: string }) {
+  return (
+    <span className="flex items-center gap-(--e-2)">
+      <Avatar nome={nome} />
+      {nome}
+    </span>
   )
 }
 
 function Datas({ ocorrencia }: { ocorrencia: Ocorrencia }) {
   const mudou = ocorrencia.prazoAtual !== ocorrencia.prazoOriginal
   return (
-    <section aria-labelledby="titulo-datas" className="flex flex-col gap-(--e-2)">
-      <h2 id="titulo-datas" className="rotulo-maiusculo text-(--tinta-2)">
+    <section aria-labelledby="titulo-datas" className="flex flex-col gap-(--e-3)">
+      <h2 id="titulo-datas" className="titulo-secao text-(--tinta)">
         Datas
       </h2>
-      <dl className="flex flex-col gap-(--e-2)">
+      <dl className="flex flex-col gap-(--e-3)">
         <Linha rotulo="Prazo oficial">
-          {formatarDataCivil(ocorrencia.prazoOriginal)}
+          <span className="numero">{formatarDataCivil(ocorrencia.prazoOriginal)}</span>
           {mudou ? null : (
-            <span className="text-(--tinta-2)">
+            <span className="corpo text-(--tinta-2)">
               {' '}
               · {emDias(ocorrencia.prazoOriginal, ocorrencia.hoje)}
             </span>
@@ -98,8 +86,8 @@ function Datas({ ocorrencia }: { ocorrencia: Ocorrencia }) {
         </Linha>
         {mudou ? (
           <Linha rotulo="Prazo atual">
-            {formatarDataCivil(ocorrencia.prazoAtual)}
-            <span className="text-(--tinta-2)">
+            <span className="numero">{formatarDataCivil(ocorrencia.prazoAtual)}</span>
+            <span className="corpo text-(--tinta-2)">
               {' '}
               · {emDias(ocorrencia.prazoAtual, ocorrencia.hoje)}
             </span>
@@ -107,9 +95,9 @@ function Datas({ ocorrencia }: { ocorrencia: Ocorrencia }) {
         ) : null}
         <Linha rotulo="Meta interna">
           {ocorrencia.metaInterna ? (
-            formatarDataCivil(ocorrencia.metaInterna)
+            <span className="numero">{formatarDataCivil(ocorrencia.metaInterna)}</span>
           ) : (
-            <span className="text-(--tinta-3)">Sem meta</span>
+            <span className="corpo text-(--tinta-3)">Sem meta</span>
           )}
         </Linha>
       </dl>
@@ -132,33 +120,69 @@ function Pessoas({
     mutationFn: (membroId: string | null) => designarConferente(ocorrencia.id, membroId),
     onSuccess: aoMudar,
   })
+  // "Sem responsável" é uma ação para a Gestão (EQ-03), como na Visão da equipe.
+  const atribuir = useMutation({
+    mutationFn: (membroId: string) =>
+      atribuirOcorrencia(ocorrencia.id, membroId, ocorrencia.rowVersion),
+    onSuccess: aoMudar,
+  })
   const podeDesignar = ehGestao && ocorrencia.situacao !== 'concluida'
 
   return (
-    <section aria-labelledby="titulo-pessoas" className="flex flex-col gap-(--e-2)">
-      <h2 id="titulo-pessoas" className="rotulo-maiusculo text-(--tinta-2)">
+    <section aria-labelledby="titulo-pessoas" className="flex flex-col gap-(--e-3)">
+      <h2 id="titulo-pessoas" className="titulo-secao text-(--tinta)">
         Pessoas
       </h2>
-      {designar.isError ? (
+      {designar.isError || atribuir.isError ? (
         <MensagemSecao role="alert" tom="perigo">
-          {mensagemDoErro(designar.error)}
+          {mensagemDoErro(designar.error ?? atribuir.error)}
         </MensagemSecao>
       ) : null}
-      <dl className="flex flex-col gap-(--e-2)">
+      <dl className="flex flex-col gap-(--e-3)">
         <Linha rotulo="Responsável">
-          {ocorrencia.responsavelNome ?? <span className="text-(--tinta-3)">Sem responsável</span>}
+          {ocorrencia.responsavelNome ? (
+            <Pessoa nome={ocorrencia.responsavelNome} />
+          ) : podeDesignar ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Botao
+                  tamanho="compacto"
+                  iconeAntes="plus"
+                  disabled={atribuir.isPending}
+                  aria-label="Atribuir responsável"
+                >
+                  Atribuir
+                </Botao>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuLabel>Atribuir a</DropdownMenuLabel>
+                {membros.map((m) => (
+                  <DropdownMenuItem
+                    key={m.id}
+                    onSelect={() => {
+                      atribuir.mutate(m.id)
+                    }}
+                  >
+                    {m.nome}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <span className="corpo text-(--tinta-3)">Sem responsável</span>
+          )}
         </Linha>
         {podeDesignar ? (
-          <div className="flex flex-col gap-(--e-05)">
+          <div className="flex flex-col gap-(--e-1)">
             <dt>
-              <label htmlFor="conferente" className="text-xs text-(--tinta-2)">
+              <label htmlFor="conferente" className="rotulo">
                 Conferente
               </label>
             </dt>
             <dd>
               <select
                 id="conferente"
-                className={classeSelect}
+                className={classeCampo}
                 value={ocorrencia.conferenteId ?? ''}
                 disabled={designar.isPending}
                 onChange={(evento) => {
@@ -176,8 +200,10 @@ function Pessoas({
           </div>
         ) : (
           <Linha rotulo="Conferente">
-            {ocorrencia.conferenteNome ?? (
-              <span className="text-(--tinta-2)">Qualquer pessoa da Gestão</span>
+            {ocorrencia.conferenteNome ? (
+              <Pessoa nome={ocorrencia.conferenteNome} />
+            ) : (
+              <span className="corpo text-(--tinta-2)">Qualquer pessoa da Gestão</span>
             )}
           </Linha>
         )}
@@ -187,14 +213,16 @@ function Pessoas({
 }
 
 /**
- * /ocorrencias/:id (Protótipo 16; DEM-01 a DEM-04, DEM-09). Origem, próxima ação, etapas,
- * evidência com conferência, conclusão e histórico. Quem pode o quê é decidido no banco.
+ * /ocorrencias/:id (Protótipo 16; DEM-01 a DEM-04, DEM-09). No topo, quanto falta, a situação e a
+ * próxima ação; depois o texto da condicionante, as etapas, a evidência e as vistorias; ao lado,
+ * datas, pessoas e histórico. Quem pode o quê é decidido no banco.
  */
 export function PaginaOcorrencia() {
   const { id = '' } = useParams()
   const { atual } = useConsultoria()
   const queryClient = useQueryClient()
   const ehGestao = atual.papel === 'gestao'
+  const entradaArquivo = useRef<HTMLInputElement>(null)
 
   const ocorrencia = useQuery({ queryKey: ['ocorrencia', id], queryFn: () => obterOcorrencia(id) })
   const existe = Boolean(ocorrencia.data)
@@ -219,10 +247,10 @@ export function PaginaOcorrencia() {
     enabled: existe,
   })
 
-  const codigo = ocorrencia.data?.codigo
+  // Com a ocorrência carregada, a <Pagina> põe o título na aba; antes disso, fica o genérico.
   useEffect(() => {
-    document.title = `${codigo ?? 'Ocorrência'} · Grama`
-  }, [codigo])
+    if (!existe) document.title = 'Ocorrência · Grama'
+  }, [existe])
 
   async function recarregar() {
     // A Visão e o calendário mostram "em conferência" e responsável: também ficam velhos.
@@ -232,10 +260,18 @@ export function PaginaOcorrencia() {
     ])
   }
 
+  /** Botão principal "Enviar evidência": leva ao formulário e já abre o seletor de arquivo. */
+  function irParaEnvio() {
+    const entrada = entradaArquivo.current
+    if (!entrada) return
+    entrada.closest('form')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    entrada.click()
+  }
+
   if (ocorrencia.isPending) {
     return (
       <div className="flex flex-col gap-(--e-4)">
-        <Voltar />
+        <VoltarParaVisao />
         <Carregando rotulo="Carregando a ocorrência" linhas={5} />
       </div>
     )
@@ -243,7 +279,7 @@ export function PaginaOcorrencia() {
   if (ocorrencia.isError) {
     return (
       <div className="flex flex-col gap-(--e-4)">
-        <Voltar />
+        <VoltarParaVisao />
         {ehSemPermissao(ocorrencia.error) ? (
           <SemPermissao />
         ) : (
@@ -259,7 +295,7 @@ export function PaginaOcorrencia() {
     // Inexistente ou de outra consultoria: a RLS não distingue, e a tela também não.
     return (
       <div className="flex flex-col gap-(--e-4)">
-        <Voltar />
+        <VoltarParaVisao />
         <h1 className="sr-only">Ocorrência não encontrada</h1>
         <EstadoVazio
           icone="file-text"
@@ -280,61 +316,52 @@ export function PaginaOcorrencia() {
   const listaEvidencias = evidencias.data ?? []
   const ultima = listaEvidencias[0]
   const exibida = situacaoExibida(dados.situacao, ultima?.situacao ?? null)
-  const situacao = SITUACAO[exibida]
-  const dias = diferencaEmDias(dados.prazoAtual, dados.hoje)
   const filhosCarregando = etapas.isPending || evidencias.isPending
   const filhosComErro = etapas.isError || evidencias.isError
 
   return (
-    <div className="flex flex-col gap-(--e-4)">
-      <Voltar />
-
-      <header className="flex flex-col gap-(--e-1)">
-        <h1 className="titulo-tela text-(--tinta)">
-          <span className="font-mono text-(--tinta-2)">{dados.codigo}</span> · {dados.titulo}
-        </h1>
-        <p className="flex flex-wrap items-center gap-(--e-2) corpo text-(--tinta-2)">
-          <Selo tom={situacao.tom}>{situacao.texto}</Selo>
-          {dados.situacao === 'concluida' ? null : (
-            <SeloSituacaoPrazo
-              situacao={situacaoDoPrazo({
-                tipo: 'ocorrencia',
-                dias,
-                emConferencia: dados.situacao === 'em_conferencia',
-              })}
-            />
-          )}
-          <span>Ciclo {dados.ciclo}</span>
-          <span aria-hidden="true">·</span>
+    <Pagina
+      titulo={dados.titulo}
+      prefixo={dados.codigo}
+      voltar={{ para: '/', rotulo: 'Visão da equipe' }}
+      meta={
+        <span className="flex flex-wrap items-center gap-x-(--e-2)">
           <Link to={`/empreendimentos/${dados.empreendimentoId}`}>{dados.empreendimentoNome}</Link>
+          <span aria-hidden="true">·</span>
+          <span>{dados.unidadeNome}</span>
           {dados.licenca ? (
             <>
               <span aria-hidden="true">·</span>
-              <span>{dados.licenca}</span>
+              <span className="numero">{dados.licenca}</span>
             </>
           ) : null}
-        </p>
-      </header>
+          <span aria-hidden="true">·</span>
+          <span className="numero">Ciclo {dados.ciclo}</span>
+        </span>
+      }
+    >
+      <PainelAgora
+        ocorrencia={dados}
+        exibida={exibida}
+        etapas={listaEtapas}
+        ultima={ultima}
+        pronto={!filhosCarregando && !filhosComErro}
+        membroId={atual.membroId}
+        ehGestao={ehGestao}
+        fuso={atual.fuso}
+        aoMudar={recarregar}
+        aoEnviarEvidencia={irParaEnvio}
+      />
 
-      <div className="grid gap-(--e-6) lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="flex min-w-0 flex-col gap-(--e-6)">
-          <section aria-labelledby="titulo-proxima" className="flex flex-col gap-(--e-1)">
-            <h2 id="titulo-proxima" className="rotulo-maiusculo text-(--tinta-2)">
-              Próxima ação
-            </h2>
-            <p className="corpo-medio">
-              {filhosCarregando ? '…' : proximaAcao(exibida, listaEtapas)}
-            </p>
-          </section>
-
-          <section aria-labelledby="titulo-origem" className="flex flex-col gap-(--e-1)">
-            <h2 id="titulo-origem" className="rotulo-maiusculo text-(--tinta-2)">
+      <div className="grid gap-(--e-8) lg:grid-cols-[minmax(0,1fr)_300px]">
+        <div className="flex min-w-0 flex-col gap-(--e-8)">
+          <section aria-labelledby="titulo-origem" className="flex flex-col gap-(--e-2)">
+            <h2 id="titulo-origem" className="titulo-secao text-(--tinta)">
               Texto da condicionante
             </h2>
-            <blockquote className="border-l-2 border-(--regra-forte) pl-(--e-3) corpo whitespace-pre-line">
+            <blockquote className="max-w-[72ch] border-l-[3px] border-(--marca-linha) pl-(--e-4) corpo text-pretty whitespace-pre-line text-(--tinta)">
               {dados.textoLiteral}
             </blockquote>
-            <p className="text-xs text-(--tinta-2)">{dados.unidadeNome}</p>
           </section>
 
           {filhosComErro ? (
@@ -356,31 +383,26 @@ export function PaginaOcorrencia() {
                 podeEditar={dados.situacao !== 'concluida'}
                 aoMudar={recarregar}
               />
+              <SecaoEvidencia
+                ocorrencia={dados}
+                evidencias={listaEvidencias}
+                fuso={atual.fuso}
+                entrada={entradaArquivo}
+                aoMudar={recarregar}
+              />
               <SecaoVistorias
                 ocorrenciaId={dados.id}
                 membros={membros.data ?? []}
                 podeAgendar={dados.situacao !== 'concluida'}
               />
-              <SecaoEvidencia
-                ocorrencia={dados}
-                evidencias={listaEvidencias}
-                membroId={atual.membroId}
-                ehGestao={ehGestao}
-                fuso={atual.fuso}
-                aoMudar={recarregar}
-              />
-              <SecaoConclusao
-                ocorrencia={dados}
-                ultimaAprovada={ultima?.situacao === 'aprovada'}
-                ehGestao={ehGestao}
-                fuso={atual.fuso}
-                aoMudar={recarregar}
-              />
             </>
           )}
         </div>
 
-        <aside className="flex flex-col gap-(--e-6)" aria-label="Detalhes">
+        <aside
+          className="flex flex-col gap-(--e-6) max-lg:border-t max-lg:pt-(--e-6) lg:border-l lg:pl-(--e-6)"
+          aria-label="Detalhes"
+        >
           <Datas ocorrencia={dados} />
           <Pessoas
             ocorrencia={dados}
@@ -400,6 +422,6 @@ export function PaginaOcorrencia() {
           )}
         </aside>
       </div>
-    </div>
+    </Pagina>
   )
 }

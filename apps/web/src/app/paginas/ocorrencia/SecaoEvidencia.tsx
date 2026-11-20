@@ -6,19 +6,16 @@ import {
   type DataCivil,
 } from '@gestao-ambiental/domain'
 import { useMutation } from '@tanstack/react-query'
-import { useRef, useState } from 'react'
+import { useState, type RefObject } from 'react'
 
 import { BotaoGerarRelatorio } from '@/app/paginas/modelos/GerarRelatorio'
 import { Botao } from '@/components/ui/botao'
 import { CampoData } from '@/components/ui/campo-data'
-import { CampoTexto } from '@/components/ui/campo-texto'
-import { Dialogo } from '@/components/ui/dialogo'
 import { Icone } from '@/components/ui/icone'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { Selo, type TomSelo } from '@/components/ui/selo'
 import {
   conferirArquivoDeEvidencia,
-  conferirEvidencia,
   enviarEvidencia,
   urlDoArquivo,
   type Evidencia,
@@ -27,6 +24,8 @@ import {
 } from '@/lib/api/ocorrencias'
 import { formatarInstanteComHora } from '@/lib/datas'
 import { mensagemDoErro } from '@/lib/erros'
+
+import { CabecalhoDeSecao, VazioDeSecao } from './pecas'
 
 const SITUACAO: Record<Evidencia['situacao'], { texto: string; tom: TomSelo }> = {
   em_conferencia: { texto: 'Em conferência', tom: 'revisao' },
@@ -55,13 +54,15 @@ function dataDe(valor: string): DataCivil | null {
 function EnvioDeEvidencia({
   ocorrencia,
   corrigindo,
+  entrada,
   aoEnviar,
 }: {
   ocorrencia: Ocorrencia
   corrigindo: boolean
+  /** O botão principal do topo abre o seletor de arquivo por aqui. */
+  entrada: RefObject<HTMLInputElement | null>
   aoEnviar: () => Promise<void>
 }) {
-  const entrada = useRef<HTMLInputElement>(null)
   const [evidenciaId] = useState(() => crypto.randomUUID())
   const [arquivo, setArquivo] = useState<File | null>(null)
   const [problema, setProblema] = useState<string | null>(null)
@@ -111,7 +112,7 @@ function EnvioDeEvidencia({
         }
         envio.mutate()
       }}
-      className="flex flex-col gap-(--e-3) rounded-(--raio) border border-dashed border-(--regra-forte) p-(--e-3)"
+      className="mt-(--e-3) flex flex-col gap-(--e-3) rounded-(--raio-painel) border border-dashed border-(--regra-forte) bg-(--folha) p-(--e-4)"
     >
       {envio.isError ? (
         <MensagemSecao role="alert" tom="perigo">
@@ -119,8 +120,14 @@ function EnvioDeEvidencia({
         </MensagemSecao>
       ) : null}
       <div className="flex flex-wrap items-center gap-(--e-2)">
-        <Icone nome="paperclip" className="text-(--icone)" />
-        <span className="min-w-0 flex-1 truncate corpo">
+        <Icone nome="paperclip" className="text-(--icone-2)" />
+        <span
+          className={
+            arquivo
+              ? 'min-w-0 flex-1 truncate corpo-medio numero'
+              : 'min-w-0 flex-1 truncate corpo text-(--tinta-2)'
+          }
+        >
           {arquivo
             ? `${arquivo.name} · ${tamanhoLegivel(arquivo.size)}`
             : corrigindo
@@ -160,7 +167,6 @@ function EnvioDeEvidencia({
         motivoDoLimite="A data real de execução não pode estar no futuro"
         valor={ehDataCivil(data) ? data : null}
         erro={erroData ?? undefined}
-        ajuda="Quando a coleta ou o serviço foi feito. A data do envio não substitui."
         aoMudar={(nova) => {
           setData(nova ?? '')
           setErroData(null)
@@ -175,12 +181,7 @@ function EnvioDeEvidencia({
           . Confira antes de enviar.
         </MensagemSecao>
       ) : null}
-      <div className="flex flex-wrap items-center gap-(--e-2)">
-        <span className="flex-1 text-xs text-(--tinta-2)">
-          {ocorrencia.conferenteNome
-            ? `${ocorrencia.conferenteNome} confere depois do envio.`
-            : 'A gestão confere depois do envio.'}
-        </span>
+      <div className="flex justify-end max-md:[&>*]:flex-1">
         <Botao
           type="submit"
           aparencia="primario"
@@ -195,80 +196,49 @@ function EnvioDeEvidencia({
 }
 
 /**
- * Evidência e conferência (DEM-03, DEM-09). Upload não conclui: vai para conferência. Pode
- * conferir o conferente designado ou, sem designação, a Gestão; com a independência, nunca quem
- * enviou. A tela só explica; o banco recusa o resto.
+ * Evidência (DEM-03, DEM-09): envio com a data real de execução e as versões enviadas. Upload não
+ * conclui: vai para conferência. Aprovar e devolver ficam no topo da tela (PainelAgora).
  */
 export function SecaoEvidencia({
   ocorrencia,
   evidencias,
-  membroId,
-  ehGestao,
   fuso,
+  entrada,
   aoMudar,
 }: {
   ocorrencia: Ocorrencia
   evidencias: readonly Evidencia[]
-  membroId: string
-  ehGestao: boolean
   fuso: string
+  entrada: RefObject<HTMLInputElement | null>
   aoMudar: () => Promise<void>
 }) {
-  const [devolvendo, setDevolvendo] = useState(false)
-  const [motivo, setMotivo] = useState('')
-  const [erroMotivo, setErroMotivo] = useState<string | null>(null)
   const ultima = evidencias[0]
-
-  const conferir = useMutation({
-    mutationFn: ({ decisao, texto }: { decisao: 'aprovada' | 'devolvida'; texto: string }) => {
-      if (!ultima) throw new Error('sem evidência')
-      return conferirEvidencia(ultima.id, decisao, texto)
-    },
-    onSuccess: async () => {
-      setDevolvendo(false)
-      setMotivo('')
-      await aoMudar()
-    },
-  })
   const abrir = useMutation({
     mutationFn: urlDoArquivo,
     onSuccess: (url) => {
       window.open(url, '_blank', 'noopener,noreferrer')
     },
   })
-
-  const aguardando =
-    ocorrencia.situacao === 'em_conferencia' && ultima?.situacao === 'em_conferencia'
-  const souConferente = ocorrencia.conferenteId === membroId
-  const possoConferirPorPapel = ocorrencia.conferenteId ? souConferente : ehGestao
-  const enviei = ultima?.enviadaPorId === membroId
-  const bloqueadoPorIndependencia = ocorrencia.conferenciaIndependente && enviei
-  const possoConferir = aguardando && possoConferirPorPapel && !bloqueadoPorIndependencia
   const possoEnviar = ocorrencia.situacao === 'aberta'
 
   return (
-    <section aria-labelledby="titulo-evidencia" className="flex flex-col gap-(--e-2)">
-      <div className="flex flex-wrap items-center justify-between gap-(--e-2)">
-        <h2 id="titulo-evidencia" className="rotulo-maiusculo text-(--tinta-2)">
-          Evidência
-        </h2>
-        {possoEnviar ? (
-          <BotaoGerarRelatorio
-            empreendimentoId={ocorrencia.empreendimentoId}
-            empreendimentoNome={ocorrencia.empreendimentoNome}
-            ocorrenciaId={ocorrencia.id}
-          />
-        ) : null}
-      </div>
-      {conferir.isError ? (
-        <MensagemSecao role="alert" tom="perigo">
-          {mensagemDoErro(conferir.error)}
-        </MensagemSecao>
-      ) : null}
-
-      {ocorrencia.situacao === 'concluida' ? (
-        <MensagemSecao tom="informacao">
-          Ocorrência concluída. Para enviar algo novo, reabra com motivo.
+    <section aria-labelledby="titulo-evidencia" className="flex flex-col">
+      <CabecalhoDeSecao
+        id="titulo-evidencia"
+        titulo="Evidência"
+        acao={
+          possoEnviar ? (
+            <BotaoGerarRelatorio
+              empreendimentoId={ocorrencia.empreendimentoId}
+              empreendimentoNome={ocorrencia.empreendimentoNome}
+              ocorrenciaId={ocorrencia.id}
+            />
+          ) : null
+        }
+      />
+      {abrir.isError ? (
+        <MensagemSecao role="alert" tom="perigo" className="mt-(--e-2)">
+          {mensagemDoErro(abrir.error)}
         </MensagemSecao>
       ) : null}
 
@@ -276,122 +246,51 @@ export function SecaoEvidencia({
         <EnvioDeEvidencia
           ocorrencia={ocorrencia}
           corrigindo={ultima?.situacao === 'devolvida'}
+          entrada={entrada}
           aoEnviar={aoMudar}
         />
       ) : null}
 
-      {aguardando && bloqueadoPorIndependencia && possoConferirPorPapel ? (
-        <MensagemSecao tom="atencao">
-          Você enviou esta evidência. Outra pessoa precisa conferir.
-        </MensagemSecao>
-      ) : null}
-      {aguardando && souConferente && !bloqueadoPorIndependencia ? (
-        <MensagemSecao tom="informacao">Você é o conferente desta ocorrência.</MensagemSecao>
-      ) : null}
-
       {evidencias.length > 0 ? (
-        <ul className="flex flex-col rounded-(--raio) border" aria-label="Versões da evidência">
+        <ul className="flex flex-col" aria-label="Versões da evidência">
           {evidencias.map((ev) => (
             <li
               key={ev.id}
-              className="flex flex-col gap-(--e-1) border-b px-(--e-3) py-(--e-2) last:border-b-0"
+              className="flex min-h-(--linha) flex-col justify-center gap-(--e-05) border-b border-(--regra-leve) py-(--e-2)"
             >
-              <span className="flex flex-wrap items-center gap-(--e-2)">
-                <Icone nome="paperclip" className="text-(--icone)" />
+              <span className="flex flex-wrap items-center gap-x-(--e-2) gap-y-(--e-1)">
+                <span className="text-xs font-[800] text-(--tinta-2) numero">v{ev.numero}</span>
                 <button
                   type="button"
                   onClick={() => {
                     abrir.mutate(ev.arquivo.caminho)
                   }}
-                  className="min-w-0 flex-1 cursor-pointer truncate text-left corpo-medio text-(--link) hover:underline"
+                  className="min-w-0 flex-1 cursor-pointer truncate text-left corpo-medio text-(--link) hover:underline max-md:min-h-(--controle-toque)"
                 >
                   {ev.arquivo.nome}
                 </button>
-                <span className="text-xs text-(--tinta-2)">v{ev.numero}</span>
                 <Selo tom={SITUACAO[ev.situacao].tom}>{SITUACAO[ev.situacao].texto}</Selo>
               </span>
-              <span className="text-xs text-(--tinta-2)">
+              <span className="text-xs text-(--tinta-2) numero">
                 {ev.enviadaPorNome} · {formatarInstanteComHora(ev.enviadaEm, fuso)} · execução{' '}
                 {formatarDataCivil(ev.dataExecucao)} · {tamanhoLegivel(ev.arquivo.tamanho)}
               </span>
               {ev.conferencia ? (
-                <span className="text-xs text-(--tinta-2)">
+                <span className="text-xs text-(--tinta-2) numero">
                   {ev.conferencia.decisao === 'aprovada' ? 'Aprovada' : 'Devolvida'} por{' '}
                   {ev.conferencia.conferenteNome} em{' '}
                   {formatarInstanteComHora(ev.conferencia.em, fuso)}
-                  {ev.conferencia.motivo ? ` · Motivo: “${ev.conferencia.motivo}”` : ''}
+                  {ev.conferencia.motivo ? (
+                    <span className="text-(--tinta)"> · “{ev.conferencia.motivo}”</span>
+                  ) : null}
                 </span>
               ) : null}
             </li>
           ))}
         </ul>
       ) : !possoEnviar ? (
-        <p className="text-xs text-(--tinta-2)">Nenhuma evidência enviada.</p>
+        <VazioDeSecao>Nenhuma evidência enviada.</VazioDeSecao>
       ) : null}
-
-      {possoConferir ? (
-        <div className="flex flex-wrap gap-(--e-2)">
-          <Botao
-            aparencia="primario"
-            iconeAntes="check"
-            disabled={conferir.isPending}
-            onClick={() => {
-              conferir.mutate({ decisao: 'aprovada', texto: '' })
-            }}
-          >
-            Aprovar
-          </Botao>
-          <Botao
-            disabled={conferir.isPending}
-            onClick={() => {
-              setDevolvendo(true)
-            }}
-          >
-            Devolver para correção
-          </Botao>
-        </div>
-      ) : null}
-
-      <Dialogo
-        aberto={devolvendo}
-        aoMudar={setDevolvendo}
-        titulo="Devolver para correção"
-        descricao="A evidência volta para quem enviou corrigir. O motivo aparece para a pessoa e fica no histórico."
-        acoes={
-          <>
-            <Botao
-              onClick={() => {
-                setDevolvendo(false)
-              }}
-            >
-              Cancelar
-            </Botao>
-            <Botao
-              aparencia="perigo"
-              disabled={conferir.isPending}
-              onClick={() => {
-                if (!motivo.trim()) {
-                  setErroMotivo('Informe o motivo')
-                  return
-                }
-                conferir.mutate({ decisao: 'devolvida', texto: motivo })
-              }}
-            >
-              Devolver
-            </Botao>
-          </>
-        }
-      >
-        <CampoTexto
-          rotulo="Motivo"
-          value={motivo}
-          erro={erroMotivo ?? undefined}
-          onChange={(evento) => {
-            setMotivo(evento.target.value)
-            setErroMotivo(null)
-          }}
-        />
-      </Dialogo>
     </section>
   )
 }

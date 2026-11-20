@@ -1,5 +1,10 @@
+import { useState } from 'react'
+
+import { Botao } from '@/components/ui/botao'
 import type { EventoDoHistorico } from '@/lib/api/ocorrencias'
 import { formatarInstanteComHora } from '@/lib/datas'
+
+import { VazioDeSecao } from './pecas'
 
 function textoDoEvento(evento: EventoDoHistorico): string {
   const v = evento.evidenciaNumero === null ? '' : ` v${String(evento.evidenciaNumero)}`
@@ -28,7 +33,12 @@ function textoDoEvento(evento: EventoDoHistorico): string {
   }
 }
 
-/** Histórico da ocorrência (DEM-03, DEM-04): quem fez o quê e quando, mais recente primeiro. */
+const VISIVEIS = 5
+
+/**
+ * Histórico da ocorrência (DEM-03, DEM-04): quem fez o quê e quando, mais recente primeiro.
+ * Compacto: os cinco últimos, o resto a um clique.
+ */
 export function SecaoHistorico({
   eventos,
   fuso,
@@ -36,28 +46,42 @@ export function SecaoHistorico({
   eventos: readonly EventoDoHistorico[]
   fuso: string
 }) {
+  const [todos, setTodos] = useState(false)
+  const lista = todos ? eventos : eventos.slice(0, VISIVEIS)
   return (
     <section aria-labelledby="titulo-historico" className="flex flex-col gap-(--e-2)">
-      <h2 id="titulo-historico" className="rotulo-maiusculo text-(--tinta-2)">
+      <h2 id="titulo-historico" className="titulo-secao text-(--tinta)">
         Histórico
       </h2>
       {eventos.length === 0 ? (
-        <p className="text-xs text-(--tinta-2)">Nada registrado ainda.</p>
+        <VazioDeSecao>Nada registrado ainda.</VazioDeSecao>
       ) : (
-        <ol className="flex flex-col gap-(--e-15)">
-          {eventos.map((evento) => (
+        <ol className="flex flex-col gap-(--e-2) border-l-2 border-(--regra) pl-(--e-3)">
+          {lista.map((evento) => (
             <li key={evento.id} className="flex flex-col">
-              <span className="corpo">
-                <span className="corpo-medio">{evento.atorNome ?? 'Sistema'}</span>{' '}
-                {textoDoEvento(evento)}
-              </span>
-              <span className="text-xs text-(--tinta-2)">
+              <span className="text-xs text-(--tinta-3) numero">
                 {formatarInstanteComHora(evento.instante, fuso)}
+              </span>
+              <span className="corpo text-(--tinta-2)">
+                <span className="corpo-medio text-(--tinta)">{evento.atorNome ?? 'Sistema'}</span>{' '}
+                {textoDoEvento(evento)}
               </span>
             </li>
           ))}
         </ol>
       )}
+      {eventos.length > VISIVEIS ? (
+        <div>
+          <Botao
+            aparencia="link"
+            onClick={() => {
+              setTodos((t) => !t)
+            }}
+          >
+            {todos ? 'Mostrar menos' : `Mostrar tudo (${String(eventos.length)})`}
+          </Botao>
+        </div>
+      ) : null}
     </section>
   )
 }

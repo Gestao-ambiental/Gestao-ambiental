@@ -74,6 +74,9 @@ function cenario(
       meus_vinculos: { data: [vinculoFalso('Filtroville', papel)] },
       obter_ocorrencia: { data: extra.ocorrencia ? [extra.ocorrencia] : [ocorrencia()] },
       enviar_evidencia: { data: 1 },
+      concluir_etapa: { data: null },
+      atribuir_ocorrencia: { data: null },
+      concluir_sem_evidencia: { data: 4 },
       conferir_evidencia: { data: null },
       concluir_ocorrencia: { data: 4 },
       reabrir_ocorrencia: { data: 4 },
@@ -127,17 +130,83 @@ describe('detalhe da ocorrência (DEM-01, DEM-02)', () => {
     )
     renderizarApp('/ocorrencias/o1')
 
-    expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent(
-      '4.2 · Laudo de ruído',
-    )
+    expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent('4.2 Laudo de ruído')
     expect(screen.getByText('A fazer')).toBeInTheDocument()
     expect(screen.getByText('Ciclo 2')).toBeInTheDocument()
     expect(screen.getByText('Apresentar laudo de ruído semestral.')).toBeInTheDocument()
     expect(await screen.findByText('Concluir a etapa “Coletar medições”')).toBeInTheDocument()
     expect(screen.getByText(/em 10 dias/)).toBeInTheDocument()
     expect(screen.getByText('Qualquer pessoa da Gestão')).toBeInTheDocument()
-    expect(screen.getByText('Só a Gestão conclui, depois da aprovação.')).toBeInTheDocument()
     expect(await screen.findByText(/criou a etapa “Coletar medições”/)).toBeInTheDocument()
+  })
+
+  it('a próxima ação é o botão principal: concluir a etapa pendente', async () => {
+    const usuario = userEvent.setup()
+    falso.reiniciar(
+      cenario('equipe', {
+        tabelas: {
+          etapa: [
+            {
+              id: 'et1',
+              titulo: 'Coletar medições',
+              modo: 'trabalho',
+              responsavel_externo: null,
+              meta: null,
+              horas_estimadas: 4,
+              concluida_em: null,
+              responsavel: { nome: 'Bruno Kist' },
+            },
+          ],
+        },
+      }),
+    )
+    renderizarApp('/ocorrencias/o1')
+    const lista = await screen.findByRole('list', { name: 'Etapas' })
+    expect(
+      within(lista).getByRole('button', { name: 'Concluir etapa Coletar medições' }),
+    ).toBeInTheDocument()
+
+    await usuario.click(screen.getByRole('button', { name: 'Concluir etapa' }))
+    await vi.waitFor(() => {
+      expect(falso.cliente.rpc).toHaveBeenCalledWith('concluir_etapa', { p_etapa_id: 'et1' })
+    })
+  })
+
+  it('sem etapa pendente, o botão principal leva ao envio da evidência', async () => {
+    renderizarApp('/ocorrencias/o1')
+    expect(await screen.findByText('Enviar a evidência para conferência')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Enviar evidência' })).toBeInTheDocument()
+    expect(screen.getByText('Nenhuma etapa.')).toBeInTheDocument()
+  })
+
+  it('erro ao concluir a etapa aparece no topo', async () => {
+    const usuario = userEvent.setup()
+    falso.reiniciar({
+      ...cenario('equipe', {
+        tabelas: {
+          etapa: [
+            {
+              id: 'et1',
+              titulo: 'Coletar medições',
+              modo: 'espera_externa',
+              responsavel_externo: 'Laboratório',
+              meta: null,
+              horas_estimadas: null,
+              concluida_em: null,
+              responsavel: null,
+            },
+          ],
+        },
+      }),
+      rpc: {
+        ...cenario().rpc,
+        concluir_etapa: { error: { message: 'falhou', code: 'XX000' } },
+      },
+    })
+    renderizarApp('/ocorrencias/o1')
+    expect(await screen.findByText(/Espera externa · Laboratório/)).toBeInTheDocument()
+    await usuario.click(screen.getByRole('button', { name: 'Concluir etapa' }))
+    expect(await screen.findByRole('alert')).toBeInTheDocument()
   })
 
   it('ocorrência de outra consultoria ou inexistente', async () => {
@@ -311,9 +380,8 @@ describe('conclusão (DEM-04)', () => {
       }),
     )
     renderizarApp('/ocorrencias/o1')
-    expect(
-      await screen.findByText('Ocorrência concluída. Para enviar algo novo, reabra com motivo.'),
-    ).toBeInTheDocument()
+    expect(await screen.findByText('Nada pendente')).toBeInTheDocument()
+    expect(screen.getByText(/^Concluída por Ana Ribeiro em/)).toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'Enviar para conferência' }),
     ).not.toBeInTheDocument()
@@ -331,5 +399,90 @@ describe('conclusão (DEM-04)', () => {
         p_row_version: 3,
       })
     })
+  })
+
+  it('a Equipe vê a evidência aprovada, mas só a Gestão conclui', async () => {
+    falso.reiniciar(
+      cenario('equipe', {
+        ocorrencia: ocorrencia({ situacao: 'em_conferencia' }),
+        tabelas: { evidencia: [evidencia({ situacao: 'aprovada' })] },
+      }),
+    )
+    renderizarApp('/ocorrencias/o1')
+    expect(await screen.findByText('Concluir a ocorrência')).toBeInTheDocument()
+    expect(screen.getByText('Só a Gestão conclui.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Concluir ocorrência' })).not.toBeInTheDocument()
+  })
+
+  it('devolvida: o motivo aparece no topo e a Gestão conclui sem evidência pelo menu', async () => {
+    const usuario = userEvent.setup()
+    falso.reiniciar(
+      cenario('gestao', {
+        tabelas: {
+          evidencia: [
+            evidencia({
+              situacao: 'devolvida',
+              conferencia: {
+                decisao: 'devolvida',
+                motivo: 'Falta a ART',
+                decidida_em: '2026-10-17T13:00:00Z',
+                conferente: { nome: 'Helena' },
+              },
+            }),
+          ],
+        },
+      }),
+    )
+    renderizarApp('/ocorrencias/o1')
+    expect(await screen.findByText('Corrigir e reenviar a evidência')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Reenviar evidência' })).toBeInTheDocument()
+    expect(screen.getAllByText(/Falta a ART/).length).toBeGreaterThan(0)
+
+    await usuario.click(screen.getByRole('button', { name: 'Mais ações' }))
+    await usuario.click(await screen.findByRole('menuitem', { name: 'Concluir sem evidência' }))
+    const dialogo = await screen.findByRole('dialog')
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Concluir sem evidência' }))
+    expect(within(dialogo).getByText('Informe a justificativa')).toBeInTheDocument()
+    await usuario.type(within(dialogo).getByLabelText('Justificativa'), 'Órgão dispensou')
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Concluir sem evidência' }))
+    await vi.waitFor(() => {
+      expect(falso.cliente.rpc).toHaveBeenCalledWith('concluir_sem_evidencia', {
+        p_ocorrencia_id: 'o1',
+        p_justificativa: 'Órgão dispensou',
+        p_row_version: 3,
+      })
+    })
+  })
+})
+
+describe('pessoas', () => {
+  it('sem responsável, a Gestão atribui ali mesmo', async () => {
+    const usuario = userEvent.setup()
+    falso.reiniciar(
+      cenario('gestao', {
+        ocorrencia: ocorrencia({ responsavel_id: null, responsavel_nome: null }),
+      }),
+    )
+    renderizarApp('/ocorrencias/o1')
+    await usuario.click(await screen.findByRole('button', { name: 'Atribuir responsável' }))
+    await usuario.click(await screen.findByRole('menuitem', { name: 'Bruno Kist' }))
+    await vi.waitFor(() => {
+      expect(falso.cliente.rpc).toHaveBeenCalledWith('atribuir_ocorrencia', {
+        p_ocorrencia_id: 'o1',
+        p_membro_id: 'm-bruno',
+        p_row_version: 3,
+      })
+    })
+  })
+
+  it('a Equipe só lê "Sem responsável"', async () => {
+    falso.reiniciar(
+      cenario('equipe', {
+        ocorrencia: ocorrencia({ responsavel_id: null, responsavel_nome: null }),
+      }),
+    )
+    renderizarApp('/ocorrencias/o1')
+    expect(await screen.findByText('Sem responsável')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Atribuir responsável' })).not.toBeInTheDocument()
   })
 })
