@@ -161,14 +161,14 @@ isOneToOne: true
                   ]
                 },"atividade_licenciada": {
                   Row: {
-                    "codigo": string,"consultoria_id": string,"descricao": string,"fonte": string,"id": string,"instrumento_id": string,"medidas": Json,"porte": string,"potencial": string,"registrado_em": string,"registrado_por": string,"row_version": number
+                    "codigo": string,"consultoria_id": string,"descricao": string,"fonte": string,"id": string,"instrumento_id": string,"medidas": NonNullable<Json>,"porte": string,"potencial": string,"registrado_em": string,"registrado_por": string,"row_version": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "codigo": string,"consultoria_id": string,"descricao": string,"fonte": string,"id"?: string,"instrumento_id": string,"medidas"?: Json,"porte": string,"potencial": string,"registrado_em"?: string,"registrado_por": string,"row_version"?: number
+                    "codigo": string,"consultoria_id": string,"descricao": string,"fonte": string,"id"?: string,"instrumento_id": string,"medidas"?: NonNullable<Json>,"porte": string,"potencial": string,"registrado_em"?: string,"registrado_por": string,"row_version"?: number
                   }
                   Update: {
-                    "codigo"?: string,"consultoria_id"?: string,"descricao"?: string,"fonte"?: string,"id"?: string,"instrumento_id"?: string,"medidas"?: Json,"porte"?: string,"potencial"?: string,"registrado_em"?: string,"registrado_por"?: string,"row_version"?: number
+                    "codigo"?: string,"consultoria_id"?: string,"descricao"?: string,"fonte"?: string,"id"?: string,"instrumento_id"?: string,"medidas"?: NonNullable<Json>,"porte"?: string,"potencial"?: string,"registrado_em"?: string,"registrado_por"?: string,"row_version"?: number
                   }
                   Relationships: [
                     {
