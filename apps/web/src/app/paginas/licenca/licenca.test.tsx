@@ -234,6 +234,23 @@ describe('passo 2: identificação (LIC-01)', () => {
     )
   })
 
+  it('a trilha volta a um passo feito, mas não pula para um passo futuro', async () => {
+    falso.reiniciar(cenario())
+    const usuario = userEvent.setup()
+    const { router } = renderizarApp('/licencas/i1/identificacao')
+    await screen.findByRole('form', { name: 'Identificação da licença' })
+    const trilha = screen.getByRole('navigation', { name: 'Passos do cadastro' })
+    // O passo atual e os futuros não são botões: só os já feitos levam de volta.
+    expect(trilha.querySelector('[aria-current="step"]')).toHaveTextContent('Identificação')
+    expect(within(trilha).queryByRole('button', { name: 'Identificação' })).toBeNull()
+    expect(within(trilha).queryByRole('button', { name: 'Prazos' })).toBeNull()
+
+    await usuario.click(within(trilha).getByRole('button', { name: 'Documento, concluída' }))
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/licencas/i1/documento')
+    })
+  })
+
   it('o PDF anexado aparece ao lado', async () => {
     falso.reiniciar(cenario())
     renderizarApp('/licencas/i1/identificacao')

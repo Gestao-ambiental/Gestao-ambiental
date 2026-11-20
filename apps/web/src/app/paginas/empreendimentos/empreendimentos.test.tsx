@@ -208,7 +208,11 @@ describe('tela do empreendimento (EMP-02)', () => {
     )
 
     expect(screen.getByText('Nenhuma licença cadastrada')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Voltar para Empreendimentos' })).toHaveAttribute(
+    // Volta pelo cabeçalho da página (Pagina `voltar`), acima do título.
+    const titulo = screen.getByRole('heading', { level: 1, name: 'Metalúrgica Rio Cubatão' })
+    const cabecalho = titulo.closest('header')
+    if (!cabecalho) throw new Error('cabeçalho ausente')
+    expect(within(cabecalho).getByRole('link', { name: 'Empreendimentos' })).toHaveAttribute(
       'href',
       '/empreendimentos',
     )
@@ -261,6 +265,51 @@ describe('tela do empreendimento (EMP-02)', () => {
       screen.getByRole('link', { name: 'Continuar o cadastro de LAO 4821/2023' }),
     ).toHaveAttribute('href', '/licencas/i1/prazos')
     expect(screen.getAllByText(/Rascunho no passo/)).toHaveLength(1)
+  })
+
+  it('no celular as licenças viram lista, com o rascunho e o Continuar', async () => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() })),
+    )
+    try {
+      falso.reiniciar(
+        cenario({
+          rpc: { meus_vinculos: { data: [vinculoFalso('Filtroville', 'gestao')] } },
+          tabelas: {
+            instrumento: [
+              {
+                id: 'i1',
+                numero: '4821/2023',
+                orgao: 'IMA',
+                validade: '2027-02-15',
+                criado_em: '2026-10-01T12:00:00Z',
+                antecedencia_renovacao_dias: 30,
+                unidade_id: 'u1',
+                tipo_id: 't-lao',
+                marco: 'assinatura',
+                situacao: 'rascunho',
+                tipo: { sigla: 'LAO', nome: 'Licença Ambiental de Operação' },
+                unidade: { nome: 'Matriz' },
+                plano: null,
+                condicionante: [{ count: 0 }],
+              },
+            ],
+          },
+        }),
+      )
+      renderizarApp('/empreendimentos/e1')
+      const lista = await screen.findByRole('list', { name: 'Licenças do empreendimento' })
+      expect(screen.queryByRole('table')).not.toBeInTheDocument()
+      expect(within(lista).getByText('LAO 4821/2023')).toBeInTheDocument()
+      expect(within(lista).getByText(/Rascunho no passo/)).toBeInTheDocument()
+      expect(
+        within(lista).getByRole('link', { name: 'Continuar o cadastro de LAO 4821/2023' }),
+      ).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Gerenciar unidades' })).toBeInTheDocument()
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 
   it('gerenciar unidades lista, mostra endereço ausente e adiciona', async () => {

@@ -18,7 +18,6 @@ import { Botao } from '@/components/ui/botao'
 import { Dialogo } from '@/components/ui/dialogo'
 import { Icone } from '@/components/ui/icone'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
-import { Selo } from '@/components/ui/selo'
 import { SeletorPessoa, type PessoaDoSeletor } from '@/components/ui/seletor-pessoa'
 import {
   ativarPlano,
@@ -37,8 +36,8 @@ import { MolduraCadastro, RodapeCadastro } from './MolduraCadastro'
 import { useCondicionantes, useSalvamento } from './usar-rascunho'
 
 const classeCabecalho =
-  'h-10 border-b px-(--e-2) text-left rotulo whitespace-nowrap first:pl-(--e-3)'
-const classeCelula = 'h-10 border-b px-(--e-2) align-middle first:pl-(--e-3)'
+  'h-10 border-b px-(--e-3) text-left rotulo-maiusculo whitespace-nowrap text-(--tinta-2)'
+const classeCelula = 'h-(--linha) border-b border-(--regra-leve) px-(--e-3) align-middle'
 
 /** Para o seletor: embaixo do nome vai o cargo; sem cargo, o papel. */
 function pessoaDoSeletor(membro: MembroAtivo): PessoaDoSeletor {
@@ -95,7 +94,7 @@ function ProximoPrazo({
   if (!proxima) return <span className="text-(--tinta-2)">Sem prazo</span>
   return (
     <span className="flex flex-col">
-      <span className="tabular-nums">{formatarDataCivil(proxima.data)}</span>
+      <span className="numero">{formatarDataCivil(proxima.data)}</span>
       {proxima.vencida ? <span className="text-xs text-(--atraso-texto)">Vencido</span> : null}
     </span>
   )
@@ -131,7 +130,7 @@ function Sucesso({ instrumento, ativado }: { instrumento: Instrumento; ativado: 
   const identificacao = [instrumento.tipoSigla, instrumento.numero].filter(Boolean).join(' ')
   return (
     <div role="status" className="flex flex-col items-center gap-(--e-3) py-(--e-16) text-center">
-      <Icone nome="circle-check" tamanho={24} className="text-(--link)" />
+      <Icone nome="circle-check" tamanho={32} className="text-(--ok-texto)" />
       <h2 className="titulo-tela">
         Plano ativado.{' '}
         {ativado.total === 1
@@ -288,8 +287,8 @@ function Responsaveis({
         <RodapeCadastro
           aviso={
             semResponsavel === 0
-              ? 'Todas as condicionantes têm responsável. Salvar ativa o plano.'
-              : `${String(semResponsavel)} sem responsável: aparecem com “Atribuir” na visão da equipe. Salvar ativa o plano.`
+              ? 'Todas com responsável. Salvar ativa o plano.'
+              : `${String(semResponsavel)} sem responsável. Salvar ativa o plano.`
           }
           voltarPara={`/licencas/${instrumento.id}/prazos`}
           aoContinuar={() => {
@@ -309,13 +308,13 @@ function Responsaveis({
             {mensagemDoErro(erro)}
           </MensagemSecao>
         ) : null}
-        <div className="flex items-baseline gap-(--e-2)">
+        <div className="flex flex-wrap items-baseline gap-x-(--e-3) gap-y-(--e-1)">
           <h2 className="titulo-secao">Condicionantes</h2>
-          <span className="text-xs text-(--tinta-2)">
+          <span className="corpo text-(--tinta-2) numero">
             {itens.length === 1 ? '1 condicionante' : `${String(itens.length)} condicionantes`}
           </span>
           {excecoes > 0 ? (
-            <span className="ml-auto text-xs text-(--tinta-2)">
+            <span className="ml-auto corpo text-(--tinta-2) numero">
               {excecoes === 1 ? '1 exceção' : `${String(excecoes)} exceções`}
             </span>
           ) : null}
@@ -330,13 +329,9 @@ function Responsaveis({
             }}
           />
         ) : itens.length === 0 ? (
-          <EstadoVazio
-            icone="users"
-            titulo="Nenhuma condicionante"
-            descricao="Volte ao passo 3 para cadastrar."
-          />
+          <EstadoVazio icone="users" titulo="Nenhuma condicionante" />
         ) : (
-          <div className="overflow-x-auto rounded-(--raio-painel) border bg-(--folha) shadow-cartao">
+          <div className="overflow-x-auto rounded-(--raio-painel) border bg-(--folha)">
             <table className="w-full border-collapse corpo">
               <thead>
                 <tr>
@@ -377,7 +372,7 @@ function Responsaveis({
                   )
                   return (
                     <tr key={item.id}>
-                      <td className={`${classeCelula} font-mono text-xs text-(--tinta-2)`}>
+                      <td className={`${classeCelula} corpo-medio text-(--tinta-2) numero`}>
                         {item.codigo}
                       </td>
                       <td className={classeCelula}>{item.titulo}</td>
@@ -399,7 +394,7 @@ function Responsaveis({
                             }}
                             className="min-w-0 flex-1"
                           />
-                          {excecao ? <Selo>Exceção</Selo> : null}
+                          {excecao ? <span className="rotulo">Exceção</span> : null}
                         </span>
                       </td>
                     </tr>

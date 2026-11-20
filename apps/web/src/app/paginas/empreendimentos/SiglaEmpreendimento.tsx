@@ -2,8 +2,8 @@ import { iniciais } from '@/lib/texto'
 import { cn } from '@/lib/utils'
 
 /**
- * Quadrado com as iniciais do empreendimento (Protótipos 08 e 09). Decorativo: o nome está
- * sempre escrito ao lado.
+ * Plaqueta discreta com as iniciais do empreendimento (Protótipos 08 e 09). Decorativa: o nome
+ * está sempre escrito ao lado. Fundo neutro e tinta secundária, para não pesar em toda linha.
  */
 export function SiglaEmpreendimento({
   nome,
@@ -18,7 +18,7 @@ export function SiglaEmpreendimento({
     <span
       aria-hidden="true"
       className={cn(
-        'inline-flex shrink-0 items-center justify-center rounded-(--raio) bg-(--acao) font-semibold text-(--acao-texto)',
+        'inline-flex shrink-0 items-center justify-center rounded-(--raio-mini) bg-(--neutro-fundo) font-[750] text-(--tinta-2) numero',
         grande ? 'size-12 text-base' : 'size-6 text-[10px]',
         className,
       )}

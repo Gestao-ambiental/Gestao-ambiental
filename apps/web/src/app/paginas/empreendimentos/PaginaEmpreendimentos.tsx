@@ -14,31 +14,32 @@ import { Pagina } from '@/app/paginas/Pagina'
 import { SeloSituacaoLicenca } from '@/app/paginas/licenca/SeloSituacaoLicenca'
 import { Carregando, EstadoErro, EstadoVazio } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
+import { classeCampo } from '@/components/ui/estilos-campo'
 import { Icone } from '@/components/ui/icone'
 import {
   TAMANHO_PAGINA_EMPREENDIMENTOS,
   listarEmpreendimentos,
   type EmpreendimentoNaLista,
 } from '@/lib/api/empreendimentos'
+import { cn } from '@/lib/utils'
 
 import { DialogoEmpreendimento } from './DialogoEmpreendimento'
-import { SiglaEmpreendimento } from './SiglaEmpreendimento'
 
 const classeCabecalho =
-  'h-10 border-b px-(--e-2) text-left rotulo whitespace-nowrap first:pl-(--e-3)'
-const classeCelula = 'h-10 border-b px-(--e-2) align-middle first:pl-(--e-3)'
+  'h-10 border-b px-(--e-3) text-left rotulo-maiusculo whitespace-nowrap text-(--tinta-2)'
+const classeCelula = 'h-(--linha) border-b border-(--regra-leve) px-(--e-3) align-middle'
 
-function Cliente({ nome }: { nome: string | null }) {
-  return nome ? <span>{nome}</span> : <span className="text-(--tinta-2)">Não informado</span>
-}
-
+/** Validade mais próxima com a sigla da licença dona dela (ex.: "04/04/2027 LAO"). */
 function ProximaValidade({ item }: { item: EmpreendimentoNaLista }) {
-  if (item.licencas.length === 0) return <span className="text-(--tinta-2)">Nenhuma licença</span>
+  if (item.licencas.length === 0) return <span className="text-(--tinta-3)">—</span>
   const validade = proximaValidade(item.licencas)
-  return validade ? (
-    <span>{formatarDataCivil(validade)}</span>
-  ) : (
-    <span className="text-(--tinta-2)">Não informada</span>
+  if (!validade) return <span className="text-(--tinta-2)">Não informada</span>
+  const sigla = item.licencas.find((l) => l.situacao === 'ativo' && l.validade === validade)?.sigla
+  return (
+    <span className="inline-flex items-baseline gap-(--e-2) whitespace-nowrap">
+      <span className="corpo-medio numero text-(--tinta)">{formatarDataCivil(validade)}</span>
+      {sigla ? <span className="text-xs text-(--tinta-2)">{sigla}</span> : null}
+    </span>
   )
 }
 
@@ -46,9 +47,14 @@ function Situacao({ item, hoje }: { item: EmpreendimentoNaLista; hoje: DataCivil
   return <SeloSituacaoLicenca situacao={situacaoMaisUrgente(item.licencas, hoje)} />
 }
 
+function contar(n: number, um: string, varios: string): string {
+  return `${String(n)} ${n === 1 ? um : varios}`
+}
+
 /**
  * /empreendimentos (Protótipo 08; EMP-01). Carteira da consultoria com busca por empreendimento
- * ou cliente, paginada no servidor. Qualquer membro ativo cadastra.
+ * ou cliente, paginada no servidor. O que se escaneia é a próxima validade e a situação mais
+ * urgente. Qualquer membro ativo cadastra.
  */
 export function PaginaEmpreendimentos() {
   const { atual } = useConsultoria()
@@ -80,6 +86,18 @@ export function PaginaEmpreendimentos() {
     void navegar(`/empreendimentos/${id}`)
   }
 
+  const botaoNovo = (
+    <Botao
+      aparencia="primario"
+      iconeAntes="plus"
+      onClick={() => {
+        setNovoAberto(true)
+      }}
+    >
+      Novo empreendimento
+    </Botao>
+  )
+
   let conteudo
   if (consulta.isPending) {
     conteudo = <Carregando rotulo="Carregando empreendimentos" linhas={5} />
@@ -95,18 +113,7 @@ export function PaginaEmpreendimentos() {
       <EstadoVazio
         icone="briefcase"
         titulo="Nenhum empreendimento ainda"
-        descricao="Cadastre os empreendimentos dos seus clientes para começar a registrar as licenças."
-        acaoPrincipal={
-          <Botao
-            aparencia="primario"
-            iconeAntes="plus"
-            onClick={() => {
-              setNovoAberto(true)
-            }}
-          >
-            Novo empreendimento
-          </Botao>
-        }
+        acaoPrincipal={botaoNovo}
       />
     )
   } else if (itens.length === 0) {
@@ -114,13 +121,22 @@ export function PaginaEmpreendimentos() {
       <EstadoVazio
         icone="search"
         titulo="Nenhum empreendimento encontrado"
-        descricao={`Nada com “${buscaAdiada}”. Confira a grafia ou busque pelo cliente.`}
+        descricao={`Nada com “${buscaAdiada}”.`}
+        acaoPrincipal={
+          <Botao
+            onClick={() => {
+              setBusca('')
+            }}
+          >
+            Limpar busca
+          </Botao>
+        }
       />
     )
   } else {
     conteudo = (
-      <div className="flex flex-col gap-(--e-2)">
-        <div className="hidden overflow-x-auto rounded-(--raio-painel) border bg-(--folha) shadow-cartao md:block">
+      <div className="flex flex-col overflow-hidden rounded-(--raio-painel) border bg-(--folha)">
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full border-collapse corpo">
             <thead>
               <tr>
@@ -128,19 +144,23 @@ export function PaginaEmpreendimentos() {
                   Empreendimento
                 </th>
                 <th scope="col" className={classeCabecalho}>
-                  Cliente contratante
-                </th>
-                <th scope="col" className={classeCabecalho}>
-                  Unidades
-                </th>
-                <th scope="col" className={classeCabecalho}>
-                  Licenças
-                </th>
-                <th scope="col" className={classeCabecalho}>
                   Próxima validade
                 </th>
-                <th scope="col" className={classeCabecalho}>
+                <th
+                  scope="col"
+                  className={classeCabecalho}
+                  title="A licença mais urgente do empreendimento"
+                >
                   Situação
+                </th>
+                <th scope="col" className={classeCabecalho}>
+                  Cliente contratante
+                </th>
+                <th scope="col" className={cn(classeCabecalho, 'text-right')}>
+                  Licenças
+                </th>
+                <th scope="col" className={cn(classeCabecalho, 'text-right')}>
+                  Unidades
                 </th>
               </tr>
             </thead>
@@ -153,119 +173,99 @@ export function PaginaEmpreendimentos() {
                     abrir(item.id)
                   }}
                 >
-                  <td className={classeCelula}>
-                    <span className="flex items-center gap-(--e-2)">
-                      <SiglaEmpreendimento nome={item.nome} />
-                      <Link
-                        to={`/empreendimentos/${item.id}`}
-                        className="corpo-medio text-(--tinta) hover:text-(--tinta)"
-                        onClick={(evento) => {
-                          evento.stopPropagation()
-                        }}
-                      >
-                        {item.nome}
-                      </Link>
-                    </span>
+                  <td className={cn(classeCelula, 'max-w-[320px]')}>
+                    <Link
+                      to={`/empreendimentos/${item.id}`}
+                      className="block truncate corpo-medio text-(--tinta) hover:text-(--tinta)"
+                      onClick={(evento) => {
+                        evento.stopPropagation()
+                      }}
+                    >
+                      {item.nome}
+                    </Link>
                   </td>
-                  <td className={classeCelula}>
-                    <Cliente nome={item.clienteNome} />
-                  </td>
-                  <td className={classeCelula}>{item.unidades}</td>
-                  <td className={classeCelula}>{item.licencas.length}</td>
                   <td className={classeCelula}>
                     <ProximaValidade item={item} />
                   </td>
                   <td className={classeCelula}>
                     <Situacao item={item} hoje={hoje} />
                   </td>
+                  <td className={cn(classeCelula, 'max-w-[280px] truncate')}>
+                    {item.clienteNome ?? <span className="text-(--tinta-2)">Não informado</span>}
+                  </td>
+                  <td className={cn(classeCelula, 'text-right numero')}>{item.licencas.length}</td>
+                  <td className={cn(classeCelula, 'text-right numero')}>{item.unidades}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <p className="border-t px-(--e-3) py-(--e-2) text-xs text-(--tinta-2)">
-            {filtrando
-              ? `${String(total)} ${total === 1 ? 'empreendimento encontrado' : 'empreendimentos encontrados'}`
-              : `${String(total)} ${total === 1 ? 'empreendimento' : 'empreendimentos'}`}
-          </p>
         </div>
 
-        <ul className="flex flex-col gap-(--e-2) md:hidden" aria-label="Empreendimentos">
+        <ul className="flex flex-col md:hidden" aria-label="Empreendimentos">
           {itens.map((item) => (
-            <li key={item.id}>
+            <li key={item.id} className="border-b border-(--regra-leve)">
               <Link
                 to={`/empreendimentos/${item.id}`}
-                className="flex flex-col gap-(--e-1) rounded-(--raio-painel) border bg-(--folha) shadow-cartao p-(--e-3) text-(--tinta) no-underline hover:bg-(--toque) hover:text-(--tinta) hover:no-underline"
+                className="flex min-h-(--controle-toque) items-center gap-(--e-3) px-(--e-4) py-(--e-3) text-(--tinta) no-underline hover:bg-(--toque) hover:text-(--tinta) hover:no-underline"
               >
-                <span className="flex items-center justify-between gap-(--e-2)">
-                  <Situacao item={item} hoje={hoje} />
-                  <Icone nome="chevron-right" className="text-(--icone)" />
-                </span>
-                <span className="flex items-center gap-(--e-2)">
-                  <SiglaEmpreendimento nome={item.nome} />
+                <span className="flex min-w-0 flex-1 flex-col gap-(--e-05)">
                   <span className="truncate corpo-medio">{item.nome}</span>
+                  <span className="flex flex-wrap items-center gap-x-(--e-3) gap-y-(--e-05)">
+                    <ProximaValidade item={item} />
+                    <Situacao item={item} hoje={hoje} />
+                  </span>
+                  <span className="truncate text-xs text-(--tinta-2)">
+                    {item.clienteNome ?? 'Cliente não informado'} ·{' '}
+                    {contar(item.licencas.length, 'licença', 'licenças')}
+                  </span>
                 </span>
-                <span className="text-xs text-(--tinta-2)">
-                  {item.clienteNome ?? 'Cliente não informado'} ·{' '}
-                  {item.unidades === 1 ? '1 unidade' : `${String(item.unidades)} unidades`} ·{' '}
-                  {item.licencas.length === 1
-                    ? '1 licença'
-                    : `${String(item.licencas.length)} licenças`}
-                </span>
+                <Icone nome="chevron-right" className="text-(--icone-2)" />
               </Link>
             </li>
           ))}
         </ul>
 
-        {consulta.hasNextPage ? (
-          <Botao
-            className="self-start"
-            disabled={consulta.isFetchingNextPage}
-            onClick={() => void consulta.fetchNextPage()}
-          >
-            Mostrar mais empreendimentos
-          </Botao>
-        ) : null}
-        <p className="text-xs text-(--tinta-2)">
-          Situação mostra a licença mais urgente do empreendimento.
-        </p>
+        <div className="flex items-center gap-(--e-2) px-(--e-4) py-(--e-2)">
+          <span className="flex-1 rotulo numero" aria-live="polite">
+            {filtrando
+              ? contar(total, 'empreendimento encontrado', 'empreendimentos encontrados')
+              : contar(total, 'empreendimento', 'empreendimentos')}
+          </span>
+          {consulta.hasNextPage ? (
+            <Botao
+              tamanho="compacto"
+              disabled={consulta.isFetchingNextPage}
+              onClick={() => void consulta.fetchNextPage()}
+            >
+              Mostrar mais
+            </Botao>
+          ) : null}
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col gap-(--e-4)">
-      <div className="flex flex-wrap items-center justify-between gap-(--e-2)">
-        <Pagina titulo="Empreendimentos">{null}</Pagina>
-        <div className="flex flex-wrap items-center gap-(--e-2)">
-          <label className="relative flex items-center">
-            <span className="sr-only">Buscar empreendimentos</span>
-            <Icone
-              nome="search"
-              className="pointer-events-none absolute left-(--e-2) text-(--icone-2)"
-            />
-            <input
-              type="search"
-              value={busca}
-              placeholder="Buscar empreendimento ou cliente"
-              onChange={(evento) => {
-                setBusca(evento.target.value)
-              }}
-              className="h-(--controle) w-[280px] max-w-full rounded-(--raio) border border-(--campo-borda) border-b-(--campo-borda) bg-(--campo) pr-(--e-2) pl-(--e-8) corpo text-(--tinta) outline-none transicao-estado focus:border-b-(--campo-borda-ativa) focus:shadow-[inset_0_-1px_0_0_var(--campo-borda-ativa)] focus:bg-(--campo-foco)"
-            />
-          </label>
-          <Botao
-            aparencia="primario"
-            iconeAntes="plus"
-            onClick={() => {
-              setNovoAberto(true)
+    <Pagina titulo="Empreendimentos" acao={botaoNovo}>
+      <div className="flex flex-col gap-(--e-3)">
+        <label className="relative flex w-full items-center md:w-[320px]">
+          <span className="sr-only">Buscar empreendimentos</span>
+          <Icone
+            nome="search"
+            className="pointer-events-none absolute left-(--e-3) text-(--icone-2)"
+          />
+          <input
+            type="search"
+            value={busca}
+            placeholder="Empreendimento ou cliente"
+            onChange={(evento) => {
+              setBusca(evento.target.value)
             }}
-          >
-            Novo empreendimento
-          </Botao>
-        </div>
+            className={cn(classeCampo, 'pl-(--e-8)')}
+          />
+        </label>
+        {conteudo}
       </div>
-
-      {conteudo}
 
       <DialogoEmpreendimento
         aberto={novoAberto}
@@ -277,6 +277,6 @@ export function PaginaEmpreendimentos() {
           })
         }}
       />
-    </div>
+    </Pagina>
   )
 }

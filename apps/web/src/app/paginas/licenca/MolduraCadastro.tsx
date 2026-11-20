@@ -1,5 +1,5 @@
 import { useContext, useEffect, type ReactNode } from 'react'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 
 import { ContextoConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { usePrenderTarefa } from '@/app/consultoria/tempo-ativo'
@@ -7,6 +7,7 @@ import { usePrenderTarefa } from '@/app/consultoria/tempo-ativo'
 import { Botao } from '@/components/ui/botao'
 import { Icone } from '@/components/ui/icone'
 import { MarcaGrama } from '@/components/ui/marca-grama'
+import { Trilha } from '@/components/ui/trilha'
 import { cn } from '@/lib/utils'
 
 import { PASSOS, type ChavePasso } from './passos'
@@ -51,6 +52,7 @@ export function MolduraCadastro({
   // Cadastro com IA (ADR-0027): o tempo ativo conta em todos os passos desta licença.
   usePrenderTarefa(instrumentoId ? `ia:${instrumentoId}` : null)
   const indiceAtual = PASSOS.findIndex((p) => p.chave === passo)
+  const navegar = useNavigate()
   const titulo = identificacao ? `Cadastrar licença · ${identificacao}` : 'Cadastrar licença'
 
   useEffect(() => {
@@ -69,7 +71,7 @@ export function MolduraCadastro({
         <MarcaGrama compactaNoCelular />
         <span aria-hidden="true" className="h-6 border-l" />
         <div className="flex min-w-0 flex-1 flex-col">
-          <h1 className="truncate corpo-medio text-(--tinta)">{titulo}</h1>
+          <h1 className="truncate titulo-secao text-(--tinta)">{titulo}</h1>
           {contexto ? <span className="truncate text-xs text-(--tinta-2)">{contexto}</span> : null}
         </div>
         {salvoEm ? (
@@ -82,73 +84,33 @@ export function MolduraCadastro({
           </span>
         ) : null}
         <Botao asChild>
-          <Link to={sairPara}>Sair e continuar depois</Link>
+          <Link to={sairPara}>
+            <span>
+              Sair<span className="max-md:sr-only"> e continuar depois</span>
+            </span>
+          </Link>
         </Botao>
       </header>
 
-      <nav
-        aria-label="Passos do cadastro"
-        className="shrink-0 overflow-x-auto border-b bg-(--folha)"
-      >
-        <ol className="flex min-w-max items-center gap-(--e-2) px-(--e-4) py-(--e-3) md:px-(--e-6)">
-          {PASSOS.map((item, indice) => {
-            const feito = indice < indiceAtual
-            const atual = indice === indiceAtual
-            const ultimo = indice === PASSOS.length - 1
-            const conteudo = (
-              <>
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    'inline-flex size-6 shrink-0 items-center justify-center rounded-(--raio) border rotulo',
-                    atual && 'border-(--acao) bg-(--acao) text-(--acao-texto)',
-                    feito && 'border-(--escolha) bg-(--escolha) text-(--link)',
-                    !atual && !feito && 'border-(--regra-forte) text-(--tinta-2)',
-                  )}
-                >
-                  {feito ? <Icone nome="check" tamanho={12} /> : indice + 1}
-                </span>
-                <span
-                  className={cn(
-                    'whitespace-nowrap',
-                    atual ? 'corpo-medio text-(--tinta)' : 'corpo',
-                    feito && 'text-(--tinta)',
-                    !atual && !feito && 'text-(--tinta-2)',
-                  )}
-                >
-                  {item.rotulo}
-                  {feito ? <span className="sr-only"> (concluído)</span> : null}
-                </span>
-              </>
-            )
-            return (
-              <li
-                key={item.chave}
-                className={cn('flex items-center gap-(--e-2)', ultimo ? 'flex-none' : 'flex-1')}
-              >
-                {feito && instrumentoId ? (
-                  <Link
-                    to={`/licencas/${instrumentoId}/${item.chave}`}
-                    className="flex items-center gap-(--e-2) no-underline hover:no-underline"
-                  >
-                    {conteudo}
-                  </Link>
-                ) : (
-                  <span
-                    className="flex items-center gap-(--e-2)"
-                    aria-current={atual ? 'step' : undefined}
-                  >
-                    {conteudo}
-                  </span>
-                )}
-                {ultimo ? null : (
-                  <span aria-hidden="true" className="h-px min-w-3 flex-1 bg-(--regra)" />
-                )}
-              </li>
-            )
-          })}
-        </ol>
-      </nav>
+      <div className="shrink-0 border-b bg-(--folha)">
+        <Trilha
+          rotulo="Passos do cadastro"
+          atual={indiceAtual}
+          passos={PASSOS.map((item) => ({ id: item.chave, titulo: item.rotulo }))}
+          aoEscolher={
+            instrumentoId
+              ? (indice) => {
+                  const destino = PASSOS[indice]
+                  if (destino) void navegar(`/licencas/${instrumentoId}/${destino.chave}`)
+                }
+              : undefined
+          }
+          // Só volta a passos já feitos; o avanço é pelo "Continuar", que valida e salva.
+          podeEscolher={(indice) => indice < indiceAtual}
+          compactaNoCelular
+          className="relative px-(--e-3) py-(--e-2) md:px-(--e-5)"
+        />
+      </div>
 
       <main id="conteudo" tabIndex={-1} className="min-h-0 flex-1 overflow-auto outline-none">
         {larga ? (
@@ -159,7 +121,7 @@ export function MolduraCadastro({
       </main>
 
       {rodape ? (
-        <footer className="flex shrink-0 flex-wrap items-center gap-(--e-3) border-t bg-(--folha) px-(--e-4) py-(--e-3) md:px-(--e-6)">
+        <footer className="flex shrink-0 flex-wrap items-center gap-x-(--e-3) gap-y-(--e-2) border-t bg-(--folha) px-(--e-4) py-(--e-3) md:px-(--e-6)">
           {rodape}
         </footer>
       ) : null}
@@ -194,7 +156,10 @@ export function RodapeCadastro({
           {salvando ? 'Salvando…' : 'Salvar rascunho'}
         </Botao>
       ) : null}
-      <span className="min-w-0 flex-1 text-xs text-(--tinta-2)" aria-live="polite">
+      <span
+        className="min-w-0 flex-1 corpo text-(--tinta-2) max-md:order-first max-md:basis-full"
+        aria-live="polite"
+      >
         {aviso}
       </span>
       {voltarPara ? (
@@ -204,9 +169,11 @@ export function RodapeCadastro({
       ) : null}
       <Botao
         aparencia="primario"
+        iconeDepois={continuando || rotuloContinuar !== 'Continuar' ? undefined : 'arrow-right'}
         disabled={!podeContinuar || continuando}
         aria-busy={continuando ? true : undefined}
         onClick={aoContinuar}
+        className="max-md:flex-1"
       >
         {continuando ? 'Salvando…' : rotuloContinuar}
       </Botao>

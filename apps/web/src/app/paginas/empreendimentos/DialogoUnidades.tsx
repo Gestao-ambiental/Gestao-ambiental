@@ -121,7 +121,6 @@ export function DialogoUnidades({
       }}
       titulo="Unidades"
       largura={560}
-      descricao="Filiais são unidades do mesmo empreendimento. Cada item pertence a uma unidade."
       acoes={
         <Botao
           onClick={() => {

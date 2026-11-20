@@ -19,6 +19,7 @@ import { CampoTexto } from '@/components/ui/campo-texto'
 import { DivisorRedimensionavel } from '@/components/ui/divisor-redimensionavel'
 import { Icone } from '@/components/ui/icone'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
+import { classeAreaTexto } from '@/components/ui/estilos-campo'
 import { Selo, type TomSelo } from '@/components/ui/selo'
 import {
   moverCondicionante,
@@ -112,12 +113,8 @@ function useLarguraLembrada(chave: string, padrao: number, minimo: number, maxim
   return [largura, mudar] as const
 }
 
-const classeCampo =
-  'w-full rounded-(--raio) border border-(--campo-borda) border-b-(--campo-borda) bg-(--campo) px-(--e-2) corpo text-(--tinta) outline-none focus:border-b-(--campo-borda-ativa) focus:shadow-[inset_0_-1px_0_0_var(--campo-borda-ativa)] focus:bg-(--campo-foco)'
-
 /** Texto fora de edição: caixa cinza de leitura, como no Protótipo 12. */
-const classeLeitura =
-  'read-only:border-transparent read-only:bg-(--chao) read-only:focus:border-b-(--campo-borda-ativa) focus:shadow-[inset_0_-1px_0_0_var(--campo-borda-ativa)]'
+const classeLeitura = 'read-only:border-transparent read-only:bg-(--chao)'
 
 type Edicao =
   | { tipo: 'existente'; id: string }
@@ -179,7 +176,7 @@ function LinhaNova({
         <Icone nome={agrupador ? 'folder' : 'file-text'} />
       </span>
       {codigo ? (
-        <span className="shrink-0 font-mono text-xs text-(--tinta-2)">{codigo}</span>
+        <span className="shrink-0 corpo-medio text-(--tinta-2) numero">{codigo}</span>
       ) : null}
       {nomeando ? (
         <input
@@ -205,7 +202,7 @@ function LinhaNova({
       ) : (
         <span className="flex min-w-0 flex-1 items-center gap-(--e-2)">
           <span className="truncate corpo-medio text-(--link)">{titulo}</span>
-          <Selo>Nova</Selo>
+          <span className="rotulo">Nova</span>
         </span>
       )}
     </li>
@@ -318,11 +315,11 @@ function Editor({
       className="flex flex-col gap-(--e-4)"
     >
       <div className="flex min-h-8 items-center gap-(--e-2)">
-        <span className="font-mono text-base text-(--tinta-2)">{codigo || '—'}</span>
+        <span className="titulo-secao text-(--tinta) numero">{codigo || '—'}</span>
         {item ? (
           <Selo tom={REVISAO[item.revisao].tom}>{REVISAO[item.revisao].texto}</Selo>
         ) : (
-          <Selo>Nova</Selo>
+          <span className="rotulo">Nova</span>
         )}
         <span className="flex-1" />
         {item && paginaFonte && fonte ? (
@@ -333,7 +330,7 @@ function Editor({
             onClick={() => {
               aoVerPagina(paginaFonte, trechosDoItem(item))
             }}
-            className="inline-flex cursor-pointer items-center gap-(--e-1) rounded-(--raio) text-xs text-(--link) outline-none hover:underline focus-visible:shadow-[0_0_0_2px_var(--foco)]"
+            className="inline-flex cursor-pointer items-center gap-(--e-1) rounded-(--raio) text-xs font-[650] text-(--ia) outline-none hover:underline focus-visible:shadow-[0_0_0_2px_var(--foco)]"
           >
             <Icone nome="sparkles" tamanho={12} className="text-(--ia)" />
             {fonte}
@@ -344,7 +341,7 @@ function Editor({
             icone="file-text"
             rotulo="Abrir documento"
             tamanho="compacto"
-            className="hidden xl:inline-flex"
+            className="md:hidden xl:inline-flex"
             onClick={aoAbrirPdf}
           />
         ) : null}
@@ -408,7 +405,7 @@ function Editor({
           onChange={(evento) => {
             setTexto(evento.target.value)
           }}
-          className={cn(classeCampo, classeLeitura, 'min-h-28 py-(--e-3) leading-6')}
+          className={cn(classeAreaTexto, classeLeitura, 'min-h-28 py-(--e-3) leading-6')}
         />
         {textoMudou ? (
           <p className="text-xs text-(--alerta-texto)">
@@ -422,7 +419,7 @@ function Editor({
           {NATUREZAS.map((n) => (
             <label
               key={n.chave}
-              className="flex cursor-pointer flex-col gap-0.5 rounded-(--raio-painel) border bg-(--folha) shadow-cartao px-(--e-3) py-(--e-2) transicao-estado has-checked:border-(--marca-linha) has-checked:bg-(--escolha) hover:bg-(--toque) has-disabled:cursor-not-allowed has-disabled:opacity-80"
+              className="flex cursor-pointer flex-col gap-0.5 rounded-(--raio) border border-(--regra-forte) bg-(--folha) px-(--e-3) py-(--e-2) transicao-estado has-checked:border-(--marca-linha) has-checked:bg-(--escolha) has-checked:shadow-[0_0_0_1px_var(--marca-linha)] hover:bg-(--toque) has-disabled:cursor-not-allowed has-disabled:opacity-80"
             >
               <span className="inline-flex items-center gap-(--e-2) corpo-medio">
                 <input
@@ -440,15 +437,10 @@ function Editor({
                 />
                 {n.rotulo}
               </span>
-              <span className="pl-6 text-xs text-(--tinta-2)">{n.descricao}</span>
+              <span className="pl-6 rotulo">{n.descricao}</span>
             </label>
           ))}
         </div>
-        <p className="flex gap-(--e-15) text-xs text-(--tinta-2)">
-          <Icone nome="info" tamanho={12} className="mt-0.5 shrink-0" />
-          Cláusula geral (“a empresa deve manter…”) é condição contínua ou informação geral: não
-          vira entrega periódica.
-        </p>
       </fieldset>
       <div className="flex flex-wrap items-center gap-(--e-2) border-t pt-(--e-4)">
         {!item ? (
@@ -842,8 +834,11 @@ function Condicionantes({
         >
           <div className="flex flex-col gap-(--e-2) border-b p-(--e-3)">
             <div className="flex items-center gap-(--e-1)">
-              <span className="flex-1 text-xs text-(--tinta-2)">
-                {revisados} de {itens.length} revisados
+              <span className="flex-1 corpo text-(--tinta-2)">
+                <span className="corpo-medio text-(--tinta) numero">
+                  {revisados} de {itens.length}
+                </span>{' '}
+                revisados
               </span>
               <div
                 role="toolbar"
@@ -888,7 +883,7 @@ function Condicionantes({
             <div
               role="group"
               aria-label="Filtrar condicionantes"
-              className="flex flex-wrap gap-(--e-1)"
+              className="-mb-(--e-3) flex gap-x-(--e-3) overflow-x-auto overflow-y-hidden [scrollbar-width:none]"
             >
               {(
                 [
@@ -906,13 +901,13 @@ function Condicionantes({
                     setFiltro(chave)
                   }}
                   className={cn(
-                    'inline-flex h-(--controle-mini) cursor-pointer items-center gap-(--e-1) rounded-(--raio) border px-(--e-2) text-xs transicao-estado',
+                    'inline-flex h-10 cursor-pointer shrink-0 items-center gap-(--e-1) border-b-[3px] text-xs font-[750] whitespace-nowrap transicao-estado max-md:h-(--controle-toque)',
                     filtro === chave
-                      ? 'border-(--marca-linha) bg-(--escolha) text-(--link)'
-                      : 'hover:bg-(--toque)',
+                      ? 'border-(--marca-linha) text-(--tinta)'
+                      : 'border-transparent text-(--tinta-2) hover:text-(--tinta)',
                   )}
                 >
-                  {rotulo} <span className="font-semibold">{contagem[chave]}</span>
+                  {rotulo} <span className="numero">{contagem[chave]}</span>
                 </button>
               ))}
             </div>
@@ -952,11 +947,7 @@ function Condicionantes({
             ) : consulta.isError ? (
               <EstadoErro aoTentarDeNovo={() => void consulta.refetch()} className="m-(--e-3)" />
             ) : itens.length === 0 && edicao?.tipo !== 'nova' ? (
-              <EstadoVazio
-                icone="file-check"
-                titulo="Adicione a primeira condicionante"
-                descricao="Use obrigação para o que tem entrega e agrupador para títulos. Com um agrupador selecionado, o novo item entra dentro dele."
-              />
+              <EstadoVazio icone="file-check" titulo="Adicione a primeira condicionante" />
             ) : (
               <ul aria-label="Condicionantes">
                 {edicao?.tipo === 'nova' && posicaoDaNova === -1 ? linhaNova : null}
@@ -1033,7 +1024,7 @@ function Condicionantes({
                         }}
                         className="flex min-w-0 flex-1 cursor-pointer gap-(--e-2) py-(--e-2) pr-(--e-3) text-left outline-none focus-visible:shadow-[inset_0_0_0_2px_var(--foco)]"
                       >
-                        <span className="shrink-0 pt-0.5 font-mono text-xs text-(--tinta-2)">
+                        <span className="shrink-0 corpo-medio text-(--tinta-2) numero">
                           {item.codigo}
                         </span>
                         <span className="flex min-w-0 flex-1 flex-col gap-(--e-1)">
@@ -1047,9 +1038,9 @@ function Condicionantes({
                           >
                             {item.titulo}
                           </span>
-                          <span className="flex gap-(--e-1)">
+                          <span className="flex items-center gap-(--e-2)">
                             {item.natureza !== 'agrupador' && natureza ? (
-                              <Selo>{natureza.curto}</Selo>
+                              <span className="text-xs text-(--tinta-2)">{natureza.curto}</span>
                             ) : null}
                             <Selo tom={REVISAO[item.revisao].tom}>
                               {REVISAO[item.revisao].texto}
@@ -1142,7 +1133,7 @@ function Condicionantes({
                   icone="file-text"
                   rotulo="Abrir documento"
                   tamanho="compacto"
-                  className="absolute top-0 right-0 hidden xl:inline-flex"
+                  className="absolute top-0 right-0 md:hidden xl:inline-flex"
                   onClick={() => {
                     setPdfAberto(true)
                   }}
@@ -1154,11 +1145,6 @@ function Condicionantes({
                   itens.length === 0
                     ? 'Adicione a primeira condicionante'
                     : 'Escolha um item da lista'
-                }
-                descricao={
-                  itens.length === 0
-                    ? 'Copie o texto literal da licença. Depois escolha a natureza: só obrigação vira prazo.'
-                    : 'Ou adicione outro item.'
                 }
                 acaoPrincipal={
                   <div className="flex flex-wrap justify-center gap-(--e-2)">{botoesVazio}</div>
@@ -1188,7 +1174,7 @@ function Condicionantes({
           aoFechar={() => {
             setPdfAberto(false)
           }}
-          className="hidden min-h-[480px] min-w-[320px] flex-[0_1_var(--largura-pdf)] xl:flex"
+          className="flex h-[70dvh] min-h-[420px] border-t max-md:border-l-0 md:hidden xl:flex xl:h-auto xl:min-h-[480px] xl:min-w-[320px] xl:flex-[0_1_var(--largura-pdf)] xl:border-t-0"
         />
       </div>
     </MolduraCadastro>

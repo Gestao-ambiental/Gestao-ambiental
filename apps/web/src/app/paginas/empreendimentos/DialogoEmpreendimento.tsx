@@ -236,12 +236,10 @@ export function DialogoEmpreendimento({
           <CampoTexto
             rotulo="Primeira unidade"
             placeholder="Nome ou endereço"
-            ajuda="Você pode adicionar unidades depois. Filiais são unidades do mesmo empreendimento."
             disabled={salvando}
             {...register('primeiraUnidade')}
           />
         )}
-        <p className="text-xs text-(--tinta-2)">Só o nome é obrigatório.</p>
       </form>
     </Dialogo>
   )

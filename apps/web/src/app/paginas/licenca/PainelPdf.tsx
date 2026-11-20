@@ -66,7 +66,6 @@ export function PainelPdf({
             <EstadoVazio
               icone="file-text"
               titulo="Sem PDF anexado"
-              descricao="Anexe o PDF para conferir o texto da licença enquanto preenche."
               acaoPrincipal={
                 <Botao asChild>
                   <Link to={`/licencas/${instrumento.id}/documento`}>Anexar PDF</Link>

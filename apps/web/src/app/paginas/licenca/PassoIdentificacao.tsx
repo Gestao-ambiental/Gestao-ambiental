@@ -15,6 +15,7 @@ import { Botao } from '@/components/ui/botao'
 import type { PedidoDePagina } from '@/components/pdf/VisualizadorPdf'
 import { CampoData } from '@/components/ui/campo-data'
 import { CampoTexto } from '@/components/ui/campo-texto'
+import { classeCampo } from '@/components/ui/estilos-campo'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { listarUnidades } from '@/lib/api/empreendimentos'
 import { obterUltimaExtracao, type PropostaDeIdentificacao } from '@/lib/api/extracao'
@@ -78,9 +79,6 @@ const MARCOS: {
   },
 ]
 
-const classeSelect =
-  'h-(--controle) w-full rounded-(--raio) border border-(--campo-borda) border-b-(--campo-borda) bg-(--campo) px-(--e-2) corpo text-(--tinta) transicao-estado outline-none focus:border-b-(--campo-borda-ativa) focus:shadow-[inset_0_-1px_0_0_var(--campo-borda-ativa)] aria-invalid:border-(--atraso)'
-
 /** Rótulo de select com a marca da IA à direita, como no CampoTexto. */
 function RotuloComMarca({
   htmlFor,
@@ -103,7 +101,7 @@ function RotuloComMarca({
 
 function ErroDoCampo({ id, children }: { id: string; children: ReactNode }) {
   return (
-    <span id={id} className="text-xs text-(--atraso-texto)">
+    <span id={id} className="rotulo text-(--atraso-texto)">
       {children}
     </span>
   )
@@ -314,14 +312,14 @@ function Identificacao({
         />
       }
     >
-      <div className="grid h-full min-h-0 lg:grid-cols-[minmax(0,9fr)_minmax(0,11fr)]">
+      <div className="grid lg:h-full lg:min-h-0 lg:grid-cols-[minmax(0,9fr)_minmax(0,11fr)]">
         <form
           noValidate
           aria-label="Identificação da licença"
           onSubmit={(evento) => {
             evento.preventDefault()
           }}
-          className="flex min-h-0 flex-col gap-(--e-6) overflow-auto bg-(--folha) p-(--e-4) md:p-(--e-6)"
+          className="flex flex-col gap-(--e-8) bg-(--folha) p-(--e-4) md:p-(--e-6) lg:min-h-0 lg:overflow-auto"
         >
           {mostrarFaltas ? (
             <div ref={avisoRef} tabIndex={-1} className="outline-none">
@@ -368,7 +366,7 @@ function Identificacao({
               </RotuloComMarca>
               <select
                 id="tipo-instrumento"
-                className={classeSelect}
+                className={classeCampo}
                 aria-invalid={mostrarFaltas && faltaTipo ? true : undefined}
                 aria-describedby={mostrarFaltas && faltaTipo ? 'erro-tipo' : undefined}
                 value={criandoTipo ? NOVO_TIPO : (dados.tipoId ?? '')}
@@ -470,7 +468,7 @@ function Identificacao({
               <RotuloComMarca htmlFor="unidade">Unidade</RotuloComMarca>
               <select
                 id="unidade"
-                className={classeSelect}
+                className={classeCampo}
                 value={dados.unidadeId}
                 onChange={(evento) => {
                   mudar('unidadeId', evento.target.value)
@@ -512,22 +510,24 @@ function Identificacao({
             </div>
             <fieldset
               aria-describedby={mostrarFaltas && faltaMarco ? 'erro-marco' : undefined}
-              className={cn(
-                'flex flex-col gap-(--e-2) rounded-(--raio) border px-(--e-4) pt-(--e-2) pb-(--e-3)',
-                mostrarFaltas && faltaMarco && 'border-(--atraso)',
-              )}
+              className="flex flex-col gap-(--e-2) border-t border-(--regra-leve) pt-(--e-3)"
             >
-              <legend className="px-(--e-1) rotulo">Marco usado para os prazos *</legend>
+              <legend
+                className={cn(
+                  'float-left mb-(--e-2) w-full rotulo',
+                  mostrarFaltas && faltaMarco && 'text-(--atraso-texto)',
+                )}
+              >
+                Marco usado para os prazos *
+              </legend>
               {marcosPreenchidos.length === 0 ? (
-                <p className="text-xs text-(--tinta-2)">
-                  Preencha ao menos uma data para escolher.
-                </p>
+                <p className="corpo text-(--tinta-3)">Preencha ao menos uma data para escolher.</p>
               ) : (
                 <div className="flex flex-wrap gap-x-(--e-6) gap-y-(--e-2)">
                   {marcosPreenchidos.map((m) => (
                     <label
                       key={m.chave}
-                      className="group inline-flex cursor-pointer items-center gap-(--e-2) corpo text-(--tinta)"
+                      className="group inline-flex min-h-(--controle) cursor-pointer items-center gap-(--e-2) corpo text-(--tinta) max-md:min-h-(--controle-toque)"
                     >
                       <input
                         type="radio"
@@ -542,7 +542,8 @@ function Identificacao({
                         aria-hidden="true"
                         className="inline-flex size-4 shrink-0 items-center justify-center rounded-(--raio-redondo) border border-(--campo-borda) bg-(--campo) transicao-estado group-hover:border-(--regra-forte) group-hover:bg-(--toque) peer-checked:border-(--marca-linha) peer-checked:bg-(--acao) peer-focus-visible:shadow-[0_0_0_2px_var(--foco)] after:size-1.5 after:rounded-(--raio-redondo) after:bg-(--acao-texto) after:opacity-0 peer-checked:after:opacity-100"
                       />
-                      {m.rotulo} · {formatarDataCivil(dados[m.campo])}
+                      {m.rotulo} ·{' '}
+                      <span className="numero">{formatarDataCivil(dados[m.campo])}</span>
                     </label>
                   ))}
                 </div>
@@ -571,7 +572,7 @@ function Identificacao({
             />
             <div className="flex flex-col gap-(--e-1) sm:pt-(--e-6)">
               <span className="rotulo">Limite de protocolo</span>
-              <span className="corpo">
+              <span className={cn('corpo', limite ? 'numero text-(--tinta)' : 'text-(--tinta-3)')}>
                 {limite ??
                   (!dados.validade
                     ? 'Depende da validade'
@@ -585,7 +586,7 @@ function Identificacao({
         <PainelPdf
           instrumento={instrumento}
           paginaPedida={paginaPdf}
-          className="hidden min-h-[480px] lg:flex"
+          className="h-[70dvh] min-h-[420px] border-t max-lg:border-l-0 lg:h-auto lg:min-h-[480px] lg:border-t-0"
         />
       </div>
     </MolduraCadastro>

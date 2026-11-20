@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 
 import { Botao } from '@/components/ui/botao'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
-import { Selo } from '@/components/ui/selo'
+import { Icone } from '@/components/ui/icone'
 import {
   EXTRACAO_ABANDONADA_MS,
   FALHA_DEFINITIVA,
@@ -13,6 +13,7 @@ import {
   type MotivoDaFalha,
 } from '@/lib/api/extracao'
 import { mensagemDoErro } from '@/lib/erros'
+import { cn } from '@/lib/utils'
 
 export type Metodo = 'ia' | 'manual'
 
@@ -30,16 +31,19 @@ export function ComoCadastrar({
   /** Por que a IA não está disponível agora; nulo = disponível. */
   semIa: string | null
 }) {
+  const classeOpcao =
+    'flex flex-col gap-(--e-1) rounded-(--raio) border border-(--regra-forte) bg-(--folha) px-(--e-4) py-(--e-3) transicao-estado'
+  const classeEscolhivel =
+    'cursor-pointer hover:bg-(--toque) has-checked:border-(--marca-linha) has-checked:bg-(--escolha) has-checked:shadow-[0_0_0_1px_var(--marca-linha)] has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-(--foco)'
   return (
-    <fieldset className="flex flex-col gap-(--e-2)">
-      <legend className="mb-(--e-2) titulo-secao">Como cadastrar</legend>
+    <fieldset className="flex flex-col gap-(--e-3)">
+      <legend className="mb-(--e-3) titulo-secao">Como cadastrar</legend>
       <div className="grid gap-(--e-3) sm:grid-cols-2">
         <label
-          className={
-            semIa
-              ? 'flex cursor-not-allowed flex-col gap-(--e-1) rounded-(--raio-painel) border bg-(--folha) shadow-cartao p-(--e-4) opacity-70'
-              : 'flex cursor-pointer flex-col gap-(--e-1) rounded-(--raio-painel) border bg-(--folha) shadow-cartao p-(--e-4) transicao-estado has-checked:border-(--marca-linha) has-checked:bg-(--escolha) hover:bg-(--toque)'
-          }
+          className={cn(
+            classeOpcao,
+            semIa ? 'cursor-not-allowed border-(--regra) bg-(--off)' : classeEscolhivel,
+          )}
         >
           <span className="inline-flex items-center gap-(--e-2) corpo-medio">
             <input
@@ -52,21 +56,24 @@ export function ComoCadastrar({
               }}
               aria-labelledby="como-ia"
               aria-describedby="ia-descricao"
-              className="size-4 accent-(--marca-linha)"
+              className="size-[18px] shrink-0 accent-(--marca-linha) outline-none"
             />
-            <span id="como-ia" className={semIa ? 'text-(--tinta-off)' : undefined}>
+            <span id="como-ia" className={semIa ? 'text-(--tinta-off)' : 'text-(--tinta)'}>
               Extrair com IA
             </span>
-            <Selo tom="revisao" className="ml-auto">
-              IA
-            </Selo>
+            <Icone
+              nome="sparkles"
+              className={cn('ml-auto', semIa ? 'text-(--tinta-off)' : 'text-(--ia)')}
+            />
           </span>
-          <span id="ia-descricao" className="text-xs text-(--tinta-2)">
-            {semIa ??
-              'A IA propõe identificação e condicionantes a partir do PDF. Nada vale sem a sua revisão. PDF com texto até 10 MB.'}
+          <span
+            id="ia-descricao"
+            className={cn('pl-[26px] corpo', semIa ? 'text-(--alerta-texto)' : 'text-(--tinta-2)')}
+          >
+            {semIa ?? 'Propõe identificação e condicionantes. Você revisa.'}
           </span>
         </label>
-        <label className="flex cursor-pointer flex-col gap-(--e-1) rounded-(--raio-painel) border bg-(--folha) shadow-cartao p-(--e-4) transicao-estado has-checked:border-(--marca-linha) has-checked:bg-(--escolha) hover:bg-(--toque)">
+        <label className={cn(classeOpcao, classeEscolhivel)}>
           <span className="inline-flex items-center gap-(--e-2) corpo-medio">
             <input
               type="radio"
@@ -77,13 +84,15 @@ export function ComoCadastrar({
               }}
               aria-labelledby="como-manual"
               aria-describedby="manual-descricao"
-              className="size-4 accent-(--marca-linha)"
+              className="size-[18px] shrink-0 accent-(--marca-linha) outline-none"
             />
-            <span id="como-manual">Cadastrar manualmente</span>
+            <span id="como-manual" className="text-(--tinta)">
+              Cadastrar manualmente
+            </span>
+            <Icone nome="pencil" className="ml-auto text-(--icone-2)" />
           </span>
-          <span id="manual-descricao" className="text-xs text-(--tinta-2)">
-            Você preenche a identificação e as condicionantes. Sempre disponível; aceita PDF até 25
-            MB ou nenhum.
+          <span id="manual-descricao" className="pl-[26px] corpo text-(--tinta-2)">
+            Com ou sem PDF.
           </span>
         </label>
       </div>
@@ -175,13 +184,17 @@ export function PainelExtracao({
     return (
       <section
         aria-labelledby="titulo-extraindo"
-        className="flex flex-col gap-(--e-3) rounded-(--raio-painel) border bg-(--folha) shadow-cartao p-(--e-4)"
+        className="flex flex-col gap-(--e-3) rounded-(--raio-painel) border bg-(--folha) p-(--e-4)"
       >
         <div className="flex items-center justify-between gap-(--e-2)">
-          <h2 id="titulo-extraindo" className="titulo-secao">
+          <h2
+            id="titulo-extraindo"
+            className="inline-flex items-center gap-(--e-2) titulo-secao text-(--tinta)"
+          >
+            <Icone nome="sparkles" className="text-(--ia)" />
             Extraindo com IA
           </h2>
-          <span className="text-xs text-(--tinta-2)" aria-live="off">
+          <span className="corpo-medio text-(--tinta-2) numero" aria-live="off">
             {decorridos} s de até 2 min
           </span>
         </div>
@@ -194,17 +207,14 @@ export function PainelExtracao({
           aria-valuetext={`${String(decorridos)} segundos de até 2 minutos`}
           className="h-1 overflow-hidden rounded-full bg-(--regra)"
         >
-          <div className="h-full bg-(--tinta)" style={{ width: `${String(percentual)}%` }} />
+          <div className="h-full bg-(--ia)" style={{ width: `${String(percentual)}%` }} />
         </div>
         <p className="corpo" role="status">
           A IA está lendo o PDF e propondo a identificação e as condicionantes.
         </p>
         <div className="flex flex-wrap items-center gap-(--e-3)">
           <Botao onClick={aoManual}>Cancelar e cadastrar manualmente</Botao>
-          <span className="text-xs text-(--tinta-2)">
-            Pode sair desta tela: a extração continua e o rascunho fica salvo. O que a IA propuser
-            entra como pendente de revisão.
-          </span>
+          <span className="corpo text-(--tinta-2)">Pode sair: a extração continua.</span>
         </div>
       </section>
     )

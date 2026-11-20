@@ -23,6 +23,8 @@ import { Botao } from '@/components/ui/botao'
 import { BotaoIcone } from '@/components/ui/botao-icone'
 import { CampoData } from '@/components/ui/campo-data'
 import { CampoTexto } from '@/components/ui/campo-texto'
+import { classeAreaTexto, classeCampo } from '@/components/ui/estilos-campo'
+import { Icone } from '@/components/ui/icone'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { Selo } from '@/components/ui/selo'
 import {
@@ -41,8 +43,8 @@ import { MolduraCadastro, RodapeCadastro } from './MolduraCadastro'
 import { useCondicionantes, useSalvamento } from './usar-rascunho'
 
 const classeCabecalho =
-  'h-10 border-b px-(--e-2) text-left rotulo whitespace-nowrap first:pl-(--e-3)'
-const classeCelula = 'h-10 border-b px-(--e-2) align-middle first:pl-(--e-3)'
+  'h-10 border-b px-(--e-3) text-left rotulo-maiusculo whitespace-nowrap text-(--tinta-2)'
+const classeCelula = 'h-(--linha) border-b border-(--regra-leve) px-(--e-3) py-(--e-1) align-middle'
 
 function dataDoMarco(instrumento: Instrumento): DataCivil | null {
   switch (instrumento.marco) {
@@ -228,38 +230,29 @@ function PainelPrazo({
               onChange={(evento) => {
                 setFonte(evento.target.value)
               }}
-              className="w-full rounded-(--raio) border border-(--campo-borda) border-b-(--campo-borda) bg-(--campo) px-(--e-2) py-(--e-2) corpo outline-none focus:border-b-(--campo-borda-ativa) focus:shadow-[inset_0_-1px_0_0_var(--campo-borda-ativa)]"
+              placeholder="Trecho do documento ou norma que define o prazo"
+              className={cn(classeAreaTexto, 'min-h-20')}
             />
-            <span className="text-xs text-(--tinta-2)">
-              Trecho do documento ou norma que define o prazo. Sem base no documento, o prazo fica
-              pendente: nada é inventado.
-            </span>
           </label>
 
           <fieldset className="flex flex-col gap-(--e-2)">
             <legend className="mb-(--e-1) rotulo">Recorrência</legend>
             <div className="flex flex-wrap gap-(--e-1)">
               {RECORRENCIAS.map((r) => (
-                <button
+                <Botao
                   key={r}
-                  type="button"
-                  aria-pressed={recorrencia === r}
+                  selecionado={recorrencia === r}
+                  className="px-(--e-3)"
                   onClick={() => {
                     setRecorrencia(r)
                   }}
-                  className={cn(
-                    'h-(--controle) cursor-pointer rounded-(--raio) border px-(--e-2) corpo transicao-estado',
-                    recorrencia === r
-                      ? 'border-(--marca-linha) bg-(--escolha) text-(--link)'
-                      : 'hover:bg-(--toque)',
-                  )}
                 >
                   {nomeDaRecorrencia(r)}
-                </button>
+                </Botao>
               ))}
             </div>
             {recorrencia === 'personalizada' ? (
-              <div className="grid grid-cols-[1fr_120px] gap-(--e-3) rounded-(--raio) border p-(--e-3)">
+              <div className="grid grid-cols-[1fr_120px] gap-(--e-3) pt-(--e-1)">
                 <label className="flex flex-col gap-(--e-1)">
                   <span className="rotulo">Unidade</span>
                   <select
@@ -267,7 +260,7 @@ function PainelPrazo({
                     onChange={(evento) => {
                       setUnidade(evento.target.value as UnidadeCiclo)
                     }}
-                    className="h-(--controle) rounded-(--raio) border border-(--campo-borda) border-b-(--campo-borda) bg-(--campo) px-(--e-2) corpo"
+                    className={classeCampo}
                   >
                     <option value="mes">Mês</option>
                     <option value="dia">Dia</option>
@@ -291,7 +284,6 @@ function PainelPrazo({
                 <CampoData
                   rotulo="Data de referência"
                   hoje={hojeNoFuso(new Date(), fuso)}
-                  ajuda="De onde a recorrência começa a contar."
                   valor={referencia}
                   aoMudar={setReferencia}
                 />
@@ -341,26 +333,26 @@ function PainelPrazo({
                 {problema ? (
                   <MensagemSecao tom="atencao">{problema}</MensagemSecao>
                 ) : simulacao.length === 0 ? (
-                  <p className="text-xs text-(--tinta-2)">Informe as datas para ver a simulação.</p>
+                  <p className="corpo text-(--tinta-3)">Informe as datas.</p>
                 ) : (
                   <>
                     <ol
-                      className="grid grid-cols-2 gap-(--e-2) sm:grid-cols-3"
+                      className="grid grid-cols-2 gap-x-(--e-4) gap-y-(--e-2) sm:grid-cols-3"
                       aria-label="Próximas datas"
                     >
                       {simulacao.slice(0, 6).map((d) => (
                         <li
                           key={d.ciclo}
-                          className="flex flex-col rounded-(--raio) border px-(--e-2) py-(--e-15)"
+                          className="flex flex-col border-l-[3px] border-(--regra-forte) pl-(--e-2)"
                         >
-                          <span className="corpo-medio">{formatarDataCivil(d.prazo)}</span>
+                          <span className="corpo-medio numero">{formatarDataCivil(d.prazo)}</span>
                           <span className="text-xs text-(--tinta-2)">
                             {nomeDoDiaDaSemana(d.prazo)}
                           </span>
                         </li>
                       ))}
                     </ol>
-                    <span className="text-xs text-(--tinta-2)">
+                    <span className="corpo text-(--tinta-2) numero">
                       {simulacao.length === 1
                         ? '1 entrega'
                         : `${String(simulacao.length)} entregas`}
@@ -510,10 +502,13 @@ function Prazos({
         <div
           className={cn('min-h-0 overflow-auto p-(--e-4) md:p-(--e-6)', item && 'hidden lg:block')}
         >
-          <div className="mb-(--e-3) flex items-baseline gap-(--e-2)">
+          <div className="mb-(--e-3) flex flex-wrap items-baseline gap-x-(--e-3) gap-y-(--e-1)">
             <h2 className="titulo-secao">Prazos das obrigações</h2>
-            <span className="text-xs text-(--tinta-2)">
-              {confirmados} de {obrigacoes.length} confirmados
+            <span className="corpo text-(--tinta-2)">
+              <span className="numero-contagem text-(--tinta)">
+                {confirmados}/{obrigacoes.length}
+              </span>{' '}
+              confirmados
             </span>
           </div>
           {confirmarRapido.isError ? (
@@ -526,13 +521,9 @@ function Prazos({
           ) : consulta.isError ? (
             <EstadoErro aoTentarDeNovo={() => void consulta.refetch()} />
           ) : obrigacoes.length === 0 ? (
-            <EstadoVazio
-              icone="calendar"
-              titulo="Nenhuma obrigação"
-              descricao="Só obrigação vira prazo. Condições contínuas e informações gerais não geram entregas."
-            />
+            <EstadoVazio icone="calendar" titulo="Nenhuma obrigação" />
           ) : (
-            <div className="overflow-x-auto rounded-(--raio-painel) border bg-(--folha) shadow-cartao">
+            <div className="overflow-x-auto rounded-(--raio-painel) border bg-(--folha)">
               <table className="w-full border-collapse corpo">
                 <thead>
                   <tr>
@@ -585,7 +576,7 @@ function Prazos({
                         o.id === aberto && 'bg-(--escolha) hover:bg-(--escolha)',
                       )}
                     >
-                      <td className={`${classeCelula} font-mono text-xs text-(--tinta-2)`}>
+                      <td className={`${classeCelula} corpo-medio text-(--tinta-2) numero`}>
                         {o.codigo}
                       </td>
                       <td className={classeCelula}>
@@ -611,7 +602,8 @@ function Prazos({
                                 intervalo: dados.intervalo,
                               })}
                               {o.recorrencia ? null : (
-                                <span className="text-xs text-(--tinta-2)">
+                                <span className="inline-flex items-center gap-(--e-1) text-xs text-(--ia)">
+                                  <Icone nome="sparkles" tamanho={12} />
                                   sugerida pela leitura da IA
                                 </span>
                               )}
@@ -625,15 +617,15 @@ function Prazos({
                           if (!primeira) return <span className="text-(--tinta-2)">—</span>
                           return (
                             <span className="flex flex-col">
-                              {formatarDataCivil(primeira)}
+                              <span className="numero">{formatarDataCivil(primeira)}</span>
                               {o.primeiraData ? null : (
-                                <span className="text-xs text-(--tinta-2)">sugerida</span>
+                                <span className="text-xs text-(--ia)">sugerida</span>
                               )}
                             </span>
                           )
                         })()}
                       </td>
-                      <td className={`${classeCelula} whitespace-nowrap`}>
+                      <td className={`${classeCelula} whitespace-nowrap numero`}>
                         {o.confirmadoEm && o.confirmadoPor
                           ? `${o.confirmadoPor} · ${formatarInstanteComoData(o.confirmadoEm, fuso).slice(0, 5)}`
                           : '—'}
@@ -644,7 +636,6 @@ function Prazos({
                         ) : propostos.has(o.id) ? (
                           <Botao
                             tamanho="compacto"
-                            aparencia="primario"
                             iconeAntes="check"
                             aria-label={`Confirmar prazo de ${o.codigo || o.titulo}`}
                             disabled={confirmarRapido.isPending}

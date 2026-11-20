@@ -1,40 +1,15 @@
-import { cn } from '@/lib/utils'
-
 import { PASSOS } from './passos'
 
 /**
- * Linha de progresso do cadastro de um rascunho: um ponto por passo, ligados por traço; os
- * concluídos e o atual preenchidos, os seguintes vazados; ao lado, o nome do passo atual. O texto
- * acessível diz o passo por extenso, sem depender da cor.
+ * Onde o rascunho parou, em texto curto ("Parou em Identificação"). O texto acessível diz o passo
+ * por extenso ("Rascunho no passo 2 de 5: Identificação").
  */
 export function ProgressoCadastro({ passo }: { passo: number }) {
   const atual = PASSOS[passo] ?? PASSOS[0]
   return (
-    <span className="inline-flex items-center gap-(--e-2)">
-      <span aria-hidden="true" className="inline-flex items-center">
-        {PASSOS.map((item, indice) => (
-          <span key={item.chave} className="inline-flex items-center">
-            {indice > 0 ? (
-              <span
-                className={cn(
-                  'h-0.5 w-3',
-                  indice <= passo ? 'bg-(--marca-linha)' : 'bg-(--regra-forte)',
-                )}
-              />
-            ) : null}
-            <span
-              className={cn(
-                'size-2.5 shrink-0 rounded-full border-2',
-                indice < passo && 'border-(--marca-linha) bg-(--marca-linha)',
-                indice === passo && 'border-(--marca-linha) bg-(--folha)',
-                indice > passo && 'border-(--regra-forte) bg-(--folha)',
-              )}
-            />
-          </span>
-        ))}
-      </span>
-      <span className="text-xs whitespace-nowrap text-(--tinta)" aria-hidden="true">
-        {atual.rotulo}
+    <span className="inline-flex items-center whitespace-nowrap">
+      <span className="text-(--tinta-2)" aria-hidden="true">
+        Parou em <span className="corpo-medio text-(--tinta)">{atual.rotulo}</span>
       </span>
       <span className="sr-only">
         Rascunho no passo {passo + 1} de {PASSOS.length}: {atual.rotulo}

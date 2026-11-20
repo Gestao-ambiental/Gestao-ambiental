@@ -6,6 +6,7 @@ import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { useTarefas } from '@/app/consultoria/tempo-ativo'
 import { Carregando, EstadoErro } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
+import { classeCampo } from '@/components/ui/estilos-campo'
 import { Icone } from '@/components/ui/icone'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { listarEmpreendimentos, listarUnidades } from '@/lib/api/empreendimentos'
@@ -33,9 +34,6 @@ const PROBLEMAS: Record<ProblemaDoPdf, string> = {
   grande_demais: 'O PDF passa de 25 MB.',
   vazio: 'O arquivo está vazio.',
 }
-
-const classeSelect =
-  'h-(--controle) w-full rounded-(--raio) border border-(--campo-borda) border-b-(--campo-borda) bg-(--campo) px-(--e-2) corpo text-(--tinta) outline-none focus:border-b-(--campo-borda-ativa) focus:shadow-[inset_0_-1px_0_0_var(--campo-borda-ativa)]'
 
 function tamanhoLegivel(bytes: number): string {
   return bytes >= 1024 * 1024
@@ -91,13 +89,13 @@ function EnvioPdf({
         }}
         onDrop={soltar}
         className={cn(
-          'flex flex-col items-center gap-(--e-2) rounded-(--raio) border border-dashed p-(--e-6) text-center transicao-estado',
+          'flex flex-col items-center gap-(--e-2) rounded-(--raio-painel) border-2 border-dashed px-(--e-4) py-(--e-6) text-center transicao-estado',
           arrastando
             ? 'border-(--marca-linha) bg-(--escolha)'
             : 'border-(--regra-forte) bg-(--folha)',
         )}
       >
-        <Icone nome="file-text" tamanho={24} className="text-(--icone)" />
+        <Icone nome={nome ? 'file-check' : 'file-plus'} tamanho={32} className="text-(--tinta-3)" />
         {nome ? (
           <p className="corpo">
             <span className="corpo-medio">{nome}</span>
@@ -106,7 +104,7 @@ function EnvioPdf({
             ) : null}
           </p>
         ) : (
-          <p className="corpo">Arraste o PDF aqui ou</p>
+          <p className="titulo-secao text-(--tinta)">Arraste o PDF aqui</p>
         )}
         <Botao
           aria-describedby={ajudaId}
@@ -128,9 +126,8 @@ function EnvioPdf({
             evento.target.value = ''
           }}
         />
-        <p id={ajudaId} className="text-xs text-(--tinta-2)">
-          PDF até 25 MB.{' '}
-          {atual && !arquivo ? 'Trocar cria uma versão nova; a anterior fica guardada.' : ''}
+        <p id={ajudaId} className="rotulo">
+          PDF até 25 MB
         </p>
       </div>
       {problema ? (
@@ -264,7 +261,7 @@ function DocumentoNovo() {
               <label className="flex flex-col gap-(--e-1)">
                 <span className="rotulo">Empreendimento</span>
                 <select
-                  className={classeSelect}
+                  className={classeCampo}
                   value={empreendimentoId}
                   onChange={(evento) => {
                     setEmpreendimentoId(evento.target.value)
@@ -282,7 +279,7 @@ function DocumentoNovo() {
               <label className="flex flex-col gap-(--e-1)">
                 <span className="rotulo">Unidade</span>
                 <select
-                  className={classeSelect}
+                  className={classeCampo}
                   value={unidadeEscolhida}
                   disabled={!empreendimentoId || unidades.isPending}
                   onChange={(evento) => {
