@@ -1,10 +1,12 @@
 // Orquestração da Edge Function conferir-relatorio (ADR-0036, fatia 3), com as dependências
 // injetadas para testar com `deno test` sem rede. O index.ts só liga as dependências reais.
 //
-// 1. Com o JWT de quem pediu: iniciar_conferencia_ia confere quem pode pedir, o plano e o tipo do
-//    arquivo, e devolve o caminho e o contexto do cadastro. Repetir não chama a IA de novo.
-// 2. Baixa o arquivo (PDF ou .docx) e extrai o texto. Roda as regras fixas, que valem mesmo quando
-//    a IA não roda (plano sem IA, sem cota, provedor fora).
+// 1. Com o JWT de quem pediu: iniciar_conferencia_ia (evidência anexada) ou
+//    iniciar_conferencia_relatorio (versão do relatório escrito no Grama, ADR-0040) confere quem pode
+//    pedir e o plano, e devolve o arquivo ou o conteúdo e o contexto do cadastro. Repetir não chama a
+//    IA de novo.
+// 2. Extrai o texto (PDF, .docx ou o JSON do editor). Roda as regras fixas, que valem mesmo quando a
+//    IA não roda (plano sem IA, sem cota, provedor fora).
 // 3. Reserva a cota (somada com a extração) e chama o provedor pelo adapter, com tempo limite.
 // 4. Com a service role: grava os apontamentos (regras + IA) ou a falha com os das regras.
 
@@ -18,6 +20,7 @@ import {
   MIME_PDF,
   MINIMO_CARACTERES,
   regrasFixas,
+  textoDoDocumento,
   validarConferencia,
   VERSAO_PROMPT_CONFERENCIA,
 } from './conferencia.ts'
@@ -55,6 +58,7 @@ function responder(corpo: Record<string, unknown>, status = 200): Response {
 
 export const ERROS_DO_INICIO_DA_CONFERENCIA: Record<string, number> = {
   sem_permissao: 403,
+  versao_inexistente: 409,
   consultoria_somente_leitura: 403,
 }
 
@@ -69,6 +73,8 @@ export interface InicioDaConferencia {
   mime: string | null
   tamanho_bytes: number | null
   contexto: ContextoDaConferencia | null
+  /** Só no relatório escrito no Grama: o JSON do editor da versão pedida. */
+  conteudo?: unknown
 }
 
 export interface RespostaDoBanco<T> {
@@ -91,6 +97,13 @@ export interface DependenciasDaConferencia {
     autorizacao: string,
     conferenciaId: string,
     evidenciaId: string,
+  ) => Promise<RespostaDoBanco<InicioDaConferencia>>
+  /** RPC iniciar_conferencia_relatorio com o JWT de quem pediu (relatório escrito no Grama). */
+  iniciarRelatorio: (
+    autorizacao: string,
+    conferenciaId: string,
+    relatorioId: string,
+    versao: number,
   ) => Promise<RespostaDoBanco<InicioDaConferencia>>
   baixar: (autorizacao: string, caminho: string) => Promise<RespostaDoBanco<Uint8Array>>
   /** Texto de cada página do PDF; lança se não abre. */
@@ -135,21 +148,33 @@ export function criarTratadorDaConferencia(deps: DependenciasDaConferencia) {
 
     let conferenciaId = ''
     let evidenciaId = ''
+    let relatorioId = ''
+    let versao = 0
     try {
-      const corpo = (await pedido.json()) as { conferenciaId?: unknown; evidenciaId?: unknown }
+      const corpo = (await pedido.json()) as {
+        conferenciaId?: unknown
+        evidenciaId?: unknown
+        relatorioId?: unknown
+        versao?: unknown
+      }
       conferenciaId = typeof corpo.conferenciaId === 'string' ? corpo.conferenciaId : ''
       evidenciaId = typeof corpo.evidenciaId === 'string' ? corpo.evidenciaId : ''
+      relatorioId = typeof corpo.relatorioId === 'string' ? corpo.relatorioId : ''
+      versao = typeof corpo.versao === 'number' && Number.isInteger(corpo.versao) ? corpo.versao : 0
     } catch {
       // corpo inválido: cai na conferência abaixo
     }
-    if (!UUID.test(conferenciaId) || !UUID.test(evidenciaId)) {
+    const doRelatorio = UUID.test(relatorioId) && versao > 0
+    if (!UUID.test(conferenciaId) || (!UUID.test(evidenciaId) && !doRelatorio)) {
       return responder({ erro: 'pedido_invalido' }, 400)
     }
 
     const inicio = agora()
     let resposta: RespostaDoBanco<InicioDaConferencia>
     try {
-      resposta = await deps.iniciar(autorizacao, conferenciaId, evidenciaId)
+      resposta = doRelatorio
+        ? await deps.iniciarRelatorio(autorizacao, conferenciaId, relatorioId, versao)
+        : await deps.iniciar(autorizacao, conferenciaId, evidenciaId)
     } catch {
       return responder({ erro: 'erro_interno' }, 500)
     }
@@ -164,9 +189,14 @@ export function criarTratadorDaConferencia(deps: DependenciasDaConferencia) {
     if (!alvo) return responder({ erro: 'erro_interno' }, 500)
     const id = alvo.conferencia_id
     if (!alvo.nova) return responder({ situacao: alvo.situacao, motivo: alvo.motivo })
-    if (!alvo.caminho || !alvo.mime || !alvo.contexto)
+    if (
+      !alvo.contexto ||
+      (!doRelatorio && (!alvo.caminho || !alvo.mime)) ||
+      (doRelatorio && !alvo.conteudo)
+    )
       return responder({ erro: 'erro_interno' }, 500)
     const contexto = alvo.contexto
+    const alvoDoLog = doRelatorio ? { relatorioId, versao } : { evidenciaId }
 
     const modelo = deps.env('OPENROUTER_MODEL') || MODELO_PADRAO
     let regras: Apontamento[] = []
@@ -176,7 +206,7 @@ export function criarTratadorDaConferencia(deps: DependenciasDaConferencia) {
       consumo?: Consumo,
       detalhe: string | null = null,
     ): Promise<Response> {
-      registrar(JSON.stringify({ conferenciaId: id, evidenciaId, motivo, detalhe, modelo }))
+      registrar(JSON.stringify({ conferenciaId: id, ...alvoDoLog, motivo, detalhe, modelo }))
       let erro: string | null
       try {
         const registro = await deps.falhar(id, motivo, detalhe, regras, {
@@ -201,25 +231,29 @@ export function criarTratadorDaConferencia(deps: DependenciasDaConferencia) {
     }
 
     try {
-      if ((alvo.tamanho_bytes ?? 0) > LIMITE_ARQUIVO_BYTES)
-        return await falhar('arquivo_grande_demais')
-
-      const arquivo = await deps.baixar(autorizacao, alvo.caminho)
-      if (!arquivo.dados) {
-        return await falhar(
-          'erro_interno',
-          undefined,
-          `storage: ${(arquivo.erro ?? 'sem arquivo').slice(0, 200)}`,
-        )
-      }
-
       let texto: string
-      try {
-        if (alvo.mime === MIME_PDF) texto = (await deps.lerPdf(arquivo.dados)).join('\n\n')
-        else if (alvo.mime === MIME_DOCX) texto = await deps.lerDocx(arquivo.dados)
-        else return await falhar('arquivo_sem_texto')
-      } catch {
-        return await falhar('arquivo_sem_texto')
+      if (alvo.conteudo) {
+        texto = textoDoDocumento(alvo.conteudo)
+      } else {
+        if ((alvo.tamanho_bytes ?? 0) > LIMITE_ARQUIVO_BYTES)
+          return await falhar('arquivo_grande_demais')
+
+        const arquivo = await deps.baixar(autorizacao, alvo.caminho ?? '')
+        if (!arquivo.dados) {
+          return await falhar(
+            'erro_interno',
+            undefined,
+            `storage: ${(arquivo.erro ?? 'sem arquivo').slice(0, 200)}`,
+          )
+        }
+
+        try {
+          if (alvo.mime === MIME_PDF) texto = (await deps.lerPdf(arquivo.dados)).join('\n\n')
+          else if (alvo.mime === MIME_DOCX) texto = await deps.lerDocx(arquivo.dados)
+          else return await falhar('arquivo_sem_texto')
+        } catch {
+          return await falhar('arquivo_sem_texto')
+        }
       }
       if (caracteresVisiveis(texto) < MINIMO_CARACTERES) return await falhar('arquivo_sem_texto')
 

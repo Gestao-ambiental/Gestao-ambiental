@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 
 import {
   type Apontamento,
+  textoDoDocumento,
   type ContextoDaConferencia,
   juntarApontamentos,
   regrasFixas,
@@ -107,6 +108,7 @@ Deno.test('juntarApontamentos: regra primeiro, sem repetir o que a IA também ac
     trecho: '[Unidade]',
     problema: 'Campo do modelo sem preencher.',
     sugestao: '',
+    substituicao: '',
   }
   const repetido: Apontamento = { ...regra, origem: 'ia', problema: 'Placeholder.' }
   const novo: Apontamento = {
@@ -117,4 +119,87 @@ Deno.test('juntarApontamentos: regra primeiro, sem repetir o que a IA também ac
     problema: 'Período confuso.',
   }
   assert.deepEqual(juntarApontamentos([regra], [repetido, novo]), [regra, novo])
+})
+
+Deno.test('textoDoDocumento: blocos, listas, tabela e quebra de linha', () => {
+  const texto = textoDoDocumento({
+    type: 'doc',
+    content: [
+      { type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text: 'Relatório' }] },
+      {
+        type: 'paragraph',
+        content: [
+          { type: 'text', text: 'Licença ' },
+          { type: 'text', text: 'LAO 4821/2023', marks: [{ type: 'bold' }] },
+          { type: 'hardBreak' },
+          { type: 'text', text: 'IMA' },
+        ],
+      },
+      {
+        type: 'orderedList',
+        content: [
+          {
+            type: 'listItem',
+            content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Coleta' }] }],
+          },
+          {
+            type: 'listItem',
+            content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Análise' }] }],
+          },
+        ],
+      },
+      {
+        type: 'table',
+        content: [
+          {
+            type: 'tableRow',
+            content: [
+              {
+                type: 'tableCell',
+                content: [{ type: 'paragraph', content: [{ type: 'text', text: 'DBO' }] }],
+              },
+              {
+                type: 'tableCell',
+                content: [{ type: 'paragraph', content: [{ type: 'text', text: '12 mg/L' }] }],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  })
+  assert.equal(
+    texto,
+    ['Relatório', 'Licença LAO 4821/2023', 'IMA', '1. Coleta', '2. Análise', 'DBO | 12 mg/L'].join(
+      '\n',
+    ),
+  )
+})
+
+Deno.test('validarConferencia: guarda a substituição só quando há trecho', () => {
+  const resultado = validarConferencia({
+    resumo: '',
+    apontamentos: [
+      {
+        categoria: 'licenca',
+        gravidade: 'corrigir',
+        trecho: 'LAO 4812/2023',
+        problema: 'Trocado.',
+        sugestao: '',
+        substituicao: 'LAO 4821/2023',
+      },
+      {
+        categoria: 'datas',
+        gravidade: 'verificar',
+        trecho: '',
+        problema: 'Falta o período.',
+        sugestao: '',
+        substituicao: 'x',
+      },
+    ],
+  })
+  assert.deepEqual(
+    resultado?.apontamentos.map((a) => a.substituicao),
+    ['LAO 4821/2023', ''],
+  )
 })

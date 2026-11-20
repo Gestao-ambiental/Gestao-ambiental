@@ -57,6 +57,20 @@ Deno.serve(
       if (error) return { dados: null, erro: error.message }
       return { dados: (data as InicioDaConferencia[] | null)?.[0] ?? null, erro: null }
     },
+    async iniciarRelatorio(autorizacao, conferenciaId, relatorioId, versao) {
+      const { data, error } = await clienteDoUsuario(autorizacao).rpc(
+        'iniciar_conferencia_relatorio',
+        { p_id: conferenciaId, p_relatorio_id: relatorioId, p_versao: versao },
+      )
+      if (error) return { dados: null, erro: error.message }
+      const linha = (
+        data as Omit<InicioDaConferencia, 'caminho' | 'mime' | 'tamanho_bytes'>[] | null
+      )?.[0]
+      return {
+        dados: linha ? { ...linha, caminho: null, mime: null, tamanho_bytes: null } : null,
+        erro: null,
+      }
+    },
     async baixar(autorizacao, caminho) {
       const { data, error } = await clienteDoUsuario(autorizacao)
         .storage.from('arquivos')

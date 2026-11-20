@@ -25,6 +25,33 @@ const INICIO: InicioDaConferencia = {
   contexto: CONTEXTO,
 }
 
+const DOCUMENTO = {
+  type: 'doc',
+  content: [
+    {
+      type: 'paragraph',
+      content: [
+        {
+          type: 'text',
+          text:
+            'Relatório semestral de efluentes da Metalúrgica Rio Cubatão, condicionante 4.1 da ' +
+            'LAO 4812/2023. As coletas foram feitas em 10/11/2026 e os resultados estão abaixo. '.repeat(
+              3,
+            ),
+        },
+      ],
+    },
+  ],
+}
+
+const INICIO_RELATORIO: InicioDaConferencia = {
+  ...INICIO,
+  caminho: null,
+  mime: null,
+  tamanho_bytes: null,
+  conteudo: DOCUMENTO,
+}
+
 const TEXTO =
   'Relatório semestral de efluentes da Metalúrgica Rio Cubatão, CNPJ 11.222.333/0001-81, ' +
   'referente à condicionante 4.1 da LAO 4821/2023 emitida pelo IMA. ' +
@@ -32,6 +59,7 @@ const TEXTO =
   'As coletas foram feitas em 10/11/2026 e os resultados estão na tabela abaixo. '.repeat(3)
 
 interface Chamadas {
+  baixar: number
   reservar: number
   conferir: number
   concluido: { resumo: string; apontamentos: Apontamento[] } | null
@@ -41,13 +69,14 @@ interface Chamadas {
 function montar(
   extra: {
     inicio?: RespostaDoBanco<InicioDaConferencia>
+    inicioRelatorio?: RespostaDoBanco<InicioDaConferencia>
     texto?: string
     reserva?: RespostaDoBanco<boolean>
     provedor?: () => Promise<Resultado>
     chave?: string | undefined
   } = {},
 ) {
-  const chamadas: Chamadas = { reservar: 0, conferir: 0, concluido: null, falhas: [] }
+  const chamadas: Chamadas = { baixar: 0, reservar: 0, conferir: 0, concluido: null, falhas: [] }
   const deps: DependenciasDaConferencia = {
     env: (nome) =>
       nome === 'OPENROUTER_API_KEY'
@@ -56,7 +85,12 @@ function montar(
           : 'chave-de-teste'
         : undefined,
     iniciar: () => Promise.resolve(extra.inicio ?? { dados: INICIO, erro: null }),
-    baixar: () => Promise.resolve({ dados: new Uint8Array([1]), erro: null }),
+    iniciarRelatorio: () =>
+      Promise.resolve(extra.inicioRelatorio ?? { dados: INICIO_RELATORIO, erro: null }),
+    baixar: () => {
+      chamadas.baixar++
+      return Promise.resolve({ dados: new Uint8Array([1]), erro: null })
+    },
     lerPdf: () => Promise.resolve([extra.texto ?? TEXTO]),
     lerDocx: () => Promise.resolve(extra.texto ?? TEXTO),
     reservar: () => {
@@ -82,6 +116,7 @@ function montar(
                     trecho: '',
                     problema: 'Período de referência não informado.',
                     sugestao: 'Informe o semestre.',
+                    substituicao: '',
                   },
                 ],
               },
@@ -207,4 +242,23 @@ Deno.test('sem a chave do provedor: configuracao_ausente, com as regras gravadas
   const { tratar, chamadas } = montar({ chave: undefined })
   assert.equal((await (await tratar(pedido())).json()).motivo, 'configuracao_ausente')
   assert.equal(chamadas.falhas[0]?.apontamentos.length, 1)
+})
+
+Deno.test('relatório escrito no Grama: lê o texto do JSON, sem baixar arquivo', async () => {
+  const { tratar, chamadas } = montar()
+  const resposta = await tratar(
+    pedido({ conferenciaId: CONFERENCIA, relatorioId: EVIDENCIA, versao: 3 }),
+  )
+  assert.deepEqual(await resposta.json(), { situacao: 'concluida', apontamentos: 1 })
+  assert.equal(chamadas.baixar, 0)
+  assert.equal(chamadas.reservar, 1)
+  assert.equal(chamadas.concluido?.apontamentos[0]?.origem, 'ia')
+})
+
+Deno.test('relatório: versão inválida no pedido é recusada', async () => {
+  const { tratar } = montar()
+  const resposta = await tratar(
+    pedido({ conferenciaId: CONFERENCIA, relatorioId: EVIDENCIA, versao: 0 }),
+  )
+  assert.equal(resposta.status, 400)
 })
