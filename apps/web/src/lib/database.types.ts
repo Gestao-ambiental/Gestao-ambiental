@@ -5,7 +5,57 @@ export type Database = {
   
   "public": {
           Tables: {
-            "acesso_suporte": {
+            "acao_legal": {
+                  Row: {
+                    "avaliacao_id": string | null,"concluida_em": string | null,"concluida_por": string | null,"consultoria_id": string,"criado_em": string,"criado_por": string,"descricao": string,"id": string,"prazo": string,"requisito_id": string,"responsavel_id": string | null,"row_version": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "avaliacao_id"?: string | null,"concluida_em"?: string | null,"concluida_por"?: string | null,"consultoria_id": string,"criado_em"?: string,"criado_por": string,"descricao": string,"id"?: string,"prazo": string,"requisito_id": string,"responsavel_id"?: string | null,"row_version"?: number
+                  }
+                  Update: {
+                    "avaliacao_id"?: string | null,"concluida_em"?: string | null,"concluida_por"?: string | null,"consultoria_id"?: string,"criado_em"?: string,"criado_por"?: string,"descricao"?: string,"id"?: string,"prazo"?: string,"requisito_id"?: string,"responsavel_id"?: string | null,"row_version"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "acao_legal_avaliacao_fk"
+      columns: ["consultoria_id","avaliacao_id"]
+isOneToOne: false
+      referencedRelation: "avaliacao_conformidade"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "acao_legal_concluida_por_fk"
+      columns: ["consultoria_id","concluida_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "acao_legal_consultoria_id_fkey"
+      columns: ["consultoria_id"]
+isOneToOne: false
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "acao_legal_criado_por_fk"
+      columns: ["consultoria_id","criado_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "acao_legal_requisito_fk"
+      columns: ["consultoria_id","requisito_id"]
+isOneToOne: false
+      referencedRelation: "requisito_legal"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "acao_legal_responsavel_fk"
+      columns: ["consultoria_id","responsavel_id"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    }
+                  ]
+                },"acesso_suporte": {
                   Row: {
                     "aberto_por": string | null,"autorizado_por": string | null,"categoria": string | null,"consultoria_id": string,"fim_previsto": string,"id": string,"inicio": string,"modo": string,"motivo": string | null
                   }
@@ -247,6 +297,38 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "consultoria"
       referencedColumns: ["id"]
+    }
+                  ]
+                },"avaliacao_conformidade": {
+                  Row: {
+                    "avaliada_em": string,"avaliada_por": string,"consultoria_id": string,"criado_em": string,"id": string,"norma_versao_id": string | null,"observacao": string | null,"requisito_id": string,"resultado": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "avaliada_em": string,"avaliada_por": string,"consultoria_id": string,"criado_em"?: string,"id"?: string,"norma_versao_id"?: string | null,"observacao"?: string | null,"requisito_id": string,"resultado": string
+                  }
+                  Update: {
+                    "avaliada_em"?: string,"avaliada_por"?: string,"consultoria_id"?: string,"criado_em"?: string,"id"?: string,"norma_versao_id"?: string | null,"observacao"?: string | null,"requisito_id"?: string,"resultado"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "avaliacao_conformidade_avaliada_por_fk"
+      columns: ["consultoria_id","avaliada_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "avaliacao_conformidade_consultoria_id_fkey"
+      columns: ["consultoria_id"]
+isOneToOne: false
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "avaliacao_conformidade_requisito_fk"
+      columns: ["consultoria_id","requisito_id"]
+isOneToOne: false
+      referencedRelation: "requisito_legal"
+      referencedColumns: ["consultoria_id","id"]
     }
                   ]
                 },"aviso_norma": {
@@ -874,6 +956,44 @@ isOneToOne: false
       columns: ["consultoria_id","documento_versao_id"]
 isOneToOne: false
       referencedRelation: "documento_versao"
+      referencedColumns: ["consultoria_id","id"]
+    }
+                  ]
+                },"evidencia_de_requisito": {
+                  Row: {
+                    "consultoria_id": string,"documento_id": string,"enviada_em": string,"enviada_por": string,"id": string,"requisito_id": string,"validade": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "consultoria_id": string,"documento_id": string,"enviada_em"?: string,"enviada_por": string,"id"?: string,"requisito_id": string,"validade"?: string | null
+                  }
+                  Update: {
+                    "consultoria_id"?: string,"documento_id"?: string,"enviada_em"?: string,"enviada_por"?: string,"id"?: string,"requisito_id"?: string,"validade"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "evidencia_de_requisito_consultoria_id_fkey"
+      columns: ["consultoria_id"]
+isOneToOne: false
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "evidencia_de_requisito_documento_fk"
+      columns: ["consultoria_id","documento_id"]
+isOneToOne: true
+      referencedRelation: "documento"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "evidencia_de_requisito_enviada_por_fk"
+      columns: ["consultoria_id","enviada_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "evidencia_de_requisito_requisito_fk"
+      columns: ["consultoria_id","requisito_id"]
+isOneToOne: false
+      referencedRelation: "requisito_legal"
       referencedColumns: ["consultoria_id","id"]
     }
                   ]
@@ -1752,6 +1872,50 @@ isOneToOne: false
       columns: ["consultoria_id","relatorio_id"]
 isOneToOne: false
       referencedRelation: "relatorio"
+      referencedColumns: ["consultoria_id","id"]
+    }
+                  ]
+                },"requisito_legal": {
+                  Row: {
+                    "aplicavel": boolean | null,"consultoria_id": string,"criado_em": string,"criado_por": string,"decidido_em": string | null,"decidido_por": string | null,"descricao": string | null,"dispositivo": string | null,"empreendimento_id": string,"id": string,"justificativa": string | null,"motivo": Json | null,"norma_id": string,"origem": string,"responsavel_id": string | null,"row_version": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "aplicavel"?: boolean | null,"consultoria_id": string,"criado_em"?: string,"criado_por": string,"decidido_em"?: string | null,"decidido_por"?: string | null,"descricao"?: string | null,"dispositivo"?: string | null,"empreendimento_id": string,"id"?: string,"justificativa"?: string | null,"motivo"?: Json | null,"norma_id": string,"origem": string,"responsavel_id"?: string | null,"row_version"?: number
+                  }
+                  Update: {
+                    "aplicavel"?: boolean | null,"consultoria_id"?: string,"criado_em"?: string,"criado_por"?: string,"decidido_em"?: string | null,"decidido_por"?: string | null,"descricao"?: string | null,"dispositivo"?: string | null,"empreendimento_id"?: string,"id"?: string,"justificativa"?: string | null,"motivo"?: Json | null,"norma_id"?: string,"origem"?: string,"responsavel_id"?: string | null,"row_version"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "requisito_legal_consultoria_id_fkey"
+      columns: ["consultoria_id"]
+isOneToOne: false
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "requisito_legal_criado_por_fk"
+      columns: ["consultoria_id","criado_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "requisito_legal_decidido_por_fk"
+      columns: ["consultoria_id","decidido_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "requisito_legal_empreendimento_fk"
+      columns: ["consultoria_id","empreendimento_id"]
+isOneToOne: false
+      referencedRelation: "empreendimento"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "requisito_legal_responsavel_fk"
+      columns: ["consultoria_id","responsavel_id"]
+isOneToOne: false
+      referencedRelation: "membro"
       referencedColumns: ["consultoria_id","id"]
     }
                   ]
@@ -2661,7 +2825,7 @@ isOneToOne: false
                            },
 "listar_mudancas_do_empreendimento":
 { Args: { "p_consultoria_id": string,"p_desde": string,"p_empreendimento_id": string }; Returns: {
-              "licencas": string[],"mudanca_id": string,"norma_id": string,"norma_titulo": string,"publicada_em": string,"resumo": Json,"tipo_mudanca": string,"url_oficial": string
+              "licencas": (string)[],"mudanca_id": string,"norma_id": string,"norma_titulo": string,"publicada_em": string,"resumo": Json,"tipo_mudanca": string,"url_oficial": string
             }[]
                            },
 "listar_orcamentos":
@@ -2742,7 +2906,7 @@ isOneToOne: false
 { Args: { "p_id": string,"p_para": string,"p_row_version": number }; Returns: number
                            },
 "normas_por_chave":
-{ Args: { "p_chaves": string[] }; Returns: {
+{ Args: { "p_chaves": (string)[] }; Returns: {
               "chave": string,"id": string,"situacao_na_fonte": string,"titulo": string
             }[]
                            },
