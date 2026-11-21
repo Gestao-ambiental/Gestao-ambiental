@@ -260,8 +260,12 @@ describe('nova importação', () => {
       },
       expect.objectContaining({ numero_linha: 3 }) as unknown,
     ])
-    // Nada de CPF sai do aparelho.
-    expect(JSON.stringify(falso.cliente.rpc.mock.calls)).not.toMatch(/529|111\.444/)
+    // Nada de CPF sai do aparelho: nem formatado nem só os dígitos (o id aleatório da importação
+    // pode conter "529", então a busca é pelo CPF inteiro).
+    const enviado = JSON.stringify(falso.cliente.rpc.mock.calls)
+    for (const cpf of ['529.982.247-25', '52998224725', '111.444.777-35', '11144477735']) {
+      expect(enviado).not.toContain(cpf)
+    }
   })
 
   it('planilha sem cabeçalho com CPF na 1ª linha, ou CPF no nome do arquivo: nada disso sai', async () => {
@@ -302,7 +306,9 @@ describe('nova importação', () => {
       'criar_importacao',
       expect.objectContaining({ p_nome_arquivo: 'carteira.xlsx' }) as unknown,
     )
-    expect(JSON.stringify(falso.cliente.rpc.mock.calls)).not.toMatch(/529/)
+    const enviado = JSON.stringify(falso.cliente.rpc.mock.calls)
+    expect(enviado).not.toContain('529.982.247-25')
+    expect(enviado).not.toContain('52998224725')
   })
 
   it('lembra o último mapeamento da consultoria', async () => {
