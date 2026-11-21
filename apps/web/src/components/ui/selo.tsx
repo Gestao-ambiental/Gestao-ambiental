@@ -33,7 +33,7 @@ const TONS: Record<TomSelo, { texto: string; marca: string }> = {
     marca: 'h-2 w-2 rounded-full border-[1.5px] border-current border-r-transparent',
   },
   revisao: { texto: 'text-(--revisao-texto)', marca: 'size-[7px] rotate-45 bg-current' },
-  // Sem verde-escuro: palavra em tinta com a marca cheia em lima e aro de tinta.
+  // Palavra no verde do ok com a marca cheia no destaque e aro de tinta.
   sucesso: {
     texto: 'text-(--ok-texto)',
     marca: 'size-2.5 rounded-full bg-(--sinal) shadow-[0_0_0_1.5px_var(--tinta)]',

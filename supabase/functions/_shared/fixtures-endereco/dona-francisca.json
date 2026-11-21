@@ -1,0 +1,101 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "street",
+        "name": "Rua Dona Francisca",
+        "district": "Centro",
+        "city": "Joinville",
+        "state": "Santa Catarina",
+        "postcode": "89204-020",
+        "countrycode": "BR"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-48.8427503, -26.2959148]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "street",
+        "name": "Rua Dona Francisca",
+        "district": "Zona Industrial Norte",
+        "city": "Joinville",
+        "state": "Santa Catarina",
+        "postcode": "89219-530",
+        "countrycode": "BR"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-48.8673443, -26.258642]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "street",
+        "name": "Rua Dona Francisca",
+        "district": "Zona Industrial Norte",
+        "city": "Joinville",
+        "state": "Santa Catarina",
+        "postcode": "89219-600",
+        "countrycode": "BR"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-48.885502, -26.2447749]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "street",
+        "name": "Rua Dona Francisca",
+        "district": "Zona Industrial Norte",
+        "city": "Joinville",
+        "state": "Santa Catarina",
+        "postcode": "89293-270",
+        "countrycode": "BR"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-48.8824528, -26.2458491]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "street",
+        "name": "Rua Dona Francisca",
+        "district": "Zona Industrial Norte",
+        "city": "Joinville",
+        "state": "Santa Catarina",
+        "postcode": "82219-530",
+        "countrycode": "BR"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-48.8732502, -26.2518921]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "street",
+        "name": "Rua Dona Francisca",
+        "district": "Zona Industrial Norte",
+        "city": "Joinville",
+        "state": "Santa Catarina",
+        "postcode": "89218-100",
+        "countrycode": "BR"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-48.8621048, -26.2634428]
+      }
+    }
+  ]
+}

@@ -6,7 +6,7 @@ begin;
 
 set local timezone to 'America/Sao_Paulo';
 
-select plan(36);
+select plan(37);
 
 select testes.criar_dados_sinteticos();
 
@@ -361,6 +361,23 @@ select results_eq(
            ('exigencia', '71100000-0000-4000-8000-000000000082'::uuid, false),
            ('vencimento', '71100000-0000-4000-8000-000000000091'::uuid, false)$$,
   'calendário: exigência e vencimento com o tipo próprio; vencimento nunca "sem responsável"'
+);
+
+-- 20261121163000: as fontes novas também trazem o responsável pelo id (cores por pessoa e área).
+select results_eq(
+  $$select id, responsavel_id
+    from public.listar_calendario('c0000000-0000-4000-8000-00000000000a',
+      current_setting('testes.hoje')::date, current_setting('testes.hoje')::date + 10)$$,
+  $$select x.id, x.responsavel_id
+    from (values ('71100000-0000-4000-8000-000000000081'::uuid, 1),
+                 ('71100000-0000-4000-8000-000000000082'::uuid, 2),
+                 ('71100000-0000-4000-8000-000000000091'::uuid, 3)) as v (id, ordem)
+    join lateral (
+      select l.id, l.responsavel_id from private.linhas_de_prazo('c0000000-0000-4000-8000-00000000000a') as l
+      where l.id = v.id
+    ) as x on true
+    order by v.ordem$$,
+  'calendário: responsavel_id das fontes novas é o mesmo de linhas_de_prazo'
 );
 
 select results_eq(

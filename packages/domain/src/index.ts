@@ -225,6 +225,7 @@ export {
   CARGOS,
   GENEROS,
   MAXIMO_DE_OUTRAS_PROFISSOES,
+  areaDaProfissao,
   PROFISSOES,
   cargoDoCodigo,
   generoDoCodigo,
@@ -605,3 +606,11 @@ export { OBJETO_INICIAL, objetoAindaAutomatico, objetoAutomatico } from './objet
 
 export { dobrarLinhaIcs, escaparTextoIcs, gerarIcs } from './ics'
 export type { EventoIcs, OpcoesDoIcs } from './ics'
+export {
+  coresDasAreas,
+  coresSemRepetir,
+  hashEstavel,
+  iniciaisDe,
+  QUANTIDADE_DE_CORES,
+} from './cores-por-categoria'
+export { lerInscricaoImobiliaria } from './inscricao-imobiliaria'

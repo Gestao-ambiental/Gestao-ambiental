@@ -17,6 +17,7 @@ const base: EventoDoCalendario = {
   unidadeNome: 'Matriz',
   licenca: 'LAO 1001/2024',
   responsavelNome: 'Bruno Kist',
+  responsavelId: 'm-bruno',
   semResponsavel: false,
 }
 

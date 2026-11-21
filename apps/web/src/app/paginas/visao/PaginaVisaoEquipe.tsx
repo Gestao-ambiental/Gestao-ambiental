@@ -455,7 +455,7 @@ export function PaginaVisaoEquipe() {
                   key={`${linha.tipo}:${linha.id}`}
                   className={cn(
                     'transicao-estado hover:bg-(--toque)',
-                    linha.dias === 0 && 'bg-(--sinal-fundo) hover:bg-(--sinal-fundo)',
+                    linha.dias === 0 && 'pulso bg-(--sinal-fundo) hover:bg-(--sinal-fundo)',
                   )}
                 >
                   <td className={classeCelula}>
@@ -513,7 +513,7 @@ export function PaginaVisaoEquipe() {
               key={`${linha.tipo}:${linha.id}`}
               className={cn(
                 'flex gap-(--e-3) border-b border-(--regra-leve) px-(--e-4) py-(--e-3)',
-                linha.dias === 0 && 'bg-(--sinal-fundo)',
+                linha.dias === 0 && 'pulso bg-(--sinal-fundo)',
               )}
             >
               <Contagem dias={linha.dias} ordem={indice} />

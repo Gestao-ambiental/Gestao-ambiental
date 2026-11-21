@@ -237,6 +237,12 @@ const CURSO_DA_PROFISSAO: Record<CodigoProfissao, string> = {
 }
 
 /** "Estudante de engenharia ambiental"; igual para todo gênero. */
+/** A área da formação, para agrupar (ex.: cores do calendário): "Engenharia ambiental", "Biologia". */
+export function areaDaProfissao(codigo: CodigoProfissao): string {
+  const curso = CURSO_DA_PROFISSAO[codigo]
+  return curso.charAt(0).toUpperCase() + curso.slice(1)
+}
+
 export function rotuloDoCurso(codigo: CodigoProfissao): string {
   return `Estudante de ${CURSO_DA_PROFISSAO[codigo]}`
 }
