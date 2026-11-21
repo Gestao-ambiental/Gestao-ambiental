@@ -14,8 +14,9 @@ values
    '{"nome": "Bia Estagiária", "profissao": "eng_ambiental", "profissao_em_curso": true, "genero": "feminino"}',
    now(), now());
 
+select testes.convidar_para_o_beta('estagiaria@exemplo.test');
 select testes.autenticar_como('estagiaria@exemplo.test');
-select public.criar_consultoria('c0000000-0000-4000-8000-0000000000f5', 'Consultoria da Bia');
+select public.abrir_consultoria('c0000000-0000-4000-8000-0000000000f5', 'Consultoria da Bia', '12345678000195');
 reset role;
 select results_eq(
   $$select profissao::text, profissao_em_curso, genero::text from public.membro

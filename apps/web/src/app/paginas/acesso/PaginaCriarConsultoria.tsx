@@ -1,8 +1,9 @@
+import { cnpjValido, mascararCnpj } from '@gestao-ambiental/domain'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { z } from 'zod'
 
 import {
@@ -13,7 +14,7 @@ import { useSessao } from '@/app/sessao/contexto-sessao'
 import { Botao } from '@/components/ui/botao'
 import { CampoTexto } from '@/components/ui/campo-texto'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
-import { criarConsultoria } from '@/lib/api/acesso'
+import { abrirConsultoria } from '@/lib/api/acesso'
 import { enviarLogo, salvarIdentidade } from '@/lib/api/identidade'
 import { conferirFoto, type ProblemaDaFoto } from '@/lib/api/perfil'
 import { mensagemDoErro } from '@/lib/erros'
@@ -21,8 +22,22 @@ import { mensagemDoErro } from '@/lib/erros'
 import { CabecalhoAcesso } from './CabecalhoAcesso'
 import { RodapeDaConta } from './PaginaEscolherConsultoria'
 
-const esquema = z.object({ nome: z.string().trim().min(1, 'Informe o nome da consultoria') })
+const esquema = z.object({
+  nome: z.string().trim().min(1, 'Informe o nome da consultoria'),
+  cnpj: z
+    .string()
+    .trim()
+    .min(1, 'Informe o CNPJ')
+    .refine((valor) => cnpjValido(valor), 'CNPJ inválido'),
+})
 type Dados = z.infer<typeof esquema>
+
+/** Onde se entra na lista de espera do beta. */
+export const LINK_DA_LISTA_DE_ESPERA = 'https://gramaapp.com.br/'
+
+function semConviteDoBeta(erro: unknown): boolean {
+  return (erro as { message?: unknown } | null)?.message === 'convite_do_beta_obrigatorio'
+}
 
 const PROBLEMAS_DO_LOGO: Record<ProblemaDaFoto, string> = {
   tipo: 'Envie uma imagem PNG ou JPEG.',
@@ -48,10 +63,14 @@ async function guardarLogo(consultoriaId: string, nome: string, arquivo: File): 
   await enviarLogo(consultoriaId, arquivo)
 }
 
-/** /criar-consultoria (Protótipo 03, ACC-02). Quem cria vira a Gestão. */
+/**
+ * /criar-consultoria (Protótipo 03, ACC-02, ADR-0058). Quem cria vira a Gestão. CNPJ obrigatório;
+ * no beta, só com convite do beta; sem teste (já usou), vai direto para o plano.
+ */
 export function PaginaCriarConsultoria() {
   const { sessao } = useSessao()
   const queryClient = useQueryClient()
+  const navegar = useNavigate()
   // Id gerado aqui: reenviar o formulário (clique duplo, rede instável) não cria outra consultoria.
   const [id] = useState(() => crypto.randomUUID())
   const [criada, setCriada] = useState<string | null>(null)
@@ -63,12 +82,13 @@ export function PaginaCriarConsultoria() {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
-  } = useForm<Dados>({ resolver: zodResolver(esquema), defaultValues: { nome: '' } })
+  } = useForm<Dados>({ resolver: zodResolver(esquema), defaultValues: { nome: '', cnpj: '' } })
 
   const criacao = useMutation({
-    mutationFn: ({ nome }: Dados) => criarConsultoria(id, nome),
-    onSuccess: async (consultoriaId, { nome }) => {
+    mutationFn: ({ nome, cnpj }: Dados) => abrirConsultoria(id, nome, cnpj),
+    onSuccess: async ({ consultoriaId, acesso }, { nome }) => {
       if (sessao) gravarConsultoriaPreferida(sessao.user.id, consultoriaId)
       if (logo) {
         await guardarLogo(consultoriaId, nome.trim(), logo).catch(() => {
@@ -76,6 +96,10 @@ export function PaginaCriarConsultoria() {
         })
       }
       await queryClient.invalidateQueries({ queryKey: [CHAVE_MEUS_VINCULOS], refetchType: 'all' })
+      if (acesso === 'sem_teste') {
+        await navegar('/configuracoes/plano', { replace: true })
+        return
+      }
       setCriada(nome.trim())
     },
   })
@@ -115,7 +139,14 @@ export function PaginaCriarConsultoria() {
       <CabecalhoAcesso titulo="Criar consultoria">
         Você será a Gestão desta consultoria.
       </CabecalhoAcesso>
-      {criacao.isError ? (
+      {criacao.isError && semConviteDoBeta(criacao.error) ? (
+        <MensagemSecao role="alert" tom="atencao" titulo="Falta o convite do beta">
+          {mensagemDoErro(criacao.error)}{' '}
+          <a href={LINK_DA_LISTA_DE_ESPERA} target="_blank" rel="noopener noreferrer">
+            Entrar na lista de espera
+          </a>
+        </MensagemSecao>
+      ) : criacao.isError ? (
         <MensagemSecao role="alert" tom="perigo">
           {mensagemDoErro(criacao.error)}
         </MensagemSecao>
@@ -134,6 +165,17 @@ export function PaginaCriarConsultoria() {
           autoComplete="organization"
           erro={errors.nome?.message}
           {...register('nome')}
+        />
+        <CampoTexto
+          rotulo="CNPJ"
+          autoComplete="off"
+          spellCheck={false}
+          erro={errors.cnpj?.message}
+          {...register('cnpj', {
+            onChange: (evento: { target: { value: string } }) => {
+              setValue('cnpj', mascararCnpj(evento.target.value))
+            },
+          })}
         />
         <div role="group" aria-labelledby="rotulo-logo" className="flex flex-col gap-(--e-1)">
           <span id="rotulo-logo" className="rotulo">

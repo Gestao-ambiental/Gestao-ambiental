@@ -372,7 +372,13 @@ export type {
   Uso,
 } from './planos'
 
-export { cpfValido, mascararDocumento, normalizarDocumento, tipoDoDocumento } from './documento'
+export {
+  cnpjValido,
+  cpfValido,
+  mascararDocumento,
+  normalizarDocumento,
+  tipoDoDocumento,
+} from './documento'
 export type { TipoDeDocumento } from './documento'
 
 export {
@@ -732,3 +738,10 @@ export {
   valoresDoRelatorioMensal,
 } from './relatorio-mensal'
 export type { DadosParaRelatorioMensal } from './relatorio-mensal'
+export { condicaoDaConsultoriaNova, emBeta } from './acesso-pago'
+export type {
+  AcessoDaConsultoriaNova,
+  CondicaoDaConsultoriaNova,
+  EntradaDaConsultoriaNova,
+  ErroDaConsultoriaNova,
+} from './acesso-pago'

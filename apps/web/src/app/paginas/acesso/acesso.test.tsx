@@ -286,9 +286,9 @@ describe('criar conta e consultoria (ACC-01, ACC-02)', () => {
       sessao: sessaoDe('carla@exemplo.test', 'Carla Menezes'),
       rpc: {
         meus_vinculos: () => ({ data: vinculos }),
-        criar_consultoria: (args) => {
+        abrir_consultoria: (args) => {
           vinculos = [vinculoFalso('Ecossis', 'gestao')]
-          return { data: args.p_id }
+          return { data: [{ consultoria_id: args.p_id, acesso: 'beta' }] }
         },
       },
     })
@@ -304,8 +304,17 @@ describe('criar conta e consultoria (ACC-01, ACC-02)', () => {
 
     await usuario.click(await screen.findByRole('button', { name: 'Criar consultoria' }))
     expect(await screen.findByText('Informe o nome da consultoria')).toBeInTheDocument()
+    expect(screen.getByText('Informe o CNPJ')).toBeInTheDocument()
 
     await usuario.type(screen.getByLabelText('Nome da consultoria'), 'Ecossis')
+    await usuario.type(screen.getByLabelText('CNPJ'), '11222333000182')
+    await usuario.click(screen.getByRole('button', { name: 'Criar consultoria' }))
+    expect(await screen.findByText('CNPJ inválido')).toBeInTheDocument()
+    expect(falso.cliente.rpc).not.toHaveBeenCalledWith('abrir_consultoria', expect.anything())
+
+    await usuario.clear(screen.getByLabelText('CNPJ'))
+    await usuario.type(screen.getByLabelText('CNPJ'), '11222333000181')
+    expect(screen.getByLabelText('CNPJ')).toHaveValue('11.222.333/0001-81')
     await usuario.click(screen.getByRole('button', { name: 'Criar consultoria' }))
 
     expect(
@@ -318,15 +327,67 @@ describe('criar conta e consultoria (ACC-01, ACC-02)', () => {
     expect(screen.getByRole('group', { name: 'Consultoria: Ecossis' })).toBeInTheDocument()
   })
 
+  it('sem convite do beta, mostra o motivo e leva à lista de espera do site', async () => {
+    falso.reiniciar({
+      sessao: sessaoDe('carla@exemplo.test', 'Carla Menezes'),
+      rpc: {
+        meus_vinculos: { data: [] },
+        abrir_consultoria: { error: { message: 'convite_do_beta_obrigatorio' } },
+      },
+    })
+    const usuario = userEvent.setup()
+    renderizarApp('/criar-consultoria')
+    await usuario.type(await screen.findByLabelText('Nome da consultoria'), 'Ecossis')
+    await usuario.type(screen.getByLabelText('CNPJ'), '11.222.333/0001-81')
+    await usuario.click(screen.getByRole('button', { name: 'Criar consultoria' }))
+    const alerta = await screen.findByRole('alert')
+    expect(alerta).toHaveTextContent('Falta o convite do beta')
+    expect(within(alerta).getByRole('link', { name: 'Entrar na lista de espera' })).toHaveAttribute(
+      'href',
+      'https://gramaapp.com.br/',
+    )
+    expect(falso.cliente.rpc).toHaveBeenCalledWith('abrir_consultoria', {
+      p_id: expect.any(String) as unknown,
+      p_nome: 'Ecossis',
+      p_cnpj: '11.222.333/0001-81',
+    })
+  })
+
+  it('quem já usou o teste abre a consultoria e vai direto para o plano', async () => {
+    let vinculos: unknown[] = []
+    falso.reiniciar({
+      sessao: sessaoDe('carla@exemplo.test', 'Carla Menezes'),
+      rpc: {
+        meus_vinculos: () => ({ data: vinculos }),
+        abrir_consultoria: (args) => {
+          vinculos = [vinculoFalso('Ecossis', 'gestao')]
+          return { data: [{ consultoria_id: args.p_id, acesso: 'sem_teste' }] }
+        },
+      },
+    })
+    const usuario = userEvent.setup()
+    renderizarApp('/criar-consultoria')
+    await usuario.type(await screen.findByLabelText('Nome da consultoria'), 'Ecossis')
+    await usuario.type(screen.getByLabelText('CNPJ'), '11222333000181')
+    await usuario.click(screen.getByRole('button', { name: 'Criar consultoria' }))
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Configurações' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Plano e cobrança' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
+    expect(screen.queryByRole('heading', { name: 'Boas-vindas à Ecossis' })).not.toBeInTheDocument()
+  })
   it('criar consultoria com logo grava a razão social e envia o logo para as propostas', async () => {
     let vinculos: unknown[] = []
     falso.reiniciar({
       sessao: sessaoDe('carla@exemplo.test', 'Carla Menezes'),
       rpc: {
         meus_vinculos: () => ({ data: vinculos }),
-        criar_consultoria: (args) => {
+        abrir_consultoria: (args) => {
           vinculos = [vinculoFalso('Ecossis', 'gestao')]
-          return { data: args.p_id }
+          return { data: [{ consultoria_id: args.p_id, acesso: 'beta' }] }
         },
         salvar_identidade_da_consultoria: { data: 1 },
         registrar_logo_da_consultoria: { data: null },
@@ -336,6 +397,7 @@ describe('criar conta e consultoria (ACC-01, ACC-02)', () => {
     renderizarApp('/criar-consultoria')
 
     await usuario.type(await screen.findByLabelText('Nome da consultoria'), 'Ecossis')
+    await usuario.type(screen.getByLabelText('CNPJ'), '11222333000181')
     const arquivo = new File(['logo'], 'logo.png', { type: 'image/png' })
     const entrada = document.querySelector<HTMLInputElement>('input[type="file"]')
     if (!entrada) throw new Error('sem campo de arquivo')

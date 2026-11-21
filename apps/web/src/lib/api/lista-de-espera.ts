@@ -52,6 +52,12 @@ export async function marcarContatado(id: string, contatado: boolean): Promise<v
   if (error) throw error
 }
 
+/** Convite do beta para um e-mail (ADR-0058): libera abrir uma consultoria, uma vez. */
+export async function emitirConviteDoBeta(email: string): Promise<void> {
+  const { error } = await obterSupabase().rpc('central_emitir_convite_do_beta', { p_email: email })
+  if (error) throw error
+}
+
 /** WhatsApp: só registra o convite (a conversa abre no navegador com a mensagem pronta). */
 export async function registrarConviteNoWhatsapp(id: string): Promise<void> {
   const { error } = await obterSupabase().rpc('central_registrar_convite', { p_id: id })

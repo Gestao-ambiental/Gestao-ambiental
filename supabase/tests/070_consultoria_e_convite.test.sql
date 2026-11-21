@@ -44,10 +44,12 @@ select throws_ok(
   'sem login não cria consultoria'
 );
 
+select testes.convidar_para_o_beta('gabriela@exemplo.test');
 select testes.autenticar_como('gabriela@exemplo.test');
 
 select is(
-  public.criar_consultoria('c0000000-0000-4000-8000-0000000000f1', '  Ecossis Consultoria  '),
+  (select a.consultoria_id from public.abrir_consultoria(
+    'c0000000-0000-4000-8000-0000000000f1', '  Ecossis Consultoria  ', '11.222.333/0001-81') as a),
   'c0000000-0000-4000-8000-0000000000f1'::uuid,
   'conta sem vínculo cria a consultoria'
 );

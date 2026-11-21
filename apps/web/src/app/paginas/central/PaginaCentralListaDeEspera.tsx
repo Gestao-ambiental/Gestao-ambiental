@@ -6,10 +6,12 @@ import { Pagina } from '@/app/paginas/Pagina'
 import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
 import { CaixaSelecao } from '@/components/ui/caixa-selecao'
+import { CampoTexto } from '@/components/ui/campo-texto'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { TAMANHO_PAGINA_CENTRAL } from '@/lib/api/central'
 import {
   convidarPorEmail,
+  emitirConviteDoBeta,
   ErroDoConvite,
   listarListaDeEspera,
   marcarContatado,
@@ -261,7 +263,52 @@ export function PaginaCentralListaDeEspera() {
           {aviso.texto}
         </MensagemSecao>
       ) : null}
+      <ConviteDoBetaPorEmail aoAvisar={setAviso} />
       {conteudo}
     </Pagina>
+  )
+}
+
+/**
+ * Convite do beta para um e-mail que não está na lista (ADR-0058): libera abrir uma consultoria,
+ * uma vez, para a conta com este e-mail. Não manda e-mail: a Central avisa a pessoa.
+ */
+function ConviteDoBetaPorEmail({ aoAvisar }: { aoAvisar: (aviso: Aviso) => void }) {
+  const [email, setEmail] = useState('')
+  const emissao = useMutation({
+    mutationFn: (valor: string) => emitirConviteDoBeta(valor),
+    onSuccess: (_, valor) => {
+      aoAvisar({ tom: 'sucesso', texto: `Convite do beta liberado para ${valor.trim()}.` })
+      setEmail('')
+    },
+    onError: (erro) => {
+      aoAvisar({ tom: 'perigo', texto: mensagemDoErro(erro) })
+    },
+  })
+  return (
+    <form
+      noValidate
+      aria-label="Convite do beta por e-mail"
+      className="flex flex-wrap items-end gap-(--e-2)"
+      onSubmit={(evento) => {
+        evento.preventDefault()
+        aoAvisar(null)
+        emissao.mutate(email)
+      }}
+    >
+      <CampoTexto
+        rotulo="E-mail para o convite do beta"
+        type="email"
+        autoComplete="off"
+        value={email}
+        className="w-full max-w-[360px]"
+        onChange={(e) => {
+          setEmail(e.target.value)
+        }}
+      />
+      <Botao type="submit" disabled={emissao.isPending || email.trim() === ''}>
+        {emissao.isPending ? 'Liberando…' : 'Liberar convite'}
+      </Botao>
+    </form>
   )
 }

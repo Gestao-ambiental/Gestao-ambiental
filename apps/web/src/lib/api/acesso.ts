@@ -43,13 +43,29 @@ export async function listarMeusVinculos(): Promise<Vinculo[]> {
   }))
 }
 
-export async function criarConsultoria(id: string, nome: string): Promise<string> {
-  const { data, error } = await obterSupabase().rpc('criar_consultoria', {
+/** Como a consultoria nasceu (ADR-0058): sem_teste precisa de plano desde o primeiro dia. */
+export type AcessoDaConsultoria = 'beta' | 'teste' | 'sem_teste' | 'anterior'
+
+export interface ConsultoriaAberta {
+  consultoriaId: string
+  acesso: AcessoDaConsultoria
+}
+
+/** Abre a consultoria com o CNPJ (no beta, só com convite do beta). Repetir devolve a mesma. */
+export async function abrirConsultoria(
+  id: string,
+  nome: string,
+  cnpj: string,
+): Promise<ConsultoriaAberta> {
+  const { data, error } = await obterSupabase().rpc('abrir_consultoria', {
     p_id: id,
     p_nome: nome,
+    p_cnpj: cnpj,
   })
   if (error) throw error
-  return data
+  const linha = data[0]
+  if (!linha) throw new Error('consultoria_existente')
+  return { consultoriaId: linha.consultoria_id, acesso: linha.acesso as AcessoDaConsultoria }
 }
 
 // ---------------------------------------------------------------------------

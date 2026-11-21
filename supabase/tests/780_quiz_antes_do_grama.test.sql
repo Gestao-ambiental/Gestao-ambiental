@@ -68,8 +68,10 @@ values ('00000000-0000-0000-0000-000000000000', '78000000-0000-4000-8000-0000000
         'authenticated', 'sem.quiz@exemplo.test', '', now(),
         '{"provider": "email", "providers": ["email"]}'::jsonb, '{"nome": "Sem Quiz"}'::jsonb, now(), now());
 
+select testes.convidar_para_o_beta('nova.consultoria@exemplo.test');
+select testes.convidar_para_o_beta('sem.quiz@exemplo.test');
 select testes.autenticar_como('nova.consultoria@exemplo.test');
-select public.criar_consultoria('c7800000-0000-4000-8000-0000000000c1', 'Nova Consultoria');
+select public.abrir_consultoria('c7800000-0000-4000-8000-0000000000c1', 'Nova Consultoria', '98765432000198');
 
 select is(
   (select count(*) from public.ultima_linha_de_base('c7800000-0000-4000-8000-0000000000c1')),
@@ -100,7 +102,7 @@ select is(
 );
 
 select testes.autenticar_como('sem.quiz@exemplo.test');
-select public.criar_consultoria('c7800000-0000-4000-8000-0000000000c2', 'Sem Quiz');
+select public.abrir_consultoria('c7800000-0000-4000-8000-0000000000c2', 'Sem Quiz', '13579135000103');
 select testes.autenticar_como('gustavo@verdesul.test');
 select is(
   (select count(*) from public.linha_de_base

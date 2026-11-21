@@ -2759,6 +2759,11 @@ isOneToOne: false
 "abrir_acesso_de_emergencia":
 { Args: { "p_categoria": string,"p_consultoria_id": string,"p_id": string,"p_motivo": string }; Returns: string
                            },
+"abrir_consultoria":
+{ Args: { "p_cnpj": string,"p_id": string,"p_nome": string }; Returns: {
+              "acesso": string,"consultoria_id": string
+            }[]
+                           },
 "aceitar_convite":
 { Args: { "p_token": string }; Returns: string
                            },
@@ -2909,6 +2914,9 @@ isOneToOne: false
                            },
 "central_detalhe_da_mudanca_de_norma":
 { Args: { "p_id": string }; Returns: Json
+                           },
+"central_emitir_convite_do_beta":
+{ Args: { "p_email": string }; Returns: string
                            },
 "central_financeiro_lista":
 { Args: { "p_deslocamento"?: number,"p_grupo"?: string,"p_limite"?: number }; Returns: {

@@ -118,6 +118,17 @@ begin
 end;
 $$;
 
+-- Convite do beta (ADR-0058) para o e-mail, como se a Central tivesse convidado.
+create or replace function testes.convidar_para_o_beta(email_convidado text)
+returns void
+language sql
+security definer
+set search_path = ''
+as $$
+  insert into private.convite_do_beta (email) values (lower(email_convidado))
+  on conflict (email) where usado_em is null do nothing
+$$;
+
 grant execute on all functions in schema testes to anon, authenticated;
 
 select plan(1);

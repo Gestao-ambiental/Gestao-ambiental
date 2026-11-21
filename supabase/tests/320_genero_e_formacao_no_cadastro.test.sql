@@ -17,9 +17,11 @@ values
    'authenticated', 'lia@exemplo.test', '', now(), '{"provider": "email"}',
    '{"nome": "Lia Souza", "profissao": "astronauta", "genero": "outro"}', now(), now());
 
+select testes.convidar_para_o_beta('mateus@exemplo.test');
+select testes.convidar_para_o_beta('lia@exemplo.test');
 select testes.autenticar_como('mateus@exemplo.test');
 select lives_ok(
-  $$select public.criar_consultoria('c0000000-0000-4000-8000-0000000000f3', 'Empresa do Mateus')$$,
+  $$select public.abrir_consultoria('c0000000-0000-4000-8000-0000000000f3', 'Empresa do Mateus', '44555666000181')$$,
   'conta nova cria a própria consultoria'
 );
 reset role;
@@ -31,7 +33,7 @@ select results_eq(
 );
 
 select testes.autenticar_como('lia@exemplo.test');
-select public.criar_consultoria('c0000000-0000-4000-8000-0000000000f4', 'Empresa da Lia');
+select public.abrir_consultoria('c0000000-0000-4000-8000-0000000000f4', 'Empresa da Lia', '77888999000181');
 reset role;
 select results_eq(
   $$select profissao::text, genero::text from public.membro

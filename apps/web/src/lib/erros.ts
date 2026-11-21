@@ -10,6 +10,9 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   empreendimento_existente: 'Não foi possível salvar o empreendimento. Tente de novo.',
   unidade_existente: 'Não foi possível salvar a unidade. Tente de novo.',
   consultoria_existente: 'Não foi possível criar a consultoria. Tente de novo.',
+  cnpj_obrigatorio: 'Informe o CNPJ',
+  convite_do_beta_obrigatorio:
+    'Durante o beta, só abre consultoria quem recebeu o convite no e-mail desta conta.',
   email_invalido: 'Informe um e-mail válido',
   papel_obrigatorio: 'Escolha o papel',
   ja_e_membro: 'Esta pessoa já faz parte da consultoria.',

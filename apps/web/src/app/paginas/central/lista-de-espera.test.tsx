@@ -107,6 +107,44 @@ describe('Central: lista de espera (ADR-0032)', () => {
     )
   })
 
+  it('o operador libera o convite do beta para um e-mail', async () => {
+    const usuario = userEvent.setup()
+    falso.reiniciar(
+      cenario({
+        central_lista_de_espera: { data: LINHAS },
+        central_emitir_convite_do_beta: { data: 'cv1' },
+      }),
+    )
+    renderizarApp('/admin/lista-de-espera')
+    const formulario = await screen.findByRole('form', { name: 'Convite do beta por e-mail' })
+    await usuario.type(
+      within(formulario).getByLabelText('E-mail para o convite do beta'),
+      'nova@exemplo.test',
+    )
+    await usuario.click(within(formulario).getByRole('button', { name: 'Liberar convite' }))
+    expect(falso.cliente.rpc).toHaveBeenCalledWith('central_emitir_convite_do_beta', {
+      p_email: 'nova@exemplo.test',
+    })
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Convite do beta liberado para nova@exemplo.test.',
+    )
+  })
+
+  it('e-mail recusado pelo banco aparece traduzido', async () => {
+    const usuario = userEvent.setup()
+    falso.reiniciar(
+      cenario({
+        central_lista_de_espera: { data: LINHAS },
+        central_emitir_convite_do_beta: { error: { message: 'email_invalido' } },
+      }),
+    )
+    renderizarApp('/admin/lista-de-espera')
+    const formulario = await screen.findByRole('form', { name: 'Convite do beta por e-mail' })
+    await usuario.type(within(formulario).getByLabelText('E-mail para o convite do beta'), 'x@y')
+    await usuario.click(within(formulario).getByRole('button', { name: 'Liberar convite' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Informe um e-mail válido')
+  })
+
   it('convite por e-mail passa pela função e confirma o envio', async () => {
     const usuario = userEvent.setup()
     falso.reiniciar(
