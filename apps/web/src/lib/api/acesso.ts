@@ -194,6 +194,8 @@ export interface Membro {
   /** Gênero que a pessoa informou: a profissão aparece na forma dela. Nulo: não informado. */
   genero: GeneroDaPessoa | null
   papel: PapelMembro
+  /** Vê e registra dinheiro (P7). Só vale para a Gestão. */
+  financeiro: boolean
   situacao: SituacaoMembro
   criadoEm: string
   desligadoEm: string | null
@@ -208,7 +210,7 @@ export async function listarMembros(
   const { data, error, count } = await obterSupabase()
     .from('membro')
     .select(
-      'id, nome, email, papel, situacao, criado_em, desligado_em, profissao, outras_profissoes, profissao_em_curso, genero, cargo, cargo_antigo',
+      'id, nome, email, papel, financeiro, situacao, criado_em, desligado_em, profissao, outras_profissoes, profissao_em_curso, genero, cargo, cargo_antigo',
       {
         count: 'exact',
       },
@@ -226,6 +228,8 @@ export async function listarMembros(
       ...profissaoECargo(linha),
       genero: generoDoCodigo(linha.genero),
       papel: linha.papel,
+      // Linha antiga (antes do P7) não traz a coluna: o padrão do banco é ter a permissão.
+      financeiro: (linha.financeiro as boolean | undefined) !== false,
       situacao: linha.situacao,
       criadoEm: linha.criado_em,
       desligadoEm: linha.desligado_em,
@@ -238,6 +242,17 @@ export async function alterarPapel(membroId: string, papel: PapelMembro): Promis
   const { error } = await obterSupabase().rpc('alterar_papel', {
     p_membro_id: membroId,
     p_papel: papel,
+  })
+  if (error) throw error
+}
+
+export async function definirPermissaoFinanceira(
+  membroId: string,
+  financeiro: boolean,
+): Promise<void> {
+  const { error } = await obterSupabase().rpc('definir_permissao_financeira', {
+    p_membro_id: membroId,
+    p_financeiro: financeiro,
   })
   if (error) throw error
 }

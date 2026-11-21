@@ -94,6 +94,44 @@ describe('tela Equipe (ACC-02, ACC-03)', () => {
     ).toHaveLength(2)
   })
 
+  it('acesso ao dinheiro: a única pessoa com ele não o perde; outra da Gestão perde e ganha', async () => {
+    falso.reiniciar({
+      sessao: eduardo,
+      rpc: {
+        meus_vinculos: { data: [vinculoFalso('Filtroville', 'gestao')] },
+        definir_permissao_financeira: { data: null },
+      },
+      tabelas: {
+        ...tabelas,
+        membro: [
+          membro('m-Filtroville', 'Eduardo Karnopp', 'gestao'),
+          { ...membro('bia', 'Beatriz Lima', 'gestao'), financeiro: false },
+        ],
+      },
+    })
+    const usuario = userEvent.setup()
+    renderizarApp('/configuracoes/equipe')
+    const tabela = await within(await screen.findByRole('region', { name: 'Membros' })).findByRole(
+      'table',
+    )
+
+    await usuario.click(within(tabela).getByRole('button', { name: 'Ações de Eduardo Karnopp' }))
+    expect(
+      await screen.findByRole('menuitem', { name: /Tirar acesso ao dinheiro/ }),
+    ).toHaveAttribute('aria-disabled', 'true')
+    await usuario.keyboard('{Escape}')
+
+    await usuario.click(within(tabela).getByRole('button', { name: 'Ações de Beatriz Lima' }))
+    await usuario.click(await screen.findByRole('menuitem', { name: 'Dar acesso ao dinheiro' }))
+    expect(falso.cliente.rpc).toHaveBeenCalledWith('definir_permissao_financeira', {
+      p_membro_id: 'bia',
+      p_financeiro: true,
+    })
+    expect(
+      await screen.findByText('Beatriz Lima agora vê o dinheiro dos orçamentos.'),
+    ).toBeInTheDocument()
+  })
+
   it('convidar chama a RPC e manda o e-mail com o link do convite', async () => {
     const usuario = userEvent.setup()
     renderizarApp('/configuracoes/equipe')

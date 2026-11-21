@@ -27,6 +27,7 @@ import { Selo } from '@/components/ui/selo'
 import {
   TAMANHO_PAGINA,
   alterarPapel,
+  definirPermissaoFinanceira,
   cancelarConvite,
   desligarMembro,
   enviarEmailDoConvite,
@@ -100,6 +101,9 @@ const classeItemCelular =
  * papel e desligamento, convites pendentes com reenviar e cancelar. A Equipe vê "sem permissão"
  * (o banco recusaria de qualquer forma).
  */
+const MOTIVO_ULTIMO_FINANCEIRO =
+  'A consultoria precisa de pelo menos uma pessoa com acesso ao dinheiro.'
+
 export function PaginaEquipe() {
   const { atual } = useConsultoria()
   if (atual.papel !== 'gestao') {
@@ -151,6 +155,20 @@ function EquipeDaGestao() {
       alterarPapel(membro.id, novo),
     onSuccess: (_, { membro, novo }) => {
       setAviso({ tom: 'sucesso', texto: `${membro.nome} agora é ${NOMES_PAPEL[novo]}.` })
+    },
+    onError: falhar,
+    onSettled: atualizar,
+  })
+
+  const financeiro = useMutation({
+    mutationFn: (membro: Membro) => definirPermissaoFinanceira(membro.id, !membro.financeiro),
+    onSuccess: (_, membro) => {
+      setAviso({
+        tom: 'sucesso',
+        texto: membro.financeiro
+          ? `${membro.nome} não vê mais o dinheiro dos orçamentos.`
+          : `${membro.nome} agora vê o dinheiro dos orçamentos.`,
+      })
     },
     onError: falhar,
     onSettled: atualizar,
@@ -218,7 +236,11 @@ function EquipeDaGestao() {
   const vinculos = listaMembros.itens
   const agora = new Date()
   const ocupado =
-    papel.isPending || desligamento.isPending || reenvio.isPending || cancelamento.isPending
+    papel.isPending ||
+    financeiro.isPending ||
+    desligamento.isPending ||
+    reenvio.isPending ||
+    cancelamento.isPending
 
   function acoesDoMembro(membro: Membro) {
     if (membro.situacao === 'desligado' || suporte) return null
@@ -229,6 +251,11 @@ function EquipeDaGestao() {
       novo === 'equipe' ? 'passar_para_equipe' : 'passar_para_gestao',
     )
     const impedimentoDesligar = impedimentoDoVinculo(vinculos, membro.id, 'desligar')
+    // A permissão financeira não pode ficar sem ninguém (o banco também recusa).
+    const ultimoFinanceiro =
+      membro.financeiro &&
+      vinculos.filter((v) => v.situacao === 'ativo' && v.papel === 'gestao' && v.financeiro)
+        .length === 1
     return (
       <BotaoMais
         de={membro.nome}
@@ -243,6 +270,19 @@ function EquipeDaGestao() {
               papel.mutate({ membro, novo })
             },
           },
+          ...(membro.papel === 'gestao'
+            ? [
+                {
+                  rotulo: membro.financeiro ? 'Tirar acesso ao dinheiro' : 'Dar acesso ao dinheiro',
+                  detalhe: ultimoFinanceiro ? MOTIVO_ULTIMO_FINANCEIRO : undefined,
+                  desabilitado: ultimoFinanceiro,
+                  aoEscolher: () => {
+                    setAviso(null)
+                    financeiro.mutate(membro)
+                  },
+                },
+              ]
+            : []),
           {
             rotulo: 'Profissão e cargo',
             aoEscolher: () => {

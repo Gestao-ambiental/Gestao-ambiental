@@ -84,6 +84,7 @@ import {
 import { DialogoModelo, type SelecaoDoModelo } from './DialogoModelo'
 import { DialogoDuplicar, DialogoSalvarModelo } from './DialogosDeCopia'
 import { SituacaoDoOrcamento } from './SituacaoDoOrcamento'
+import { ExecucaoDoOrcamento } from './ExecucaoDoOrcamento'
 import { TarefasDoOrcamento } from './TarefasDoOrcamento'
 import { camposDoProspecto, lerProspecto, type CamposDoProspecto } from './prospecto'
 import { SeloSituacaoOrcamento } from './SeloSituacaoOrcamento'
@@ -1155,6 +1156,10 @@ function Editor({
 
       {naLixeira ? null : (
         <TarefasDoOrcamento orcamentoId={orcamento.id} situacao={orcamento.situacao} />
+      )}
+
+      {naLixeira || orcamento.situacao !== 'aprovada' ? null : (
+        <ExecucaoDoOrcamento orcamentoId={orcamento.id} />
       )}
 
       {naLixeira ? (

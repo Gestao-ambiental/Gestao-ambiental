@@ -611,3 +611,16 @@ export {
   QUANTIDADE_DE_CORES,
 } from './cores-por-categoria'
 export { lerInscricaoImobiliaria } from './inscricao-imobiliaria'
+export {
+  horasDaExecucao,
+  minutosDoLancamentoValidos,
+  situacaoDaParcela,
+  situacaoFinanceira,
+} from './execucao-do-orcamento'
+export type {
+  HorasDaExecucao,
+  HorasDoItem,
+  ParcelaDaExecucao,
+  SituacaoDaParcela,
+  SituacaoFinanceira,
+} from './execucao-do-orcamento'

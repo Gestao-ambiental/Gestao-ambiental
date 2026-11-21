@@ -102,6 +102,33 @@ describe('Lista de orçamentos: filtros e indicadores', () => {
     expect(acessibilidade.violations.map((v) => v.id)).toEqual([])
   })
 
+  it('"A receber" aparece para quem tem a permissão financeira, com o vencido', async () => {
+    falso.reiniciar(
+      cenario('gestao', {
+        a_receber_dos_orcamentos: {
+          data: [{ a_receber_centavos: 250_000, vencido_centavos: 40_000 }],
+        },
+      }),
+    )
+    renderizarApp('/orcamentos')
+    const indicadores = await screen.findByLabelText('Indicadores')
+    expect(await within(indicadores).findByText('A receber')).toBeInTheDocument()
+    expect(within(indicadores).getByText('R$ 2.500,00')).toBeInTheDocument()
+    expect(within(indicadores).getByText('Vencido R$ 400,00')).toBeInTheDocument()
+  })
+
+  it('sem a permissão financeira, "A receber" não aparece', async () => {
+    falso.reiniciar(
+      cenario('gestao', { a_receber_dos_orcamentos: { error: { message: 'sem_permissao' } } }),
+    )
+    renderizarApp('/orcamentos')
+    const indicadores = await screen.findByLabelText('Indicadores')
+    await waitFor(() => {
+      expect(chamadas('a_receber_dos_orcamentos')).toHaveLength(1)
+    })
+    expect(within(indicadores).queryByText('A receber')).toBeNull()
+  })
+
   it('cada aba mostra a contagem lida pelo leitor de tela; a situação vazia fica sem número', async () => {
     renderizarApp('/orcamentos')
     const abas = await screen.findByRole('group', { name: 'Situação' })
