@@ -2270,6 +2270,9 @@ isOneToOne: false
 "dados_para_relatorio":
 { Args: { "p_empreendimento_id": string,"p_ocorrencia_id"?: string }; Returns: Json
                            },
+"dados_para_relatorio_mensal":
+{ Args: { "p_empreendimento_id": string,"p_mes": string }; Returns: Json
+                           },
 "declarar_registro_profissional":
 { Args: { "p_conselho": string,"p_membro_id": string,"p_numero": string,"p_profissao": string,"p_uf"?: string,"p_valido_ate"?: string }; Returns: string
                            },

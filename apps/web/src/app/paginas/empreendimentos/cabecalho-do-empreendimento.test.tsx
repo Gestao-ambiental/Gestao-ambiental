@@ -13,10 +13,13 @@ const ITENS_DO_MENU = [
   'Editar empreendimento',
   'Gerenciar unidades',
   'Gerar relatório',
+  'Gerar relatório do mês',
   'Novo orçamento',
   'Triar atividades',
 ]
-const ITENS_DA_EQUIPE = ITENS_DO_MENU.filter((item) => item !== 'Novo orçamento')
+const ITENS_DA_EQUIPE = ITENS_DO_MENU.filter(
+  (item) => item !== 'Novo orçamento' && item !== 'Gerar relatório do mês',
+)
 
 function cenario(papel: 'gestao' | 'equipe', tabelas: Cenario['tabelas'] = {}): Cenario {
   return {
