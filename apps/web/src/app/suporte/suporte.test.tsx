@@ -347,10 +347,14 @@ describe('acesso de suporte: operador na central (ADR-0025)', () => {
       expect(router.state.location.pathname).toBe('/')
     })
 
-    const faixa = await screen.findByRole('region', { name: 'Acesso de suporte' })
-    expect(within(faixa).getByRole('status')).toHaveTextContent(
-      `Acesso de suporte · somente leitura · ${rotuloDoFimDoSuporte(fim, SP, new Date())}`,
-    )
+    // Com a suíte inteira, a seção da central ("Acesso de suporte") ainda pode estar na tela por um
+    // instante depois da navegação: espera a faixa do app, a que tem o status.
+    await waitFor(() => {
+      const faixa = screen.getByRole('region', { name: 'Acesso de suporte' })
+      expect(within(faixa).getByRole('status')).toHaveTextContent(
+        `Acesso de suporte · somente leitura · ${rotuloDoFimDoSuporte(fim, SP, new Date())}`,
+      )
+    })
     expect(router.state.location.pathname).toBe('/')
     expect(chamadas('entrar_como_suporte')[0]?.[1]).toEqual({ p_consultoria_id: 'c-b' })
     // O rail mostra a consultoria como suporte; o suporte não registra uso.
