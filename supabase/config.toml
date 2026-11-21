@@ -399,6 +399,18 @@ verify_jwt = false
 [functions.avisar-acesso-de-suporte]
 verify_jwt = false
 
+# Avisos (ADR-0047). Resumo diário: chamada pelo pg_cron (pg_net) com o header x-cron-token.
+# Feed do calendário: GET público, o token na URL é a credencial (o banco guarda só o hash).
+# Descadastro: POST sem login, com o token assinado (AVISO_ASSINATURA).
+[functions.enviar-avisos-do-dia]
+verify_jwt = false
+
+[functions.feed-calendario]
+verify_jwt = false
+
+[functions.preferencias-por-link]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327
