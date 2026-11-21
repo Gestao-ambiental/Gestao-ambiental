@@ -43,6 +43,50 @@ describe('meu perfil: foto, profissão e cargo', () => {
     })
   })
 
+  it('troca o próprio nome: grava na conta e vale em todo lugar', async () => {
+    const usuario = userEvent.setup()
+    renderizarApp('/perfil')
+
+    const nome = await screen.findByRole('textbox', { name: 'Nome' })
+    expect(nome).toHaveValue('Ana Ribeiro')
+    const salvar = screen.getByRole('button', { name: 'Salvar nome' })
+    expect(salvar).toBeDisabled()
+
+    await usuario.clear(nome)
+    await usuario.type(nome, '  Ana   Paula Ribeiro ')
+    await usuario.click(salvar)
+    expect(falso.cliente.auth.updateUser).toHaveBeenCalledWith({
+      data: { nome: 'Ana Paula Ribeiro' },
+    })
+    expect(await screen.findByText('Nome salvo.')).toBeVisible()
+  })
+
+  it('nome vazio avisa e não grava', async () => {
+    const usuario = userEvent.setup()
+    renderizarApp('/perfil')
+    const nome = await screen.findByRole('textbox', { name: 'Nome' })
+    await usuario.clear(nome)
+    await usuario.type(nome, '   {Enter}')
+    expect(screen.getByText('Informe seu nome')).toBeVisible()
+    expect(falso.cliente.auth.updateUser).not.toHaveBeenCalled()
+  })
+
+  it('erro ao salvar o nome mostra a mensagem e mantém o que foi digitado', async () => {
+    falso.cliente.auth.updateUser.mockResolvedValueOnce({
+      data: { user: null },
+      error: { message: 'Failed to fetch' },
+    } as never)
+    const usuario = userEvent.setup()
+    renderizarApp('/perfil')
+    const nome = await screen.findByRole('textbox', { name: 'Nome' })
+    await usuario.clear(nome)
+    await usuario.type(nome, 'Ana Paula')
+    await usuario.click(screen.getByRole('button', { name: 'Salvar nome' }))
+    expect(await screen.findByRole('alert')).toBeVisible()
+    expect(nome).toHaveValue('Ana Paula')
+    expect(screen.queryByText('Nome salvo.')).not.toBeInTheDocument()
+  })
+
   it('escolhe profissão e cargo nas listas, sem digitar (ADR-0021)', async () => {
     const usuario = userEvent.setup()
     renderizarApp('/perfil')

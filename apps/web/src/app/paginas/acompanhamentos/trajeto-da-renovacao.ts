@@ -17,7 +17,7 @@ export interface Estacao {
 
 /**
  * Início da preparação, protocolo (se houver), limite de protocolo e vencimento, em ordem de
- * data, com "hoje" entre elas. Antes de hoje = feito (estação cheia); hoje = atual (lima com aro);
+ * data, com "hoje" entre elas. Antes de hoje = feito (estação cheia); hoje = atual (verde com aro);
  * depois = futuro (vazada). Uma estação na data de hoje vira a atual no lugar da estação "hoje".
  */
 export function estacoesDaRenovacao(entrada: {

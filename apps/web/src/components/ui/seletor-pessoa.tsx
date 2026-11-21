@@ -164,7 +164,7 @@ export function SeletorPessoa({
           sideOffset={4}
           className={cn(
             'z-50 flex w-(--radix-popover-trigger-width) min-w-[280px] flex-col overflow-hidden rounded-(--raio) border bg-(--flutuante) text-(--tinta) shadow-sobreposicao',
-            'data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-top-1 duration-(--dur-media)',
+            'origin-(--radix-popover-content-transform-origin) data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-97 duration-(--dur-media) ease-(--saida)',
           )}
         >
           <div className="flex items-center gap-(--e-2) border-b px-(--e-3)">

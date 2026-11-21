@@ -9,10 +9,14 @@ import { CampoGenero } from '@/components/campos-da-pessoa'
 import { Carregando, EstadoErro, SemPermissao } from '@/components/estados'
 import { Avatar } from '@/components/ui/avatar'
 import { Botao } from '@/components/ui/botao'
+import { CampoTexto } from '@/components/ui/campo-texto'
+import { ConfirmacaoSalva } from '@/components/ui/confirmacao-salva'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import {
   conferirFoto,
   definirMeuGenero,
+  definirMeuNome,
+  LIMITE_DO_NOME,
   definirProfissaoECargo,
   enviarFoto,
   meuPerfil,
@@ -33,7 +37,8 @@ const PROBLEMAS_DA_FOTO: Record<ProblemaDaFoto, string> = {
 }
 
 /**
- * /perfil: foto, gênero, profissão e cargo da pessoa nesta consultoria. Aparecem no seletor de
+ * /perfil: nome, foto, gênero, profissão e cargo da pessoa nesta consultoria. O nome é da conta
+ * (vale em todos os vínculos) e vence o do Google e o pedaço do e-mail. Aparecem no seletor de
  * responsável (foto e, embaixo do nome, o cargo). Cada consultoria tem o seu: o perfil é do vínculo.
  * Profissão e cargo vêm das listas fixas do Grama (ADR-0021). O gênero é só da própria pessoa, vale
  * em todos os vínculos e muda como a profissão é escrita.
@@ -78,6 +83,11 @@ function Perfil({ perfil }: { perfil: MembroAtivo }) {
   const [genero, setGenero] = useState<GeneroDaPessoa | ''>(perfil.genero ?? '')
   const [salvo, setSalvo] = useState(false)
   const [generoSalvo, setGeneroSalvo] = useState(false)
+  const [nome, setNome] = useState(perfil.nome)
+  const [erroDoNome, setErroDoNome] = useState<string | null>(null)
+  const [nomeSalvo, setNomeSalvo] = useState(false)
+  // O último nome gravado: vale até o perfil recarregar com ele.
+  const [nomeGravado, setNomeGravado] = useState(perfil.nome)
   const email = sessao ? usuarioDaSessao(sessao).email : ''
 
   async function atualizar() {
@@ -101,6 +111,30 @@ function Perfil({ perfil }: { perfil: MembroAtivo }) {
     },
   })
   const generoMudou = genero !== (perfil.genero ?? '')
+
+  const salvarNome = useMutation({
+    mutationFn: (escolhido: string) => definirMeuNome(escolhido),
+    onSuccess: async (_, escolhido) => {
+      setNomeGravado(escolhido)
+      setNomeSalvo(true)
+      // O nome aparece em muita tela (responsável, equipe, propostas): tudo recarrega.
+      await queryClient.invalidateQueries()
+    },
+  })
+  const nomeLimpo = nome.replace(/\s+/g, ' ').trim()
+  const nomeMudou = nomeLimpo !== nomeGravado
+
+  function enviarNome() {
+    if (!nomeLimpo) {
+      setErroDoNome('Informe seu nome')
+      return
+    }
+    if (nomeLimpo.length > LIMITE_DO_NOME) {
+      setErroDoNome(`Até ${String(LIMITE_DO_NOME)} caracteres`)
+      return
+    }
+    if (nomeMudou) salvarNome.mutate(nomeLimpo)
+  }
 
   const foto = useMutation({
     mutationFn: (arquivo: File) =>
@@ -191,6 +225,52 @@ function Perfil({ perfil }: { perfil: MembroAtivo }) {
       </section>
 
       <section
+        aria-labelledby="titulo-nome"
+        className="flex flex-col gap-(--e-3) border-t pt-(--e-6)"
+      >
+        <h2 id="titulo-nome" className="sr-only">
+          Nome
+        </h2>
+        <form
+          noValidate
+          className="flex flex-col gap-(--e-3)"
+          onSubmit={(evento) => {
+            evento.preventDefault()
+            enviarNome()
+          }}
+        >
+          <CampoTexto
+            rotulo="Nome"
+            autoComplete="name"
+            maxLength={LIMITE_DO_NOME}
+            value={nome}
+            erro={erroDoNome ?? undefined}
+            disabled={salvarNome.isPending}
+            onChange={(evento) => {
+              setNome(evento.target.value)
+              setErroDoNome(null)
+              setNomeSalvo(false)
+            }}
+          />
+          {salvarNome.error ? (
+            <MensagemSecao role="alert" tom="perigo">
+              {mensagemDoErro(salvarNome.error)}
+            </MensagemSecao>
+          ) : null}
+          <div className="flex items-center gap-(--e-3)">
+            <Botao
+              type="submit"
+              aparencia={nomeMudou ? 'primario' : 'padrao'}
+              disabled={!nomeMudou || salvarNome.isPending}
+            >
+              {salvarNome.isPending ? 'Salvando…' : 'Salvar nome'}
+            </Botao>
+            {nomeSalvo && !nomeMudou ? <ConfirmacaoSalva>Nome salvo.</ConfirmacaoSalva> : null}
+          </div>
+        </form>
+      </section>
+
+      <section
         aria-labelledby="titulo-genero"
         className="flex flex-col gap-(--e-3) border-t pt-(--e-6)"
       >
@@ -227,9 +307,7 @@ function Perfil({ perfil }: { perfil: MembroAtivo }) {
               {salvarGenero.isPending ? 'Salvando…' : 'Salvar gênero'}
             </Botao>
             {generoSalvo && !generoMudou ? (
-              <span role="status" className="rotulo">
-                Gênero salvo.
-              </span>
+              <ConfirmacaoSalva>Gênero salvo.</ConfirmacaoSalva>
             ) : null}
           </div>
         </form>
@@ -288,9 +366,7 @@ function Perfil({ perfil }: { perfil: MembroAtivo }) {
               {salvar.isPending ? 'Salvando…' : 'Salvar profissão e cargo'}
             </Botao>
             {salvo && !mudou ? (
-              <span role="status" className="rotulo">
-                Profissão e cargo salvos.
-              </span>
+              <ConfirmacaoSalva>Profissão e cargo salvos.</ConfirmacaoSalva>
             ) : null}
           </div>
         </form>

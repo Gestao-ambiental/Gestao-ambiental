@@ -6,7 +6,7 @@
  */
 
 .proposta-folha {
-  /* Rótulo das tabelas na tela: lima do Grama com texto tinta (13,5:1 nos dois temas). */
+  /* Rótulo das tabelas na tela: o verde da ação com texto branco (11,1:1 no claro, 5,2:1 no escuro). */
   --proposta-rotulo-fundo: var(--acao);
   --proposta-rotulo-texto: var(--acao-texto);
   --proposta-borda: var(--regra-forte);
