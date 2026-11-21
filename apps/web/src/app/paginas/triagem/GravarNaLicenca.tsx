@@ -1,5 +1,6 @@
-// "Gravar na licença" da triagem (ADR-0044): grava as atividades enquadradas numa licença do
-// empreendimento, para a taxa da renovação vir sugerida no orçamento. Só a Gestão (a RPC confere).
+// "Gravar" da triagem: grava as atividades enquadradas numa licença do empreendimento (ADR-0044),
+// para a taxa da renovação vir sugerida no orçamento, ou no próprio empreendimento (ADR-0050,
+// LEG-05), quando ainda não há licença. Só a Gestão (as RPCs conferem).
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router'
 
@@ -8,6 +9,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
@@ -21,27 +24,40 @@ export interface LicencaParaGravar {
   temPlano: boolean
 }
 
-const ROTULO = 'Gravar na licença'
+/** Empreendimento da triagem, como aparece no link de volta. */
+export interface EmpreendimentoParaGravar {
+  id: string
+  nome: string
+}
+
+/** Onde as atividades vão: uma licença do empreendimento ou o próprio empreendimento. */
+export type DestinoDaGravacao =
+  | { tipo: 'licenca'; licenca: LicencaParaGravar }
+  | { tipo: 'empreendimento'; empreendimento: EmpreendimentoParaGravar }
+
+const NA_LICENCA = 'Gravar na licença'
+const NO_EMPREENDIMENTO = 'Gravar no empreendimento'
 
 /**
  * Ação principal da triagem com empreendimento. Com `licencaPedida` (vinda do plano de renovação)
- * que seja deste empreendimento, grava direto nela; senão, um menu com as licenças dele.
+ * que seja deste empreendimento, grava direto nela. Sem licenças, grava no empreendimento. Com
+ * licenças, um menu: o empreendimento primeiro, depois as licenças dele.
  */
-export function AcaoGravarNaLicenca({
-  empreendimentoId,
+export function AcaoGravar({
+  empreendimento,
   licencaPedida,
   gravando,
   aoGravar,
 }: {
-  empreendimentoId: string
+  empreendimento: EmpreendimentoParaGravar
   licencaPedida: string | null
   gravando: boolean
-  aoGravar: (licenca: LicencaParaGravar) => void
+  aoGravar: (destino: DestinoDaGravacao) => void
 }) {
   const licencas = useQuery({
-    queryKey: ['licencas-para-triagem', empreendimentoId],
+    queryKey: ['licencas-para-triagem', empreendimento.id],
     // Primeira página (50): empreendimento com mais licenças é raro; as mais novas vêm antes.
-    queryFn: () => listarLicencasDoEmpreendimento(empreendimentoId, 0),
+    queryFn: () => listarLicencasDoEmpreendimento(empreendimento.id, 0),
     select: (pagina): LicencaParaGravar[] =>
       pagina.itens.map((l) => ({
         id: l.id,
@@ -49,11 +65,14 @@ export function AcaoGravarNaLicenca({
         temPlano: l.diasLimite !== null,
       })),
   })
+  const gravarNoEmpreendimento = () => {
+    aoGravar({ tipo: 'empreendimento', empreendimento })
+  }
 
   if (licencas.isPending) {
     return (
       <Botao aparencia="primario" disabled>
-        {ROTULO}
+        Gravar
       </Botao>
     )
   }
@@ -64,25 +83,34 @@ export function AcaoGravarNaLicenca({
       <Botao
         aparencia="primario"
         disabled={gravando}
-        aria-label={`${ROTULO}: ${pedida.rotulo}`}
+        aria-label={`${NA_LICENCA}: ${pedida.rotulo}`}
         onClick={() => {
-          aoGravar(pedida)
+          aoGravar({ tipo: 'licenca', licenca: pedida })
         }}
       >
-        {gravando ? 'Gravando…' : ROTULO}
+        {gravando ? 'Gravando…' : NA_LICENCA}
       </Botao>
     )
   }
-  if (!licencas.isError && lista.length === 0) return null
+  if (!licencas.isError && lista.length === 0) {
+    return (
+      <Botao aparencia="primario" disabled={gravando} onClick={gravarNoEmpreendimento}>
+        {gravando ? 'Gravando…' : NO_EMPREENDIMENTO}
+      </Botao>
+    )
+  }
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Botao aparencia="primario" iconeDepois="chevron-down" disabled={gravando}>
-          {gravando ? 'Gravando…' : ROTULO}
+          {gravando ? 'Gravando…' : 'Gravar'}
         </Botao>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
+        <DropdownMenuItem onSelect={gravarNoEmpreendimento}>{NO_EMPREENDIMENTO}</DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel>Na licença</DropdownMenuLabel>
         {licencas.isError ? (
           <DropdownMenuItem
             onSelect={() => {
@@ -97,7 +125,7 @@ export function AcaoGravarNaLicenca({
               key={licenca.id}
               className="numero"
               onSelect={() => {
-                aoGravar(licenca)
+                aoGravar({ tipo: 'licenca', licenca })
               }}
             >
               {licenca.rotulo}
@@ -109,12 +137,12 @@ export function AcaoGravarNaLicenca({
   )
 }
 
-/** Retorno da gravação: sucesso com link para o plano (quando há) ou o erro. */
+/** Retorno da gravação: sucesso com link (plano de renovação ou empreendimento) ou o erro. */
 export function RetornoDaGravacao({
   gravada,
   erro,
 }: {
-  gravada: LicencaParaGravar | null
+  gravada: DestinoDaGravacao | null
   erro: unknown
 }) {
   if (erro) {
@@ -125,15 +153,26 @@ export function RetornoDaGravacao({
     )
   }
   if (!gravada) return null
+  if (gravada.tipo === 'empreendimento') {
+    return (
+      <MensagemSecao role="status" tom="sucesso">
+        Gravado no empreendimento{' '}
+        <Link to={`/empreendimentos/${gravada.empreendimento.id}`}>
+          {gravada.empreendimento.nome}
+        </Link>
+      </MensagemSecao>
+    )
+  }
+  const { licenca } = gravada
   return (
     <MensagemSecao role="status" tom="sucesso">
       Gravado na{' '}
-      {gravada.temPlano ? (
-        <Link to={`/renovacoes/${gravada.id}`} className="numero">
-          {gravada.rotulo}
+      {licenca.temPlano ? (
+        <Link to={`/renovacoes/${licenca.id}`} className="numero">
+          {licenca.rotulo}
         </Link>
       ) : (
-        <span className="numero">{gravada.rotulo}</span>
+        <span className="numero">{licenca.rotulo}</span>
       )}
     </MensagemSecao>
   )

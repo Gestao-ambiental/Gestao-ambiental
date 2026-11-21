@@ -159,6 +159,38 @@ isOneToOne: true
       referencedColumns: ["id"]
     }
                   ]
+                },"atividade_do_empreendimento": {
+                  Row: {
+                    "codigo": string,"consultoria_id": string,"descricao": string,"empreendimento_id": string,"fonte": string,"id": string,"medidas": NonNullable<Json>,"porte": string,"potencial": string,"registrado_em": string,"registrado_por": string,"row_version": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "codigo": string,"consultoria_id": string,"descricao": string,"empreendimento_id": string,"fonte": string,"id"?: string,"medidas"?: NonNullable<Json>,"porte": string,"potencial": string,"registrado_em"?: string,"registrado_por": string,"row_version"?: number
+                  }
+                  Update: {
+                    "codigo"?: string,"consultoria_id"?: string,"descricao"?: string,"empreendimento_id"?: string,"fonte"?: string,"id"?: string,"medidas"?: NonNullable<Json>,"porte"?: string,"potencial"?: string,"registrado_em"?: string,"registrado_por"?: string,"row_version"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "atividade_do_empreendimento_consultoria_id_fkey"
+      columns: ["consultoria_id"]
+isOneToOne: false
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "atividade_do_empreendimento_empreendimento_fk"
+      columns: ["consultoria_id","empreendimento_id"]
+isOneToOne: false
+      referencedRelation: "empreendimento"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "atividade_do_empreendimento_registrado_por_fk"
+      columns: ["consultoria_id","registrado_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    }
+                  ]
                 },"atividade_licenciada": {
                   Row: {
                     "codigo": string,"consultoria_id": string,"descricao": string,"fonte": string,"id": string,"instrumento_id": string,"medidas": NonNullable<Json>,"porte": string,"potencial": string,"registrado_em": string,"registrado_por": string,"row_version": number
@@ -1803,14 +1835,14 @@ isOneToOne: false
                   ]
                 },"unidade": {
                   Row: {
-                    "consultoria_id": string,"criado_em": string,"empreendimento_id": string,"endereco": string | null,"id": string,"nome": string
+                    "consultoria_id": string,"criado_em": string,"empreendimento_id": string,"endereco": string | null,"id": string,"municipio_gravado_em": string | null,"municipio_ibge": string | null,"municipio_nome": string | null,"nome": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "consultoria_id": string,"criado_em"?: string,"empreendimento_id": string,"endereco"?: string | null,"id"?: string,"nome": string
+                    "consultoria_id": string,"criado_em"?: string,"empreendimento_id": string,"endereco"?: string | null,"id"?: string,"municipio_gravado_em"?: string | null,"municipio_ibge"?: string | null,"municipio_nome"?: string | null,"nome": string
                   }
                   Update: {
-                    "consultoria_id"?: string,"criado_em"?: string,"empreendimento_id"?: string,"endereco"?: string | null,"id"?: string,"nome"?: string
+                    "consultoria_id"?: string,"criado_em"?: string,"empreendimento_id"?: string,"endereco"?: string | null,"id"?: string,"municipio_gravado_em"?: string | null,"municipio_ibge"?: string | null,"municipio_nome"?: string | null,"nome"?: string
                   }
                   Relationships: [
                     {
@@ -2427,6 +2459,12 @@ isOneToOne: false
 "gravar_atividades_na_licenca":
 { Args: { "p_atividades": Json,"p_consultoria_id": string,"p_instrumento_id": string }; Returns: number
                            },
+"gravar_atividades_no_empreendimento":
+{ Args: { "p_atividades": Json,"p_consultoria_id": string,"p_empreendimento_id": string }; Returns: number
+                           },
+"gravar_municipio_da_unidade":
+{ Args: { "p_codigo_ibge": string,"p_consultoria_id": string,"p_nome": string,"p_unidade_id": string }; Returns: boolean
+                           },
 "ignorar_apontamento":
 { Args: { "p_conferencia_id": string,"p_indice": number }; Returns: undefined
                            },
@@ -2473,6 +2511,11 @@ isOneToOne: false
 "listar_aguardando_conferencia":
 { Args: { "p_consultoria_id": string,"p_deslocamento"?: number,"p_limite"?: number }; Returns: {
               "codigo": string,"conferente_nome": string,"empreendimento_nome": string,"enviada_em": string,"evidencia_numero": number,"ocorrencia_id": string,"responsavel_nome": string,"titulo": string,"total": number
+            }[]
+                           },
+"listar_atividades_do_empreendimento":
+{ Args: { "p_consultoria_id": string,"p_empreendimento_id": string }; Returns: {
+              "codigo": string,"descricao": string,"instrumento_id": string,"origem": string,"porte": string,"potencial": string,"registrado_em": string
             }[]
                            },
 "listar_calendario":

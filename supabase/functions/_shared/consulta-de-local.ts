@@ -10,7 +10,8 @@
 //
 // Sempre com outFields explícitos: algumas camadas trazem nome de proprietário e usuário de rede,
 // que não pedimos nem devolvemos. Uma camada que falha não derruba as outras: vira item de `falhas`.
-// Nada da consulta vai para o log.
+// Com consultoriaId e unidadeId, o município achado é gravado na unidade (RPC
+// gravar_municipio_da_unidade, com o JWT de quem chamou). Nada da consulta vai para o log.
 
 import { CORS, responder } from './aviso-de-suporte.ts'
 
@@ -354,13 +355,71 @@ export function lerPonto(corpo: unknown): Ponto | 'fora_de_sc' | null {
   return dentroDeSantaCatarina(p) ? p : 'fora_de_sc'
 }
 
+/** Pedido de gravação do município na unidade (RPC gravar_municipio_da_unidade). */
+export interface GravacaoDoMunicipio {
+  consultoriaId: string
+  unidadeId: string
+  codigoIbge: string
+  nome: string
+}
+
 export interface DependenciasDaConsultaDeLocal {
   fetch: typeof fetch
+  /**
+   * Grava o município na unidade com o JWT de quem chamou (nunca service role). Devolve o código do
+   * erro, ou null se gravou. Opcional: sem ela, nada é gravado.
+   */
+  gravarMunicipio?: (
+    autorizacao: string,
+    gravacao: GravacaoDoMunicipio,
+  ) => Promise<{ erro: string | null }>
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/**
+ * Lê { consultoriaId, unidadeId } opcionais do corpo. 'ausente' se nenhum dos dois veio (a resposta
+ * não muda); null se vieram, mas não são uuid (ignora a gravação, sem erro 400).
+ */
+export function lerUnidade(
+  corpo: unknown,
+): { consultoriaId: string; unidadeId: string } | 'ausente' | null {
+  if (typeof corpo !== 'object' || corpo === null) return 'ausente'
+  const { consultoriaId, unidadeId } = corpo as Record<string, unknown>
+  if (consultoriaId === undefined && unidadeId === undefined) return 'ausente'
+  if (typeof consultoriaId !== 'string' || !UUID.test(consultoriaId)) return null
+  if (typeof unidadeId !== 'string' || !UUID.test(unidadeId)) return null
+  return { consultoriaId, unidadeId }
+}
+
+/** Grava o município achado na unidade; falha não derruba a consulta e só o código vai para o log. */
+async function gravarMunicipioDaUnidade(
+  deps: DependenciasDaConsultaDeLocal,
+  autorizacao: string,
+  unidade: { consultoriaId: string; unidadeId: string } | null,
+  municipio: ResultadoDoLocal['municipio'],
+): Promise<boolean> {
+  if (!unidade || !municipio || !deps.gravarMunicipio) return false
+  try {
+    const { erro } = await deps.gravarMunicipio(autorizacao, {
+      ...unidade,
+      codigoIbge: municipio.codigoIbge,
+      nome: municipio.nome,
+    })
+    if (erro === null) return true
+    console.warn('consultar-local: falha ao gravar o município da unidade', erro)
+    return false
+  } catch {
+    console.warn('consultar-local: falha ao gravar o município da unidade', 'excecao')
+    return false
+  }
 }
 
 /**
- * POST { latitude, longitude } com o JWT de quem está logado (verify_jwt do Supabase confere a
- * assinatura; aqui só exigimos o header). Devolve ResultadoDoLocal.
+ * POST { latitude, longitude, consultoriaId?, unidadeId? } com o JWT de quem está logado (verify_jwt
+ * do Supabase confere a assinatura; aqui só exigimos o header). Devolve ResultadoDoLocal. Com
+ * consultoriaId e unidadeId, grava o município achado na unidade e a resposta ganha
+ * municipioGravado (true | false); uuid inválido ou falha ao gravar vira false, nunca erro.
  */
 export function criarTratadorDaConsultaDeLocal(
   deps: DependenciasDaConsultaDeLocal,
@@ -368,7 +427,8 @@ export function criarTratadorDaConsultaDeLocal(
   return async (pedido) => {
     if (pedido.method === 'OPTIONS') return new Response('ok', { headers: CORS })
     if (pedido.method !== 'POST') return responder({ erro: 'metodo_nao_permitido' }, 405)
-    if (!pedido.headers.get('Authorization')) return responder({ erro: 'sem_permissao' }, 401)
+    const autorizacao = pedido.headers.get('Authorization')
+    if (!autorizacao) return responder({ erro: 'sem_permissao' }, 401)
 
     let corpo: unknown
     try {
@@ -381,6 +441,14 @@ export function criarTratadorDaConsultaDeLocal(
     if (ponto === 'fora_de_sc') return responder({ erro: 'fora_de_santa_catarina' }, 422)
 
     const resultado = await consultarLocal(deps.fetch, ponto)
-    return responder({ ...resultado })
+    const unidade = lerUnidade(corpo)
+    if (unidade === 'ausente') return responder({ ...resultado })
+    const municipioGravado = await gravarMunicipioDaUnidade(
+      deps,
+      autorizacao,
+      unidade,
+      resultado.municipio,
+    )
+    return responder({ ...resultado, municipioGravado })
   }
 }

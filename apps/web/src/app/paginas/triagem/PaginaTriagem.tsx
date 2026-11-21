@@ -10,7 +10,9 @@
 // num detalhe recolhível depois do resultado.
 //
 // Com ?empreendimento= (e, do plano de renovação, &licenca=), a Gestão grava as atividades
-// enquadradas numa licença do empreendimento (ADR-0044), para sugerir a taxa da renovação.
+// enquadradas numa licença do empreendimento (ADR-0044), para sugerir a taxa da renovação, ou no
+// próprio empreendimento (ADR-0050, LEG-05). Com unidades, a consulta do local grava o município
+// na unidade.
 
 import {
   CATALOGO_CONSEMA_250,
@@ -56,11 +58,12 @@ import {
   gravarAtividadesNaLicenca,
   type AtividadeParaGravar,
 } from '@/lib/api/atividades-da-licenca'
-import { obterEmpreendimento } from '@/lib/api/empreendimentos'
+import { gravarAtividadesNoEmpreendimento } from '@/lib/api/atividades-do-empreendimento'
+import { listarUnidades, obterEmpreendimento } from '@/lib/api/empreendimentos'
 import { ehUuid } from '@/lib/texto'
 import { cn } from '@/lib/utils'
 
-import { AcaoGravarNaLicenca, RetornoDaGravacao, type LicencaParaGravar } from './GravarNaLicenca'
+import { AcaoGravar, RetornoDaGravacao, type DestinoDaGravacao } from './GravarNaLicenca'
 import { LocalDoEmpreendimento } from './LocalDoEmpreendimento'
 
 const { atividades: CATALOGO, parametros: PARAMETROS, fonte: FONTE } = CATALOGO_CONSEMA_250
@@ -116,7 +119,7 @@ function calcular(item: ItemEmEdicao, nivel: NivelMunicipal | null): ItemCalcula
 }
 
 /**
- * O que "Gravar na licença" grava: as atividades enquadradas, com o porte da faixa, o potencial
+ * O que "Gravar" (na licença ou no empreendimento) grava: as atividades enquadradas, com o porte da faixa, o potencial
  * geral e as medidas lidas (as pendentes e as abaixo do limite ficam de fora).
  */
 function atividadesParaGravar(calculados: readonly ItemCalculado[]): AtividadeParaGravar[] {
@@ -715,7 +718,9 @@ function Fontes() {
  * /triagem: enquadramento das atividades de um empreendimento pelas CONSEMA 250 e 251/2024.
  * `?empreendimento=<id>` (Empreendimento, plano de renovação, orçamento) põe o nome dele no link de
  * volta, acima do título. Id inválido, de outra consultoria ou que falhou: a triagem abre sem ele.
- * Com ele, a Gestão tem "Gravar na licença"; `&licenca=<id>` (plano de renovação) grava direto nela.
+ * Com ele, a Gestão tem "Gravar" (no empreendimento ou numa licença dele); `&licenca=<id>` (plano
+ * de renovação) grava direto nela. As unidades dele vão para a consulta do local, que grava nelas o
+ * município achado.
  */
 export function PaginaTriagem() {
   const { atual } = useConsultoria()
@@ -730,6 +735,11 @@ export function PaginaTriagem() {
     queryKey: ['empreendimento', empreendimentoId],
     queryFn: () => obterEmpreendimento(empreendimentoId ?? ''),
     enabled: empreendimentoId !== null,
+  })
+  const unidades = useQuery({
+    queryKey: ['unidades', empreendimento.data?.id],
+    queryFn: () => listarUnidades(empreendimento.data?.id ?? ''),
+    enabled: Boolean(empreendimento.data),
   })
   const voltar = empreendimento.data
     ? { para: `/empreendimentos/${empreendimento.data.id}`, rotulo: empreendimento.data.nome }
@@ -768,14 +778,26 @@ export function PaginaTriagem() {
   const paraGravar = atividadesParaGravar(calculados)
   const gravar = useMutation({
     mutationFn: ({
-      licenca,
+      destino,
       atividades,
     }: {
-      licenca: LicencaParaGravar
+      destino: DestinoDaGravacao
       atividades: readonly AtividadeParaGravar[]
-    }) => gravarAtividadesNaLicenca(atual.consultoriaId, licenca.id, atividades),
-    onSuccess: async (_, { licenca }) => {
-      await queryClient.invalidateQueries({ queryKey: ['atividades-da-licenca', licenca.id] })
+    }) =>
+      destino.tipo === 'licenca'
+        ? gravarAtividadesNaLicenca(atual.consultoriaId, destino.licenca.id, atividades)
+        : gravarAtividadesNoEmpreendimento(
+            atual.consultoriaId,
+            destino.empreendimento.id,
+            atividades,
+          ),
+    onSuccess: async (_, { destino }) => {
+      await queryClient.invalidateQueries({
+        queryKey:
+          destino.tipo === 'licenca'
+            ? ['atividades-da-licenca', destino.licenca.id]
+            : ['atividades-do-empreendimento', destino.empreendimento.id],
+      })
     },
   })
   // Mudou a triagem depois de gravar: o aviso de gravado (ou o erro) já não vale.
@@ -792,24 +814,26 @@ export function PaginaTriagem() {
       voltar={voltar}
       acao={
         doEmpreendimento ? (
-          <AcaoGravarNaLicenca
-            empreendimentoId={doEmpreendimento.id}
+          <AcaoGravar
+            empreendimento={doEmpreendimento}
             licencaPedida={licencaPedida}
             gravando={gravar.isPending}
-            aoGravar={(licenca) => {
-              gravar.mutate({ licenca, atividades: paraGravar })
+            aoGravar={(destino) => {
+              gravar.mutate({ destino, atividades: paraGravar })
             }}
           />
         ) : undefined
       }
     >
       <RetornoDaGravacao
-        gravada={gravar.isSuccess ? gravar.variables.licenca : null}
+        gravada={gravar.isSuccess ? gravar.variables.destino : null}
         erro={gravar.error}
       />
       <div className="flex max-w-[1120px] flex-col">
         <Passo numero={1} titulo="Onde fica">
           <LocalDoEmpreendimento
+            consultoriaId={atual.consultoriaId}
+            unidades={unidades.data ?? []}
             aoUsarArea={(hectares) => {
               const area = hectares.toLocaleString('pt-BR', { maximumFractionDigits: 4 })
               setAreaDoLote(area)

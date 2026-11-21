@@ -437,35 +437,46 @@ describe('triagem de licenciamento (/triagem)', () => {
   })
 })
 
-describe('gravar na licença (ADR-0044)', () => {
-  const EMPREENDIMENTO = '3c1d2e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f'
-  const LAO = '7d1e2f3a-4b5c-4d6e-8f9a-0b1c2d3e4f5a'
-  const LAI = '9a8b7c6d-5e4f-4a3b-9c2d-1e0f9a8b7c6d'
+const EMPREENDIMENTO = '3c1d2e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f'
+const LAO = '7d1e2f3a-4b5c-4d6e-8f9a-0b1c2d3e4f5a'
+const LAI = '9a8b7c6d-5e4f-4a3b-9c2d-1e0f9a8b7c6d'
 
-  function licenca(
-    id: string,
-    sigla: string,
-    numero: string,
-    plano: Record<string, unknown> | null,
-  ): Record<string, unknown> {
-    return {
-      id,
-      numero,
-      orgao: 'IMA',
-      situacao: 'ativo',
-      validade: '2027-03-01',
-      criado_em: '2026-01-10T12:00:00Z',
-      antecedencia_renovacao_dias: 30,
-      unidade_id: 'un1',
-      tipo_id: 't1',
-      marco: 'emissao',
-      tipo: { sigla, nome: sigla },
-      unidade: { nome: 'Matriz' },
-      plano,
-      condicionante: [{ count: 0 }],
-    }
+/** Linha de instrumento como a lista de licenças do empreendimento lê. */
+function licenca(
+  id: string,
+  sigla: string,
+  numero: string,
+  plano: Record<string, unknown> | null,
+): Record<string, unknown> {
+  return {
+    id,
+    numero,
+    orgao: 'IMA',
+    situacao: 'ativo',
+    validade: '2027-03-01',
+    criado_em: '2026-01-10T12:00:00Z',
+    antecedencia_renovacao_dias: 30,
+    unidade_id: 'un1',
+    tipo_id: 't1',
+    marco: 'emissao',
+    tipo: { sigla, nome: sigla },
+    unidade: { nome: 'Matriz' },
+    plano,
+    condicionante: [{ count: 0 }],
   }
+}
 
+async function enquadrarUsinagem(usuario: ReturnType<typeof userEvent.setup>) {
+  await incluir(usuario, '12.80.10', '12.80.10')
+  await usuario.type(
+    within(screen.getByRole('article', { name: /^12\.80\.10/ })).getByRole('textbox', {
+      name: /AU\(3\)/,
+    }),
+    '0,5',
+  )
+}
+
+describe('gravar na licença (ADR-0044)', () => {
   function cenario(gravar: { data?: unknown; error?: unknown } = { data: 1 }) {
     falso.reiniciar({
       tabelas: {
@@ -483,23 +494,13 @@ describe('gravar na licença (ADR-0044)', () => {
     })
   }
 
-  async function enquadrarUsinagem(usuario: ReturnType<typeof userEvent.setup>) {
-    await incluir(usuario, '12.80.10', '12.80.10')
-    await usuario.type(
-      within(screen.getByRole('article', { name: /^12\.80\.10/ })).getByRole('textbox', {
-        name: /AU\(3\)/,
-      }),
-      '0,5',
-    )
-  }
-
   it('vinda do plano (&licenca=), grava as atividades enquadradas direto na licença', async () => {
     cenario()
     const { usuario } = montar(`/triagem?empreendimento=${EMPREENDIMENTO}&licenca=${LAO}`)
     await screen.findByRole('link', { name: 'Metalúrgica Rio Cubatão' })
     // Atividade sem parâmetro (pendente) não conta: sem enquadrada, não há o que gravar.
     await incluir(usuario, 'usinagem pintura', '12.80.10')
-    expect(screen.queryByRole('button', { name: /Gravar na licença/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Gravar/ })).toBeNull()
     await usuario.type(
       within(screen.getByRole('article', { name: /^12\.80\.10/ })).getByRole('textbox', {
         name: /AU\(3\)/,
@@ -542,7 +543,8 @@ describe('gravar na licença (ADR-0044)', () => {
     await screen.findByRole('link', { name: 'Metalúrgica Rio Cubatão' })
     await enquadrarUsinagem(usuario)
 
-    await usuario.click(await screen.findByRole('button', { name: 'Gravar na licença' }))
+    // Com o empreendimento no menu, o botão diz só "Gravar" (a regra mudou no ADR-0050).
+    await usuario.click(await screen.findByRole('button', { name: 'Gravar' }))
     expect(await screen.findByRole('menuitem', { name: 'LAO 4821/2023' })).toBeInTheDocument()
     await usuario.click(screen.getByRole('menuitem', { name: 'LAI 77/2026' }))
     await waitFor(() => {
@@ -575,7 +577,7 @@ describe('gravar na licença (ADR-0044)', () => {
     const { usuario } = montar(`/triagem?empreendimento=${EMPREENDIMENTO}&licenca=${LAO}`, 'equipe')
     await screen.findByRole('link', { name: 'Metalúrgica Rio Cubatão' })
     await enquadrarUsinagem(usuario)
-    expect(screen.queryByRole('button', { name: /Gravar na licença/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Gravar/ })).toBeNull()
     expect(falso.cliente.from).not.toHaveBeenCalledWith('instrumento')
   })
 
@@ -583,7 +585,7 @@ describe('gravar na licença (ADR-0044)', () => {
     cenario()
     const { usuario } = montar()
     await enquadrarUsinagem(usuario)
-    expect(screen.queryByRole('button', { name: /Gravar na licença/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Gravar/ })).toBeNull()
   })
 
   it('sem violações de acessibilidade com a ação e o aviso de gravado', async () => {
@@ -597,6 +599,159 @@ describe('gravar na licença (ADR-0044)', () => {
       await screen.findByRole('button', { name: 'Gravar na licença: LAO 4821/2023' }),
     )
     await screen.findByRole('status')
+    const r = await axe.run(container)
+    expect(r.violations.map((v) => v.id)).toEqual([])
+  })
+})
+
+describe('gravar no empreendimento (ADR-0050, LEG-05)', () => {
+  const EMPRESA = { id: EMPREENDIMENTO, nome: 'Metalúrgica Rio Cubatão', cnpj: null }
+
+  function cenario({
+    licencas = [],
+    gravar = { data: 1 },
+  }: {
+    licencas?: Record<string, unknown>[]
+    gravar?: { data?: unknown; error?: unknown }
+  } = {}) {
+    falso.reiniciar({
+      tabelas: { empreendimento: [EMPRESA], instrumento: licencas },
+      rpc: { gravar_atividades_no_empreendimento: gravar },
+    })
+  }
+
+  it('sem licença, "Gravar no empreendimento" é a única ação e grava nele', async () => {
+    cenario()
+    const { usuario } = montar(`/triagem?empreendimento=${EMPREENDIMENTO}`)
+    await screen.findByRole('link', { name: 'Metalúrgica Rio Cubatão' })
+    await enquadrarUsinagem(usuario)
+
+    await usuario.click(await screen.findByRole('button', { name: 'Gravar no empreendimento' }))
+    await waitFor(() => {
+      expect(falso.cliente.rpc).toHaveBeenCalledWith('gravar_atividades_no_empreendimento', {
+        p_consultoria_id: 'c1',
+        p_empreendimento_id: EMPREENDIMENTO,
+        p_atividades: [
+          expect.objectContaining({
+            codigo: '12.80.10',
+            porte: 'medio',
+            potencial: 'M',
+            medidas: { 'AU(3)': 0.5 },
+          }) as unknown,
+        ],
+      })
+    })
+    const aviso = await screen.findByRole('status')
+    expect(aviso).toHaveTextContent('Gravado no empreendimento Metalúrgica Rio Cubatão')
+    expect(within(aviso).getByRole('link', { name: 'Metalúrgica Rio Cubatão' })).toHaveAttribute(
+      'href',
+      `/empreendimentos/${EMPREENDIMENTO}`,
+    )
+    expect(falso.cliente.rpc).not.toHaveBeenCalledWith(
+      'gravar_atividades_na_licenca',
+      expect.anything(),
+    )
+  })
+
+  it('com licenças, "Gravar no empreendimento" é o primeiro item do menu', async () => {
+    cenario({ licencas: [licenca(LAI, 'LAI', '77/2026', null)] })
+    const { usuario } = montar(`/triagem?empreendimento=${EMPREENDIMENTO}`)
+    await screen.findByRole('link', { name: 'Metalúrgica Rio Cubatão' })
+    await enquadrarUsinagem(usuario)
+
+    await usuario.click(await screen.findByRole('button', { name: 'Gravar' }))
+    const itens = await screen.findAllByRole('menuitem')
+    expect(itens.map((i) => i.textContent)).toEqual(['Gravar no empreendimento', 'LAI 77/2026'])
+    await usuario.click(screen.getByRole('menuitem', { name: 'Gravar no empreendimento' }))
+    await waitFor(() => {
+      expect(falso.cliente.rpc).toHaveBeenCalledWith(
+        'gravar_atividades_no_empreendimento',
+        expect.objectContaining({ p_empreendimento_id: EMPREENDIMENTO }) as unknown,
+      )
+    })
+    expect(await screen.findByRole('status')).toHaveTextContent('Gravado no empreendimento')
+  })
+
+  it('erro da RPC aparece na tela', async () => {
+    cenario({ gravar: { error: { message: 'empreendimento_invalido', code: '22023' } } })
+    const { usuario } = montar(`/triagem?empreendimento=${EMPREENDIMENTO}`)
+    await screen.findByRole('link', { name: 'Metalúrgica Rio Cubatão' })
+    await enquadrarUsinagem(usuario)
+    await usuario.click(await screen.findByRole('button', { name: 'Gravar no empreendimento' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Escolha um empreendimento desta consultoria.',
+    )
+    expect(screen.queryByRole('status')).toBeNull()
+  })
+
+  it('a Equipe não vê a ação', async () => {
+    cenario()
+    const { usuario } = montar(`/triagem?empreendimento=${EMPREENDIMENTO}`, 'equipe')
+    await screen.findByRole('link', { name: 'Metalúrgica Rio Cubatão' })
+    await enquadrarUsinagem(usuario)
+    expect(screen.queryByRole('button', { name: /^Gravar/ })).toBeNull()
+  })
+})
+
+describe('município gravado na unidade (ADR-0050)', () => {
+  const EMPRESA = { id: EMPREENDIMENTO, nome: 'Metalúrgica Rio Cubatão', cnpj: null }
+  const MATRIZ = { id: '5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a8b', nome: 'Matriz', endereco: null }
+  const FILIAL = { id: '6f7a8b9c-0d1e-4f2a-9b3c-4d5e6f7a8b9c', nome: 'Filial', endereco: null }
+
+  function cenario(unidades: Record<string, unknown>[]) {
+    falso.reiniciar({
+      tabelas: { empreendimento: [EMPRESA], unidade: unidades },
+      funcoes: { 'consultar-local': { data: { ...CENTRO, municipioGravado: true } } },
+    })
+  }
+
+  it('com uma unidade, a consulta leva a unidade e mostra que o município foi gravado', async () => {
+    cenario([MATRIZ])
+    const { usuario } = montar(`/triagem?empreendimento=${EMPREENDIMENTO}`)
+    await screen.findByRole('link', { name: 'Metalúrgica Rio Cubatão' })
+    await waitFor(() => {
+      expect(falso.cliente.from).toHaveBeenCalledWith('unidade')
+    })
+    expect(screen.queryByRole('combobox', { name: 'Unidade' })).toBeNull()
+    await usuario.type(screen.getByRole('textbox', { name: /Coordenadas/ }), '-26.3044, -48.8487')
+    await usuario.click(screen.getByRole('button', { name: 'Consultar local' }))
+    expect(await screen.findByText('Gravado na unidade')).toBeInTheDocument()
+    expect(falso.cliente.functions.invoke).toHaveBeenCalledWith('consultar-local', {
+      body: {
+        latitude: -26.3044,
+        longitude: -48.8487,
+        consultoriaId: 'c1',
+        unidadeId: MATRIZ.id,
+      },
+    })
+  })
+
+  it('com duas unidades, exige escolher a unidade antes de consultar', async () => {
+    cenario([MATRIZ, FILIAL])
+    const { usuario } = montar(`/triagem?empreendimento=${EMPREENDIMENTO}`)
+    const seletor = await screen.findByRole('combobox', { name: 'Unidade' })
+    await usuario.type(screen.getByRole('textbox', { name: /Coordenadas/ }), '-26.3044, -48.8487')
+    await usuario.click(screen.getByRole('button', { name: 'Consultar local' }))
+    expect(screen.getByText('Escolha a unidade.')).toBeInTheDocument()
+    expect(seletor).toHaveAttribute('aria-invalid', 'true')
+    expect(falso.cliente.functions.invoke).not.toHaveBeenCalled()
+
+    await usuario.selectOptions(seletor, 'Filial')
+    expect(screen.queryByText('Escolha a unidade.')).toBeNull()
+    await usuario.click(screen.getByRole('button', { name: 'Consultar local' }))
+    expect(await screen.findByText('Gravado na unidade')).toBeInTheDocument()
+    expect(falso.cliente.functions.invoke).toHaveBeenCalledWith('consultar-local', {
+      body: expect.objectContaining({ unidadeId: FILIAL.id, consultoriaId: 'c1' }) as unknown,
+    })
+  })
+
+  it('sem violações de acessibilidade com o seletor de unidade e o erro', async () => {
+    cenario([MATRIZ, FILIAL])
+    const { usuario, container } = montar(`/triagem?empreendimento=${EMPREENDIMENTO}`)
+    await screen.findByRole('combobox', { name: 'Unidade' })
+    await usuario.type(screen.getByRole('textbox', { name: /Coordenadas/ }), '-26.3044, -48.8487')
+    await usuario.click(screen.getByRole('button', { name: 'Consultar local' }))
+    await screen.findByText('Escolha a unidade.')
     const r = await axe.run(container)
     expect(r.violations.map((v) => v.id)).toEqual([])
   })

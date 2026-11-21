@@ -86,6 +86,9 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   taxa_invalida: 'Informe a taxa em reais (0 ou mais).',
   licenca_ja_tem_orcamento: 'Esta licença já tem um orçamento de renovação em andamento.',
   atividades_invalidas: 'Não foi possível gravar as atividades. Refaça a triagem.',
+  // Triagem grava no empreendimento e o município na unidade (ADR-0050). empreendimento_invalido e
+  // unidade_invalida já existem nesta tabela, com o mesmo sentido.
+  municipio_invalido: 'Município não reconhecido. Consulte o local de novo.',
   id_obrigatorio: 'Não foi possível criar o orçamento. Tente de novo.',
   // Extração por IA (épico 9)
   pdf_obrigatorio: 'Anexe o PDF da licença para a IA ler.',

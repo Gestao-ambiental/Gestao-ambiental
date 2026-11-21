@@ -30,6 +30,14 @@ export interface ResultadoDoLocal {
   restricoes: { tipo: TipoDeRestricao; descricao: string; fonte: string }[]
   falhas: string[]
   fontes: string[]
+  /** Só vem quando a consulta levou a unidade: true se o município achado ficou gravado nela. */
+  municipioGravado?: boolean
+}
+
+/** Unidade do empreendimento onde gravar o município achado (RPC gravar_municipio_da_unidade). */
+export interface UnidadeDaConsulta {
+  consultoriaId: string
+  unidadeId: string
 }
 
 const MOTIVOS: Record<string, string> = {
@@ -41,9 +49,20 @@ const MOTIVOS: Record<string, string> = {
 /** Falha da consulta, já com a mensagem para a tela. */
 export class ErroDaConsultaDeLocal extends Error {}
 
-export async function consultarLocal(c: Coordenadas): Promise<ResultadoDoLocal> {
+/** Consulta o ponto; com a unidade, a função também grava nela o município achado. */
+export async function consultarLocal(
+  c: Coordenadas,
+  unidade?: UnidadeDaConsulta,
+): Promise<ResultadoDoLocal> {
   const resposta = await obterSupabase().functions.invoke<ResultadoDoLocal>('consultar-local', {
-    body: { latitude: c.latitude, longitude: c.longitude },
+    body: unidade
+      ? {
+          latitude: c.latitude,
+          longitude: c.longitude,
+          consultoriaId: unidade.consultoriaId,
+          unidadeId: unidade.unidadeId,
+        }
+      : { latitude: c.latitude, longitude: c.longitude },
   })
   const erro: unknown = resposta.error
   if (!erro && resposta.data) return resposta.data

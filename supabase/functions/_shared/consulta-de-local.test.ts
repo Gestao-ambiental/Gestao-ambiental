@@ -6,8 +6,10 @@ import {
   consultarLocal,
   criarTratadorDaConsultaDeLocal,
   dentroDeSantaCatarina,
+  type GravacaoDoMunicipio,
   interpretarRespostas,
   lerPonto,
+  lerUnidade,
   urlDaConsulta,
 } from './consulta-de-local.ts'
 // Respostas gravadas dos serviços em 19/11/2026, só com os campos pedidos. Import de JSON para o
@@ -226,4 +228,133 @@ Deno.test('tratador: OPTIONS, sem JWT, ponto inválido, fora de SC e sucesso', a
     ((await ok.json()) as { municipio: { nome: string } }).municipio.nome,
     'Florianópolis',
   )
+})
+
+const CONSULTORIA = '11111111-1111-4111-8111-111111111111'
+const UNIDADE = '22222222-2222-4222-8222-222222222222'
+const FLORIPA = { latitude: -27.5969, longitude: -48.5482 }
+
+/** Tratador com gravarMunicipio falso: registra as chamadas e devolve o erro pedido. */
+async function tratadorQueGrava(opcoes: {
+  erro?: string | null
+  lanca?: boolean
+  semMunicipio?: boolean
+}) {
+  const chamadas: { autorizacao: string; gravacao: GravacaoDoMunicipio }[] = []
+  const tratar = criarTratadorDaConsultaDeLocal({
+    fetch: fetchFalso(
+      opcoes.semMunicipio
+        ? []
+        : [{ camada: CAMADAS.municipio, corpo: await fixture('floripa-municipio') }],
+    ),
+    gravarMunicipio(autorizacao, gravacao) {
+      chamadas.push({ autorizacao, gravacao })
+      if (opcoes.lanca) return Promise.reject(new Error('rede'))
+      return Promise.resolve({ erro: opcoes.erro ?? null })
+    },
+  })
+  const post = (corpo: Record<string, unknown>) =>
+    tratar(
+      new Request('https://exemplo.test/functions/v1/consultar-local', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer jwt-de-quem-chamou' },
+        body: JSON.stringify(corpo),
+      }),
+    )
+  return { chamadas, post }
+}
+
+Deno.test('com consultoriaId, unidadeId e município: grava com o JWT de quem chamou', async () => {
+  const { chamadas, post } = await tratadorQueGrava({})
+  const r = await post({ ...FLORIPA, consultoriaId: CONSULTORIA, unidadeId: UNIDADE })
+  assert.equal(r.status, 200)
+  const corpo = (await r.json()) as { municipioGravado: boolean; municipio: { nome: string } }
+  assert.equal(corpo.municipioGravado, true)
+  assert.equal(corpo.municipio.nome, 'Florianópolis')
+  assert.deepEqual(chamadas, [
+    {
+      autorizacao: 'Bearer jwt-de-quem-chamou',
+      gravacao: {
+        consultoriaId: CONSULTORIA,
+        unidadeId: UNIDADE,
+        codigoIbge: '4205407',
+        nome: 'Florianópolis',
+      },
+    },
+  ])
+})
+
+Deno.test('sem consultoriaId e unidadeId: não grava e a resposta não muda', async () => {
+  const { chamadas, post } = await tratadorQueGrava({})
+  const r = await post(FLORIPA)
+  assert.equal(r.status, 200)
+  const corpo = (await r.json()) as Record<string, unknown>
+  assert.equal('municipioGravado' in corpo, false)
+  assert.equal(chamadas.length, 0)
+})
+
+Deno.test('sem município encontrado: não grava e municipioGravado é false', async () => {
+  const { chamadas, post } = await tratadorQueGrava({ semMunicipio: true })
+  const r = await post({ ...FLORIPA, consultoriaId: CONSULTORIA, unidadeId: UNIDADE })
+  assert.equal(r.status, 200)
+  const corpo = (await r.json()) as { municipioGravado: boolean; municipio: unknown }
+  assert.equal(corpo.municipio, null)
+  assert.equal(corpo.municipioGravado, false)
+  assert.equal(chamadas.length, 0)
+})
+
+Deno.test('erro da RPC vira municipioGravado false e a consulta volta 200', async () => {
+  const avisos: unknown[][] = []
+  const original = console.warn
+  console.warn = (...args: unknown[]) => void avisos.push(args)
+  try {
+    const { chamadas, post } = await tratadorQueGrava({ erro: '42501' })
+    const r = await post({ ...FLORIPA, consultoriaId: CONSULTORIA, unidadeId: UNIDADE })
+    assert.equal(r.status, 200)
+    const corpo = (await r.json()) as { municipioGravado: boolean; municipio: { nome: string } }
+    assert.equal(corpo.municipioGravado, false)
+    assert.equal(corpo.municipio.nome, 'Florianópolis')
+    assert.equal(chamadas.length, 1)
+
+    const lancou = await tratadorQueGrava({ lanca: true })
+    const r2 = await lancou.post({ ...FLORIPA, consultoriaId: CONSULTORIA, unidadeId: UNIDADE })
+    assert.equal(r2.status, 200)
+    assert.equal(((await r2.json()) as { municipioGravado: boolean }).municipioGravado, false)
+  } finally {
+    console.warn = original
+  }
+  // Só o código do erro vai para o log: nada de ids, município ou coordenadas.
+  const log = JSON.stringify(avisos)
+  assert.match(log, /42501/)
+  for (const proibido of [CONSULTORIA, UNIDADE, 'Florianópolis', '4205407', '-27.5969']) {
+    assert.equal(log.includes(proibido), false, proibido)
+  }
+})
+
+Deno.test(
+  'uuid inválido em consultoriaId ou unidadeId: ignora a gravação, sem erro 400',
+  async () => {
+    const { chamadas, post } = await tratadorQueGrava({})
+    for (const ids of [
+      { consultoriaId: 'nao-e-uuid', unidadeId: UNIDADE },
+      { consultoriaId: CONSULTORIA, unidadeId: 42 },
+      { consultoriaId: CONSULTORIA },
+    ]) {
+      const r = await post({ ...FLORIPA, ...ids })
+      assert.equal(r.status, 200)
+      assert.equal(((await r.json()) as { municipioGravado: boolean }).municipioGravado, false)
+    }
+    assert.equal(chamadas.length, 0)
+  },
+)
+
+Deno.test('lerUnidade', () => {
+  assert.equal(lerUnidade({ latitude: 1 }), 'ausente')
+  assert.equal(lerUnidade(null), 'ausente')
+  assert.deepEqual(lerUnidade({ consultoriaId: CONSULTORIA, unidadeId: UNIDADE }), {
+    consultoriaId: CONSULTORIA,
+    unidadeId: UNIDADE,
+  })
+  assert.equal(lerUnidade({ consultoriaId: CONSULTORIA, unidadeId: 'x' }), null)
+  assert.equal(lerUnidade({ unidadeId: UNIDADE }), null)
 })
