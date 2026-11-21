@@ -1,4 +1,9 @@
-import { adicionarDias, formatarDataCivil, hojeNoFuso } from '@gestao-ambiental/domain'
+import {
+  adicionarDias,
+  adicionarMeses,
+  formatarDataCivil,
+  hojeNoFuso,
+} from '@gestao-ambiental/domain'
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import axe from 'axe-core'
@@ -166,7 +171,12 @@ describe('Acompanhamentos (EQ-05)', () => {
     )
     const usuario = userEvent.setup()
     renderizarApp('/acompanhamentos')
-    expect(await screen.findByText('Nenhuma LAO ativa para renovar.')).toBeInTheDocument()
+    // ADR-0044: o radar mostra as LAOs que vencem no horizonte (6 meses por padrão).
+    expect(
+      await screen.findByText(
+        `Nenhuma LAO vence até ${formatarDataCivil(adicionarMeses(hoje, 6))}.`,
+      ),
+    ).toBeInTheDocument()
     await usuario.click(screen.getByRole('tab', { name: /Aguardando conferência/ }))
     expect(await screen.findByText('Nenhuma evidência aguardando conferência.')).toBeInTheDocument()
   })
@@ -276,7 +286,8 @@ describe('plano de renovação (REN-01)', () => {
     await usuario.click(screen.getByRole('button', { name: 'Mais ações' }))
     await usuario.click(await screen.findByRole('menuitem', { name: 'Triar atividades' }))
     expect(router.state.location.pathname).toBe('/triagem')
-    expect(router.state.location.search).toBe('?empreendimento=e1')
+    // ADR-0044: com a licença, a triagem grava as atividades direto nela.
+    expect(router.state.location.search).toBe('?empreendimento=e1&licenca=i2')
   })
 
   it('Gestão: "Registrar protocolo" continua a única ação principal, ao lado do "…"', async () => {

@@ -10,6 +10,7 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
+import { useRecursoLiberado } from '@/app/consultoria/recurso-liberado'
 import { Pagina } from '@/app/paginas/Pagina'
 import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
@@ -142,6 +143,7 @@ export function PaginaPlanoRenovacao() {
   const { atual } = useConsultoria()
   const queryClient = useQueryClient()
   const ehGestao = atual.papel === 'gestao'
+  const orcamentosNoPlano = useRecursoLiberado('orcamentos').data === true
   const [protocoloAberto, setProtocoloAberto] = useState(false)
   const [rascunho, setRascunho] = useState<string | null>(null)
 
@@ -249,9 +251,16 @@ export function PaginaPlanoRenovacao() {
           <BotaoMais
             itens={[
               {
+                // ADR-0044: a tela nova abre o editor se a licença já tem orçamento vivo.
+                rotulo: 'Gerar orçamento',
+                icone: 'receipt',
+                para: `/orcamentos/novo?renovacao=${dados.instrumentoId}`,
+                oculto: !(ehGestao && orcamentosNoPlano),
+              },
+              {
                 rotulo: 'Triar atividades',
                 icone: 'signpost',
-                para: `/triagem?empreendimento=${dados.empreendimentoId}`,
+                para: `/triagem?empreendimento=${dados.empreendimentoId}&licenca=${dados.instrumentoId}`,
               },
             ]}
           />
