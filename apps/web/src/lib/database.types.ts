@@ -2027,6 +2027,11 @@ isOneToOne: false
               "detalhe": string,"id": string,"referencia_id": string,"tipo": string,"titulo": string
             }[]
                            },
+"buscar_normas":
+{ Args: { "p_deslocamento"?: number,"p_limite"?: number,"p_termo": string }; Returns: {
+              "ano": number,"chave": string,"esfera": string,"id": string,"municipio_ibge": string,"numero": string,"orgao": string,"situacao_na_fonte": string,"tipo": string,"titulo": string,"total": number,"ultima_versao_em": string
+            }[]
+                           },
 "cadastrar_empreendimento_com_unidade":
 { Args: { "p_cnpj": string,"p_consultoria_id": string,"p_empreendimento_id": string,"p_nome": string,"p_unidade_endereco"?: string,"p_unidade_id": string,"p_unidade_nome": string }; Returns: string
                            },
@@ -2178,6 +2183,9 @@ isOneToOne: false
 "completar_cadastro":
 { Args: { "p_em_curso"?: boolean,"p_genero": string,"p_profissao": string }; Returns: undefined
                            },
+"concluir_coleta":
+{ Args: { "p_coleta_id": string,"p_erro"?: string,"p_itens_novos": number }; Returns: undefined
+                           },
 "concluir_conferencia_ia":
 { Args: { "p_apontamentos": Json,"p_custo_micros": number,"p_duracao_ms": number,"p_id": string,"p_modelo": string,"p_resumo": string,"p_tokens_entrada": number,"p_tokens_saida": number,"p_versao_prompt": string }; Returns: number
                            },
@@ -2306,6 +2314,9 @@ isOneToOne: false
 "desligar_membro":
 { Args: { "p_membro_id": string,"p_motivo"?: string }; Returns: undefined
                            },
+"detalhe_da_norma":
+{ Args: { "p_norma_id": string }; Returns: Json
+                           },
 "devolver_relatorio":
 { Args: { "p_id": string,"p_motivo": string,"p_row_version": number }; Returns: number
                            },
@@ -2383,8 +2394,14 @@ isOneToOne: false
 "falhar_extracao_ia":
 { Args: { "p_custo_micros": number,"p_detalhe": string,"p_duracao_ms": number,"p_id": string,"p_modelo": string,"p_motivo": string,"p_paginas": number,"p_tokens_entrada": number,"p_tokens_saida": number,"p_versao_prompt": string }; Returns: undefined
                            },
+"garantir_norma":
+{ Args: { "p_norma": Json }; Returns: string
+                           },
 "ignorar_apontamento":
 { Args: { "p_conferencia_id": string,"p_indice": number }; Returns: undefined
+                           },
+"iniciar_coleta":
+{ Args: { "p_fonte": string,"p_forcar"?: boolean,"p_janela": string }; Returns: string
                            },
 "iniciar_conferencia_ia":
 { Args: { "p_evidencia_id": string,"p_id": string }; Returns: {
@@ -2444,6 +2461,11 @@ isOneToOne: false
 "listar_empreendimentos":
 { Args: { "p_busca"?: string,"p_consultoria_id": string,"p_deslocamento"?: number,"p_limite"?: number }; Returns: {
               "cliente_nome": string,"cnpj": string,"criado_em": string,"id": string,"licencas": Json,"nome": string,"total": number,"unidades": number
+            }[]
+                           },
+"listar_fontes_legais":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "ativa": boolean,"codigo": string,"com_erro": boolean,"esfera": string,"nome": string,"ultima_coleta_em": string
             }[]
                            },
 "listar_modelos_de_orcamento":
@@ -2610,11 +2632,17 @@ isOneToOne: false
 "registrar_protocolo":
 { Args: { "p_caminho": string,"p_data": string,"p_nome_original": string,"p_numero": string,"p_plano_id": string,"p_row_version": number,"p_sha256": string,"p_versao_id": string }; Returns: number
                            },
+"registrar_revogacao":
+{ Args: { "p_chave_ato": string,"p_chave_revogada": string,"p_coleta_id": string,"p_revogada_em": string }; Returns: string
+                           },
 "registrar_tarefa":
 { Args: { "p_consultoria_id": string,"p_quantidade": number,"p_segundos": number,"p_tipo": string }; Returns: undefined
                            },
 "registrar_uso":
 { Args: { "p_consultoria_id": string,"p_modulo": string }; Returns: undefined
+                           },
+"registrar_versao_de_norma":
+{ Args: { "p_ato_novo"?: boolean,"p_coleta_id": string,"p_diferenca"?: Json,"p_norma_id": string,"p_versao": Json }; Returns: Json
                            },
 "remover_foto_membro":
 { Args: { "p_membro_id": string }; Returns: undefined
@@ -2704,12 +2732,20 @@ isOneToOne: false
 "sou_operador":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },
+"texto_da_ultima_versao":
+{ Args: { "p_norma_id": string }; Returns: string
+                           },
 "trocar_pdf_alvara":
 { Args: { "p_alvara_id": string,"p_caminho": string,"p_nome_original": string,"p_sha256": string,"p_versao_id": string }; Returns: string
                            },
 "ultima_linha_de_base":
 { Args: { "p_consultoria_id": string }; Returns: {
               "respondido_em": string
+            }[]
+                           },
+"versoes_conhecidas":
+{ Args: { "p_fonte": string }; Returns: {
+              "chave": string,"id_externo": string,"norma_id": string,"situacao_na_fonte": string,"ultima_versao_id_externo": string,"ultima_versao_numero": number,"ultimo_sha256": string
             }[]
                            }
           }
