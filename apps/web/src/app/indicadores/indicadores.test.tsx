@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { renderizarApp, vinculoFalso } from '@/test/renderizar'
 import { falso, sessaoDe } from '@/test/supabase-falso'
@@ -13,29 +13,32 @@ function chamadas(nome: string) {
   return falso.cliente.rpc.mock.calls.filter(([rpc]) => rpc === nome).map(([, args]) => args)
 }
 
-describe('linha de base (ADR-0027)', () => {
-  beforeEach(() => {
-    window.localStorage.clear()
-  })
-
-  it('pergunta à Gestão sem resposta, valida e grava as 4 respostas', async () => {
-    const usuario = userEvent.setup()
-    let respondida = false
+describe('linha de base (ADR-0027, ADR-0057)', () => {
+  function cenario(papel: 'gestao' | 'equipe', rpc: Record<string, unknown> = {}) {
     falso.reiniciar({
-      sessao: gestao,
+      sessao: papel === 'gestao' ? gestao : sessaoDe('ana@filtroville.test', 'Ana Ribeiro'),
       rpc: {
-        meus_vinculos: { data: [vinculoFalso('Filtroville', 'gestao')] },
-        ultima_linha_de_base: () => ({
-          data: respondida ? [{ respondido_em: new Date().toISOString() }] : [],
-        }),
-        responder_linha_de_base: () => {
-          respondida = true
-          return { data: 'id' }
-        },
+        meus_vinculos: { data: [vinculoFalso('Filtroville', papel)] },
+        ultima_linha_de_base: { data: [] },
+        ...rpc,
       },
     })
-    renderizarApp('/')
+  }
 
+  it('o diálogo não abre sozinho, nem sem resposta (as respostas vêm do quiz do site)', async () => {
+    cenario('gestao')
+    renderizarApp('/calendario')
+    expect(await screen.findByRole('heading', { level: 1, name: 'Calendário' })).toBeInTheDocument()
+    expect(screen.queryByRole('dialog', { name: 'Antes do Grama' })).toBeNull()
+    expect(chamadas('ultima_linha_de_base')).toEqual([])
+  })
+
+  it('em Configurações, a Gestão abre "Antes do Grama", valida e grava as 4 respostas', async () => {
+    const usuario = userEvent.setup()
+    cenario('gestao', { responder_linha_de_base: { data: 'id' } })
+    renderizarApp('/configuracoes/equipe')
+    await usuario.click(await screen.findByRole('button', { name: 'Ações de Configurações' }))
+    await usuario.click(await screen.findByRole('menuitem', { name: 'Antes do Grama' }))
     const dialogo = await screen.findByRole('dialog', { name: 'Antes do Grama' })
     await usuario.type(
       within(dialogo).getByLabelText('Quantas licenças ativas vocês acompanham hoje?'),
@@ -76,35 +79,36 @@ describe('linha de base (ADR-0027)', () => {
     ])
   })
 
-  it('"Responder depois" fecha e adia; a Equipe nem consulta', async () => {
+  it('o erro do banco aparece no diálogo; Cancelar fecha sem gravar', async () => {
     const usuario = userEvent.setup()
-    falso.reiniciar({
-      sessao: gestao,
-      rpc: {
-        meus_vinculos: { data: [vinculoFalso('Filtroville', 'gestao')] },
-        ultima_linha_de_base: { data: [] },
-      },
-    })
-    renderizarApp('/')
+    cenario('gestao', { responder_linha_de_base: { error: { message: 'sem_permissao' } } })
+    renderizarApp('/configuracoes/equipe')
+    await usuario.click(await screen.findByRole('button', { name: 'Ações de Configurações' }))
+    await usuario.click(await screen.findByRole('menuitem', { name: 'Antes do Grama' }))
     const dialogo = await screen.findByRole('dialog', { name: 'Antes do Grama' })
-    await usuario.click(within(dialogo).getByRole('button', { name: 'Responder depois' }))
+    for (const rotulo of [
+      'Quantas licenças ativas vocês acompanham hoje?',
+      'Quantas horas por semana a equipe gasta conferindo prazos e cobrando pessoas?',
+      'Quantos minutos leva para cadastrar uma condicionante à mão?',
+      'Quantas vezes por mês um prazo pegou a equipe de surpresa?',
+    ]) {
+      await usuario.type(within(dialogo).getByLabelText(rotulo), '1')
+    }
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Salvar respostas' }))
+    expect(await within(dialogo).findByRole('alert')).toHaveTextContent(
+      'Você não tem permissão para esta ação.',
+    )
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Cancelar' }))
     await waitFor(() => {
       expect(screen.queryByRole('dialog', { name: 'Antes do Grama' })).not.toBeInTheDocument()
     })
-    expect(Object.keys(window.localStorage).some((k) => k.startsWith('grama:linha-de-base:'))).toBe(
-      true,
-    )
+  })
 
-    falso.reiniciar({
-      sessao: sessaoDe('ana@filtroville.test', 'Ana Ribeiro'),
-      rpc: {
-        meus_vinculos: { data: [vinculoFalso('Filtroville', 'equipe')] },
-        ultima_linha_de_base: { data: [] },
-      },
-    })
-    renderizarApp('/calendario')
-    expect(await screen.findByRole('heading', { level: 1, name: 'Calendário' })).toBeInTheDocument()
-    expect(chamadas('ultima_linha_de_base')).toEqual([])
+  it('a Equipe não tem a ação', async () => {
+    cenario('equipe')
+    renderizarApp('/configuracoes/equipe')
+    expect(await screen.findByText('Você não tem acesso a esta área')).toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Antes do Grama' })).toBeNull()
   })
 })
 

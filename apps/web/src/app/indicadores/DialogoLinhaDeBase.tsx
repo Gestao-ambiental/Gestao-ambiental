@@ -1,19 +1,13 @@
-import {
-  adiarLinhaDeBase,
-  errosDaLinhaDeBase,
-  precisaResponderLinhaDeBase,
-  type LinhaDeBase,
-} from '@gestao-ambiental/domain'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { errosDaLinhaDeBase, type LinhaDeBase } from '@gestao-ambiental/domain'
+import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
-import { useSessao } from '@/app/sessao/contexto-sessao'
 import { Botao } from '@/components/ui/botao'
 import { CampoTexto } from '@/components/ui/campo-texto'
 import { Dialogo } from '@/components/ui/dialogo'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
-import { obterUltimaLinhaDeBase, responderLinhaDeBase } from '@/lib/api/indicadores-de-valor'
+import { responderLinhaDeBase } from '@/lib/api/indicadores-de-valor'
 import { mensagemDoErro } from '@/lib/erros'
 
 const PERGUNTAS: { campo: keyof LinhaDeBase; rotulo: string; unidade: string }[] = [
@@ -46,59 +40,31 @@ const VAZIO: Record<keyof LinhaDeBase, string> = {
   surpresasPorMes: '',
 }
 
-const prefixoAdiada = 'grama:linha-de-base:adiada:'
-
-function lerAdiada(chave: string): string | null {
-  try {
-    return window.localStorage.getItem(prefixoAdiada + chave)
-  } catch {
-    return null
-  }
-}
-
-function gravarAdiada(chave: string, ate: string): void {
-  try {
-    window.localStorage.setItem(prefixoAdiada + chave, ate)
-  } catch {
-    // Sem armazenamento: o diálogo volta no próximo acesso.
-  }
-}
-
 /**
- * Linha de base (ADR-0027): as 4 perguntas à Gestão, quando a consultoria nunca respondeu ou a
- * última resposta tem mais de 90 dias. "Responder depois" adia 7 dias para esta pessoa, neste
- * navegador. Não aparece no modo suporte nem para a Equipe.
+ * Linha de base (ADR-0027, ADR-0057): as 4 perguntas da Gestão. As respostas chegam do quiz do site
+ * quando a consultoria é criada; aqui a Gestão preenche ou corrige, por Configurações. Não abre
+ * sozinho.
  */
-export function DialogoLinhaDeBase() {
-  const { atual, suporte } = useConsultoria()
-  const { sessao } = useSessao()
+export function DialogoLinhaDeBase({
+  aberto,
+  aoMudar,
+}: {
+  aberto: boolean
+  aoMudar: (aberto: boolean) => void
+}) {
+  const { atual } = useConsultoria()
   const cid = atual.consultoriaId
-  const chaveAdiada = `${sessao?.user.id ?? ''}:${cid}`
-  const ehGestao = atual.papel === 'gestao' && !suporte
   const queryClient = useQueryClient()
-  const [adiada, setAdiada] = useState(() => lerAdiada(chaveAdiada))
   const [respostas, setRespostas] = useState(VAZIO)
   const [erros, setErros] = useState<Partial<Record<keyof LinhaDeBase, string>>>({})
   const [falha, setFalha] = useState<string | null>(null)
   const [salvando, setSalvando] = useState(false)
 
-  const ultima = useQuery({
-    queryKey: ['linha-de-base', cid],
-    queryFn: () => obterUltimaLinhaDeBase(cid),
-    enabled: ehGestao,
-    retry: false,
-  })
-
-  const aberto =
-    ehGestao &&
-    ultima.isSuccess &&
-    ultima.data !== undefined &&
-    precisaResponderLinhaDeBase(ultima.data, new Date(), adiada)
-
-  function responderDepois() {
-    const ate = adiarLinhaDeBase(new Date())
-    gravarAdiada(chaveAdiada, ate)
-    setAdiada(ate)
+  function fechar() {
+    setRespostas(VAZIO)
+    setErros({})
+    setFalha(null)
+    aoMudar(false)
   }
 
   async function enviar() {
@@ -116,6 +82,7 @@ export function DialogoLinhaDeBase() {
         surpresasPorMes: numero('surpresasPorMes'),
       })
       await queryClient.invalidateQueries({ queryKey: ['linha-de-base', cid] })
+      fechar()
     } catch (erro) {
       setFalha(mensagemDoErro(erro))
     } finally {
@@ -127,14 +94,14 @@ export function DialogoLinhaDeBase() {
     <Dialogo
       aberto={aberto}
       aoMudar={(valor) => {
-        if (!valor) responderDepois()
+        if (!valor) fechar()
       }}
       titulo="Antes do Grama"
       largura={560}
       acoes={
         <>
-          <Botao disabled={salvando} onClick={responderDepois}>
-            Responder depois
+          <Botao disabled={salvando} onClick={fechar}>
+            Cancelar
           </Botao>
           <Botao
             type="submit"

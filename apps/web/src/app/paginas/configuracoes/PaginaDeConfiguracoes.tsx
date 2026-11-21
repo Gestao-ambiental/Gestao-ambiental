@@ -1,13 +1,15 @@
 // Moldura das abas de Configurações (ADR-0041): título "Configurações" em todas, abas logo abaixo,
 // a ação principal da aba à direita do título e, na aba com seções (Orçamentos), o segmentado
 // entre elas. A Equipe (papel) vê só o título e o "sem permissão" de cada aba.
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { useRecursosLiberados } from '@/app/consultoria/recurso-liberado'
 import { Pagina } from '@/app/paginas/Pagina'
+import { DialogoLinhaDeBase } from '@/app/indicadores/DialogoLinhaDeBase'
 import { AbasDeRota } from '@/components/ui/abas'
+import { BotaoMais } from '@/components/ui/botao-mais'
 import { Segmentado } from '@/components/ui/segmentado'
 
 import {
@@ -26,12 +28,41 @@ export function PaginaDeConfiguracoes({
   acao?: ReactNode
   children: ReactNode
 }) {
-  const { atual } = useConsultoria()
+  const { atual, suporte } = useConsultoria()
   const ehGestao = atual.papel === 'gestao'
+  const [antesDoGrama, setAntesDoGrama] = useState(false)
+  // Os números de antes do Grama (ADR-0057): chegam do quiz do site; aqui só para corrigir.
+  const mais =
+    ehGestao && !suporte ? (
+      <BotaoMais
+        de={TITULO_DE_CONFIGURACOES}
+        itens={[
+          {
+            rotulo: 'Antes do Grama',
+            aoEscolher: () => {
+              setAntesDoGrama(true)
+            },
+          },
+        ]}
+      />
+    ) : null
   return (
-    <Pagina titulo={TITULO_DE_CONFIGURACOES} acao={ehGestao ? acao : undefined}>
+    <Pagina
+      titulo={TITULO_DE_CONFIGURACOES}
+      acao={
+        ehGestao ? (
+          <span className="flex items-center gap-(--e-2)">
+            {acao}
+            {mais}
+          </span>
+        ) : undefined
+      }
+    >
       {ehGestao ? <AbasDeConfiguracoes /> : null}
       {children}
+      {ehGestao && !suporte ? (
+        <DialogoLinhaDeBase aberto={antesDoGrama} aoMudar={setAntesDoGrama} />
+      ) : null}
     </Pagina>
   )
 }
