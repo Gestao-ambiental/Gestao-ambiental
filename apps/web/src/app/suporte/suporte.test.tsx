@@ -492,8 +492,12 @@ describe('acesso de suporte: emergência pela central', () => {
       expect(router.state.location.pathname).toBe('/')
     })
 
-    const faixa = await screen.findByRole('region', { name: 'Acesso de suporte' })
-    expect(within(faixa).getByRole('status')).toHaveTextContent('somente leitura')
+    // Com a suíte inteira, a seção da central ("Acesso de suporte") ainda pode estar na tela por um
+    // instante depois da navegação: espera a faixa do app, a que tem o status.
+    await waitFor(() => {
+      const faixa = screen.getByRole('region', { name: 'Acesso de suporte' })
+      expect(within(faixa).getByRole('status')).toHaveTextContent('somente leitura')
+    })
     expect(router.state.location.pathname).toBe('/')
     const [chamada] = chamadas('abrir_acesso_de_emergencia')
     expect(chamada?.[1]).toMatchObject({
