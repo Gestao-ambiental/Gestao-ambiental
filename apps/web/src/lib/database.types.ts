@@ -3720,11 +3720,11 @@ isOneToOne: false
 "responder_exigencia":
 { Args: { "p_caminho"?: string,"p_descricao"?: string,"p_exigencia_id": string,"p_nome_original"?: string,"p_protocolado_em": string,"p_protocolado_em_texto"?: string,"p_protocolo_numero"?: string,"p_resposta_id": string,"p_sha256"?: string,"p_versao_id"?: string }; Returns: number
                            },
-"responder_quiz_antes_do_grama":
-{ Args: { "p_contato"?: string,"p_horas_semana_conferindo": number,"p_id": string,"p_licencas_ativas": number,"p_minutos_por_condicionante": number,"p_surpresas_por_mes": number }; Returns: undefined
-                           },
 "responder_linha_de_base":
 { Args: { "p_consultoria_id": string,"p_horas_semana_conferindo": number,"p_licencas_ativas": number,"p_minutos_por_condicionante": number,"p_surpresas_por_mes": number }; Returns: string
+                           },
+"responder_quiz_antes_do_grama":
+{ Args: { "p_contato"?: string,"p_horas_semana_conferindo": number,"p_id": string,"p_licencas_ativas": number,"p_minutos_por_condicionante": number,"p_surpresas_por_mes": number }; Returns: undefined
                            },
 "restaurar_orcamento":
 { Args: { "p_id": string,"p_row_version": number }; Returns: number
