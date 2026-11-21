@@ -1,0 +1,12 @@
+{
+  "displayFieldName": "iq",
+  "fieldAliases": { "iq": "Inscrição Imobiliária", "quadra": "Quadra", "lote": "Lote" },
+  "geometryType": "esriGeometryPolygon",
+  "spatialReference": { "wkid": 4326, "latestWkid": 4326 },
+  "fields": [
+    { "name": "iq", "type": "esriFieldTypeString", "alias": "Inscrição Imobiliária", "length": 16 },
+    { "name": "quadra", "type": "esriFieldTypeString", "alias": "Quadra", "length": 11 },
+    { "name": "lote", "type": "esriFieldTypeInteger", "alias": "Lote" }
+  ],
+  "features": []
+}

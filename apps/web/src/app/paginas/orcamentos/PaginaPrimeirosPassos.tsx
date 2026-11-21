@@ -841,7 +841,7 @@ function ProgressoDosPassos({
 }) {
   return (
     <nav aria-label="Passos da configuração" className="overflow-x-auto">
-      {/* Linha de trajeto como a Trilha: estação lima com aro (atual), cheia com check (salvo),
+      {/* Linha de trajeto como a Trilha: estação verde com aro (atual), cheia com check (salvo),
           vazada (não salvo). Cada estação é um botão: dá para ir e voltar à vontade. */}
       <ol className="flex items-center gap-(--e-2)">
         {ETAPAS.map((e) => {

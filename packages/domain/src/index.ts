@@ -225,6 +225,7 @@ export {
   CARGOS,
   GENEROS,
   MAXIMO_DE_OUTRAS_PROFISSOES,
+  areaDaProfissao,
   PROFISSOES,
   cargoDoCodigo,
   generoDoCodigo,
@@ -604,3 +605,11 @@ export type { SituacaoDoAlvara } from './alvara'
 export { OBJETO_INICIAL, objetoAindaAutomatico, objetoAutomatico } from './objeto-do-orcamento'
 
 export * from './importacao'
+export {
+  coresDasAreas,
+  coresSemRepetir,
+  hashEstavel,
+  iniciaisDe,
+  QUANTIDADE_DE_CORES,
+} from './cores-por-categoria'
+export { lerInscricaoImobiliaria } from './inscricao-imobiliaria'

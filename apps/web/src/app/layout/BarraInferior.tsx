@@ -11,7 +11,7 @@ const classeItem =
 
 /**
  * Barra inferior do celular: os destinos de todo dia ao alcance do polegar e "Mais" com o resto.
- * O atual leva a plaqueta verde-lima atrás do ícone (forma e peso, não só cor).
+ * O atual leva a plaqueta verde do destaque atrás do ícone (forma e peso, não só cor).
  */
 export const BarraInferior = forwardRef<HTMLButtonElement, { aoAbrirMais: () => void }>(
   function BarraInferior({ aoAbrirMais }, refMais) {
