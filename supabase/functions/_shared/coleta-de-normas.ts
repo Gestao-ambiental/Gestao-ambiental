@@ -1,4 +1,4 @@
-// Coleta de normas (pacote L1, ADR-0050, LEG-02 e LEG-03). A Edge Function coletar-normas só liga
+// Coleta de normas (pacotes L1 e L2, ADR-0050, LEG-02 e LEG-03). A Edge Function coletar-normas só liga
 // as dependências reais (Supabase com a service role, Storage, fetch e unpdf); a regra fica aqui e
 // nos adaptadores de _shared/fontes/, testada com `deno test` e dependências falsas.
 //
@@ -8,7 +8,8 @@
 // 1. iniciar_coleta(fonte, janela): a janela padrão é o dia de hoje em Brasília. null = a coleta da
 //    janela já foi feita ou está em andamento (200 {ignorada: true}).
 // 2. O adaptador da fonte busca, compara com versoes_conhecidas e grava as versões novas (no
-//    máximo `limite` arquivos baixados por execução, padrão 15; o resto fica para a próxima).
+//    máximo `limite` arquivos baixados por execução, padrão 15; o resto fica para a próxima). Os
+//    diários (DOE-SC, DOEM de Joinville) leem as edições do dia da janela, que vai no contexto.
 // 3. concluir_coleta com os itens novos, ou com o código curto do erro (falhou): o código vai para
 //    fonte_legal.ultimo_erro, que é o alerta de fonte fora do ar ou de formato mudado.
 // Nunca vão para o log: o token, textos de norma nem dados pessoais. Só fonte, ids e códigos.
@@ -23,9 +24,12 @@ import {
   dataEmSaoPaulo,
   ErroDaColeta,
 } from './fontes/comum.ts'
+import { coletarLeisDaAlesc, FONTE_ALESC } from './fontes/alesc.ts'
 import { coletarConsema, FONTE_CONSEMA } from './fontes/consema.ts'
+import { coletarDoeSc, FONTE_DOE_SC } from './fontes/doe-sc.ts'
 import { coletarInsDoIma, FONTE_IMA_IN } from './fontes/ima-in.ts'
 import { coletarPortariasDoIma, FONTE_IMA_PORTARIA } from './fontes/ima-portaria.ts'
+import { coletarDoemDeJoinville, FONTE_JOINVILLE_DOEM } from './fontes/joinville-doem.ts'
 
 export { buscarComEducacao, ErroDaColeta }
 
@@ -43,6 +47,9 @@ export const COLETORES: Readonly<Record<string, Coletor>> = {
   [FONTE_IMA_IN]: coletarInsDoIma,
   [FONTE_IMA_PORTARIA]: coletarPortariasDoIma,
   [FONTE_CONSEMA]: coletarConsema,
+  [FONTE_DOE_SC]: coletarDoeSc,
+  [FONTE_ALESC]: coletarLeisDaAlesc,
+  [FONTE_JOINVILLE_DOEM]: coletarDoemDeJoinville,
 }
 
 export interface DependenciasDaColeta {
@@ -159,6 +166,7 @@ export function criarTratadorDaColeta(deps: DependenciasDaColeta) {
     const ctx: ContextoDaColeta = {
       coletaId,
       fonte: dados.fonte,
+      janela,
       banco: deps.banco,
       buscar: buscarComEducacao(deps.fetch, { esperar: deps.esperar }),
       lerPdf: deps.lerPdf,

@@ -16,7 +16,13 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
-export const ARQUIVOS = ['norma.ts', 'diferenca-de-norma.ts', 'classificar-ato.ts', 'sem-cpf.ts']
+export const ARQUIVOS = [
+  'norma.ts',
+  'diferenca-de-norma.ts',
+  'classificar-ato.ts',
+  'sem-cpf.ts',
+  'filtro-de-ato.ts',
+]
 
 export const CABECALHO =
   '// Gerado por scripts/normas/espelhar-dominio-no-edge.mjs a partir de packages/domain/src. Não edite.\n\n'

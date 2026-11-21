@@ -12,10 +12,12 @@ import { describe, expect, it } from 'vitest'
 
 import classificarAto from './classificar-ato.ts?raw'
 import diferencaDeNorma from './diferenca-de-norma.ts?raw'
+import filtroDeAto from './filtro-de-ato.ts?raw'
 import norma from './norma.ts?raw'
 import semCpf from './sem-cpf.ts?raw'
 import classificarAtoNoEdge from '../../../supabase/functions/_shared/dominio/classificar-ato.ts?raw'
 import diferencaDeNormaNoEdge from '../../../supabase/functions/_shared/dominio/diferenca-de-norma.ts?raw'
+import filtroDeAtoNoEdge from '../../../supabase/functions/_shared/dominio/filtro-de-ato.ts?raw'
 import normaNoEdge from '../../../supabase/functions/_shared/dominio/norma.ts?raw'
 import semCpfNoEdge from '../../../supabase/functions/_shared/dominio/sem-cpf.ts?raw'
 
@@ -85,6 +87,7 @@ describe('espelho do domínio em supabase/functions/_shared/dominio', () => {
     ['diferenca-de-norma.ts', diferencaDeNorma, diferencaDeNormaNoEdge],
     ['classificar-ato.ts', classificarAto, classificarAtoNoEdge],
     ['sem-cpf.ts', semCpf, semCpfNoEdge],
+    ['filtro-de-ato.ts', filtroDeAto, filtroDeAtoNoEdge],
   ])(
     '%s está em dia (se falhar: node scripts/normas/espelhar-dominio-no-edge.mjs)',
     (_arquivo, dominio, noEdge) => {

@@ -1,7 +1,8 @@
-// Peças comuns dos coletores de normas (pacote L1, ADR-0050): acesso educado às fontes, erro com
-// código curto, contexto de uma execução e o fluxo de gravar uma versão (SHA-256, texto sem CPF,
+// Peças comuns dos coletores de normas (pacotes L1 e L2, ADR-0050): acesso educado às fontes, erro
+// com código curto, contexto de uma execução e o fluxo de gravar uma versão (SHA-256, texto sem CPF,
 // diferença, Storage e registrar_versao_de_norma). Os adaptadores de cada fonte (ima-in.ts,
-// ima-portaria.ts, consema.ts) e o tratador (../coleta-de-normas.ts) usam daqui.
+// ima-portaria.ts, consema.ts, doe-sc.ts, alesc.ts, joinville-doem.ts) e o tratador
+// (../coleta-de-normas.ts) usam daqui; o que só os diários usam fica em diarios.ts.
 //
 // Storage: bucket privado 'normas'. O caminho dentro do bucket é '<norma_id>/<uuid>' e a coluna
 // norma_versao.objeto guarda 'normas/<norma_id>/<uuid>' (bucket + caminho), o formato do check
@@ -23,6 +24,9 @@ export const HOSTS_DAS_FONTES = [
   'in.ima.sc.gov.br',
   'consultas.ima.sc.gov.br',
   'www.semae.sc.gov.br',
+  'portal.doe.sea.sc.gov.br',
+  'leis.alesc.sc.gov.br',
+  'sei.joinville.sc.gov.br',
 ] as const
 
 export const TIPOS_PDF = [
@@ -277,7 +281,11 @@ export interface NormaParaGarantir {
   tipo: string
   numero: string
   ano?: number | null
-  titulo: string
+  /**
+   * Obrigatório quando a norma é criada. Sem ele, a norma que já existe mantém o título (garantir_norma
+   * faz coalesce); quem só quer completar a URL de uma norma da carga não manda título.
+   */
+  titulo?: string
   ementa?: string | null
   url_oficial?: string | null
   fonte: string
@@ -355,6 +363,8 @@ export interface Contagem {
 export interface ContextoDaColeta {
   coletaId: string
   fonte: string
+  /** Janela da coleta (aaaa-mm-dd ou aaaa-mm-ddTHH). Os diários leem as edições desse dia. */
+  janela?: string
   banco: BancoDaColeta
   buscar: Buscador
   /** Texto do PDF; pode lançar (a versão fica com texto nulo). */

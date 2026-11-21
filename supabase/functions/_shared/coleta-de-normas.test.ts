@@ -147,7 +147,8 @@ Deno.test(
       assert.equal(resposta.status, 400, JSON.stringify(corpo))
       assert.deepEqual(await resposta.json(), { erro: 'pedido_invalido' })
     }
-    const semColetor = await tratar(pedir({ fonte: 'doe_sc' }))
+    // O DOE-SC ganhou coletor no L2; o CIGA continua sem.
+    const semColetor = await tratar(pedir({ fonte: 'ciga' }))
     assert.equal(semColetor.status, 400)
     assert.deepEqual(await semColetor.json(), { erro: 'fonte_sem_coletor' })
     assert.deepEqual(banco.chamadas, [])
