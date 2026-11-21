@@ -5,14 +5,20 @@ import {
   CAIXA_DE_SC,
   criarTratadorDaBuscaDeEndereco,
   IDENTIFICACAO,
+  interpretarLote,
   interpretarResposta,
+  lerInscricao,
   lerTexto,
   urlDaBusca,
+  urlDaInscricao,
 } from './busca-de-endereco.ts'
 // Respostas gravadas do Photon em 20/11/2026, só com os campos usados. Import de JSON para o teste
 // rodar sem --allow-read, como no CI.
 import avenidaPaulista from './fixtures-endereco/avenida-paulista.json' with { type: 'json' }
 import donaFrancisca from './fixtures-endereco/dona-francisca.json' with { type: 'json' }
+// Respostas gravadas do SIMGeo de Joinville em 20/11/2026 (camada de lotes, só iq, quadra e lote).
+import inscricaoCentro from './fixtures-endereco/inscricao-centro.json' with { type: 'json' }
+import inscricaoInexistente from './fixtures-endereco/inscricao-inexistente.json' with { type: 'json' }
 
 function pedido(corpo: unknown, autorizacao: string | null = 'Bearer sessao-1'): Request {
   return new Request('http://local/buscar-endereco', {
@@ -132,4 +138,61 @@ Deno.test('provedor fora do ar: 502 com motivo, para a tela sugerir o mapa', asy
   const resposta = await tratar(pedido({ texto: 'Rua Dona Francisca' }))
   assert.equal(resposta.status, 502)
   assert.deepEqual(await resposta.json(), { erro: 'provedor_indisponivel' })
+})
+
+Deno.test('inscrição: reconhece com pontos, espaços e zeros à esquerda; endereço não é', () => {
+  assert.equal(lerInscricao('13.20.23.07.0239'), '13-20-23-7-239')
+  assert.equal(lerInscricao('13 20 23 7 239 000'), '13-20-23-7-239')
+  assert.equal(lerInscricao('Rua Dona Francisca'), null)
+  assert.equal(lerInscricao('89201-000'), null)
+})
+
+Deno.test('inscrição: a consulta pede só os campos públicos do lote, em graus', () => {
+  const url = new URL(urlDaInscricao('13-20-23-7-239'))
+  assert.match(url.pathname, /divisao_territorial_simgeo_v4\/MapServer\/4\/query$/)
+  assert.equal(url.searchParams.get('where'), "iq='13-20-23-7-239'")
+  assert.equal(url.searchParams.get('outFields'), 'iq,quadra,lote')
+  assert.equal(url.searchParams.get('outSR'), '4326')
+})
+
+Deno.test('inscrição achada: centro do lote, contorno e o lote no detalhe', () => {
+  const [lote] = interpretarLote(inscricaoCentro)
+  assert.ok(lote)
+  assert.equal(lote.rotulo, 'Inscrição 13-20-23-7-239')
+  assert.equal(lote.detalhe, 'Lote 239 · Joinville')
+  assert.ok(Math.abs(lote.latitude - -26.3045) < 0.001)
+  assert.ok(Math.abs(lote.longitude - -48.8486) < 0.001)
+  assert.ok((lote.contorno?.length ?? 0) >= 4)
+  // Contorno em [latitude, longitude], para o Leaflet.
+  assert.ok((lote.contorno?.[0]?.[0] ?? 0) < -26)
+})
+
+Deno.test('inscrição que não existe: nenhuma sugestão', () => {
+  assert.deepEqual(interpretarLote(inscricaoInexistente), [])
+})
+
+Deno.test('inscrição: vai ao SIMGeo (não ao Photon) e devolve a inscrição lida', async () => {
+  const { f, chamadas } = fetchFalso([inscricaoCentro])
+  const tratar = criarTratadorDaBuscaDeEndereco({ fetch: f })
+  const resposta = (await (await tratar(pedido({ texto: '13.20.23.07.0239' }))).json()) as {
+    sugestoes: { rotulo: string }[]
+    inscricao: string
+  }
+  assert.equal(resposta.inscricao, '13-20-23-7-239')
+  assert.equal(resposta.sugestoes[0]?.rotulo, 'Inscrição 13-20-23-7-239')
+  assert.match(chamadas[0]?.url ?? '', /geo\.joinville\.sc\.gov\.br/)
+  // Mesma inscrição escrita de outro jeito: cache.
+  await tratar(pedido({ texto: '13-20-23-7-239' }))
+  assert.equal(chamadas.length, 1)
+})
+
+Deno.test('SIMGeo fora do ar ou com erro: 502 próprio, para a tela explicar', async () => {
+  const fora = criarTratadorDaBuscaDeEndereco({ fetch: fetchFalso([new Error('rede')]).f })
+  const r1 = await fora(pedido({ texto: '13-20-23-7-239' }))
+  assert.equal(r1.status, 502)
+  assert.deepEqual(await r1.json(), { erro: 'simgeo_indisponivel' })
+  const comErro = criarTratadorDaBuscaDeEndereco({
+    fetch: fetchFalso([{ error: { code: 400, message: 'Invalid query' } }]).f,
+  })
+  assert.equal((await comErro(pedido({ texto: '13-20-23-7-239' }))).status, 502)
 })

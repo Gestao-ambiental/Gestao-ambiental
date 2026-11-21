@@ -584,3 +584,4 @@ export {
   iniciaisDe,
   QUANTIDADE_DE_CORES,
 } from './cores-por-categoria'
+export { lerInscricaoImobiliaria } from './inscricao-imobiliaria'

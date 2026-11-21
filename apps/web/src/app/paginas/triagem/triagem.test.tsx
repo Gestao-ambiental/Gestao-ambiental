@@ -339,6 +339,94 @@ describe('local do empreendimento', () => {
   })
 })
 
+describe('inscrição imobiliária no campo de endereço (Joinville)', () => {
+  const LOTE_239 = {
+    rotulo: 'Inscrição 13-20-23-7-239',
+    detalhe: 'Lote 239 · Joinville',
+    latitude: -26.30452,
+    longitude: -48.84862,
+    contorno: [
+      [-26.304503, -48.848343],
+      [-26.304814, -48.848691],
+      [-26.304579, -48.848936],
+      [-26.304503, -48.848343],
+    ],
+  }
+
+  it('achou: mostra o lote, marca o centro e segue a consulta do local', async () => {
+    falso.reiniciar(
+      cenario({
+        'buscar-endereco': { data: { sugestoes: [LOTE_239], inscricao: '13-20-23-7-239' } },
+      }),
+    )
+    const { usuario } = montar()
+    const campo = screen.getByRole('combobox', { name: 'Endereço' })
+    await usuario.type(campo, '13.20.23.07.0239')
+    const opcao = await screen.findByRole('option', { name: /^Inscrição 13-20-23-7-239/ })
+    expect(screen.getByRole('listbox', { name: 'Lote encontrado' })).toContainElement(opcao)
+    expect(falso.cliente.functions.invoke).toHaveBeenCalledWith('buscar-endereco', {
+      body: { texto: '13.20.23.07.0239' },
+    })
+    expect(screen.getByText('Lotes: SIMGeo, Prefeitura de Joinville')).toBeInTheDocument()
+    await usuario.click(opcao)
+
+    // O campo fica com o número da inscrição; a consulta do local vai ao centro do lote.
+    expect(campo).toHaveValue('13-20-23-7-239')
+    expect(falso.cliente.functions.invoke).toHaveBeenCalledWith('consultar-local', {
+      body: { latitude: -26.30452, longitude: -48.84862 },
+    })
+    expect(await screen.findByText('Joinville (IBGE 4209102)')).toBeInTheDocument()
+    expect(within(resumo()).getByText('Inscrição 13-20-23-7-239')).toBeInTheDocument()
+  })
+
+  it('não achou: diz que a inscrição não está no SIMGeo e que vale só para Joinville', async () => {
+    falso.reiniciar(
+      cenario({
+        'buscar-endereco': { data: { sugestoes: [], inscricao: '99-99-99-9-999' } },
+      }),
+    )
+    const { usuario } = montar()
+    await usuario.type(screen.getByRole('combobox', { name: 'Endereço' }), '99-99-99-9-999')
+    expect(
+      await screen.findByText(
+        'Inscrição não encontrada no SIMGeo de Joinville. Por enquanto, a inscrição vale só para Joinville.',
+      ),
+    ).toBeInTheDocument()
+    expect(falso.cliente.functions.invoke).not.toHaveBeenCalledWith(
+      'consultar-local',
+      expect.anything(),
+    )
+  })
+
+  it('SIMGeo fora do ar: mensagem própria, e o campo segue aceitando endereço', async () => {
+    falso.reiniciar(
+      cenario({
+        'buscar-endereco': (corpo) =>
+          String(corpo.texto).startsWith('13')
+            ? {
+                error: new FunctionsHttpError(
+                  new Response(JSON.stringify({ erro: 'simgeo_indisponivel' }), { status: 502 }),
+                ),
+              }
+            : { data: { sugestoes: [DONA_FRANCISCA], inscricao: null } },
+      }),
+    )
+    const { usuario } = montar()
+    const campo = screen.getByRole('combobox', { name: 'Endereço' })
+    await usuario.type(campo, '13-20-23-7-239')
+    expect(
+      await screen.findByText(
+        'O SIMGeo de Joinville não respondeu. Tente de novo ou marque no mapa.',
+      ),
+    ).toBeInTheDocument()
+
+    await usuario.clear(campo)
+    await usuario.type(campo, 'Rua Dona Francisca')
+    expect(await screen.findByRole('option', { name: /^Rua Dona Francisca/ })).toBeInTheDocument()
+    expect(screen.getByText('Endereços: © colaboradores do OpenStreetMap')).toBeInTheDocument()
+  })
+})
+
 describe('o que o simulador do IMA mostra: taxa, IN e TFASC', () => {
   it('trifásica no IMA mostra LAP, LAI, LAO e total pela classe porte,potencial', async () => {
     const { usuario } = montar('/triagem?etapa=atividades')

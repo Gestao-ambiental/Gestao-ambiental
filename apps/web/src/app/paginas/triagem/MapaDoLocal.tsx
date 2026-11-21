@@ -57,13 +57,16 @@ async function adicionarNomes(m: L.Map): Promise<L.Layer | null> {
 
 interface Props {
   ponto: Coordenadas | null
+  /** Contorno do lote achado pela inscrição ([latitude, longitude]), desenhado em lima. */
+  contorno?: [number, number][] | null
   aoEscolher: (c: Coordenadas) => void
 }
 
-export default function MapaDoLocal({ ponto, aoEscolher }: Props) {
+export default function MapaDoLocal({ ponto, contorno = null, aoEscolher }: Props) {
   const elemento = useRef<HTMLDivElement>(null)
   const mapa = useRef<L.Map | null>(null)
   const marcador = useRef<L.CircleMarker | null>(null)
+  const lote = useRef<L.Polygon | null>(null)
   const aoEscolherAtual = useRef(aoEscolher)
 
   useEffect(() => {
@@ -103,8 +106,25 @@ export default function MapaDoLocal({ ponto, aoEscolher }: Props) {
       m.remove()
       mapa.current = null
       marcador.current = null
+      lote.current = null
     }
   }, [])
+
+  // Contorno do lote (inscrição imobiliária): em lima, sem pegar o clique; o mapa enquadra o lote.
+  useEffect(() => {
+    const m = mapa.current
+    if (!m) return
+    lote.current?.remove()
+    lote.current = null
+    if (!contorno || contorno.length < 3) return
+    lote.current = L.polygon(contorno, {
+      className: 'contorno-do-lote',
+      weight: 3,
+      fillOpacity: 0.12,
+      interactive: false,
+    }).addTo(m)
+    m.fitBounds(lote.current.getBounds(), { padding: [48, 48], maxZoom: 19 })
+  }, [contorno])
 
   useEffect(() => {
     const m = mapa.current
@@ -126,7 +146,9 @@ export default function MapaDoLocal({ ponto, aoEscolher }: Props) {
         className: 'marcador-do-local',
       }).addTo(m)
     }
-    // Endereço escolhido ou ponto fora da vista: centraliza perto do lote.
+    // Endereço escolhido ou ponto fora da vista: centraliza perto do lote (com o contorno, o
+    // enquadramento é o do lote).
+    if (lote.current) return
     if (!m.getBounds().contains(latlng) || m.getZoom() < 16) m.setView(latlng, 18)
   }, [ponto])
 

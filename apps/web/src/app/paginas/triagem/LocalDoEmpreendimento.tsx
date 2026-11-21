@@ -24,8 +24,14 @@ import { BuscaDeEndereco } from './BuscaDeEndereco'
 
 const MapaDoLocal = lazy(() => import('./MapaDoLocal'))
 
-/** Ponto marcado: as coordenadas e, se veio do endereço, o texto escolhido. */
-export type PontoMarcado = Coordenadas & { rotulo?: string | null }
+/**
+ * Ponto marcado: as coordenadas e, se veio do endereço, o texto escolhido. Pela inscrição
+ * imobiliária, também o contorno do lote ([latitude, longitude]), desenhado no mapa.
+ */
+export type PontoMarcado = Coordenadas & {
+  rotulo?: string | null
+  contorno?: [number, number][] | null
+}
 
 const formatarNumero = (v: number, casas = 0) =>
   v.toLocaleString('pt-BR', { maximumFractionDigits: casas })
@@ -227,6 +233,7 @@ export function LocalDoEmpreendimento({
                   latitude: sugestao.latitude,
                   longitude: sugestao.longitude,
                   rotulo: sugestao.rotulo,
+                  contorno: sugestao.contorno ?? null,
                 })
               }}
             />
@@ -257,6 +264,7 @@ export function LocalDoEmpreendimento({
       >
         <MapaDoLocal
           ponto={ponto}
+          contorno={ponto?.contorno ?? null}
           aoEscolher={(c) => {
             aoMarcar({ ...c, rotulo: null })
           }}
