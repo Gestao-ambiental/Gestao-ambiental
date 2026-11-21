@@ -2027,6 +2027,11 @@ isOneToOne: false
               "detalhe": string,"id": string,"referencia_id": string,"tipo": string,"titulo": string
             }[]
                            },
+"buscar_normas":
+{ Args: { "p_deslocamento"?: number,"p_limite"?: number,"p_termo": string }; Returns: {
+              "ano": number,"chave": string,"esfera": string,"id": string,"municipio_ibge": string,"numero": string,"orgao": string,"situacao_na_fonte": string,"tipo": string,"titulo": string,"total": number,"ultima_versao_em": string
+            }[]
+                           },
 "cadastrar_empreendimento_com_unidade":
 { Args: { "p_cnpj": string,"p_consultoria_id": string,"p_empreendimento_id": string,"p_nome": string,"p_unidade_endereco"?: string,"p_unidade_id": string,"p_unidade_nome": string }; Returns: string
                            },
@@ -2080,10 +2085,16 @@ isOneToOne: false
 "central_definir_recursos_do_plano":
 { Args: { "p_codigo": string,"p_motivo": string,"p_recursos": (string)[] }; Returns: undefined
                            },
+"central_descartar_mudanca_de_norma":
+{ Args: { "p_id": string,"p_motivo": string }; Returns: undefined
+                           },
 "central_detalhar_consultoria":
 { Args: { "p_consultoria_id": string }; Returns: {
               "criada_em": string,"empreendimentos": number,"fuso": string,"gestao": Json,"id": string,"licencas": number,"nome": string,"orcamentos": number,"pessoas_ativas": number,"row_version": number,"situacao": Database["public"]['Enums']["situacao_consultoria"],"situacao_alterada_em": string,"situacao_alterada_por_nome": string,"situacao_motivo": string
             }[]
+                           },
+"central_detalhe_da_mudanca_de_norma":
+{ Args: { "p_id": string }; Returns: Json
                            },
 "central_financeiro_lista":
 { Args: { "p_deslocamento"?: number,"p_grupo"?: string,"p_limite"?: number }; Returns: {
@@ -2120,6 +2131,11 @@ isOneToOne: false
               "criada_em": string,"empreendimentos": number,"fuso": string,"gestao": Json,"id": string,"licencas": number,"nome": string,"orcamentos": number,"pessoas_ativas": number,"situacao": Database["public"]['Enums']["situacao_consultoria"],"situacao_alterada_em": string,"total": number,"ultimo_uso_em": string
             }[]
                            },
+"central_listar_mudancas_de_norma":
+{ Args: { "p_deslocamento"?: number,"p_limite"?: number,"p_situacao"?: string }; Returns: {
+              "detectada_em": string,"id": string,"norma_id": string,"norma_titulo": string,"situacao": string,"tem_resumo": boolean,"tipo": string,"total": number
+            }[]
+                           },
 "central_listar_pessoas":
 { Args: { "p_consultoria_id": string,"p_deslocamento"?: number,"p_limite"?: number }; Returns: {
               "criado_em": string,"desligado_em": string,"dias_com_uso_30": number,"email": string,"membro_id": string,"nome": string,"papel": Database["public"]['Enums']["papel_membro"],"situacao": Database["public"]['Enums']["situacao_membro"],"total": number,"ultimo_uso_em": string
@@ -2143,6 +2159,9 @@ isOneToOne: false
 { Args: { "p_consultoria_id": string }; Returns: {
               "bloqueio_em": string,"ciclo": string,"ciclo_agendado": string,"condicao_row_version": number,"contrato_ate": string,"convites_pendentes": number,"criada_em": string,"dias_de_teste": number,"em_atraso_desde": string,"empreendimentos": number,"fim_do_beta": string,"forma": string,"hoje": string,"interna": boolean,"mudanca_em": string,"pessoas": number,"plano": string,"plano_agendado": string,"plano_contrato": string,"proximo_vencimento": string,"situacao": string,"situacao_asaas": string,"somente_leitura": boolean,"teste_ate": string,"valida_ate": string,"vencimentos_em_aberto": Json
             }[]
+                           },
+"central_publicar_mudanca_de_norma":
+{ Args: { "p_criterios": Json,"p_id": string,"p_resumo": Json }; Returns: undefined
                            },
 "central_registrar_convite":
 { Args: { "p_id": string }; Returns: {
@@ -2170,6 +2189,9 @@ isOneToOne: false
 "central_simular_pagamento":
 { Args: { "p_consultoria_id": string }; Returns: number
                            },
+"central_uso_de_ia_da_plataforma":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
 "central_uso_por_modulo":
 { Args: { "p_consultoria_id": string }; Returns: {
               "dias": number,"modulo": string,"ultimo_uso_em": string
@@ -2189,6 +2211,9 @@ isOneToOne: false
                            },
 "concluir_ocorrencia":
 { Args: { "p_ocorrencia_id": string,"p_row_version": number }; Returns: number
+                           },
+"concluir_resumo_de_mudanca":
+{ Args: { "p_criterios": Json,"p_custo_micros": number,"p_duracao_ms": number,"p_modelo": string,"p_reserva_id": string,"p_resumo": Json,"p_tokens_entrada": number,"p_tokens_saida": number,"p_versao_prompt": string }; Returns: undefined
                            },
 "concluir_sem_evidencia":
 { Args: { "p_justificativa": string,"p_ocorrencia_id": string,"p_row_version": number }; Returns: number
@@ -2306,6 +2331,9 @@ isOneToOne: false
 "desligar_membro":
 { Args: { "p_membro_id": string,"p_motivo"?: string }; Returns: undefined
                            },
+"detalhe_da_norma":
+{ Args: { "p_norma_id": string }; Returns: Json
+                           },
 "devolver_relatorio":
 { Args: { "p_id": string,"p_motivo": string,"p_row_version": number }; Returns: number
                            },
@@ -2383,6 +2411,9 @@ isOneToOne: false
 "falhar_extracao_ia":
 { Args: { "p_custo_micros": number,"p_detalhe": string,"p_duracao_ms": number,"p_id": string,"p_modelo": string,"p_motivo": string,"p_paginas": number,"p_tokens_entrada": number,"p_tokens_saida": number,"p_versao_prompt": string }; Returns: undefined
                            },
+"falhar_resumo_de_mudanca":
+{ Args: { "p_motivo": string,"p_reserva_id": string }; Returns: undefined
+                           },
 "ignorar_apontamento":
 { Args: { "p_conferencia_id": string,"p_indice": number }; Returns: undefined
                            },
@@ -2444,6 +2475,11 @@ isOneToOne: false
 "listar_empreendimentos":
 { Args: { "p_busca"?: string,"p_consultoria_id": string,"p_deslocamento"?: number,"p_limite"?: number }; Returns: {
               "cliente_nome": string,"cnpj": string,"criado_em": string,"id": string,"licencas": Json,"nome": string,"total": number,"unidades": number
+            }[]
+                           },
+"listar_fontes_legais":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "ativa": boolean,"codigo": string,"com_erro": boolean,"esfera": string,"nome": string,"ultima_coleta_em": string
             }[]
                            },
 "listar_modelos_de_orcamento":
@@ -2638,6 +2674,9 @@ isOneToOne: false
                            },
 "reservar_extracao_ia":
 { Args: { "p_id": string }; Returns: boolean
+                           },
+"reservar_resumo_de_mudanca":
+{ Args: { "p_mudanca_id": string }; Returns: Json
                            },
 "responder_linha_de_base":
 { Args: { "p_consultoria_id": string,"p_horas_semana_conferindo": number,"p_licencas_ativas": number,"p_minutos_por_condicionante": number,"p_surpresas_por_mes": number }; Returns: string

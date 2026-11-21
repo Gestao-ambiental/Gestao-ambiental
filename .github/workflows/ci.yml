@@ -105,7 +105,7 @@ jobs:
           deno-version: v2.x
       - name: Checagem de tipos
         working-directory: supabase/functions
-        run: deno check --config deno.json extrair-licenca/index.ts conferir-relatorio/index.ts avisar-acesso-de-suporte/index.ts enviar-resumo-do-mes/index.ts avisar-lista-de-espera/index.ts convidar-da-lista-de-espera/index.ts consultar-local/index.ts
+        run: deno check --config deno.json extrair-licenca/index.ts conferir-relatorio/index.ts avisar-acesso-de-suporte/index.ts enviar-resumo-do-mes/index.ts avisar-lista-de-espera/index.ts convidar-da-lista-de-espera/index.ts consultar-local/index.ts resumir-mudanca/index.ts
       # _shared/ tem os testes da extração, da conferência do relatório, do aviso de acesso de suporte
       # (ADR-0025), do resumo do mês (ADR-0027) e da consulta do local do empreendimento.
       - name: Testes das regras das funções

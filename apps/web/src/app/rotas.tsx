@@ -124,6 +124,22 @@ export const rotas: RouteObject[] = [
               })),
             ),
           },
+          {
+            path: 'normas',
+            lazy: carregarRota(() =>
+              import('./paginas/central/PaginaCentralNormas').then((m) => ({
+                Component: m.PaginaCentralNormas,
+              })),
+            ),
+          },
+          {
+            path: 'normas/:id',
+            lazy: carregarRota(() =>
+              import('./paginas/central/PaginaCentralMudancaDeNorma').then((m) => ({
+                Component: m.PaginaCentralMudancaDeNorma,
+              })),
+            ),
+          },
         ],
       },
       {
