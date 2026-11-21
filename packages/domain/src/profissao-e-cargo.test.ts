@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  areaDaProfissao,
   CARGOS,
   PROFISSOES,
   cargoDoCodigo,
@@ -268,5 +269,12 @@ describe('de-para dos textos antigos (sugestão para revisar, nunca conversão s
     ]) {
       expect(sugerirCargo(texto)).toBeNull()
     }
+  })
+})
+
+describe('área da profissão', () => {
+  it('é o curso com a primeira letra maiúscula, para agrupar por área', () => {
+    expect(areaDaProfissao('eng_ambiental')).toBe('Engenharia ambiental')
+    expect(areaDaProfissao('eng_agronomo')).toBe('Agronomia')
   })
 })

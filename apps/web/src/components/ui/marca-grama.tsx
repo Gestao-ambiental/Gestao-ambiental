@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 interface Props {
   /** Abaixo de 640px mostra o G aberto no lugar da palavra completa (áreas pequenas). */
   compactaNoCelular?: boolean
-  /** Sobre o verde-lima: sempre a versão preta, em qualquer tema. */
+  /** Sempre a versão preta, em qualquer tema (fundo claro fixo). */
   escura?: boolean
   /** Largura da palavra em px (mínimo do manual: 120). */
   largura?: number

@@ -159,6 +159,42 @@ describe('AbasDeFiltro', () => {
     await usuario.click(screen.getByRole('button', { name: 'Abertas' }))
     expect(aoMudar).toHaveBeenCalledTimes(1)
   })
+
+  it('o traço da ativa é um elemento só, decorativo, que segue o filtro escolhido', async () => {
+    // jsdom não mede: cada botão ganha uma caixa conforme a posição dele na faixa.
+    const medir = vi
+      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockImplementation(function (this: HTMLElement) {
+        const irmaos = this.parentElement ? [...this.parentElement.children] : []
+        const x = this.tagName === 'BUTTON' ? irmaos.indexOf(this) * 100 : 0
+        return DOMRect.fromRect({
+          x,
+          y: 0,
+          width: this.tagName === 'BUTTON' ? 80 : 400,
+          height: 44,
+        })
+      })
+    try {
+      const usuario = userEvent.setup()
+      const { container } = render(<Filtro />)
+      const tracos = () => container.querySelectorAll('[data-indicador]')
+      expect(tracos()).toHaveLength(1)
+      expect(tracos()[0]).toHaveAttribute('aria-hidden', 'true')
+      expect(screen.getByRole('button', { name: 'Todas 5' })).toHaveClass('border-transparent')
+      const antes = (tracos()[0] as HTMLElement).style.transform
+      await usuario.click(screen.getByRole('button', { name: 'Abertas' }))
+      expect(tracos()).toHaveLength(1)
+      expect((tracos()[0] as HTMLElement).style.transform).not.toBe(antes)
+    } finally {
+      medir.mockRestore()
+    }
+  })
+
+  it('sem medida (primeira pintura), a própria aba ativa desenha o traço', () => {
+    const { container } = render(<Filtro />)
+    expect(container.querySelector('[data-indicador]')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Todas 5' })).toHaveClass('border-(--marca-linha)')
+  })
 })
 
 describe('AbasDeRota', () => {

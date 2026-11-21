@@ -17,6 +17,7 @@ export function Esqueleto({ largura = '100%', altura = 12, className, style }: P
   return (
     <span
       aria-hidden="true"
+      data-esqueleto=""
       className={cn('block rounded-(--raio)', className)}
       style={{
         width: largura,
