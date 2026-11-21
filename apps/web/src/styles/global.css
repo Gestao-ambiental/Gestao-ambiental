@@ -4,7 +4,7 @@
 @import '@fontsource/anton/400.css';
 
 /*
- * Design system do Grama: "quadro de partidas", nas cores e fontes do site (apps/web/DESIGN.md).
+ * Design system do Grama: "quadro de partidas", com o papel e as fontes do site e o verde-escuro (apps/web/DESIGN.md).
  * Os tokens vivem em tokens.css; componentes usam só os nomes semânticos (--folha, --tinta,
  * --acao, --sinal, --atraso-texto, --e-*, --raio…), nunca primitivos nem hexadecimal.
  */
@@ -138,15 +138,15 @@
 @utility entrar {
   animation: entrar var(--dur-media) var(--saida) both;
 }
-/* O lima "acende": a estação atual da trilha se preenche ao avançar. */
+/* O destaque "acende": a estação atual da trilha se preenche de verde ao avançar. */
 @utility acender {
   animation: acender var(--dur-media) var(--saida) both;
 }
-/* Pulso lima breve: recém-salvo ou o "agora" (vence hoje). Só cor, uma vez. */
-@utility pulso-lima {
-  animation: pulso-lima var(--dur-pulso) var(--saida) both;
+/* Pulso breve do destaque: recém-salvo ou o "agora" (vence hoje). Só cor, uma vez. */
+@utility pulso {
+  animation: pulso var(--dur-pulso) var(--saida) both;
 }
-/* Check lima do "salvo": aparece de 60% para o tamanho real, sem quicar. */
+/* Check verde do "salvo": aparece de 60% para o tamanho real, sem quicar. */
 @utility marcar {
   animation: marcar var(--dur-media) var(--saida) both;
 }
@@ -253,9 +253,10 @@
     background-color: var(--folha);
   }
 }
-@keyframes pulso-lima {
+/* Começa num verde médio (o texto de tinta continua legível) e volta ao fundo da linha. */
+@keyframes pulso {
   from {
-    background-color: color-mix(in srgb, var(--sinal) 60%, transparent);
+    background-color: color-mix(in srgb, var(--sinal) 28%, var(--sinal-fundo));
   }
 }
 @keyframes marcar {

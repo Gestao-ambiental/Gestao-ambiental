@@ -161,7 +161,7 @@ describe('categorias (regra)', () => {
     expect(uma.cor).not.toBeNull()
   })
 
-  it('nenhuma categoria colorida usa o lima: as cores são as da paleta de categorias', () => {
+  it('nenhuma categoria colorida usa o verde do destaque: as cores são as da paleta de categorias', () => {
     const equipe = [membro(BRUNO, 'Bruno Kist', 'eng_ambiental')]
     const categoria = categorizador('area', equipe)(item(BRUNO))
     expect(categoria.cor).toBeGreaterThanOrEqual(0)

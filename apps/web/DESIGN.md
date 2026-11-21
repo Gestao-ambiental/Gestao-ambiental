@@ -4,7 +4,7 @@ Fonte da verdade visual do app (`apps/web`). Tokens em [`src/styles/tokens.css`]
 
 ## A ideia
 
-**O prazo é uma partida.** Toda lista de prazos é um quadro de partidas: colunas fixas, número grande do que falta, a linha de hoje acesa. Cores e fontes são as do site **gramaapp.com.br**: papel, tinta preta e o **verde-lima** como única cor de destaque (desde 20/11/2026 não há verde-escuro no sistema). O lima marca o "agora" e a ação principal: botão em pílula, item ativo, hoje, passo atual. Títulos de tela e números do placar em **Anton** caixa alta, como o herói do site; o resto em **Outfit**.
+**O prazo é uma partida.** Toda lista de prazos é um quadro de partidas: colunas fixas, número grande do que falta, a linha de hoje acesa. Papel, tinta e fontes são os do site **gramaapp.com.br**; a cor de destaque do software é o **verde-escuro `#1b4332`** (ADR-0051, decisão do Eduardo em 21/11/2026: o site segue no lima `#cdf22b`, o software usa o verde-escuro). O destaque marca o "agora" e a ação principal: botão em pílula, item ativo, hoje, passo atual. Títulos de tela e números do placar em **Anton** caixa alta, como o herói do site; o resto em **Outfit**.
 
 O que isso recusa: cartões de KPI com sombra, selos em pílula colorida em toda linha, cinza neutro em tudo, ícone dentro de quadradinho, prosa cinza de ajuda.
 
@@ -15,42 +15,43 @@ O que isso recusa: cartões de KPI com sombra, selos em pílula colorida em toda
 3. **Sem cartão dentro de cartão.** Dentro de um painel, separe com regra fina, não com outra caixa.
 4. **Estado = palavra + forma.** O `Selo` é uma palavra colorida com uma marca de forma (quadrado, triângulo, losango, círculo). A plaqueta cheia vermelha só para atraso grave.
 5. **Número tabular** (`numero`, `numero-contagem`, `numero-grande`) em toda coluna de data, valor, quantidade e documento.
-6. **Lima é sinal, não decoração, e sempre preenchimento no claro.** Botão principal, item ativo, hoje, seleção forte (busca), passo atual, seleção de texto, campo do login. No claro o lima sobre o papel tem 1,2:1: nunca é texto, ícone nem linha; ali a marca e o link são tinta. No escuro, o lima pode ser texto, linha e foco.
+6. **O destaque é sinal, não decoração.** Botão principal, item ativo, hoje, seleção forte (busca), passo atual, seleção de texto. Preenchido, leva sempre texto branco (`--acao-texto`, `--sinal-texto`). Como texto, linha e foco usa `--link`, `--marca-linha` e `--foco`: verde-escuro no claro (10,4:1 no papel) e `#7cc4a0` no escuro (9,7:1 na noite). Nenhum componente usa os primitivos `--destaque*`.
 7. **Sem texto cinza explicativo.** Rótulo, valor, estado, erro e o que falta. Nada de parágrafo de ajuda.
 8. **Celular de primeira classe.** Alvos de 44px (`--controle-toque`), barra inferior com Início, Calendário, Campo e Mais; tabelas viram lista no celular.
 
 ## Cor
 
-Estratégia: **a do site.** Papel no chão, folha branca no trabalho, areia no trilho, tinta preta em tudo que é texto e marca, lima só no destaque. Cor de estado só onde há estado.
+Estratégia: **a do site, com o verde-escuro no destaque.** Papel no chão, folha branca no trabalho, areia no trilho, tinta preta no texto, verde só no destaque. Cor de estado só onde há estado.
 
-| Token                                 | Claro                      | Escuro                | Uso                                                   |
-| ------------------------------------- | -------------------------- | --------------------- | ----------------------------------------------------- |
-| `--chao`                              | papel `#faf8f3`            | tinta `#08090b`       | fundo da área de conteúdo                             |
-| `--folha`                             | `#ffffff`                  | `#15171a`             | painel, tabela, campo                                 |
-| `--trilho`                            | areia `#f0efe9`            | `#111311`             | navegação lateral, faixa do celular                   |
-| `--tinta`                             | `#08090b`                  | papel `#faf8f3`       | texto principal (18,8:1 / 18,8:1)                     |
-| `--tinta-2`                           | muted `#484e45`            | `#a9ada4`             | texto secundário (8,1:1 / 8,7:1)                      |
-| `--tinta-3`                           | `#5f665b`                  | `#8b9086`             | metadado, rótulo de coluna (5,6:1 / 5,5:1)            |
-| `--regra` / `--regra-forte`           | line `#d2d6cd` / `#b9beb2` | `#2a2d29` / `#3a3e38` | linhas do quadro                                      |
-| `--campo-borda`                       | `#7d8478`                  | `#6b7068`             | contorno de campo (3,6:1 / 3,5:1)                     |
-| `--acao`                              | lima `#cdf22b`             | lima `#cdf22b`        | botão principal, com tinta preta (15,5:1)             |
-| `--sinal`                             | lima `#cdf22b`             | lima `#cdf22b`        | "agora", sempre com tinta preta                       |
-| `--sinal-fundo` / `--escolha`         | `#eef9c4`                  | `#22290b`             | linha de hoje, item selecionado                       |
-| `--marca-linha` / `--link` / `--foco` | tinta `#08090b`            | lima `#cdf22b`        | aba ativa, link, anel de foco                         |
-| `--atraso-texto`                      | `#b42318`                  | `#ff8b7e`             | atrasado, erro                                        |
-| `--alerta-texto`                      | `#8a5300`                  | `#f2b95a`             | vence em breve                                        |
-| `--ok-texto`                          | tinta (marca lima)         | lima                  | concluído, vigente: palavra em tinta com bolinha lima |
-| `--andamento-texto`                   | `#1d4ed8`                  | `#93b4ff`             | em andamento, espera externa                          |
-| `--revisao-texto`                     | `#6d3fc8`                  | `#b9a0ff`             | em conferência                                        |
-| `--ia`                                | `#7c4ddb`                  | `#b9a0ff`             | o que a IA propôs (só isso)                           |
-| `--estacao-feita`                     | tinta                      | line `#d2d6cd`        | estação concluída da trilha (não é lima)              |
-| `--branco`                            | `#ffffff`                  | `#ffffff`             | sempre branco: QR code                                |
+| Token                                 | Claro                      | Escuro                | Uso                                            |
+| ------------------------------------- | -------------------------- | --------------------- | ---------------------------------------------- |
+| `--chao`                              | papel `#faf8f3`            | tinta `#08090b`       | fundo da área de conteúdo                      |
+| `--folha`                             | `#ffffff`                  | `#15171a`             | painel, tabela, campo                          |
+| `--trilho`                            | areia `#f0efe9`            | `#111311`             | navegação lateral, faixa do celular            |
+| `--tinta`                             | `#08090b`                  | papel `#faf8f3`       | texto principal (18,8:1 / 18,8:1)              |
+| `--tinta-2`                           | muted `#484e45`            | `#a9ada4`             | texto secundário (8,1:1 / 8,7:1)               |
+| `--tinta-3`                           | `#5f665b`                  | `#8b9086`             | metadado, rótulo de coluna (5,6:1 / 5,5:1)     |
+| `--regra` / `--regra-forte`           | line `#d2d6cd` / `#b9beb2` | `#2a2d29` / `#3a3e38` | linhas do quadro                               |
+| `--campo-borda`                       | `#7d8478`                  | `#6b7068`             | contorno de campo (3,6:1 / 3,5:1)              |
+| `--acao`                              | `#1b4332`                  | `#2f7a57`             | botão principal, texto branco (11,1:1 / 5,2:1) |
+| `--acao-toque` / `--acao-aperto`      | `#24573f` / `#143326`      | `#33825d` / `#276749` | hover e pressionado (8,4:1 / 4,7:1 com branco) |
+| `--sinal`                             | `#1b4332`                  | `#2f7a57`             | "agora", sempre com texto branco               |
+| `--sinal-fundo` / `--escolha`         | `#dbe9e1`                  | `#14261d`             | linha de hoje, item selecionado                |
+| `--marca-linha` / `--link` / `--foco` | `#1b4332`                  | `#7cc4a0`             | aba ativa, link, anel de foco (10,4:1 / 9,7:1) |
+| `--atraso-texto`                      | `#b42318`                  | `#ff8b7e`             | atrasado, erro                                 |
+| `--alerta-texto`                      | `#8a5300`                  | `#f2b95a`             | vence em breve                                 |
+| `--ok-texto` / `--ok-fundo`           | `#1b4332` / `#dbe9e1`      | `#7cc4a0` / `#14261d` | concluído, vigente (8,8:1 / 7,7:1)             |
+| `--andamento-texto`                   | `#1d4ed8`                  | `#93b4ff`             | em andamento, espera externa                   |
+| `--revisao-texto`                     | `#6d3fc8`                  | `#b9a0ff`             | em conferência                                 |
+| `--ia`                                | `#7c4ddb`                  | `#b9a0ff`             | o que a IA propôs (só isso)                    |
+| `--estacao-feita`                     | tinta                      | line `#d2d6cd`        | estação concluída da trilha (não é o destaque) |
+| `--branco`                            | `#ffffff`                  | `#ffffff`             | sempre branco: QR code                         |
 
 Contraste AA conferido com accesslint e axe (color-contrast) no claro e no escuro em Visão, Orçamentos, Ocorrência, Calendário e cadastro de licença: zero violações.
 
-Cada estado tem `-texto`, `-fundo` e, quando precisa, `-borda`. Superfícies: `--toque` (areia, hover), `--aperto` (pedra, pressionado), `--escolha` (lima claro, selecionado), `--off`, `--flutuante`, `--veu`.
+Cada estado tem `-texto`, `-fundo` e, quando precisa, `-borda`. Superfícies: `--toque` (areia, hover), `--aperto` (pedra, pressionado), `--escolha` (verde claro, selecionado), `--off`, `--flutuante`, `--veu`.
 
-**Trilho:** `data-superficie="trilho"` redefine os semânticos para o fundo do trilho. **Login:** o painel do layout público é um campo lima com o logotipo preto (`<MarcaGrama escura />`).
+**Trilho:** `data-superficie="trilho"` redefine os semânticos para o fundo do trilho. **Login:** o painel do layout público é areia com a frase do site em Anton e o pincel no verde do destaque. A logo não mudou com o verde-escuro.
 
 ## Tipo
 
@@ -79,7 +80,7 @@ As fontes do site, auto-hospedadas (CSP `font-src 'self'`): **Outfit** variável
 
 ## Cores de categoria (calendário)
 
-"Colorir por" tipo, área ou pessoa no Calendário (20/11/2026). Paleta própria, separada do design: 9 cores suaves `--categoria-1` a `--categoria-9` (cada uma com `-fundo` e `-forte`) e a `--categoria-neutra`, com versões para o claro e o escuro. Quentes e frias alternadas, para vizinhas não se confundirem; **nenhuma é lima** (o lima segue só para o "agora" e o destaque).
+"Colorir por" tipo, área ou pessoa no Calendário (20/11/2026). Paleta própria, separada do design: 9 cores suaves `--categoria-1` a `--categoria-9` (cada uma com `-fundo` e `-forte`) e a `--categoria-neutra`, com versões para o claro e o escuro. Quentes e frias alternadas, para vizinhas não se confundirem; **nenhuma é o verde do destaque** (a `--categoria-3`, que era verde-água, virou oliva em 21/11/2026).
 
 - O evento ganha o fundo suave, um traço de 3px na cor forte e a **sigla** da categoria (iniciais da pessoa ou da área); o title diz o nome. A forma do tipo continua.
 - Texto de tinta sobre o fundo: ≥ 14:1 no claro e ≥ 11:1 no escuro (medido nos eventos: mínimo 5,3:1 e 5,8:1 com os textos secundários). O traço forte tem ≥ 3:1 sobre o fundo.
@@ -100,39 +101,39 @@ Curto, com saída exponencial (`--saida`, `cubic-bezier(0.16, 1, 0.3, 1)`), nunc
 | `--dur-media`     | 200ms | menu, diálogo, chegada (`entrar`), estação que acende, check do salvo |
 | `--dur-indicador` | 220ms | indicador que desliza: item do menu, segmentado, aba                  |
 | `--dur-lenta`     | 360ms | assinatura (`virar-placa`)                                            |
-| `--dur-pulso`     | 640ms | pulso lima, só cor, uma vez                                           |
+| `--dur-pulso`     | 640ms | pulso do destaque, só cor, uma vez                                    |
 
 **Microtransições (20/11/2026, "dar vida" sem animação):**
 
-- **Botão:** encolhe para 97% ao apertar; o primário "acende" no hover com um halo lima curto, que some ao apertar.
-- **Indicadores que deslizam** (`IndicadorDeslizante`): a plaqueta lima do item atual do menu, o cheio do segmentado e o traço da aba são um elemento só, movido por `transform`. Na primeira medida aparece no lugar; depois desliza.
-- **Trilha:** a estação nova se preenche de lima ao avançar (`acender`).
+- **Botão:** encolhe para 97% ao apertar; o primário "acende" no hover com um halo verde curto, que some ao apertar.
+- **Indicadores que deslizam** (`IndicadorDeslizante`): a plaqueta verde do item atual do menu, o cheio do segmentado e o traço da aba são um elemento só, movido por `transform`. Na primeira medida aparece no lugar; depois desliza.
+- **Trilha:** a estação nova se preenche de verde ao avançar (`acender`).
 - **Chegadas:** mensagens e o corpo da etapa entram com fade e 4px (`entrar`); linhas de tabela novas com fade curto, sem mexer embaixo do ponteiro.
 - **Menus e popovers** abrem de onde foram chamados (`transform-origin` do Radix, 97% → 100%) e fecham mais rápido; diálogo centrado abre do centro.
-- **Pulso lima** (`pulso-lima`): o "vence hoje" da Visão ao chegar. Só cor.
-- **Salvo:** `ConfirmacaoSalva`, check lima que aparece de 60% sem quicar, com o texto em `role="status"`.
+- **Pulso** (`pulso`): o "vence hoje" da Visão ao chegar. Começa num verde médio e volta ao `--sinal-fundo`; o texto de tinta fica legível o tempo todo. Só cor.
+- **Salvo:** `ConfirmacaoSalva`, check verde que aparece de 60% sem quicar, com o texto em `role="status"`.
 
 **Movimento-assinatura:** `virar-placa`, o número da coluna "Faltam" sobe e se revela como plaqueta de painel ao chegar, em cascata de 28ms por linha. Uma vez, na chegada.
 
-**Movimento reduzido:** `prefers-reduced-motion` zera as durações e tira `entrar`, `marcar`, `virar-placa` e o brilho do esqueleto; a estação da trilha só troca de cor e o pulso lima fica (é só cor). A busca Ctrl+K abre sem animação. Os testes (jsdom) não rodam CSS: nada depende de tempo.
+**Movimento reduzido:** `prefers-reduced-motion` zera as durações e tira `entrar`, `marcar`, `virar-placa` e o brilho do esqueleto; a estação da trilha só troca de cor e o pulso fica (é só cor). A busca Ctrl+K abre sem animação. Os testes (jsdom) não rodam CSS: nada depende de tempo.
 
 ## Componentes
 
-| Componente            | Arquivo                                             | Notas                                                                                                                                             |
-| --------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Casca                 | `app/layout/AppShell.tsx`                           | trilho de areia (desktop), faixa de areia + barra inferior (celular), busca Ctrl+K                                                                |
-| Página                | `app/paginas/Pagina.tsx`                            | `titulo`, `acao`, `meta`, `voltar`                                                                                                                |
-| Botão                 | `components/ui/botao.tsx`                           | pílula; `primario` (lima + tinta), `padrao`, `sutil`, `perigo`, `link`; `compacto`; `selecionado`                                                 |
-| Botão de ícone        | `components/ui/botao-icone.tsx`                     | nome acessível obrigatório; 44px no celular                                                                                                       |
-| Situação              | `components/ui/selo.tsx`                            | palavra + forma; `perigoForte` = plaqueta cheia                                                                                                   |
-| Campo                 | `components/ui/campo-texto.tsx`, `estilos-campo.ts` | `classeCampo`, `classeSelecao`, `classeAreaTexto` para nativos                                                                                    |
-| Trilha                | `components/ui/trilha.tsx`                          | linha de trajeto: estação cheia `--estacao-feita` (feito), lima com aro (atual), vazada + tracejado (futuro); `podeEscolher`, `compactaNoCelular` |
-| Placar                | `components/ui/placar.tsx`                          | `Placar` + `ItemDoPlacar`: faixa única, número de 40px; botão quando filtra                                                                       |
-| Segmentado            | `components/ui/segmentado.tsx`                      | grupo colado, selecionado em tinta cheia; um só desenho no app                                                                                    |
-| Contagem              | `app/paginas/visao/Contagem.tsx`                    | coluna "Faltam" do quadro                                                                                                                         |
-| Mensagem              | `components/ui/mensagem-secao.tsx`                  | faixa no fundo do estado, sem borda                                                                                                               |
-| Estados               | `components/estados/*`                              | vazio (ícone 32 + título), carregando (esqueleto 48px), erro, sem permissão                                                                       |
-| Menu, diálogo, gaveta | `dropdown-menu.tsx`, `dialogo.tsx`, `sheet.tsx`     | diálogo sobe do rodapé no celular                                                                                                                 |
+| Componente            | Arquivo                                             | Notas                                                                                                                                              |
+| --------------------- | --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Casca                 | `app/layout/AppShell.tsx`                           | trilho de areia (desktop), faixa de areia + barra inferior (celular), busca Ctrl+K                                                                 |
+| Página                | `app/paginas/Pagina.tsx`                            | `titulo`, `acao`, `meta`, `voltar`                                                                                                                 |
+| Botão                 | `components/ui/botao.tsx`                           | pílula; `primario` (verde + branco), `padrao`, `sutil`, `perigo`, `link`; `compacto`; `selecionado`                                                |
+| Botão de ícone        | `components/ui/botao-icone.tsx`                     | nome acessível obrigatório; 44px no celular                                                                                                        |
+| Situação              | `components/ui/selo.tsx`                            | palavra + forma; `perigoForte` = plaqueta cheia                                                                                                    |
+| Campo                 | `components/ui/campo-texto.tsx`, `estilos-campo.ts` | `classeCampo`, `classeSelecao`, `classeAreaTexto` para nativos                                                                                     |
+| Trilha                | `components/ui/trilha.tsx`                          | linha de trajeto: estação cheia `--estacao-feita` (feito), verde com aro (atual), vazada + tracejado (futuro); `podeEscolher`, `compactaNoCelular` |
+| Placar                | `components/ui/placar.tsx`                          | `Placar` + `ItemDoPlacar`: faixa única, número de 40px; botão quando filtra                                                                        |
+| Segmentado            | `components/ui/segmentado.tsx`                      | grupo colado, selecionado em tinta cheia; um só desenho no app                                                                                     |
+| Contagem              | `app/paginas/visao/Contagem.tsx`                    | coluna "Faltam" do quadro                                                                                                                          |
+| Mensagem              | `components/ui/mensagem-secao.tsx`                  | faixa no fundo do estado, sem borda                                                                                                                |
+| Estados               | `components/estados/*`                              | vazio (ícone 32 + título), carregando (esqueleto 48px), erro, sem permissão                                                                        |
+| Menu, diálogo, gaveta | `dropdown-menu.tsx`, `dialogo.tsx`, `sheet.tsx`     | diálogo sobe do rodapé no celular                                                                                                                  |
 
 ## Padrões de tela
 

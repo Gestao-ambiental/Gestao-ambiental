@@ -57,7 +57,7 @@ async function adicionarNomes(m: L.Map): Promise<L.Layer | null> {
 
 interface Props {
   ponto: Coordenadas | null
-  /** Contorno do lote achado pela inscrição ([latitude, longitude]), desenhado em lima. */
+  /** Contorno do lote achado pela inscrição ([latitude, longitude]), desenhado no destaque. */
   contorno?: [number, number][] | null
   aoEscolher: (c: Coordenadas) => void
 }
@@ -110,7 +110,7 @@ export default function MapaDoLocal({ ponto, contorno = null, aoEscolher }: Prop
     }
   }, [])
 
-  // Contorno do lote (inscrição imobiliária): em lima, sem pegar o clique; o mapa enquadra o lote.
+  // Contorno do lote (inscrição imobiliária): no destaque, sem pegar o clique; o mapa enquadra o lote.
   useEffect(() => {
     const m = mapa.current
     if (!m) return

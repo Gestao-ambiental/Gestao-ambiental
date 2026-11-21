@@ -6,7 +6,7 @@
 // orienta a proposta; quem enquadra é o órgão.
 //
 // Etapas como no editor de orçamento (pedido do Eduardo, 20/11/2026): a trilha no alto, uma etapa
-// por vez (1 Local, 2 Atividades e porte, 3 Resultado), "Continuar" lima para a próxima e "Voltar".
+// por vez (1 Local, 2 Atividades e porte, 3 Resultado), "Continuar" verde para a próxima e "Voltar".
 // O resumo ao lado (embaixo, no celular) mostra o que já se sabe: município e habilitação, lote,
 // restrições e enquadramento. A etapa fica na URL (?etapa=atividades): recarregar não perde o lugar.
 

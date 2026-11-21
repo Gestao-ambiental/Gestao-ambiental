@@ -219,7 +219,7 @@ function Legenda({
 
 /**
  * /calendario (Protótipo 06; EQ-04): mês, semana e lista, com filtros por pessoa, unidade e "só
- * sem responsável". As datas são civis (o fuso do aparelho não move nada). Hoje acende em lima;
+ * sem responsável". As datas são civis (o fuso do aparelho não move nada). Hoje acende no destaque;
  * cada tipo de evento tem forma própria. No celular, a lista vem primeiro.
  */
 export function PaginaCalendario() {
