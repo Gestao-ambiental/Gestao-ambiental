@@ -159,7 +159,9 @@ describe('orçamento rápido, sem custos e taxas configurados', () => {
       await screen.findByRole('combobox', { name: 'Cliente' }),
       'Padaria Pão Quente',
     )
-    await usuario.click(await screen.findByRole('option', { name: /^Novo: Padaria Pão Quente/ }))
+    await usuario.click(
+      await screen.findByRole('option', { name: /^Cliente novo: Padaria Pão Quente/ }),
+    )
 
     // Serviço com preço digitado: sem tabela de preços, é o único preço.
     await screen.findByRole('heading', { name: 'Padaria Pão Quente' })
@@ -277,7 +279,9 @@ describe('orçamento rápido, sem custos e taxas configurados', () => {
       await screen.findByRole('combobox', { name: 'Cliente' }),
       'Padaria Pão Quente',
     )
-    await usuario.click(await screen.findByRole('option', { name: /^Novo: Padaria Pão Quente/ }))
+    await usuario.click(
+      await screen.findByRole('option', { name: /^Cliente novo: Padaria Pão Quente/ }),
+    )
     await screen.findByRole('heading', { name: 'Padaria Pão Quente' })
     await usuario.click(screen.getByRole('button', { name: 'Adicionar item' }))
     await usuario.type(screen.getByLabelText('Serviço do item 1'), 'Diagnóstico')

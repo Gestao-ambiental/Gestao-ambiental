@@ -2,7 +2,7 @@ import { cn } from '@/lib/utils'
 
 /**
  * Coluna "Faltam" do quadro de partidas: quantos dias faltam (ou passaram) em numeral tabular
- * grande. Hoje vira plaqueta verde-lima; atraso fica em vermelho com sinal de menos. É reforço
+ * grande. Hoje vira plaqueta verde; atraso fica em vermelho com sinal de menos. É reforço
  * visual: a situação por extenso está na coluna Situação, então o número fica fora do leitor de
  * tela. O número "vira" ao chegar, como plaqueta de painel (respeita movimento reduzido).
  */

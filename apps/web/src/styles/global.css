@@ -4,7 +4,7 @@
 @import '@fontsource/anton/400.css';
 
 /*
- * Design system do Grama: "quadro de partidas", nas cores e fontes do site (apps/web/DESIGN.md).
+ * Design system do Grama: "quadro de partidas", com o papel e as fontes do site e o verde-escuro (apps/web/DESIGN.md).
  * Os tokens vivem em tokens.css; componentes usam só os nomes semânticos (--folha, --tinta,
  * --acao, --sinal, --atraso-texto, --e-*, --raio…), nunca primitivos nem hexadecimal.
  */
@@ -127,6 +127,29 @@
 @utility transicao-estado {
   transition: var(--transicao);
 }
+/* Indicador deslizante (menu, segmentado, abas): só transform e tamanho, nunca top/left. */
+@utility transicao-indicador {
+  transition:
+    transform var(--dur-indicador) var(--saida),
+    width var(--dur-indicador) var(--saida),
+    height var(--dur-indicador) var(--saida);
+}
+/* Chegada curta: mensagem, cartão, painel de etapa. */
+@utility entrar {
+  animation: entrar var(--dur-media) var(--saida) both;
+}
+/* O destaque "acende": a estação atual da trilha se preenche de verde ao avançar. */
+@utility acender {
+  animation: acender var(--dur-media) var(--saida) both;
+}
+/* Pulso breve do destaque: recém-salvo ou o "agora" (vence hoje). Só cor, uma vez. */
+@utility pulso {
+  animation: pulso var(--dur-pulso) var(--saida) both;
+}
+/* Check verde do "salvo": aparece de 60% para o tamanho real, sem quicar. */
+@utility marcar {
+  animation: marcar var(--dur-media) var(--saida) both;
+}
 
 @layer base {
   * {
@@ -198,6 +221,61 @@
     transform: none;
   }
 }
+@keyframes entrar {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes aparecer {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes acender {
+  from {
+    transform: scale(0.82);
+    background-color: var(--folha);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes acender-cor {
+  from {
+    background-color: var(--folha);
+  }
+}
+/* Começa num verde médio (o texto de tinta continua legível) e volta ao fundo da linha. */
+@keyframes pulso {
+  from {
+    background-color: color-mix(in srgb, var(--sinal) 28%, var(--sinal-fundo));
+  }
+}
+@keyframes marcar {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* Linhas de tabela entram com um fade curto ao chegar (página nova, "mostrar mais"). Só opacidade:
+   nada se mexe embaixo do ponteiro. */
+@layer base {
+  tbody tr {
+    animation: aparecer var(--dur-media) var(--saida) both;
+  }
+}
 @keyframes af-spin {
   to {
     transform: rotate(360deg);
@@ -220,7 +298,17 @@
   animation: virar-placa 260ms var(--saida) both;
 }
 @media (prefers-reduced-motion: reduce) {
-  .virar-placa {
+  .virar-placa,
+  .entrar,
+  .marcar {
     animation: none;
+  }
+  /* Sem movimento, só a troca de cor. */
+  .acender {
+    animation-name: acender-cor;
+    animation-duration: 200ms;
+  }
+  [data-esqueleto] {
+    animation: none !important;
   }
 }

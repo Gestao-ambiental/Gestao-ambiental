@@ -121,7 +121,7 @@ export function ItemDoPlacar({
   valor: ReactNode
   /** Linha curta embaixo do rótulo (ex.: "3 de 4", "Subiu 2 contra o mês anterior"). */
   detalhe?: ReactNode
-  /** `atraso` em vermelho, `alerta` em âmbar, `hoje` com a plaqueta lima. */
+  /** `atraso` em vermelho, `alerta` em âmbar, `hoje` com a plaqueta verde. */
   tom?: 'atraso' | 'alerta' | 'hoje'
   /** Sem valor para mostrar; o padrão é apagar o zero. */
   apagado?: boolean

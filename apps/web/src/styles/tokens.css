@@ -1,18 +1,28 @@
 /*
- * Tokens do Grama: "quadro de partidas" com as cores e as fontes do site gramaapp.com.br.
- * Papel, tinta e verde-lima; nenhum verde-escuro. Componentes usam só os nomes semânticos;
- * nada de hexadecimal fora deste arquivo (DESIGN.md).
+ * Tokens do Grama: "quadro de partidas" com as fontes e o papel do site gramaapp.com.br.
+ * Papel, tinta e um destaque verde-escuro (ADR-0051: o site segue no lima, o software usa
+ * #1b4332). Componentes usam só os nomes semânticos; nada de hexadecimal fora deste arquivo
+ * (DESIGN.md).
  */
 
 /* ---------- Primitivos (os do site; não use direto nos componentes) ---------- */
 :root {
   --papel: #faf8f3; /* --paper do site: fundo */
   --tinta-pura: #08090b; /* --ink do site */
-  --lima: #cdf22b; /* --lime do site: a única cor de destaque */
-  --lima-toque: #c0e51f;
-  --lima-aperto: #b2d614;
-  --lima-claro: #eef9c4;
-  --lima-claro-toque: #e4f5a3;
+  /* Destaque do software: verde-escuro. O lima do site só aparece na logo. */
+  --destaque: #1b4332;
+  --destaque-toque: #24573f;
+  --destaque-aperto: #143326;
+  --destaque-claro: #dbe9e1;
+  --destaque-claro-toque: #cbe0d4;
+  /* O mesmo destaque no tema escuro: mais claro, para ler sobre a noite. */
+  --destaque-noite: #2f7a57;
+  --destaque-noite-toque: #33825d; /* o #378a63 do teste dava 4,2:1 com o branco; este dá 4,7:1 */
+  --destaque-noite-aperto: #276749;
+  --destaque-noite-fundo: #14261d;
+  --destaque-noite-fundo-toque: #1a3226;
+  --destaque-noite-borda: #24473a;
+  --destaque-brilho: #7cc4a0; /* texto, linha e foco no escuro */
   --muted: #484e45; /* --muted do site */
   --linha-site: #d2d6cd; /* --line do site */
   --areia: #f0efe9; /* --sand do site */
@@ -48,8 +58,8 @@
   --folha: var(--branco);
   --toque: var(--areia); /* fundo ao passar o mouse */
   --aperto: var(--pedra); /* fundo ao apertar */
-  --escolha: var(--lima-claro); /* linha ou item selecionado */
-  --escolha-toque: var(--lima-claro-toque);
+  --escolha: var(--destaque-claro); /* linha ou item selecionado */
+  --escolha-toque: var(--destaque-claro-toque);
   --campo: var(--branco);
   --campo-foco: var(--branco);
   --off: var(--areia);
@@ -58,7 +68,7 @@
   --esqueleto-brilho: var(--areia);
   --veu: rgb(8 9 11 / 0.48);
 
-  /* Trilho de navegação: areia do site, tinta preta, item ativo em lima. */
+  /* Trilho de navegação: areia do site, tinta preta, item ativo no destaque. */
   --trilho: var(--areia);
   --trilho-texto: var(--tinta-pura);
   --trilho-texto-2: var(--muted);
@@ -80,24 +90,24 @@
   --regra-forte: #b9beb2;
   --campo-borda: #7d8478; /* 3,6:1: contorno de controle */
   --campo-borda-ativa: var(--tinta-pura);
-  --foco: var(--tinta-pura);
-  --foco-anel: var(--lima);
+  --foco: var(--destaque); /* 10,4:1 no papel */
+  --foco-anel: var(--destaque-claro);
 
-  /* Ação principal: pílula verde-lima com tinta preta, como os botões do site. */
-  --acao: var(--lima);
-  --acao-toque: var(--lima-toque);
-  --acao-aperto: var(--lima-aperto);
-  --acao-texto: var(--tinta-pura);
-  /* No claro, o lima não tem contraste como linha ou texto (1,2:1): marca e link são tinta. */
-  --link: var(--tinta-pura);
-  --marca-linha: var(--tinta-pura); /* aba ativa, traço do placar, passo atual */
-  --estacao-feita: var(--tinta-pura);
+  /* Ação principal: pílula verde-escura com texto branco (11,1:1). */
+  --acao: var(--destaque);
+  --acao-toque: var(--destaque-toque);
+  --acao-aperto: var(--destaque-aperto);
+  --acao-texto: var(--branco);
+  /* O verde-escuro tem contraste como texto e linha (10,4:1 no papel): link e marca usam ele. */
+  --link: var(--destaque);
+  --marca-linha: var(--destaque); /* aba ativa, traço do placar, passo atual */
+  --estacao-feita: var(--tinta-pura); /* cheia com check; o passo atual é o destaque com aro */
 
-  /* Sinal: o verde-lima. "Agora", hoje, item ativo; sempre como preenchimento com tinta. */
-  --sinal: var(--lima);
-  --sinal-toque: var(--lima-toque);
-  --sinal-fundo: var(--lima-claro);
-  --sinal-texto: var(--tinta-pura);
+  /* Sinal: o destaque. "Agora", hoje, item ativo; sempre preenchimento com texto branco. */
+  --sinal: var(--destaque);
+  --sinal-toque: var(--destaque-toque);
+  --sinal-fundo: var(--destaque-claro);
+  --sinal-texto: var(--branco);
 
   /* Estados. Sempre com palavra ou forma junto; a cor nunca é o único sinal. */
   --atraso: var(--vermelho-700);
@@ -108,10 +118,10 @@
   --alerta-texto: var(--ambar-700);
   --alerta-fundo: var(--ambar-100);
   --alerta-borda: #f0cf8f;
-  /* Ok sem verde-escuro: palavra em tinta com a marca em lima (Selo "sucesso"). */
-  --ok-texto: var(--tinta-pura);
-  --ok-fundo: var(--lima-claro);
-  --ok-borda: var(--linha-site);
+  /* Ok no destaque: palavra verde-escura sobre o verde claro (8,8:1). */
+  --ok-texto: var(--destaque);
+  --ok-fundo: var(--destaque-claro);
+  --ok-borda: #b5d1c2;
   --andamento-texto: var(--azul-700);
   --andamento-fundo: var(--azul-100);
   --revisao-texto: #6d3fc8;
@@ -125,11 +135,34 @@
 
   /* Cores de empreendimento (sigla): superfícies do site. */
   --sigla-1: var(--areia);
-  --sigla-2: var(--lima-claro);
+  --sigla-2: var(--destaque-claro);
   --sigla-3: var(--azul-100);
   --sigla-4: var(--ambar-100);
   --sigla-5: #f1ebff;
   --sigla-6: var(--vermelho-100);
+
+  /* Categorias do calendário (colorir por área ou pessoa): 9 cores suaves, nenhuma é o verde do
+     destaque. Fundo suave com texto de tinta; a borda forte marca a cor ao lado do texto. */
+  --categoria-1-fundo: #dbe8fb;
+  --categoria-1-forte: #3f74c0;
+  --categoria-2-fundo: #fde2cd;
+  --categoria-2-forte: #b55d1a;
+  --categoria-3-fundo: #e8f0c6;
+  --categoria-3-forte: #6a7d12;
+  --categoria-4-fundo: #fadbe8;
+  --categoria-4-forte: #c04d86;
+  --categoria-5-fundo: #dddff8;
+  --categoria-5-forte: #4c55bd;
+  --categoria-6-fundo: #f5e8c0;
+  --categoria-6-forte: #a07a12;
+  --categoria-7-fundo: #d0edf5;
+  --categoria-7-forte: #2a8aab;
+  --categoria-8-fundo: #f6d6d0;
+  --categoria-8-forte: #b84a37;
+  --categoria-9-fundo: #e7dffa;
+  --categoria-9-forte: #7a59d1;
+  --categoria-neutra-fundo: #ecebe6;
+  --categoria-neutra-forte: #7b7a74;
 
   --sombra-flutuante: 0 12px 32px -8px rgb(8 9 11 / 0.2), 0 2px 6px rgb(8 9 11 / 0.08);
   --sombra-dialogo: 0 32px 64px -16px rgb(8 9 11 / 0.34), 0 4px 12px rgb(8 9 11 / 0.1);
@@ -137,14 +170,14 @@
   color-scheme: light;
 }
 
-/* ---------- Semânticos: tema escuro (tinta do site como fundo, lima como destaque) ---------- */
+/* ---------- Semânticos: tema escuro (tinta do site como fundo, verde como destaque) ---------- */
 [data-theme='dark'] {
   --chao: var(--noite);
   --folha: var(--noite-2);
   --toque: var(--noite-3);
   --aperto: var(--noite-4);
-  --escolha: #22290b;
-  --escolha-toque: #2c3510;
+  --escolha: var(--destaque-noite-fundo);
+  --escolha-toque: var(--destaque-noite-fundo-toque);
   --campo: var(--noite);
   --campo-foco: var(--noite);
   --off: var(--noite-3);
@@ -171,22 +204,23 @@
   --regra-leve: var(--noite-3);
   --regra-forte: var(--noite-5);
   --campo-borda: #6b7068;
-  --campo-borda-ativa: var(--lima);
-  --foco: var(--lima);
-  --foco-anel: var(--lima);
+  --campo-borda-ativa: var(--destaque-brilho);
+  --foco: var(--destaque-brilho); /* 9,7:1 na noite */
+  --foco-anel: var(--destaque-brilho);
 
-  --acao: var(--lima);
-  --acao-toque: var(--lima-toque);
-  --acao-aperto: var(--lima-aperto);
-  --acao-texto: var(--tinta-pura);
-  --link: var(--lima);
-  --marca-linha: var(--lima);
-  --estacao-feita: var(--linha-site); /* diferente do lima do passo atual */
+  /* Botão em verde com texto branco (5,2:1). */
+  --acao: var(--destaque-noite);
+  --acao-toque: var(--destaque-noite-toque);
+  --acao-aperto: var(--destaque-noite-aperto);
+  --acao-texto: var(--branco);
+  --link: var(--destaque-brilho);
+  --marca-linha: var(--destaque-brilho);
+  --estacao-feita: var(--linha-site); /* diferente do verde do passo atual */
 
-  --sinal: var(--lima);
-  --sinal-toque: var(--lima-toque);
-  --sinal-fundo: #22290b;
-  --sinal-texto: var(--tinta-pura);
+  --sinal: var(--destaque-noite);
+  --sinal-toque: var(--destaque-noite-toque);
+  --sinal-fundo: var(--destaque-noite-fundo);
+  --sinal-texto: var(--branco);
 
   --atraso: #e5483a;
   --atraso-toque: #f05a4c;
@@ -196,9 +230,9 @@
   --alerta-texto: var(--ambar-300);
   --alerta-fundo: #33240a;
   --alerta-borda: #6a4a12;
-  --ok-texto: var(--lima);
-  --ok-fundo: #22290b;
-  --ok-borda: #3a4514;
+  --ok-texto: var(--destaque-brilho);
+  --ok-fundo: var(--destaque-noite-fundo);
+  --ok-borda: var(--destaque-noite-borda);
   --andamento-texto: var(--azul-300);
   --andamento-fundo: #16223f;
   --revisao-texto: var(--violeta-300);
@@ -209,11 +243,32 @@
   --ia: var(--violeta-300);
 
   --sigla-1: var(--noite-4);
-  --sigla-2: #2c3510;
+  --sigla-2: var(--destaque-noite-fundo-toque);
   --sigla-3: #1b2747;
   --sigla-4: #3a2a0c;
   --sigla-5: #2a1f45;
   --sigla-6: #3f1a16;
+
+  --categoria-1-fundo: #1d2c45;
+  --categoria-1-forte: #7fa9ea;
+  --categoria-2-fundo: #3d2818;
+  --categoria-2-forte: #f0a565;
+  --categoria-3-fundo: #2b3312;
+  --categoria-3-forte: #bcd45c;
+  --categoria-4-fundo: #3d1f30;
+  --categoria-4-forte: #ea8cbb;
+  --categoria-5-fundo: #23264a;
+  --categoria-5-forte: #8f97f0;
+  --categoria-6-fundo: #382f14;
+  --categoria-6-forte: #d9b44b;
+  --categoria-7-fundo: #16343e;
+  --categoria-7-forte: #5cc1e0;
+  --categoria-8-fundo: #3d1f1a;
+  --categoria-8-forte: #e88c7b;
+  --categoria-9-fundo: #2c2447;
+  --categoria-9-forte: #a88ef0;
+  --categoria-neutra-fundo: #24262a;
+  --categoria-neutra-forte: #9a9893;
 
   --sombra-flutuante: 0 12px 32px -8px rgb(0 0 0 / 0.6), 0 0 0 1px var(--noite-4);
   --sombra-dialogo: 0 32px 64px -16px rgb(0 0 0 / 0.7), 0 0 0 1px var(--noite-4);
@@ -298,6 +353,8 @@
   --dur-rapida: 120ms;
   --dur-media: 200ms;
   --dur-lenta: 360ms;
+  --dur-indicador: 220ms; /* indicador que desliza: menu, segmentado, aba */
+  --dur-pulso: 640ms; /* pulso do destaque: só cor, uma vez */
   --saida: cubic-bezier(0.16, 1, 0.3, 1);
   --entra-sai: cubic-bezier(0.65, 0, 0.35, 1);
   --transicao:
@@ -310,6 +367,9 @@
     --dur-rapida: 0ms;
     --dur-media: 0ms;
     --dur-lenta: 0ms;
+    --dur-indicador: 0ms;
+    /* O pulso é só cor: fica, mais curto. */
+    --dur-pulso: 400ms;
   }
 }
 

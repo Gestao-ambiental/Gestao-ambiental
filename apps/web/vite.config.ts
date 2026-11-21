@@ -13,5 +13,8 @@ export default defineConfig({
     environment: 'jsdom',
     include: ['src/**/*.test.{ts,tsx}'],
     setupFiles: ['./src/test/setup.ts'],
+    // Os testes de tela longos (orçamento, custos) levam 3 a 5 s com a suíte inteira em paralelo;
+    // 5 s derrubava o push por lentidão da máquina, não por regra.
+    testTimeout: 15_000,
   },
 })

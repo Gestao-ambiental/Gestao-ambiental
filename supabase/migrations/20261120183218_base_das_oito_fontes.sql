@@ -490,7 +490,12 @@ grant execute on function public.listar_prazos(uuid, text, uuid, boolean, uuid, 
 grant execute on function public.contar_prazos(uuid, text, uuid, boolean, uuid, uuid, uuid) to authenticated;
 
 -- Calendário: mesma assinatura; "sem responsável" por tipo.
-create or replace function public.listar_calendario(
+-- drop + create (e não create or replace): a 20261121012948 (relatorio-no-grama) acrescentou a
+-- coluna responsavel_id ao retorno. Assim esta migration roda antes ou depois dela; a
+-- 20261121163000 junta as duas versões.
+drop function if exists public.listar_calendario(uuid, date, date, uuid, uuid, boolean);
+
+create function public.listar_calendario(
   p_consultoria_id uuid,
   p_de date,
   p_ate date,
@@ -544,6 +549,9 @@ begin
   order by 2, 1, 5, 3;
 end;
 $$;
+
+revoke all on function public.listar_calendario(uuid, date, date, uuid, uuid, boolean) from public, anon;
+grant execute on function public.listar_calendario(uuid, date, date, uuid, uuid, boolean) to authenticated;
 
 -- ---------------------------------------------------------------------------
 -- 4. Busca global por grupos

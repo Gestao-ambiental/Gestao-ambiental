@@ -9,7 +9,7 @@ import {
   type DataCivil,
 } from '@gestao-ambiental/domain'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Pagina } from '@/app/paginas/Pagina'
@@ -37,7 +37,16 @@ import { CHAVE_TAREFAS, listarTarefasDeServico } from '@/lib/api/tarefas'
 import { nomeDoMes } from '@/lib/datas'
 import { cn } from '@/lib/utils'
 
-import { EventoDoDia, MarcaDoTipo } from './ItemDoCalendario'
+import {
+  categorizador,
+  estiloDaCategoria,
+  guardarColorirPor,
+  legendaDe,
+  lerColorirPor,
+  type Categoria,
+  type ColorirPor,
+} from './colorir-por'
+import { EventoDoDia, MarcaDoTipo, SiglaDaCategoria } from './ItemDoCalendario'
 import { itemDoEvento, itemDoResiduo, type ItemDoDia } from './itens-do-calendario'
 
 const DIAS_DA_SEMANA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
@@ -45,6 +54,12 @@ const VISIVEIS_POR_DIA = 3
 const MARCAS_NO_CELULAR = 3
 
 type Modo = 'mes' | 'semana' | 'lista'
+
+const COLORIR_POR: readonly OpcaoSegmentada<ColorirPor>[] = [
+  { valor: 'tipo', rotulo: 'Tipo' },
+  { valor: 'area', rotulo: 'Área' },
+  { valor: 'pessoa', rotulo: 'Pessoa' },
+]
 
 const MODOS: readonly OpcaoSegmentada<Modo>[] = [
   { valor: 'lista', rotulo: 'Lista' },
@@ -94,8 +109,19 @@ function dias(inicio: DataCivil, fim: DataCivil): DataCivil[] {
   return lista
 }
 
-/** Eventos do dia em linhas: marca, texto e, embaixo, empreendimento e responsável. */
-function ListaDoDia({ itens, rotulo }: { itens: ItemDoDia[]; rotulo: string }) {
+/**
+ * Eventos do dia em linhas: marca, texto e, embaixo, empreendimento e responsável. Colorindo por
+ * área ou pessoa, a linha de apoio começa com a sigla e o nome da categoria.
+ */
+function ListaDoDia({
+  itens,
+  rotulo,
+  categoriaDe,
+}: {
+  itens: ItemDoDia[]
+  rotulo: string
+  categoriaDe: ((item: ItemDoDia) => Categoria) | null
+}) {
   return (
     <ul className="flex min-w-0 flex-col" aria-label={rotulo}>
       {itens.map((item) => (
@@ -104,7 +130,16 @@ function ListaDoDia({ itens, rotulo }: { itens: ItemDoDia[]; rotulo: string }) {
           className="flex min-h-11 flex-col justify-center gap-(--e-05) border-b border-(--regra-leve) py-(--e-2) last:border-b-0"
         >
           <EventoDoDia item={item} modo="inteiro" />
-          {item.apoio ? (
+          {categoriaDe ? (
+            <span className="flex flex-wrap items-center gap-(--e-15) pl-(--e-4) text-xs text-(--tinta-2)">
+              <SiglaDaCategoria categoria={categoriaDe(item)} />
+              {/* A pessoa já vem no apoio; a área não: escreve só o que faltar. */}
+              {item.apoio.includes(categoriaDe(item).rotulo) ? null : (
+                <span className="font-[650] text-(--tinta)">{categoriaDe(item).rotulo}</span>
+              )}
+              {item.apoio ? <span>{item.apoio}</span> : null}
+            </span>
+          ) : item.apoio ? (
             <span className="pl-(--e-4) text-xs text-(--tinta-2)">{item.apoio}</span>
           ) : null}
         </li>
@@ -114,8 +149,77 @@ function ListaDoDia({ itens, rotulo }: { itens: ItemDoDia[]; rotulo: string }) {
 }
 
 /**
+ * Legenda do "Colorir por": cada categoria com a forma (tipo) ou a cor e a sigla (área, pessoa), o
+ * nome e quantos eventos tem. Clicar mostra só aquela categoria; clicar de novo mostra todas.
+ */
+function Legenda({
+  itens,
+  filtrada,
+  aoFiltrar,
+}: {
+  itens: { categoria: Categoria; quantidade: number }[]
+  filtrada: string | null
+  aoFiltrar: (chave: string | null) => void
+}) {
+  return (
+    <div
+      role="group"
+      aria-label="Legenda: clique para ver só uma categoria"
+      className="-mx-(--e-4) flex items-center gap-(--e-1) overflow-x-auto px-(--e-4) pb-(--e-05) [scrollbar-width:none] md:mx-0 md:flex-wrap md:overflow-visible md:px-0"
+    >
+      {itens.map(({ categoria, quantidade }) => {
+        const ativa = filtrada === categoria.chave
+        const cores = categoria.tipo ? null : estiloDaCategoria(categoria.cor)
+        return (
+          <button
+            key={categoria.chave}
+            type="button"
+            aria-pressed={ativa}
+            aria-label={`${categoria.rotulo}, ${String(quantidade)} ${quantidade === 1 ? 'evento' : 'eventos'}`}
+            onClick={() => {
+              aoFiltrar(ativa ? null : categoria.chave)
+            }}
+            className={cn(
+              'inline-flex h-8 shrink-0 cursor-pointer items-center gap-(--e-15) rounded-(--raio-redondo) border px-(--e-3) text-xs font-[650] whitespace-nowrap text-(--tinta) transicao-estado max-md:min-h-(--controle-toque)',
+              ativa
+                ? 'border-(--marca-linha) bg-(--escolha)'
+                : 'border-(--regra) bg-(--folha) hover:bg-(--toque)',
+              filtrada !== null && !ativa && 'text-(--tinta-2)',
+            )}
+          >
+            {cores ? (
+              <span
+                aria-hidden
+                style={{ backgroundColor: cores.fundo, borderColor: cores.forte }}
+                className="size-3 shrink-0 rounded-[3px] border-2"
+              />
+            ) : categoria.tipo ? (
+              <MarcaDoTipo tipo={categoria.tipo} />
+            ) : null}
+            {categoria.rotulo}
+            <span className="font-normal text-(--tinta-2) numero">{quantidade}</span>
+          </button>
+        )
+      })}
+      {filtrada !== null ? (
+        <Botao
+          tamanho="compacto"
+          aparencia="sutil"
+          className="shrink-0"
+          onClick={() => {
+            aoFiltrar(null)
+          }}
+        >
+          Mostrar todas
+        </Botao>
+      ) : null}
+    </div>
+  )
+}
+
+/**
  * /calendario (Protótipo 06; EQ-04): mês, semana e lista, com filtros por pessoa, unidade e "só
- * sem responsável". As datas são civis (o fuso do aparelho não move nada). Hoje acende em lima;
+ * sem responsável". As datas são civis (o fuso do aparelho não move nada). Hoje acende no destaque;
  * cada tipo de evento tem forma própria. No celular, a lista vem primeiro.
  */
 export function PaginaCalendario() {
@@ -189,6 +293,7 @@ export function PaginaCalendario() {
                 unidadeNome: '',
                 licenca: null,
                 responsavelNome: t.responsavelNome,
+                responsavelId: t.responsavelId,
                 semResponsavel: t.responsavelId === null,
                 orcamentoId: t.orcamentoId,
               },
@@ -203,7 +308,23 @@ export function PaginaCalendario() {
   for (const [dia, prazos] of residuosPorDia) {
     porDia.set(dia, [...(porDia.get(dia) ?? []), ...prazos.map(itemDoResiduo)])
   }
-  const doDia = (d: DataCivil) => porDia.get(d) ?? []
+  // Colorir por tipo, área ou pessoa (lembrado neste navegador), com a legenda que filtra.
+  const [colorirPor, setColorirPor] = useState<ColorirPor>(lerColorirPor)
+  const [soCategoria, setSoCategoria] = useState<string | null>(null)
+  const categoriaDe = useMemo(
+    () => categorizador(colorirPor, membros.data ?? []),
+    [colorirPor, membros.data],
+  )
+  const legenda = legendaDe([...porDia.values()].flat(), categoriaDe)
+  const categoriaFiltrada = legenda.some((l) => l.categoria.chave === soCategoria)
+    ? soCategoria
+    : null
+  const doDia = (d: DataCivil) =>
+    (porDia.get(d) ?? []).filter(
+      (item) => categoriaFiltrada === null || categoriaDe(item).chave === categoriaFiltrada,
+    )
+  const categoriaNoEvento = (item: ItemDoDia) => (colorirPor === 'tipo' ? null : categoriaDe(item))
+  const categoriaNaLista = colorirPor === 'tipo' ? null : categoriaDe
 
   const [anoRef, mesRef] = partes(referencia)
   const titulo =
@@ -286,7 +407,11 @@ export function PaginaCalendario() {
                       {partes(dia)[2]}
                     </span>
                   </h3>
-                  <ListaDoDia itens={doDia(dia)} rotulo={nomeDoDia} />
+                  <ListaDoDia
+                    itens={doDia(dia)}
+                    rotulo={nomeDoDia}
+                    categoriaDe={categoriaNaLista}
+                  />
                 </li>
               )
             })}
@@ -379,6 +504,7 @@ export function PaginaCalendario() {
                                 key={item.chave}
                                 item={item}
                                 modo={porSemana ? 'quebra' : 'linha'}
+                                categoria={categoriaNoEvento(item)}
                               />
                             ))}
                             {restantes > 0 ? (
@@ -493,7 +619,25 @@ export function PaginaCalendario() {
               setFiltros((f) => ({ ...f, semResponsavel: evento.target.checked }))
             }}
           />
+          <span className="flex shrink-0 items-center gap-(--e-2) md:ml-auto">
+            <span aria-hidden className="rotulo whitespace-nowrap text-(--tinta-2)">
+              Colorir por
+            </span>
+            <Segmentado
+              rotulo="Colorir por"
+              opcoes={COLORIR_POR}
+              valor={colorirPor}
+              aoMudar={(valor) => {
+                setColorirPor(valor)
+                guardarColorirPor(valor)
+                setSoCategoria(null)
+              }}
+            />
+          </span>
         </div>
+        {legenda.length > 0 ? (
+          <Legenda itens={legenda} filtrada={categoriaFiltrada} aoFiltrar={setSoCategoria} />
+        ) : null}
       </div>
 
       {semFiltroDePessoa && residuos.isError ? (
@@ -516,7 +660,11 @@ export function PaginaCalendario() {
         }
       >
         {diaAberto && doDia(diaAberto).length > 0 ? (
-          <ListaDoDia itens={doDia(diaAberto)} rotulo="Eventos do dia" />
+          <ListaDoDia
+            itens={doDia(diaAberto)}
+            rotulo="Eventos do dia"
+            categoriaDe={categoriaNaLista}
+          />
         ) : (
           <p className="corpo text-(--tinta-2)">Nenhum evento neste dia.</p>
         )}
