@@ -15,10 +15,16 @@ const ITENS_DO_MENU = [
   'Gerar relatório',
   'Gerar relatório do mês',
   'Registrar exigência',
+  'Novo vencimento',
   'Novo orçamento',
   'Triar atividades',
 ]
-const SO_DA_GESTAO = ['Gerar relatório do mês', 'Registrar exigência', 'Novo orçamento']
+const SO_DA_GESTAO = [
+  'Gerar relatório do mês',
+  'Registrar exigência',
+  'Novo vencimento',
+  'Novo orçamento',
+]
 const ITENS_DA_EQUIPE = ITENS_DO_MENU.filter((item) => !SO_DA_GESTAO.includes(item))
 
 function cenario(papel: 'gestao' | 'equipe', tabelas: Cenario['tabelas'] = {}): Cenario {
@@ -130,14 +136,43 @@ describe('cabeçalho do empreendimento (uma ação principal + "…")', () => {
     expect(await screen.findByRole('dialog', { name: 'Novo relatório' })).toBeInTheDocument()
   })
 
-  it('as seções seguem a ordem de antes: Licenças antes de Alvarás', async () => {
-    falso.reiniciar(cenario('gestao'))
+  it('as seções seguem a ordem de antes: Licenças antes de Vencimentos (no lugar de Alvarás)', async () => {
+    falso.reiniciar(
+      cenario('gestao', {
+        vencimento: [
+          {
+            id: 'v1',
+            row_version: 1,
+            tipo_vencimento_id: 't1',
+            unidade_id: null,
+            instrumento_id: null,
+            numero: '200/2026',
+            orgao: null,
+            notas: null,
+            emitido_em: null,
+            emitido_texto: null,
+            valido_ate: '2999-05-31',
+            validade_texto: null,
+            antecedencia_dias: 60,
+            responsavel_tecnico_id: null,
+            anterior_id: null,
+            tipo: { nome: 'Alvará' },
+            unidade: null,
+            instrumento: null,
+            responsavel_tecnico: null,
+            documento: null,
+          },
+        ],
+      }),
+    )
     renderizarApp('/empreendimentos/e1')
     await cabecalho()
-    await screen.findByRole('heading', { level: 2, name: 'Alvarás' })
-    const titulos = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)
-    expect(titulos.indexOf('Licenças')).toBeGreaterThanOrEqual(0)
-    expect(titulos.indexOf('Licenças')).toBeLessThan(titulos.indexOf('Alvarás'))
+    const vencimentos = await screen.findByRole('heading', { level: 2, name: 'Vencimentos' })
+    const licencas = screen.getByRole('heading', { level: 2, name: 'Licenças' })
+    expect(
+      licencas.compareDocumentPosition(vencimentos) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+    expect(screen.queryByRole('heading', { level: 2, name: 'Alvarás' })).not.toBeInTheDocument()
   })
 
   it('carregando: esqueleto anunciado, sem cabeçalho de ações', async () => {

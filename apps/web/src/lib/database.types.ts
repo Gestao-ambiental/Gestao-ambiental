@@ -2429,6 +2429,26 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"tipo_vencimento": {
+                  Row: {
+                    "antecedencia_dias": number,"ativo": boolean,"consultoria_id": string,"criado_em": string,"exige_pdf": boolean,"id": string,"nome": string,"nome_normalizado": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "antecedencia_dias"?: number,"ativo"?: boolean,"consultoria_id": string,"criado_em"?: string,"exige_pdf"?: boolean,"id"?: string,"nome": string,"nome_normalizado"?: never
+                  }
+                  Update: {
+                    "antecedencia_dias"?: number,"ativo"?: boolean,"consultoria_id"?: string,"criado_em"?: string,"exige_pdf"?: boolean,"id"?: string,"nome"?: string,"nome_normalizado"?: never
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "tipo_vencimento_consultoria_id_fkey"
+      columns: ["consultoria_id"]
+isOneToOne: false
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"unidade": {
                   Row: {
                     "consultoria_id": string,"criado_em": string,"empreendimento_id": string,"endereco": string | null,"excluido_em": string | null,"excluido_por": string | null,"id": string,"municipio_gravado_em": string | null,"municipio_ibge": string | null,"municipio_nome": string | null,"nome": string
@@ -2485,6 +2505,80 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "membro"
       referencedColumns: ["consultoria_id","id"]
+    }
+                  ]
+                },"vencimento": {
+                  Row: {
+                    "antecedencia_dias": number,"anterior_id": string | null,"consultoria_id": string,"criado_em": string,"criado_por": string,"documento_id": string | null,"emitido_em": string | null,"emitido_texto": string | null,"empreendimento_id": string,"excluido_em": string | null,"excluido_por": string | null,"id": string,"instrumento_id": string | null,"notas": string | null,"numero": string | null,"orgao": string | null,"responsavel_tecnico_id": string | null,"row_version": number,"tipo_vencimento_id": string,"unidade_id": string | null,"validade_texto": string | null,"valido_ate": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "antecedencia_dias": number,"anterior_id"?: string | null,"consultoria_id": string,"criado_em"?: string,"criado_por": string,"documento_id"?: string | null,"emitido_em"?: string | null,"emitido_texto"?: string | null,"empreendimento_id": string,"excluido_em"?: string | null,"excluido_por"?: string | null,"id"?: string,"instrumento_id"?: string | null,"notas"?: string | null,"numero"?: string | null,"orgao"?: string | null,"responsavel_tecnico_id"?: string | null,"row_version"?: number,"tipo_vencimento_id": string,"unidade_id"?: string | null,"validade_texto"?: string | null,"valido_ate": string
+                  }
+                  Update: {
+                    "antecedencia_dias"?: number,"anterior_id"?: string | null,"consultoria_id"?: string,"criado_em"?: string,"criado_por"?: string,"documento_id"?: string | null,"emitido_em"?: string | null,"emitido_texto"?: string | null,"empreendimento_id"?: string,"excluido_em"?: string | null,"excluido_por"?: string | null,"id"?: string,"instrumento_id"?: string | null,"notas"?: string | null,"numero"?: string | null,"orgao"?: string | null,"responsavel_tecnico_id"?: string | null,"row_version"?: number,"tipo_vencimento_id"?: string,"unidade_id"?: string | null,"validade_texto"?: string | null,"valido_ate"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "vencimento_anterior_fk"
+      columns: ["consultoria_id","anterior_id"]
+isOneToOne: false
+      referencedRelation: "vencimento"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "vencimento_consultoria_id_fkey"
+      columns: ["consultoria_id"]
+isOneToOne: false
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "vencimento_criado_por_fk"
+      columns: ["consultoria_id","criado_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "vencimento_documento_fk"
+      columns: ["consultoria_id","documento_id"]
+isOneToOne: false
+      referencedRelation: "documento"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "vencimento_empreendimento_fk"
+      columns: ["consultoria_id","empreendimento_id"]
+isOneToOne: false
+      referencedRelation: "empreendimento"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "vencimento_excluido_por_fk"
+      columns: ["consultoria_id","excluido_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "vencimento_instrumento_fk"
+      columns: ["consultoria_id","instrumento_id"]
+isOneToOne: false
+      referencedRelation: "instrumento"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "vencimento_responsavel_tecnico_fk"
+      columns: ["consultoria_id","responsavel_tecnico_id"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "vencimento_tipo_fk"
+      columns: ["consultoria_id","tipo_vencimento_id"]
+isOneToOne: false
+      referencedRelation: "tipo_vencimento"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "vencimento_unidade_fk"
+      columns: ["consultoria_id","empreendimento_id","unidade_id"]
+isOneToOne: false
+      referencedRelation: "unidade"
+      referencedColumns: ["consultoria_id","empreendimento_id","id"]
     }
                   ]
                 },"vistoria": {
@@ -2742,6 +2836,9 @@ isOneToOne: false
                            },
 "cadastrar_empreendimento_do_prospecto":
 { Args: { "p_empreendimento_id": string,"p_orcamento_id": string }; Returns: string
+                           },
+"cadastrar_vencimento":
+{ Args: { "p_antecedencia_dias"?: number,"p_caminho"?: string,"p_emitido_em"?: string,"p_emitido_texto"?: string,"p_empreendimento_id": string,"p_id": string,"p_instrumento_id"?: string,"p_nome_original"?: string,"p_notas"?: string,"p_numero"?: string,"p_orgao"?: string,"p_responsavel_tecnico_id"?: string,"p_sha256"?: string,"p_tipo_vencimento_id": string,"p_unidade_id"?: string,"p_validade_texto"?: string,"p_valido_ate": string,"p_versao_id"?: string }; Returns: string
                            },
 "cancelar_convite":
 { Args: { "p_convite_id": string }; Returns: undefined
@@ -3010,6 +3107,9 @@ isOneToOne: false
 "criar_tipo_instrumento":
 { Args: { "p_consultoria_id": string,"p_nome": string,"p_sigla": string }; Returns: string
                            },
+"criar_tipo_vencimento":
+{ Args: { "p_antecedencia_dias"?: number,"p_consultoria_id": string,"p_exige_pdf"?: boolean,"p_nome": string }; Returns: string
+                           },
 "criar_unidade":
 { Args: { "p_empreendimento_id": string,"p_endereco"?: string,"p_id": string,"p_nome": string }; Returns: string
                            },
@@ -3114,8 +3214,14 @@ isOneToOne: false
 "editar_tarefa_servico":
 { Args: { "p_id": string,"p_minutos": number,"p_prazo_interno": string,"p_responsavel_id": string,"p_row_version": number,"p_titulo": string }; Returns: number
                            },
+"editar_tipo_vencimento":
+{ Args: { "p_antecedencia_dias": number,"p_ativo": boolean,"p_exige_pdf": boolean,"p_nome": string,"p_tipo_id": string }; Returns: undefined
+                           },
 "editar_unidade":
 { Args: { "p_endereco": string,"p_id": string,"p_nome": string }; Returns: undefined
+                           },
+"editar_vencimento":
+{ Args: { "p_antecedencia_dias": number,"p_emitido_em"?: string,"p_emitido_texto"?: string,"p_instrumento_id"?: string,"p_notas"?: string,"p_numero"?: string,"p_orgao"?: string,"p_responsavel_tecnico_id"?: string,"p_row_version": number,"p_tipo_vencimento_id": string,"p_unidade_id"?: string,"p_validade_texto"?: string,"p_valido_ate": string,"p_vencimento_id": string }; Returns: number
                            },
 "efetivar_importacao":
 { Args: { "p_confirmar_adicional"?: boolean,"p_importacao_id": string,"p_row_version": number }; Returns: Json
@@ -3172,6 +3278,9 @@ isOneToOne: false
                            },
 "excluir_orcamento":
 { Args: { "p_id": string,"p_row_version": number }; Returns: number
+                           },
+"excluir_vencimento":
+{ Args: { "p_row_version": number,"p_vencimento_id": string }; Returns: undefined
                            },
 "execucao_do_orcamento":
 { Args: { "p_orcamento_id": string }; Returns: Json
@@ -3570,6 +3679,9 @@ isOneToOne: false
 "remover_registro_profissional":
 { Args: { "p_registro_id": string,"p_row_version": number }; Returns: undefined
                            },
+"renovar_vencimento":
+{ Args: { "p_antecedencia_dias"?: number,"p_anterior_id": string,"p_caminho"?: string,"p_emitido_em"?: string,"p_emitido_texto"?: string,"p_id": string,"p_instrumento_id"?: string,"p_nome_original"?: string,"p_notas"?: string,"p_numero"?: string,"p_orgao"?: string,"p_responsavel_tecnico_id"?: string,"p_row_version_anterior": number,"p_sha256"?: string,"p_validade_texto"?: string,"p_valido_ate": string,"p_versao_id"?: string }; Returns: string
+                           },
 "reservar_aviso_de_emergencia":
 { Args: { "p_acesso_id": string }; Returns: {
               "acesso_id": string,"categoria": string,"consultoria_fuso": string,"consultoria_id": string,"consultoria_nome": string,"fim_previsto": string,"inicio": string,"motivo": string,"operador_nome": string
@@ -3680,6 +3792,9 @@ isOneToOne: false
                            },
 "trocar_pdf_alvara":
 { Args: { "p_alvara_id": string,"p_caminho": string,"p_nome_original": string,"p_sha256": string,"p_versao_id": string }; Returns: string
+                           },
+"trocar_pdf_vencimento":
+{ Args: { "p_caminho": string,"p_nome_original": string,"p_sha256": string,"p_vencimento_id": string,"p_versao_id": string }; Returns: string
                            },
 "ultima_linha_de_base":
 { Args: { "p_consultoria_id": string }; Returns: {

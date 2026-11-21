@@ -2,6 +2,12 @@
 -- aqui, com contagens e linhas fixas de listar_prazos, contar_prazos, listar_calendario e
 -- buscar_no_grama, por tipo de linha e por filtro. Escrito contra o código de antes da
 -- refatoração em funções por fonte: se este teste muda, a refatoração mudou comportamento.
+-- Mudança de propósito (P4, ADR-0046): o alvará virou vencimento do tipo Alvará. As linhas dos
+-- alvarás passam de 'validade' ("Validade do alvará", licença "Alvará n") a 'vencimento' (título
+-- "Alvará n", licença vazia, porque o alvará não tem licença ligada). Contagens e ordem iguais.
+-- Mudança de propósito (decisão do Eduardo, 20/11/2026): na Visão (listar_prazos e contar_prazos)
+-- o vencimento só aparece a partir da antecedência (60 dias no Alvará). O alvará da Padaria, que
+-- vence em 425 dias, sai da Visão (total 10 -> 9) e continua no Calendário.
 --
 -- Cenário da Filtroville (A), datas relativas a hoje (h) no fuso da consultoria:
 --   E1 Metalúrgica Açores (cliente Grupo Açoriano), unidade U1
@@ -205,33 +211,32 @@ select results_eq(
     from public.listar_prazos('c0000000-0000-4000-8000-00000000000a')$$,
   $$values
     ('ocorrencia', '71000000-0000-4000-8000-000000000051'::uuid, '71000000-0000-4000-8000-000000000011'::uuid, -5,
-     '1.1', 'Monitoramento de efluentes', 'Metalúrgica Açores', 'Matriz', 'LAO 1001/2024', 'Ana Ribeiro', 'aberta', 10::bigint),
+     '1.1', 'Monitoramento de efluentes', 'Metalúrgica Açores', 'Matriz', 'LAO 1001/2024', 'Ana Ribeiro', 'aberta', 9::bigint),
     ('validade', '71000000-0000-4000-8000-000000000013', '71000000-0000-4000-8000-000000000013', -3,
-     null, 'Validade', 'Metalúrgica Açores', 'Matriz', 'AuA 77/2025', null, null, 10),
+     null, 'Validade', 'Metalúrgica Açores', 'Matriz', 'AuA 77/2025', null, null, 9),
     ('ocorrencia', '71000000-0000-4000-8000-000000000052', '71000000-0000-4000-8000-000000000011', 0,
-     '1.1', 'Monitoramento de efluentes', 'Metalúrgica Açores', 'Matriz', 'LAO 1001/2024', null, 'aberta', 10),
+     '1.1', 'Monitoramento de efluentes', 'Metalúrgica Açores', 'Matriz', 'LAO 1001/2024', null, 'aberta', 9),
     ('ocorrencia', '71000000-0000-4000-8000-000000000053', '71000000-0000-4000-8000-000000000011', 4,
      '1.1', 'Monitoramento de efluentes', 'Metalúrgica Açores', 'Matriz', 'LAO 1001/2024', 'Bruno Tavares',
-     'em_conferencia', 10),
-    ('validade', '71000000-0000-4000-8000-000000000063', null, 6,
-     null, 'Validade do alvará', 'Metalúrgica Açores', 'Matriz', 'Alvará', null, null, 10),
+     'em_conferencia', 9),
+    ('vencimento', '71000000-0000-4000-8000-000000000063', null, 6,
+     null, 'Alvará', 'Metalúrgica Açores', 'Matriz', null, null, null, 9),
     ('ocorrencia', '71000000-0000-4000-8000-000000000055', '71000000-0000-4000-8000-000000000012', 10,
-     '2.1', 'Relatório de ruído', 'Padaria Central', 'Loja', 'LAO 1002/2024', null, 'aberta', 10),
+     '2.1', 'Relatório de ruído', 'Padaria Central', 'Loja', 'LAO 1002/2024', null, 'aberta', 9),
     ('validade', '71000000-0000-4000-8000-000000000012', '71000000-0000-4000-8000-000000000012', 100,
-     null, 'Validade', 'Padaria Central', 'Loja', 'LAO 1002/2024', null, null, 10),
+     null, 'Validade', 'Padaria Central', 'Loja', 'LAO 1002/2024', null, null, 9),
     ('limite_protocolo', '71000000-0000-4000-8000-000000000011', '71000000-0000-4000-8000-000000000011', 250,
-     null, 'Limite de protocolo', 'Metalúrgica Açores', 'Matriz', 'LAO 1001/2024', null, null, 10),
+     null, 'Limite de protocolo', 'Metalúrgica Açores', 'Matriz', 'LAO 1001/2024', null, null, 9),
     ('validade', '71000000-0000-4000-8000-000000000011', '71000000-0000-4000-8000-000000000011', 400,
-     null, 'Validade', 'Metalúrgica Açores', 'Matriz', 'LAO 1001/2024', null, null, 10),
-    ('validade', '71000000-0000-4000-8000-000000000062', null, 425,
-     null, 'Validade do alvará', 'Padaria Central', 'Loja', 'Alvará 200/2026', null, null, 10)$$,
-  'listar_prazos: 4 ocorrências abertas, 3 validades de licença, 1 limite (só LAO sem protocolo) e 2 alvarás vigentes'
+     null, 'Validade', 'Metalúrgica Açores', 'Matriz', 'LAO 1001/2024', null, null, 9)$$,
+  'listar_prazos: 4 ocorrências abertas, 3 validades de licença, 1 limite (só LAO sem protocolo) e o alvará dentro da antecedência (o de 425 dias fica fora da Visão)'
 );
 
 select results_eq(
   $$select tipo_linha, count(*) from public.listar_prazos('c0000000-0000-4000-8000-00000000000a')
     group by tipo_linha order by tipo_linha$$,
-  $$values ('limite_protocolo', 1::bigint), ('ocorrencia', 4::bigint), ('validade', 5::bigint)$$,
+  $$values ('limite_protocolo', 1::bigint), ('ocorrencia', 4::bigint), ('validade', 3::bigint),
+           ('vencimento', 1::bigint)$$,
   'listar_prazos: contagem por tipo de linha'
 );
 
@@ -274,9 +279,8 @@ select results_eq(
   $$select tipo_linha, id from public.listar_prazos('c0000000-0000-4000-8000-00000000000a',
       p_empreendimento_id => '71000000-0000-4000-8000-0000000000e2')$$,
   $$values ('ocorrencia', '71000000-0000-4000-8000-000000000055'::uuid),
-           ('validade', '71000000-0000-4000-8000-000000000012'::uuid),
-           ('validade', '71000000-0000-4000-8000-000000000062'::uuid)$$,
-  'filtro por empreendimento (Padaria Central, sem cliente)'
+           ('validade', '71000000-0000-4000-8000-000000000012'::uuid)$$,
+  'filtro por empreendimento (Padaria Central, sem cliente; o alvará de 425 dias fica fora da Visão)'
 );
 
 select results_eq(
@@ -306,16 +310,16 @@ select results_eq(
 select results_eq(
   $$select id, total from public.listar_prazos('c0000000-0000-4000-8000-00000000000a',
       p_limite => 3, p_deslocamento => 3)$$,
-  $$values ('71000000-0000-4000-8000-000000000053'::uuid, 10::bigint),
-           ('71000000-0000-4000-8000-000000000063'::uuid, 10::bigint),
-           ('71000000-0000-4000-8000-000000000055'::uuid, 10::bigint)$$,
+  $$values ('71000000-0000-4000-8000-000000000053'::uuid, 9::bigint),
+           ('71000000-0000-4000-8000-000000000063'::uuid, 9::bigint),
+           ('71000000-0000-4000-8000-000000000055'::uuid, 9::bigint)$$,
   'paginação com o total'
 );
 
 select results_eq(
   $$select id from public.listar_prazos('c0000000-0000-4000-8000-00000000000a', p_ordem => '-prazo', p_limite => 2)$$,
-  $$values ('71000000-0000-4000-8000-000000000062'::uuid), ('71000000-0000-4000-8000-000000000011'::uuid)$$,
-  'ordem por prazo decrescente'
+  $$values ('71000000-0000-4000-8000-000000000011'::uuid), ('71000000-0000-4000-8000-000000000011'::uuid)$$,
+  'ordem por prazo decrescente (validade da LAO, depois o limite de protocolo)'
 );
 
 -- ---------------------------------------------------------------------------
@@ -324,7 +328,7 @@ select results_eq(
 select results_eq(
   $$select atrasadas, hoje, proximos_7, sem_responsavel, total
     from public.contar_prazos('c0000000-0000-4000-8000-00000000000a')$$,
-  $$values (2::bigint, 1::bigint, 2::bigint, 2::bigint, 10::bigint)$$,
+  $$values (2::bigint, 1::bigint, 2::bigint, 2::bigint, 9::bigint)$$,
   'contar_prazos sem filtro'
 );
 
@@ -339,7 +343,7 @@ select results_eq(
   $$select atrasadas, hoje, proximos_7, sem_responsavel, total
     from public.contar_prazos('c0000000-0000-4000-8000-00000000000a',
       p_empreendimento_id => '71000000-0000-4000-8000-0000000000e2')$$,
-  $$values (0::bigint, 0::bigint, 0::bigint, 1::bigint, 3::bigint)$$,
+  $$values (0::bigint, 0::bigint, 0::bigint, 1::bigint, 2::bigint)$$,
   'contar_prazos por empreendimento'
 );
 
@@ -381,7 +385,7 @@ select results_eq(
      'LAO 1001/2024', 'Bruno Tavares', false, 4),
     ('prazo', 4, '71000000-0000-4000-8000-000000000053', '1.1', 'Monitoramento de efluentes',
      'LAO 1001/2024', 'Bruno Tavares', false, 4),
-    ('validade', 6, '71000000-0000-4000-8000-000000000063', null, 'Validade do alvará', 'Alvará', null, false, 6),
+    ('vencimento', 6, '71000000-0000-4000-8000-000000000063', null, 'Alvará', null, null, false, 6),
     ('meta', 7, '71000000-0000-4000-8000-000000000055', '2.1', 'Relatório de ruído', 'LAO 1002/2024', null, true, 10),
     ('prazo', 10, '71000000-0000-4000-8000-000000000055', '2.1', 'Relatório de ruído', 'LAO 1002/2024', null, true, 10)$$,
   'calendário: prazos, metas, validade da licença e do alvará na janela'
@@ -398,7 +402,7 @@ select results_eq(
   $$select tipo_evento, id from public.listar_calendario('c0000000-0000-4000-8000-00000000000a',
       current_setting('testes.hoje')::date + 390, current_setting('testes.hoje')::date + 430)$$,
   $$values ('validade', '71000000-0000-4000-8000-000000000011'::uuid),
-           ('validade', '71000000-0000-4000-8000-000000000062'::uuid)$$,
+           ('vencimento', '71000000-0000-4000-8000-000000000062'::uuid)$$,
   'calendário: validade da LAO e do alvará renovado (o anterior não aparece)'
 );
 
@@ -527,7 +531,7 @@ select is(
 select results_eq(
   $$select tipo_linha, id, dias from public.listar_prazos('c0000000-0000-4000-8000-00000000000b')$$,
   $$values ('ocorrencia', '71000000-0000-4000-8000-0000000000b5'::uuid, 1),
-           ('validade', '71000000-0000-4000-8000-0000000000b6'::uuid, 15),
+           ('vencimento', '71000000-0000-4000-8000-0000000000b6'::uuid, 15),
            ('limite_protocolo', '71000000-0000-4000-8000-0000000000b1'::uuid, 80),
            ('validade', '71000000-0000-4000-8000-0000000000b1'::uuid, 200)$$,
   'B vê só os próprios prazos (plano padrão da LAO: 120 dias)'

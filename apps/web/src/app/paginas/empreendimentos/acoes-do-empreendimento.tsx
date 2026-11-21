@@ -1,6 +1,7 @@
 // Ações do menu "…" no cabeçalho do empreendimento. A ação principal ("Cadastrar licença") fica
 // na página. Função nova acrescenta UMA linha em ACOES: um link (`para`) ou um diálogo (`Dialogo`,
 // num arquivo próprio). `somenteGestao` esconde a ação da Equipe (o banco decide de fato).
+import { hojeNoFuso } from '@gestao-ambiental/domain'
 import { useQueryClient } from '@tanstack/react-query'
 import { useState, type ComponentType } from 'react'
 
@@ -14,6 +15,8 @@ import type { Empreendimento, Unidade } from '@/lib/api/empreendimentos'
 
 import { DialogoEmpreendimento } from './DialogoEmpreendimento'
 import { DialogoUnidades } from './DialogoUnidades'
+import { DialogoVencimento } from './DialogoVencimento'
+import { chavesDosVencimentos } from './vencimentos-do-empreendimento'
 
 export interface ContextoDaAcao {
   empreendimento: Empreendimento
@@ -85,6 +88,32 @@ function DialogoDoRelatorioDoMes({ empreendimento, aberto, aoMudar }: PropsDoDia
   )
 }
 
+function DialogoDoVencimento({ empreendimento, unidades, aberto, aoMudar }: PropsDoDialogoDaAcao) {
+  const { atual } = useConsultoria()
+  const queryClient = useQueryClient()
+  // Monta ao abrir: o id do vencimento e o da versão do PDF nascem a cada abertura.
+  if (!aberto) return null
+  return (
+    <DialogoVencimento
+      modo={{ tipo: 'novo' }}
+      empreendimentoId={empreendimento.id}
+      unidades={unidades}
+      hoje={hojeNoFuso(new Date(), atual.fuso)}
+      aoFechar={() => {
+        aoMudar(false)
+      }}
+      aoSalvar={async () => {
+        aoMudar(false)
+        await Promise.all(
+          chavesDosVencimentos(empreendimento.id).map((queryKey) =>
+            queryClient.invalidateQueries({ queryKey }),
+          ),
+        )
+      }}
+    />
+  )
+}
+
 const ACOES: readonly AcaoDoEmpreendimento[] = [
   { id: 'editar', rotulo: 'Editar empreendimento', icone: 'pencil', Dialogo: DialogoEditar },
   {
@@ -107,6 +136,13 @@ const ACOES: readonly AcaoDoEmpreendimento[] = [
     icone: 'flag',
     somenteGestao: true,
     Dialogo: DialogoRegistrarExigenciaDoEmpreendimento,
+  },
+  {
+    id: 'vencimento',
+    rotulo: 'Novo vencimento',
+    icone: 'calendar-check',
+    somenteGestao: true,
+    Dialogo: DialogoDoVencimento,
   },
   {
     id: 'orcamento',

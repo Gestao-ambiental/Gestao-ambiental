@@ -47,6 +47,12 @@ export const ABAS_DE_CONFIGURACOES: readonly AbaDeConfiguracoes[] = [
     rotuloNaBusca: 'Importar planilha',
     icone: 'upload',
   },
+  {
+    para: '/configuracoes/vencimentos',
+    rotulo: 'Vencimentos',
+    rotuloNaBusca: 'Tipos de vencimento',
+    icone: 'calendar-check',
+  },
 ]
 
 /** Recursos do plano que alguma aba pede (para consultar uma vez cada). */

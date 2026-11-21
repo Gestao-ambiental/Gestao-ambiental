@@ -1,6 +1,10 @@
 -- Alvará (ALV-01 e ALV-02): só a Gestão registra, com PDF e validade; repetir não duplica; renovar
 -- cria um novo ligado ao anterior, que fica guardado; só o vigente entra na visão da equipe;
 -- excluir é lógico; nada atravessa consultorias e ninguém escreve direto na tabela.
+-- Desde o P4 (ADR-0046) o alvará entra no prazo como vencimento do tipo Alvará (espelhado pela
+-- trigger): as leituras filtram tipo_linha 'vencimento' e comparam o título. Como a Visão
+-- (listar_prazos) só mostra o vencimento a partir da antecedência (decisão do Eduardo, 20/11/2026)
+-- e estes alvarás vencem em mais de 60 dias, a vigência é conferida na fonte (private.linhas_de_prazo).
 begin;
 
 set local timezone to 'America/Sao_Paulo';
@@ -127,10 +131,10 @@ select throws_ok(
 );
 
 select is(
-  (select count(*) from public.listar_prazos('c0000000-0000-4000-8000-00000000000a', p_limite => 100)
-   where licenca = 'Alvará 1234/2026' and tipo_linha = 'validade' and prazo = current_date + 200),
+  (select count(*) from private.linhas_de_prazo('c0000000-0000-4000-8000-00000000000a')
+   where titulo = 'Alvará 1234/2026' and tipo_linha = 'vencimento' and prazo = current_date + 200),
   1::bigint,
-  'o alvará aparece na visão da equipe como linha de validade'
+  'o alvará entra no prazo como linha de vencimento (ADR-0046)'
 );
 
 -- ---------------------------------------------------------------------------
@@ -171,10 +175,10 @@ select results_eq(
 );
 
 select results_eq(
-  $$select licenca from public.listar_prazos('c0000000-0000-4000-8000-00000000000a', p_limite => 100)
-    where licenca like 'Alvará%'$$,
+  $$select titulo from private.linhas_de_prazo('c0000000-0000-4000-8000-00000000000a')
+    where tipo_linha = 'vencimento'$$,
   $$values ('Alvará 2200/2027'::text)$$,
-  'na visão da equipe fica só o alvará vigente'
+  'no prazo fica só o alvará vigente'
 );
 
 select throws_ok(
@@ -236,8 +240,8 @@ select lives_ok(
 );
 
 select results_eq(
-  $$select licenca from public.listar_prazos('c0000000-0000-4000-8000-00000000000a', p_limite => 100)
-    where licenca like 'Alvará%'$$,
+  $$select titulo from private.linhas_de_prazo('c0000000-0000-4000-8000-00000000000a')
+    where tipo_linha = 'vencimento'$$,
   $$values ('Alvará 1234/2026'::text)$$,
   'excluído o novo, o anterior volta a ser o vigente'
 );

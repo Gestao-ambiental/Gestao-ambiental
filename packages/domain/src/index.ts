@@ -618,8 +618,15 @@ export {
 } from './titular-da-licenca'
 export type { TitularDaLicenca } from './titular-da-licenca'
 
-export { idsRenovados, rotuloDaSituacaoDoAlvara, situacaoDoAlvara } from './alvara'
-export type { SituacaoDoAlvara } from './alvara'
+export {
+  ANTECEDENCIA_PADRAO_DIAS,
+  antecedenciaValida,
+  diasParaVencer,
+  idsRenovados,
+  rotuloDaSituacaoDoVencimento,
+  situacaoDoVencimento,
+} from './vencimento'
+export type { SituacaoDoVencimento } from './vencimento'
 export { OBJETO_INICIAL, objetoAindaAutomatico, objetoAutomatico } from './objeto-do-orcamento'
 
 export {

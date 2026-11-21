@@ -355,6 +355,53 @@ describe('protocolo (REN-02)', () => {
     })
   })
 
+  it('trocar o comprovante depois de um erro gera versão nova; repetir com o mesmo não', async () => {
+    // O Storage não sobrescreve: com o mesmo caminho, o objeto ficaria com o arquivo antigo e a
+    // linha da versão com o nome e o SHA-256 do novo.
+    const usuario = userEvent.setup()
+    falso.reiniciar(
+      cenario('gestao', {
+        registrar_protocolo: { error: { code: 'P0001', message: 'conflito_de_versao' } },
+      }),
+    )
+    renderizarApp('/renovacoes/i2')
+    await usuario.click(await screen.findByRole('button', { name: 'Registrar protocolo' }))
+    const dialogo = await screen.findByRole('dialog')
+    await usuario.type(within(dialogo).getByLabelText('Número do protocolo *'), 'IMA 2026/558812')
+    await usuario.type(
+      within(dialogo).getByLabelText('Data *'),
+      formatarDataCivil(adicionarDias(hoje, -1)),
+    )
+    const entrada = document.querySelector<HTMLInputElement>('input[type="file"]')
+    if (!entrada) throw new Error('campo de arquivo ausente')
+    const chamadas = () =>
+      falso.cliente.rpc.mock.calls
+        .filter(([nome]) => nome === 'registrar_protocolo')
+        .map(([, args]) => args as Record<string, string>)
+    const enviar = async (vezes: number) => {
+      await usuario.click(
+        await within(dialogo).findByRole('button', { name: 'Registrar protocolo' }),
+      )
+      await vi.waitFor(() => {
+        expect(chamadas()).toHaveLength(vezes)
+      })
+    }
+
+    await usuario.upload(entrada, new File(['png a'], 'comprovante-a.png', { type: 'image/png' }))
+    expect(await within(dialogo).findByText(/comprovante-a\.png/)).toBeInTheDocument()
+    await enviar(1)
+    await enviar(2)
+    await usuario.upload(entrada, new File(['png b'], 'comprovante-b.png', { type: 'image/png' }))
+    expect(await within(dialogo).findByText(/comprovante-b\.png/)).toBeInTheDocument()
+    await enviar(3)
+
+    const [primeira, repetida, trocada] = chamadas()
+    expect(repetida?.p_versao_id).toBe(primeira?.p_versao_id)
+    expect(trocada?.p_versao_id).not.toBe(primeira?.p_versao_id)
+    expect(trocada?.p_nome_original).toBe('comprovante-b.png')
+    expect(trocada?.p_caminho).toBe(`c-Filtroville/protocolo/${trocada?.p_versao_id ?? ''}.png`)
+  })
+
   it('depois do protocolo: aviso com número e data, sem novo protocolo nem antecedência', async () => {
     falso.reiniciar(
       cenario('gestao', {
