@@ -619,3 +619,14 @@ export type { DiferencaDeNorma, Dispositivo, DispositivoAlterado } from './difer
 export { classificarAto } from './classificar-ato'
 export type { AcaoDoAto, ClassificacaoDoAto } from './classificar-ato'
 export { MARCADOR_DE_CPF, contemCpf, removerCpf } from './sem-cpf'
+export {
+  HORIZONTES_DA_RENOVACAO,
+  HORIZONTE_PADRAO_DA_RENOVACAO,
+  dentroDoHorizonte,
+  ehHorizonteDaRenovacao,
+  fimDoHorizonte,
+  objetoDaRenovacao,
+  orgaoEhIma,
+  taxaSugeridaDaRenovacao,
+} from './renovacao-orcamento'
+export type { AtividadeDaLicenca, HorizonteDaRenovacao } from './renovacao-orcamento'

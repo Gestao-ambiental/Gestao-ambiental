@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router'
+import { useLocation, useNavigate, useSearchParams } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { usePrenderTarefa, useTarefas } from '@/app/consultoria/tempo-ativo'
@@ -12,24 +12,40 @@ import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { Trilha } from '@/components/ui/trilha'
 import type { ParaQuem } from '@/lib/api/orcamentos'
 import { mensagemDoErro } from '@/lib/erros'
+import { ehUuid } from '@/lib/texto'
 
 import { BuscaDoCliente, type EscolhaDoCliente } from './BuscaDoCliente'
 import { ETAPAS } from './comum'
 import { CHAVE_DO_NOVO_ORCAMENTO, useCriarRascunho } from './criar-rascunho'
+import { NovoOrcamentoDaRenovacao } from './NovoOrcamentoDaRenovacao'
 import { SeloSituacaoOrcamento } from './SeloSituacaoOrcamento'
 
 /**
  * /orcamentos/novo (pedido do Eduardo, 20/11/2026): sem diálogo, direto no editor. O cliente vem
  * numa linha só, no topo; escolhido, o rascunho nasce e a tela vira o editor dele. Com
- * ?empreendimento=<id> (menu do empreendimento), o rascunho nasce na hora para ele.
+ * ?empreendimento=<id> (menu do empreendimento), o rascunho nasce na hora para ele. Com
+ * ?renovacao=<licença> (radar e plano de renovação, ADR-0044), vira o rascunho da renovação.
  */
 export function PaginaNovoOrcamento() {
   const { atual } = useConsultoria()
+  const [parametros] = useSearchParams()
+  const renovacao = parametros.get('renovacao')
+  // Cada chegada à tela (key da navegação) confere de novo se a licença já tem orçamento vivo.
+  const { key: chegada } = useLocation()
   if (atual.papel !== 'gestao') {
     return (
       <Pagina titulo="Novo orçamento">
         <SemPermissao descricao="Orçamentos têm custo e margem: por enquanto, só a gestão acessa." />
       </Pagina>
+    )
+  }
+  if (ehUuid(renovacao)) {
+    return (
+      <NovoOrcamentoDaRenovacao
+        key={chegada}
+        consultoriaId={atual.consultoriaId}
+        instrumentoId={renovacao}
+      />
     )
   }
   return <CriacaoDoOrcamento consultoriaId={atual.consultoriaId} />

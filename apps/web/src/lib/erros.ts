@@ -80,6 +80,13 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   data_protocolo_futura: 'A data do protocolo não pode estar no futuro',
   comprovante_obrigatorio: 'Anexe o comprovante',
   plano_nao_protocolado: 'O acompanhamento do órgão começa depois do protocolo.',
+  // Renovação vira orçamento (ADR-0044)
+  licenca_invalida: 'Licença não encontrada.',
+  licenca_sem_renovacao: 'Esta licença não está no radar de renovação.',
+  taxa_invalida: 'Informe a taxa em reais (0 ou mais).',
+  licenca_ja_tem_orcamento: 'Esta licença já tem um orçamento de renovação em andamento.',
+  atividades_invalidas: 'Não foi possível gravar as atividades. Refaça a triagem.',
+  id_obrigatorio: 'Não foi possível criar o orçamento. Tente de novo.',
   // Extração por IA (épico 9)
   pdf_obrigatorio: 'Anexe o PDF da licença para a IA ler.',
   condicionantes_existentes:

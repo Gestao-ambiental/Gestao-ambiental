@@ -1,3 +1,4 @@
+import type { PapelMembro } from '@gestao-ambiental/domain'
 import { FunctionsHttpError } from '@supabase/supabase-js'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor, within } from '@testing-library/react'
@@ -6,6 +7,7 @@ import axe from 'axe-core'
 import { MemoryRouter } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { ContextoConsultoria, type EstadoConsultoria } from '@/app/consultoria/contexto-consultoria'
 import type { ResultadoDoLocal } from '@/lib/api/consulta-de-local'
 import { falso } from '@/test/supabase-falso'
 
@@ -50,16 +52,36 @@ beforeEach(() => {
   falso.reiniciar({ funcoes: { 'consultar-local': { data: CENTRO } } })
 })
 
-function montar(caminho = '/triagem') {
+function consultoria(papel: PapelMembro): EstadoConsultoria {
+  return {
+    atual: {
+      membroId: 'm1',
+      consultoriaId: 'c1',
+      consultoriaNome: 'Filtroville',
+      fuso: 'America/Sao_Paulo',
+      papel,
+      situacao: 'ativo',
+      desligadoEm: null,
+    },
+    suporte: null,
+    abrirSuporte: () => Promise.resolve(),
+    vinculos: [],
+    trocar: () => undefined,
+  }
+}
+
+function montar(caminho = '/triagem', papel: PapelMembro = 'gestao') {
   const usuario = userEvent.setup()
   const cliente = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })
   const tela = render(
     <QueryClientProvider client={cliente}>
-      <MemoryRouter initialEntries={[caminho]}>
-        <PaginaTriagem />
-      </MemoryRouter>
+      <ContextoConsultoria.Provider value={consultoria(papel)}>
+        <MemoryRouter initialEntries={[caminho]}>
+          <PaginaTriagem />
+        </MemoryRouter>
+      </ContextoConsultoria.Provider>
     </QueryClientProvider>,
   )
   return { usuario, ...tela }
@@ -410,6 +432,171 @@ describe('triagem de licenciamento (/triagem)', () => {
       }),
       '10.000',
     )
+    const r = await axe.run(container)
+    expect(r.violations.map((v) => v.id)).toEqual([])
+  })
+})
+
+describe('gravar na licença (ADR-0044)', () => {
+  const EMPREENDIMENTO = '3c1d2e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f'
+  const LAO = '7d1e2f3a-4b5c-4d6e-8f9a-0b1c2d3e4f5a'
+  const LAI = '9a8b7c6d-5e4f-4a3b-9c2d-1e0f9a8b7c6d'
+
+  function licenca(
+    id: string,
+    sigla: string,
+    numero: string,
+    plano: Record<string, unknown> | null,
+  ): Record<string, unknown> {
+    return {
+      id,
+      numero,
+      orgao: 'IMA',
+      situacao: 'ativo',
+      validade: '2027-03-01',
+      criado_em: '2026-01-10T12:00:00Z',
+      antecedencia_renovacao_dias: 30,
+      unidade_id: 'un1',
+      tipo_id: 't1',
+      marco: 'emissao',
+      tipo: { sigla, nome: sigla },
+      unidade: { nome: 'Matriz' },
+      plano,
+      condicionante: [{ count: 0 }],
+    }
+  }
+
+  function cenario(gravar: { data?: unknown; error?: unknown } = { data: 1 }) {
+    falso.reiniciar({
+      tabelas: {
+        empreendimento: [{ id: EMPREENDIMENTO, nome: 'Metalúrgica Rio Cubatão', cnpj: null }],
+        instrumento: [
+          licenca(LAO, 'LAO', '4821/2023', {
+            antecedencia_dias: 30,
+            dias_limite_protocolo: 120,
+            protocolado_em: null,
+          }),
+          licenca(LAI, 'LAI', '77/2026', null),
+        ],
+      },
+      rpc: { gravar_atividades_na_licenca: gravar },
+    })
+  }
+
+  async function enquadrarUsinagem(usuario: ReturnType<typeof userEvent.setup>) {
+    await incluir(usuario, '12.80.10', '12.80.10')
+    await usuario.type(
+      within(screen.getByRole('article', { name: /^12\.80\.10/ })).getByRole('textbox', {
+        name: /AU\(3\)/,
+      }),
+      '0,5',
+    )
+  }
+
+  it('vinda do plano (&licenca=), grava as atividades enquadradas direto na licença', async () => {
+    cenario()
+    const { usuario } = montar(`/triagem?empreendimento=${EMPREENDIMENTO}&licenca=${LAO}`)
+    await screen.findByRole('link', { name: 'Metalúrgica Rio Cubatão' })
+    // Atividade sem parâmetro (pendente) não conta: sem enquadrada, não há o que gravar.
+    await incluir(usuario, 'usinagem pintura', '12.80.10')
+    expect(screen.queryByRole('button', { name: /Gravar na licença/ })).toBeNull()
+    await usuario.type(
+      within(screen.getByRole('article', { name: /^12\.80\.10/ })).getByRole('textbox', {
+        name: /AU\(3\)/,
+      }),
+      '0,5',
+    )
+    // A pendente fica de fora do que é gravado.
+    await incluir(usuario, '01.54.00', '01.54.00')
+
+    await usuario.click(
+      await screen.findByRole('button', { name: 'Gravar na licença: LAO 4821/2023' }),
+    )
+    await waitFor(() => {
+      expect(falso.cliente.rpc).toHaveBeenCalledWith('gravar_atividades_na_licenca', {
+        p_consultoria_id: 'c1',
+        p_instrumento_id: LAO,
+        p_atividades: [
+          {
+            codigo: '12.80.10',
+            descricao: expect.stringMatching(/pintura/i) as unknown,
+            porte: 'medio',
+            potencial: 'M',
+            medidas: { 'AU(3)': 0.5 },
+            fonte: 'Resolução CONSEMA 250/2024, consolidada até a Resolução CONSEMA 314/2026',
+          },
+        ],
+      })
+    })
+    const aviso = await screen.findByRole('status')
+    expect(aviso).toHaveTextContent('Gravado na LAO 4821/2023')
+    expect(within(aviso).getByRole('link', { name: 'LAO 4821/2023' })).toHaveAttribute(
+      'href',
+      `/renovacoes/${LAO}`,
+    )
+  })
+
+  it('sem a licença no endereço, escolhe no menu entre as licenças do empreendimento', async () => {
+    cenario()
+    const { usuario } = montar(`/triagem?empreendimento=${EMPREENDIMENTO}`)
+    await screen.findByRole('link', { name: 'Metalúrgica Rio Cubatão' })
+    await enquadrarUsinagem(usuario)
+
+    await usuario.click(await screen.findByRole('button', { name: 'Gravar na licença' }))
+    expect(await screen.findByRole('menuitem', { name: 'LAO 4821/2023' })).toBeInTheDocument()
+    await usuario.click(screen.getByRole('menuitem', { name: 'LAI 77/2026' }))
+    await waitFor(() => {
+      expect(falso.cliente.rpc).toHaveBeenCalledWith(
+        'gravar_atividades_na_licenca',
+        expect.objectContaining({ p_instrumento_id: LAI }) as unknown,
+      )
+    })
+    // Licença sem plano de renovação: o aviso não tem link.
+    const aviso = await screen.findByRole('status')
+    expect(aviso).toHaveTextContent('Gravado na LAI 77/2026')
+    expect(within(aviso).queryByRole('link')).toBeNull()
+  })
+
+  it('erro ao gravar aparece na tela', async () => {
+    cenario({ error: { message: 'atividades_invalidas', code: '22023' } })
+    const { usuario } = montar(`/triagem?empreendimento=${EMPREENDIMENTO}&licenca=${LAO}`)
+    await screen.findByRole('link', { name: 'Metalúrgica Rio Cubatão' })
+    await enquadrarUsinagem(usuario)
+    await usuario.click(
+      await screen.findByRole('button', { name: 'Gravar na licença: LAO 4821/2023' }),
+    )
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Não foi possível gravar as atividades. Refaça a triagem.',
+    )
+  })
+
+  it('a Equipe não vê a ação', async () => {
+    cenario()
+    const { usuario } = montar(`/triagem?empreendimento=${EMPREENDIMENTO}&licenca=${LAO}`, 'equipe')
+    await screen.findByRole('link', { name: 'Metalúrgica Rio Cubatão' })
+    await enquadrarUsinagem(usuario)
+    expect(screen.queryByRole('button', { name: /Gravar na licença/ })).toBeNull()
+    expect(falso.cliente.from).not.toHaveBeenCalledWith('instrumento')
+  })
+
+  it('sem empreendimento não há onde gravar', async () => {
+    cenario()
+    const { usuario } = montar()
+    await enquadrarUsinagem(usuario)
+    expect(screen.queryByRole('button', { name: /Gravar na licença/ })).toBeNull()
+  })
+
+  it('sem violações de acessibilidade com a ação e o aviso de gravado', async () => {
+    cenario()
+    const { usuario, container } = montar(
+      `/triagem?empreendimento=${EMPREENDIMENTO}&licenca=${LAO}`,
+    )
+    await screen.findByRole('link', { name: 'Metalúrgica Rio Cubatão' })
+    await enquadrarUsinagem(usuario)
+    await usuario.click(
+      await screen.findByRole('button', { name: 'Gravar na licença: LAO 4821/2023' }),
+    )
+    await screen.findByRole('status')
     const r = await axe.run(container)
     expect(r.violations.map((v) => v.id)).toEqual([])
   })

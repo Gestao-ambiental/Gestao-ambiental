@@ -1,14 +1,21 @@
 import {
+  HORIZONTES_DA_RENOVACAO,
+  HORIZONTE_PADRAO_DA_RENOVACAO,
   datasRenovacaoLao,
   diferencaEmDias,
+  ehHorizonteDaRenovacao,
+  fimDoHorizonte,
   formatarDataCivil,
+  hojeNoFuso,
   situacaoDaRenovacao,
+  type HorizonteDaRenovacao,
 } from '@gestao-ambiental/domain'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useId, useState, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
+import { useRecursoLiberado } from '@/app/consultoria/recurso-liberado'
 import { Pagina } from '@/app/paginas/Pagina'
 import { Contagem } from '@/app/paginas/visao/Contagem'
 import { Carregando, EstadoErro, EstadoVazio } from '@/components/estados'
@@ -16,6 +23,7 @@ import { Abas, PainelDeAba } from '@/components/ui/abas'
 import { Avatar } from '@/components/ui/avatar'
 import { BotaoIcone } from '@/components/ui/botao-icone'
 import { Icone } from '@/components/ui/icone'
+import { Segmentado } from '@/components/ui/segmentado'
 import {
   TAMANHO_PAGINA_ACOMPANHAMENTOS,
   listarAguardandoConferencia,
@@ -27,6 +35,7 @@ import { tempoDesde } from '@/lib/datas'
 import { cn } from '@/lib/utils'
 
 import { abasDeAcompanhamentosVisiveis } from './abas-de-acompanhamentos'
+import { OrcamentoDaRenovacao } from './OrcamentoDaRenovacao'
 import { SeloRenovacao } from './SeloRenovacao'
 
 const classeCelula = 'h-(--linha) border-b border-(--regra-leve) px-(--e-3) align-middle'
@@ -115,6 +124,17 @@ function Quadro<T>({
   )
 }
 
+const OPCOES_DO_HORIZONTE = HORIZONTES_DA_RENOVACAO.map((meses) => ({
+  valor: meses,
+  rotulo: `${String(meses)} meses`,
+}))
+
+/** ?horizonte=3|6|12; ausente ou inválido vale o padrão (6), que não aparece na URL. */
+function lerHorizonte(texto: string | null): HorizonteDaRenovacao {
+  const meses = texto === null ? NaN : Number(texto)
+  return ehHorizonteDaRenovacao(meses) ? meses : HORIZONTE_PADRAO_DA_RENOVACAO
+}
+
 /** Limite, situação e quantos dias faltam para o limite de protocolo (nulo se já protocolou). */
 function calcular(item: Renovacao) {
   const { limiteProtocolo } = datasRenovacaoLao(item.validade, item.antecedencia, item.diasLimite)
@@ -152,13 +172,16 @@ export function PaginaAcompanhamentos() {
   const cid = atual.consultoriaId
   const ids = useId()
   const [parametros, setParametros] = useSearchParams()
-  const visiveis = abasDeAcompanhamentosVisiveis(atual.papel === 'gestao')
+  const ehGestao = atual.papel === 'gestao'
+  const visiveis = abasDeAcompanhamentosVisiveis(ehGestao)
   const primeira = visiveis[0]?.valor ?? 'renovacoes'
   const pedida = parametros.get('aba')
   const aba = visiveis.find((a) => a.valor === pedida)?.valor ?? primeira
   const PainelDaAba = visiveis.find((a) => a.valor === aba)?.Painel
   const [paginaConferencia, setPaginaConferencia] = useState(0)
   const [paginaRenovacao, setPaginaRenovacao] = useState(0)
+  const horizonte = lerHorizonte(parametros.get('horizonte'))
+  const orcamentosNoPlano = useRecursoLiberado('orcamentos').data === true
 
   const conferencias = useQuery({
     queryKey: ['aguardando-conferencia', cid, paginaConferencia],
@@ -166,11 +189,12 @@ export function PaginaAcompanhamentos() {
     placeholderData: keepPreviousData,
   })
   const renovacoes = useQuery({
-    queryKey: ['renovacoes', cid, paginaRenovacao],
-    queryFn: () => listarRenovacoes(cid, paginaRenovacao),
+    queryKey: ['renovacoes', cid, horizonte, paginaRenovacao],
+    queryFn: () => listarRenovacoes(cid, paginaRenovacao, horizonte),
     placeholderData: keepPreviousData,
   })
   const agora = new Date()
+  const fimDoRadar = fimDoHorizonte(hojeNoFuso(agora, atual.fuso), horizonte)
 
   const totais: Record<string, number | undefined> = {
     renovacoes: renovacoes.data?.total,
@@ -183,6 +207,19 @@ export function PaginaAcompanhamentos() {
         const proximo = new URLSearchParams(p)
         if (nova === primeira) proximo.delete('aba')
         else proximo.set('aba', nova)
+        return proximo
+      },
+      { replace: true },
+    )
+  }
+
+  function trocarHorizonte(meses: HorizonteDaRenovacao) {
+    setPaginaRenovacao(0)
+    setParametros(
+      (p) => {
+        const proximo = new URLSearchParams(p)
+        if (meses === HORIZONTE_PADRAO_DA_RENOVACAO) proximo.delete('horizonte')
+        else proximo.set('horizonte', String(meses))
         return proximo
       },
       { replace: true },
@@ -214,11 +251,19 @@ export function PaginaAcompanhamentos() {
             role="tabpanel"
             id={`${ids}-painel-renovacoes`}
             aria-labelledby={`${ids}-aba-renovacoes`}
+            className="flex flex-col gap-(--e-3)"
           >
+            <Segmentado
+              rotulo="Vencem nos próximos"
+              opcoes={OPCOES_DO_HORIZONTE}
+              valor={horizonte}
+              aoMudar={trocarHorizonte}
+              className="self-start"
+            />
             <Quadro
               titulo="Renovações no radar"
               consulta={renovacoes}
-              vazio="Nenhuma LAO ativa para renovar."
+              vazio={`Nenhuma LAO vence até ${formatarDataCivil(fimDoRadar)}.`}
               iconeVazio="calendar-check"
               pagina={paginaRenovacao}
               aoMudarPagina={setPaginaRenovacao}
@@ -243,6 +288,9 @@ export function PaginaAcompanhamentos() {
                           </th>
                           <th scope="col" className={classeCabecalho}>
                             Situação
+                          </th>
+                          <th scope="col" className={classeCabecalho}>
+                            Orçamento
                           </th>
                         </tr>
                       </thead>
@@ -288,6 +336,15 @@ export function PaginaAcompanhamentos() {
                               <td className={classeCelula}>
                                 <SeloRenovacao situacao={situacao} hoje={item.hoje} />
                               </td>
+                              <td className={classeCelula}>
+                                <OrcamentoDaRenovacao
+                                  instrumentoId={item.instrumentoId}
+                                  licenca={item.licenca}
+                                  orcamento={item.orcamento}
+                                  ehGestao={ehGestao}
+                                  podeGerar={orcamentosNoPlano}
+                                />
+                              </td>
                             </tr>
                           )
                         })}
@@ -325,6 +382,15 @@ export function PaginaAcompanhamentos() {
                                 {formatarDataCivil(limiteProtocolo)}
                               </span>{' '}
                               · vence {formatarDataCivil(item.validade)}
+                            </span>
+                            <span className="pt-(--e-1)">
+                              <OrcamentoDaRenovacao
+                                instrumentoId={item.instrumentoId}
+                                licenca={item.licenca}
+                                orcamento={item.orcamento}
+                                ehGestao={ehGestao}
+                                podeGerar={orcamentosNoPlano}
+                              />
                             </span>
                           </span>
                         </li>

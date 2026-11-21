@@ -159,6 +159,38 @@ isOneToOne: true
       referencedColumns: ["id"]
     }
                   ]
+                },"atividade_licenciada": {
+                  Row: {
+                    "codigo": string,"consultoria_id": string,"descricao": string,"fonte": string,"id": string,"instrumento_id": string,"medidas": NonNullable<Json>,"porte": string,"potencial": string,"registrado_em": string,"registrado_por": string,"row_version": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "codigo": string,"consultoria_id": string,"descricao": string,"fonte": string,"id"?: string,"instrumento_id": string,"medidas"?: NonNullable<Json>,"porte": string,"potencial": string,"registrado_em"?: string,"registrado_por": string,"row_version"?: number
+                  }
+                  Update: {
+                    "codigo"?: string,"consultoria_id"?: string,"descricao"?: string,"fonte"?: string,"id"?: string,"instrumento_id"?: string,"medidas"?: NonNullable<Json>,"porte"?: string,"potencial"?: string,"registrado_em"?: string,"registrado_por"?: string,"row_version"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "atividade_licenciada_consultoria_id_fkey"
+      columns: ["consultoria_id"]
+isOneToOne: false
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "atividade_licenciada_instrumento_fk"
+      columns: ["consultoria_id","instrumento_id"]
+isOneToOne: false
+      referencedRelation: "instrumento"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "atividade_licenciada_registrado_por_fk"
+      columns: ["consultoria_id","registrado_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    }
+                  ]
                 },"auditoria": {
                   Row: {
                     "acao": Database["public"]['Enums']["acao_auditoria"],"antes": Json | null,"ator_membro_id": string | null,"consultoria_id": string,"depois": Json | null,"entidade": string,"entidade_id": string,"id": number,"instante": string,"motivo": string | null
@@ -1139,14 +1171,14 @@ isOneToOne: false
                   ]
                 },"orcamento": {
                   Row: {
-                    "ano": number,"apresentacao": string | null,"atualizado_em": string,"base_custo_fixo_hora_centavos": number | null,"base_custo_hora_membro": Json | null,"base_custo_hora_profissao": Json | null,"base_custo_km_centavos": number | null,"base_custos_fixos_detalhe": Json | null,"base_custos_fixos_equipe_centavos": number | null,"base_custos_fixos_mensais_centavos": number | null,"base_deslocamento_modo": string | null,"base_hora_tecnica_centavos": number | null,"base_horas_venda": Json | null,"base_margem_desejada_pb": number | null,"base_margem_minima_pb": number | null,"base_registrada_em": string | null,"base_taxa_por_assinatura_centavos": number | null,"base_taxa_por_cobranca_centavos": number | null,"base_taxas_pb": number | null,"base_tributos_pb": number | null,"base_valor_visita_centavos": number | null,"consultoria_id": string,"criado_em": string,"criado_por": string,"destinatario": string | null,"duplicado_de": string | null,"empreendimento_id": string | null,"excluido_em": string | null,"excluido_por": string | null,"exclusoes": (string)[],"forma_preco": string,"id": string,"km_por_visita": number,"margem_pb": number | null,"moeda": string,"objeto": string,"outros_por_visita_centavos": number,"prazos": string | null,"preco_visitas_centavos": number,"premissas": (string)[],"prospecto_cnpj": string | null,"prospecto_contato": string | null,"prospecto_email": string | null,"prospecto_nome": string | null,"prospecto_telefone": string | null,"revisao": number,"row_version": number,"sequencia": number,"situacao": Database["public"]['Enums']["situacao_orcamento"],"validade_dias": number,"visitas": number
+                    "ano": number,"apresentacao": string | null,"atualizado_em": string,"base_custo_fixo_hora_centavos": number | null,"base_custo_hora_membro": Json | null,"base_custo_hora_profissao": Json | null,"base_custo_km_centavos": number | null,"base_custos_fixos_detalhe": Json | null,"base_custos_fixos_equipe_centavos": number | null,"base_custos_fixos_mensais_centavos": number | null,"base_deslocamento_modo": string | null,"base_hora_tecnica_centavos": number | null,"base_horas_venda": Json | null,"base_margem_desejada_pb": number | null,"base_margem_minima_pb": number | null,"base_registrada_em": string | null,"base_taxa_por_assinatura_centavos": number | null,"base_taxa_por_cobranca_centavos": number | null,"base_taxas_pb": number | null,"base_tributos_pb": number | null,"base_valor_visita_centavos": number | null,"consultoria_id": string,"criado_em": string,"criado_por": string,"destinatario": string | null,"duplicado_de": string | null,"empreendimento_id": string | null,"excluido_em": string | null,"excluido_por": string | null,"exclusoes": (string)[],"forma_preco": string,"id": string,"instrumento_id": string | null,"km_por_visita": number,"margem_pb": number | null,"moeda": string,"objeto": string,"outros_por_visita_centavos": number,"prazos": string | null,"preco_visitas_centavos": number,"premissas": (string)[],"prospecto_cnpj": string | null,"prospecto_contato": string | null,"prospecto_email": string | null,"prospecto_nome": string | null,"prospecto_telefone": string | null,"revisao": number,"row_version": number,"sequencia": number,"situacao": Database["public"]['Enums']["situacao_orcamento"],"validade_dias": number,"visitas": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "ano": number,"apresentacao"?: string | null,"atualizado_em"?: string,"base_custo_fixo_hora_centavos"?: number | null,"base_custo_hora_membro"?: Json | null,"base_custo_hora_profissao"?: Json | null,"base_custo_km_centavos"?: number | null,"base_custos_fixos_detalhe"?: Json | null,"base_custos_fixos_equipe_centavos"?: number | null,"base_custos_fixos_mensais_centavos"?: number | null,"base_deslocamento_modo"?: string | null,"base_hora_tecnica_centavos"?: number | null,"base_horas_venda"?: Json | null,"base_margem_desejada_pb"?: number | null,"base_margem_minima_pb"?: number | null,"base_registrada_em"?: string | null,"base_taxa_por_assinatura_centavos"?: number | null,"base_taxa_por_cobranca_centavos"?: number | null,"base_taxas_pb"?: number | null,"base_tributos_pb"?: number | null,"base_valor_visita_centavos"?: number | null,"consultoria_id": string,"criado_em"?: string,"criado_por": string,"destinatario"?: string | null,"duplicado_de"?: string | null,"empreendimento_id"?: string | null,"excluido_em"?: string | null,"excluido_por"?: string | null,"exclusoes"?: (string)[],"forma_preco"?: string,"id"?: string,"km_por_visita"?: number,"margem_pb"?: number | null,"moeda"?: string,"objeto": string,"outros_por_visita_centavos"?: number,"prazos"?: string | null,"preco_visitas_centavos"?: number,"premissas"?: (string)[],"prospecto_cnpj"?: string | null,"prospecto_contato"?: string | null,"prospecto_email"?: string | null,"prospecto_nome"?: string | null,"prospecto_telefone"?: string | null,"revisao"?: number,"row_version"?: number,"sequencia": number,"situacao"?: Database["public"]['Enums']["situacao_orcamento"],"validade_dias"?: number,"visitas"?: number
+                    "ano": number,"apresentacao"?: string | null,"atualizado_em"?: string,"base_custo_fixo_hora_centavos"?: number | null,"base_custo_hora_membro"?: Json | null,"base_custo_hora_profissao"?: Json | null,"base_custo_km_centavos"?: number | null,"base_custos_fixos_detalhe"?: Json | null,"base_custos_fixos_equipe_centavos"?: number | null,"base_custos_fixos_mensais_centavos"?: number | null,"base_deslocamento_modo"?: string | null,"base_hora_tecnica_centavos"?: number | null,"base_horas_venda"?: Json | null,"base_margem_desejada_pb"?: number | null,"base_margem_minima_pb"?: number | null,"base_registrada_em"?: string | null,"base_taxa_por_assinatura_centavos"?: number | null,"base_taxa_por_cobranca_centavos"?: number | null,"base_taxas_pb"?: number | null,"base_tributos_pb"?: number | null,"base_valor_visita_centavos"?: number | null,"consultoria_id": string,"criado_em"?: string,"criado_por": string,"destinatario"?: string | null,"duplicado_de"?: string | null,"empreendimento_id"?: string | null,"excluido_em"?: string | null,"excluido_por"?: string | null,"exclusoes"?: (string)[],"forma_preco"?: string,"id"?: string,"instrumento_id"?: string | null,"km_por_visita"?: number,"margem_pb"?: number | null,"moeda"?: string,"objeto": string,"outros_por_visita_centavos"?: number,"prazos"?: string | null,"preco_visitas_centavos"?: number,"premissas"?: (string)[],"prospecto_cnpj"?: string | null,"prospecto_contato"?: string | null,"prospecto_email"?: string | null,"prospecto_nome"?: string | null,"prospecto_telefone"?: string | null,"revisao"?: number,"row_version"?: number,"sequencia": number,"situacao"?: Database["public"]['Enums']["situacao_orcamento"],"validade_dias"?: number,"visitas"?: number
                   }
                   Update: {
-                    "ano"?: number,"apresentacao"?: string | null,"atualizado_em"?: string,"base_custo_fixo_hora_centavos"?: number | null,"base_custo_hora_membro"?: Json | null,"base_custo_hora_profissao"?: Json | null,"base_custo_km_centavos"?: number | null,"base_custos_fixos_detalhe"?: Json | null,"base_custos_fixos_equipe_centavos"?: number | null,"base_custos_fixos_mensais_centavos"?: number | null,"base_deslocamento_modo"?: string | null,"base_hora_tecnica_centavos"?: number | null,"base_horas_venda"?: Json | null,"base_margem_desejada_pb"?: number | null,"base_margem_minima_pb"?: number | null,"base_registrada_em"?: string | null,"base_taxa_por_assinatura_centavos"?: number | null,"base_taxa_por_cobranca_centavos"?: number | null,"base_taxas_pb"?: number | null,"base_tributos_pb"?: number | null,"base_valor_visita_centavos"?: number | null,"consultoria_id"?: string,"criado_em"?: string,"criado_por"?: string,"destinatario"?: string | null,"duplicado_de"?: string | null,"empreendimento_id"?: string | null,"excluido_em"?: string | null,"excluido_por"?: string | null,"exclusoes"?: (string)[],"forma_preco"?: string,"id"?: string,"km_por_visita"?: number,"margem_pb"?: number | null,"moeda"?: string,"objeto"?: string,"outros_por_visita_centavos"?: number,"prazos"?: string | null,"preco_visitas_centavos"?: number,"premissas"?: (string)[],"prospecto_cnpj"?: string | null,"prospecto_contato"?: string | null,"prospecto_email"?: string | null,"prospecto_nome"?: string | null,"prospecto_telefone"?: string | null,"revisao"?: number,"row_version"?: number,"sequencia"?: number,"situacao"?: Database["public"]['Enums']["situacao_orcamento"],"validade_dias"?: number,"visitas"?: number
+                    "ano"?: number,"apresentacao"?: string | null,"atualizado_em"?: string,"base_custo_fixo_hora_centavos"?: number | null,"base_custo_hora_membro"?: Json | null,"base_custo_hora_profissao"?: Json | null,"base_custo_km_centavos"?: number | null,"base_custos_fixos_detalhe"?: Json | null,"base_custos_fixos_equipe_centavos"?: number | null,"base_custos_fixos_mensais_centavos"?: number | null,"base_deslocamento_modo"?: string | null,"base_hora_tecnica_centavos"?: number | null,"base_horas_venda"?: Json | null,"base_margem_desejada_pb"?: number | null,"base_margem_minima_pb"?: number | null,"base_registrada_em"?: string | null,"base_taxa_por_assinatura_centavos"?: number | null,"base_taxa_por_cobranca_centavos"?: number | null,"base_taxas_pb"?: number | null,"base_tributos_pb"?: number | null,"base_valor_visita_centavos"?: number | null,"consultoria_id"?: string,"criado_em"?: string,"criado_por"?: string,"destinatario"?: string | null,"duplicado_de"?: string | null,"empreendimento_id"?: string | null,"excluido_em"?: string | null,"excluido_por"?: string | null,"exclusoes"?: (string)[],"forma_preco"?: string,"id"?: string,"instrumento_id"?: string | null,"km_por_visita"?: number,"margem_pb"?: number | null,"moeda"?: string,"objeto"?: string,"outros_por_visita_centavos"?: number,"prazos"?: string | null,"preco_visitas_centavos"?: number,"premissas"?: (string)[],"prospecto_cnpj"?: string | null,"prospecto_contato"?: string | null,"prospecto_email"?: string | null,"prospecto_nome"?: string | null,"prospecto_telefone"?: string | null,"revisao"?: number,"row_version"?: number,"sequencia"?: number,"situacao"?: Database["public"]['Enums']["situacao_orcamento"],"validade_dias"?: number,"visitas"?: number
                   }
                   Relationships: [
                     {
@@ -1178,6 +1210,12 @@ isOneToOne: false
       columns: ["consultoria_id","excluido_por"]
 isOneToOne: false
       referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "orcamento_instrumento_fk"
+      columns: ["consultoria_id","instrumento_id"]
+isOneToOne: false
+      referencedRelation: "instrumento"
       referencedColumns: ["consultoria_id","id"]
     }
                   ]
@@ -2250,6 +2288,9 @@ isOneToOne: false
 "criar_orcamento":
 { Args: { "p_consultoria_id": string,"p_empreendimento_id": string,"p_id": string,"p_objeto": string,"p_prospecto"?: Json }; Returns: string
                            },
+"criar_orcamento_de_renovacao":
+{ Args: { "p_consultoria_id": string,"p_id": string,"p_instrumento_id": string,"p_taxa_centavos"?: number }; Returns: string
+                           },
 "criar_relatorio":
 { Args: { "p_conteudo": Json,"p_empreendimento_id": string,"p_id": string,"p_modelo_id": string,"p_ocorrencia_id": string,"p_titulo": string }; Returns: number
                            },
@@ -2383,6 +2424,9 @@ isOneToOne: false
 "falhar_extracao_ia":
 { Args: { "p_custo_micros": number,"p_detalhe": string,"p_duracao_ms": number,"p_id": string,"p_modelo": string,"p_motivo": string,"p_paginas": number,"p_tokens_entrada": number,"p_tokens_saida": number,"p_versao_prompt": string }; Returns: undefined
                            },
+"gravar_atividades_na_licenca":
+{ Args: { "p_atividades": Json,"p_consultoria_id": string,"p_instrumento_id": string }; Returns: number
+                           },
 "ignorar_apontamento":
 { Args: { "p_conferencia_id": string,"p_indice": number }; Returns: undefined
                            },
@@ -2470,8 +2514,8 @@ isOneToOne: false
             }[]
                            },
 "listar_renovacoes":
-{ Args: { "p_consultoria_id": string,"p_deslocamento"?: number,"p_limite"?: number }; Returns: {
-              "acompanhamento_dias": number,"antecedencia_dias": number,"dias_limite_protocolo": number,"empreendimento_id": string,"empreendimento_nome": string,"hoje": string,"id": string,"instrumento_id": string,"licenca": string,"orgao": string,"protocolado_em": string,"protocolo_numero": string,"total": number,"unidade_nome": string,"validade": string
+{ Args: { "p_consultoria_id": string,"p_deslocamento"?: number,"p_horizonte_meses"?: number,"p_limite"?: number }; Returns: {
+              "acompanhamento_dias": number,"antecedencia_dias": number,"dias_limite_protocolo": number,"empreendimento_id": string,"empreendimento_nome": string,"hoje": string,"id": string,"instrumento_id": string,"licenca": string,"orcamento_ano": number,"orcamento_id": string,"orcamento_revisao": number,"orcamento_sequencia": number,"orcamento_situacao": Database["public"]['Enums']["situacao_orcamento"],"orgao": string,"protocolado_em": string,"protocolo_numero": string,"total": number,"unidade_nome": string,"validade": string
             }[]
                            },
 "listar_tarefas_servico":
