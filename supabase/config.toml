@@ -399,6 +399,12 @@ verify_jwt = false
 [functions.avisar-acesso-de-suporte]
 verify_jwt = false
 
+# Resumo de mudança de norma por IA (ADR-0050, L4): chamada pelo gatilho do banco (pg_net, header
+# x-resumo-token) e pela central (JWT do operador, conferido pelo banco na RPC
+# central_detalhe_da_mudanca_de_norma).
+[functions.resumir-mudanca]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

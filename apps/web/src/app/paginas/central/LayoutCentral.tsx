@@ -26,6 +26,7 @@ const ABAS: [string, string][] = [
   ['/admin/valor', 'Valor'],
   ['/admin/parametros', 'Parâmetros'],
   ['/admin/lista-de-espera', 'Lista de espera'],
+  ['/admin/normas', 'Normas'],
 ]
 
 function MenuContaCentral() {
