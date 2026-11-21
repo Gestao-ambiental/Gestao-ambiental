@@ -1,7 +1,11 @@
 // Visão da equipe e calendário (épico 5). Leitura por RPCs security invoker: a RLS decide o que
 // aparece; `dias` vem calculado do banco com hoje no fuso da consultoria.
 
-import type { DataCivil, TipoLinhaDePrazo } from '@gestao-ambiental/domain'
+import {
+  TIPOS_LINHA_DE_PRAZO,
+  type DataCivil,
+  type TipoLinhaDePrazo,
+} from '@gestao-ambiental/domain'
 
 import { obterSupabase } from '@/lib/supabase'
 
@@ -67,6 +71,10 @@ function argumentosDosFiltros(consultoriaId: string, filtros: Filtros) {
   }
 }
 
+function ehTipoConhecido(tipo: string): tipo is TipoLinhaDePrazo {
+  return (TIPOS_LINHA_DE_PRAZO as readonly string[]).includes(tipo)
+}
+
 export async function listarPrazos(
   consultoriaId: string,
   filtros: Filtros,
@@ -84,23 +92,27 @@ export async function listarPrazos(
   })
   if (error) throw error
   return {
-    itens: data.map((linha) => ({
-      tipo: linha.tipo_linha as TipoLinhaDePrazo,
-      id: linha.id,
-      instrumentoId: anulavel(linha.instrumento_id),
-      prazo: linha.prazo as DataCivil,
-      dias: linha.dias,
-      codigo: anulavel(linha.codigo),
-      titulo: linha.titulo,
-      empreendimentoId: linha.empreendimento_id,
-      empreendimentoNome: linha.empreendimento_nome,
-      unidadeNome: linha.unidade_nome,
-      licenca: anulavel(linha.licenca),
-      responsavelId: anulavel(linha.responsavel_id),
-      responsavelNome: anulavel(linha.responsavel_nome),
-      emConferencia: linha.situacao_ocorrencia === 'em_conferencia',
-      rowVersion: linha.row_version,
-    })),
+    // Tipo que o front ainda não conhece (fonte nova no banco antes do deploy da tela) fica fora,
+    // em vez de virar uma linha sem destino.
+    itens: data
+      .filter((linha) => ehTipoConhecido(linha.tipo_linha))
+      .map((linha) => ({
+        tipo: linha.tipo_linha as TipoLinhaDePrazo,
+        id: linha.id,
+        instrumentoId: anulavel(linha.instrumento_id),
+        prazo: linha.prazo as DataCivil,
+        dias: linha.dias,
+        codigo: anulavel(linha.codigo),
+        titulo: linha.titulo,
+        empreendimentoId: linha.empreendimento_id,
+        empreendimentoNome: linha.empreendimento_nome,
+        unidadeNome: linha.unidade_nome,
+        licenca: anulavel(linha.licenca),
+        responsavelId: anulavel(linha.responsavel_id),
+        responsavelNome: anulavel(linha.responsavel_nome),
+        emConferencia: linha.situacao_ocorrencia === 'em_conferencia',
+        rowVersion: linha.row_version,
+      })),
     total: data[0]?.total ?? 0,
   }
 }

@@ -188,4 +188,19 @@ describe('API de prazos', () => {
       emConferencia: false,
     })
   })
+
+  it('deixa de fora a linha de um tipo que a tela ainda não conhece', async () => {
+    falso.reiniciar({
+      rpc: {
+        listar_prazos: {
+          data: [
+            { ...linha, id: 'novo', tipo_linha: 'acao_legal' },
+            { ...linha, id: 'o2' },
+          ],
+        },
+      },
+    })
+    const { itens } = await listarPrazos('c1', semFiltro, null, 'prazo', 0)
+    expect(itens.map((i) => i.id)).toEqual(['o2'])
+  })
 })

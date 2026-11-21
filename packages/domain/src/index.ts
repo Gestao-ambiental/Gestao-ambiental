@@ -602,3 +602,20 @@ export type { TitularDaLicenca } from './titular-da-licenca'
 export { idsRenovados, rotuloDaSituacaoDoAlvara, situacaoDoAlvara } from './alvara'
 export type { SituacaoDoAlvara } from './alvara'
 export { OBJETO_INICIAL, objetoAindaAutomatico, objetoAutomatico } from './objeto-do-orcamento'
+
+export {
+  ESFERAS_DE_NORMA,
+  ORGAOS_RECONHECIDOS,
+  TIPOS_DE_NORMA,
+  chaveDaNorma,
+  lerIdentificadorDeNorma,
+  lerTodosOsIdentificadores,
+  normalizarNumeroDaNorma,
+  tituloCurtoDaNorma,
+} from './norma'
+export type { DadosDaChaveDaNorma, EsferaNorma, IdentificadorDeNorma, TipoNorma } from './norma'
+export { compararVersoes, dividirEmDispositivos } from './diferenca-de-norma'
+export type { DiferencaDeNorma, Dispositivo, DispositivoAlterado } from './diferenca-de-norma'
+export { classificarAto } from './classificar-ato'
+export type { AcaoDoAto, ClassificacaoDoAto } from './classificar-ato'
+export { MARCADOR_DE_CPF, contemCpf, removerCpf } from './sem-cpf'
