@@ -763,7 +763,9 @@ describe('gravar na licença (ADR-0044)', () => {
 
   it('vinda do plano (&licenca=), grava as atividades enquadradas direto na licença', async () => {
     cenario()
-    const { usuario } = montar(`/triagem?empreendimento=${EMPREENDIMENTO}&licenca=${LAO}`)
+    const { usuario } = montar(
+      `/triagem?empreendimento=${EMPREENDIMENTO}&licenca=${LAO}&etapa=atividades`,
+    )
     await screen.findByRole('link', { name: 'Metalúrgica Rio Cubatão' })
     // Atividade sem parâmetro (pendente) não conta: sem enquadrada, não há o que gravar.
     await incluir(usuario, 'usinagem pintura', '12.80.10')
@@ -806,7 +808,7 @@ describe('gravar na licença (ADR-0044)', () => {
 
   it('sem a licença no endereço, escolhe no menu entre as licenças do empreendimento', async () => {
     cenario()
-    const { usuario } = montar(`/triagem?empreendimento=${EMPREENDIMENTO}`)
+    const { usuario } = montar(`/triagem?empreendimento=${EMPREENDIMENTO}&etapa=atividades`)
     await screen.findByRole('link', { name: 'Metalúrgica Rio Cubatão' })
     await enquadrarUsinagem(usuario)
 
@@ -827,7 +829,9 @@ describe('gravar na licença (ADR-0044)', () => {
 
   it('erro ao gravar aparece na tela', async () => {
     cenario({ error: { message: 'atividades_invalidas', code: '22023' } })
-    const { usuario } = montar(`/triagem?empreendimento=${EMPREENDIMENTO}&licenca=${LAO}`)
+    const { usuario } = montar(
+      `/triagem?empreendimento=${EMPREENDIMENTO}&licenca=${LAO}&etapa=atividades`,
+    )
     await screen.findByRole('link', { name: 'Metalúrgica Rio Cubatão' })
     await enquadrarUsinagem(usuario)
     await usuario.click(
@@ -840,7 +844,10 @@ describe('gravar na licença (ADR-0044)', () => {
 
   it('a Equipe não vê a ação', async () => {
     cenario()
-    const { usuario } = montar(`/triagem?empreendimento=${EMPREENDIMENTO}&licenca=${LAO}`, 'equipe')
+    const { usuario } = montar(
+      `/triagem?empreendimento=${EMPREENDIMENTO}&licenca=${LAO}&etapa=atividades`,
+      'equipe',
+    )
     await screen.findByRole('link', { name: 'Metalúrgica Rio Cubatão' })
     await enquadrarUsinagem(usuario)
     expect(screen.queryByRole('button', { name: /Gravar na licença/ })).toBeNull()
@@ -849,7 +856,7 @@ describe('gravar na licença (ADR-0044)', () => {
 
   it('sem empreendimento não há onde gravar', async () => {
     cenario()
-    const { usuario } = montar()
+    const { usuario } = montar('/triagem?etapa=atividades')
     await enquadrarUsinagem(usuario)
     expect(screen.queryByRole('button', { name: /Gravar na licença/ })).toBeNull()
   })
@@ -857,7 +864,7 @@ describe('gravar na licença (ADR-0044)', () => {
   it('sem violações de acessibilidade com a ação e o aviso de gravado', async () => {
     cenario()
     const { usuario, container } = montar(
-      `/triagem?empreendimento=${EMPREENDIMENTO}&licenca=${LAO}`,
+      `/triagem?empreendimento=${EMPREENDIMENTO}&licenca=${LAO}&etapa=atividades`,
     )
     await screen.findByRole('link', { name: 'Metalúrgica Rio Cubatão' })
     await enquadrarUsinagem(usuario)
