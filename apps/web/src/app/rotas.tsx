@@ -26,6 +26,7 @@ import { PaginaFoto } from './paginas/campo/PaginaFoto'
 import { PaginaMinhasVistorias } from './paginas/campo/PaginaMinhasVistorias'
 import { PaginaModelo } from './paginas/modelos/PaginaModelo'
 import { PaginaModelos } from './paginas/modelos/PaginaModelos'
+import { PaginaNorma } from './paginas/normas/PaginaNorma'
 import { PaginaOcorrencia } from './paginas/ocorrencia/PaginaOcorrencia'
 import { PaginaNaoEncontrada } from './paginas/paginas'
 import { PaginaPlanejamento } from './paginas/planejamento/PaginaPlanejamento'
@@ -225,6 +226,8 @@ export const rotas: RouteObject[] = [
               { path: 'campo/:id/envio', element: <PaginaEnvio /> },
               { path: 'acompanhamentos', element: <PaginaAcompanhamentos /> },
               { path: 'renovacoes/:instrumentoId', element: <PaginaPlanoRenovacao /> },
+              // Detalhe da norma (ADR-0050): fora do menu, para todos os membros.
+              { path: 'normas/:id', element: <PaginaNorma /> },
               // Resíduos, fase 1 (sem integração com o IMA; ADR-0028): abas da área.
               {
                 path: 'residuos',

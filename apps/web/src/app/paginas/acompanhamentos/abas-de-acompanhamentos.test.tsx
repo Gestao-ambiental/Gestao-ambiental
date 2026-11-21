@@ -63,6 +63,7 @@ describe('abas de Acompanhamentos', () => {
     expect(nomesDasAbas()).toEqual([
       expect.stringContaining('Renovações no radar'),
       expect.stringContaining('Aguardando conferência'),
+      expect.stringContaining('Normas'),
       expect.stringContaining('Aba de teste'),
     ])
 

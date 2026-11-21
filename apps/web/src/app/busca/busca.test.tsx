@@ -328,6 +328,33 @@ describe('busca global', () => {
     expect(router.state.location.pathname).toBe('/empreendimentos/e7')
   })
 
+  it('normas vêm no grupo próprio e abrem o detalhe da norma', async () => {
+    falso.reiniciar({
+      rpc: {
+        buscar_no_grama: {
+          data: [
+            {
+              tipo: 'norma',
+              id: 'n1',
+              titulo: 'Instrução Normativa 4',
+              detalhe: 'IMA · Instrução normativa · revogada',
+              referencia_id: 'n1',
+            },
+          ],
+        },
+      },
+    })
+    const { usuario, router } = renderizar('equipe')
+    await usuario.keyboard('{Control>}k{/Control}')
+    await usuario.type(await screen.findByRole('combobox'), 'instrução')
+    const normas = await screen.findByRole('group', { name: 'Normas' })
+    const opcao = within(normas).getByRole('option', { name: /Instrução Normativa 4/ })
+    expect(opcao).toHaveTextContent('IMA · Instrução normativa · revogada')
+
+    await usuario.click(opcao)
+    expect(router.state.location.pathname).toBe('/normas/n1')
+  })
+
   it('mostra até 5 resultados por grupo, o limite do banco', async () => {
     falso.reiniciar({
       rpc: {

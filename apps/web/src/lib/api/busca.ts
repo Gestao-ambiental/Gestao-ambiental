@@ -4,7 +4,13 @@
 import { obterSupabase } from '@/lib/supabase'
 
 export type TipoResultadoBusca =
-  'empreendimento' | 'licenca' | 'condicionante' | 'orcamento' | 'exigencia' | 'vencimento'
+  | 'empreendimento'
+  | 'licenca'
+  | 'condicionante'
+  | 'orcamento'
+  | 'exigencia'
+  | 'vencimento'
+  | 'norma'
 
 export interface ResultadoBusca {
   tipo: TipoResultadoBusca
@@ -13,7 +19,7 @@ export interface ResultadoBusca {
   detalhe: string | null
   /**
    * Id que monta a rota: o empreendimento (licença, condicionante e vencimento) ou o próprio
-   * registro (orçamento). A exigência abre pela própria id.
+   * registro (orçamento e norma). A exigência abre pela própria id.
    */
   referenciaId: string
 }
@@ -31,6 +37,7 @@ const TIPOS: readonly TipoResultadoBusca[] = [
   'orcamento',
   'exigencia',
   'vencimento',
+  'norma',
 ]
 
 function ehTipo(valor: string): valor is TipoResultadoBusca {

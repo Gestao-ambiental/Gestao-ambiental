@@ -335,7 +335,7 @@ select results_eq(
 );
 
 -- ---------------------------------------------------------------------------
--- Fontes vazias (L5 e L6)
+-- Fonte vazia do L6 e grupo de normas da busca (real desde o L5)
 -- ---------------------------------------------------------------------------
 select is(
   (select count(*) from private.linhas_de_prazo_acao_legal('c0000000-0000-4000-8000-00000000000a')),
@@ -351,17 +351,19 @@ select ok(
   'acao_legal tem responsável, como ocorrência e exigência'
 );
 
+-- Regra mudada de propósito no L5 (ADR-0050): o grupo de normas deixou de ser o stub vazio. Ele só
+-- busca com termo que parece referência de norma (número, tipo ou órgão no começo).
 select is(
-  (select count(*) from private.busca_normas('c0000000-0000-4000-8000-00000000000a', 'zzpaginacao')),
-  0::bigint,
-  'grupo de normas da busca nasce vazio'
+  (select count(*) from private.busca_normas('c0000000-0000-4000-8000-00000000000a', 'portaria zzpaginacao')),
+  5::bigint,
+  'grupo de normas da busca acha pelo título depois do tipo'
 );
 
 select results_eq(
   $$select tipo, count(*) from public.buscar_no_grama('c0000000-0000-4000-8000-00000000000a', 'zzpaginacao')
     group by tipo order by tipo$$,
   $$values ('empreendimento'::text, 1::bigint)$$,
-  'busca global continua funcionando e não traz norma enquanto o grupo estiver vazio'
+  'busca global: termo que não parece norma não traz o grupo de normas'
 );
 
 select is(

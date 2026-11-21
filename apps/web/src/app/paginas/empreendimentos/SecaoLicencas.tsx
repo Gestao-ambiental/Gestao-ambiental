@@ -151,6 +151,7 @@ export function SecaoLicencas({
         />
       ) : (
         <TabelaLicencas
+          empreendimentoId={id}
           itens={filtradas}
           totalSemFiltro={todasLicencas.length}
           hoje={hoje}

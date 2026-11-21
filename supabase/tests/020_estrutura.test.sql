@@ -150,7 +150,10 @@ select is(
      ('uso_diario'), ('auditoria'),
      -- Avisos (P5, tabelas futuras): consultoria inadimplente não pode impedir alguém de parar de
      -- receber aviso nem de desligar o feed do calendário.
-     ('preferencia_aviso'), ('feed_calendario')
+     ('preferencia_aviso'), ('feed_calendario'),
+     -- Aviso de mudança de norma (ADR-0050): aviso de lei não pode parar por inadimplência, e
+     -- marcar como vista não pode ser barrado (mesmo motivo de preferencia_aviso no ADR-0041).
+     ('aviso_norma')
    )
    select coalesce(array_agg(c.relname::text order by c.relname), '{}')
    from pg_catalog.pg_class as c

@@ -249,6 +249,44 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"aviso_norma": {
+                  Row: {
+                    "consultoria_id": string,"criado_em": string,"empreendimento_id": string,"id": string,"instrumento_id": string | null,"motivo": NonNullable<Json>,"mudanca_id": string,"visto_em": string | null,"visto_por": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "consultoria_id": string,"criado_em"?: string,"empreendimento_id": string,"id"?: string,"instrumento_id"?: string | null,"motivo": NonNullable<Json>,"mudanca_id": string,"visto_em"?: string | null,"visto_por"?: string | null
+                  }
+                  Update: {
+                    "consultoria_id"?: string,"criado_em"?: string,"empreendimento_id"?: string,"id"?: string,"instrumento_id"?: string | null,"motivo"?: NonNullable<Json>,"mudanca_id"?: string,"visto_em"?: string | null,"visto_por"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "aviso_norma_consultoria_id_fkey"
+      columns: ["consultoria_id"]
+isOneToOne: false
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "aviso_norma_empreendimento_fk"
+      columns: ["consultoria_id","empreendimento_id"]
+isOneToOne: false
+      referencedRelation: "empreendimento"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "aviso_norma_instrumento_fk"
+      columns: ["consultoria_id","instrumento_id"]
+isOneToOne: false
+      referencedRelation: "instrumento"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "aviso_norma_visto_por_fk"
+      columns: ["consultoria_id","visto_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    }
+                  ]
                 },"cdf": {
                   Row: {
                     "atualizado_em": string,"consultoria_id": string,"criado_em": string,"criado_por": string,"destinador_cnpj": string | null,"destinador_nome": string,"documento_id": string | null,"emitido_em": string,"empreendimento_id": string,"excluido_em": string | null,"excluido_por": string | null,"id": string,"numero": string,"observacao": string | null,"periodo_fim": string,"periodo_inicio": string,"row_version": number
@@ -2055,6 +2093,11 @@ isOneToOne: false
 "adicionar_tarefa_servico":
 { Args: { "p_id": string,"p_minutos": number,"p_orcamento_id": string,"p_prazo_interno": string,"p_responsavel_id": string,"p_titulo": string }; Returns: string
                            },
+"afetados_pela_mudanca":
+{ Args: { "p_consultoria_id": string,"p_mudanca_id": string }; Returns: {
+              "cliente_nome": string,"empreendimento_id": string,"empreendimento_nome": string,"instrumento_id": string,"licenca": string,"motivo": Json,"visto_em": string
+            }[]
+                           },
 "alterar_papel":
 { Args: { "p_membro_id": string,"p_papel": Database["public"]['Enums']["papel_membro"] }; Returns: undefined
                            },
@@ -2315,6 +2358,9 @@ isOneToOne: false
               "consultoria_fuso": string,"consultoria_nome": string,"conta_com_senha": boolean,"convidado_por_nome": string,"email": string,"expira_em": string,"papel": Database["public"]['Enums']["papel_membro"],"situacao": string
             }[]
                            },
+"contar_mudancas_de_norma_nao_vistas":
+{ Args: { "p_consultoria_id": string }; Returns: number
+                           },
 "contar_orcamentos_por_situacao":
 { Args: { "p_busca"?: string,"p_consultoria_id": string,"p_lixeira"?: boolean }; Returns: {
               "quantidade": number,"situacao": Database["public"]['Enums']["situacao_orcamento"]
@@ -2523,6 +2569,11 @@ isOneToOne: false
 "liberar_reserva_do_resumo":
 { Args: { "p_consultoria_id": string,"p_mes": string }; Returns: undefined
                            },
+"licencas_com_mudanca_de_norma":
+{ Args: { "p_consultoria_id": string,"p_empreendimento_id": string }; Returns: {
+              "instrumento_id": string,"mudancas": number
+            }[]
+                           },
 "lista_de_espera_marcar_avisados":
 { Args: { "p_ids": (string)[] }; Returns: number
                            },
@@ -2577,6 +2628,11 @@ isOneToOne: false
               "cdfs": Json,"criado_em": string,"destinador_cnpj": string,"destinador_nome": string,"emitido_em": string,"empreendimento_id": string,"empreendimento_nome": string,"id": string,"itens": Json,"numero": string,"observacao": string,"pdf_caminho": string,"pdf_nome": string,"row_version": number,"situacao": string,"tem_cdf": boolean,"total": number,"transportador_cnpj": string,"transportador_nome": string
             }[]
                            },
+"listar_mudancas_de_norma_da_consultoria":
+{ Args: { "p_consultoria_id": string,"p_deslocamento"?: number,"p_limite"?: number,"p_so_nao_vistas"?: boolean }; Returns: {
+              "clientes": number,"empreendimentos": number,"licencas": number,"mudanca_id": string,"nao_vista": boolean,"norma_id": string,"norma_titulo": string,"publicada_em": string,"resumo": string,"tipo_mudanca": string,"total": number
+            }[]
+                           },
 "listar_orcamentos":
 { Args: { "p_busca"?: string,"p_consultoria_id": string,"p_deslocamento"?: number,"p_limite"?: number,"p_lixeira"?: boolean,"p_situacao"?: Database["public"]['Enums']["situacao_orcamento"] }; Returns: {
               "ano": number,"atualizado_em": string,"empreendimento_id": string,"empreendimento_nome": string,"excluido_em": string,"id": string,"objeto": string,"revisao": number,"row_version": number,"sequencia": number,"situacao": Database["public"]['Enums']["situacao_orcamento"],"total": number,"total_centavos": number
@@ -2621,6 +2677,9 @@ isOneToOne: false
                            },
 "marcar_aviso_de_suporte_visto":
 { Args: { "p_acesso_id": string }; Returns: undefined
+                           },
+"marcar_mudanca_de_norma_vista":
+{ Args: { "p_consultoria_id": string,"p_mudanca_id": string }; Returns: number
                            },
 "meus_acessos_de_suporte":
 { Args: Record<PropertyKey, never>; Returns: {

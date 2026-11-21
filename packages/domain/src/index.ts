@@ -630,3 +630,14 @@ export {
   taxaSugeridaDaRenovacao,
 } from './renovacao-orcamento'
 export type { AtividadeDaLicenca, HorizonteDaRenovacao } from './renovacao-orcamento'
+export { afetaOEmpreendimento, rotuloDoMotivo } from './aplicabilidade'
+export type {
+  AtividadeDoPerfil,
+  CriterioDeNorma,
+  LicencaDoPerfil,
+  MotivoDaAplicabilidade,
+  NormaParaAplicar,
+  PerfilDoEmpreendimento,
+  ResultadoDaAplicabilidade,
+  TipoDeCriterio,
+} from './aplicabilidade'

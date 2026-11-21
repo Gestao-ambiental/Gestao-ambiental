@@ -31,6 +31,7 @@ import {
   type Pagina as PaginaDeItens,
   type Renovacao,
 } from '@/lib/api/renovacoes'
+import { CHAVES_DE_NORMAS, contarMudancasNaoVistas } from '@/lib/api/normas'
 import { tempoDesde } from '@/lib/datas'
 import { cn } from '@/lib/utils'
 
@@ -193,12 +194,18 @@ export function PaginaAcompanhamentos() {
     queryFn: () => listarRenovacoes(cid, paginaRenovacao, horizonte),
     placeholderData: keepPreviousData,
   })
+  // Normas: a contagem é das mudanças que ninguém da consultoria viu ainda.
+  const normasNaoVistas = useQuery({
+    queryKey: [CHAVES_DE_NORMAS.naoVistas, cid],
+    queryFn: () => contarMudancasNaoVistas(cid),
+  })
   const agora = new Date()
   const fimDoRadar = fimDoHorizonte(hojeNoFuso(agora, atual.fuso), horizonte)
 
   const totais: Record<string, number | undefined> = {
     renovacoes: renovacoes.data?.total,
     conferencia: conferencias.data?.total,
+    normas: normasNaoVistas.data,
   }
 
   function trocar(nova: string) {

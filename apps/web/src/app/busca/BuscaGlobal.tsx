@@ -42,11 +42,12 @@ const GRUPOS: readonly { tipo: TipoResultadoBusca; rotulo: string; icone: NomeIc
   { tipo: 'orcamento', rotulo: 'Orçamentos', icone: 'file-text' },
   { tipo: 'exigencia', rotulo: 'Exigências', icone: 'flag' },
   { tipo: 'vencimento', rotulo: 'Vencimentos', icone: 'calendar-check' },
+  { tipo: 'norma', rotulo: 'Normas', icone: 'certificate' },
 ]
 
 /**
- * Orçamento e exigência têm página própria. Licença, condicionante e vencimento não: abrem o
- * empreendimento.
+ * Orçamento, exigência e norma têm página própria. Licença, condicionante e vencimento não: abrem
+ * o empreendimento.
  */
 function destinoDoResultado(resultado: ResultadoBusca): string {
   switch (resultado.tipo) {
@@ -54,6 +55,8 @@ function destinoDoResultado(resultado: ResultadoBusca): string {
       return `/orcamentos/${resultado.referenciaId}`
     case 'exigencia':
       return `/exigencias/${resultado.id}`
+    case 'norma':
+      return `/normas/${resultado.referenciaId}`
     default:
       return `/empreendimentos/${resultado.referenciaId}`
   }

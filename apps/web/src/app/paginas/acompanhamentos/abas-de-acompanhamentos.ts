@@ -2,6 +2,8 @@
 // Aguardando conferência traz o próprio painel em `Painel`.
 import type { ComponentType } from 'react'
 
+import { AbaNormas } from './AbaNormas'
+
 export interface AbaDeAcompanhamentos {
   /** Valor em ?aba=… (a primeira aba não aparece na URL). */
   valor: string
@@ -17,6 +19,7 @@ export interface AbaDeAcompanhamentos {
 export const ABAS_DE_ACOMPANHAMENTOS: readonly AbaDeAcompanhamentos[] = [
   { valor: 'renovacoes', rotulo: 'Renovações no radar', curto: 'Renovações' },
   { valor: 'conferencia', rotulo: 'Aguardando conferência', curto: 'Conferência' },
+  { valor: 'normas', rotulo: 'Normas', curto: 'Normas', Painel: AbaNormas },
 ]
 
 /** Abas que este papel vê, na ordem da lista. */

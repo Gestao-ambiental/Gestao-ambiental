@@ -1,6 +1,8 @@
 import { formatarDataCivil, situacaoDaLicenca, type DataCivil } from '@gestao-ambiental/domain'
+import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router'
 
+import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { ProgressoCadastro } from '@/app/paginas/licenca/ProgressoCadastro'
 import { PASSOS } from '@/app/paginas/licenca/passos'
 import { SeloSituacaoLicenca } from '@/app/paginas/licenca/SeloSituacaoLicenca'
@@ -8,6 +10,7 @@ import { EstadoVazio } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
 import { Icone } from '@/components/ui/icone'
 import type { LicencaNaLista } from '@/lib/api/licencas'
+import { listarLicencasComMudancaDeNorma } from '@/lib/api/normas-da-licenca'
 import { formatarInstanteComoData } from '@/lib/datas'
 import { useCelular } from '@/lib/usar-celular'
 import { cn } from '@/lib/utils'
@@ -32,6 +35,61 @@ function Identificador({ licenca }: { licenca: LicencaNaLista }) {
       {titulo(licenca)}
     </span>
   )
+}
+
+/** Aba Normas de Acompanhamentos (mesmo ?aba=… que a página lê). */
+const DESTINO_DAS_MUDANCAS_DE_NORMA = '/acompanhamentos?aba=normas'
+
+/**
+ * Selo "Norma mudou" (ADR-0050, item 25): a licença tem aviso de mudança de norma ainda não visto.
+ * Ícone e palavra, nunca só a cor; leva à aba Normas de Acompanhamentos.
+ */
+function SeloNormaMudou({ licenca, mudancas }: { licenca: LicencaNaLista; mudancas: number }) {
+  const quantas = mudancas === 1 ? '1 mudança' : `${String(mudancas)} mudanças`
+  return (
+    <Link
+      to={DESTINO_DAS_MUDANCAS_DE_NORMA}
+      aria-label={`Norma mudou: ${quantas} para ${titulo(licenca)}`}
+      className="inline-flex shrink-0 items-center gap-(--e-1) rounded-(--raio-mini) text-xs font-[750] whitespace-nowrap text-(--alerta-texto) underline-offset-2 hover:underline"
+    >
+      <Icone nome="megaphone" tamanho={12} rotulo="Aviso de norma" />
+      Norma mudou
+    </Link>
+  )
+}
+
+/** Identificador e, quando houver aviso não visto, o selo "Norma mudou" ao lado. */
+function LicencaComSelo({
+  licenca,
+  mudancas,
+}: {
+  licenca: LicencaNaLista
+  mudancas: number | undefined
+}) {
+  if (!mudancas) return <Identificador licenca={licenca} />
+  return (
+    <span className="inline-flex flex-wrap items-center gap-x-(--e-2) gap-y-(--e-1)">
+      <Identificador licenca={licenca} />
+      <SeloNormaMudou licenca={licenca} mudancas={mudancas} />
+    </span>
+  )
+}
+
+/**
+ * Licenças com aviso de norma não visto. Erro ou carregando: nenhum selo, a tabela segue igual.
+ */
+function useMudancasDeNorma(
+  empreendimentoId: string,
+  temLicencas: boolean,
+): ReadonlyMap<string, number> {
+  const { atual } = useConsultoria()
+  const consulta = useQuery({
+    queryKey: ['licencas-com-mudanca-de-norma', atual.consultoriaId, empreendimentoId],
+    queryFn: () => listarLicencasComMudancaDeNorma(atual.consultoriaId, empreendimentoId),
+    enabled: temLicencas,
+    staleTime: 60_000,
+  })
+  return new Map((consulta.data ?? []).map((l) => [l.instrumentoId, l.mudancas]))
 }
 
 function Situacao({
@@ -72,9 +130,11 @@ function Condicionantes({ licenca }: { licenca: LicencaNaLista }) {
 /**
  * Licenças do empreendimento (Protótipo 09, onda 1): da mais recente para a mais antiga, com
  * validade e situação calculada. O número da licença é o identificador da linha. Rascunho diz
- * onde parou e, para a Gestão, "Continuar" no passo em que parou. No celular, vira lista.
+ * onde parou e, para a Gestão, "Continuar" no passo em que parou. Licença com mudança de norma
+ * não vista ganha o selo "Norma mudou". No celular, vira lista.
  */
 export function TabelaLicencas({
+  empreendimentoId,
   itens,
   totalSemFiltro,
   hoje,
@@ -84,6 +144,7 @@ export function TabelaLicencas({
   ordemDecrescente,
   aoInverterOrdem,
 }: {
+  empreendimentoId: string
   itens: readonly LicencaNaLista[]
   totalSemFiltro: number
   hoje: DataCivil
@@ -94,6 +155,7 @@ export function TabelaLicencas({
   aoInverterOrdem: () => void
 }) {
   const celular = useCelular()
+  const mudancasDeNorma = useMudancasDeNorma(empreendimentoId, itens.length > 0)
 
   if (totalSemFiltro === 0) {
     return <EstadoVazio icone="file-text" titulo="Nenhuma licença cadastrada" />
@@ -117,7 +179,7 @@ export function TabelaLicencas({
             className="flex flex-col gap-(--e-1) border-b border-(--regra-leve) px-(--e-4) py-(--e-3)"
           >
             <span className="flex items-baseline justify-between gap-(--e-2)">
-              <Identificador licenca={licenca} />
+              <LicencaComSelo licenca={licenca} mudancas={mudancasDeNorma.get(licenca.id)} />
               <span className="corpo-medio numero">
                 {licenca.validade ? formatarDataCivil(licenca.validade) : '—'}
               </span>
@@ -175,7 +237,7 @@ export function TabelaLicencas({
           {itens.map((licenca) => (
             <tr key={licenca.id} className="transicao-estado hover:bg-(--toque)">
               <td className={classeCelula}>
-                <Identificador licenca={licenca} />
+                <LicencaComSelo licenca={licenca} mudancas={mudancasDeNorma.get(licenca.id)} />
               </td>
               <td className={cn(classeCelula, 'numero')}>
                 {licenca.validade ? (
