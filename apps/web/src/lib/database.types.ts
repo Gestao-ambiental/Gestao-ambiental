@@ -1402,6 +1402,12 @@ isOneToOne: false
       referencedRelation: "documento"
       referencedColumns: ["consultoria_id","id"]
     },{
+      foreignKeyName: "instrumento_excluido_por_fk"
+      columns: ["consultoria_id","excluido_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    },{
       foreignKeyName: "instrumento_tipo_fk"
       columns: ["consultoria_id","tipo_id"]
 isOneToOne: false
@@ -1730,6 +1736,12 @@ isOneToOne: false
       columns: ["consultoria_id","excluido_por"]
 isOneToOne: false
       referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "orcamento_instrumento_fk"
+      columns: ["consultoria_id","instrumento_id"]
+isOneToOne: false
+      referencedRelation: "instrumento"
       referencedColumns: ["consultoria_id","id"]
     }
                   ]
