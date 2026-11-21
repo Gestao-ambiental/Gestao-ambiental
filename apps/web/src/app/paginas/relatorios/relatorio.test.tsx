@@ -281,8 +281,18 @@ describe('relatório escrito no Grama', () => {
       name: /Número da licença diferente do cadastro/,
     })
     expect(cartao).toHaveAttribute('aria-pressed', 'false')
-    await usuario.click(cartao)
-    expect(cartao).toHaveAttribute('aria-pressed', 'true')
+    // O clique rola o editor até o trecho; o jsdom não mede Range.
+    const prototipo = Range.prototype as unknown as Record<string, unknown>
+    const vazio = { top: 0, bottom: 0, left: 0, right: 0, width: 0, height: 0 }
+    prototipo.getClientRects = () => [vazio]
+    prototipo.getBoundingClientRect = () => vazio
+    try {
+      await usuario.click(cartao)
+      expect(cartao).toHaveAttribute('aria-pressed', 'true')
+    } finally {
+      delete prototipo.getClientRects
+      delete prototipo.getBoundingClientRect
+    }
   })
 
   it('sem ocorrência, aprovar não pede data nem envia arquivo', async () => {
