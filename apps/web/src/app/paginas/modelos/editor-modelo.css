@@ -72,7 +72,7 @@
   background: var(--escolha);
 }
 /* Campo inserido: plaqueta com fundo de seleção, contorno tracejado e texto no verde do link
-   (lima claro no escuro). Lê-se como "isto será preenchido", sem confundir com texto digitado. */
+   (verde claro no escuro). Lê-se como "isto será preenchido", sem confundir com texto digitado. */
 .editor-modelo .campo-do-modelo {
   display: inline-block;
   padding: 0 var(--e-15);

@@ -21,7 +21,7 @@ interface PropsMenu {
  * (data-superficie="trilho"), então qualquer peça posta aqui se ajusta sozinha.
  */
 export function MenuLateral({ rotulo, cabecalho, rodape, children, className }: PropsMenu) {
-  // A plaqueta lima do item atual é um indicador só, que desliza de um item para o outro.
+  // A plaqueta verde do item atual é um indicador só, que desliza de um item para o outro.
   const { pathname } = useLocation()
   const { conteiner, medida, desliza } = useIndicadorDeslizante<HTMLDivElement>(
     'a[aria-current="page"]',
@@ -76,7 +76,7 @@ interface PropsItem {
 }
 
 /**
- * Item do trilho. Atual = plaqueta verde-lima com tinta escura e aria-current="page" (a marca de
+ * Item do trilho. Atual = plaqueta verde com texto branco e aria-current="page" (a marca de
  * trilha do logotipo); a mudança de fundo e de peso diz o estado, não só a cor.
  */
 export function MenuLateralItem({ para, icone, children, exato, contagem, aoNavegar }: PropsItem) {
@@ -90,7 +90,7 @@ export function MenuLateralItem({ para, icone, children, exato, contagem, aoNave
           cn(
             'group relative flex h-10 max-md:h-(--controle-toque) items-center gap-(--e-3) whitespace-nowrap rounded-(--raio) px-(--e-3) no-underline transicao-estado hover:no-underline',
             isActive
-              ? // O fundo lima é o indicador deslizante; o item atual não ganha fundo próprio.
+              ? // O fundo verde é o indicador deslizante; o item atual não ganha fundo próprio.
                 'corpo-medio text-(--sinal-texto) hover:text-(--sinal-texto)'
               : 'corpo text-(--tinta) hover:bg-(--toque) hover:text-(--tinta) active:bg-(--aperto)',
           )

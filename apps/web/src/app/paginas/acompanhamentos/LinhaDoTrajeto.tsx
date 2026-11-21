@@ -16,7 +16,7 @@ function dias(n: number): string {
 
 /**
  * Linha do tempo da renovação como linha de trajeto, na linguagem da Trilha: estação cheia com
- * visto = já passou, lima com aro = hoje, vazada com linha tracejada = ainda vem. Entre as
+ * visto = já passou, verde com aro = hoje, vazada com linha tracejada = ainda vem. Entre as
  * estações, quantos dias corridos. Horizontal no desktop, vertical no celular.
  */
 export function LinhaDoTrajeto({ estacoes }: { estacoes: readonly Estacao[] }) {

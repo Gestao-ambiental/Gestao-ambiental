@@ -58,7 +58,7 @@ function mesCurto(mes: DataCivil): string {
 }
 
 /**
- * Barras por mês no verde do sistema (--ok-texto: tinta no claro, lima no escuro),
+ * Barras por mês no verde do sistema (--ok-texto: verde-escuro no claro, verde claro no escuro),
  * eixo e rótulos em tinta, valor escrito sobre cada barra (nada depende de passar o mouse).
  */
 function GraficoMensal({

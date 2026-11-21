@@ -39,12 +39,12 @@
 .mapa-do-local .leaflet-control-attribution a {
   color: var(--link);
 }
-/* Lote achado pela inscrição: contorno lima, preenchimento leve. */
+/* Lote achado pela inscrição: contorno no destaque, preenchimento leve. */
 .mapa-do-local .contorno-do-lote {
   stroke: var(--sinal);
   fill: var(--sinal);
 }
-/* Ponto marcado: anel de tinta (lima no escuro) com miolo lima, o "agora". */
+/* Ponto marcado: anel de tinta (verde claro no escuro) com miolo no destaque, o "agora". */
 .mapa-do-local .marcador-do-local {
   stroke: var(--marca-linha);
   fill: var(--sinal);
