@@ -417,6 +417,11 @@ verify_jwt = false
 [functions.preferencias-por-link]
 verify_jwt = false
 
+# Coleta de normas (ADR-0050, pacote L1): chamada pelo pg_cron + pg_net sem JWT de usuário; quem
+# protege é o segredo COLETA_NORMAS_TOKEN no header x-cron-token.
+[functions.coletar-normas]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

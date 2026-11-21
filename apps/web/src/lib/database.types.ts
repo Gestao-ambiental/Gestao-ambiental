@@ -2575,6 +2575,9 @@ isOneToOne: false
 "concluir_acao_legal":
 { Args: { "p_acao_id": string,"p_consultoria_id": string,"p_row_version": number }; Returns: number
                            },
+"concluir_coleta":
+{ Args: { "p_coleta_id": string,"p_erro"?: string,"p_itens_novos": number }; Returns: undefined
+                           },
 "concluir_conferencia_ia":
 { Args: { "p_apontamentos": Json,"p_custo_micros": number,"p_duracao_ms": number,"p_id": string,"p_modelo": string,"p_resumo": string,"p_tokens_entrada": number,"p_tokens_saida": number,"p_versao_prompt": string }; Returns: number
                            },
@@ -2812,6 +2815,9 @@ isOneToOne: false
               "codigo": string,"empreendimento_nome": string,"id": string,"prazo": string,"tipo_linha": string
             }[]
                            },
+"garantir_norma":
+{ Args: { "p_norma": Json }; Returns: string
+                           },
 "gerar_link_do_calendario":
 { Args: { "p_consultoria_id": string }; Returns: string
                            },
@@ -2826,6 +2832,9 @@ isOneToOne: false
                            },
 "ignorar_apontamento":
 { Args: { "p_conferencia_id": string,"p_indice": number }; Returns: undefined
+                           },
+"iniciar_coleta":
+{ Args: { "p_fonte": string,"p_forcar"?: boolean,"p_janela": string }; Returns: string
                            },
 "iniciar_conferencia_ia":
 { Args: { "p_evidencia_id": string,"p_id": string }; Returns: {
@@ -3012,6 +3021,11 @@ isOneToOne: false
 "mudar_situacao_tarefa_servico":
 { Args: { "p_id": string,"p_para": string,"p_row_version": number }; Returns: number
                            },
+"municipios_vigiados":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "ibge": string,"nome": string
+            }[]
+                           },
 "normas_por_chave":
 { Args: { "p_chaves": (string)[] }; Returns: {
               "chave": string,"id": string,"situacao_na_fonte": string,"titulo": string
@@ -3112,11 +3126,17 @@ isOneToOne: false
 "registrar_protocolo":
 { Args: { "p_caminho": string,"p_data": string,"p_nome_original": string,"p_numero": string,"p_plano_id": string,"p_row_version": number,"p_sha256": string,"p_versao_id": string }; Returns: number
                            },
+"registrar_revogacao":
+{ Args: { "p_chave_ato": string,"p_chave_revogada": string,"p_coleta_id": string,"p_revogada_em": string }; Returns: string
+                           },
 "registrar_tarefa":
 { Args: { "p_consultoria_id": string,"p_quantidade": number,"p_segundos": number,"p_tipo": string }; Returns: undefined
                            },
 "registrar_uso":
 { Args: { "p_consultoria_id": string,"p_modulo": string }; Returns: undefined
+                           },
+"registrar_versao_de_norma":
+{ Args: { "p_ato_novo"?: boolean,"p_coleta_id": string,"p_diferenca"?: Json,"p_norma_id": string,"p_versao": Json }; Returns: Json
                            },
 "remover_foto_membro":
 { Args: { "p_membro_id": string }; Returns: undefined
@@ -3218,12 +3238,20 @@ isOneToOne: false
 "sugerir_requisitos":
 { Args: { "p_consultoria_id": string,"p_empreendimento_id": string }; Returns: number
                            },
+"texto_da_ultima_versao":
+{ Args: { "p_norma_id": string }; Returns: string
+                           },
 "trocar_pdf_alvara":
 { Args: { "p_alvara_id": string,"p_caminho": string,"p_nome_original": string,"p_sha256": string,"p_versao_id": string }; Returns: string
                            },
 "ultima_linha_de_base":
 { Args: { "p_consultoria_id": string }; Returns: {
               "respondido_em": string
+            }[]
+                           },
+"versoes_conhecidas":
+{ Args: { "p_fonte": string }; Returns: {
+              "chave": string,"id_externo": string,"norma_id": string,"situacao_na_fonte": string,"ultima_versao_id_externo": string,"ultima_versao_numero": number,"ultimo_sha256": string
             }[]
                            }
           }
