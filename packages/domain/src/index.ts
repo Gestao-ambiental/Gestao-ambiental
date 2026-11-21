@@ -679,3 +679,23 @@ export {
   objetoDoOrcamentoDaTriagem,
 } from './triagem-orcamento'
 export type { DespesaDaTaxa, TaxaDaAtividade } from './triagem-orcamento'
+export {
+  horasDaExecucao,
+  minutosDoLancamentoValidos,
+  situacaoDaParcela,
+  situacaoFinanceira,
+} from './execucao-do-orcamento'
+export type {
+  HorasDaExecucao,
+  HorasDoItem,
+  ParcelaDaExecucao,
+  SituacaoDaParcela,
+  SituacaoFinanceira,
+} from './execucao-do-orcamento'
+export {
+  PESOS_DO_RISCO,
+  gravidadeDoRisco,
+  motivosDoRisco,
+  ordenarClientesEmRisco,
+} from './painel-do-dono'
+export type { ClienteEmRisco, ContagensDeRisco } from './painel-do-dono'

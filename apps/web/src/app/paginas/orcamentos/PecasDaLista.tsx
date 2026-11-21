@@ -41,11 +41,14 @@ export function IndicadoresDosOrcamentos({
   carregando,
   falhou,
   aoTentarDeNovo,
+  aReceber = null,
 }: {
   resumo: ResumoDosOrcamentos | undefined
   carregando: boolean
   falhou: boolean
   aoTentarDeNovo: () => void
+  /** "A receber" dos aprovados (P7); só para quem tem a permissão financeira. */
+  aReceber?: { aReceberCentavos: number; vencidoCentavos: number } | null
 }) {
   if (falhou) {
     return (
@@ -95,6 +98,19 @@ export function IndicadoresDosOrcamentos({
         detalhe={detalheDoIndicador(resumo.aprovados)}
         apagado={resumo.aprovados.quantidade === 0}
       />
+      {aReceber ? (
+        <ItemDoPlacar
+          rotulo="A receber"
+          valor={formatarReais(aReceber.aReceberCentavos)}
+          detalhe={
+            aReceber.vencidoCentavos > 0
+              ? `Vencido ${formatarReais(aReceber.vencidoCentavos)}`
+              : undefined
+          }
+          tom={aReceber.vencidoCentavos > 0 ? 'atraso' : undefined}
+          apagado={aReceber.aReceberCentavos === 0}
+        />
+      ) : null}
     </Placar>
   )
 }

@@ -26,6 +26,7 @@ import {
   type OrcamentoNaLista,
   type SituacaoOrcamento,
 } from '@/lib/api/orcamentos'
+import { obterAReceber } from '@/lib/api/execucao'
 import { obterConfiguracao } from '@/lib/api/primeiros-passos'
 import { formatarInstanteComoData } from '@/lib/datas'
 import { mensagemDoErro } from '@/lib/erros'
@@ -105,6 +106,13 @@ function ListaDaGestao() {
     queryKey: ['orcamentos', cid, 'resumo'],
     queryFn: () => obterResumoDosOrcamentos(cid),
     enabled: !lixeira,
+  })
+  // "A receber" (P7): só volta para quem tem a permissão financeira; sem ela, não aparece.
+  const aReceber = useQuery({
+    queryKey: ['a-receber', cid],
+    queryFn: () => obterAReceber(cid),
+    enabled: !lixeira,
+    retry: false,
   })
 
   // Link para os primeiros passos enquanto a base não foi publicada. Se a leitura falhar,
@@ -545,6 +553,7 @@ function ListaDaGestao() {
           carregando={resumo.isPending}
           falhou={resumo.isError}
           aoTentarDeNovo={() => void resumo.refetch()}
+          aReceber={aReceber.data ?? null}
         />
       )}
 
