@@ -64,7 +64,13 @@ describe('Configurações', () => {
       await screen.findByRole('heading', { level: 1, name: 'Configurações' }),
     ).toBeInTheDocument()
     await aba('Orçamentos')
-    expect(abasDaTela()).toEqual(['Equipe', 'Plano e cobrança', 'Orçamentos', 'Modelos'])
+    expect(abasDaTela()).toEqual([
+      'Equipe',
+      'Plano e cobrança',
+      'Orçamentos',
+      'Modelos',
+      'Vencimentos',
+    ])
     const abas = screen.getByRole('navigation', { name: 'Configurações' })
     expect(within(abas).getByRole('link', { name: 'Equipe' })).toHaveAttribute(
       'aria-current',
@@ -115,7 +121,7 @@ describe('Configurações', () => {
     expect(await aba('Modelos')).toHaveAttribute('aria-current', 'page')
     // A resposta do plano chega depois; a aba não aparece em nenhum momento.
     await new Promise((resolver) => setTimeout(resolver, 50))
-    expect(abasDaTela()).toEqual(['Equipe', 'Plano e cobrança', 'Modelos'])
+    expect(abasDaTela()).toEqual(['Equipe', 'Plano e cobrança', 'Modelos', 'Vencimentos'])
   })
 
   it('/configuracoes no desktop abre a primeira aba', async () => {
@@ -137,7 +143,7 @@ describe('Configurações', () => {
       within(lista)
         .getAllByRole('link')
         .map((l) => l.textContent),
-    ).toEqual(['Equipe', 'Plano e cobrança', 'Orçamentos', 'Modelos'])
+    ).toEqual(['Equipe', 'Plano e cobrança', 'Orçamentos', 'Modelos', 'Vencimentos'])
     expect(router.state.location.pathname).toBe('/configuracoes')
 
     await usuario.click(within(lista).getByRole('link', { name: 'Plano e cobrança' }))
@@ -170,6 +176,7 @@ describe('lista das abas de Configurações', () => {
     expect(abaDoCaminho('/configuracoes/equipe')?.rotulo).toBe('Equipe')
     expect(abaDoCaminho('/configuracoes/proposta')?.rotulo).toBe('Orçamentos')
     expect(abaDoCaminho('/configuracoes/modelos/md1')?.rotulo).toBe('Modelos')
+    expect(abaDoCaminho('/configuracoes/vencimentos')?.rotulo).toBe('Vencimentos')
     expect(abaDoCaminho('/configuracoes')).toBeUndefined()
     expect(abaDoCaminho('/configuracoes/equipe-x')).toBeUndefined()
   })
@@ -183,6 +190,7 @@ describe('lista das abas de Configurações', () => {
       'Equipe',
       'Plano e cobrança',
       'Modelos',
+      'Vencimentos',
       'Importar',
     ])
     expect(

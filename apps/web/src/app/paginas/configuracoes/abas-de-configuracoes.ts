@@ -41,6 +41,12 @@ export const ABAS_DE_CONFIGURACOES: readonly AbaDeConfiguracoes[] = [
     rotuloNaBusca: 'Modelos de documento',
     icone: 'file-doc',
   },
+  {
+    para: '/configuracoes/vencimentos',
+    rotulo: 'Vencimentos',
+    rotuloNaBusca: 'Tipos de vencimento',
+    icone: 'calendar-check',
+  },
 ]
 
 /** Recursos do plano que alguma aba pede (para consultar uma vez cada). */

@@ -250,6 +250,16 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   captura_no_futuro: 'A hora da foto está no futuro. Confira o relógio do aparelho.',
   legenda_longa_demais: 'Use até 200 caracteres na legenda.',
   local_invalido: 'Confira a localização da foto.',
+  // Outros vencimentos (ADR-0046). Os códigos reaproveitados ficam em MENSAGENS_DO_VENCIMENTO.
+  datas_incoerentes: 'A emissão não pode ser depois da validade.',
+  instrumento_invalido: 'A licença precisa ser deste empreendimento.',
+  tipo_vencimento_invalido: 'Escolha um tipo da lista.',
+  tipo_vencimento_inativo: 'Este tipo está desativado. Reative em Configurações ou escolha outro.',
+  tipo_vencimento_existente: 'Já existe um tipo com este nome.',
+  responsavel_tecnico_invalido: 'O responsável técnico precisa ser membro ativo da consultoria.',
+  vencimento_anterior_invalido: 'O vencimento a renovar não foi encontrado. Recarregue a página.',
+  vencimento_ja_renovado: 'Este vencimento já foi renovado. Recarregue a página.',
+  vencimento_excluido: 'Este vencimento foi excluído. Recarregue a página.',
 }
 
 // Códigos que a vistoria (ADR-0033) reaproveita com outro sentido: a tela de Campo usa estas
@@ -264,6 +274,14 @@ const MENSAGENS_DA_VISTORIA: Record<string, string> = {
   arquivo_grande_demais: 'A foto passa de 25 MB.',
   conferencia_independente:
     'Quem enviou a vistoria não pode conferi-la. Outra pessoa precisa conferir.',
+}
+
+// Códigos que os vencimentos (ADR-0046) reaproveitam com outro sentido: as telas de vencimento
+// usam estas mensagens no lugar das gerais (que falam da licença, da renovação ou da IA).
+const MENSAGENS_DO_VENCIMENTO: Record<string, string> = {
+  validade_obrigatoria: 'Informe a validade.',
+  antecedencia_invalida: 'Use uma antecedência de 0 a 730 dias.',
+  pdf_obrigatorio: 'Este tipo exige o PDF do documento.',
 }
 
 const MENSAGENS_DO_AUTH: Record<string, string> = {
@@ -345,6 +363,15 @@ export function mensagemDoErroDaVistoria(erro: unknown, padrao = MENSAGEM_PADRAO
   const { message } = comoObjeto(erro)
   if (typeof message === 'string' && Object.hasOwn(MENSAGENS_DA_VISTORIA, message))
     return MENSAGENS_DA_VISTORIA[message] ?? padrao
+  return mensagemDoErro(erro, padrao)
+}
+
+/** Como mensagemDoErro, com as mensagens próprias dos vencimentos para os códigos reaproveitados. */
+export function mensagemDoErroDoVencimento(erro: unknown, padrao = MENSAGEM_PADRAO): string {
+  if (modoSuporte && ehSemPermissao(erro)) return MENSAGEM_SUPORTE_SOMENTE_LEITURA
+  const { message } = comoObjeto(erro)
+  if (typeof message === 'string' && Object.hasOwn(MENSAGENS_DO_VENCIMENTO, message))
+    return MENSAGENS_DO_VENCIMENTO[message] ?? padrao
   return mensagemDoErro(erro, padrao)
 }
 

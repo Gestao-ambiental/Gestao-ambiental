@@ -20,6 +20,7 @@ import { PaginaPlanoRenovacao } from './paginas/acompanhamentos/PaginaPlanoRenov
 import { PaginaCalendario } from './paginas/calendario/PaginaCalendario'
 import { PaginaChecklist } from './paginas/campo/PaginaChecklist'
 import { PaginaConfiguracoes } from './paginas/configuracoes/PaginaConfiguracoes'
+import { PaginaTiposDeVencimento } from './paginas/configuracoes/PaginaTiposDeVencimento'
 import { PaginaDetalheVistoria } from './paginas/campo/PaginaDetalheVistoria'
 import { PaginaEnvio } from './paginas/campo/PaginaEnvio'
 import { PaginaFoto } from './paginas/campo/PaginaFoto'
@@ -320,6 +321,7 @@ export const rotas: RouteObject[] = [
               },
               { path: 'configuracoes/modelos', element: <PaginaModelos /> },
               { path: 'configuracoes/modelos/:id', element: <PaginaModelo /> },
+              { path: 'configuracoes/vencimentos', element: <PaginaTiposDeVencimento /> },
               { path: 'perfil', element: <PaginaPerfil /> },
               { path: 'seguranca', element: <PaginaSeguranca /> },
               { path: '*', element: <PaginaNaoEncontrada /> },

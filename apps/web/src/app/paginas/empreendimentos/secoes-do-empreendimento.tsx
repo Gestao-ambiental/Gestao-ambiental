@@ -9,8 +9,8 @@ import { RelatoriosEscritos } from '@/app/paginas/relatorios/RelatoriosEscritos'
 import { SecaoResiduosDoEmpreendimento } from '@/app/paginas/residuos/registro/SecaoResiduosDoEmpreendimento'
 import type { Empreendimento, Unidade } from '@/lib/api/empreendimentos'
 
-import { SecaoAlvaras } from './SecaoAlvaras'
 import { SecaoLicencas } from './SecaoLicencas'
+import { SecaoVencimentos } from './SecaoVencimentos'
 
 export interface PropsDaSecao {
   empreendimento: Empreendimento
@@ -26,9 +26,9 @@ function SecaoRelatorios({ empreendimento }: PropsDaSecao) {
   return <RelatoriosEscritos empreendimentoId={empreendimento.id} comTitulo />
 }
 
-function SecaoDeAlvaras({ empreendimento, unidades, hoje, ehGestao }: PropsDaSecao) {
+function SecaoDeVencimentos({ empreendimento, unidades, hoje, ehGestao }: PropsDaSecao) {
   return (
-    <SecaoAlvaras
+    <SecaoVencimentos
       empreendimentoId={empreendimento.id}
       unidades={unidades.data ?? []}
       hoje={hoje}
@@ -44,7 +44,7 @@ function SecaoResiduos({ empreendimento }: PropsDaSecao) {
 const SECOES: readonly { id: string; Secao: ComponentType<PropsDaSecao> }[] = [
   { id: 'licencas', Secao: SecaoLicencas },
   { id: 'relatorios', Secao: SecaoRelatorios },
-  { id: 'alvaras', Secao: SecaoDeAlvaras },
+  { id: 'vencimentos', Secao: SecaoDeVencimentos },
   { id: 'residuos', Secao: SecaoResiduos },
 ]
 
