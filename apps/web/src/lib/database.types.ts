@@ -395,6 +395,32 @@ isOneToOne: false
       referencedColumns: ["consultoria_id","id"]
     }
                   ]
+                },"aviso_revogacao_envio": {
+                  Row: {
+                    "consultoria_id": string,"enviado_em": string | null,"id": string,"membro_id": string,"mudanca_id": string,"provedor_id": string | null,"reservado_em": string,"situacao": string,"tentativas": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "consultoria_id": string,"enviado_em"?: string | null,"id"?: string,"membro_id": string,"mudanca_id": string,"provedor_id"?: string | null,"reservado_em"?: string,"situacao"?: string,"tentativas"?: number
+                  }
+                  Update: {
+                    "consultoria_id"?: string,"enviado_em"?: string | null,"id"?: string,"membro_id"?: string,"mudanca_id"?: string,"provedor_id"?: string | null,"reservado_em"?: string,"situacao"?: string,"tentativas"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "aviso_revogacao_envio_consultoria_id_fkey"
+      columns: ["consultoria_id"]
+isOneToOne: false
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "aviso_revogacao_envio_membro_fk"
+      columns: ["consultoria_id","membro_id"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    }
+                  ]
                 },"cdf": {
                   Row: {
                     "atualizado_em": string,"consultoria_id": string,"criado_em": string,"criado_por": string,"destinador_cnpj": string | null,"destinador_nome": string,"documento_id": string | null,"emitido_em": string,"empreendimento_id": string,"excluido_em": string | null,"excluido_por": string | null,"id": string,"numero": string,"observacao": string | null,"periodo_fim": string,"periodo_inicio": string,"row_version": number
@@ -3026,6 +3052,11 @@ isOneToOne: false
               "ibge": string,"nome": string
             }[]
                            },
+"normas_do_resumo_diario":
+{ Args: { "p_consultoria_id": string,"p_dia": string,"p_membro_id": string }; Returns: {
+              "empreendimento_nome": string,"licenca": string,"mudanca_id": string,"norma_titulo": string,"publicada_em": string,"tipo": string
+            }[]
+                           },
 "normas_por_chave":
 { Args: { "p_chaves": (string)[] }; Returns: {
               "chave": string,"id": string,"situacao_na_fonte": string,"titulo": string
@@ -3099,6 +3130,9 @@ isOneToOne: false
 "registrar_alvara":
 { Args: { "p_anterior_id"?: string,"p_caminho": string,"p_nome_original": string,"p_notas"?: string,"p_numero"?: string,"p_orgao"?: string,"p_sha256": string,"p_unidade_id": string,"p_validade": string,"p_versao_id": string }; Returns: string
                            },
+"registrar_aviso_de_revogacao":
+{ Args: { "p_id": string,"p_provedor_id"?: string,"p_situacao": string }; Returns: boolean
+                           },
 "registrar_aviso_do_dia":
 { Args: { "p_id": string,"p_provedor_id"?: string,"p_situacao": string }; Returns: boolean
                            },
@@ -3152,6 +3186,9 @@ isOneToOne: false
               "acesso_id": string,"categoria": string,"consultoria_fuso": string,"consultoria_id": string,"consultoria_nome": string,"fim_previsto": string,"inicio": string,"motivo": string,"operador_nome": string
             }[]
                            },
+"reservar_aviso_de_revogacao":
+{ Args: { "p_consultoria_id": string,"p_membro_id": string,"p_mudanca_id": string }; Returns: string
+                           },
 "reservar_aviso_do_dia":
 { Args: { "p_consultoria_id": string,"p_dia": string,"p_membro_id": string }; Returns: string
                            },
@@ -3190,6 +3227,11 @@ isOneToOne: false
                            },
 "revisar_condicionante":
 { Args: { "p_id": string,"p_revisao": Database["public"]['Enums']["revisao_condicionante"] }; Returns: undefined
+                           },
+"revogacoes_para_avisar":
+{ Args: { "p_agora"?: string }; Returns: {
+              "afetados": (string)[],"consultoria_id": string,"consultoria_nome": string,"email": string,"membro_id": string,"membro_nome": string,"mudanca_id": string,"norma_titulo": string
+            }[]
                            },
 "revogar_link_do_calendario":
 { Args: { "p_consultoria_id": string }; Returns: boolean
