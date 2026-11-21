@@ -1,3 +1,4 @@
+import type { PapelMembro } from '@gestao-ambiental/domain'
 import { FunctionsHttpError } from '@supabase/supabase-js'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor, within } from '@testing-library/react'
@@ -6,6 +7,7 @@ import axe from 'axe-core'
 import { MemoryRouter } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { ContextoConsultoria, type EstadoConsultoria } from '@/app/consultoria/contexto-consultoria'
 import type { ResultadoDoLocal } from '@/lib/api/consulta-de-local'
 import { falso, type Cenario } from '@/test/supabase-falso'
 
@@ -68,16 +70,36 @@ beforeEach(() => {
   window.localStorage.clear()
 })
 
-function montar(caminho = '/triagem') {
+function consultoria(papel: PapelMembro): EstadoConsultoria {
+  return {
+    atual: {
+      membroId: 'm1',
+      consultoriaId: 'c1',
+      consultoriaNome: 'Filtroville',
+      fuso: 'America/Sao_Paulo',
+      papel,
+      situacao: 'ativo',
+      desligadoEm: null,
+    },
+    suporte: null,
+    abrirSuporte: () => Promise.resolve(),
+    vinculos: [],
+    trocar: () => undefined,
+  }
+}
+
+function montar(caminho = '/triagem', papel: PapelMembro = 'gestao') {
   const usuario = userEvent.setup()
   const cliente = new QueryClient({
     defaultOptions: { mutations: { retry: false }, queries: { retry: false } },
   })
   const tela = render(
     <QueryClientProvider client={cliente}>
-      <MemoryRouter initialEntries={[caminho]}>
-        <PaginaTriagem />
-      </MemoryRouter>
+      <ContextoConsultoria.Provider value={consultoria(papel)}>
+        <MemoryRouter initialEntries={[caminho]}>
+          <PaginaTriagem />
+        </MemoryRouter>
+      </ContextoConsultoria.Provider>
     </QueryClientProvider>,
   )
   return { usuario, ...tela }
@@ -680,5 +702,73 @@ describe('acessibilidade', () => {
     })
     const r = await axe.run(container)
     expect(r.violations.map((v) => v.id)).toEqual([])
+  })
+})
+
+describe('orçar da triagem (ADR-0056)', () => {
+  const ID = '3c1d2e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f'
+
+  function comEmpreendimento(rpc: Cenario['rpc'] = {}) {
+    falso.reiniciar({
+      ...cenario(),
+      tabelas: { empreendimento: [{ id: ID, nome: 'Metalúrgica Rio Cubatão', cnpj: null }] },
+      rpc,
+    })
+  }
+
+  async function enquadrar(usuario: Usuario) {
+    await screen.findByRole('link', { name: 'Metalúrgica Rio Cubatão' })
+    await incluir(usuario, '12.80.10', '12.80.10')
+    await digitarNoParametro(usuario, '12.80.10', /AU\(3\)/, '0,5')
+    await irParaResultado(usuario)
+  }
+
+  it('abre o rascunho com a modalidade, o objeto e a taxa do IMA como repasse', async () => {
+    comEmpreendimento({
+      criar_orcamento_da_triagem: {
+        data: { orcamento_id: 'o-novo', modelo_id: 'mod-trifasica' },
+      },
+    })
+    const { usuario } = montar(`/triagem?empreendimento=${ID}&etapa=atividades`)
+    await enquadrar(usuario)
+    await usuario.click(screen.getByRole('button', { name: 'Orçar' }))
+    await waitFor(() => {
+      expect(falso.cliente.rpc).toHaveBeenCalledWith(
+        'criar_orcamento_da_triagem',
+        expect.objectContaining({
+          p_consultoria_id: 'c1',
+          p_empreendimento_id: ID,
+          p_modalidade: 'trifasica',
+          p_objeto: 'Licenciamento trifásico (LAP, LAI e LAO) · Metalúrgica Rio Cubatão',
+          p_taxa: expect.objectContaining({
+            descricao: expect.stringContaining('Taxa do IMA') as unknown,
+          }) as unknown,
+        }),
+      )
+    })
+  })
+
+  it('erro do banco aparece; a Equipe não vê o Orçar', async () => {
+    comEmpreendimento({ criar_orcamento_da_triagem: { error: { message: 'sem_permissao' } } })
+    const { usuario, unmount } = montar(`/triagem?empreendimento=${ID}&etapa=atividades`)
+    await enquadrar(usuario)
+    await usuario.click(screen.getByRole('button', { name: 'Orçar' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Você não tem permissão para esta ação.',
+    )
+    unmount()
+
+    comEmpreendimento()
+    const equipe = montar(`/triagem?empreendimento=${ID}&etapa=atividades`, 'equipe')
+    await enquadrar(equipe.usuario)
+    expect(screen.queryByRole('button', { name: 'Orçar' })).toBeNull()
+  })
+
+  it('sem empreendimento não há para quem orçar', async () => {
+    const { usuario } = montar('/triagem?etapa=atividades')
+    await incluir(usuario, '12.80.10', '12.80.10')
+    await digitarNoParametro(usuario, '12.80.10', /AU\(3\)/, '0,5')
+    await irParaResultado(usuario)
+    expect(screen.queryByRole('button', { name: 'Orçar' })).toBeNull()
   })
 })

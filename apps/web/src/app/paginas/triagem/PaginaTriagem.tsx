@@ -43,6 +43,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router'
 
+import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Pagina } from '@/app/paginas/Pagina'
 import { EstadoVazio } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
@@ -60,6 +61,7 @@ import { ehUuid } from '@/lib/texto'
 import { cn } from '@/lib/utils'
 
 import { LocalDoEmpreendimento, type PontoMarcado } from './LocalDoEmpreendimento'
+import { OrcarDaTriagem } from './OrcarDaTriagem'
 
 const { atividades: CATALOGO, parametros: PARAMETROS, fonte: FONTE } = CATALOGO_CONSEMA_250
 const POR_CODIGO = new Map(CATALOGO.map((a) => [a.codigo, a]))
@@ -961,6 +963,8 @@ function Fontes() {
  * volta, acima do título. Id inválido, de outra consultoria ou que falhou: a triagem abre sem ele.
  */
 export function PaginaTriagem() {
+  const { atual } = useConsultoria()
+  const ehGestao = atual.papel === 'gestao'
   // A etapa fica na URL (?etapa=atividades), como no orçamento; o empreendimento também.
   const [parametros, setParametros] = useSearchParams()
   const parametroEmpreendimento = parametros.get('empreendimento')
@@ -1220,6 +1224,18 @@ export function PaginaTriagem() {
                     nivel={nivel}
                     calculados={calculados}
                   />
+                  {conclusao.modalidade && empreendimento.data && ehGestao ? (
+                    <OrcarDaTriagem
+                      consultoriaId={atual.consultoriaId}
+                      empreendimento={empreendimento.data}
+                      modalidade={conclusao.modalidade}
+                      orgao={orgao}
+                      taxas={calculados.flatMap((c) => {
+                        const centavos = centavosNoIma(c)
+                        return centavos === null ? [] : [{ codigo: c.atividade.codigo, centavos }]
+                      })}
+                    />
+                  ) : null}
                 </section>
                 <div
                   role="group"

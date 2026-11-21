@@ -611,3 +611,12 @@ export {
   QUANTIDADE_DE_CORES,
 } from './cores-por-categoria'
 export { lerInscricaoImobiliaria } from './inscricao-imobiliaria'
+export {
+  LICENCAS_DA_MODALIDADE,
+  MODALIDADES,
+  despesaDaTaxa,
+  ehModalidade,
+  nomeDosValoresDaModalidade,
+  objetoDoOrcamentoDaTriagem,
+} from './triagem-orcamento'
+export type { DespesaDaTaxa, TaxaDaAtividade } from './triagem-orcamento'

@@ -2267,6 +2267,9 @@ isOneToOne: false
               "acesso_id": string,"categoria": string,"consultoria_fuso": string,"consultoria_id": string,"consultoria_nome": string,"fim_previsto": string,"inicio": string,"motivo": string,"operador_nome": string
             }[]
                            },
+"criar_orcamento_da_triagem":
+{ Args: { "p_consultoria_id": string,"p_empreendimento_id": string,"p_id": string,"p_modalidade": string,"p_objeto": string,"p_taxa"?: Json }; Returns: Json
+                           },
 "dados_para_relatorio":
 { Args: { "p_empreendimento_id": string,"p_ocorrencia_id"?: string }; Returns: Json
                            },
@@ -2677,6 +2680,9 @@ isOneToOne: false
                            },
 "salvar_identificacao":
 { Args: { "p_assinado_em": string,"p_emitido_em": string,"p_id": string,"p_marco": Database["public"]['Enums']["marco_instrumento"],"p_numero": string,"p_orgao": string,"p_publicado_em": string,"p_recebido_em": string,"p_row_version": number,"p_tipo_id": string,"p_unidade_id": string,"p_validade": string }; Returns: number
+                           },
+"salvar_valores_da_modalidade":
+{ Args: { "p_modalidade": string,"p_modelo_id": string,"p_nome": string,"p_orcamento_id": string }; Returns: string
                            },
 "salvar_modelo_de_orcamento":
 { Args: { "p_modelo_id": string,"p_nome": string,"p_orcamento_id": string }; Returns: string
