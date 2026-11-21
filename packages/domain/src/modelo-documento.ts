@@ -1,7 +1,9 @@
 // Modelo de documento da consultoria (ADR-0036): texto padrão com campos que puxam dados do
 // empreendimento, da licença e da condicionante. O conteúdo é a árvore do editor (formato JSON do
 // ProseMirror/TipTap). Um campo é o nó inline `campo` com attrs.chave; preencher troca cada campo
-// pelo valor, ou por "[Rótulo]" quando o cadastro não tem o dado.
+// pelo valor, ou por "[Rótulo]" quando o cadastro não tem o dado. Um bloco repetível (nó
+// `bloco_repetido`, ADR-0052) repete o seu conteúdo para cada item de uma lista (licenças, entregas
+// do mês…); dentro dele, o nó `campo_do_item` puxa um dado do item.
 import { formatarCnpj } from './cnpj'
 import { ehDataCivil, formatarDataCivil } from './data-civil'
 
@@ -44,6 +46,7 @@ export const CAMPOS_DO_MODELO = [
   { chave: 'relatorio.consultoria', rotulo: 'Nome da consultoria', grupo: 'Relatório' },
   { chave: 'relatorio.autor', rotulo: 'Quem gerou', grupo: 'Relatório' },
   { chave: 'relatorio.data', rotulo: 'Data de hoje', grupo: 'Relatório' },
+  { chave: 'relatorio.mes', rotulo: 'Mês do relatório', grupo: 'Relatório' },
 ] as const satisfies readonly { chave: string; rotulo: string; grupo: GrupoDeCampo }[]
 
 export type ChaveDoCampo = (typeof CAMPOS_DO_MODELO)[number]['chave']
@@ -57,6 +60,35 @@ export function ehChaveDoCampo(chave: unknown): chave is ChaveDoCampo {
 
 export function rotuloDoCampo(chave: string): string {
   return ROTULOS.get(chave) ?? chave
+}
+
+/** Listas que um bloco repetível percorre, com os dados de cada item. */
+export const LISTAS_DO_MODELO = [
+  { chave: 'licencas', rotulo: 'Licenças e validades', campos: ['titulo', 'orgao', 'validade'] },
+  { chave: 'entregas', rotulo: 'Entregas do mês', campos: ['codigo', 'titulo', 'licenca', 'data'] },
+  {
+    chave: 'protocolos',
+    rotulo: 'Protocolos e respostas a exigências',
+    campos: ['data', 'titulo', 'detalhe'],
+  },
+  {
+    chave: 'proximos',
+    rotulo: 'Próximos 90 dias',
+    campos: ['data', 'codigo', 'titulo', 'licenca'],
+  },
+] as const satisfies readonly { chave: string; rotulo: string; campos: readonly string[] }[]
+
+export type ChaveDaLista = (typeof LISTAS_DO_MODELO)[number]['chave']
+/** Um item da lista, já formatado (datas dd/mm/aaaa). Campo ausente sai como "—". */
+export type ItemDoBloco = Readonly<Record<string, string | undefined>>
+export type ListasDoModelo = Partial<Record<ChaveDaLista, readonly ItemDoBloco[]>>
+
+const CAMPOS_DA_LISTA = new Map<string, readonly string[]>(
+  LISTAS_DO_MODELO.map((l) => [l.chave, l.campos]),
+)
+
+export function ehChaveDaLista(chave: unknown): chave is ChaveDaLista {
+  return typeof chave === 'string' && CAMPOS_DA_LISTA.has(chave)
 }
 
 /** Texto que fica no lugar de um campo sem valor: a pessoa vê o que falta preencher. */
@@ -97,9 +129,25 @@ function ehNo(valor: unknown): valor is NoDoDocumento {
 export function problemaDoConteudo(conteudo: unknown): ProblemaDoConteudo | null {
   if (!ehNo(conteudo) || conteudo.type !== 'doc') return 'formato'
   if (JSON.stringify(conteudo).length > LIMITE_DO_CONTEUDO) return 'grande_demais'
-  return algum(conteudo, (no) => no.type === 'campo' && !ehChaveDoCampo(no.attrs?.chave))
-    ? 'campo_desconhecido'
-    : null
+  if (algum(conteudo, (no) => no.type === 'campo' && !ehChaveDoCampo(no.attrs?.chave))) {
+    return 'campo_desconhecido'
+  }
+  return blocoComProblema(conteudo, null) ? 'campo_desconhecido' : null
+}
+
+/** Bloco de lista desconhecida, bloco dentro de bloco ou campo do item que a lista não tem. */
+function blocoComProblema(no: NoDoDocumento, lista: string | null): boolean {
+  if (no.type === 'bloco_repetido') {
+    const chave = no.attrs?.lista
+    if (lista !== null || !ehChaveDaLista(chave)) return true
+    return (no.content ?? []).some((filho) => blocoComProblema(filho, chave))
+  }
+  if (no.type === 'campo_do_item') {
+    const campos = lista === null ? undefined : CAMPOS_DA_LISTA.get(lista)
+    const chave = no.attrs?.chave
+    return typeof chave !== 'string' || !campos?.includes(chave)
+  }
+  return (no.content ?? []).some((filho) => blocoComProblema(filho, lista))
 }
 
 /** Chaves dos campos usados no modelo, na ordem em que aparecem, sem repetir. */
@@ -118,34 +166,54 @@ export interface ModeloPreenchido {
   semValor: ChaveDoCampo[]
 }
 
-/** Troca cada campo pelo valor (texto com as mesmas marcas). Não altera o conteúdo recebido. */
+/** Texto de um bloco repetível sem itens, quando o bloco não traz o seu (attrs.vazio). */
+export const BLOCO_SEM_ITENS = 'Nada no período.'
+
+/**
+ * Troca cada campo pelo valor (texto com as mesmas marcas) e repete cada bloco para os itens da
+ * lista dele. Bloco sem itens vira um parágrafo com `attrs.vazio`. Não altera o conteúdo recebido.
+ */
 export function preencherModelo(
   conteudo: NoDoDocumento,
   valores: ValoresDosCampos,
+  listas: ListasDoModelo = {},
 ): ModeloPreenchido {
   const semValor: ChaveDoCampo[] = []
-  const trocar = (no: NoDoDocumento): NoDoDocumento | null => {
+  const texto = (valor: string, no: NoDoDocumento): NoDoDocumento => {
+    const novo: NoDoDocumento = { type: 'text', text: valor }
+    if (no.marks?.length) novo.marks = no.marks.map((m) => ({ ...m }))
+    return novo
+  }
+  const trocar = (no: NoDoDocumento, item: ItemDoBloco | null): NoDoDocumento[] => {
     if (no.type === 'campo') {
       const chave = no.attrs?.chave
-      if (!ehChaveDoCampo(chave)) return null
+      if (!ehChaveDoCampo(chave)) return []
       const valor = valores[chave]?.trim()
       if (!valor && !semValor.includes(chave)) semValor.push(chave)
-      const texto: NoDoDocumento = {
-        type: 'text',
-        text: valor && valor.length > 0 ? valor : marcadorSemValor(chave),
+      return [texto(valor && valor.length > 0 ? valor : marcadorSemValor(chave), no)]
+    }
+    if (no.type === 'campo_do_item') {
+      if (!item) return []
+      const chave = no.attrs?.chave
+      const valor = typeof chave === 'string' ? item[chave]?.trim() : undefined
+      return [texto(valor && valor.length > 0 ? valor : '—', no)]
+    }
+    if (no.type === 'bloco_repetido') {
+      const lista = no.attrs?.lista
+      const itens = ehChaveDaLista(lista) ? (listas[lista] ?? []) : []
+      if (itens.length === 0) {
+        const vazio = typeof no.attrs?.vazio === 'string' ? no.attrs.vazio : BLOCO_SEM_ITENS
+        return [{ type: 'paragraph', content: [{ type: 'text', text: vazio }] }]
       }
-      if (no.marks?.length) texto.marks = no.marks.map((m) => ({ ...m }))
-      return texto
+      return itens.flatMap((cada) => (no.content ?? []).flatMap((filho) => trocar(filho, cada)))
     }
     const copia: NoDoDocumento = { ...no }
     if (no.attrs) copia.attrs = { ...no.attrs }
     if (no.marks) copia.marks = no.marks.map((m) => ({ ...m }))
-    if (no.content) {
-      copia.content = no.content.map(trocar).filter((n): n is NoDoDocumento => n !== null)
-    }
-    return copia
+    if (no.content) copia.content = no.content.flatMap((filho) => trocar(filho, item))
+    return [copia]
   }
-  return { documento: trocar(conteudo) ?? documentoVazio(), semValor }
+  return { documento: trocar(conteudo, null)[0] ?? documentoVazio(), semValor }
 }
 
 /** Dados crus que o banco devolve para o relatório (dados_para_relatorio). */
@@ -209,6 +277,7 @@ export function valoresDoRelatorio(dados: DadosParaRelatorio): ValoresDosCampos 
     'relatorio.consultoria': texto(dados.consultoria),
     'relatorio.autor': texto(dados.autor),
     'relatorio.data': data(dados.hoje),
+    'relatorio.mes': undefined,
   } satisfies Record<ChaveDoCampo, string | undefined>) as [ChaveDoCampo, string | undefined][]
   const valores: ValoresDosCampos = {}
   for (const [chave, valor] of pares) {

@@ -569,10 +569,13 @@ export { DADOS_DO_SIMULADOR_IMA, INSTRUCOES_NORMATIVAS_IMA } from './dados-simul
 export type { DadosDoSimuladorIma, InstrucaoNormativaIma } from './dados-simulador-ima'
 
 export {
+  BLOCO_SEM_ITENS,
   CAMPOS_DO_MODELO,
   GRUPOS_DE_CAMPO,
   LIMITE_DO_CONTEUDO,
+  LISTAS_DO_MODELO,
   camposUsados,
+  ehChaveDaLista,
   documentoVazio,
   ehChaveDoCampo,
   marcadorSemValor,
@@ -583,9 +586,12 @@ export {
   valoresDoRelatorio,
 } from './modelo-documento'
 export type {
+  ChaveDaLista,
   ChaveDoCampo,
   DadosParaRelatorio,
   GrupoDeCampo,
+  ItemDoBloco,
+  ListasDoModelo,
   MarcaDoTexto,
   ModeloPreenchido,
   NoDoDocumento,
@@ -699,3 +705,10 @@ export {
   ordenarClientesEmRisco,
 } from './painel-do-dono'
 export type { ClienteEmRisco, ContagensDeRisco } from './painel-do-dono'
+export {
+  NOME_DO_RESUMO_PARA_O_CLIENTE,
+  mesPorExtenso,
+  modeloResumoParaOCliente,
+  valoresDoRelatorioMensal,
+} from './relatorio-mensal'
+export type { DadosParaRelatorioMensal } from './relatorio-mensal'

@@ -2798,6 +2798,9 @@ isOneToOne: false
 "dados_para_relatorio":
 { Args: { "p_empreendimento_id": string,"p_ocorrencia_id"?: string }; Returns: Json
                            },
+"dados_para_relatorio_mensal":
+{ Args: { "p_empreendimento_id": string,"p_mes": string }; Returns: Json
+                           },
 "decidir_aplicabilidade":
 { Args: { "p_aplicavel": boolean,"p_consultoria_id": string,"p_justificativa": string,"p_requisito_id": string,"p_row_version": number }; Returns: number
                            },

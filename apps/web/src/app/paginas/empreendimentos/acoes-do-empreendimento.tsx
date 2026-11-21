@@ -6,6 +6,7 @@ import { useState, type ComponentType } from 'react'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { DialogoGerarRelatorio } from '@/app/paginas/modelos/GerarRelatorio'
+import { DialogoRelatorioDoMes } from '@/app/paginas/modelos/RelatorioDoMes'
 import { BotaoMais } from '@/components/ui/botao-mais'
 import type { NomeIcone } from '@/components/ui/icone'
 import type { Empreendimento, Unidade } from '@/lib/api/empreendimentos'
@@ -72,6 +73,17 @@ function DialogoDoRelatorio({ empreendimento, aberto, aoMudar }: PropsDoDialogoD
   )
 }
 
+function DialogoDoRelatorioDoMes({ empreendimento, aberto, aoMudar }: PropsDoDialogoDaAcao) {
+  return (
+    <DialogoRelatorioDoMes
+      empreendimentoId={empreendimento.id}
+      empreendimentoNome={empreendimento.nome}
+      aberto={aberto}
+      aoMudar={aoMudar}
+    />
+  )
+}
+
 const ACOES: readonly AcaoDoEmpreendimento[] = [
   { id: 'editar', rotulo: 'Editar empreendimento', icone: 'pencil', Dialogo: DialogoEditar },
   {
@@ -81,6 +93,13 @@ const ACOES: readonly AcaoDoEmpreendimento[] = [
     Dialogo: DialogoDasUnidades,
   },
   { id: 'relatorio', rotulo: 'Gerar relatório', icone: 'file-text', Dialogo: DialogoDoRelatorio },
+  {
+    id: 'relatorio-do-mes',
+    rotulo: 'Gerar relatório do mês',
+    icone: 'calendar',
+    somenteGestao: true,
+    Dialogo: DialogoDoRelatorioDoMes,
+  },
   {
     id: 'orcamento',
     rotulo: 'Novo orçamento',
