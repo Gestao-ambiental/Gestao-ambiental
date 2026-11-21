@@ -1,7 +1,9 @@
 // Endereço do empreendimento com sugestões enquanto se digita (combobox WAI-ARIA: setas percorrem,
 // Enter escolhe, Esc fecha). Espera a pessoa parar de digitar antes de buscar, para não pesar no
-// provedor; a Edge Function ainda guarda em cache e limita.
+// provedor; a Edge Function ainda guarda em cache e limita. Uma inscrição imobiliária de Joinville
+// ("13-20-23-7-239", com pontos, espaços ou zeros à esquerda) vai ao SIMGeo em vez do endereço.
 
+import { lerInscricaoImobiliaria } from '@gestao-ambiental/domain'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useId, useState, type KeyboardEvent } from 'react'
 
@@ -43,7 +45,9 @@ export function BuscaDeEndereco({
     staleTime: 10 * 60_000,
     retry: false,
   })
-  const sugestoes = consulta.data ?? []
+  const sugestoes = consulta.data?.sugestoes ?? []
+  // Inscrição: pelo que a pessoa está digitando (a resposta confirma com a inscrição lida).
+  const ehInscricao = lerInscricaoImobiliaria(texto) !== null
   const esperando = texto.trim().length >= MINIMO_PARA_BUSCAR && texto.trim() !== buscado
   const buscando = esperando || (buscado !== '' && consulta.isFetching)
   const mostrarLista = aberto && texto.trim().length >= MINIMO_PARA_BUSCAR
@@ -54,8 +58,10 @@ export function BuscaDeEndereco({
 
   function escolher(sugestao: SugestaoDeEndereco | undefined) {
     if (!sugestao) return
-    setTexto(sugestao.rotulo)
-    setBuscado(sugestao.rotulo.trim())
+    // Na inscrição, o campo fica com o número (o rótulo "Inscrição …" iria buscar endereço).
+    const noCampo = consulta.data?.inscricao ?? sugestao.rotulo
+    setTexto(noCampo)
+    setBuscado(noCampo.trim())
     setAberto(false)
     aoEscolher(sugestao)
   }
@@ -104,7 +110,7 @@ export function BuscaDeEndereco({
               mostrarLista && !buscando && sugestoes[ativa] ? idDaOpcao(ativa) : undefined
             }
             autoComplete="off"
-            placeholder="Rua, número e cidade"
+            placeholder="Rua, número e cidade, ou inscrição imobiliária"
             value={texto}
             onFocus={() => {
               setAberto(true)
@@ -126,7 +132,7 @@ export function BuscaDeEndereco({
             <div
               id={idDaLista}
               role="listbox"
-              aria-label="Endereços encontrados"
+              aria-label={ehInscricao ? 'Lote encontrado' : 'Endereços encontrados'}
               aria-busy={buscando || undefined}
               className="max-h-[300px] overflow-y-auto py-(--e-1)"
             >
@@ -152,7 +158,10 @@ export function BuscaDeEndereco({
                     indice === ativa && 'bg-(--toque)',
                   )}
                 >
-                  <Icone nome="map-pin" className="shrink-0 text-(--tinta-2)" />
+                  <Icone
+                    nome={sugestao.contorno ? 'buildings' : 'map-pin'}
+                    className="shrink-0 text-(--tinta-2)"
+                  />
                   <span className="flex min-w-0 flex-col">
                     <span className="truncate corpo-medio text-(--tinta)">{sugestao.rotulo}</span>
                     {sugestao.detalhe ? (
@@ -169,12 +178,16 @@ export function BuscaDeEndereco({
                 <span className="rotulo text-(--atraso-texto)">{consulta.error.message}</span>
               ) : consulta.isSuccess && !buscando && sugestoes.length === 0 ? (
                 <span className="rotulo">
-                  Nenhum endereço encontrado em Santa Catarina. Marque no mapa.
+                  {consulta.data.inscricao
+                    ? 'Inscrição não encontrada no SIMGeo de Joinville. Por enquanto, a inscrição vale só para Joinville.'
+                    : 'Nenhum endereço encontrado em Santa Catarina. Marque no mapa.'}
                 </span>
               ) : null}
             </div>
             <p className="border-t px-(--e-3) py-(--e-1) text-[11px] text-(--tinta-2)">
-              Endereços: © colaboradores do OpenStreetMap
+              {ehInscricao
+                ? 'Lotes: SIMGeo, Prefeitura de Joinville'
+                : 'Endereços: © colaboradores do OpenStreetMap'}
             </p>
           </div>
         ) : null}
