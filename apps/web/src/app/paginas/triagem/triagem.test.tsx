@@ -961,7 +961,10 @@ describe('gravar no empreendimento (ADR-0050, LEG-05)', () => {
 
   it('a Equipe não vê a ação', async () => {
     cenario()
-    const { usuario } = montar(`/triagem?empreendimento=${EMPREENDIMENTO}&etapa=atividades`, 'equipe')
+    const { usuario } = montar(
+      `/triagem?empreendimento=${EMPREENDIMENTO}&etapa=atividades`,
+      'equipe',
+    )
     await screen.findByRole('link', { name: 'Metalúrgica Rio Cubatão' })
     await enquadrarUsinagem(usuario)
     expect(screen.queryByRole('button', { name: /^Gravar/ })).toBeNull()
