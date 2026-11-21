@@ -59,6 +59,7 @@ describe('atalhos do Ctrl+K (ADR-0041)', () => {
   it('a Equipe vê o trabalho, a Triagem e a conta; nada da Gestão, mesmo com o recurso', () => {
     const daEquipe = rotulos(atalhosVisiveis('equipe', new Set(['orcamentos', 'capacidade'])))
     expect(daEquipe).toEqual([
+      'Minha semana',
       'Visão da equipe',
       'Calendário',
       'Empreendimentos',

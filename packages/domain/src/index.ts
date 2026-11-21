@@ -732,3 +732,10 @@ export {
   valoresDoRelatorioMensal,
 } from './relatorio-mensal'
 export type { DadosParaRelatorioMensal } from './relatorio-mensal'
+export {
+  agruparPorDia,
+  ordenarItensDaSemana,
+  periodoDaMinhaSemana,
+  rotuloDoDia,
+} from './minha-semana'
+export type { DiaDaMinhaSemana, ItemDaMinhaSemana } from './minha-semana'

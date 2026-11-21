@@ -122,11 +122,11 @@ function ConsultoriaDoVinculo({
   }, [perdeuTudo, encerrada, usuarioId, sair])
 
   const trocar = useCallback(
-    (consultoriaId: string) => {
+    (consultoriaId: string, destino = '/') => {
       gravarConsultoriaPreferida(usuarioId, consultoriaId)
       limparDadosDaConsultoria(queryClient)
       setPreferida(consultoriaId)
-      void navegar('/')
+      void navegar(destino)
     },
     [usuarioId, queryClient, navegar],
   )
@@ -259,14 +259,14 @@ function ConsultoriaComoSuporte({
   }, [consultoriaId, voltarParaCentral])
 
   const trocar = useCallback(
-    (outra: string) => {
+    (outra: string, destino = '/') => {
       if (outra === consultoriaId) return
       // Trocar para uma consultoria própria deixa o modo suporte (o acesso continua valendo até
       // o fim ou até alguém encerrar).
       gravarConsultoriaPreferida(usuarioId, outra)
       limparDadosDaConsultoria(queryClient)
       aoDeixar()
-      void navegar('/')
+      void navegar(destino)
     },
     [consultoriaId, usuarioId, queryClient, aoDeixar, navegar],
   )

@@ -39,7 +39,7 @@ describe('shell do app', () => {
     expect(linkVisao).not.toHaveAttribute('aria-current')
   })
 
-  it('a Gestão vê 9 itens em três grupos; Triagem e Planejamento ficam fora do menu', async () => {
+  it('a Gestão vê 10 itens em três grupos; Triagem e Planejamento ficam fora do menu', async () => {
     renderizarApp('/')
     const menu = await screen.findByRole('navigation', { name: 'Menu principal' })
     expect(
@@ -47,6 +47,7 @@ describe('shell do app', () => {
         .getAllByRole('link')
         .map((link) => link.textContent),
     ).toEqual([
+      'Minha semana',
       'Visão da equipe',
       'Calendário',
       'Empreendimentos',
@@ -70,7 +71,7 @@ describe('shell do app', () => {
     expect(within(menu).queryByRole('link', { name: 'Planejamento' })).not.toBeInTheDocument()
   })
 
-  it('a Equipe vê 6 itens, sem o grupo Gestão', async () => {
+  it('a Equipe vê 7 itens, sem o grupo Gestão', async () => {
     falso.reiniciar({
       sessao: sessaoDe('ana@filtroville.test', 'Ana Ribeiro'),
       rpc: { meus_vinculos: { data: [vinculoFalso('Filtroville', 'equipe')] } },
@@ -82,6 +83,7 @@ describe('shell do app', () => {
         .getAllByRole('link')
         .map((link) => link.textContent),
     ).toEqual([
+      'Minha semana',
       'Visão da equipe',
       'Calendário',
       'Empreendimentos',
@@ -105,9 +107,9 @@ describe('shell do app', () => {
     const menu = await screen.findByRole('navigation', { name: 'Menu principal' })
     const links = within(menu).getAllByRole('link')
 
-    links[0]?.focus()
+    links[1]?.focus()
     await usuario.tab()
-    expect(links[1]).toHaveFocus()
+    expect(links[2]).toHaveFocus()
     await usuario.keyboard('{Enter}')
     expect(await screen.findByRole('heading', { level: 1, name: 'Calendário' })).toBeInTheDocument()
   })
@@ -141,7 +143,7 @@ describe('shell do app', () => {
       within(atalhos)
         .getAllByRole('link')
         .map((link) => link.textContent),
-    ).toEqual(['Início', 'Calendário', 'Campo'])
+    ).toEqual(['Semana', 'Início', 'Calendário', 'Campo'])
     expect(within(atalhos).getByRole('button', { name: 'Mais' })).toBeInTheDocument()
     expect(within(atalhos).getByRole('link', { name: 'Início' })).toHaveAttribute(
       'aria-current',

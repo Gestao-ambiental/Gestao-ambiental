@@ -23,8 +23,11 @@ export interface EstadoConsultoria {
   abrirSuporte: (consultoriaId: string) => Promise<void>
   /** Todos os vínculos da pessoa (ativos e encerrados). */
   vinculos: readonly Vinculo[]
-  /** Troca de consultoria: limpa o cache e remonta as telas (ACC-04). */
-  trocar: (consultoriaId: string) => void
+  /**
+   * Troca de consultoria: limpa o cache e remonta as telas (ACC-04). Vai para `destino` (padrão: o
+   * início), como na Minha semana, que abre o item na consultoria dele.
+   */
+  trocar: (consultoriaId: string, destino?: string) => void
 }
 
 export const ContextoConsultoria = createContext<EstadoConsultoria | null>(null)
