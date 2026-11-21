@@ -5,9 +5,10 @@
 // rede, pela Edge Function consultar-local, com seus estados de carregando e erro. O resultado
 // orienta a proposta; quem enquadra é o órgão.
 //
-// A tela é um passo a passo numa página só: 1 local e município, 2 atividades e porte,
-// 3 resultado (quem licencia, modalidade, estudo e taxa), grande no fim. As fontes legais ficam
-// num detalhe recolhível depois do resultado.
+// Etapas como no editor de orçamento (pedido do Eduardo, 20/11/2026): a trilha no alto, uma etapa
+// por vez (1 Local, 2 Atividades e porte, 3 Resultado), "Continuar" verde para a próxima e "Voltar".
+// O resumo ao lado (embaixo, no celular) mostra o que já se sabe: município e habilitação, lote,
+// restrições e enquadramento. A etapa fica na URL (?etapa=atividades): recarregar não perde o lugar.
 //
 // Com ?empreendimento= (e, do plano de renovação, &licenca=), a Gestão grava as atividades
 // enquadradas numa licença do empreendimento (ADR-0044), para sugerir a taxa da renovação.
@@ -20,6 +21,9 @@ import {
   ROTULO_DO_PORTE,
   FONTE_DA_TAXA_IMA,
   buscarAtividades,
+  dentroDeSantaCatarina,
+  formatarCoordenadas,
+  metrosQuadradosParaHectares,
   calcularTaxaDoIma,
   concluirTriagem,
   definirCompetencia,
@@ -31,6 +35,7 @@ import {
   parametrosDaAtividade,
   type AtividadeLicenciavel,
   type Competencia,
+  type Coordenadas,
   type ConclusaoDaTriagem,
   type Medidas,
   type NivelMunicipal,
@@ -38,7 +43,7 @@ import {
   type TaxaDoIma,
 } from '@gestao-ambiental/domain'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useId, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
@@ -52,6 +57,8 @@ import { Icone } from '@/components/ui/icone'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { ItemDoPlacar, Placar } from '@/components/ui/placar'
 import { Selo } from '@/components/ui/selo'
+import { Trilha } from '@/components/ui/trilha'
+import { consultarLocal, type ResultadoDoLocal } from '@/lib/api/consulta-de-local'
 import {
   gravarAtividadesNaLicenca,
   type AtividadeParaGravar,
@@ -61,7 +68,7 @@ import { ehUuid } from '@/lib/texto'
 import { cn } from '@/lib/utils'
 
 import { AcaoGravarNaLicenca, RetornoDaGravacao, type LicencaParaGravar } from './GravarNaLicenca'
-import { LocalDoEmpreendimento } from './LocalDoEmpreendimento'
+import { LocalDoEmpreendimento, type PontoMarcado } from './LocalDoEmpreendimento'
 
 const { atividades: CATALOGO, parametros: PARAMETROS, fonte: FONTE } = CATALOGO_CONSEMA_250
 const POR_CODIGO = new Map(CATALOGO.map((a) => [a.codigo, a]))
@@ -158,51 +165,14 @@ const MOTIVO_ESTADUAL: Record<Extract<Competencia, { orgao: 'estadual' }>['motiv
   falta_medida: 'informe o parâmetro para saber se cabe no município',
 }
 
-/** Um passo da triagem: estação numerada à esquerda, ligada à próxima por uma linha. */
-function Passo({
-  numero,
-  titulo,
-  rotulo,
-  aceso = false,
-  ultimo = false,
-  children,
+function QuemLicencia({
+  competencia,
+  habilitacao,
 }: {
-  numero: number
-  titulo: string
-  /** Nome da região (aria-label), quando difere do título. */
-  rotulo?: string
-  /** Passo com resultado: estação lima (o "agora" do design system). */
-  aceso?: boolean
-  ultimo?: boolean
-  children: ReactNode
+  competencia: Competencia
+  /** Controle da habilitação, mostrado quando a falta dela é o motivo de ir para o Estado. */
+  habilitacao?: ReactNode
 }) {
-  return (
-    <section
-      aria-label={rotulo ?? titulo}
-      className="grid grid-cols-[28px_minmax(0,1fr)] gap-x-(--e-3) sm:gap-x-(--e-4)"
-    >
-      <div aria-hidden className="flex flex-col items-center">
-        <span
-          className={cn(
-            'inline-flex size-7 shrink-0 items-center justify-center rounded-(--raio-redondo) text-xs font-[800] numero',
-            aceso
-              ? 'bg-(--sinal) text-(--sinal-texto) shadow-[0_0_0_2px_var(--chao),0_0_0_4px_var(--marca-linha)]'
-              : 'bg-(--marca-linha) text-(--folha)',
-          )}
-        >
-          {numero}
-        </span>
-        {ultimo ? null : <span className="mt-(--e-2) w-[3px] flex-1 rounded-full bg-(--regra)" />}
-      </div>
-      <div className={cn('flex min-w-0 flex-col gap-(--e-4)', !ultimo && 'pb-(--e-10)')}>
-        <h2 className="pt-(--e-05) titulo-painel text-(--tinta)">{titulo}</h2>
-        {children}
-      </div>
-    </section>
-  )
-}
-
-function QuemLicencia({ competencia }: { competencia: Competencia }) {
   if (competencia.orgao === 'municipal') {
     return (
       <p className="corpo text-(--tinta)">
@@ -213,10 +183,13 @@ function QuemLicencia({ competencia }: { competencia: Competencia }) {
   }
   if (competencia.orgao === 'estadual') {
     return (
-      <p className="corpo text-(--tinta)">
-        <span className="corpo-medio">Quem licencia: Estado (IMA)</span> ·{' '}
-        <span className="text-(--tinta-2)">{MOTIVO_ESTADUAL[competencia.motivo]}</span>
-      </p>
+      <div className="flex flex-col gap-(--e-2)">
+        <p className="corpo text-(--tinta)">
+          <span className="corpo-medio">Quem licencia: Estado (IMA)</span> ·{' '}
+          <span className="text-(--tinta-2)">{MOTIVO_ESTADUAL[competencia.motivo]}</span>
+        </p>
+        {competencia.motivo === 'municipio_nao_habilitado' ? habilitacao : null}
+      </div>
     )
   }
   return null
@@ -472,7 +445,74 @@ function NoIma({
   )
 }
 
-function Atividade({
+function CabecalhoDaAtividade({
+  atividade,
+  acao,
+}: {
+  atividade: AtividadeLicenciavel
+  acao?: ReactNode
+}) {
+  return (
+    <header className="flex items-start gap-(--e-3)">
+      <div className="flex min-w-0 flex-1 flex-col gap-(--e-1)">
+        <h3 className="titulo-secao text-(--tinta)">
+          <span className="numero">{atividade.codigo}</span>
+          <span className="text-(--tinta-3)"> · </span>
+          {atividade.descricao}
+        </h3>
+        <p className="text-xs text-(--tinta-2)">
+          Potencial poluidor {ROTULO_DO_POTENCIAL[atividade.potencial.geral]} (
+          {atividade.potencial.geral})
+          {atividade.redacaoDada ? ` · redação dada pela CONSEMA ${atividade.redacaoDada}` : ''}
+        </p>
+      </div>
+      {acao}
+    </header>
+  )
+}
+
+/** Uma linha com o enquadramento enquanto se digita (o detalhe fica na etapa Resultado). */
+function EnquadramentoEmUmaLinha({ resultado }: { resultado: ResultadoDoEnquadramento }) {
+  switch (resultado.tipo) {
+    case 'enquadrada': {
+      const [sigla] = separarSigla(ROTULO_DA_MODALIDADE[resultado.faixa.modalidade])
+      return (
+        <p className="flex flex-wrap items-center gap-(--e-2) corpo text-(--tinta)">
+          <Selo tom="sucesso">Enquadrada</Selo>
+          <span>
+            Porte {ROTULO_DO_PORTE[resultado.faixa.porte].toLowerCase()} ·{' '}
+            <span className="corpo-medio">{sigla}</span>
+          </span>
+        </p>
+      )
+    }
+    case 'falta_medida':
+      return (
+        <p className="corpo-medio text-(--alerta-texto)">
+          Informe {resultado.parametros.join(' ou ')} para enquadrar.
+        </p>
+      )
+    case 'medida_invalida':
+      return (
+        <p className="corpo-medio text-(--atraso-texto)">
+          {resultado.parametro}: use um número maior ou igual a zero, como 0,2 ou 48.000.
+        </p>
+      )
+    case 'abaixo_do_limite':
+      return (
+        <p className="corpo-medio text-(--tinta)">Abaixo do limite de licenciamento estadual.</p>
+      )
+    case 'acima_do_limite':
+      return (
+        <p className="corpo-medio text-(--alerta-texto)">
+          {resultado.parametro} acima das faixas desta lista.
+        </p>
+      )
+  }
+}
+
+/** Etapa 2: a atividade com os parâmetros de porte. */
+function AtividadeEmEdicao({
   calculado,
   aoMudarMedida,
   aoRemover,
@@ -481,7 +521,7 @@ function Atividade({
   aoMudarMedida: (sigla: string, texto: string) => void
   aoRemover: () => void
 }) {
-  const { item, atividade, competencia, resultado } = calculado
+  const { item, atividade, resultado } = calculado
   const parametros = parametrosDaAtividade(atividade)
   const faixasPorParametro = (sigla: string) =>
     atividade.faixas
@@ -495,22 +535,12 @@ function Atividade({
       aria-label={`${atividade.codigo} ${atividade.descricao}`}
       className="flex flex-col gap-(--e-4) border-b px-(--e-4) py-(--e-5) last:border-b-0 sm:px-(--e-5)"
     >
-      <header className="flex items-start gap-(--e-3)">
-        <div className="flex min-w-0 flex-1 flex-col gap-(--e-1)">
-          <h3 className="titulo-secao text-(--tinta)">
-            <span className="numero">{atividade.codigo}</span>
-            <span className="text-(--tinta-3)"> · </span>
-            {atividade.descricao}
-          </h3>
-          <p className="text-xs text-(--tinta-2)">
-            Potencial poluidor {ROTULO_DO_POTENCIAL[atividade.potencial.geral]} (
-            {atividade.potencial.geral})
-            {atividade.redacaoDada ? ` · redação dada pela CONSEMA ${atividade.redacaoDada}` : ''}
-          </p>
-        </div>
-        <BotaoIcone icone="trash-2" rotulo={`Remover ${atividade.codigo}`} onClick={aoRemover} />
-      </header>
-
+      <CabecalhoDaAtividade
+        atividade={atividade}
+        acao={
+          <BotaoIcone icone="trash-2" rotulo={`Remover ${atividade.codigo}`} onClick={aoRemover} />
+        }
+      />
       {parametros.length > 0 ? (
         <div className="grid grid-cols-1 gap-(--e-3) sm:grid-cols-2">
           {parametros.map((sigla) => (
@@ -529,9 +559,28 @@ function Atividade({
           ))}
         </div>
       ) : null}
+      <EnquadramentoEmUmaLinha resultado={resultado} />
+    </article>
+  )
+}
 
+/** Etapa 3: o enquadramento completo da atividade, quem licencia e o que o IMA cobra. */
+function AtividadeNoResultado({
+  calculado,
+  habilitacao,
+}: {
+  calculado: ItemCalculado
+  habilitacao: ReactNode
+}) {
+  const { item, atividade, competencia, resultado } = calculado
+  return (
+    <article
+      aria-label={`${atividade.codigo} ${atividade.descricao}`}
+      className="flex flex-col gap-(--e-4) border-b px-(--e-4) py-(--e-5) last:border-b-0 sm:px-(--e-5)"
+    >
+      <CabecalhoDaAtividade atividade={atividade} />
       <DescricaoDoResultado atividade={atividade} resultado={resultado} />
-      <QuemLicencia competencia={competencia} />
+      <QuemLicencia competencia={competencia} habilitacao={habilitacao} />
       {competencia.orgao !== 'fora_da_lista' && competencia.avisos.length > 0 ? (
         <p className="corpo text-(--tinta)">{competencia.avisos.join(' ')}</p>
       ) : null}
@@ -660,7 +709,14 @@ function Conclusao({
   )
 }
 
-function SeletorDoNivel({
+const ROTULO_DA_HABILITACAO = (nivel: NivelMunicipal | null) =>
+  nivel === null ? 'Não habilitado ou não sei' : `Nível ${ROTULO_DO_NIVEL[nivel]}`
+
+/**
+ * Habilitação do município (CONSEMA 251/2024): o valor e um "Trocar" discreto que abre a escolha.
+ * Fica junto do município (no resumo) e no resultado, quando a falta dela manda para o Estado.
+ */
+function HabilitacaoDoMunicipio({
   nivel,
   aoMudar,
 }: {
@@ -668,18 +724,51 @@ function SeletorDoNivel({
   aoMudar: (nivel: NivelMunicipal | null) => void
 }) {
   const id = useId()
+  const [trocando, setTrocando] = useState(false)
+  const lista = useRef<HTMLSelectElement>(null)
+  useEffect(() => {
+    if (trocando) lista.current?.focus()
+  }, [trocando])
+
+  if (!trocando) {
+    return (
+      <span className="flex flex-wrap items-center gap-x-(--e-2) gap-y-(--e-05) corpo text-(--tinta)">
+        <span>
+          Habilitação: <span className="corpo-medio">{ROTULO_DA_HABILITACAO(nivel)}</span>
+        </span>
+        <button
+          type="button"
+          className="cursor-pointer rounded-(--raio-mini) corpo-medio text-(--link) underline underline-offset-2 hover:text-(--tinta) max-md:min-h-(--controle-toque)"
+          aria-label={`Trocar a habilitação do município (${ROTULO_DA_HABILITACAO(nivel)})`}
+          onClick={() => {
+            setTrocando(true)
+          }}
+        >
+          Trocar
+        </button>
+      </span>
+    )
+  }
   return (
-    <div className="flex flex-col gap-(--e-1)">
+    <span className="flex flex-col gap-(--e-1)">
       <label htmlFor={id} className="rotulo text-(--tinta)">
         Habilitação do município (CONSEMA 251/2024)
       </label>
       <select
         id={id}
+        ref={lista}
         className={cn(classeCampo, 'max-w-[320px] cursor-pointer')}
         value={nivel ?? ''}
         onChange={(e) => {
           const v = e.target.value
           aoMudar(v === '1' || v === '2' || v === '3' ? (Number(v) as NivelMunicipal) : null)
+          setTrocando(false)
+        }}
+        onBlur={() => {
+          setTrocando(false)
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') setTrocando(false)
         }}
       >
         <option value="">Não habilitado ou não sei</option>
@@ -687,6 +776,194 @@ function SeletorDoNivel({
         <option value="2">Nível II</option>
         <option value="3">Nível III</option>
       </select>
+    </span>
+  )
+}
+
+const formatarNumero = (v: number, casas = 0) =>
+  v.toLocaleString('pt-BR', { maximumFractionDigits: casas })
+
+/** O que a triagem já sabe, como o card de preço do orçamento: ao lado no desktop, embaixo no celular. */
+function ResumoDaTriagem({
+  ponto,
+  local,
+  consultando,
+  habilitacao,
+  atividades,
+  enquadramento,
+}: {
+  ponto: PontoMarcado | null
+  local: ResultadoDoLocal | null
+  consultando: boolean
+  habilitacao: ReactNode
+  atividades: number
+  enquadramento: { valor: string; detalhe: string | null } | null
+}) {
+  const areaHa = local?.lote?.areaM2 != null ? metrosQuadradosParaHectares(local.lote.areaM2) : null
+  return (
+    <section
+      aria-label="Resumo da triagem"
+      className="flex flex-col gap-(--e-4) rounded-(--raio-painel) border bg-(--folha) p-(--e-4) xl:sticky xl:top-(--e-4) xl:p-(--e-5)"
+    >
+      <dl className="flex flex-col gap-(--e-4)">
+        <div className="flex flex-col gap-(--e-05) border-b pb-(--e-4)">
+          <dt className="rotulo">Enquadramento</dt>
+          <dd className="text-(--tinta)">
+            {enquadramento ? (
+              <span className="flex flex-col">
+                <span className="numero-contagem">{enquadramento.valor}</span>
+                {enquadramento.detalhe ? (
+                  <span className="corpo text-(--tinta-2)">{enquadramento.detalhe}</span>
+                ) : null}
+              </span>
+            ) : (
+              <span className="corpo text-(--tinta-3)">pendente</span>
+            )}
+          </dd>
+        </div>
+        <div className="flex flex-col gap-(--e-05)">
+          <dt className="rotulo">Local</dt>
+          <dd className="corpo text-(--tinta)">
+            {ponto ? (
+              <span className="flex flex-col">
+                <span className="corpo-medio">{ponto.rotulo ?? formatarCoordenadas(ponto)}</span>
+                {ponto.rotulo ? (
+                  <span className="text-xs text-(--tinta-2) numero">
+                    {formatarCoordenadas(ponto)}
+                  </span>
+                ) : null}
+              </span>
+            ) : (
+              <span className="text-(--tinta-3)">não marcado</span>
+            )}
+          </dd>
+        </div>
+        <div className="flex flex-col gap-(--e-05)">
+          <dt className="rotulo">Município</dt>
+          <dd className="flex flex-col gap-(--e-1) corpo text-(--tinta)">
+            {consultando ? (
+              <span className="text-(--tinta-3)">consultando…</span>
+            ) : local?.municipio ? (
+              <span className="corpo-medio">{local.municipio.nome}</span>
+            ) : (
+              <span className="text-(--tinta-3)">não identificado</span>
+            )}
+            {habilitacao}
+          </dd>
+        </div>
+        {local?.lote ? (
+          <div className="flex flex-col gap-(--e-05)">
+            <dt className="rotulo">Lote</dt>
+            <dd className="corpo text-(--tinta) numero">
+              {local.lote.inscricaoImobiliaria ?? 'Sem inscrição'}
+              {areaHa !== null && local.lote.areaM2 !== null ? (
+                <span className="block text-xs text-(--tinta-2)">
+                  {formatarNumero(local.lote.areaM2)} m² ({formatarNumero(areaHa, 4)} ha)
+                </span>
+              ) : null}
+            </dd>
+          </div>
+        ) : null}
+        {local ? (
+          <div className="flex flex-col gap-(--e-05)">
+            <dt className="rotulo">Restrições</dt>
+            <dd className="corpo text-(--tinta)">
+              {local.restricoes.length === 0 ? (
+                'Nenhuma encontrada'
+              ) : (
+                <ul className="flex flex-col gap-(--e-1)">
+                  {local.restricoes.map((r) => (
+                    <li key={`${r.tipo}-${r.descricao}`}>
+                      <Selo tom="atencao">{r.descricao}</Selo>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </dd>
+          </div>
+        ) : null}
+        <div className="flex flex-col gap-(--e-05)">
+          <dt className="rotulo">Atividades</dt>
+          <dd className="corpo text-(--tinta) numero">
+            {atividades === 0 ? (
+              <span className="text-(--tinta-3)">nenhuma</span>
+            ) : (
+              `${String(atividades)} ${atividades === 1 ? 'atividade' : 'atividades'}`
+            )}
+          </dd>
+        </div>
+      </dl>
+    </section>
+  )
+}
+
+const ETAPAS = [
+  { id: 'local', titulo: 'Local' },
+  { id: 'atividades', titulo: 'Atividades e porte' },
+  { id: 'resultado', titulo: 'Resultado' },
+] as const
+type IdDaEtapa = (typeof ETAPAS)[number]['id']
+
+/** Habilitação lembrada por município (só neste navegador): na próxima triagem, já vem marcada. */
+const chaveDaHabilitacao = (codigoIbge: string) => `grama.triagem.habilitacao.${codigoIbge}`
+
+function lerHabilitacaoLembrada(codigoIbge: string): NivelMunicipal | null | undefined {
+  try {
+    const v = window.localStorage.getItem(chaveDaHabilitacao(codigoIbge))
+    if (v === '1' || v === '2' || v === '3') return Number(v) as NivelMunicipal
+    if (v === '0') return null
+  } catch {
+    // Sem armazenamento (aba privada): fica como está.
+  }
+  return undefined
+}
+
+function lembrarHabilitacao(codigoIbge: string, nivel: NivelMunicipal | null) {
+  try {
+    window.localStorage.setItem(chaveDaHabilitacao(codigoIbge), String(nivel ?? 0))
+  } catch {
+    // Sem armazenamento: só não lembra.
+  }
+}
+
+/** Voltar e Continuar no pé da etapa, como no editor de orçamento. */
+function NavegacaoDaEtapa({
+  etapa,
+  aoIr,
+  podeContinuar,
+}: {
+  etapa: number
+  aoIr: (indice: number) => void
+  podeContinuar: boolean
+}) {
+  const anterior = ETAPAS[etapa - 1]
+  const proxima = ETAPAS[etapa + 1]
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-(--e-2) border-t p-(--e-3) max-sm:flex-col-reverse max-sm:items-stretch sm:p-(--e-4)">
+      {anterior ? (
+        <Botao
+          iconeAntes="arrow-left"
+          onClick={() => {
+            aoIr(etapa - 1)
+          }}
+        >
+          {anterior.titulo}
+        </Botao>
+      ) : (
+        <span />
+      )}
+      {proxima ? (
+        <Botao
+          aparencia="primario"
+          iconeDepois="arrow-right"
+          disabled={!podeContinuar}
+          onClick={() => {
+            aoIr(etapa + 1)
+          }}
+        >
+          Continuar para {proxima.titulo.toLowerCase()}
+        </Botao>
+      ) : null}
     </div>
   )
 }
@@ -721,7 +998,8 @@ export function PaginaTriagem() {
   const { atual } = useConsultoria()
   const ehGestao = atual.papel === 'gestao'
   const queryClient = useQueryClient()
-  const [parametros] = useSearchParams()
+  // A etapa fica na URL (?etapa=atividades), como no orçamento; o empreendimento também.
+  const [parametros, setParametros] = useSearchParams()
   const parametroEmpreendimento = parametros.get('empreendimento')
   const empreendimentoId = ehUuid(parametroEmpreendimento) ? parametroEmpreendimento : null
   const parametroLicenca = parametros.get('licenca')
@@ -739,6 +1017,74 @@ export function PaginaTriagem() {
   /** Área do lote em ha, já no formato do campo, para preencher o AU(3) das atividades. */
   const [areaDoLote, setAreaDoLote] = useState<string | null>(null)
   const jaIncluidas = useMemo(() => new Set(itens.map((i) => i.codigo)), [itens])
+
+  // Local: fica na página para não se perder ao trocar de etapa.
+  const [ponto, setPonto] = useState<PontoMarcado | null>(null)
+  const [erroDoPonto, setErroDoPonto] = useState<string | null>(null)
+  const consulta = useMutation({
+    mutationFn: consultarLocal,
+    onSuccess: (resultado) => {
+      const codigo = resultado.municipio?.codigoIbge
+      if (!codigo) return
+      const lembrada = lerHabilitacaoLembrada(codigo)
+      if (lembrada !== undefined) setNivel(lembrada)
+    },
+  })
+  const local = consulta.isSuccess ? consulta.data : null
+
+  function marcar(novo: PontoMarcado) {
+    setPonto(novo)
+    if (!dentroDeSantaCatarina(novo)) {
+      setErroDoPonto('O ponto está fora de Santa Catarina.')
+      consulta.reset()
+      return
+    }
+    setErroDoPonto(null)
+    consulta.mutate({ latitude: novo.latitude, longitude: novo.longitude } satisfies Coordenadas)
+  }
+
+  function mudarNivel(novo: NivelMunicipal | null) {
+    setNivel(novo)
+    const codigo = local?.municipio?.codigoIbge
+    if (codigo) lembrarHabilitacao(codigo, novo)
+  }
+
+  const indiceDaUrl = ETAPAS.findIndex((e) => e.id === parametros.get('etapa'))
+  const pedida = indiceDaUrl < 0 ? 0 : indiceDaUrl
+  // Sem atividade, o resultado não tem o que mostrar: fica nas atividades.
+  const etapa = pedida === 2 && itens.length === 0 ? 1 : pedida
+  // E a URL acompanha: incluir a primeira atividade não pula sozinho para o resultado.
+  useEffect(() => {
+    if (pedida !== 2 || itens.length > 0) return
+    setParametros(
+      (atuais) => {
+        const novos = new URLSearchParams(atuais)
+        novos.set('etapa', 'atividades')
+        return novos
+      },
+      { replace: true },
+    )
+  }, [pedida, itens.length, setParametros])
+  const areaDaEtapa = useRef<HTMLHeadingElement>(null)
+  const trocou = useRef(false)
+
+  function irPara(indice: number) {
+    const id: IdDaEtapa = ETAPAS[indice]?.id ?? 'local'
+    trocou.current = true
+    setParametros((atuais) => {
+      const novos = new URLSearchParams(atuais)
+      if (id === 'local') novos.delete('etapa')
+      else novos.set('etapa', id)
+      return novos
+    })
+  }
+
+  // Ao trocar de etapa, o foco vai para o título da etapa nova, sem ficar no botão que sumiu.
+  useEffect(() => {
+    if (!trocou.current) return
+    trocou.current = false
+    areaDaEtapa.current?.focus()
+  }, [etapa])
 
   const comAreaDoLote = (item: ItemEmEdicao, area: string | null): ItemEmEdicao => {
     const atividade = POR_CODIGO.get(item.codigo)
@@ -763,7 +1109,30 @@ export function PaginaTriagem() {
       : orgaos.includes('estadual')
         ? 'estadual'
         : 'municipal'
-  const temResultado = itens.length > 0
+
+  // No resumo, a sigla (curta) grande e o nome por extenso embaixo, com quem licencia.
+  const [nomeDaModalidade, siglaDaModalidade] = conclusao.modalidade
+    ? separarSigla(ROTULO_DA_MODALIDADE[conclusao.modalidade])
+    : ['', '']
+  const enquadramento = conclusao.modalidade
+    ? {
+        valor: siglaDaModalidade || nomeDaModalidade,
+        detalhe:
+          [
+            siglaDaModalidade ? nomeDaModalidade : null,
+            orgao === 'municipal'
+              ? 'Licencia o município'
+              : orgao === 'estadual'
+                ? 'Licencia o Estado (IMA)'
+                : null,
+          ]
+            .filter(Boolean)
+            .join(' · ') || null,
+      }
+    : null
+
+  const habilitacao = <HabilitacaoDoMunicipio nivel={nivel} aoMudar={mudarNivel} />
+  const titulo = ETAPAS[etapa]?.titulo ?? ''
 
   const paraGravar = atividadesParaGravar(calculados)
   const gravar = useMutation({
@@ -807,77 +1176,159 @@ export function PaginaTriagem() {
         gravada={gravar.isSuccess ? gravar.variables.licenca : null}
         erro={gravar.error}
       />
-      <div className="flex max-w-[1120px] flex-col">
-        <Passo numero={1} titulo="Onde fica">
-          <LocalDoEmpreendimento
-            aoUsarArea={(hectares) => {
-              const area = hectares.toLocaleString('pt-BR', { maximumFractionDigits: 4 })
-              setAreaDoLote(area)
-              setItens((atual) => atual.map((i) => comAreaDoLote(i, area)))
-            }}
+      <div className="grid max-w-[1280px] gap-(--e-4) xl:grid-cols-[minmax(0,1fr)_300px] xl:items-start xl:gap-(--e-6)">
+        <div className="flex min-w-0 flex-col gap-(--e-4)">
+          <Trilha
+            compactaNoCelular
+            rotulo="Etapas da triagem"
+            atual={etapa}
+            aoEscolher={irPara}
+            podeEscolher={(indice) => indice < 2 || itens.length > 0}
+            passos={[
+              {
+                id: 'local',
+                titulo: 'Local',
+                detalhe: local?.municipio?.nome ?? (ponto ? 'marcado' : 'opcional'),
+              },
+              {
+                id: 'atividades',
+                titulo: 'Atividades e porte',
+                detalhe: `${String(itens.length)} ${itens.length === 1 ? 'atividade' : 'atividades'}`,
+              },
+              {
+                id: 'resultado',
+                titulo: 'Resultado',
+                detalhe: enquadramento?.valor ?? 'pendente',
+              },
+            ]}
           />
-          <SeletorDoNivel nivel={nivel} aoMudar={setNivel} />
-        </Passo>
 
-        <Passo
-          numero={2}
-          titulo="Atividades e porte"
-          rotulo="Atividades do empreendimento"
-          ultimo={!temResultado}
-        >
-          <BuscaDeAtividade
-            jaIncluidas={jaIncluidas}
-            aoIncluir={(codigo) => {
-              setItens((atual) =>
-                atual.some((i) => i.codigo === codigo)
-                  ? atual
-                  : [...atual, comAreaDoLote({ codigo, medidas: {} }, areaDoLote)],
-              )
-            }}
-          />
-          {itens.length === 0 ? (
-            <EstadoVazio
-              icone="search"
-              titulo="Nenhuma atividade incluída"
-              className="rounded-(--raio-painel) border border-dashed border-(--regra-forte) py-(--e-8)"
-            />
-          ) : (
-            <div className="flex flex-col rounded-(--raio-painel) border bg-(--folha)">
-              {calculados.map((calculado) => (
-                <Atividade
-                  key={calculado.item.codigo}
-                  calculado={calculado}
-                  aoMudarMedida={(sigla, texto) => {
-                    setItens((atual) =>
-                      atual.map((i) =>
-                        i.codigo === calculado.item.codigo
-                          ? { ...i, medidas: { ...i.medidas, [sigla]: texto } }
-                          : i,
-                      ),
-                    )
+          <section
+            aria-labelledby="titulo-da-etapa"
+            className="flex min-w-0 flex-col overflow-hidden rounded-(--raio-painel) border bg-(--folha)"
+          >
+            <h2
+              id="titulo-da-etapa"
+              ref={areaDaEtapa}
+              tabIndex={-1}
+              className="px-(--e-4) pt-(--e-4) titulo-painel text-(--tinta) outline-none sm:px-(--e-5) sm:pt-(--e-5)"
+            >
+              {titulo}
+            </h2>
+
+            {etapa === 0 ? (
+              <div className="entrar p-(--e-4) sm:p-(--e-5)">
+                <LocalDoEmpreendimento
+                  ponto={ponto}
+                  erroDoPonto={erroDoPonto}
+                  consulta={{
+                    pendente: consulta.isPending,
+                    erro: consulta.isError ? consulta.error.message : null,
+                    resultado: local,
                   }}
-                  aoRemover={() => {
-                    setItens((atual) => atual.filter((i) => i.codigo !== calculado.item.codigo))
+                  aoMarcar={marcar}
+                  habilitacao={habilitacao}
+                  aoUsarArea={(hectares) => {
+                    const area = hectares.toLocaleString('pt-BR', { maximumFractionDigits: 4 })
+                    setAreaDoLote(area)
+                    setItens((atual) => atual.map((i) => comAreaDoLote(i, area)))
                   }}
                 />
-              ))}
-            </div>
-          )}
-        </Passo>
+              </div>
+            ) : null}
 
-        {temResultado ? (
-          <Passo
-            numero={3}
-            titulo="Resultado"
-            rotulo="Conclusão da triagem"
-            aceso={conclusao.modalidade !== null}
-            ultimo
-          >
-            <Conclusao conclusao={conclusao} orgao={orgao} nivel={nivel} calculados={calculados} />
-          </Passo>
-        ) : null}
+            {etapa === 1 ? (
+              <div className="entrar flex flex-col gap-(--e-4) p-(--e-4) sm:p-(--e-5)">
+                <BuscaDeAtividade
+                  jaIncluidas={jaIncluidas}
+                  aoIncluir={(codigo) => {
+                    setItens((atual) =>
+                      atual.some((i) => i.codigo === codigo)
+                        ? atual
+                        : [...atual, comAreaDoLote({ codigo, medidas: {} }, areaDoLote)],
+                    )
+                  }}
+                />
+                {itens.length === 0 ? (
+                  <EstadoVazio
+                    icone="search"
+                    titulo="Nenhuma atividade incluída"
+                    className="rounded-(--raio-painel) border border-dashed border-(--regra-forte) py-(--e-8)"
+                  />
+                ) : (
+                  <div
+                    role="group"
+                    aria-label="Atividades do empreendimento"
+                    className="flex flex-col rounded-(--raio-painel) border"
+                  >
+                    {calculados.map((calculado) => (
+                      <AtividadeEmEdicao
+                        key={calculado.item.codigo}
+                        calculado={calculado}
+                        aoMudarMedida={(sigla, texto) => {
+                          setItens((atual) =>
+                            atual.map((i) =>
+                              i.codigo === calculado.item.codigo
+                                ? { ...i, medidas: { ...i.medidas, [sigla]: texto } }
+                                : i,
+                            ),
+                          )
+                        }}
+                        aoRemover={() => {
+                          setItens((atual) =>
+                            atual.filter((i) => i.codigo !== calculado.item.codigo),
+                          )
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : null}
 
-        <Fontes />
+            {etapa === 2 ? (
+              <div className="entrar flex flex-col gap-(--e-5) p-(--e-4) sm:p-(--e-5)">
+                <section aria-label="Conclusão da triagem">
+                  <Conclusao
+                    conclusao={conclusao}
+                    orgao={orgao}
+                    nivel={nivel}
+                    calculados={calculados}
+                  />
+                </section>
+                <div
+                  role="group"
+                  aria-label="Resultado por atividade"
+                  className="flex flex-col rounded-(--raio-painel) border"
+                >
+                  {calculados.map((calculado) => (
+                    <AtividadeNoResultado
+                      key={calculado.item.codigo}
+                      calculado={calculado}
+                      habilitacao={habilitacao}
+                    />
+                  ))}
+                </div>
+                <Fontes />
+              </div>
+            ) : null}
+
+            <NavegacaoDaEtapa
+              etapa={etapa}
+              aoIr={irPara}
+              podeContinuar={etapa !== 1 || itens.length > 0}
+            />
+          </section>
+        </div>
+
+        <ResumoDaTriagem
+          ponto={ponto}
+          local={local}
+          consultando={consulta.isPending}
+          habilitacao={habilitacao}
+          atividades={itens.length}
+          enquadramento={enquadramento}
+        />
       </div>
     </Pagina>
   )

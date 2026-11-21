@@ -1,5 +1,5 @@
 // Novo orçamento sem diálogo (pedido do Eduardo, 20/11/2026): o botão abre direto o editor, o
-// cliente vem numa linha só (empreendimento, "Novo: <nome>" ou cadastro completo) e o "o que será
+// cliente vem numa linha só (empreendimento, "Cliente novo" ou cadastro completo) e o "o que será
 // orçado" se preenche sozinho com o modelo ou o primeiro serviço.
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -171,8 +171,8 @@ describe('Novo orçamento, direto no editor', () => {
         .getAllByRole('option')
         .map((o) => o.textContent),
     ).toEqual([
-      'Novo: Padaria Pão QuenteAinda não cadastrado',
-      'Cadastrar empreendimento: Padaria Pão QuenteCom CNPJ e unidade',
+      'Cliente novo: Padaria Pão QuenteSó com o nome',
+      'Padaria Pão Quente com CNPJ e unidadeEntra em Empreendimentos',
     ])
     await usuario.keyboard('{Enter}')
 
@@ -187,12 +187,50 @@ describe('Novo orçamento, direto no editor', () => {
     expect(screen.getByRole('button', { name: 'Cadastrar como empreendimento' })).toBeVisible()
   })
 
+  it('o botão Cliente novo fica à vista e cria o orçamento só com o nome', async () => {
+    const usuario = userEvent.setup()
+    renderizarApp('/orcamentos/novo')
+    await usuario.click(await screen.findByRole('button', { name: 'Cliente novo' }))
+
+    const form = screen.getByRole('form', { name: 'Cliente novo' })
+    const nome = within(form).getByLabelText('Nome da empresa ou do cliente')
+    expect(nome).toHaveFocus()
+    // Sem nome, avisa e não cria.
+    await usuario.click(within(form).getByRole('button', { name: 'Criar orçamento' }))
+    expect(within(form).getByText('Informe o nome do cliente')).toBeVisible()
+    expect(chamadas('criar_orcamento')).toHaveLength(0)
+
+    await usuario.type(nome, 'Dermaclinic{Enter}')
+    expect(await screen.findByRole('heading', { level: 1, name: 'Dermaclinic' })).toBeVisible()
+    expect(chamadas('criar_orcamento')[0]).toMatchObject({
+      p_empreendimento_id: null,
+      p_prospecto: { nome: 'Dermaclinic' },
+    })
+  })
+
+  it('Cliente novo leva o nome já digitado e também abre o cadastro com CNPJ', async () => {
+    const usuario = userEvent.setup()
+    renderizarApp('/orcamentos/novo')
+    await usuario.type(await screen.findByRole('combobox', { name: 'Cliente' }), 'Dermaclinic')
+    await usuario.click(screen.getByRole('button', { name: 'Cliente novo' }))
+    const form = screen.getByRole('form', { name: 'Cliente novo' })
+    expect(within(form).getByLabelText('Nome da empresa ou do cliente')).toHaveValue('Dermaclinic')
+
+    await usuario.click(within(form).getByRole('button', { name: 'Cadastrar com CNPJ e unidade' }))
+    const cadastro = await screen.findByRole('form', { name: 'Novo empreendimento' })
+    expect(within(cadastro).getByLabelText('Nome do empreendimento')).toHaveValue('Dermaclinic')
+    await usuario.click(within(cadastro).getByRole('button', { name: 'Cancelar' }))
+
+    // Voltar para a busca mantém o nome digitado.
+    expect(await screen.findByRole('combobox', { name: 'Cliente' })).toHaveValue('Dermaclinic')
+  })
+
   it('cadastra o empreendimento completo ali mesmo e cria o orçamento para ele', async () => {
     const usuario = userEvent.setup()
     renderizarApp('/orcamentos/novo')
     await usuario.type(await screen.findByRole('combobox', { name: 'Cliente' }), 'Posto Vale Verde')
     await usuario.click(
-      await screen.findByRole('option', { name: /^Cadastrar empreendimento: Posto Vale Verde/ }),
+      await screen.findByRole('option', { name: /^Posto Vale Verde com CNPJ e unidade/ }),
     )
 
     const form = await screen.findByRole('form', { name: 'Novo empreendimento' })
@@ -300,7 +338,7 @@ describe('Novo orçamento, direto no editor', () => {
     const usuario = userEvent.setup()
     const { container } = renderizarApp('/orcamentos/novo')
     await usuario.type(await screen.findByRole('combobox', { name: 'Cliente' }), 'Padaria')
-    await screen.findByRole('option', { name: /^Novo: Padaria/ })
+    await screen.findByRole('option', { name: /^Cliente novo: Padaria/ })
     const resultado = await axe.run(container)
     expect(resultado.violations).toEqual([])
   })

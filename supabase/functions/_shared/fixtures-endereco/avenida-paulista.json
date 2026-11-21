@@ -1,0 +1,55 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "street",
+        "name": "Avenida Paulista",
+        "district": "Centro",
+        "city": "BalneÃ¡rio Barra do Sul",
+        "state": "Santa Catarina",
+        "postcode": "89247-000",
+        "countrycode": "BR"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-48.5998709, -26.4567163]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "street",
+        "name": "Rua Paulista",
+        "district": "Castelo",
+        "city": "Caxias do Sul",
+        "state": "Rio Grande do Sul",
+        "postcode": "95058-490",
+        "countrycode": "BR"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-51.1217037, -29.1241823]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "house",
+        "housenumber": "58",
+        "name": "Hotel Paulista [FECHADO]",
+        "street": "Avenida Mondardo",
+        "district": "Centro",
+        "city": "BalneÃ¡rio Arroio do Silva",
+        "state": "Santa Catarina",
+        "postcode": "88914-000",
+        "countrycode": "BR"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-49.4121738, -28.9875508]
+      }
+    }
+  ]
+}

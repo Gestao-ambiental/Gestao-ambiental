@@ -225,6 +225,7 @@ export {
   CARGOS,
   GENEROS,
   MAXIMO_DE_OUTRAS_PROFISSOES,
+  areaDaProfissao,
   PROFISSOES,
   cargoDoCodigo,
   generoDoCodigo,
@@ -614,3 +615,11 @@ export {
   taxaSugeridaDaRenovacao,
 } from './renovacao-orcamento'
 export type { AtividadeDaLicenca, HorizonteDaRenovacao } from './renovacao-orcamento'
+export {
+  coresDasAreas,
+  coresSemRepetir,
+  hashEstavel,
+  iniciaisDe,
+  QUANTIDADE_DE_CORES,
+} from './cores-por-categoria'
+export { lerInscricaoImobiliaria } from './inscricao-imobiliaria'

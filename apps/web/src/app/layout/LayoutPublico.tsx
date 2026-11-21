@@ -5,7 +5,7 @@ import { MarcaGrama } from '@/components/ui/marca-grama'
 
 import { BotaoTema } from './BotaoTema'
 
-/** O traço de pincel verde-lima do herói do site, sob a frase. Decorativo. */
+/** O traço de pincel do herói do site, sob a frase, no verde do destaque. Decorativo. */
 function Pincel({ className }: { className?: string }) {
   return (
     <svg
@@ -25,7 +25,7 @@ function Pincel({ className }: { className?: string }) {
 
 /**
  * Layout das rotas públicas (opção C escolhida pelo Eduardo): à esquerda, a frase do herói do site
- * em Anton com o pincel verde-lima, sobre a areia; à direita, o formulário. No celular, o logotipo
+ * em Anton com o pincel verde, sobre a areia; à direita, o formulário. No celular, o logotipo
  * e a primeira frase em cima e o formulário embaixo. Com `children`, mostra esse conteúdo no lugar
  * da rota (ex.: "Complete seu cadastro").
  */

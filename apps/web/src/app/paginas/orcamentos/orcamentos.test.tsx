@@ -1531,7 +1531,9 @@ describe('orçamentos (onda 5)', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(screen.queryByLabelText(/O que será orçado/)).not.toBeInTheDocument()
     await usuario.type(screen.getByRole('combobox', { name: 'Cliente' }), 'Padaria Pão Quente')
-    await usuario.click(await screen.findByRole('option', { name: /^Novo: Padaria Pão Quente/ }))
+    await usuario.click(
+      await screen.findByRole('option', { name: /^Cliente novo: Padaria Pão Quente/ }),
+    )
     await waitFor(() => {
       expect(router.state.location.pathname).toBe('/orcamentos/o2')
     })

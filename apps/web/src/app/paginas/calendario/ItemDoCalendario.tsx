@@ -2,6 +2,7 @@ import { Link } from 'react-router'
 
 import { cn } from '@/lib/utils'
 
+import { estiloDaCategoria, type Categoria } from './colorir-por'
 import type { ItemDoDia, TipoDoItem } from './itens-do-calendario'
 
 /*
@@ -58,26 +59,57 @@ export function MarcaDoTipo({ tipo, className }: { tipo: TipoDoItem; className?:
   )
 }
 
-/** Evento: marca de forma, prefixo escrito ("Meta", "Exigência", "Resíduos") e texto. */
+/** Sigla da categoria (área ou pessoa) junto da cor: a informação nunca vai só na cor. */
+export function SiglaDaCategoria({ categoria }: { categoria: Categoria }) {
+  const { fundo, forte } = estiloDaCategoria(categoria.cor)
+  return (
+    <span
+      aria-hidden
+      style={{ backgroundColor: fundo, borderColor: forte }}
+      className="inline-flex h-4 min-w-6 shrink-0 items-center justify-center rounded-(--raio-mini) border px-[3px] text-[10px] leading-none font-[800] text-(--tinta)"
+    >
+      {categoria.sigla}
+    </span>
+  )
+}
+
+/**
+ * Evento: marca de forma, prefixo escrito ("Meta", "Exigência", "Resíduos") e texto. Com
+ * `categoria` (colorir por área ou pessoa), ganha o fundo suave e o traço forte da categoria, a
+ * sigla dela e o nome no title.
+ */
 export function EventoDoDia({
   item,
   modo = 'linha',
+  categoria,
 }: {
   item: ItemDoDia
+  categoria?: Categoria | null
   /** linha: uma linha truncada (mês); quebra: texto pequeno que quebra (semana); inteiro: lista. */
   modo?: 'linha' | 'quebra' | 'inteiro'
 }) {
   const f = FORMAS[item.tipo]
   const forte = FORTES.includes(item.tipo)
+  const cores = categoria ? estiloDaCategoria(categoria.cor) : null
   const classes = cn(
     'flex min-w-0 gap-(--e-15) rounded-(--raio-mini) text-(--tinta) no-underline',
     modo === 'linha' && 'h-5 items-center px-(--e-1) text-xs',
     modo === 'quebra' && 'items-start px-(--e-1) py-px text-xs',
     modo === 'inteiro' && 'items-start corpo',
     item.link && 'transicao-estado hover:bg-(--toque) hover:no-underline',
+    cores && modo !== 'inteiro' && 'pl-(--e-15)',
   )
+  const estilo = cores
+    ? { backgroundColor: cores.fundo, boxShadow: `inset 3px 0 0 ${cores.forte}` }
+    : undefined
+  // O title diz a categoria (a pessoa já vem no texto de apoio; a área, não).
+  const titulo =
+    categoria && !item.descricao.includes(categoria.rotulo)
+      ? `${item.descricao} · ${categoria.rotulo}`
+      : item.descricao
   const conteudo = (
     <>
+      {categoria && modo !== 'inteiro' ? <SiglaDaCategoria categoria={categoria} /> : null}
       <MarcaDoTipo
         tipo={item.tipo}
         className={modo === 'quebra' ? 'mt-[3px]' : modo === 'inteiro' ? 'mt-[5px]' : undefined}
@@ -109,13 +141,18 @@ export function EventoDoDia({
   )
   if (item.link) {
     return (
-      <Link to={item.link} title={item.descricao} className={classes}>
+      <Link
+        to={item.link}
+        title={titulo}
+        style={modo === 'inteiro' ? undefined : estilo}
+        className={classes}
+      >
         {conteudo}
       </Link>
     )
   }
   return (
-    <span title={item.descricao} className={classes}>
+    <span title={titulo} style={modo === 'inteiro' ? undefined : estilo} className={classes}>
       {conteudo}
     </span>
   )
