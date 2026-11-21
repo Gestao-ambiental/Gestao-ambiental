@@ -195,6 +195,9 @@ describe('Painel, o antigo Resumo do mês (ADR-0027, ADR-0041)', () => {
       rpc: {
         meus_vinculos: { data: [vinculoFalso('Filtroville', 'gestao')] },
         resumo_do_mes: { error: { message: 'falha' } },
+        painel_clientes_em_risco: { data: [] },
+        painel_carga: { data: [] },
+        painel_dinheiro_por_cliente: { data: [] },
       },
     })
     const { unmount } = renderizarApp('/painel')
@@ -209,5 +212,116 @@ describe('Painel, o antigo Resumo do mês (ADR-0027, ADR-0041)', () => {
     renderizarApp('/painel')
     expect(await screen.findByText('Você não tem acesso a esta área')).toBeInTheDocument()
     expect(chamadas('resumo_do_mes')).toEqual([])
+  })
+})
+
+describe('quadros do dono (ADR-0054)', () => {
+  const resumo = { data: [] }
+  const risco = (nome: string, extra: Record<string, unknown> = {}) => ({
+    chave: nome,
+    nome,
+    empreendimentos: 1,
+    prazos_atrasados: 0,
+    lao_alem_do_limite: 0,
+    lao_perto_do_limite: 0,
+    vencimentos_vencidos: 0,
+    receber_vencido_centavos: 0,
+    aprovado_centavos: 0,
+    ...extra,
+  })
+
+  function cenario(rpc: Record<string, unknown> = {}) {
+    falso.reiniciar({
+      sessao: gestao,
+      rpc: {
+        meus_vinculos: { data: [vinculoFalso('Filtroville', 'gestao')] },
+        resumo_do_mes: resumo,
+        painel_clientes_em_risco: {
+          data: [
+            risco('Padaria Central', {
+              receber_vencido_centavos: 50_000,
+              aprovado_centavos: 900_000,
+            }),
+            risco('Metalúrgica Açores', { prazos_atrasados: 2, lao_alem_do_limite: 1 }),
+          ],
+        },
+        painel_carga: {
+          data: [
+            {
+              membro_id: 'm-bruno',
+              nome: 'Bruno Kist',
+              prazos: 3,
+              atrasados: 0,
+              minutos_tarefas: 0,
+            },
+            {
+              membro_id: 'm-ana',
+              nome: 'Ana Ribeiro',
+              prazos: 1,
+              atrasados: 2,
+              minutos_tarefas: 90,
+            },
+          ],
+        },
+        painel_dinheiro_por_cliente: {
+          data: [
+            {
+              chave: 'c1',
+              nome: 'Metalúrgica Açores',
+              aprovado_centavos: 300_000,
+              recebido_centavos: 100_000,
+              a_receber_centavos: 200_000,
+              vencido_centavos: 50_000,
+            },
+          ],
+        },
+        ...rpc,
+      },
+    })
+  }
+
+  it('clientes em risco do mais grave, com os motivos em palavras', async () => {
+    cenario()
+    renderizarApp('/painel')
+    const lista = await screen.findByRole('list', { name: 'Clientes em risco, do mais grave' })
+    const itens = within(lista).getAllByRole('listitem')
+    expect(itens[0]).toHaveTextContent('Metalúrgica Açores')
+    expect(itens[0]).toHaveTextContent('1 LAO passou do limite de protocolo · 2 atrasados')
+    expect(itens[1]).toHaveTextContent('R$ 500,00 a receber vencido')
+  })
+
+  it('carga das 2 semanas põe quem tem atraso primeiro; dinheiro por cliente com o vencido', async () => {
+    cenario()
+    renderizarApp('/painel')
+    const carga = await screen.findByRole('table', {
+      name: 'Carga por pessoa nas próximas 2 semanas',
+    })
+    const linhas = within(carga).getAllByRole('row')
+    expect(linhas[1]).toHaveTextContent('Ana Ribeiro')
+    expect(linhas[1]).toHaveTextContent('1h30')
+    const dinheiro = await screen.findByRole('table', { name: 'Dinheiro por cliente' })
+    expect(dinheiro).toHaveTextContent('R$ 2.000,00')
+    expect(dinheiro).toHaveTextContent('Vencido R$ 500,00')
+  })
+
+  it('sem a permissão financeira o quadro de dinheiro não aparece; sem risco, diz isso', async () => {
+    cenario({
+      painel_clientes_em_risco: { data: [] },
+      painel_dinheiro_por_cliente: { error: { message: 'sem_permissao', code: '42501' } },
+    })
+    renderizarApp('/painel')
+    expect(await screen.findByText('Nenhum cliente em risco.')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(chamadas('painel_dinheiro_por_cliente')).toHaveLength(1)
+    })
+    await waitFor(() => {
+      expect(screen.queryByRole('heading', { name: 'Dinheiro por cliente' })).toBeNull()
+    })
+  })
+
+  it('erro na carga aparece com tentar de novo', async () => {
+    cenario({ painel_carga: { error: { message: 'falha' } } })
+    renderizarApp('/painel')
+    expect(await screen.findByText('Não foi possível carregar a carga.')).toBeInTheDocument()
   })
 })

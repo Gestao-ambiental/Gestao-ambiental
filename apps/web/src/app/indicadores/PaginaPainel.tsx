@@ -18,6 +18,8 @@ import { Selo } from '@/components/ui/selo'
 import { obterResumoDoMes, type ResumoDoMes } from '@/lib/api/indicadores-de-valor'
 import { ehSemPermissao } from '@/lib/erros'
 
+import { QuadrosDoDono } from './QuadrosDoDono'
+
 const decimal = new Intl.NumberFormat('pt-BR', {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
@@ -110,7 +112,7 @@ function PlacarDoMes({
 
 /**
  * /painel (ADR-0027; antes /resumo-do-mes, que redireciona para cá, ADR-0041): só a Gestão, só
- * totais da consultoria. Horas devolvidas à equipe
+ * totais da consultoria. Embaixo do placar, os quadros do dono (ADR-0054). Horas devolvidas à equipe
  * (com R$ quando há custo da hora), entregas no prazo e renovações protegidas, contra o mês
  * anterior. Seletor com o mês atual e os 5 anteriores; abre no último mês fechado.
  */
@@ -158,23 +160,26 @@ export function PaginaPainel() {
         </label>
       }
     >
-      {consulta.isPending ? (
-        <Carregando rotulo="Carregando o resumo" linhas={3} />
-      ) : consulta.isError ? (
-        ehSemPermissao(consulta.error) ? (
-          <SemPermissao descricao="O painel é da gestão." />
+      <div className="flex flex-col gap-(--e-6)">
+        {consulta.isPending ? (
+          <Carregando rotulo="Carregando o resumo" linhas={3} />
+        ) : consulta.isError ? (
+          ehSemPermissao(consulta.error) ? (
+            <SemPermissao descricao="O painel é da gestão." />
+          ) : (
+            <EstadoErro
+              titulo="Não foi possível carregar o resumo."
+              descricao="Verifique a conexão e tente de novo."
+              aoTentarDeNovo={() => void consulta.refetch()}
+            />
+          )
+        ) : !doMes ? (
+          <EstadoVazio icone="chart-column" titulo="Sem dados neste mês" />
         ) : (
-          <EstadoErro
-            titulo="Não foi possível carregar o resumo."
-            descricao="Verifique a conexão e tente de novo."
-            aoTentarDeNovo={() => void consulta.refetch()}
-          />
-        )
-      ) : !doMes ? (
-        <EstadoVazio icone="chart-column" titulo="Sem dados neste mês" />
-      ) : (
-        <PlacarDoMes atual={doMes} anterior={anterior} />
-      )}
+          <PlacarDoMes atual={doMes} anterior={anterior} />
+        )}
+        <QuadrosDoDono consultoriaId={atual.consultoriaId} />
+      </div>
     </Pagina>
   )
 }

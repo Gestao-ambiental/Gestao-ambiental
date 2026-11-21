@@ -624,3 +624,10 @@ export type {
   SituacaoDaParcela,
   SituacaoFinanceira,
 } from './execucao-do-orcamento'
+export {
+  PESOS_DO_RISCO,
+  gravidadeDoRisco,
+  motivosDoRisco,
+  ordenarClientesEmRisco,
+} from './painel-do-dono'
+export type { ClienteEmRisco, ContagensDeRisco } from './painel-do-dono'

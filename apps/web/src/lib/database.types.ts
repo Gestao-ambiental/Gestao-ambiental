@@ -2291,6 +2291,15 @@ isOneToOne: false
 "remover_apontamento":
 { Args: { "p_id": string }; Returns: undefined
                            },
+"painel_carga":
+{ Args: { "p_consultoria_id": string }; Returns: { "atrasados": number,"membro_id": string | null,"minutos_tarefas": number,"nome": string | null,"prazos": number }[]
+                           },
+"painel_clientes_em_risco":
+{ Args: { "p_consultoria_id": string }; Returns: { "aprovado_centavos": number,"chave": string,"empreendimentos": number,"lao_alem_do_limite": number,"lao_perto_do_limite": number,"nome": string,"prazos_atrasados": number,"receber_vencido_centavos": number,"vencimentos_vencidos": number }[]
+                           },
+"painel_dinheiro_por_cliente":
+{ Args: { "p_consultoria_id": string }; Returns: { "a_receber_centavos": number,"aprovado_centavos": number,"chave": string,"nome": string,"recebido_centavos": number,"vencido_centavos": number }[]
+                           },
 "dados_para_relatorio":
 { Args: { "p_empreendimento_id": string,"p_ocorrencia_id"?: string }; Returns: Json
                            },
