@@ -115,7 +115,7 @@ describe('Placar', () => {
     const zero = screen.getByText('0')
     expect(zero).toHaveClass('text-(--tinta-3)')
     expect(zero).not.toHaveClass('text-(--atraso-texto)')
-    // "Hoje" com valor ganha a plaqueta lima.
+    // "Hoje" com valor ganha a plaqueta verde.
     expect(screen.getByText('2')).toHaveClass('bg-(--sinal)')
   })
 })

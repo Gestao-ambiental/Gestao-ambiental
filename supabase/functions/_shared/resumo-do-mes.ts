@@ -16,8 +16,9 @@
 // Envio pelo Resend (RESEND_API_KEY, AVISO_REMETENTE). Sem as variáveis: erro tratado (503).
 // Nunca vão para o log: e-mails, a chave, o token nem os números das consultorias.
 
-export const URL_DO_RESEND = 'https://api.resend.com/emails'
-export const LIMITE_TEMPO_ENVIO_MS = 15_000
+import { LIMITE_TEMPO_ENVIO_MS, URL_DO_RESEND } from './resend.ts'
+
+export { LIMITE_TEMPO_ENVIO_MS, URL_DO_RESEND }
 
 export const CORS = {
   'Access-Control-Allow-Origin': '*',

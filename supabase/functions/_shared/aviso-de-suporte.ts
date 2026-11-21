@@ -19,10 +19,11 @@
 //    reservar; o acesso continua (a faixa de aviso aparece para a Gestão no Grama do mesmo jeito).
 // Nunca vão para o log: e-mails, a chave, o token e o motivo.
 
+import { LIMITE_TEMPO_ENVIO_MS, URL_DO_RESEND } from './resend.ts'
 import { iguaisEmTempoConstante } from './resumo-do-mes.ts'
 
-export const URL_DO_RESEND = 'https://api.resend.com/emails'
-export const LIMITE_TEMPO_ENVIO_MS = 15_000
+export { LIMITE_TEMPO_ENVIO_MS, URL_DO_RESEND }
+
 /** Quanto quem perdeu a reserva espera o resultado do outro chamador (o envio dele e uma folga). */
 export const ESPERA_PELO_OUTRO_ENVIO_MS = LIMITE_TEMPO_ENVIO_MS + 5_000
 export const INTERVALO_DA_ESPERA_MS = 500

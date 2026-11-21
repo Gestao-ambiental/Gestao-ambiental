@@ -168,3 +168,50 @@ describe('calendário: exigência e vencimento (base das oito funções)', () =>
     expect(dia.querySelector('[data-tipo="vencimento"]')).not.toBeNull()
   })
 })
+
+describe('calendário: exportar .ics (ADR-0047)', () => {
+  it('baixa o recorte visível como eventos de dia inteiro', async () => {
+    falso.reiniciar(cenario())
+    let arquivo: Blob | null = null
+    let nome = ''
+    const criar = vi.fn((blob: Blob) => {
+      arquivo = blob
+      return 'blob:ics'
+    })
+    URL.createObjectURL = criar
+    URL.revokeObjectURL = vi.fn()
+    const clique = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
+      this: HTMLAnchorElement,
+    ) {
+      nome = this.download
+    })
+    const usuario = userEvent.setup()
+    renderizarApp('/calendario')
+    await screen.findByRole('table', { name: /Calendário de/ })
+
+    await usuario.click(screen.getByRole('button', { name: 'Mais ações' }))
+    await usuario.click(await screen.findByRole('menuitem', { name: 'Exportar .ics' }))
+
+    expect(clique).toHaveBeenCalledOnce()
+    expect(nome).toMatch(/^grama-calendario-\d{4}-\d{2}-\d{2}-a-\d{4}-\d{2}-\d{2}\.ics$/)
+    const texto = (await (arquivo as Blob | null)?.text()) ?? ''
+    expect(texto).toContain(`DTSTART;VALUE=DATE:${hoje.replace(/-/g, '')}\r\n`)
+    expect(texto).toContain('UID:ocorrencia-prazo-Relatório A@gramaapp.com.br\r\n')
+    expect(texto).toContain('SUMMARY:4.2 · Metalúrgica Rio Cubatão\r\n')
+    expect(texto.match(/BEGIN:VEVENT/g)).toHaveLength(2)
+    clique.mockRestore()
+  })
+
+  it('sem eventos no período, exportar fica desabilitado', async () => {
+    falso.reiniciar(cenario({ listar_calendario: { data: [] } }))
+    const usuario = userEvent.setup()
+    renderizarApp('/calendario')
+    await screen.findByRole('table', { name: /Calendário de/ })
+
+    await usuario.click(screen.getByRole('button', { name: 'Mais ações' }))
+    expect(await screen.findByRole('menuitem', { name: 'Exportar .ics' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    )
+  })
+})

@@ -23,6 +23,8 @@ export interface ItemDoDia {
   /** Texto completo para o `title`. */
   descricao: string
   semResponsavel: boolean
+  /** Responsável pelo id, para colorir por pessoa ou área (nulo sem responsável). */
+  responsavelId: string | null
   link: string | null
 }
 
@@ -139,6 +141,13 @@ export function itemDoEvento(evento: EventoDoCalendario, ehGestao: boolean): Ite
     descricao: [ROTULO_DO_TIPO[evento.tipo], texto, apoio].filter(Boolean).join(' · '),
     semResponsavel: evento.semResponsavel,
     link: linkDoEvento(evento, ehGestao),
+    responsavelId:
+      evento.tipo === 'prazo' ||
+      evento.tipo === 'meta' ||
+      evento.tipo === 'tarefa' ||
+      evento.tipo === 'exigencia'
+        ? evento.responsavelId
+        : null,
   }
 }
 
@@ -152,6 +161,7 @@ export function itemDoResiduo(prazo: PrazoDeObrigacaoNoCalendario): ItemDoDia {
     apoio: prazo.referencia,
     descricao: descricaoDoPrazoDeResiduo(prazo),
     semResponsavel: false,
+    responsavelId: null,
     link: caminhoDosPrazosDeResiduo(prazo.empreendimentoId),
   }
 }

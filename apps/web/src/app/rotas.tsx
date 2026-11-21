@@ -17,6 +17,7 @@ import { PaginaEquipe } from './paginas/equipe/PaginaEquipe'
 import { ErroDeRota } from './paginas/ErroDeRota'
 import { PaginaAcompanhamentos } from './paginas/acompanhamentos/PaginaAcompanhamentos'
 import { PaginaPlanoRenovacao } from './paginas/acompanhamentos/PaginaPlanoRenovacao'
+import { PaginaPararResumo } from './paginas/avisos/PaginaPararResumo'
 import { PaginaCalendario } from './paginas/calendario/PaginaCalendario'
 import { PaginaChecklist } from './paginas/campo/PaginaChecklist'
 import { PaginaConfiguracoes } from './paginas/configuracoes/PaginaConfiguracoes'
@@ -58,6 +59,7 @@ export const rotas: RouteObject[] = [
       { path: '/redefinir-senha', element: <PaginaRedefinirSenha /> },
       { path: '/criar-conta', element: <PaginaCriarConta /> },
       { path: '/convite', element: <PaginaConvite /> },
+      { path: '/avisos/parar', element: <PaginaPararResumo /> },
       {
         element: <RequerSessao />,
         children: [
