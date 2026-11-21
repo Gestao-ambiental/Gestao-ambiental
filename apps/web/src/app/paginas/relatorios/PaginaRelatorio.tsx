@@ -44,7 +44,7 @@ import { ColunaDaConferencia } from './ColunaDaConferencia'
 
 const TOM: Record<SituacaoDoRelatorio, TomSelo> = {
   rascunho: 'padrao',
-  em_revisao: 'revisao',
+  em_revisao: 'andamento',
   devolvido: 'perigo',
   aprovado: 'sucesso',
 }
@@ -310,17 +310,19 @@ function EdicaoDoRelatorio({
               Devolver
             </Botao>
           ) : null}
-          <BotaoMais
-            itens={[
-              {
-                rotulo: 'Exportar .docx',
-                desabilitado: exportar.isPending,
-                aoEscolher: () => {
-                  exportar.mutate()
+          {relatorio.situacao === 'aprovado' ? null : (
+            <BotaoMais
+              itens={[
+                {
+                  rotulo: 'Exportar .docx',
+                  desabilitado: exportar.isPending,
+                  aoEscolher: () => {
+                    exportar.mutate()
+                  },
                 },
-              },
-            ]}
-          />
+              ]}
+            />
+          )}
           {principal}
         </>
       }

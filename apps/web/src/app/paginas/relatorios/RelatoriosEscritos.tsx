@@ -16,7 +16,7 @@ import { mensagemDoErro } from '@/lib/erros'
 
 const TOM: Record<SituacaoDoRelatorio, TomSelo> = {
   rascunho: 'padrao',
-  em_revisao: 'revisao',
+  em_revisao: 'andamento',
   devolvido: 'perigo',
   aprovado: 'sucesso',
 }

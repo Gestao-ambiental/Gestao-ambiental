@@ -1,5 +1,5 @@
 // Apontamentos da conferência por IA (ADR-0037, ADR-0040): usados na evidência anexada e no editor
-// do relatório. Estado = palavra + forma (Selo); a cor da IA (--ia) marca só o que ela propôs.
+// do relatório. Estado = palavra + forma (Selo); o apontamento escolhido fica com o fundo de escolha e aria-pressed.
 import type { ReactNode } from 'react'
 
 import { Selo } from '@/components/ui/selo'
@@ -46,15 +46,16 @@ export function CartaoDoApontamento({
   return (
     <li
       className={cn(
-        'flex flex-col gap-(--e-1) border-b border-(--regra-leve) py-(--e-3) last:border-b-0',
-        ativo && 'border-l-[3px] border-l-(--ia) pl-(--e-3)',
+        'flex flex-col gap-(--e-1) border-b border-(--regra-leve) px-(--e-2) py-(--e-3) last:border-b-0',
+        ativo && 'rounded-(--raio) bg-(--escolha)',
       )}
     >
       {aoEscolher ? (
         <button
           type="button"
+          aria-pressed={ativo}
           onClick={aoEscolher}
-          className="flex cursor-pointer flex-col gap-(--e-1) text-left"
+          className="flex cursor-pointer flex-col gap-(--e-1) rounded-(--raio) text-left outline-none focus-visible:shadow-[0_0_0_2px_var(--foco)]"
         >
           {conteudo}
         </button>

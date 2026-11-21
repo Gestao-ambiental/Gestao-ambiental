@@ -244,6 +244,47 @@ describe('relatório escrito no Grama', () => {
     expect(screen.getByRole('button', { name: 'Exportar .docx' })).toBeInTheDocument()
   })
 
+  it.each([
+    ['rascunho', 'Rascunho', 'padrao'],
+    ['em_revisao', 'Em revisão', 'andamento'],
+    ['devolvido', 'Devolvido', 'perigo'],
+    ['aprovado', 'Aprovado', 'sucesso'],
+  ] as const)(
+    'o estado %s usa o selo de estado das outras telas, com o texto junto',
+    async (situacao, texto, tom) => {
+      falso.reiniciar(cenario(autor, { relatorio: relatorio({ situacao }) }))
+      renderizarApp('/relatorios/r1')
+      await screen.findByRole('heading', { level: 1, name: 'Relatório semestral' })
+      const selo = screen.getAllByText(texto).find((el) => el.closest('[data-tom]'))
+      expect(selo?.closest('[data-tom]')).toHaveAttribute('data-tom', tom)
+    },
+  )
+
+  it('aprovado mostra "Exportar .docx" uma vez só, sem repetir no menu', async () => {
+    falso.reiniciar(
+      cenario(
+        { pode_editar: false, pode_revisar: false },
+        { relatorio: relatorio({ situacao: 'aprovado' }) },
+      ),
+    )
+    renderizarApp('/relatorios/r1')
+    expect(await screen.findByRole('button', { name: 'Exportar .docx' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Mais ações' })).not.toBeInTheDocument()
+  })
+
+  it('o apontamento escolhido fica marcado por aria-pressed, não só pela cor', async () => {
+    const usuario = userEvent.setup()
+    falso.reiniciar(cenario(autor, { conferencias: [conferencia] }))
+    renderizarApp('/relatorios/r1')
+    const coluna = await screen.findByRole('region', { name: 'Conferência da IA' })
+    const cartao = await within(coluna).findByRole('button', {
+      name: /Número da licença diferente do cadastro/,
+    })
+    expect(cartao).toHaveAttribute('aria-pressed', 'false')
+    await usuario.click(cartao)
+    expect(cartao).toHaveAttribute('aria-pressed', 'true')
+  })
+
   it('sem ocorrência, aprovar não pede data nem envia arquivo', async () => {
     const usuario = userEvent.setup()
     falso.reiniciar(
