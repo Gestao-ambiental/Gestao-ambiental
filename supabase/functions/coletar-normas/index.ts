@@ -1,4 +1,4 @@
-// Edge Function coletar-normas (pacote L1, ADR-0050): coleta as normas de uma fonte (IMA · INs, IMA
+// Edge Function coletar-normas (pacotes L1, L2 e L8, ADR-0050): coleta as normas de uma fonte (IMA · INs, IMA
 // · Portarias, CONSEMA). Chamada pelo pg_cron + pg_net (private.ligar_coleta_de_normas, desligado
 // até a publicação) com o header x-cron-token. verify_jwt = false (supabase/config.toml): quem
 // protege é o segredo COLETA_NORMAS_TOKEN.

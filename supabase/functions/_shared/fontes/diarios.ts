@@ -30,6 +30,8 @@ export const FONTES_COM_COLETOR = [
   'doe_sc',
   'alesc',
   'joinville_doem',
+  'inlabs',
+  'planalto',
 ] as const
 
 /** Dia (aaaa-mm-dd) da janela da coleta; sem janela, hoje em Brasília. */

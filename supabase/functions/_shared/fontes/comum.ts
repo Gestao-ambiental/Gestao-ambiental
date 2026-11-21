@@ -27,6 +27,8 @@ export const HOSTS_DAS_FONTES = [
   'portal.doe.sea.sc.gov.br',
   'leis.alesc.sc.gov.br',
   'sei.joinville.sc.gov.br',
+  'inlabs.in.gov.br',
+  'www.planalto.gov.br',
 ] as const
 
 export const TIPOS_PDF = [
@@ -59,6 +61,12 @@ export interface PedidoDeBusca {
   tipoDoCorpo?: string
   /** Content-Types aceitos (sem parâmetros). Outro tipo vira erro 'conteudo_inesperado'. */
   tipos: readonly string[]
+  /** Cabeçalhos extras (If-None-Match, Cookie). User-Agent e Accept não são trocados. */
+  cabecalhos?: Readonly<Record<string, string>>
+  /** Devolve o 304 (pedido condicional) em vez de tratá-lo como erro. */
+  aceitarNaoModificado?: boolean
+  /** Devolve o redirecionamento como veio (para ler o Set-Cookie do login), sem segui-lo. */
+  naoSeguir?: boolean
 }
 
 export type Buscador = (url: string, pedido: PedidoDeBusca) => Promise<Response>
@@ -102,6 +110,7 @@ export function buscarComEducacao(fetchFn: typeof fetch, opcoes: OpcoesDoBuscado
     }
     ultimo = agora()
     const cabecalhos: Record<string, string> = {
+      ...pedido.cabecalhos,
       'User-Agent': USER_AGENT,
       Accept: pedido.tipos.join(', '),
     }
@@ -129,6 +138,8 @@ export function buscarComEducacao(fetchFn: typeof fetch, opcoes: OpcoesDoBuscado
     let atual = pedido
     for (let saltos = 0; ; saltos++) {
       const resposta = await umPedido(url, atual)
+      if (resposta.status === 304 && pedido.aceitarNaoModificado) return resposta
+      if (resposta.status >= 300 && resposta.status < 400 && pedido.naoSeguir) return resposta
       if (resposta.status >= 300 && resposta.status < 400) {
         await resposta.body?.cancel()
         const destino = resposta.headers.get('location')
@@ -140,7 +151,7 @@ export function buscarComEducacao(fetchFn: typeof fetch, opcoes: OpcoesDoBuscado
         url = proximo
         // 303 (e 301/302 depois de POST) seguem com GET, como o navegador.
         if (resposta.status === 303 || atual.metodo === 'POST') {
-          atual = { tipos: atual.tipos, metodo: 'GET' }
+          atual = { tipos: atual.tipos, metodo: 'GET', cabecalhos: atual.cabecalhos }
         }
         continue
       }
@@ -371,6 +382,8 @@ export interface ContextoDaColeta {
   lerPdf: (bytes: Uint8Array) => Promise<string>
   /** Máximo de arquivos baixados nesta execução. */
   limite: number
+  /** Segredo da função (credencial do INLABS); nunca vai para o log. */
+  segredo?: (nome: string) => string | undefined
   agora: Date
   novoUuid: () => string
   registrar: (linha: string) => void
