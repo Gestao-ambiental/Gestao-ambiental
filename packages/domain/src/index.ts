@@ -666,3 +666,5 @@ export {
   QUANTIDADE_DE_CORES,
 } from './cores-por-categoria'
 export { lerInscricaoImobiliaria } from './inscricao-imobiliaria'
+export { ROTULO_DA_MUDANCA, linhaDaMudanca, pedeEmailNaHora } from './aviso-de-norma'
+export type { MudancaNoResumo, TipoDeMudancaDeNorma } from './aviso-de-norma'

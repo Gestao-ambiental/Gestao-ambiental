@@ -6,7 +6,10 @@ import {
   type ItemDoResumo,
   linhaDoItem,
   MAXIMO_POR_CHAMADA,
+  montarEmailDeRevogacao,
   montarEmailDoResumoDiario,
+  type MudancaDoResumo,
+  type RevogacaoParaAvisar,
   type PendenteDoDia,
   sufixoDosDias,
 } from './avisos-do-dia.ts'
@@ -342,4 +345,184 @@ Deno.test('linha do item: rótulo do tipo sem código e sufixo de atraso, hoje e
   )
   assert.equal(sufixoDosDias(-1), '1 dia de atraso')
   assert.equal(sufixoDosDias(3), 'em 3 dias')
+})
+
+// ---------------------------------------------------------------- L7: normas no resumo
+function mudanca(extra: Partial<MudancaDoResumo> = {}): MudancaDoResumo {
+  return {
+    mudancaId: 'c7640000-0000-4000-8000-000000000002',
+    tipo: 'alterada',
+    normaTitulo: 'Portaria 10 · Ruído',
+    publicadaEm: '2026-11-22',
+    empreendimentoNome: 'Metalúrgica Açores',
+    licenca: null,
+    ...extra,
+  }
+}
+
+function revogacao(extra: Partial<RevogacaoParaAvisar> = {}): RevogacaoParaAvisar {
+  return {
+    consultoriaId: CONSULTORIA,
+    consultoriaNome: 'Filtroville',
+    membroId: 'd0000000-0000-4000-8000-0000000000a1',
+    membroNome: 'Eduardo Karnopp',
+    email: 'eduardo@exemplo.test',
+    mudancaId: 'c7640000-0000-4000-8000-000000000001',
+    normaTitulo: 'IN 02 · Efluentes',
+    afetados: ['Metalúrgica Açores · LAO 4821/2023'],
+    ...extra,
+  }
+}
+
+Deno.test('resumo: seção de mudanças de norma depois dos prazos', () => {
+  const email = montarEmailDoResumoDiario(
+    pendente(1),
+    [item()],
+    { app: 'https://beta.exemplo.test', tokenDeDescadastro: 'tok' },
+    [mudanca()],
+  )
+  assert.equal(email.assunto, 'Grama: prazos de 23/11/2026')
+  const prazos = email.texto.indexOf('Seus prazos (1)')
+  const normas = email.texto.indexOf('Mudanças de norma (1)')
+  assert.ok(prazos >= 0 && normas > prazos)
+  assert.ok(email.texto.includes('- Norma alterada · Portaria 10 · Ruído · Metalúrgica Açores'))
+})
+
+Deno.test('resumo só com mudança de norma também sai, com assunto próprio', async () => {
+  const chamadas: { url: string; init: RequestInit }[] = []
+  const resultados: string[] = []
+  const tratar = criarTratadorDosAvisos({
+    env: (nome) => VARIAVEIS[nome],
+    fetch: (async (url: string, init: RequestInit) => {
+      chamadas.push({ url, init })
+      return new Response(JSON.stringify({ id: 're_1' }), { status: 200 })
+    }) as typeof fetch,
+    pendentes: () => Promise.resolve([pendente(1)]),
+    itens: () => Promise.resolve([]),
+    normas: () => Promise.resolve([mudanca({ tipo: 'revogada', licenca: 'LAO 1/2024' })]),
+    reservar: () => Promise.resolve('reserva-1'),
+    registrarResultado: (id, situacao) => {
+      resultados.push(`${id}:${situacao}`)
+      return Promise.resolve(true)
+    },
+    esperar: () => Promise.resolve(),
+    registrar: () => {},
+  })
+  const resposta = await tratar(pedido(TOKEN))
+  assert.equal(resposta.status, 200)
+  assert.equal(chamadas.length, 1)
+  const corpo = JSON.parse(String(chamadas[0]?.init.body)) as { subject: string; text: string }
+  assert.equal(corpo.subject, 'Grama: mudanças de norma de 23/11/2026')
+  assert.ok(
+    corpo.text.includes('Norma revogada · Portaria 10 · Ruído · Metalúrgica Açores (LAO 1/2024)'),
+  )
+  assert.deepEqual(resultados, ['reserva-1:enviado'])
+})
+
+Deno.test('sem prazo e sem mudança de norma: não envia', async () => {
+  let reservas = 0
+  const tratar = criarTratadorDosAvisos({
+    env: (nome) => VARIAVEIS[nome],
+    fetch: (() => Promise.reject(new Error('não deveria enviar'))) as typeof fetch,
+    pendentes: () => Promise.resolve([pendente(1)]),
+    itens: () => Promise.resolve([]),
+    normas: () => Promise.resolve([]),
+    reservar: () => {
+      reservas++
+      return Promise.resolve('r')
+    },
+    registrarResultado: () => Promise.resolve(true),
+    registrar: () => {},
+  })
+  const resposta = await tratar(pedido(TOKEN))
+  assert.equal(resposta.status, 200)
+  assert.equal(reservas, 0)
+})
+
+// ---------------------------------------------------------------- L7: e-mail de revogação
+function montarRevogacoes(opcoes: { revogacoes: RevogacaoParaAvisar[]; jaReservadas?: string[] }) {
+  const chamadas: { url: string; init: RequestInit }[] = []
+  const resultados: string[] = []
+  const log: string[] = []
+  const reservadas = new Set(opcoes.jaReservadas ?? [])
+  const tratar = criarTratadorDosAvisos({
+    env: (nome) => VARIAVEIS[nome],
+    fetch: (async (url: string, init: RequestInit) => {
+      chamadas.push({ url, init })
+      return new Response(JSON.stringify({ id: `re_${String(chamadas.length)}` }), { status: 200 })
+    }) as typeof fetch,
+    pendentes: () => Promise.resolve([]),
+    itens: () => Promise.resolve([]),
+    reservar: () => Promise.resolve(null),
+    registrarResultado: () => Promise.resolve(true),
+    revogacoes: () => Promise.resolve(opcoes.revogacoes),
+    reservarRevogacao: (_c, membroId, mudancaId) => {
+      const chave = `${membroId}/${mudancaId}`
+      if (reservadas.has(chave)) return Promise.resolve(null)
+      reservadas.add(chave)
+      return Promise.resolve(`rev-${String(reservadas.size)}`)
+    },
+    registrarRevogacao: (id, situacao, provedorId) => {
+      resultados.push(`${id}:${situacao}:${String(provedorId ?? '')}`)
+      return Promise.resolve(true)
+    },
+    esperar: () => Promise.resolve(),
+    registrar: (linha) => log.push(linha),
+  })
+  return { tratar, chamadas, resultados, log }
+}
+
+Deno.test(
+  'revogação com licença ativa: e-mail na hora, idempotente e com descadastro',
+  async () => {
+    const { tratar, chamadas, resultados, log } = montarRevogacoes({ revogacoes: [revogacao()] })
+    const resposta = await tratar(pedido(TOKEN))
+    assert.equal(resposta.status, 200)
+    assert.deepEqual(await resposta.json(), {
+      pendentes: 0,
+      enviados: 0,
+      vazios: 0,
+      em_andamento: 0,
+      falhas: 0,
+      adiados: 0,
+      revogacoes_enviadas: 1,
+    })
+    assert.equal(chamadas.length, 1)
+    assert.equal(chamadas[0]?.url, URL_DO_RESEND)
+    const cabecalhos = new Headers(chamadas[0]?.init.headers)
+    assert.equal(
+      cabecalhos.get('Idempotency-Key'),
+      'revogacao/d0000000-0000-4000-8000-0000000000a1/c7640000-0000-4000-8000-000000000001',
+    )
+    const corpo = JSON.parse(String(chamadas[0]?.init.body)) as {
+      subject: string
+      text: string
+      headers: Record<string, string>
+    }
+    assert.equal(corpo.subject, 'Grama: norma revogada (IN 02 · Efluentes)')
+    assert.ok(corpo.text.includes('- Metalúrgica Açores · LAO 4821/2023'))
+    assert.ok(corpo.headers['List-Unsubscribe']?.includes('/functions/v1/preferencias-por-link/'))
+    assert.deepEqual(resultados, ['rev-1:enviado:re_1'])
+    assert.ok(log.every((linha) => !linha.includes('eduardo@exemplo.test')))
+  },
+)
+
+Deno.test('revogação já reservada por outra execução: não envia de novo', async () => {
+  const { tratar, chamadas } = montarRevogacoes({
+    revogacoes: [revogacao()],
+    jaReservadas: ['d0000000-0000-4000-8000-0000000000a1/c7640000-0000-4000-8000-000000000001'],
+  })
+  const resposta = await tratar(pedido(TOKEN))
+  assert.equal(resposta.status, 200)
+  assert.equal(chamadas.length, 0)
+})
+
+Deno.test('e-mail de revogação escapa o HTML e lista cada licença afetada', () => {
+  const email = montarEmailDeRevogacao(
+    revogacao({ normaTitulo: 'IN <02>', afetados: ['A · LAO 1', 'B · LAO 2'] }),
+    { app: 'https://beta.exemplo.test', tokenDeDescadastro: 'tok' },
+  )
+  assert.ok(email.html.includes('IN &lt;02&gt;'))
+  assert.ok(email.html.includes('<li>A · LAO 1</li><li>B · LAO 2</li>'))
+  assert.ok(email.texto.includes('https://beta.exemplo.test/avisos/parar#tok'))
 })

@@ -15,7 +15,13 @@
 // Entre dois envios, 600 ms (limite de 2 por segundo do Resend).
 // Segredos: CRON_TOKEN, RESEND_API_KEY, AVISO_REMETENTE e AVISO_ASSINATURA. Nunca vão para o log:
 // e-mails, nomes, tokens, a chave e o conteúdo (só ids, etapa, motivo e status).
+//
+// L7 (ADR-0050, ADR-0055): o resumo ganha a seção "Mudanças de norma" (normas_do_resumo_diario);
+// quem só tem mudança de norma também recebe. E-mail na hora só para revogação de norma que afeta
+// licença ativa (revogacoes_para_avisar), um por pessoa e mudança, em qualquer horário, com o mesmo
+// descadastro. Sem e-mail por mudança.
 
+import { linhaDaMudanca } from './aviso-de-norma.ts'
 import { assinarLinkDeDescadastro } from './link-de-descadastro.ts'
 import { LINK_PADRAO_DO_BETA } from './lista-de-espera.ts'
 import { enviarPeloResend } from './resend.ts'
@@ -61,6 +67,30 @@ export interface ItemDoResumo {
   licenca: string | null
 }
 
+/** Uma linha da RPC normas_do_resumo_diario. */
+export interface MudancaDoResumo {
+  mudancaId: string
+  tipo: string
+  normaTitulo: string
+  /** Data civil da publicação (aaaa-mm-dd). */
+  publicadaEm: string
+  empreendimentoNome: string | null
+  licenca: string | null
+}
+
+/** Uma linha da RPC revogacoes_para_avisar: uma pessoa e uma revogação. */
+export interface RevogacaoParaAvisar {
+  consultoriaId: string
+  consultoriaNome: string
+  membroId: string
+  membroNome: string
+  email: string
+  mudancaId: string
+  normaTitulo: string
+  /** "Empreendimento · LAO 1/2024" de cada licença ativa afetada. */
+  afetados: string[]
+}
+
 export interface DependenciasDosAvisos {
   env: (nome: string) => string | undefined
   fetch: typeof fetch
@@ -72,6 +102,20 @@ export interface DependenciasDosAvisos {
   reservar: (consultoriaId: string, membroId: string, dia: string) => Promise<string | null>
   /** Service role: grava o resultado da reserva. */
   registrarResultado: (
+    id: string,
+    situacao: 'enviado' | 'falhou',
+    provedorId?: string | null,
+  ) => Promise<boolean>
+  /** Service role: mudanças de norma do resumo da pessoa no dia (L7). */
+  normas?: (consultoriaId: string, membroId: string, dia: string) => Promise<MudancaDoResumo[]>
+  /** Service role: revogações que pedem e-mail na hora (L7). */
+  revogacoes?: () => Promise<RevogacaoParaAvisar[]>
+  reservarRevogacao?: (
+    consultoriaId: string,
+    membroId: string,
+    mudancaId: string,
+  ) => Promise<string | null>
+  registrarRevogacao?: (
     id: string,
     situacao: 'enviado' | 'falhou',
     provedorId?: string | null,
@@ -174,17 +218,30 @@ function agrupar(itens: readonly ItemDoResumo[]): GrupoMontado[] {
   return grupos
 }
 
+/** Seção "Mudanças de norma (n)" do resumo, até 15 linhas. */
+function grupoDasNormas(normas: readonly MudancaDoResumo[]): GrupoMontado[] {
+  if (normas.length === 0) return []
+  return [
+    {
+      titulo: `Mudanças de norma (${String(normas.length)})`,
+      linhas: normas.slice(0, MAXIMO_POR_GRUPO).map((m) => linhaDaMudanca(m)),
+      restantes: Math.max(normas.length - MAXIMO_POR_GRUPO, 0),
+    },
+  ]
+}
+
 export function montarEmailDoResumoDiario(
   pendente: PendenteDoDia,
   itens: readonly ItemDoResumo[],
   links: LinksDoResumo,
+  normas: readonly MudancaDoResumo[] = [],
 ): EmailDoResumoDiario {
   const dia = dataBrasileira(pendente.dia)
   const nome = primeiroNome(pendente.membroNome)
   const saudacao = nome ? `Olá, ${nome}.` : 'Olá.'
   const abrir = `${links.app}/`
   const parar = `${links.app}/avisos/parar#${links.tokenDeDescadastro}`
-  const grupos = agrupar(itens)
+  const grupos = [...agrupar(itens), ...grupoDasNormas(normas)]
   const maisNoGrama = (n: number) => `e mais ${String(n)} no Grama`
 
   const texto = [
@@ -217,7 +274,41 @@ export function montarEmailDoResumoDiario(
     '</body></html>',
   ].join('')
 
-  return { assunto: `Grama: prazos de ${dia}`, texto, html }
+  const assunto =
+    itens.length > 0 ? `Grama: prazos de ${dia}` : `Grama: mudanças de norma de ${dia}`
+  return { assunto, texto, html }
+}
+
+/** E-mail na hora da revogação: a norma, onde afeta, o link e o descadastro. */
+export function montarEmailDeRevogacao(
+  revogacao: RevogacaoParaAvisar,
+  links: LinksDoResumo,
+): EmailDoResumoDiario {
+  const nome = primeiroNome(revogacao.membroNome)
+  const saudacao = nome ? `Olá, ${nome}.` : 'Olá.'
+  const abrir = `${links.app}/`
+  const parar = `${links.app}/avisos/parar#${links.tokenDeDescadastro}`
+  const frase = `A norma ${revogacao.normaTitulo} foi revogada e afeta licença ativa:`
+  const texto = [
+    saudacao,
+    '',
+    frase,
+    ...revogacao.afetados.map((a) => `- ${a}`),
+    '',
+    `Abrir no Grama: ${abrir}`,
+    '',
+    `Parar de receber estes avisos: ${parar}`,
+  ].join('\n')
+  const html = [
+    '<!doctype html><html lang="pt-BR"><body style="font-family:Arial,sans-serif;font-size:14px;color:#1b1b1b">',
+    `<p>${escapar(saudacao)}</p>`,
+    `<p>${escapar(frase)}</p>`,
+    `<ul style="margin:0;padding-left:20px">${revogacao.afetados.map((a) => `<li>${escapar(a)}</li>`).join('')}</ul>`,
+    `<p style="margin-top:16px"><a href="${escapar(abrir)}">Abrir no Grama</a></p>`,
+    `<p style="margin-top:24px;font-size:12px"><a href="${escapar(parar)}">Parar de receber estes avisos</a></p>`,
+    '</body></html>',
+  ].join('')
+  return { assunto: `Grama: norma revogada (${revogacao.normaTitulo})`, texto, html }
 }
 
 const esperarDeVerdade = (ms: number) => new Promise<void>((resolver) => setTimeout(resolver, ms))
@@ -271,7 +362,9 @@ export function criarTratadorDosAvisos(deps: DependenciasDosAvisos) {
       let etapa = 'itens'
       try {
         const itens = await deps.itens(consultoriaId, membroId, dia)
-        if (itens.length === 0) {
+        etapa = 'normas'
+        const normas = deps.normas ? await deps.normas(consultoriaId, membroId, dia) : []
+        if (itens.length === 0 && normas.length === 0) {
           vazios++
           continue
         }
@@ -284,7 +377,12 @@ export function criarTratadorDosAvisos(deps: DependenciasDosAvisos) {
         tentados++
         etapa = 'envio'
         const token = await assinarLinkDeDescadastro(assinatura, consultoriaId, membroId)
-        const email = montarEmailDoResumoDiario(pendente, itens, { app, tokenDeDescadastro: token })
+        const email = montarEmailDoResumoDiario(
+          pendente,
+          itens,
+          { app, tokenDeDescadastro: token },
+          normas,
+        )
         if (jaEnviou) await esperar(INTERVALO_ENTRE_ENVIOS_MS)
         jaEnviou = true
         const resultado = await enviarPeloResend(deps.fetch, chave, {
@@ -327,6 +425,71 @@ export function criarTratadorDosAvisos(deps: DependenciasDosAvisos) {
       }
     }
 
+    // E-mail na hora das revogações (L7): independe do horário do resumo.
+    let revogacoesEnviadas = 0
+    if (deps.revogacoes && deps.reservarRevogacao && deps.registrarRevogacao) {
+      let revogacoes: RevogacaoParaAvisar[] = []
+      try {
+        revogacoes = await deps.revogacoes()
+      } catch {
+        falhas++
+        registrar(JSON.stringify({ etapa: 'revogacoes', motivo: 'erro_interno' }))
+      }
+      for (const revogacao of revogacoes) {
+        if (tentados >= MAXIMO_POR_CHAMADA) break
+        const { consultoriaId, membroId, mudancaId } = revogacao
+        let etapa = 'reserva_da_revogacao'
+        try {
+          const reserva = await deps.reservarRevogacao(consultoriaId, membroId, mudancaId)
+          if (!reserva) {
+            emAndamento++
+            continue
+          }
+          tentados++
+          etapa = 'envio_da_revogacao'
+          const token = await assinarLinkDeDescadastro(assinatura, consultoriaId, membroId)
+          const email = montarEmailDeRevogacao(revogacao, { app, tokenDeDescadastro: token })
+          if (jaEnviou) await esperar(INTERVALO_ENTRE_ENVIOS_MS)
+          jaEnviou = true
+          const resultado = await enviarPeloResend(deps.fetch, chave, {
+            de: remetente,
+            para: [revogacao.email],
+            assunto: email.assunto,
+            texto: email.texto,
+            html: email.html,
+            cabecalhos: {
+              'List-Unsubscribe': `<${urlDoProjeto}/functions/v1/preferencias-por-link/${token}>`,
+              'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+            },
+            chaveDeIdempotencia: `revogacao/${membroId}/${mudancaId}`,
+          })
+          if (resultado.ok) {
+            etapa = 'registro_da_revogacao'
+            await deps.registrarRevogacao(reserva, 'enviado', resultado.id)
+            revogacoesEnviadas++
+            continue
+          }
+          falhas++
+          registrar(
+            JSON.stringify({
+              membroId,
+              mudancaId,
+              etapa: 'envio_da_revogacao',
+              motivo: 'falha_no_envio',
+              status: resultado.status,
+            }),
+          )
+          if (resultado.status !== 0) {
+            etapa = 'registro_da_falha'
+            await deps.registrarRevogacao(reserva, 'falhou')
+          }
+        } catch {
+          if (etapa !== 'registro_da_falha') falhas++
+          registrar(JSON.stringify({ membroId, mudancaId, etapa, motivo: 'erro_interno' }))
+        }
+      }
+    }
+
     return responder(
       {
         pendentes: pendentes.length,
@@ -335,6 +498,7 @@ export function criarTratadorDosAvisos(deps: DependenciasDosAvisos) {
         em_andamento: emAndamento,
         falhas,
         adiados: pendentes.length - processados,
+        ...(deps.revogacoes ? { revogacoes_enviadas: revogacoesEnviadas } : {}),
       },
       falhas > 0 ? 502 : 200,
     )
