@@ -1582,7 +1582,7 @@ isOneToOne: false
     },{
       foreignKeyName: "preferencia_aviso_membro_fk"
       columns: ["consultoria_id","membro_id"]
-isOneToOne: false
+isOneToOne: true
       referencedRelation: "membro"
       referencedColumns: ["consultoria_id","id"]
     }
