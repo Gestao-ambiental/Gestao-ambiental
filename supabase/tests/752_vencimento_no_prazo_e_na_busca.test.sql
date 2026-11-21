@@ -5,7 +5,8 @@
 --
 -- Cenário da Filtroville (A), datas relativas a hoje (h):
 --   E1 Metalúrgica Açores (cliente C1), unidade U1 | E2 Padaria Central, unidade U2, licença I2 (LAO L-752)
---   VA Alvará 300/2026 em U1, h+20, renovado por VB Alvará 301/2027 em U1, h+400: só VB entra
+--   VA Alvará 300/2026 em U1, h+20, renovado por VB Alvará 301/2027 em U1, h+40: só VB entra
+--   (VB dentro da antecedência de 60 dias, para entrar na Visão; a regra da antecedência está no 754)
 --   VC ART em E2, sem unidade e sem número, órgão CREA-SC, ligada a I2, h+5
 --   VD Outorga 7/2024 em E1, h+3, excluída (não entra)
 --   VE CTF IBAMA 55 em U1, órgão IBAMA, h-2 (vencido)
@@ -58,7 +59,7 @@ from (values
    'Alvará', '300/2026', null, 20, null::uuid, 'd0000000-0000-4000-8000-0000000000a1'::uuid, false),
   ('75200000-0000-4000-8000-0000000000a2', 'c0000000-0000-4000-8000-00000000000a',
    '75200000-0000-4000-8000-0000000000e1', '75200000-0000-4000-8000-0000000000f1', null,
-   'Alvará', '301/2027', null, 400, '75200000-0000-4000-8000-0000000000a1', 'd0000000-0000-4000-8000-0000000000a1',
+   'Alvará', '301/2027', null, 40, '75200000-0000-4000-8000-0000000000a1', 'd0000000-0000-4000-8000-0000000000a1',
    false),
   ('75200000-0000-4000-8000-0000000000a3', 'c0000000-0000-4000-8000-00000000000a',
    '75200000-0000-4000-8000-0000000000e2', null, '75200000-0000-4000-8000-000000000012',
@@ -98,7 +99,7 @@ select results_eq(
      'Metalúrgica Açores'::text, 'Matriz'::text, null::text, null::uuid, null::text, null::text, 3::bigint),
     ('vencimento', '75200000-0000-4000-8000-0000000000a3', '75200000-0000-4000-8000-000000000012', 5, null, 'ART',
      'Padaria Central', '', 'LAO L-752', null, null, null, 3),
-    ('vencimento', '75200000-0000-4000-8000-0000000000a2', null, 400, null, 'Alvará 301/2027',
+    ('vencimento', '75200000-0000-4000-8000-0000000000a2', null, 40, null, 'Alvará 301/2027',
      'Metalúrgica Açores', 'Matriz', null, null, null, null, 3)$$,
   'listar_prazos: só os vigentes (renovado e excluído não entram), título = tipo + número, licença ligada'
 );
@@ -195,7 +196,7 @@ select results_eq(
     from public.buscar_no_grama('c0000000-0000-4000-8000-00000000000a', 'alvara')$$,
   $$values
     ('vencimento'::text, '75200000-0000-4000-8000-0000000000a2'::uuid, 'Alvará 301/2027'::text,
-     'Metalúrgica Açores · Validade ' || to_char(current_setting('testes.hoje')::date + 400, 'DD/MM/YYYY'),
+     'Metalúrgica Açores · Validade ' || to_char(current_setting('testes.hoje')::date + 40, 'DD/MM/YYYY'),
      '75200000-0000-4000-8000-0000000000e1'::uuid),
     ('vencimento', '75200000-0000-4000-8000-0000000000a1', 'Alvará 300/2026',
      'Metalúrgica Açores · Validade ' || to_char(current_setting('testes.hoje')::date + 20, 'DD/MM/YYYY'),

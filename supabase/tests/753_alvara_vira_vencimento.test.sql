@@ -148,9 +148,9 @@ select is(
 );
 
 select results_eq(
-  $$select tipo_linha, id, titulo from public.listar_prazos('c0000000-0000-4000-8000-00000000000a')$$,
+  $$select tipo_linha, id, titulo from private.linhas_de_prazo('c0000000-0000-4000-8000-00000000000a')$$,
   $$values ('vencimento'::text, '75300000-0000-4000-8000-000000000062'::uuid, 'Alvará 200/2026'::text)$$,
-  'só o vigente da série entra no prazo, uma vez, como vencimento'
+  'só o vigente da série entra no prazo (fonte), uma vez, como vencimento; na Visão só a partir da antecedência (754)'
 );
 
 -- ---------------------------------------------------------------------------

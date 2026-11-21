@@ -10,7 +10,9 @@
 --    packages/domain, nunca gravada.
 -- 3. Escrita só por RPC da Gestão, numa transação; cadastrar e renovar são idempotentes por p_id.
 -- 4. Fontes da base (ADR-0041): só private.linhas_de_prazo_vencimento e private.busca_vencimentos
---    são redefinidas. A união e as leituras públicas não mudam.
+--    são redefinidas. A união não muda.
+-- 5. Visão: listar_prazos e contar_prazos (mesmas assinaturas) só mostram o vencimento a partir da
+--    antecedência; o vencido continua. O Calendário mostra sempre (decisão do Eduardo, 20/11/2026).
 
 -- ---------------------------------------------------------------------------
 -- 1. Tipos de vencimento
@@ -887,3 +889,130 @@ $$;
 
 comment on function private.busca_vencimentos(uuid, text) is
   'Grupo vencimento da busca global (P4, ADR-0046): tipo, número e órgão; leva ao empreendimento.';
+
+-- ---------------------------------------------------------------------------
+-- 5. Vencimento na Visão só a partir da antecedência (decisão do Eduardo, 20/11/2026)
+-- ---------------------------------------------------------------------------
+-- Na Visão da equipe (listar_prazos e contar_prazos) o vencimento aparece só quando faltam até
+-- antecedencia_dias dias (a mesma fronteira do "a vencer" do domínio), e o vencido continua. O
+-- Calendário (listar_calendario) lê a fonte inteira e mostra sempre, na data de validade. Por isso
+-- o filtro fica nas duas leituras da Visão, não na fonte. Security invoker: a RLS do vencimento vale.
+create function private.linha_na_visao(cid uuid, linha_tipo text, linha_id uuid, linha_dias integer)
+returns boolean
+language sql
+stable
+set search_path = ''
+as $$
+  select linha_tipo <> 'vencimento'
+      or linha_dias <= coalesce(
+           (select v.antecedencia_dias from public.vencimento as v
+            where v.consultoria_id = cid and v.id = linha_id),
+           60)
+$$;
+
+comment on function private.linha_na_visao(uuid, text, uuid, integer) is
+  'Linha entra na Visão (listar_prazos e contar_prazos)? Vencimento só a partir da antecedência (ADR-0046).';
+
+revoke all on function private.linha_na_visao(uuid, text, uuid, integer) from public, anon;
+grant execute on function private.linha_na_visao(uuid, text, uuid, integer) to authenticated;
+
+-- Mesmas assinaturas, corpos da 20261120183218 com o filtro acima (os grants continuam).
+create or replace function public.listar_prazos(
+  p_consultoria_id uuid,
+  p_aba text default 'todos',
+  p_responsavel_id uuid default null,
+  p_sem_responsavel boolean default false,
+  p_tipo_id uuid default null,
+  p_empreendimento_id uuid default null,
+  p_faixa text default null,
+  p_ordem text default 'prazo',
+  p_limite integer default 25,
+  p_deslocamento integer default 0,
+  p_cliente_id uuid default null
+)
+returns table (
+  tipo_linha text,
+  id uuid,
+  instrumento_id uuid,
+  prazo date,
+  dias integer,
+  codigo text,
+  titulo text,
+  empreendimento_id uuid,
+  empreendimento_nome text,
+  unidade_nome text,
+  licenca text,
+  responsavel_id uuid,
+  responsavel_nome text,
+  situacao_ocorrencia public.situacao_ocorrencia,
+  row_version integer,
+  total bigint
+)
+language sql
+stable
+set search_path = ''
+as $$
+  select
+    l.tipo_linha, l.id, l.instrumento_id, l.prazo, l.dias, l.codigo, l.titulo, l.empreendimento_id,
+    l.empreendimento_nome, l.unidade_nome, l.licenca, l.responsavel_id, l.responsavel_nome,
+    l.situacao_ocorrencia, l.row_version, count(*) over ()
+  from private.linhas_de_prazo(p_consultoria_id) as l
+  where private.linha_passa_filtros(l.tipo_linha, l.responsavel_id, l.tipo_id, l.empreendimento_id,
+          private.membro_atual(p_consultoria_id), p_aba, p_responsavel_id, p_sem_responsavel, p_tipo_id,
+          p_empreendimento_id)
+    and private.empreendimento_do_cliente(p_consultoria_id, l.empreendimento_id, p_cliente_id)
+    and private.linha_na_visao(p_consultoria_id, l.tipo_linha, l.id, l.dias)
+    and (
+      p_faixa is null
+      or case p_faixa
+           when 'atrasadas' then l.dias < 0
+           when 'hoje' then l.dias = 0
+           when 'proximos_7' then l.dias between 1 and 7
+           when 'sem_responsavel' then private.tipo_linha_tem_responsavel(l.tipo_linha) and l.responsavel_id is null
+           else true
+         end
+    )
+  order by
+    case when p_ordem = 'demanda' then l.titulo end asc,
+    case when p_ordem = '-demanda' then l.titulo end desc,
+    case when p_ordem = 'empreendimento' then l.empreendimento_nome end asc,
+    case when p_ordem = '-empreendimento' then l.empreendimento_nome end desc,
+    case when p_ordem = 'licenca' then l.licenca end asc,
+    case when p_ordem = '-licenca' then l.licenca end desc,
+    case when p_ordem = 'responsavel' then l.responsavel_nome end asc nulls first,
+    case when p_ordem = '-responsavel' then l.responsavel_nome end desc nulls last,
+    case when p_ordem = '-prazo' then l.prazo end desc,
+    l.prazo asc,
+    l.titulo asc,
+    l.id asc
+  limit least(greatest(coalesce(p_limite, 25), 1), 100)
+  offset greatest(coalesce(p_deslocamento, 0), 0)
+$$;
+
+create or replace function public.contar_prazos(
+  p_consultoria_id uuid,
+  p_aba text default 'todos',
+  p_responsavel_id uuid default null,
+  p_sem_responsavel boolean default false,
+  p_tipo_id uuid default null,
+  p_empreendimento_id uuid default null,
+  p_cliente_id uuid default null
+)
+returns table (atrasadas bigint, hoje bigint, proximos_7 bigint, sem_responsavel bigint, total bigint)
+language sql
+stable
+set search_path = ''
+as $$
+  select
+    count(*) filter (where l.dias < 0),
+    count(*) filter (where l.dias = 0),
+    count(*) filter (where l.dias between 1 and 7),
+    count(*) filter (where private.tipo_linha_tem_responsavel(l.tipo_linha) and l.responsavel_id is null),
+    count(*)
+  from private.linhas_de_prazo(p_consultoria_id) as l
+  where private.linha_passa_filtros(l.tipo_linha, l.responsavel_id, l.tipo_id, l.empreendimento_id,
+          private.membro_atual(p_consultoria_id), p_aba, p_responsavel_id, p_sem_responsavel, p_tipo_id,
+          p_empreendimento_id)
+    and private.empreendimento_do_cliente(p_consultoria_id, l.empreendimento_id, p_cliente_id)
+    and private.linha_na_visao(p_consultoria_id, l.tipo_linha, l.id, l.dias)
+$$;
