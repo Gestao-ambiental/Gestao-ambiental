@@ -206,6 +206,49 @@ describe('vencimentos do empreendimento (ADR-0046)', () => {
     })
   })
 
+  it('trocar o PDF depois de um erro gera versão nova; repetir com o mesmo PDF não', async () => {
+    // O Storage não sobrescreve: com o mesmo caminho, o objeto ficaria com o PDF antigo e a linha
+    // da versão com o nome e o SHA-256 do novo.
+    const base = cenario('gestao')
+    falso.reiniciar({
+      ...base,
+      rpc: {
+        ...base.rpc,
+        renovar_vencimento: { error: { code: 'P0001', message: 'conflito_de_versao' } },
+      },
+    })
+    renderizarApp('/empreendimentos/e1')
+    const usuario = await acaoDaLinha('Alvará 2200/2027', 'Renovar')
+    const dialogo = await screen.findByRole('dialog', { name: 'Renovar Alvará 2200/2027' })
+    await usuario.type(within(dialogo).getByLabelText('Válido até *'), '31/05/2028')
+    const entrada = document.querySelector<HTMLInputElement>('[data-testid="pdf-do-vencimento"]')
+    if (!entrada) throw new Error('campo de arquivo ausente')
+    const chamadas = () =>
+      falso.cliente.rpc.mock.calls
+        .filter(([nome]) => nome === 'renovar_vencimento')
+        .map(([, args]) => args as Record<string, string>)
+    const enviar = async (vezes: number) => {
+      await usuario.click(await within(dialogo).findByRole('button', { name: 'Salvar vencimento' }))
+      await vi.waitFor(() => {
+        expect(chamadas()).toHaveLength(vezes)
+      })
+    }
+
+    await usuario.upload(entrada, new File(['%PDF-1.4 a'], 'a.pdf', { type: 'application/pdf' }))
+    expect(await within(dialogo).findByText('a.pdf')).toBeInTheDocument()
+    await enviar(1)
+    await enviar(2)
+    await usuario.upload(entrada, new File(['%PDF-1.4 b'], 'b.pdf', { type: 'application/pdf' }))
+    expect(await within(dialogo).findByText('b.pdf')).toBeInTheDocument()
+    await enviar(3)
+
+    const [primeira, repetida, trocada] = chamadas()
+    expect(repetida?.p_versao_id).toBe(primeira?.p_versao_id)
+    expect(trocada?.p_versao_id).not.toBe(primeira?.p_versao_id)
+    expect(trocada?.p_nome_original).toBe('b.pdf')
+    expect(trocada?.p_caminho).toBe(`c-Filtroville/vencimento/${trocada?.p_versao_id ?? ''}.pdf`)
+  })
+
   it('"Novo vencimento" no "…" do empreendimento: tipo ativo, antecedência do tipo, PDF opcional', async () => {
     const usuario = userEvent.setup()
     renderizarApp('/empreendimentos/e1')

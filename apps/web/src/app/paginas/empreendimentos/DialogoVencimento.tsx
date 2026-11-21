@@ -217,7 +217,9 @@ export function DialogoVencimento({
   const entrada = useRef<HTMLInputElement>(null)
   // Ids gerados ao abrir: repetir depois de erro de rede devolve o mesmo vencimento e a mesma versão.
   const [id] = useState(() => crypto.randomUUID())
-  const [versaoId] = useState(() => crypto.randomUUID())
+  // Id da versão do PDF: repetir com o mesmo arquivo mantém o id (idempotente); trocar de arquivo
+  // gera outro, porque o Storage não sobrescreve o objeto já enviado.
+  const [versaoId, setVersaoId] = useState(() => crypto.randomUUID())
   const [arquivo, setArquivo] = useState<File | null>(null)
   const [erroDoArquivo, setErroDoArquivo] = useState<string | null>(null)
   const soPdf = modo.tipo === 'pdf'
@@ -288,6 +290,7 @@ export function DialogoVencimento({
     }
     setErroDoArquivo(null)
     setArquivo(escolhido)
+    setVersaoId(crypto.randomUUID())
   }
 
   function pdfFalta(): boolean {

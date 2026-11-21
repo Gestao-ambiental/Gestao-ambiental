@@ -34,8 +34,9 @@ export function DialogoProtocolo({
   aoRegistrar: () => Promise<void>
 }) {
   const entrada = useRef<HTMLInputElement>(null)
-  // Id gerado aqui: repetir depois de erro de rede não registra outro comprovante.
-  const [versaoId] = useState(() => crypto.randomUUID())
+  // Id gerado aqui: repetir depois de erro de rede não registra outro comprovante. Trocar de arquivo
+  // gera outro id, porque o Storage não sobrescreve o objeto já enviado.
+  const [versaoId, setVersaoId] = useState(() => crypto.randomUUID())
   const [numero, setNumero] = useState('')
   const [data, setData] = useState('')
   const [arquivo, setArquivo] = useState<File | null>(null)
@@ -58,6 +59,7 @@ export function DialogoProtocolo({
     }
     setErros((e) => ({ ...e, arquivo: undefined }))
     setArquivo(escolhido)
+    setVersaoId(crypto.randomUUID())
   }
 
   function enviar() {
