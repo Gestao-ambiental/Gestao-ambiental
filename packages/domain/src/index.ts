@@ -745,3 +745,11 @@ export type {
   EntradaDaConsultoriaNova,
   ErroDaConsultoriaNova,
 } from './acesso-pago'
+
+export {
+  agruparPorDia,
+  ordenarItensDaSemana,
+  periodoDaMinhaSemana,
+  rotuloDoDia,
+} from './minha-semana'
+export type { DiaDaMinhaSemana, ItemDaMinhaSemana } from './minha-semana'

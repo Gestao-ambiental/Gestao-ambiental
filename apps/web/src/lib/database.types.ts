@@ -3529,6 +3529,11 @@ isOneToOne: false
               "consultoria_fuso": string,"consultoria_id": string,"consultoria_nome": string,"desligado_em": string,"membro_id": string,"papel": Database["public"]['Enums']["papel_membro"],"situacao": Database["public"]['Enums']["situacao_membro"]
             }[]
                            },
+"minha_semana":
+{ Args: { "p_ate"?: string,"p_de"?: string,"p_deslocamento"?: number,"p_limite"?: number }; Returns: {
+              "codigo": string,"consultoria_id": string,"consultoria_nome": string,"data": string,"dias": number,"em_conferencia": boolean,"empreendimento_id": string,"empreendimento_nome": string,"id": string,"instrumento_id": string,"licenca": string,"situacao_consultoria": string,"somente_leitura": boolean,"tipo_evento": string,"tipo_linha": string,"titulo": string,"total": number,"unidade_nome": string
+            }[]
+                           },
 "mover_condicionante":
 { Args: { "p_id": string,"p_pai_id": string }; Returns: undefined
                            },

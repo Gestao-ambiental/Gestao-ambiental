@@ -26,6 +26,7 @@ import { PaginaDetalheVistoria } from './paginas/campo/PaginaDetalheVistoria'
 import { PaginaEnvio } from './paginas/campo/PaginaEnvio'
 import { PaginaFoto } from './paginas/campo/PaginaFoto'
 import { PaginaMinhasVistorias } from './paginas/campo/PaginaMinhasVistorias'
+import { PaginaMinhaSemana } from './paginas/minha-semana/PaginaMinhaSemana'
 import { PaginaModelo } from './paginas/modelos/PaginaModelo'
 import { PaginaModelos } from './paginas/modelos/PaginaModelos'
 import { PaginaNorma } from './paginas/normas/PaginaNorma'
@@ -209,6 +210,7 @@ export const rotas: RouteObject[] = [
             element: <AppShell />,
             children: [
               { index: true, element: <PaginaVisaoEquipe /> },
+              { path: 'minha-semana', element: <PaginaMinhaSemana /> },
               { path: 'calendario', element: <PaginaCalendario /> },
               { path: 'empreendimentos', element: <PaginaEmpreendimentos /> },
               { path: 'empreendimentos/:id', element: <PaginaEmpreendimento /> },
