@@ -23,10 +23,12 @@ export interface ItemDoDia {
   /** Texto completo para o `title`. */
   descricao: string
   semResponsavel: boolean
+  /** Responsável pelo id, para colorir por pessoa ou área (nulo sem responsável). */
+  responsavelId: string | null
   link: string | null
 }
 
-const ROTULO_DO_TIPO: Record<TipoDoItem, string> = {
+export const ROTULO_DO_TIPO: Record<TipoDoItem, string> = {
   prazo: 'Prazo oficial',
   meta: 'Meta interna',
   limite_protocolo: 'Limite de protocolo',
@@ -70,6 +72,10 @@ export function itemDoEvento(evento: EventoDoCalendario, ehGestao: boolean): Ite
     apoio,
     descricao: [ROTULO_DO_TIPO[evento.tipo], texto, apoio].filter(Boolean).join(' · '),
     semResponsavel: evento.semResponsavel,
+    responsavelId:
+      evento.tipo === 'prazo' || evento.tipo === 'meta' || evento.tipo === 'tarefa'
+        ? evento.responsavelId
+        : null,
     link,
   }
 }
@@ -84,6 +90,7 @@ export function itemDoResiduo(prazo: PrazoDeObrigacaoNoCalendario): ItemDoDia {
     apoio: prazo.referencia,
     descricao: descricaoDoPrazoDeResiduo(prazo),
     semResponsavel: false,
+    responsavelId: null,
     link: caminhoDosPrazosDeResiduo(prazo.empreendimentoId),
   }
 }

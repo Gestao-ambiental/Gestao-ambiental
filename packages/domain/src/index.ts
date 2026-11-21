@@ -216,6 +216,7 @@ export {
   CARGOS,
   GENEROS,
   MAXIMO_DE_OUTRAS_PROFISSOES,
+  areaDaProfissao,
   PROFISSOES,
   cargoDoCodigo,
   generoDoCodigo,
@@ -576,3 +577,10 @@ export {
 } from './titular-da-licenca'
 export type { TitularDaLicenca } from './titular-da-licenca'
 export { OBJETO_INICIAL, objetoAindaAutomatico, objetoAutomatico } from './objeto-do-orcamento'
+export {
+  coresDasAreas,
+  coresSemRepetir,
+  hashEstavel,
+  iniciaisDe,
+  QUANTIDADE_DE_CORES,
+} from './cores-por-categoria'

@@ -169,6 +169,8 @@ export interface EventoDoCalendario {
   unidadeNome: string
   licenca: string | null
   responsavelNome: string | null
+  /** O responsável pelo id (para colorir por pessoa ou área); nulo sem responsável. */
+  responsavelId: string | null
   semResponsavel: boolean
   /** Só na tarefa de serviço (ADR-0029): o orçamento de origem. */
   orcamentoId?: string
@@ -205,6 +207,7 @@ export async function listarCalendario(
     unidadeNome: linha.unidade_nome,
     licenca: anulavel(linha.licenca),
     responsavelNome: anulavel(linha.responsavel_nome),
+    responsavelId: anulavel(linha.responsavel_id),
     semResponsavel: linha.sem_responsavel,
   }))
 }

@@ -77,6 +77,15 @@ As fontes do site, auto-hospedadas (CSP `font-src 'self'`): **Outfit** variável
 - Trilho 232px; barra superior 60px; conteúdo até 1440px com margem de 32px no desktop e 16px no celular.
 - Sombra só em `--sombra-flutuante` e `--sombra-dialogo`.
 
+## Cores de categoria (calendário)
+
+"Colorir por" tipo, área ou pessoa no Calendário (20/11/2026). Paleta própria, separada do design: 9 cores suaves `--categoria-1` a `--categoria-9` (cada uma com `-fundo` e `-forte`) e a `--categoria-neutra`, com versões para o claro e o escuro. Quentes e frias alternadas, para vizinhas não se confundirem; **nenhuma é lima** (o lima segue só para o "agora" e o destaque).
+
+- O evento ganha o fundo suave, um traço de 3px na cor forte e a **sigla** da categoria (iniciais da pessoa ou da área); o title diz o nome. A forma do tipo continua.
+- Texto de tinta sobre o fundo: ≥ 14:1 no claro e ≥ 11:1 no escuro (medido nos eventos: mínimo 5,3:1 e 5,8:1 com os textos secundários). O traço forte tem ≥ 3:1 sobre o fundo.
+- Área: cor pela ordem do catálogo de profissões, entre as áreas da equipe. Pessoa: cor pelo `membro_id` (hash), sem repetir dentro da equipe. "Sem responsável" e "Área não informada" ficam neutros.
+- A legenda lista cada categoria com a quantidade e filtra ao clicar.
+
 ## Ícones
 
 Phosphor, peso **bold** (MIT), por máscara com `currentColor` (`<Icone nome=… />`). 16px no texto, 18px em botão de ícone, 20px no trilho e na barra inferior, 32px em estado vazio. Lista e correspondência em [`src/assets/icons/LEIA-ME.md`](src/assets/icons/LEIA-ME.md).
