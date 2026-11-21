@@ -89,6 +89,16 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   // Triagem grava no empreendimento e o município na unidade (ADR-0050). empreendimento_invalido e
   // unidade_invalida já existem nesta tabela, com o mesmo sentido.
   municipio_invalido: 'Município não reconhecido. Consulte o local de novo.',
+  // Requisitos legais (ADR-0050, L6)
+  requisito_invalido: 'Requisito não encontrado. Recarregue a página.',
+  requisito_nao_se_aplica: 'Este requisito foi marcado como "não se aplica" e não é avaliado.',
+  norma_invalida: 'Norma não encontrada. Busque de novo.',
+  acao_invalida: 'Informe a ação e um prazo válido.',
+  data_invalida: 'A data da avaliação não pode ser depois de hoje.',
+  resultado_invalido: 'Escolha conforme ou não conforme.',
+  observacao_invalida: 'A observação pode ter até 2.000 caracteres.',
+  aplicabilidade_invalida: 'Escolha se o requisito se aplica.',
+  recurso_fora_do_plano: 'Este recurso não faz parte do plano desta consultoria.',
   id_obrigatorio: 'Não foi possível criar o orçamento. Tente de novo.',
   // Extração por IA (épico 9)
   pdf_obrigatorio: 'Anexe o PDF da licença para a IA ler.',

@@ -7,7 +7,8 @@ import type { ItemDoDia, TipoDoItem } from './itens-do-calendario'
 /*
  * Cada tipo tem uma forma própria além da cor (WCAG 1.4.1): quadrado cheio = prazo oficial,
  * quadrado vazado = meta interna, triângulo = limite de protocolo, anel = validade, losango
- * vazado = exigência, traço = vencimento, losango cheio = serviço, círculo cheio = resíduos.
+ * vazado = exigência, traço = vencimento, quadrado vazado girado = requisito legal, losango cheio =
+ * serviço, círculo cheio = resíduos.
  */
 const FORMAS: Readonly<Record<TipoDoItem, { forma: string; tinta: string }>> = {
   prazo: { forma: 'size-2 bg-current', tinta: 'text-(--tinta)' },
@@ -28,6 +29,10 @@ const FORMAS: Readonly<Record<TipoDoItem, { forma: string; tinta: string }>> = {
     tinta: 'text-(--tinta)',
   },
   vencimento: { forma: 'h-[3px] w-2.5 rounded-full bg-current', tinta: 'text-(--andamento-texto)' },
+  acao_legal: {
+    forma: 'size-2 rotate-12 rounded-[1px] border-[1.5px] border-dashed border-current',
+    tinta: 'text-(--tinta)',
+  },
   tarefa: { forma: 'size-[7px] rotate-45 bg-current', tinta: 'text-(--tinta)' },
   residuo: {
     forma: 'size-2 rounded-full bg-current',
@@ -36,7 +41,7 @@ const FORMAS: Readonly<Record<TipoDoItem, { forma: string; tinta: string }>> = {
 }
 
 /** Tipos em que o texto vai em peso forte: o que a equipe entrega ou protocola. */
-const FORTES: readonly TipoDoItem[] = ['prazo', 'limite_protocolo', 'exigencia']
+const FORTES: readonly TipoDoItem[] = ['prazo', 'limite_protocolo', 'exigencia', 'acao_legal']
 /** Tipos em que o texto vai na cor do tipo: o que vence ou tem limite. */
 const NA_COR_DO_TIPO: readonly TipoDoItem[] = ['limite_protocolo', 'validade', 'vencimento']
 

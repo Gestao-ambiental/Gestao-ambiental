@@ -194,7 +194,7 @@ describe('API de prazos', () => {
       rpc: {
         listar_prazos: {
           data: [
-            { ...linha, id: 'novo', tipo_linha: 'acao_legal' },
+            { ...linha, id: 'novo', tipo_linha: 'tipo_novo' },
             { ...linha, id: 'o2' },
           ],
         },
@@ -202,5 +202,37 @@ describe('API de prazos', () => {
     })
     const { itens } = await listarPrazos('c1', semFiltro, null, 'prazo', 0)
     expect(itens.map((i) => i.id)).toEqual(['o2'])
+  })
+
+  it('o calendário deixa de fora evento de tipo desconhecido e aceita a ação de requisito', async () => {
+    const evento = {
+      data: '2026-11-26',
+      id: 'x',
+      instrumento_id: null,
+      codigo: null,
+      titulo: 'Trocar o filtro',
+      empreendimento_nome: 'Posto Litoral',
+      unidade_nome: 'Matriz',
+      licenca: null,
+      responsavel_nome: null,
+      sem_responsavel: true,
+      dias: 6,
+    }
+    falso.reiniciar({
+      rpc: {
+        listar_calendario: {
+          data: [
+            { ...evento, tipo_evento: 'acao_legal', id: 'a1' },
+            { ...evento, tipo_evento: 'tipo_novo', id: 'n1' },
+          ],
+        },
+      },
+    })
+    const eventos = await listarCalendario('c1', '2026-11-20', '2026-12-20', {
+      responsavelId: null,
+      unidadeId: null,
+      semResponsavel: false,
+    })
+    expect(eventos.map((e) => `${e.tipo}:${e.id}`)).toEqual(['acao_legal:a1'])
   })
 })

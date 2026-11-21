@@ -11,6 +11,7 @@ import type { Empreendimento, Unidade } from '@/lib/api/empreendimentos'
 
 import { SecaoAlvaras } from './SecaoAlvaras'
 import { SecaoLicencas } from './SecaoLicencas'
+import { SecaoRequisitosLegais } from './SecaoRequisitosLegais'
 
 export interface PropsDaSecao {
   empreendimento: Empreendimento
@@ -43,6 +44,7 @@ function SecaoResiduos({ empreendimento }: PropsDaSecao) {
 
 const SECOES: readonly { id: string; Secao: ComponentType<PropsDaSecao> }[] = [
   { id: 'licencas', Secao: SecaoLicencas },
+  { id: 'requisitos-legais', Secao: SecaoRequisitosLegais },
   { id: 'relatorios', Secao: SecaoRelatorios },
   { id: 'alvaras', Secao: SecaoDeAlvaras },
   { id: 'residuos', Secao: SecaoResiduos },

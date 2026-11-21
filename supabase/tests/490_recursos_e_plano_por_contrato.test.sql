@@ -30,8 +30,8 @@ create trigger _comercial_somente_leitura before insert or update or delete on p
 select testes.autenticar_como('ana@filtroville.test');
 select results_eq(
   $$select codigo, recursos from public.catalogo_comercial() order by ordem$$,
-  $$values ('essencial', '{}'::text[]), ('equipe', array['capacidade']),
-           ('escala', array['capacidade', 'integracao_ima', 'financeiro', 'analise_lotes'])$$,
+  $$values ('essencial', '{}'::text[]), ('equipe', array['capacidade', 'legislacao']),
+           ('escala', array['capacidade', 'integracao_ima', 'financeiro', 'analise_lotes', 'legislacao'])$$,
   'o catálogo traz os recursos de cada plano'
 );
 

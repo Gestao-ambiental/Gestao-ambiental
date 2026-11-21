@@ -2090,6 +2090,9 @@ isOneToOne: false
 "adicionar_foto_da_vistoria":
 { Args: { "p_caminho": string,"p_capturada_em": string,"p_foto_id": string,"p_item_id": string,"p_latitude": number,"p_legenda": string,"p_local_manual": string,"p_local_origem": string,"p_longitude": number,"p_nome_original": string,"p_precisao_m": number,"p_sha256": string }; Returns: string
                            },
+"adicionar_requisito":
+{ Args: { "p_consultoria_id": string,"p_descricao"?: string,"p_dispositivo"?: string,"p_empreendimento_id": string,"p_norma_id": string }; Returns: string
+                           },
 "adicionar_tarefa_servico":
 { Args: { "p_id": string,"p_minutos": number,"p_orcamento_id": string,"p_prazo_interno": string,"p_responsavel_id": string,"p_titulo": string }; Returns: string
                            },
@@ -2100,6 +2103,9 @@ isOneToOne: false
                            },
 "alterar_papel":
 { Args: { "p_membro_id": string,"p_papel": Database["public"]['Enums']["papel_membro"] }; Returns: undefined
+                           },
+"anexar_evidencia_ao_requisito":
+{ Args: { "p_caminho": string,"p_consultoria_id": string,"p_nome_original": string,"p_requisito_id": string,"p_sha256": string,"p_validade"?: string,"p_versao_id": string }; Returns: string
                            },
 "anexar_pdf_residuo":
 { Args: { "p_caminho": string,"p_entidade": string,"p_nome_original": string,"p_registro_id": string,"p_sha256": string,"p_versao_id": string }; Returns: string
@@ -2124,11 +2130,17 @@ isOneToOne: false
 "atribuir_a_todos":
 { Args: { "p_instrumento_id": string,"p_membro_id": string }; Returns: undefined
                            },
+"atribuir_acao_legal":
+{ Args: { "p_acao_id": string,"p_consultoria_id": string,"p_responsavel_id": string,"p_row_version": number }; Returns: number
+                           },
 "atribuir_ocorrencia":
 { Args: { "p_membro_id": string,"p_ocorrencia_id": string,"p_row_version": number }; Returns: number
                            },
 "autorizar_acesso_de_suporte":
 { Args: { "p_consultoria_id": string,"p_horas": number,"p_id": string,"p_motivo"?: string }; Returns: string
+                           },
+"avaliar_requisito":
+{ Args: { "p_acao": Json,"p_avaliada_em": string,"p_consultoria_id": string,"p_observacao": string,"p_requisito_id": string,"p_resultado": string,"p_row_version": number }; Returns: Json
                            },
 "avisos_de_suporte_pendentes":
 { Args: { "p_consultoria_id": string }; Returns: {
@@ -2313,6 +2325,9 @@ isOneToOne: false
 "completar_cadastro":
 { Args: { "p_em_curso"?: boolean,"p_genero": string,"p_profissao": string }; Returns: undefined
                            },
+"concluir_acao_legal":
+{ Args: { "p_acao_id": string,"p_consultoria_id": string,"p_row_version": number }; Returns: number
+                           },
 "concluir_conferencia_ia":
 { Args: { "p_apontamentos": Json,"p_custo_micros": number,"p_duracao_ms": number,"p_id": string,"p_modelo": string,"p_resumo": string,"p_tokens_entrada": number,"p_tokens_saida": number,"p_versao_prompt": string }; Returns: number
                            },
@@ -2371,6 +2386,9 @@ isOneToOne: false
               "atrasadas": number,"hoje": number,"proximos_7": number,"sem_responsavel": number,"total": number
             }[]
                            },
+"criar_acao_legal":
+{ Args: { "p_acao": Json,"p_consultoria_id": string,"p_requisito_id": string }; Returns: string
+                           },
 "criar_consultoria":
 { Args: { "p_id": string,"p_nome": string }; Returns: string
                            },
@@ -2413,6 +2431,9 @@ isOneToOne: false
                            },
 "dados_para_relatorio":
 { Args: { "p_empreendimento_id": string,"p_ocorrencia_id"?: string }; Returns: Json
+                           },
+"decidir_aplicabilidade":
+{ Args: { "p_aplicavel": boolean,"p_consultoria_id": string,"p_justificativa": string,"p_requisito_id": string,"p_row_version": number }; Returns: number
                            },
 "declarar_registro_profissional":
 { Args: { "p_conselho": string,"p_membro_id": string,"p_numero": string,"p_profissao": string,"p_uf"?: string,"p_valido_ate"?: string }; Returns: string
@@ -2615,6 +2636,11 @@ isOneToOne: false
               "cliente_nome": string,"cnpj": string,"criado_em": string,"id": string,"licencas": Json,"nome": string,"total": number,"unidades": number
             }[]
                            },
+"listar_evidencias_do_requisito":
+{ Args: { "p_consultoria_id": string,"p_requisito_id": string }; Returns: {
+              "caminho": string,"documento_id": string,"enviada_em": string,"enviada_por_nome": string,"id": string,"nome_original": string,"validade": string
+            }[]
+                           },
 "listar_fontes_legais":
 { Args: Record<PropertyKey, never>; Returns: {
               "ativa": boolean,"codigo": string,"com_erro": boolean,"esfera": string,"nome": string,"ultima_coleta_em": string
@@ -2651,6 +2677,11 @@ isOneToOne: false
 "listar_renovacoes":
 { Args: { "p_consultoria_id": string,"p_deslocamento"?: number,"p_horizonte_meses"?: number,"p_limite"?: number }; Returns: {
               "acompanhamento_dias": number,"antecedencia_dias": number,"dias_limite_protocolo": number,"empreendimento_id": string,"empreendimento_nome": string,"hoje": string,"id": string,"instrumento_id": string,"licenca": string,"orcamento_ano": number,"orcamento_id": string,"orcamento_revisao": number,"orcamento_sequencia": number,"orcamento_situacao": Database["public"]['Enums']["situacao_orcamento"],"orgao": string,"protocolado_em": string,"protocolo_numero": string,"total": number,"unidade_nome": string,"validade": string
+            }[]
+                           },
+"listar_requisitos_do_empreendimento":
+{ Args: { "p_consultoria_id": string,"p_deslocamento"?: number,"p_empreendimento_id": string,"p_limite"?: number }; Returns: {
+              "acao_descricao": string,"acao_id": string,"acao_prazo": string,"acao_responsavel_id": string,"acao_responsavel_nome": string,"acao_row_version": number,"aplicavel": boolean,"avaliacao_resultado": string,"avaliada_em": string,"avaliada_por_nome": string,"descricao": string,"dispositivo": string,"evidencias": number,"id": string,"justificativa": string,"menor_validade": string,"motivo": Json,"norma_id": string,"norma_situacao_na_fonte": string,"norma_titulo": string,"origem": string,"responsavel_id": string,"row_version": number,"total": number,"ultima_mudanca_publicada_em": string
             }[]
                            },
 "listar_tarefas_servico":
@@ -2888,6 +2919,9 @@ isOneToOne: false
                            },
 "sou_operador":
 { Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"sugerir_requisitos":
+{ Args: { "p_consultoria_id": string,"p_empreendimento_id": string }; Returns: number
                            },
 "trocar_pdf_alvara":
 { Args: { "p_alvara_id": string,"p_caminho": string,"p_nome_original": string,"p_sha256": string,"p_versao_id": string }; Returns: string

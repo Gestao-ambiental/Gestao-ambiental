@@ -26,13 +26,15 @@ export interface Plano {
 }
 
 /** Recursos que a central liga por plano (ADR-0030). Os que ainda não existem já nascem presos. */
-export type RecursoDoPlano = 'capacidade' | 'integracao_ima' | 'financeiro' | 'analise_lotes'
+export type RecursoDoPlano =
+  'capacidade' | 'integracao_ima' | 'financeiro' | 'analise_lotes' | 'legislacao'
 
 export const RECURSOS_DO_PLANO: readonly RecursoDoPlano[] = [
   'capacidade',
   'integracao_ima',
   'financeiro',
   'analise_lotes',
+  'legislacao',
 ]
 
 export const ROTULO_DO_RECURSO: Readonly<Record<RecursoDoPlano, string>> = {
@@ -40,6 +42,7 @@ export const ROTULO_DO_RECURSO: Readonly<Record<RecursoDoPlano, string>> = {
   integracao_ima: 'Integração com o MTR do IMA',
   financeiro: 'Financeiro da consultoria',
   analise_lotes: 'Análise de lotes',
+  legislacao: 'Requisitos legais',
 }
 
 export function ehRecursoDoPlano(valor: unknown): valor is RecursoDoPlano {
@@ -68,7 +71,7 @@ export const PLANOS: Readonly<Record<CodigoPlano, Plano>> = {
     empreendimentos: 30,
     orcamentos: true,
     ia: true,
-    recursos: ['capacidade'],
+    recursos: ['capacidade', 'legislacao'],
   },
   escala: {
     codigo: 'escala',
@@ -78,7 +81,7 @@ export const PLANOS: Readonly<Record<CodigoPlano, Plano>> = {
     empreendimentos: 100,
     orcamentos: true,
     ia: true,
-    recursos: ['capacidade', 'integracao_ima', 'financeiro', 'analise_lotes'],
+    recursos: ['capacidade', 'integracao_ima', 'financeiro', 'analise_lotes', 'legislacao'],
   },
 }
 

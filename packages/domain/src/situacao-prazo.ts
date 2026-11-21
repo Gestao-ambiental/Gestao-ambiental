@@ -5,9 +5,10 @@
 /**
  * Tipos de linha das fontes de prazo (private.linhas_de_prazo). Exigência (do órgão, com
  * responsável) e vencimento (sem responsável) chegam com o P3 e o P4; até lá as fontes vêm vazias.
+ * Ação do plano de ação de um requisito legal (com responsável) chega com o L6 (ADR-0050).
  */
 export type TipoLinhaDePrazo =
-  'ocorrencia' | 'validade' | 'limite_protocolo' | 'exigencia' | 'vencimento'
+  'ocorrencia' | 'validade' | 'limite_protocolo' | 'exigencia' | 'vencimento' | 'acao_legal'
 
 export const TIPOS_LINHA_DE_PRAZO: readonly TipoLinhaDePrazo[] = [
   'ocorrencia',
@@ -15,6 +16,7 @@ export const TIPOS_LINHA_DE_PRAZO: readonly TipoLinhaDePrazo[] = [
   'limite_protocolo',
   'exigencia',
   'vencimento',
+  'acao_legal',
 ]
 
 /** Nome do tipo de linha, como a tela escreve (a cor nunca é o único sinal do tipo). */
@@ -24,6 +26,7 @@ export const ROTULO_DO_TIPO_DE_LINHA: Readonly<Record<TipoLinhaDePrazo, string>>
   limite_protocolo: 'Limite de protocolo',
   exigencia: 'Exigência',
   vencimento: 'Vencimento',
+  acao_legal: 'Requisito legal',
 }
 
 /**
@@ -31,7 +34,7 @@ export const ROTULO_DO_TIPO_DE_LINHA: Readonly<Record<TipoLinhaDePrazo, string>>
  * acrescenta 'exigencia' junto com a RPC atribuir_exigencia. (O banco já conta exigência sem
  * responsável em "sem responsável": private.tipo_linha_tem_responsavel.)
  */
-export const TIPOS_COM_RESPONSAVEL: readonly TipoLinhaDePrazo[] = ['ocorrencia']
+export const TIPOS_COM_RESPONSAVEL: readonly TipoLinhaDePrazo[] = ['ocorrencia', 'acao_legal']
 
 export function tipoAceitaResponsavel(tipo: TipoLinhaDePrazo): boolean {
   return TIPOS_COM_RESPONSAVEL.includes(tipo)
@@ -65,6 +68,7 @@ function situacaoDoAtraso(tipo: TipoLinhaDePrazo, diasDeAtraso: number): Situaca
       return { tipo: 'protocolo_atrasado', dias: diasDeAtraso }
     case 'ocorrencia':
     case 'exigencia':
+    case 'acao_legal':
       return { tipo: 'atrasada', dias: diasDeAtraso, faixa: faixaDeAtraso(diasDeAtraso) }
   }
 }

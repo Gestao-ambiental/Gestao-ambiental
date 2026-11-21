@@ -188,9 +188,34 @@ export async function listarTiposEmUso(
 // Calendário (EQ-04)
 // ---------------------------------------------------------------------------
 
-/** `prazo` é a ocorrência; exigência e vencimento vêm das fontes do P3 e do P4 (vazias até lá). */
+/**
+ * `prazo` é a ocorrência; exigência e vencimento vêm das fontes do P3 e do P4 (vazias até lá); a
+ * ação de requisito legal vem do L6.
+ */
 export type TipoEvento =
-  'prazo' | 'meta' | 'validade' | 'limite_protocolo' | 'exigencia' | 'vencimento' | 'tarefa'
+  | 'prazo'
+  | 'meta'
+  | 'validade'
+  | 'limite_protocolo'
+  | 'exigencia'
+  | 'vencimento'
+  | 'acao_legal'
+  | 'tarefa'
+
+const TIPOS_DE_EVENTO: readonly TipoEvento[] = [
+  'prazo',
+  'meta',
+  'validade',
+  'limite_protocolo',
+  'exigencia',
+  'vencimento',
+  'acao_legal',
+  'tarefa',
+]
+
+function ehTipoDeEvento(tipo: string): tipo is TipoEvento {
+  return (TIPOS_DE_EVENTO as readonly string[]).includes(tipo)
+}
 
 export interface EventoDoCalendario {
   tipo: TipoEvento
@@ -228,18 +253,21 @@ export async function listarCalendario(
     p_sem_responsavel: filtros.semResponsavel,
   })
   if (error) throw error
-  return data.map((linha) => ({
-    tipo: linha.tipo_evento as TipoEvento,
-    data: linha.data as DataCivil,
-    id: linha.id,
-    codigo: anulavel(linha.codigo),
-    titulo: linha.titulo,
-    empreendimentoNome: linha.empreendimento_nome,
-    unidadeNome: linha.unidade_nome,
-    licenca: anulavel(linha.licenca),
-    responsavelNome: anulavel(linha.responsavel_nome),
-    semResponsavel: linha.sem_responsavel,
-  }))
+  // Evento de um tipo que a tela ainda não conhece fica fora, como na lista de prazos.
+  return data
+    .filter((linha) => ehTipoDeEvento(linha.tipo_evento))
+    .map((linha) => ({
+      tipo: linha.tipo_evento as TipoEvento,
+      data: linha.data as DataCivil,
+      id: linha.id,
+      codigo: anulavel(linha.codigo),
+      titulo: linha.titulo,
+      empreendimentoNome: linha.empreendimento_nome,
+      unidadeNome: linha.unidade_nome,
+      licenca: anulavel(linha.licenca),
+      responsavelNome: anulavel(linha.responsavel_nome),
+      semResponsavel: linha.sem_responsavel,
+    }))
 }
 
 /** Unidades da consultoria, para o filtro do calendário. */

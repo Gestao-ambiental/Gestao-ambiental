@@ -131,3 +131,17 @@ describe('eventos de exigência e vencimento no calendário', () => {
     expect(itemDoEvento({ ...base, tipo: 'tarefa', orcamentoId: 'orc1' }, false).link).toBeNull()
   })
 })
+
+describe('ação de requisito legal no calendário (ADR-0050)', () => {
+  it('prefixo escrito, responsável no apoio e sem link (o evento não traz o empreendimento)', () => {
+    const item = itemDoEvento(
+      { ...base, tipo: 'acao_legal', titulo: 'Trocar o filtro', responsavelNome: 'Ana Ribeiro' },
+      true,
+    )
+    expect(item.prefixo).toBe('Requisito legal')
+    expect(item.texto).toBe('Trocar o filtro')
+    expect(item.apoio).toContain('Ana Ribeiro')
+    expect(item.link).toBeNull()
+    expect(ROTULO_DO_TIPO.acao_legal).toBe('Requisito legal')
+  })
+})

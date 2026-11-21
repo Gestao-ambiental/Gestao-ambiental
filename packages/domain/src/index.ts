@@ -641,3 +641,9 @@ export type {
   ResultadoDaAplicabilidade,
   TipoDeCriterio,
 } from './aplicabilidade'
+export {
+  ROTULO_DA_SITUACAO_DO_REQUISITO,
+  requisitoPedeAtencao,
+  situacaoDoRequisito,
+} from './situacao-requisito'
+export type { RequisitoParaSituacao, SituacaoDoRequisito } from './situacao-requisito'

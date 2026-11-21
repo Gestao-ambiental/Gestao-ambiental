@@ -4,7 +4,13 @@
 import { obterSupabase } from '@/lib/supabase'
 
 export type RecursoDoPlanoNoFront =
-  'capacidade' | 'integracao_ima' | 'financeiro' | 'analise_lotes' | 'ia' | 'orcamentos'
+  | 'capacidade'
+  | 'integracao_ima'
+  | 'financeiro'
+  | 'analise_lotes'
+  | 'legislacao'
+  | 'ia'
+  | 'orcamentos'
 
 export async function recursoLiberado(
   consultoriaId: string,

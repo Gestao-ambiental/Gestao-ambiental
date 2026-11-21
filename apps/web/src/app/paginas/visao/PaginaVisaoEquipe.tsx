@@ -42,6 +42,7 @@ import {
   type LinhaDePrazo,
   type Ordem,
 } from '@/lib/api/prazos'
+import { atribuirAcaoLegal } from '@/lib/api/requisitos-legais'
 import { formatarDataCurta } from '@/lib/datas'
 import { mensagemDoErro } from '@/lib/erros'
 import { ehUuid } from '@/lib/texto'
@@ -70,7 +71,8 @@ function Licenca({ linha }: { linha: LinhaDePrazo }) {
 
 /**
  * Para onde a demanda leva: ocorrência e exigência abrem a própria página; o limite de protocolo,
- * o plano de renovação; o vencimento, o empreendimento; a validade não abre nada.
+ * o plano de renovação; o vencimento e a ação de requisito legal, o empreendimento; a validade não
+ * abre nada.
  */
 function destinoDaDemanda(linha: LinhaDePrazo): string | null {
   switch (linha.tipo) {
@@ -82,6 +84,8 @@ function destinoDaDemanda(linha: LinhaDePrazo): string | null {
       return linha.instrumentoId ? `/renovacoes/${linha.instrumentoId}` : null
     case 'vencimento':
       return `/empreendimentos/${linha.empreendimentoId}`
+    case 'acao_legal':
+      return `/empreendimentos/${linha.empreendimentoId}#requisitos-legais`
     case 'validade':
       return null
   }
@@ -92,14 +96,15 @@ function Demanda({ linha }: { linha: LinhaDePrazo }) {
   switch (linha.tipo) {
     case 'ocorrencia':
     case 'exigencia':
+    case 'acao_legal':
       return (
         <Link
           to={destino ?? ''}
           className="block max-w-[360px] truncate text-(--tinta) hover:underline"
           title={linha.titulo}
         >
-          {linha.tipo === 'exigencia' ? (
-            <span className="text-(--tinta-2)">{ROTULO_DO_TIPO_DE_LINHA.exigencia} · </span>
+          {linha.tipo === 'exigencia' || linha.tipo === 'acao_legal' ? (
+            <span className="text-(--tinta-2)">{ROTULO_DO_TIPO_DE_LINHA[linha.tipo]} · </span>
           ) : null}
           {linha.codigo ? (
             <span className="font-mono text-xs text-(--tinta-2)">{linha.codigo} · </span>
@@ -314,7 +319,9 @@ export function PaginaVisaoEquipe() {
 
   const atribuir = useMutation({
     mutationFn: ({ linha, membroId }: { linha: LinhaDePrazo; membroId: string }) =>
-      atribuirOcorrencia(linha.id, membroId, linha.rowVersion),
+      linha.tipo === 'acao_legal'
+        ? atribuirAcaoLegal(cid, linha.id, membroId, linha.rowVersion)
+        : atribuirOcorrencia(linha.id, membroId, linha.rowVersion),
     onSettled: async () => {
       await queryClient.invalidateQueries({ queryKey: ['prazos'] })
       await queryClient.invalidateQueries({ queryKey: ['prazos-contadores'] })

@@ -21,14 +21,15 @@ const encerrada: EntradaDaSituacao = {
 }
 
 describe('recursos de cada plano', () => {
-  it('Essencial sem recursos, Equipe com capacidade, Escala com todos', () => {
+  it('Essencial sem recursos, Equipe com capacidade e requisitos legais, Escala com todos', () => {
     expect(PLANOS.essencial.recursos).toEqual([])
-    expect(PLANOS.equipe.recursos).toEqual(['capacidade'])
+    expect(PLANOS.equipe.recursos).toEqual(['capacidade', 'legislacao'])
     expect(PLANOS.escala.recursos).toEqual([
       'capacidade',
       'integracao_ima',
       'financeiro',
       'analise_lotes',
+      'legislacao',
     ])
   })
 })

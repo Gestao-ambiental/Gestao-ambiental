@@ -34,6 +34,7 @@ export const TIPOS_DO_ITEM: readonly TipoDoItem[] = [
   'validade',
   'exigencia',
   'vencimento',
+  'acao_legal',
   'tarefa',
   'residuo',
 ]
@@ -45,6 +46,7 @@ export const ROTULO_DO_TIPO: Readonly<Record<TipoDoItem, string>> = {
   validade: 'Validade',
   exigencia: 'Exigência',
   vencimento: 'Vencimento',
+  acao_legal: 'Requisito legal',
   tarefa: 'Serviço',
   residuo: 'Resíduos',
 }
@@ -59,6 +61,7 @@ function textoDoEvento(evento: EventoDoCalendario): string {
     case 'meta':
     case 'exigencia':
     case 'vencimento':
+    case 'acao_legal':
     case 'tarefa':
       return [evento.codigo, evento.titulo].filter(Boolean).join(' ')
   }
@@ -75,6 +78,8 @@ function prefixoDoEvento(tipo: EventoDoCalendario['tipo']): string | null {
       return 'Exigência'
     case 'vencimento':
       return 'Vencimento'
+    case 'acao_legal':
+      return 'Requisito legal'
     case 'prazo':
     case 'limite_protocolo':
     case 'validade':
@@ -88,6 +93,7 @@ function temResponsavel(tipo: EventoDoCalendario['tipo']): boolean {
     case 'prazo':
     case 'meta':
     case 'exigencia':
+    case 'acao_legal':
     case 'tarefa':
       return true
     case 'limite_protocolo':
@@ -99,8 +105,8 @@ function temResponsavel(tipo: EventoDoCalendario['tipo']): boolean {
 
 /**
  * Prazo e meta abrem a ocorrência; a exigência abre a própria página; o limite de protocolo abre o
- * plano de renovação; a tarefa de serviço abre o orçamento só para a Gestão; validade e
- * vencimento não abrem nada (o evento do calendário não traz o empreendimento).
+ * plano de renovação; a tarefa de serviço abre o orçamento só para a Gestão; validade, vencimento
+ * e ação de requisito legal não abrem nada (o evento do calendário não traz o empreendimento).
  */
 function linkDoEvento(evento: EventoDoCalendario, ehGestao: boolean): string | null {
   switch (evento.tipo) {
@@ -115,6 +121,7 @@ function linkDoEvento(evento: EventoDoCalendario, ehGestao: boolean): string | n
       return ehGestao ? `/orcamentos/${evento.orcamentoId ?? ''}` : null
     case 'validade':
     case 'vencimento':
+    case 'acao_legal':
       return null
   }
 }
