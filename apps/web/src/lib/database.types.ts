@@ -2627,6 +2627,11 @@ isOneToOne: false
 "mudar_situacao_tarefa_servico":
 { Args: { "p_id": string,"p_para": string,"p_row_version": number }; Returns: number
                            },
+"municipios_vigiados":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "ibge": string,"nome": string
+            }[]
+                           },
 "obrigacoes_residuo":
 { Args: { "p_empreendimento_id": string }; Returns: {
               "ativa": boolean,"atualizado_em": string,"obrigacao_id": string,"observacao": string,"tipo": string

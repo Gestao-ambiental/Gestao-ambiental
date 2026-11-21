@@ -33,7 +33,11 @@ export const FONTE_CIGA = 'ciga'
 export const BASE_DO_CIGA = 'https://dados.ciga.sc.gov.br'
 
 const TIPOS_HTML = ['text/html'] as const
-const TIPOS_ZIP = ['application/zip', 'application/x-zip-compressed', 'application/octet-stream'] as const
+const TIPOS_ZIP = [
+  'application/zip',
+  'application/x-zip-compressed',
+  'application/octet-stream',
+] as const
 
 /** Categorias do DOM-SC que podem trazer norma (o resto é contrato, ata de preço, edital). */
 export const CATEGORIAS_NORMATIVAS = [

@@ -16,11 +16,11 @@ import {
 import { contextoDeDiario, latin1 } from './fixtures/diarios.ts'
 import { BancoFalso, redeFalsa } from './fixtures/falsos.ts'
 
-Deno.test('o tratador tem coletor para o DOE-SC, a ALESC e o DOEM de Joinville', () => {
-  for (const fonte of ['doe_sc', 'alesc', 'joinville_doem']) {
+Deno.test('o tratador tem coletor para os diários e as fontes federais; o Senado fica sem', () => {
+  for (const fonte of ['doe_sc', 'alesc', 'joinville_doem', 'inlabs', 'planalto', 'ciga']) {
     assert.equal(typeof COLETORES[fonte], 'function', fonte)
   }
-  assert.equal(COLETORES.ciga, undefined)
+  assert.equal(COLETORES.senado, undefined)
 })
 
 Deno.test('o tratador passa a janela do pedido ao coletor', async () => {

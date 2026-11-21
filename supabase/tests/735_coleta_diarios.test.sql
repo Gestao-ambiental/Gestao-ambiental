@@ -97,9 +97,9 @@ select throws_ok(
 );
 
 select throws_ok(
-  $$select private.ligar_coleta_de_normas(array['ciga'])$$,
+  $$select private.ligar_coleta_de_normas(array['senado'])$$,
   'P0001', 'fonte_sem_coletor',
-  'fonte do catálogo ainda sem coletor (ciga) dá fonte_sem_coletor'
+  'fonte do catálogo ainda sem coletor (senado) dá fonte_sem_coletor'
 );
 
 select throws_ok(

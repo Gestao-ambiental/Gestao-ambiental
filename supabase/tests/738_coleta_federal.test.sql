@@ -1,6 +1,6 @@
 -- Coleta federal (L8, ADR-0050, LEG-02): leis federais vigiadas pela fonte planalto, com o caminho
 -- da página como id externo e as duas competências; o agendamento aceita inlabs e planalto e
--- continua desligado; ciga segue sem coletor (L9).
+-- continua desligado; senado segue sem coletor.
 begin;
 
 select plan(8);
@@ -37,9 +37,9 @@ select lives_ok(
 );
 
 select throws_ok(
-  $$select private.ligar_coleta_de_normas(array['ciga'])$$,
+  $$select private.ligar_coleta_de_normas(array['senado'])$$,
   'P0001', 'fonte_sem_coletor',
-  'ciga continua sem coletor'
+  'senado continua sem coletor'
 );
 
 select is(
