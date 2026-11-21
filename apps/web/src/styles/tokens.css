@@ -131,6 +131,29 @@
   --sigla-5: #f1ebff;
   --sigla-6: var(--vermelho-100);
 
+  /* Categorias do calendário (colorir por área ou pessoa): 9 cores suaves, nenhuma lima. Fundo
+     suave com texto de tinta; a borda forte marca a cor ao lado do texto. */
+  --categoria-1-fundo: #dbe8fb;
+  --categoria-1-forte: #3f74c0;
+  --categoria-2-fundo: #fde2cd;
+  --categoria-2-forte: #b55d1a;
+  --categoria-3-fundo: #d2efe7;
+  --categoria-3-forte: #2f8a73;
+  --categoria-4-fundo: #fadbe8;
+  --categoria-4-forte: #c04d86;
+  --categoria-5-fundo: #dddff8;
+  --categoria-5-forte: #4c55bd;
+  --categoria-6-fundo: #f5e8c0;
+  --categoria-6-forte: #a07a12;
+  --categoria-7-fundo: #d0edf5;
+  --categoria-7-forte: #2a8aab;
+  --categoria-8-fundo: #f6d6d0;
+  --categoria-8-forte: #b84a37;
+  --categoria-9-fundo: #e7dffa;
+  --categoria-9-forte: #7a59d1;
+  --categoria-neutra-fundo: #ecebe6;
+  --categoria-neutra-forte: #7b7a74;
+
   --sombra-flutuante: 0 12px 32px -8px rgb(8 9 11 / 0.2), 0 2px 6px rgb(8 9 11 / 0.08);
   --sombra-dialogo: 0 32px 64px -16px rgb(8 9 11 / 0.34), 0 4px 12px rgb(8 9 11 / 0.1);
 
@@ -214,6 +237,27 @@
   --sigla-4: #3a2a0c;
   --sigla-5: #2a1f45;
   --sigla-6: #3f1a16;
+
+  --categoria-1-fundo: #1d2c45;
+  --categoria-1-forte: #7fa9ea;
+  --categoria-2-fundo: #3d2818;
+  --categoria-2-forte: #f0a565;
+  --categoria-3-fundo: #173a33;
+  --categoria-3-forte: #5fc4a9;
+  --categoria-4-fundo: #3d1f30;
+  --categoria-4-forte: #ea8cbb;
+  --categoria-5-fundo: #23264a;
+  --categoria-5-forte: #8f97f0;
+  --categoria-6-fundo: #382f14;
+  --categoria-6-forte: #d9b44b;
+  --categoria-7-fundo: #16343e;
+  --categoria-7-forte: #5cc1e0;
+  --categoria-8-fundo: #3d1f1a;
+  --categoria-8-forte: #e88c7b;
+  --categoria-9-fundo: #2c2447;
+  --categoria-9-forte: #a88ef0;
+  --categoria-neutra-fundo: #24262a;
+  --categoria-neutra-forte: #9a9893;
 
   --sombra-flutuante: 0 12px 32px -8px rgb(0 0 0 / 0.6), 0 0 0 1px var(--noite-4);
   --sombra-dialogo: 0 32px 64px -16px rgb(0 0 0 / 0.7), 0 0 0 1px var(--noite-4);
