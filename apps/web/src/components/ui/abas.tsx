@@ -3,13 +3,15 @@
 // - Abas: estado da tela (tablist/tab, setas, Home/End, seleção segue o foco). Com `idBase`, cada
 //   aba aponta (aria-controls) para o PainelDeAba de mesmo idBase e valor.
 // - AbasDeFiltro: o mesmo desenho para filtros da mesma lista (grupo de botões com aria-pressed,
-//   sem painel próprio; Tab passa por cada uma).
+//   sem painel próprio; Tab passa por cada uma). O traço da ativa desliza de uma aba para a outra.
 // - AbasDeRota: navegação entre rotas (nav com links, aria-current="page").
 // No celular a faixa rola na própria região, nunca a página.
 import { type KeyboardEvent, type ReactNode, type RefObject, useEffect, useRef } from 'react'
 import { NavLink, useLocation } from 'react-router'
 
 import { cn } from '@/lib/utils'
+
+import { IndicadorDeslizante, useIndicadorDeslizante } from './indicador-deslizante'
 
 interface Rotulos {
   rotulo: string
@@ -41,11 +43,14 @@ const faixa = 'flex w-max min-w-full gap-(--e-5) border-b border-(--regra-forte)
 const rolagem =
   'relative -mx-1 max-w-[calc(100%+8px)] min-w-0 overflow-x-auto overflow-y-hidden px-1 pt-1 [scrollbar-width:none]'
 
-function classeDaAba(ativa: boolean) {
+/** Espessura do traço da aba ativa (border-b-[3px]). */
+const TRACO = 3
+
+function classeDaAba(ativa: boolean, tracoDeslizante = false) {
   return cn(
     '-mb-px inline-flex h-11 shrink-0 cursor-pointer items-center gap-(--e-2) border-b-[3px] titulo-secao whitespace-nowrap no-underline transicao-estado hover:no-underline',
     ativa
-      ? 'border-(--marca-linha) text-(--tinta)'
+      ? cn('text-(--tinta)', tracoDeslizante ? 'border-transparent' : 'border-(--marca-linha)')
       : 'border-transparent text-(--tinta-2) hover:text-(--tinta)',
   )
 }
@@ -198,11 +203,27 @@ export function AbasDeFiltro<V extends string>({
 }) {
   const visiveis = abas.filter((a) => !a.oculta)
   const faixaRef = useRef<HTMLDivElement>(null)
-  useAtivaVisivel(faixaRef, `${valor}|${visiveis.map((a) => a.contagem ?? '').join(',')}`)
+  const chave = `${valor}|${visiveis.map((a) => a.contagem ?? '').join(',')}`
+  useAtivaVisivel(faixaRef, chave)
+  // O traço da ativa é um elemento só, que desliza até a aba escolhida (DESIGN.md, "Movimento").
+  // Enquanto não há medida com largura (primeira pintura, jsdom), a própria aba desenha o traço.
+  const { conteiner, medida, desliza } = useIndicadorDeslizante<HTMLDivElement>(
+    '[aria-pressed="true"]',
+    chave,
+  )
+  const tracoDeslizante = medida !== null && medida.largura > 0
+  const medidaDoTraco = tracoDeslizante
+    ? { ...medida, y: medida.y + medida.altura - TRACO, altura: TRACO }
+    : null
 
   return (
     <div ref={faixaRef} role="group" aria-label={rotulo} className={cn(rolagem, className)}>
-      <div className={faixa}>
+      <div ref={conteiner} className={cn(faixa, 'relative')}>
+        <IndicadorDeslizante
+          medida={medidaDoTraco}
+          desliza={desliza}
+          className="z-10 bg-(--marca-linha)"
+        />
         {visiveis.map((aba) => {
           const ativa = aba.valor === valor
           return (
@@ -213,7 +234,7 @@ export function AbasDeFiltro<V extends string>({
               onClick={() => {
                 if (!ativa) aoMudar(aba.valor)
               }}
-              className={classeDaAba(ativa)}
+              className={classeDaAba(ativa, tracoDeslizante)}
             >
               <ConteudoDaAba aba={aba} ativa={ativa} />
             </button>
