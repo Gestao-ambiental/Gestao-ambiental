@@ -1,6 +1,8 @@
 -- Alvará (ALV-01 e ALV-02): só a Gestão registra, com PDF e validade; repetir não duplica; renovar
 -- cria um novo ligado ao anterior, que fica guardado; só o vigente entra na visão da equipe;
 -- excluir é lógico; nada atravessa consultorias e ninguém escreve direto na tabela.
+-- Desde o P4 (ADR-0046) o alvará entra no prazo como vencimento do tipo Alvará (espelhado pela
+-- trigger): as leituras de listar_prazos filtram tipo_linha 'vencimento' e comparam o título.
 begin;
 
 set local timezone to 'America/Sao_Paulo';
@@ -128,9 +130,9 @@ select throws_ok(
 
 select is(
   (select count(*) from public.listar_prazos('c0000000-0000-4000-8000-00000000000a', p_limite => 100)
-   where licenca = 'Alvará 1234/2026' and tipo_linha = 'validade' and prazo = current_date + 200),
+   where titulo = 'Alvará 1234/2026' and tipo_linha = 'vencimento' and prazo = current_date + 200),
   1::bigint,
-  'o alvará aparece na visão da equipe como linha de validade'
+  'o alvará aparece na visão da equipe como linha de vencimento (ADR-0046)'
 );
 
 -- ---------------------------------------------------------------------------
@@ -171,8 +173,8 @@ select results_eq(
 );
 
 select results_eq(
-  $$select licenca from public.listar_prazos('c0000000-0000-4000-8000-00000000000a', p_limite => 100)
-    where licenca like 'Alvará%'$$,
+  $$select titulo from public.listar_prazos('c0000000-0000-4000-8000-00000000000a', p_limite => 100)
+    where tipo_linha = 'vencimento'$$,
   $$values ('Alvará 2200/2027'::text)$$,
   'na visão da equipe fica só o alvará vigente'
 );
@@ -236,8 +238,8 @@ select lives_ok(
 );
 
 select results_eq(
-  $$select licenca from public.listar_prazos('c0000000-0000-4000-8000-00000000000a', p_limite => 100)
-    where licenca like 'Alvará%'$$,
+  $$select titulo from public.listar_prazos('c0000000-0000-4000-8000-00000000000a', p_limite => 100)
+    where tipo_linha = 'vencimento'$$,
   $$values ('Alvará 1234/2026'::text)$$,
   'excluído o novo, o anterior volta a ser o vigente'
 );
