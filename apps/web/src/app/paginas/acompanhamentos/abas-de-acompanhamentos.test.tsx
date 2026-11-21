@@ -55,6 +55,18 @@ describe('abas de Acompanhamentos', () => {
     ).toEqual(['renovacoes', 'conferencia'])
   })
 
+  it('Exigências do órgão vem depois de Aguardando conferência, para todos, com painel próprio', () => {
+    const exigencias = ABAS_DE_ACOMPANHAMENTOS[2]
+    expect(exigencias).toMatchObject({
+      valor: 'exigencias',
+      rotulo: 'Exigências do órgão',
+      curto: 'Exigências',
+    })
+    expect(exigencias?.somenteGestao).toBeUndefined()
+    expect(exigencias?.Painel).toBeDefined()
+    expect(abasDeAcompanhamentosVisiveis(false).map((a) => a.valor)).toContain('exigencias')
+  })
+
   it('aba nova da lista aparece com o próprio painel e abre pelo endereço', async () => {
     cenario('gestao')
     const usuario = userEvent.setup()
@@ -64,6 +76,7 @@ describe('abas de Acompanhamentos', () => {
       expect.stringContaining('Renovações no radar'),
       expect.stringContaining('Aguardando conferência'),
       expect.stringContaining('Normas'),
+      expect.stringContaining('Exigências do órgão'),
       expect.stringContaining('Aba de teste'),
     ])
 

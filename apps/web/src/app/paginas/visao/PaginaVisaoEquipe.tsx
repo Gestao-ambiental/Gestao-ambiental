@@ -29,6 +29,7 @@ import { classeSelecao } from '@/components/ui/estilos-campo'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { ItemDoPlacar, Placar } from '@/components/ui/placar'
 import { listarEmpreendimentos } from '@/lib/api/empreendimentos'
+import { atribuirExigencia } from '@/lib/api/exigencias'
 import { listarMembrosAtivos } from '@/lib/api/licencas'
 import {
   TAMANHO_PAGINA_PRAZOS,
@@ -321,7 +322,9 @@ export function PaginaVisaoEquipe() {
     mutationFn: ({ linha, membroId }: { linha: LinhaDePrazo; membroId: string }) =>
       linha.tipo === 'acao_legal'
         ? atribuirAcaoLegal(cid, linha.id, membroId, linha.rowVersion)
-        : atribuirOcorrencia(linha.id, membroId, linha.rowVersion),
+        : linha.tipo === 'exigencia'
+          ? atribuirExigencia(linha.id, membroId, linha.rowVersion)
+          : atribuirOcorrencia(linha.id, membroId, linha.rowVersion),
     onSettled: async () => {
       await queryClient.invalidateQueries({ queryKey: ['prazos'] })
       await queryClient.invalidateQueries({ queryKey: ['prazos-contadores'] })

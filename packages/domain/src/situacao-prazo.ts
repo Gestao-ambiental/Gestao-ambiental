@@ -30,11 +30,15 @@ export const ROTULO_DO_TIPO_DE_LINHA: Readonly<Record<TipoLinhaDePrazo, string>>
 }
 
 /**
- * Ponto único que diz quais tipos aceitam a ação Atribuir na tela. Só a ocorrência no P0; o P3
- * acrescenta 'exigencia' junto com a RPC atribuir_exigencia. (O banco já conta exigência sem
- * responsável em "sem responsável": private.tipo_linha_tem_responsavel.)
+ * Ponto único que diz quais tipos aceitam a ação Atribuir na tela: a ocorrência (atribuir_ocorrencia)
+ * e a exigência do órgão (atribuir_exigencia, ADR-0045). O banco conta os mesmos tipos em "sem
+ * responsável": private.tipo_linha_tem_responsavel.
  */
-export const TIPOS_COM_RESPONSAVEL: readonly TipoLinhaDePrazo[] = ['ocorrencia', 'acao_legal']
+export const TIPOS_COM_RESPONSAVEL: readonly TipoLinhaDePrazo[] = [
+  'ocorrencia',
+  'exigencia',
+  'acao_legal',
+]
 
 export function tipoAceitaResponsavel(tipo: TipoLinhaDePrazo): boolean {
   return TIPOS_COM_RESPONSAVEL.includes(tipo)

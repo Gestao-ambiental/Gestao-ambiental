@@ -1099,6 +1099,100 @@ isOneToOne: false
       referencedColumns: ["consultoria_id","id"]
     }
                   ]
+                },"exigencia": {
+                  Row: {
+                    "assunto": string,"consultoria_id": string,"criado_em": string,"criado_por": string,"documento_id": string | null,"empreendimento_id": string,"excluido_em": string | null,"excluido_por": string | null,"id": string,"instrumento_id": string | null,"meta_interna": string,"notas": string | null,"numero_oficio": string | null,"numero_processo": string | null,"orgao": string | null,"prazo_contagem": Database["public"]['Enums']["contagem_prazo"] | null,"prazo_dias": number | null,"prazo_oficial": string,"prazo_oficial_original": string,"prazo_oficial_texto": string | null,"recebido_em": string,"recebido_em_texto": string | null,"responsavel_id": string | null,"row_version": number,"situacao": string,"unidade_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "assunto": string,"consultoria_id": string,"criado_em"?: string,"criado_por": string,"documento_id"?: string | null,"empreendimento_id": string,"excluido_em"?: string | null,"excluido_por"?: string | null,"id"?: string,"instrumento_id"?: string | null,"meta_interna": string,"notas"?: string | null,"numero_oficio"?: string | null,"numero_processo"?: string | null,"orgao"?: string | null,"prazo_contagem"?: Database["public"]['Enums']["contagem_prazo"] | null,"prazo_dias"?: number | null,"prazo_oficial": string,"prazo_oficial_original": string,"prazo_oficial_texto"?: string | null,"recebido_em": string,"recebido_em_texto"?: string | null,"responsavel_id"?: string | null,"row_version"?: number,"situacao"?: string,"unidade_id": string
+                  }
+                  Update: {
+                    "assunto"?: string,"consultoria_id"?: string,"criado_em"?: string,"criado_por"?: string,"documento_id"?: string | null,"empreendimento_id"?: string,"excluido_em"?: string | null,"excluido_por"?: string | null,"id"?: string,"instrumento_id"?: string | null,"meta_interna"?: string,"notas"?: string | null,"numero_oficio"?: string | null,"numero_processo"?: string | null,"orgao"?: string | null,"prazo_contagem"?: Database["public"]['Enums']["contagem_prazo"] | null,"prazo_dias"?: number | null,"prazo_oficial"?: string,"prazo_oficial_original"?: string,"prazo_oficial_texto"?: string | null,"recebido_em"?: string,"recebido_em_texto"?: string | null,"responsavel_id"?: string | null,"row_version"?: number,"situacao"?: string,"unidade_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "exigencia_consultoria_id_fkey"
+      columns: ["consultoria_id"]
+isOneToOne: false
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "exigencia_criado_por_fk"
+      columns: ["consultoria_id","criado_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "exigencia_documento_fk"
+      columns: ["consultoria_id","documento_id"]
+isOneToOne: false
+      referencedRelation: "documento"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "exigencia_excluido_por_fk"
+      columns: ["consultoria_id","excluido_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "exigencia_instrumento_fk"
+      columns: ["consultoria_id","instrumento_id"]
+isOneToOne: false
+      referencedRelation: "instrumento"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "exigencia_responsavel_fk"
+      columns: ["consultoria_id","responsavel_id"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "exigencia_unidade_fk"
+      columns: ["consultoria_id","empreendimento_id","unidade_id"]
+isOneToOne: false
+      referencedRelation: "unidade"
+      referencedColumns: ["consultoria_id","empreendimento_id","id"]
+    }
+                  ]
+                },"exigencia_resposta": {
+                  Row: {
+                    "consultoria_id": string,"descricao": string | null,"documento_id": string | null,"exigencia_id": string,"id": string,"meta_interna_anterior": string | null,"meta_interna_nova": string | null,"motivo": string | null,"prazo_anterior": string | null,"prazo_novo": string | null,"prazo_novo_texto": string | null,"protocolado_em": string | null,"protocolado_em_texto": string | null,"protocolo_numero": string | null,"registrado_em": string,"registrado_por": string,"tipo": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "consultoria_id": string,"descricao"?: string | null,"documento_id"?: string | null,"exigencia_id": string,"id"?: string,"meta_interna_anterior"?: string | null,"meta_interna_nova"?: string | null,"motivo"?: string | null,"prazo_anterior"?: string | null,"prazo_novo"?: string | null,"prazo_novo_texto"?: string | null,"protocolado_em"?: string | null,"protocolado_em_texto"?: string | null,"protocolo_numero"?: string | null,"registrado_em"?: string,"registrado_por": string,"tipo": string
+                  }
+                  Update: {
+                    "consultoria_id"?: string,"descricao"?: string | null,"documento_id"?: string | null,"exigencia_id"?: string,"id"?: string,"meta_interna_anterior"?: string | null,"meta_interna_nova"?: string | null,"motivo"?: string | null,"prazo_anterior"?: string | null,"prazo_novo"?: string | null,"prazo_novo_texto"?: string | null,"protocolado_em"?: string | null,"protocolado_em_texto"?: string | null,"protocolo_numero"?: string | null,"registrado_em"?: string,"registrado_por"?: string,"tipo"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "exigencia_resposta_consultoria_id_fkey"
+      columns: ["consultoria_id"]
+isOneToOne: false
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "exigencia_resposta_documento_fk"
+      columns: ["consultoria_id","documento_id"]
+isOneToOne: false
+      referencedRelation: "documento"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "exigencia_resposta_exigencia_fk"
+      columns: ["consultoria_id","exigencia_id"]
+isOneToOne: false
+      referencedRelation: "exigencia"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "exigencia_resposta_registrado_por_fk"
+      columns: ["consultoria_id","registrado_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    }
+                  ]
                 },"extracao_ia": {
                   Row: {
                     "concluida_em": string | null,"consultoria_id": string,"custo_micros": number | null,"detalhe": string | null,"documento_versao_id": string,"duracao_ms": number | null,"id": string,"iniciada_em": string,"instrumento_id": string,"itens_propostos": number | null,"modelo": string | null,"moeda": string,"motivo": string | null,"paginas": number | null,"resultado": Json | null,"situacao": string,"solicitada_por": string,"tokens_entrada": number | null,"tokens_saida": number | null,"versao_prompt": string | null
@@ -1273,14 +1367,14 @@ isOneToOne: false
                   ]
                 },"instrumento": {
                   Row: {
-                    "antecedencia_renovacao_dias": number,"assinado_em": string | null,"assinado_em_texto": string | null,"ativado_em": string | null,"ativado_por": string | null,"chave_ativacao": string | null,"consultoria_id": string,"criado_em": string,"criado_por": string,"documento_id": string | null,"emitido_em": string | null,"emitido_em_texto": string | null,"empreendimento_id": string,"excluido_em": string | null,"excluido_por": string | null,"id": string,"marco": Database["public"]['Enums']["marco_instrumento"] | null,"numero": string | null,"orgao": string | null,"publicado_em": string | null,"publicado_em_texto": string | null,"recebido_em": string | null,"recebido_em_texto": string | null,"row_version": number,"situacao": Database["public"]['Enums']["situacao_instrumento"],"somente_validade": boolean,"tipo_id": string | null,"unidade_id": string,"validade": string | null,"validade_texto": string | null
+                    "antecedencia_renovacao_dias": number,"assinado_em": string | null,"assinado_em_texto": string | null,"ativado_em": string | null,"ativado_por": string | null,"chave_ativacao": string | null,"consultoria_id": string,"criado_em": string,"criado_por": string,"documento_id": string | null,"emitido_em": string | null,"emitido_em_texto": string | null,"empreendimento_id": string,"excluido_em": string | null,"excluido_por": string | null,"id": string,"marco": Database["public"]['Enums']["marco_instrumento"] | null,"numero": string | null,"numero_processo": string | null,"orgao": string | null,"publicado_em": string | null,"publicado_em_texto": string | null,"recebido_em": string | null,"recebido_em_texto": string | null,"row_version": number,"situacao": Database["public"]['Enums']["situacao_instrumento"],"somente_validade": boolean,"tipo_id": string | null,"unidade_id": string,"validade": string | null,"validade_texto": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "antecedencia_renovacao_dias"?: number,"assinado_em"?: string | null,"assinado_em_texto"?: string | null,"ativado_em"?: string | null,"ativado_por"?: string | null,"chave_ativacao"?: string | null,"consultoria_id": string,"criado_em"?: string,"criado_por": string,"documento_id"?: string | null,"emitido_em"?: string | null,"emitido_em_texto"?: string | null,"empreendimento_id": string,"excluido_em"?: string | null,"excluido_por"?: string | null,"id"?: string,"marco"?: Database["public"]['Enums']["marco_instrumento"] | null,"numero"?: string | null,"orgao"?: string | null,"publicado_em"?: string | null,"publicado_em_texto"?: string | null,"recebido_em"?: string | null,"recebido_em_texto"?: string | null,"row_version"?: number,"situacao"?: Database["public"]['Enums']["situacao_instrumento"],"somente_validade"?: boolean,"tipo_id"?: string | null,"unidade_id": string,"validade"?: string | null,"validade_texto"?: string | null
+                    "antecedencia_renovacao_dias"?: number,"assinado_em"?: string | null,"assinado_em_texto"?: string | null,"ativado_em"?: string | null,"ativado_por"?: string | null,"chave_ativacao"?: string | null,"consultoria_id": string,"criado_em"?: string,"criado_por": string,"documento_id"?: string | null,"emitido_em"?: string | null,"emitido_em_texto"?: string | null,"empreendimento_id": string,"excluido_em"?: string | null,"excluido_por"?: string | null,"id"?: string,"marco"?: Database["public"]['Enums']["marco_instrumento"] | null,"numero"?: string | null,"numero_processo"?: string | null,"orgao"?: string | null,"publicado_em"?: string | null,"publicado_em_texto"?: string | null,"recebido_em"?: string | null,"recebido_em_texto"?: string | null,"row_version"?: number,"situacao"?: Database["public"]['Enums']["situacao_instrumento"],"somente_validade"?: boolean,"tipo_id"?: string | null,"unidade_id": string,"validade"?: string | null,"validade_texto"?: string | null
                   }
                   Update: {
-                    "antecedencia_renovacao_dias"?: number,"assinado_em"?: string | null,"assinado_em_texto"?: string | null,"ativado_em"?: string | null,"ativado_por"?: string | null,"chave_ativacao"?: string | null,"consultoria_id"?: string,"criado_em"?: string,"criado_por"?: string,"documento_id"?: string | null,"emitido_em"?: string | null,"emitido_em_texto"?: string | null,"empreendimento_id"?: string,"excluido_em"?: string | null,"excluido_por"?: string | null,"id"?: string,"marco"?: Database["public"]['Enums']["marco_instrumento"] | null,"numero"?: string | null,"orgao"?: string | null,"publicado_em"?: string | null,"publicado_em_texto"?: string | null,"recebido_em"?: string | null,"recebido_em_texto"?: string | null,"row_version"?: number,"situacao"?: Database["public"]['Enums']["situacao_instrumento"],"somente_validade"?: boolean,"tipo_id"?: string | null,"unidade_id"?: string,"validade"?: string | null,"validade_texto"?: string | null
+                    "antecedencia_renovacao_dias"?: number,"assinado_em"?: string | null,"assinado_em_texto"?: string | null,"ativado_em"?: string | null,"ativado_por"?: string | null,"chave_ativacao"?: string | null,"consultoria_id"?: string,"criado_em"?: string,"criado_por"?: string,"documento_id"?: string | null,"emitido_em"?: string | null,"emitido_em_texto"?: string | null,"empreendimento_id"?: string,"excluido_em"?: string | null,"excluido_por"?: string | null,"id"?: string,"marco"?: Database["public"]['Enums']["marco_instrumento"] | null,"numero"?: string | null,"numero_processo"?: string | null,"orgao"?: string | null,"publicado_em"?: string | null,"publicado_em_texto"?: string | null,"recebido_em"?: string | null,"recebido_em_texto"?: string | null,"row_version"?: number,"situacao"?: Database["public"]['Enums']["situacao_instrumento"],"somente_validade"?: boolean,"tipo_id"?: string | null,"unidade_id"?: string,"validade"?: string | null,"validade_texto"?: string | null
                   }
                   Relationships: [
                     {
@@ -1306,12 +1400,6 @@ isOneToOne: false
       columns: ["consultoria_id","documento_id"]
 isOneToOne: false
       referencedRelation: "documento"
-      referencedColumns: ["consultoria_id","id"]
-    },{
-      foreignKeyName: "instrumento_excluido_por_fk"
-      columns: ["consultoria_id","excluido_por"]
-isOneToOne: false
-      referencedRelation: "membro"
       referencedColumns: ["consultoria_id","id"]
     },{
       foreignKeyName: "instrumento_tipo_fk"
@@ -2585,6 +2673,9 @@ isOneToOne: false
 "alterar_papel":
 { Args: { "p_membro_id": string,"p_papel": Database["public"]['Enums']["papel_membro"] }; Returns: undefined
                            },
+"anexar_a_exigencia":
+{ Args: { "p_caminho": string,"p_descricao": string,"p_exigencia_id": string,"p_nome_original": string,"p_resposta_id": string,"p_sha256": string,"p_versao_id": string }; Returns: string
+                           },
 "anexar_evidencia_ao_requisito":
 { Args: { "p_caminho": string,"p_consultoria_id": string,"p_nome_original": string,"p_requisito_id": string,"p_sha256": string,"p_validade"?: string,"p_versao_id": string }; Returns: string
                            },
@@ -2613,6 +2704,9 @@ isOneToOne: false
                            },
 "atribuir_acao_legal":
 { Args: { "p_acao_id": string,"p_consultoria_id": string,"p_responsavel_id": string,"p_row_version": number }; Returns: number
+                           },
+"atribuir_exigencia":
+{ Args: { "p_exigencia_id": string,"p_membro_id": string,"p_row_version": number }; Returns: number
                            },
 "atribuir_ocorrencia":
 { Args: { "p_membro_id": string,"p_ocorrencia_id": string,"p_row_version": number }; Returns: number
@@ -2957,6 +3051,9 @@ isOneToOne: false
 "definir_permissao_financeira":
 { Args: { "p_financeiro": boolean,"p_membro_id": string }; Returns: undefined
                            },
+"definir_processo_da_licenca":
+{ Args: { "p_instrumento_id": string,"p_numero_processo": string,"p_row_version": number }; Returns: number
+                           },
 "definir_profissao_e_cargo":
 { Args: { "p_cargo": string,"p_membro_id": string,"p_outras_profissoes"?: (string)[],"p_profissao": string,"p_profissao_em_curso"?: boolean }; Returns: undefined
                            },
@@ -3008,6 +3105,9 @@ isOneToOne: false
 "editar_empreendimento":
 { Args: { "p_cliente": string,"p_cnpj": string,"p_id": string,"p_nome": string }; Returns: undefined
                            },
+"editar_exigencia":
+{ Args: { "p_assunto": string,"p_exigencia_id": string,"p_meta_interna": string,"p_notas"?: string,"p_numero_oficio"?: string,"p_numero_processo"?: string,"p_orgao"?: string,"p_row_version": number }; Returns: number
+                           },
 "editar_mtr":
 { Args: { "p_destinador_cnpj": string,"p_destinador_nome": string,"p_emitido_em": string,"p_id": string,"p_itens": Json,"p_numero": string,"p_observacao"?: string,"p_row_version": number,"p_situacao": string,"p_transportador_cnpj": string,"p_transportador_nome": string }; Returns: number
                            },
@@ -3057,6 +3157,9 @@ isOneToOne: false
                            },
 "excluir_cdf":
 { Args: { "p_id": string,"p_row_version": number }; Returns: undefined
+                           },
+"excluir_exigencia":
+{ Args: { "p_exigencia_id": string,"p_row_version": number }; Returns: undefined
                            },
 "excluir_foto_da_vistoria":
 { Args: { "p_foto_id": string }; Returns: undefined
@@ -3191,6 +3294,11 @@ isOneToOne: false
               "caminho": string,"documento_id": string,"enviada_em": string,"enviada_por_nome": string,"id": string,"nome_original": string,"validade": string
             }[]
                            },
+"listar_exigencias":
+{ Args: { "p_consultoria_id": string,"p_deslocamento"?: number,"p_empreendimento_id"?: string,"p_exigencia_id"?: string,"p_limite"?: number,"p_situacao"?: string }; Returns: {
+              "assunto": string,"criado_em": string,"criado_por_nome": string,"dias": number,"empreendimento_id": string,"empreendimento_nome": string,"hoje": string,"id": string,"instrumento_id": string,"licenca": string,"licenca_numero_processo": string,"licenca_row_version": number,"meta_interna": string,"notas": string,"numero_oficio": string,"numero_processo": string,"oficio_caminho": string,"oficio_nome": string,"orgao": string,"prazo_contagem": Database["public"]['Enums']["contagem_prazo"],"prazo_dias": number,"prazo_oficial": string,"prazo_oficial_original": string,"prazo_oficial_texto": string,"primeira_resposta_em": string,"recebido_em": string,"recebido_em_texto": string,"responsavel_id": string,"responsavel_nome": string,"respostas": number,"row_version": number,"situacao": string,"total": number,"unidade_id": string,"unidade_nome": string
+            }[]
+                           },
 "listar_fontes_legais":
 { Args: Record<PropertyKey, never>; Returns: {
               "ativa": boolean,"codigo": string,"com_erro": boolean,"esfera": string,"nome": string,"ultima_coleta_em": string
@@ -3242,6 +3350,11 @@ isOneToOne: false
 "listar_requisitos_do_empreendimento":
 { Args: { "p_consultoria_id": string,"p_deslocamento"?: number,"p_empreendimento_id": string,"p_limite"?: number }; Returns: {
               "acao_descricao": string,"acao_id": string,"acao_prazo": string,"acao_responsavel_id": string,"acao_responsavel_nome": string,"acao_row_version": number,"aplicavel": boolean,"avaliacao_resultado": string,"avaliada_em": string,"avaliada_por_nome": string,"descricao": string,"dispositivo": string,"evidencias": number,"id": string,"justificativa": string,"menor_validade": string,"motivo": Json,"norma_id": string,"norma_situacao_na_fonte": string,"norma_titulo": string,"origem": string,"responsavel_id": string,"row_version": number,"total": number,"ultima_mudanca_publicada_em": string
+            }[]
+                           },
+"listar_respostas_da_exigencia":
+{ Args: { "p_exigencia_id": string }; Returns: {
+              "descricao": string,"documento_caminho": string,"documento_nome": string,"id": string,"meta_interna_anterior": string,"meta_interna_nova": string,"motivo": string,"prazo_anterior": string,"prazo_novo": string,"prazo_novo_texto": string,"protocolado_em": string,"protocolado_em_texto": string,"protocolo_numero": string,"registrado_em": string,"registrado_por": string,"registrado_por_nome": string,"tipo": string
             }[]
                            },
 "listar_tarefas_servico":
@@ -3379,6 +3492,9 @@ isOneToOne: false
               "dias": number,"empreendimento_id": string,"empreendimento_nome": string,"inicio": string,"obrigacao_id": string,"observacao": string,"prazo": string,"referencia": string,"tipo": string
             }[]
                            },
+"prorrogar_exigencia":
+{ Args: { "p_caminho"?: string,"p_exigencia_id": string,"p_meta_interna": string,"p_motivo": string,"p_nome_original"?: string,"p_prazo_novo": string,"p_prazo_novo_texto"?: string,"p_resposta_id": string,"p_row_version": number,"p_sha256"?: string,"p_versao_id"?: string }; Returns: number
+                           },
 "publicar_configuracao_orcamento":
 { Args: { "p_consultoria_id": string,"p_row_version": number }; Returns: number
                            },
@@ -3405,6 +3521,9 @@ isOneToOne: false
                            },
 "registrar_envio_do_resumo":
 { Args: { "p_consultoria_id": string,"p_destinatarios": number,"p_mes": string }; Returns: boolean
+                           },
+"registrar_exigencia":
+{ Args: { "p_assunto": string,"p_caminho"?: string,"p_id": string,"p_instrumento_id"?: string,"p_meta_interna": string,"p_nome_original"?: string,"p_notas"?: string,"p_numero_oficio"?: string,"p_numero_processo"?: string,"p_orgao"?: string,"p_prazo_contagem"?: Database["public"]['Enums']["contagem_prazo"],"p_prazo_dias"?: number,"p_prazo_oficial": string,"p_prazo_oficial_texto"?: string,"p_recebido_em": string,"p_recebido_em_texto"?: string,"p_responsavel_id"?: string,"p_sha256"?: string,"p_unidade_id": string,"p_versao_id"?: string }; Returns: string
                            },
 "registrar_foto_membro":
 { Args: { "p_caminho": string,"p_membro_id": string,"p_nome_original": string,"p_sha256": string,"p_versao_id": string }; Returns: string
@@ -3473,6 +3592,9 @@ isOneToOne: false
                            },
 "reservar_resumo_de_mudanca":
 { Args: { "p_mudanca_id": string }; Returns: Json
+                           },
+"responder_exigencia":
+{ Args: { "p_caminho"?: string,"p_descricao"?: string,"p_exigencia_id": string,"p_nome_original"?: string,"p_protocolado_em": string,"p_protocolado_em_texto"?: string,"p_protocolo_numero"?: string,"p_resposta_id": string,"p_sha256"?: string,"p_versao_id"?: string }; Returns: number
                            },
 "responder_linha_de_base":
 { Args: { "p_consultoria_id": string,"p_horas_semana_conferindo": number,"p_licencas_ativas": number,"p_minutos_por_condicionante": number,"p_surpresas_por_mes": number }; Returns: string

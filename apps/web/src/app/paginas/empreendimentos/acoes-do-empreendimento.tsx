@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useState, type ComponentType } from 'react'
 
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
+import { DialogoRegistrarExigenciaDoEmpreendimento } from '@/app/paginas/exigencias/DialogoRegistrarExigenciaDoEmpreendimento'
 import { DialogoGerarRelatorio } from '@/app/paginas/modelos/GerarRelatorio'
 import { DialogoRelatorioDoMes } from '@/app/paginas/modelos/RelatorioDoMes'
 import { BotaoMais } from '@/components/ui/botao-mais'
@@ -99,6 +100,13 @@ const ACOES: readonly AcaoDoEmpreendimento[] = [
     icone: 'calendar',
     somenteGestao: true,
     Dialogo: DialogoDoRelatorioDoMes,
+  },
+  {
+    id: 'exigencia',
+    rotulo: 'Registrar exigência',
+    icone: 'flag',
+    somenteGestao: true,
+    Dialogo: DialogoRegistrarExigenciaDoEmpreendimento,
   },
   {
     id: 'orcamento',
