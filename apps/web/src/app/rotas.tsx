@@ -201,6 +201,14 @@ export const rotas: RouteObject[] = [
                 ),
               },
               { path: 'ocorrencias/:id', element: <PaginaOcorrencia /> },
+              {
+                path: 'exigencias/:id',
+                lazy: carregarRota(() =>
+                  import('./paginas/exigencias/PaginaExigencia').then((m) => ({
+                    Component: m.PaginaExigencia,
+                  })),
+                ),
+              },
               // Vistoria móvel (ADR-0033): celular primeiro.
               { path: 'campo', element: <PaginaMinhasVistorias /> },
               { path: 'campo/:id', element: <PaginaDetalheVistoria /> },

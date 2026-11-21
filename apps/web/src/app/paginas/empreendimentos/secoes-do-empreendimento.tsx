@@ -5,6 +5,7 @@ import type { DataCivil } from '@gestao-ambiental/domain'
 import type { UseQueryResult } from '@tanstack/react-query'
 import type { ComponentType } from 'react'
 
+import { SecaoExigenciasDoEmpreendimento } from '@/app/paginas/exigencias/SecaoExigenciasDoEmpreendimento'
 import { RelatoriosEscritos } from '@/app/paginas/relatorios/RelatoriosEscritos'
 import { SecaoResiduosDoEmpreendimento } from '@/app/paginas/residuos/registro/SecaoResiduosDoEmpreendimento'
 import type { Empreendimento, Unidade } from '@/lib/api/empreendimentos'
@@ -43,6 +44,7 @@ function SecaoResiduos({ empreendimento }: PropsDaSecao) {
 
 const SECOES: readonly { id: string; Secao: ComponentType<PropsDaSecao> }[] = [
   { id: 'licencas', Secao: SecaoLicencas },
+  { id: 'exigencias', Secao: SecaoExigenciasDoEmpreendimento },
   { id: 'relatorios', Secao: SecaoRelatorios },
   { id: 'alvaras', Secao: SecaoDeAlvaras },
   { id: 'residuos', Secao: SecaoResiduos },

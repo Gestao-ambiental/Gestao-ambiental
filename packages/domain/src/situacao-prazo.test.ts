@@ -99,8 +99,8 @@ describe('exigência e vencimento (base das oito funções)', () => {
     expect(new Set(rotulos).size).toBe(rotulos.length)
   })
 
-  it('no P0 só a ocorrência aceita responsável (o P3 acrescenta a exigência)', () => {
-    expect(TIPOS_COM_RESPONSAVEL).toEqual(['ocorrencia'])
-    expect(TIPOS_LINHA_DE_PRAZO.filter(tipoAceitaResponsavel)).toEqual(['ocorrencia'])
+  it('ocorrência e exigência aceitam responsável; validade, limite e vencimento não', () => {
+    expect(TIPOS_COM_RESPONSAVEL).toEqual(['ocorrencia', 'exigencia'])
+    expect(TIPOS_LINHA_DE_PRAZO.filter(tipoAceitaResponsavel)).toEqual(['ocorrencia', 'exigencia'])
   })
 })

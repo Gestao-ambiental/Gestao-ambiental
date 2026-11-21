@@ -46,6 +46,18 @@ export { diaUtilAnterior, ehDiaUtil, prazoDeOficio } from './dias-uteis'
 export type { PrazoDeOficio, UnidadePrazo } from './dias-uteis'
 
 export {
+  DIAS_MAXIMOS_DA_EXIGENCIA,
+  ErroDeExigencia,
+  ROTULO_DA_SITUACAO_DA_EXIGENCIA,
+  metaInternaSugerida,
+  metaInternaValida,
+  prazoDaExigencia,
+  prorrogacaoValida,
+  situacaoDaExigencia,
+} from './exigencia'
+export type { SituacaoDaExigencia, SituacaoGravadaDaExigencia } from './exigencia'
+
+export {
   VALIDADE_CONVITE_DIAS,
   consultoriaInicial,
   impedimentoDoVinculo,

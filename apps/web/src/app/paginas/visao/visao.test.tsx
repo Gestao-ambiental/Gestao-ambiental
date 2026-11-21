@@ -335,7 +335,7 @@ describe('visão: filtro por cliente e tipos novos (base das oito funções)', (
     expect(await within(filtro).findByText('não encontrado')).toBeInTheDocument()
   })
 
-  it('exigência leva à exigência e vencimento ao empreendimento; Atribuir só na ocorrência', async () => {
+  it('exigência leva à exigência e vencimento ao empreendimento; Atribuir na ocorrência e na exigência', async () => {
     const tiposNovos = [
       linha('o9', 2, 'Relatório sem dono', { responsavel_id: null, responsavel_nome: null }),
       linha('x1', 3, 'Apresentar laudo complementar', {
@@ -380,7 +380,8 @@ describe('visão: filtro por cliente e tipos novos (base das oito funções)', (
       '/exigencias/x1',
     )
     expect(within(exigencia).getByText(/Exigência/)).toBeInTheDocument()
-    expect(within(exigencia).queryByRole('button', { name: /Atribuir/ })).toBeNull()
+    // Regra mudada de propósito no P3 (ADR-0045): a exigência aceita responsável.
+    expect(within(exigencia).getByRole('button', { name: /Atribuir/ })).toBeInTheDocument()
     expect(within(exigencia).getByText('Em 3 dias')).toBeInTheDocument()
 
     expect(within(vencimento).getByRole('link', { name: /AVCB/ })).toHaveAttribute(
@@ -390,6 +391,41 @@ describe('visão: filtro por cliente e tipos novos (base das oito funções)', (
     expect(within(vencimento).getByText(/Vencimento/)).toBeInTheDocument()
     expect(within(vencimento).queryByRole('button', { name: /Atribuir/ })).toBeNull()
     expect(within(vencimento).getByText('Vencida há 2 dias')).toBeInTheDocument()
+  })
+
+  it('Gestão atribui a exigência pela RPC da exigência, não pela da ocorrência', async () => {
+    const exigencia = linha('x1', 3, 'Apresentar laudo complementar', {
+      tipo_linha: 'exigencia',
+      codigo: null,
+      instrumento_id: null,
+      situacao_ocorrencia: null,
+      responsavel_id: null,
+      responsavel_nome: null,
+      row_version: 4,
+      total: 1,
+    })
+    falso.reiniciar(
+      cenario('gestao', {
+        rpc: {
+          listar_prazos: (args) => ({ data: args.p_limite === 1 ? [{ total: 1 }] : [exigencia] }),
+          atribuir_exigencia: { data: 5 },
+        },
+      }),
+    )
+    const usuario = userEvent.setup()
+    renderizarApp('/')
+    const tabela = await screen.findByRole('table')
+
+    await usuario.click(
+      within(tabela).getByRole('button', { name: /Atribuir.*Apresentar laudo complementar/ }),
+    )
+    await usuario.click(await screen.findByRole('menuitem', { name: 'Elisa Prado' }))
+    expect(falso.cliente.rpc).toHaveBeenCalledWith('atribuir_exigencia', {
+      p_exigencia_id: 'x1',
+      p_membro_id: 'm-elisa',
+      p_row_version: 4,
+    })
+    expect(falso.cliente.rpc).not.toHaveBeenCalledWith('atribuir_ocorrencia', expect.anything())
   })
 
   it('com o filtro de cliente não tem violações de acessibilidade detectáveis pelo axe', async () => {
