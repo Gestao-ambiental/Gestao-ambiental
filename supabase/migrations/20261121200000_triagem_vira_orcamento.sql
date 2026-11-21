@@ -34,6 +34,8 @@ as $$
   select descricao ilike 'Taxa do IMA%' or descricao ilike 'Taxa do município%'
 $$;
 
+revoke all on function private.eh_taxa_do_orgao(text) from public, anon, authenticated;
+
 -- ---------------------------------------------------------------------------
 -- Orçar: rascunho com os valores da modalidade e a taxa
 -- ---------------------------------------------------------------------------
