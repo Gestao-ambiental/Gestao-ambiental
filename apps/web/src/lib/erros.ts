@@ -250,6 +250,9 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   captura_no_futuro: 'A hora da foto está no futuro. Confira o relógio do aparelho.',
   legenda_longa_demais: 'Use até 200 caracteres na legenda.',
   local_invalido: 'Confira a localização da foto.',
+  // Avisos (ADR-0047)
+  link_invalido: 'Este link não vale mais. Desligue o resumo pelo Perfil.',
+  ligado_obrigatorio: 'Escolha ligar ou desligar.',
 }
 
 // Códigos que a vistoria (ADR-0033) reaproveita com outro sentido: a tela de Campo usa estas

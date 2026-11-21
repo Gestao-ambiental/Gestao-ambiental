@@ -24,6 +24,7 @@ import { ehSemPermissao, mensagemDoErro } from '@/lib/erros'
 
 import { CamposProfissaoECargo } from '../equipe/CamposProfissaoECargo'
 import { Pagina } from '../Pagina'
+import { SecaoAvisos } from './SecaoAvisos'
 import { SecaoCadastroFederal, SecaoRegistros } from './SecaoRegistros'
 
 const PROBLEMAS_DA_FOTO: Record<ProblemaDaFoto, string> = {
@@ -298,6 +299,7 @@ function Perfil({ perfil }: { perfil: MembroAtivo }) {
 
       <SecaoRegistros perfil={perfil} />
       <SecaoCadastroFederal perfil={perfil} />
+      <SecaoAvisos />
     </div>
   )
 }

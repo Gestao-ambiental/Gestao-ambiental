@@ -20,6 +20,7 @@ import {
 import { Carregando, EstadoErro, EstadoVazio } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
 import { BotaoIcone } from '@/components/ui/botao-icone'
+import { BotaoMais } from '@/components/ui/botao-mais'
 import { CaixaSelecao } from '@/components/ui/caixa-selecao'
 import { Dialogo } from '@/components/ui/dialogo'
 import { classeSelecao } from '@/components/ui/estilos-campo'
@@ -37,6 +38,7 @@ import { CHAVE_TAREFAS, listarTarefasDeServico } from '@/lib/api/tarefas'
 import { nomeDoMes } from '@/lib/datas'
 import { cn } from '@/lib/utils'
 
+import { exportarIcs, eventosIcsDoRecorte } from './exportar-ics'
 import { EventoDoDia, MarcaDoTipo } from './ItemDoCalendario'
 import { itemDoEvento, itemDoResiduo, type ItemDoDia } from './itens-do-calendario'
 
@@ -204,6 +206,22 @@ export function PaginaCalendario() {
     porDia.set(dia, [...(porDia.get(dia) ?? []), ...prazos.map(itemDoResiduo)])
   }
   const doDia = (d: DataCivil) => porDia.get(d) ?? []
+  const totalNoPeriodo = [...porDia.values()].reduce((soma, itens) => soma + itens.length, 0)
+
+  /** Exportar .ics: o recorte visível (período e filtros), com tarefas e resíduos. */
+  function exportar() {
+    const residuosVisiveis = semFiltroDePessoa ? (residuos.data ?? []) : []
+    exportarIcs(
+      eventosIcsDoRecorte(
+        [...(eventos.data ?? []), ...eventosDeTarefa],
+        residuosVisiveis,
+        inicio,
+        fim,
+      ),
+      inicio,
+      fim,
+    )
+  }
 
   const [anoRef, mesRef] = partes(referencia)
   const titulo =
@@ -410,13 +428,26 @@ export function PaginaCalendario() {
     <Pagina
       titulo="Calendário"
       acao={
-        <Segmentado
-          rotulo="Visualização"
-          opcoes={MODOS}
-          valor={modo}
-          aoMudar={setModo}
-          larguraTotalNoCelular
-        />
+        <>
+          <Segmentado
+            rotulo="Visualização"
+            opcoes={MODOS}
+            valor={modo}
+            aoMudar={setModo}
+            larguraTotalNoCelular
+            className="max-md:w-auto max-md:min-w-0 max-md:flex-1"
+          />
+          <BotaoMais
+            itens={[
+              {
+                rotulo: 'Exportar .ics',
+                icone: 'download',
+                desabilitado: eventos.isPending || eventos.isError || totalNoPeriodo === 0,
+                aoEscolher: exportar,
+              },
+            ]}
+          />
+        </>
       }
     >
       <div className="flex flex-col gap-(--e-3)">
