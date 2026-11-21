@@ -22,6 +22,7 @@ function evento(extra: Partial<EventoDoCalendario> = {}): EventoDoCalendario {
     unidadeNome: 'Matriz',
     licenca: 'LAO 4821/2023',
     responsavelNome: 'Bruno Kist',
+    responsavelId: 'm-bruno',
     semResponsavel: false,
     ...extra,
   }
