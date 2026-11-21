@@ -56,7 +56,13 @@ describe('abas de Acompanhamentos', () => {
   })
 
   it('Exigências do órgão vem depois de Aguardando conferência, para todos, com painel próprio', () => {
-    const exigencias = ABAS_DE_ACOMPANHAMENTOS[2]
+    // Com as normas (L5) na lista, Exigências vem depois delas: o que importa é vir depois de
+    // Aguardando conferência.
+    const indice = ABAS_DE_ACOMPANHAMENTOS.findIndex((a) => a.valor === 'exigencias')
+    expect(indice).toBeGreaterThan(
+      ABAS_DE_ACOMPANHAMENTOS.findIndex((a) => a.valor === 'conferencia'),
+    )
+    const exigencias = ABAS_DE_ACOMPANHAMENTOS[indice]
     expect(exigencias).toMatchObject({
       valor: 'exigencias',
       rotulo: 'Exigências do órgão',
