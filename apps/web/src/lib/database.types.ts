@@ -2097,6 +2097,11 @@ isOneToOne: false
               "detalhe": string,"id": string,"referencia_id": string,"tipo": string,"titulo": string
             }[]
                            },
+"buscar_normas":
+{ Args: { "p_deslocamento"?: number,"p_limite"?: number,"p_termo": string }; Returns: {
+              "ano": number,"chave": string,"esfera": string,"id": string,"municipio_ibge": string,"numero": string,"orgao": string,"situacao_na_fonte": string,"tipo": string,"titulo": string,"total": number,"ultima_versao_em": string
+            }[]
+                           },
 "cadastrar_empreendimento_com_unidade":
 { Args: { "p_cnpj": string,"p_consultoria_id": string,"p_empreendimento_id": string,"p_nome": string,"p_unidade_endereco"?: string,"p_unidade_id": string,"p_unidade_nome": string }; Returns: string
                            },
@@ -2379,6 +2384,9 @@ isOneToOne: false
 "desligar_membro":
 { Args: { "p_membro_id": string,"p_motivo"?: string }; Returns: undefined
                            },
+"detalhe_da_norma":
+{ Args: { "p_norma_id": string }; Returns: Json
+                           },
 "devolver_relatorio":
 { Args: { "p_id": string,"p_motivo": string,"p_row_version": number }; Returns: number
                            },
@@ -2531,6 +2539,11 @@ isOneToOne: false
 "listar_empreendimentos":
 { Args: { "p_busca"?: string,"p_consultoria_id": string,"p_deslocamento"?: number,"p_limite"?: number }; Returns: {
               "cliente_nome": string,"cnpj": string,"criado_em": string,"id": string,"licencas": Json,"nome": string,"total": number,"unidades": number
+            }[]
+                           },
+"listar_fontes_legais":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "ativa": boolean,"codigo": string,"com_erro": boolean,"esfera": string,"nome": string,"ultima_coleta_em": string
             }[]
                            },
 "listar_modelos_de_orcamento":
