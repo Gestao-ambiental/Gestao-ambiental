@@ -76,6 +76,7 @@ import { cn } from '@/lib/utils'
 
 import { AcaoGravar, RetornoDaGravacao, type DestinoDaGravacao } from './GravarNaLicenca'
 import { LocalDoEmpreendimento, type PontoMarcado } from './LocalDoEmpreendimento'
+import { OrcarDaTriagem } from './OrcarDaTriagem'
 
 const { atividades: CATALOGO, parametros: PARAMETROS, fonte: FONTE } = CATALOGO_CONSEMA_250
 const POR_CODIGO = new Map(CATALOGO.map((a) => [a.codigo, a]))
@@ -1349,6 +1350,18 @@ export function PaginaTriagem() {
                     nivel={nivel}
                     calculados={calculados}
                   />
+                  {conclusao.modalidade && empreendimento.data && ehGestao ? (
+                    <OrcarDaTriagem
+                      consultoriaId={atual.consultoriaId}
+                      empreendimento={empreendimento.data}
+                      modalidade={conclusao.modalidade}
+                      orgao={orgao}
+                      taxas={calculados.flatMap((c) => {
+                        const centavos = centavosNoIma(c)
+                        return centavos === null ? [] : [{ codigo: c.atividade.codigo, centavos }]
+                      })}
+                    />
+                  ) : null}
                 </section>
                 <div
                   role="group"

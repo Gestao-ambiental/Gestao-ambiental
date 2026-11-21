@@ -670,3 +670,12 @@ export {
 export { lerInscricaoImobiliaria } from './inscricao-imobiliaria'
 export { ROTULO_DA_MUDANCA, linhaDaMudanca, pedeEmailNaHora } from './aviso-de-norma'
 export type { MudancaNoResumo, TipoDeMudancaDeNorma } from './aviso-de-norma'
+export {
+  LICENCAS_DA_MODALIDADE,
+  MODALIDADES,
+  despesaDaTaxa,
+  ehModalidade,
+  nomeDosValoresDaModalidade,
+  objetoDoOrcamentoDaTriagem,
+} from './triagem-orcamento'
+export type { DespesaDaTaxa, TaxaDaAtividade } from './triagem-orcamento'

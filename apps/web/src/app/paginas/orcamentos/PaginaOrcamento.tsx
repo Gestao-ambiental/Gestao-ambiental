@@ -85,6 +85,7 @@ import { DialogoModelo, type SelecaoDoModelo } from './DialogoModelo'
 import { DialogoDuplicar, DialogoSalvarModelo } from './DialogosDeCopia'
 import { SituacaoDoOrcamento } from './SituacaoDoOrcamento'
 import { TarefasDoOrcamento } from './TarefasDoOrcamento'
+import { ValoresDaModalidade } from './ValoresDaModalidade'
 import { camposDoProspecto, lerProspecto, type CamposDoProspecto } from './prospecto'
 import { SeloSituacaoOrcamento } from './SeloSituacaoOrcamento'
 
@@ -1156,6 +1157,8 @@ function Editor({
       {naLixeira ? null : (
         <TarefasDoOrcamento orcamentoId={orcamento.id} situacao={orcamento.situacao} />
       )}
+
+      {naLixeira ? null : <ValoresDaModalidade orcamentoId={orcamento.id} />}
 
       {naLixeira ? (
         <MensagemSecao tom="atencao">
