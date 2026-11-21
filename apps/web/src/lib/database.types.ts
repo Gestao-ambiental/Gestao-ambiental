@@ -2659,6 +2659,11 @@ isOneToOne: false
               "clientes": number,"empreendimentos": number,"licencas": number,"mudanca_id": string,"nao_vista": boolean,"norma_id": string,"norma_titulo": string,"publicada_em": string,"resumo": string,"tipo_mudanca": string,"total": number
             }[]
                            },
+"listar_mudancas_do_empreendimento":
+{ Args: { "p_consultoria_id": string,"p_desde": string,"p_empreendimento_id": string }; Returns: {
+              "licencas": string[],"mudanca_id": string,"norma_id": string,"norma_titulo": string,"publicada_em": string,"resumo": Json,"tipo_mudanca": string,"url_oficial": string
+            }[]
+                           },
 "listar_orcamentos":
 { Args: { "p_busca"?: string,"p_consultoria_id": string,"p_deslocamento"?: number,"p_limite"?: number,"p_lixeira"?: boolean,"p_situacao"?: Database["public"]['Enums']["situacao_orcamento"] }; Returns: {
               "ano": number,"atualizado_em": string,"empreendimento_id": string,"empreendimento_nome": string,"excluido_em": string,"id": string,"objeto": string,"revisao": number,"row_version": number,"sequencia": number,"situacao": Database["public"]['Enums']["situacao_orcamento"],"total": number,"total_centavos": number
@@ -2677,6 +2682,11 @@ isOneToOne: false
 "listar_renovacoes":
 { Args: { "p_consultoria_id": string,"p_deslocamento"?: number,"p_horizonte_meses"?: number,"p_limite"?: number }; Returns: {
               "acompanhamento_dias": number,"antecedencia_dias": number,"dias_limite_protocolo": number,"empreendimento_id": string,"empreendimento_nome": string,"hoje": string,"id": string,"instrumento_id": string,"licenca": string,"orcamento_ano": number,"orcamento_id": string,"orcamento_revisao": number,"orcamento_sequencia": number,"orcamento_situacao": Database["public"]['Enums']["situacao_orcamento"],"orgao": string,"protocolado_em": string,"protocolo_numero": string,"total": number,"unidade_nome": string,"validade": string
+            }[]
+                           },
+"listar_requisitos_da_consultoria":
+{ Args: { "p_consultoria_id": string,"p_deslocamento"?: number,"p_limite"?: number }; Returns: {
+              "acao_prazo": string,"aplicavel": boolean,"avaliacao_resultado": string,"avaliada_em": string,"empreendimento_id": string,"empreendimento_nome": string,"id": string,"norma_titulo": string,"total": number,"ultima_mudanca_publicada_em": string
             }[]
                            },
 "listar_requisitos_do_empreendimento":
@@ -2730,6 +2740,11 @@ isOneToOne: false
                            },
 "mudar_situacao_tarefa_servico":
 { Args: { "p_id": string,"p_para": string,"p_row_version": number }; Returns: number
+                           },
+"normas_por_chave":
+{ Args: { "p_chaves": string[] }; Returns: {
+              "chave": string,"id": string,"situacao_na_fonte": string,"titulo": string
+            }[]
                            },
 "obrigacoes_residuo":
 { Args: { "p_empreendimento_id": string }; Returns: {

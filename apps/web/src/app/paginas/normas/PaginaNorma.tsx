@@ -397,6 +397,7 @@ function Situacao({ norma }: { norma: DetalheDaNorma }) {
  * mudanças publicadas com a diferença, o resumo revisado e os afetados da carteira, e as versões.
  */
 export function PaginaNorma() {
+  const { atual } = useConsultoria()
   const { id = '' } = useParams()
   const [parametros] = useSearchParams()
   const pedida = parametros.get('mudanca')
@@ -464,6 +465,15 @@ export function PaginaNorma() {
     >
       <div className="flex flex-col gap-(--e-8)">
         {norma.ementa ? <p className="max-w-[72ch] corpo text-(--tinta)">{norma.ementa}</p> : null}
+        {norma.fonte === 'planalto' ? (
+          <p className="rotulo text-(--tinta-2)">
+            Fonte: Planalto
+            {norma.versoes[0]?.coletadaEm
+              ? `, acesso em ${formatarInstanteComoData(norma.versoes[0].coletadaEm, atual.fuso)}`
+              : ''}
+            . Conteúdo informativo, não oficial.
+          </p>
+        ) : null}
         <Secao titulo="Mudanças publicadas">
           <Mudancas key={norma.id} mudancas={norma.mudancas} pedida={pedida} />
         </Secao>

@@ -18,6 +18,8 @@ import { Selo } from '@/components/ui/selo'
 import { obterResumoDoMes, type ResumoDoMes } from '@/lib/api/indicadores-de-valor'
 import { ehSemPermissao } from '@/lib/erros'
 
+import { QuadroConformidade } from './QuadroConformidade'
+
 const decimal = new Intl.NumberFormat('pt-BR', {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
@@ -175,6 +177,7 @@ export function PaginaPainel() {
       ) : (
         <PlacarDoMes atual={doMes} anterior={anterior} />
       )}
+      <QuadroConformidade />
     </Pagina>
   )
 }

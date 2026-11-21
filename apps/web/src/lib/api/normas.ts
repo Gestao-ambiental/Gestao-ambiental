@@ -111,6 +111,8 @@ export interface DetalheDaNorma {
   ano: number | null
   temas: string[]
   urlOficial: string | null
+  /** Fonte de coleta (ima_in, planalto, inlabs…); nula nas normas da carga sem coletor. */
+  fonte: string | null
   revogada: boolean
   /** DATE da revogação, quando a fonte publica. */
   revogadaEm: string | null
@@ -245,6 +247,7 @@ export async function detalheDaNorma(id: string): Promise<DetalheDaNorma | null>
     ano: inteiroOuNulo(lido.ano),
     temas: textos(lido.temas),
     urlOficial: textoOuNulo(lido.url_oficial),
+    fonte: textoOuNulo(lido.fonte),
     revogada: lido.situacao_na_fonte === 'revogada',
     revogadaEm: textoOuNulo(lido.revogada_em),
     revogadaPor: textoOuNulo(lido.revogada_por),

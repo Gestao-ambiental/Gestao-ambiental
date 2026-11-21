@@ -39,6 +39,7 @@ import { SecaoEtapas } from './SecaoEtapas'
 import { SecaoEvidencia } from './SecaoEvidencia'
 import { SecaoHistorico } from './SecaoHistorico'
 import { SecaoVistorias } from './SecaoVistorias'
+import { BaseLegal } from './BaseLegal'
 import { VoltarParaVisao } from './pecas'
 
 function emDias(data: DataCivil, hoje: DataCivil): string {
@@ -362,6 +363,7 @@ export function PaginaOcorrencia() {
             <blockquote className="max-w-[72ch] border-l-[3px] border-(--marca-linha) pl-(--e-4) corpo text-pretty whitespace-pre-line text-(--tinta)">
               {dados.textoLiteral}
             </blockquote>
+            <BaseLegal texto={dados.textoLiteral} />
           </section>
 
           {filhosComErro ? (

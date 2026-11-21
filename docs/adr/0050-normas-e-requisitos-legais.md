@@ -112,3 +112,15 @@ Antes do L2, conferir se a API do DOE-SC continua igual. Antes do L8, ler os ter
 - Recurso de plano novo (`legislacao`) muda o check do catálogo comercial, o domínio de planos e o front; vai junto com o L6.
 - Os coletores dependem de sites de terceiros: mudança de formato deve gerar alerta (`fonte_legal.ultimo_erro`), nunca aviso falso. O INLABS sai do ar às vezes; dia útil sem ZIP gera alerta e reprocessamento.
 - Fica a cargo de pessoas: card no ClickUp, atualização do doc 02 com os LEG, do ERD, do CLAUDE.md (escopo) e o envio dos contatos com os órgãos.
+
+## Notas da implementação (21/11/2026)
+
+- **Domínio no Edge:** em vez de import map, o domínio é espelhado em `supabase/functions/_shared/dominio/` por `scripts/normas/espelhar-dominio-no-edge.mjs`; um teste do domínio falha se o espelho ficar velho (L1).
+- **Triagem (L3):** parte do P2 (`atividade_licenciada`, ADR-0044). O que é gravado no empreendimento vai para `atividade_do_empreendimento`; o município da unidade é gravado pela Edge Function `consultar-local`, com o JWT de quem consulta.
+- **Revisão (L4):** a Central fica em `/admin/normas`. Mudança detectada pode ser resumida pelo gatilho (quando os segredos do Vault existem) ou pelo botão Gerar resumo.
+- **Busca (L5):** o grupo Normas do Ctrl+K só busca quando o termo parece referência de norma (tem número ou começa por tipo ou órgão), para não misturar normas com condicionantes de mesmo assunto.
+- **Plano (L6):** `listar_requisitos_do_empreendimento` continua legível sem o recurso `legislacao`; só a escrita para.
+- **Federal (L8):** a fonte `senado` ficou sem coletor: o pedido condicional ao Planalto (ETag) já diz quando a lei mudou. O ZIP do INLABS é lido sem pacote externo (`DecompressionStream`).
+- **Municípios (L9):** a coleta do CIGA só olha os municípios das unidades com município gravado (`municipios_vigiados`).
+- **Relatório e painel (L10):** a base legal da condicionante é calculada na tela a partir do texto literal (`chavesCitadas` + `normas_por_chave`), sem tabela nova. A atribuição exigida pela Portaria Casa Civil 130/2021 aparece na página das normas do Planalto.
+- **Ordem das migrations no beta:** aplicar pelo horário (20261120230000 a 20261121004000); as camadas se juntam antes.

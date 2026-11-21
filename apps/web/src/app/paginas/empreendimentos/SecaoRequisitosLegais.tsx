@@ -3,6 +3,8 @@
 // domínio; a ação e a evidência ficam dentro da própria linha, sem tela nova.
 import {
   ROTULO_DA_SITUACAO_DO_REQUISITO,
+  linhasDaMatrizLegal,
+  adicionarDias,
   formatarDataCivil,
   rotuloDoMotivo,
   situacaoDoRequisito,
@@ -27,6 +29,7 @@ import {
   sugerirRequisitos,
   type RequisitoLegal,
 } from '@/lib/api/requisitos-legais'
+import { listarMudancasDoEmpreendimento } from '@/lib/api/relatorio-de-normas'
 import { mensagemDoErro } from '@/lib/erros'
 
 import { TituloDoPainel, classePainel } from '../residuos/quadro'
@@ -125,7 +128,41 @@ export function SecaoRequisitosLegais({ empreendimento, hoje, ehGestao }: PropsD
     mutationFn: (acao: { id: string; rowVersion: number }) => concluirAcaoLegal(cid, acao),
     onSuccess: atualizar,
   })
-  const erro = sugerir.error ?? seAplica.error ?? concluir.error
+  const relatorio = useMutation({
+    mutationFn: async (tipo: 'matriz' | 'mudancas') => {
+      const word = await import('@/lib/docx-de-normas')
+      if (tipo === 'mudancas') {
+        const desde = adicionarDias(hoje, -30)
+        const mudancas = await listarMudancasDoEmpreendimento(cid, empreendimento.id, desde)
+        const arquivo = await word.gerarMudancasDoEmpreendimento(
+          empreendimento.nome,
+          mudancas,
+          desde,
+          hoje,
+        )
+        word.baixarArquivo(arquivo, `Mudancas na legislacao - ${empreendimento.nome}.docx`)
+        return
+      }
+      const todos: RequisitoLegal[] = []
+      for (let p = 0; ; p++) {
+        const { itens, total } = await listarRequisitosDoEmpreendimento(cid, empreendimento.id, p)
+        todos.push(...itens)
+        if (itens.length === 0 || todos.length >= total) break
+      }
+      const linhas = linhasDaMatrizLegal(
+        todos.map((r) => ({
+          ...r,
+          acaoPrazo: r.acao?.prazo ?? null,
+          acaoDescricao: r.acao?.descricao ?? null,
+        })),
+        hoje,
+        atual.fuso,
+      )
+      const arquivo = await word.gerarMatrizLegal(empreendimento.nome, linhas, hoje)
+      word.baixarArquivo(arquivo, `Matriz legal - ${empreendimento.nome}.docx`)
+    },
+  })
+  const erro = sugerir.error ?? seAplica.error ?? concluir.error ?? relatorio.error
 
   // Fora do plano (ou enquanto a resposta não chega) a seção não aparece.
   if (recurso.data !== true) return null
@@ -162,6 +199,23 @@ export function SecaoRequisitosLegais({ empreendimento, hoje, ehGestao }: PropsD
             >
               Adicionar norma
             </Botao>
+            <BotaoMais
+              rotulo="Relatórios de requisitos legais"
+              itens={[
+                {
+                  rotulo: 'Baixar matriz legal',
+                  aoEscolher: () => {
+                    relatorio.mutate('matriz')
+                  },
+                },
+                {
+                  rotulo: 'Baixar mudanças dos últimos 30 dias',
+                  aoEscolher: () => {
+                    relatorio.mutate('mudancas')
+                  },
+                },
+              ]}
+            />
           </div>
         }
       >

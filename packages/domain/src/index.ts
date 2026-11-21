@@ -647,3 +647,11 @@ export {
   situacaoDoRequisito,
 } from './situacao-requisito'
 export type { RequisitoParaSituacao, SituacaoDoRequisito } from './situacao-requisito'
+export { agruparPendencias, linhasDaMatrizLegal } from './matriz-legal'
+export type {
+  LinhaDaMatriz,
+  PendenciasDoEmpreendimento,
+  RequisitoDaMatriz,
+  RequisitoDoEmpreendimento,
+} from './matriz-legal'
+export { chavesCitadas, chavesDaCitacao } from './base-legal'
