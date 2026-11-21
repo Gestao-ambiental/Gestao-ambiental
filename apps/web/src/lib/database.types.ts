@@ -139,6 +139,50 @@ isOneToOne: false
       referencedColumns: ["consultoria_id","empreendimento_id","id"]
     }
                   ]
+                },"apontamento_horas": {
+                  Row: {
+                    "consultoria_id": string,"data": string,"excluido_em": string | null,"id": string,"membro_id": string,"minutos": number,"nota": string | null,"orcamento_id": string,"orcamento_item_id": string | null,"registrado_em": string,"tarefa_servico_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "consultoria_id": string,"data": string,"excluido_em"?: string | null,"id"?: string,"membro_id": string,"minutos": number,"nota"?: string | null,"orcamento_id": string,"orcamento_item_id"?: string | null,"registrado_em"?: string,"tarefa_servico_id"?: string | null
+                  }
+                  Update: {
+                    "consultoria_id"?: string,"data"?: string,"excluido_em"?: string | null,"id"?: string,"membro_id"?: string,"minutos"?: number,"nota"?: string | null,"orcamento_id"?: string,"orcamento_item_id"?: string | null,"registrado_em"?: string,"tarefa_servico_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "apontamento_horas_consultoria_id_fkey"
+      columns: ["consultoria_id"]
+isOneToOne: false
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "apontamento_horas_item_fk"
+      columns: ["consultoria_id","orcamento_item_id"]
+isOneToOne: false
+      referencedRelation: "orcamento_item"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "apontamento_horas_membro_fk"
+      columns: ["consultoria_id","membro_id"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "apontamento_horas_orcamento_fk"
+      columns: ["consultoria_id","orcamento_id"]
+isOneToOne: false
+      referencedRelation: "orcamento"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "apontamento_horas_tarefa_fk"
+      columns: ["consultoria_id","tarefa_servico_id"]
+isOneToOne: false
+      referencedRelation: "tarefa_servico"
+      referencedColumns: ["consultoria_id","id"]
+    }
+                  ]
                 },"assinatura": {
                   Row: {
                     "asaas_assinatura_id": string | null,"asaas_cliente_id": string | null,"atualizada_em": string,"cancelada_em": string | null,"ciclo": string,"ciclo_agendado": string | null,"consultoria_id": string,"criada_em": string,"forma": string,"id": string,"moeda": string,"mudanca_em": string | null,"plano": string,"plano_agendado": string | null,"proximo_vencimento": string | null,"row_version": number,"situacao_asaas": string,"valida_ate": string | null
@@ -1421,14 +1465,14 @@ isOneToOne: false
                   ]
                 },"orcamento_parcela": {
                   Row: {
-                    "consultoria_id": string,"descricao": string,"dias": number,"id": string,"orcamento_id": string,"ordem": number,"percentual_pb": number
+                    "consultoria_id": string,"descricao": string,"dias": number,"id": string,"orcamento_id": string,"ordem": number,"percentual_pb": number,"vence_em": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "consultoria_id": string,"descricao": string,"dias"?: number,"id"?: string,"orcamento_id": string,"ordem": number,"percentual_pb": number
+                    "consultoria_id": string,"descricao": string,"dias"?: number,"id"?: string,"orcamento_id": string,"ordem": number,"percentual_pb": number,"vence_em"?: string | null
                   }
                   Update: {
-                    "consultoria_id"?: string,"descricao"?: string,"dias"?: number,"id"?: string,"orcamento_id"?: string,"ordem"?: number,"percentual_pb"?: number
+                    "consultoria_id"?: string,"descricao"?: string,"dias"?: number,"id"?: string,"orcamento_id"?: string,"ordem"?: number,"percentual_pb"?: number,"vence_em"?: string | null
                   }
                   Relationships: [
                     {
@@ -1442,6 +1486,50 @@ isOneToOne: false
       columns: ["consultoria_id","orcamento_id"]
 isOneToOne: false
       referencedRelation: "orcamento"
+      referencedColumns: ["consultoria_id","id"]
+    }
+                  ]
+                },"orcamento_recebimento": {
+                  Row: {
+                    "consultoria_id": string,"estornado_em": string | null,"estornado_por": string | null,"id": string,"moeda": string,"nota": string | null,"orcamento_id": string,"parcela_id": string,"recebido_em": string,"registrado_em": string,"registrado_por": string,"row_version": number,"valor_centavos": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "consultoria_id": string,"estornado_em"?: string | null,"estornado_por"?: string | null,"id"?: string,"moeda"?: string,"nota"?: string | null,"orcamento_id": string,"parcela_id": string,"recebido_em": string,"registrado_em"?: string,"registrado_por": string,"row_version"?: number,"valor_centavos": number
+                  }
+                  Update: {
+                    "consultoria_id"?: string,"estornado_em"?: string | null,"estornado_por"?: string | null,"id"?: string,"moeda"?: string,"nota"?: string | null,"orcamento_id"?: string,"parcela_id"?: string,"recebido_em"?: string,"registrado_em"?: string,"registrado_por"?: string,"row_version"?: number,"valor_centavos"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "orcamento_recebimento_consultoria_id_fkey"
+      columns: ["consultoria_id"]
+isOneToOne: false
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "orcamento_recebimento_estornado_por_fk"
+      columns: ["consultoria_id","estornado_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "orcamento_recebimento_orcamento_fk"
+      columns: ["consultoria_id","orcamento_id"]
+isOneToOne: false
+      referencedRelation: "orcamento"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "orcamento_recebimento_parcela_fk"
+      columns: ["consultoria_id","parcela_id"]
+isOneToOne: false
+      referencedRelation: "orcamento_parcela"
+      referencedColumns: ["consultoria_id","id"]
+    },{
+      foreignKeyName: "orcamento_recebimento_registrado_por_fk"
+      columns: ["consultoria_id","registrado_por"]
+isOneToOne: false
+      referencedRelation: "membro"
       referencedColumns: ["consultoria_id","id"]
     }
                   ]
@@ -1973,7 +2061,12 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "abrir_acesso_de_emergencia":
+            "a_receber_dos_orcamentos":
+{ Args: { "p_consultoria_id": string }; Returns: {
+              "a_receber_centavos": number,"vencido_centavos": number
+            }[]
+                           },
+"abrir_acesso_de_emergencia":
 { Args: { "p_categoria": string,"p_consultoria_id": string,"p_id": string,"p_motivo": string }; Returns: string
                            },
 "aceitar_convite":
@@ -2267,39 +2360,6 @@ isOneToOne: false
               "acesso_id": string,"categoria": string,"consultoria_fuso": string,"consultoria_id": string,"consultoria_nome": string,"fim_previsto": string,"inicio": string,"motivo": string,"operador_nome": string
             }[]
                            },
-"a_receber_dos_orcamentos":
-{ Args: { "p_consultoria_id": string }; Returns: { "a_receber_centavos": number,"vencido_centavos": number }[]
-                           },
-"definir_permissao_financeira":
-{ Args: { "p_financeiro": boolean,"p_membro_id": string }; Returns: undefined
-                           },
-"definir_vencimento_da_parcela":
-{ Args: { "p_parcela_id": string,"p_vence_em": string }; Returns: undefined
-                           },
-"estornar_recebimento":
-{ Args: { "p_id": string,"p_row_version": number }; Returns: number
-                           },
-"execucao_do_orcamento":
-{ Args: { "p_orcamento_id": string }; Returns: Json
-                           },
-"lancar_horas":
-{ Args: { "p_data": string,"p_id": string,"p_minutos": number,"p_nota"?: string,"p_orcamento_id": string,"p_orcamento_item_id": string,"p_tarefa_servico_id": string }; Returns: undefined
-                           },
-"registrar_recebimento":
-{ Args: { "p_id": string,"p_nota"?: string,"p_parcela_id": string,"p_recebido_em": string,"p_valor_centavos": number }; Returns: undefined
-                           },
-"remover_apontamento":
-{ Args: { "p_id": string }; Returns: undefined
-                           },
-"painel_carga":
-{ Args: { "p_consultoria_id": string }; Returns: { "atrasados": number,"membro_id": string | null,"minutos_tarefas": number,"nome": string | null,"prazos": number }[]
-                           },
-"painel_clientes_em_risco":
-{ Args: { "p_consultoria_id": string }; Returns: { "aprovado_centavos": number,"chave": string,"empreendimentos": number,"lao_alem_do_limite": number,"lao_perto_do_limite": number,"nome": string,"prazos_atrasados": number,"receber_vencido_centavos": number,"vencimentos_vencidos": number }[]
-                           },
-"painel_dinheiro_por_cliente":
-{ Args: { "p_consultoria_id": string }; Returns: { "a_receber_centavos": number,"aprovado_centavos": number,"chave": string,"nome": string,"recebido_centavos": number,"vencido_centavos": number }[]
-                           },
 "dados_para_relatorio":
 { Args: { "p_empreendimento_id": string,"p_ocorrencia_id"?: string }; Returns: Json
                            },
@@ -2321,11 +2381,17 @@ isOneToOne: false
 "definir_obrigacao_residuo":
 { Args: { "p_ativa": boolean,"p_empreendimento_id": string,"p_observacao"?: string,"p_tipo": string }; Returns: string
                            },
+"definir_permissao_financeira":
+{ Args: { "p_financeiro": boolean,"p_membro_id": string }; Returns: undefined
+                           },
 "definir_profissao_e_cargo":
 { Args: { "p_cargo": string,"p_membro_id": string,"p_outras_profissoes"?: (string)[],"p_profissao": string,"p_profissao_em_curso"?: boolean }; Returns: undefined
                            },
 "definir_responsavel":
 { Args: { "p_condicionante_id": string,"p_membro_id": string }; Returns: undefined
+                           },
+"definir_vencimento_da_parcela":
+{ Args: { "p_parcela_id": string,"p_vence_em": string }; Returns: undefined
                            },
 "descartar_rascunho_configuracao_orcamento":
 { Args: { "p_consultoria_id": string,"p_row_version": number }; Returns: undefined
@@ -2392,6 +2458,9 @@ isOneToOne: false
 "estado_do_aviso_de_emergencia":
 { Args: { "p_acesso_id": string }; Returns: string
                            },
+"estornar_recebimento":
+{ Args: { "p_id": string,"p_row_version": number }; Returns: number
+                           },
 "excluir_alvara":
 { Args: { "p_alvara_id": string,"p_row_version": number }; Returns: undefined
                            },
@@ -2409,6 +2478,9 @@ isOneToOne: false
                            },
 "excluir_orcamento":
 { Args: { "p_id": string,"p_row_version": number }; Returns: number
+                           },
+"execucao_do_orcamento":
+{ Args: { "p_orcamento_id": string }; Returns: Json
                            },
 "falhar_conferencia_ia":
 { Args: { "p_apontamentos": Json,"p_custo_micros": number,"p_detalhe": string,"p_duracao_ms": number,"p_id": string,"p_modelo": string,"p_motivo": string,"p_tokens_entrada": number,"p_tokens_saida": number,"p_versao_prompt": string }; Returns: undefined
@@ -2436,6 +2508,9 @@ isOneToOne: false
                            },
 "iniciar_vistoria":
 { Args: { "p_id": string }; Returns: number
+                           },
+"lancar_horas":
+{ Args: { "p_data": string,"p_id": string,"p_minutos": number,"p_nota"?: string,"p_orcamento_id": string,"p_orcamento_item_id": string,"p_tarefa_servico_id": string }; Returns: undefined
                            },
 "liberar_aviso_de_emergencia":
 { Args: { "p_acesso_id": string }; Returns: undefined
@@ -2589,6 +2664,21 @@ isOneToOne: false
 "pagar_cobranca_simulada":
 { Args: { "p_cobranca_id": string }; Returns: undefined
                            },
+"painel_carga":
+{ Args: { "p_consultoria_id": string }; Returns: {
+              "atrasados": number,"membro_id": string,"minutos_tarefas": number,"nome": string,"prazos": number
+            }[]
+                           },
+"painel_clientes_em_risco":
+{ Args: { "p_consultoria_id": string }; Returns: {
+              "aprovado_centavos": number,"chave": string,"empreendimentos": number,"lao_alem_do_limite": number,"lao_perto_do_limite": number,"nome": string,"prazos_atrasados": number,"receber_vencido_centavos": number,"vencimentos_vencidos": number
+            }[]
+                           },
+"painel_dinheiro_por_cliente":
+{ Args: { "p_consultoria_id": string }; Returns: {
+              "a_receber_centavos": number,"aprovado_centavos": number,"chave": string,"nome": string,"recebido_centavos": number,"vencido_centavos": number
+            }[]
+                           },
 "painel_residuos":
 { Args: { "p_ate"?: string,"p_consultoria_id": string,"p_de"?: string,"p_empreendimento_id"?: string }; Returns: {
               "destinador_nome": string,"empreendimento_id": string,"empreendimento_nome": string,"mes": string,"mtrs": number,"quantidade": number,"residuo_codigo": string,"residuo_descricao": string,"unidade": string
@@ -2643,11 +2733,17 @@ isOneToOne: false
 "registrar_protocolo":
 { Args: { "p_caminho": string,"p_data": string,"p_nome_original": string,"p_numero": string,"p_plano_id": string,"p_row_version": number,"p_sha256": string,"p_versao_id": string }; Returns: number
                            },
+"registrar_recebimento":
+{ Args: { "p_id": string,"p_nota"?: string,"p_parcela_id": string,"p_recebido_em": string,"p_valor_centavos": number }; Returns: undefined
+                           },
 "registrar_tarefa":
 { Args: { "p_consultoria_id": string,"p_quantidade": number,"p_segundos": number,"p_tipo": string }; Returns: undefined
                            },
 "registrar_uso":
 { Args: { "p_consultoria_id": string,"p_modulo": string }; Returns: undefined
+                           },
+"remover_apontamento":
+{ Args: { "p_id": string }; Returns: undefined
                            },
 "remover_foto_membro":
 { Args: { "p_membro_id": string }; Returns: undefined
