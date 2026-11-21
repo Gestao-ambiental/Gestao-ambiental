@@ -105,7 +105,7 @@ export function SecaoLicencas({
                     {chip.rotulo}
                     <span
                       className={cn(
-                        'min-w-6 rounded-(--raio-mini) px-(--e-1) text-center text-xs font-[800] numero',
+                        'min-w-6 rounded-(--raio-mini) px-(--e-1) text-center text-xs font-semibold numero',
                         ligado ? 'bg-(--tinta) text-(--folha)' : 'bg-(--aperto) text-(--tinta-2)',
                       )}
                     >

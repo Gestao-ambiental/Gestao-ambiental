@@ -412,7 +412,7 @@ export function PaginaCalendario() {
                     {ehHoje ? (
                       <span
                         aria-hidden
-                        className="rounded-(--raio-mini) bg-(--sinal) px-(--e-15) py-(--e-05) text-[11px] font-[850] tracking-[0.06em] text-(--sinal-texto) uppercase"
+                        className="rounded-(--raio-mini) bg-(--sinal) px-(--e-15) py-(--e-05) text-[11px] font-semibold tracking-[0.06em] text-(--sinal-texto) uppercase"
                       >
                         Hoje
                       </span>
@@ -493,7 +493,7 @@ export function PaginaCalendario() {
                               className={cn(
                                 'inline-flex h-6 min-w-6 items-center justify-center rounded-(--raio-mini) px-(--e-1) text-xs numero',
                                 foraDoMes ? 'text-(--tinta-3)' : 'font-[650] text-(--tinta)',
-                                ehHoje && 'bg-(--sinal) font-[850] text-(--sinal-texto)',
+                                ehHoje && 'bg-(--sinal) font-semibold text-(--sinal-texto)',
                               )}
                             >
                               {partes(dia)[2]}

@@ -78,7 +78,7 @@ function TituloSecao({ id, children, total }: { id: string; children: ReactNode;
         {children}
       </h2>
       {total === undefined ? null : (
-        <span className="min-w-6 rounded-(--raio-mini) bg-(--aperto) px-(--e-1) text-center text-xs font-[800] text-(--tinta-2) numero">
+        <span className="min-w-6 rounded-(--raio-mini) bg-(--aperto) px-(--e-1) text-center text-xs font-semibold text-(--tinta-2) numero">
           {total}
         </span>
       )}

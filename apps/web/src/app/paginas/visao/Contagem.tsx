@@ -20,7 +20,7 @@ export function Contagem({ dias, ordem = 0 }: { dias: number; ordem?: number }) 
       style={{ animationDelay: `${String(Math.min(ordem, 8) * 22)}ms` }}
     >
       {hoje ? (
-        <span className="rounded-(--raio-mini) bg-(--sinal) px-(--e-15) py-(--e-1) text-xs font-[850] tracking-[0.06em] text-(--sinal-texto) uppercase">
+        <span className="rounded-(--raio-mini) bg-(--sinal) px-(--e-15) py-(--e-1) text-xs font-semibold tracking-[0.06em] text-(--sinal-texto) uppercase">
           hoje
         </span>
       ) : (

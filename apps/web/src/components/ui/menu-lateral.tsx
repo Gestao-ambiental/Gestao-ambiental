@@ -109,7 +109,7 @@ export function MenuLateralItem({ para, icone, children, exato, contagem, aoNave
             {contagem !== undefined && contagem > 0 ? (
               <span
                 className={cn(
-                  'min-w-6 rounded-(--raio-mini) px-(--e-1) text-center text-xs font-[800] numero',
+                  'min-w-6 rounded-(--raio-mini) px-(--e-1) text-center text-xs font-semibold numero',
                   isActive ? 'bg-(--sinal-texto) text-(--sinal)' : 'bg-(--atraso) text-white',
                 )}
               >

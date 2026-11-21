@@ -869,7 +869,7 @@ function ProgressoDosPassos({
                 <span
                   aria-hidden="true"
                   className={cn(
-                    'inline-flex size-7 shrink-0 items-center justify-center rounded-(--raio-redondo) text-xs font-[800] numero',
+                    'inline-flex size-7 shrink-0 items-center justify-center rounded-(--raio-redondo) text-xs font-semibold numero',
                     ehAtual &&
                       'bg-(--sinal) text-(--sinal-texto) shadow-[0_0_0_2px_var(--folha),0_0_0_4px_var(--marca-linha)]',
                     !ehAtual && feito && 'bg-(--marca-linha) text-(--folha)',

@@ -36,7 +36,7 @@ export function CabecalhoDeSecao({
       <h2 id={id} className="flex items-center gap-(--e-2) titulo-secao text-(--tinta)">
         {titulo}
         {contagem ? (
-          <span className="min-w-6 rounded-(--raio-mini) bg-(--aperto) px-(--e-15) text-center text-xs font-[800] text-(--tinta-2) numero">
+          <span className="min-w-6 rounded-(--raio-mini) bg-(--aperto) px-(--e-15) text-center text-xs font-semibold text-(--tinta-2) numero">
             {contagem}
           </span>
         ) : null}

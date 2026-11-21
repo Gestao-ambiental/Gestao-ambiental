@@ -71,7 +71,7 @@ export function SiglaDaCategoria({ categoria }: { categoria: Categoria }) {
     <span
       aria-hidden
       style={{ backgroundColor: fundo, borderColor: forte }}
-      className="inline-flex h-4 min-w-6 shrink-0 items-center justify-center rounded-(--raio-mini) border px-[3px] text-[10px] leading-none font-[800] text-(--tinta)"
+      className="inline-flex h-4 min-w-6 shrink-0 items-center justify-center rounded-(--raio-mini) border px-0.5 text-[10px] leading-none font-semibold text-(--tinta)"
     >
       {categoria.sigla}
     </span>

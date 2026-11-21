@@ -77,7 +77,7 @@ function ConteudoDaAba({ aba, ativa }: { aba: Rotulos; ativa: boolean }) {
           <span
             aria-hidden={aba.lerContagem ? true : undefined}
             className={cn(
-              'min-w-6 rounded-(--raio-mini) px-(--e-1) text-center text-xs font-[800] numero',
+              'min-w-6 rounded-(--raio-mini) px-(--e-1) text-center text-xs font-semibold numero',
               ativa
                 ? 'bg-(--tinta) text-(--folha)'
                 : aba.alerta

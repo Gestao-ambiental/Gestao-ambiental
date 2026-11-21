@@ -44,7 +44,7 @@ export function TituloDoPainel({
         {contagem === undefined || contagem === null ? null : (
           <span
             aria-hidden="true"
-            className="min-w-6 rounded-(--raio-mini) bg-(--tinta) px-(--e-1) text-center text-xs font-[800] text-(--folha) numero"
+            className="min-w-6 rounded-(--raio-mini) bg-(--tinta) px-(--e-1) text-center text-xs font-semibold text-(--folha) numero"
           >
             {contagem}
           </span>

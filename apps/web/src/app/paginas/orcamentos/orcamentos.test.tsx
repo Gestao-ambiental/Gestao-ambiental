@@ -1252,7 +1252,7 @@ describe('orçamentos (onda 5)', () => {
     await screen.findByRole('heading', { name: 'Indústria Horizonte' })
     await usuario.click(screen.getByRole('button', { name: 'Escolher modelo' }))
     await usuario.type(await screen.findByLabelText('Buscar serviço'), 'DANC')
-    await usuario.click(screen.getByRole('button', { name: /DANC — declaração/ }))
+    await usuario.click(screen.getByRole('button', { name: /DANC: declaração/ }))
     expect(screen.getByRole('link', { name: /Carta de serviços/ })).toHaveAttribute(
       'href',
       'https://www.joinville.sc.gov.br/servicos/requerer-declaracao-de-atividade-nao-constante-danc/',
@@ -1262,14 +1262,14 @@ describe('orçamentos (onda 5)', () => {
     await usuario.click(screen.getByRole('button', { name: 'Adicionar ao orçamento' }))
 
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Modelo "DANC — declaração de atividade não constante" aplicado: 3 etapas e 1 despesas.',
+      'Modelo "DANC: declaração de atividade não constante" aplicado: 3 etapas e 1 despesas.',
     )
     expect(screen.getByLabelText('Serviço do item 4')).toHaveValue(
       'Verificação da atividade e enquadramento',
     )
     expect(screen.getByLabelText('Horas do item 4')).toHaveValue('1h')
     expect(screen.getByLabelText('Despesa 2')).toHaveValue(
-      'Preço público municipal — conforme guia vigente',
+      'Preço público municipal, conforme guia vigente',
     )
     expect(screen.getByLabelText('Estimativa da despesa 2')).toHaveValue('')
   })

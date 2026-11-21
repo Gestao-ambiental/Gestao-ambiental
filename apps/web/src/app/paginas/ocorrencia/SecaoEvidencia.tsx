@@ -258,7 +258,7 @@ export function SecaoEvidencia({
               className="flex min-h-(--linha) flex-col justify-center gap-(--e-05) border-b border-(--regra-leve) py-(--e-2)"
             >
               <span className="flex flex-wrap items-center gap-x-(--e-2) gap-y-(--e-1)">
-                <span className="text-xs font-[800] text-(--tinta-2) numero">v{ev.numero}</span>
+                <span className="text-xs font-semibold text-(--tinta-2) numero">v{ev.numero}</span>
                 <button
                   type="button"
                   onClick={() => {

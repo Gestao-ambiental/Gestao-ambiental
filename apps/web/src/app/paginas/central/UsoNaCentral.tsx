@@ -155,7 +155,7 @@ export function AlertasDeSemUso() {
           Alertas
         </h2>
         {consulta.isSuccess && total > 0 ? (
-          <span className="min-w-6 rounded-(--raio-mini) bg-(--alerta-fundo) px-(--e-1) text-center text-xs font-[800] text-(--alerta-texto) numero">
+          <span className="min-w-6 rounded-(--raio-mini) bg-(--alerta-fundo) px-(--e-1) text-center text-xs font-semibold text-(--alerta-texto) numero">
             {total}
           </span>
         ) : null}

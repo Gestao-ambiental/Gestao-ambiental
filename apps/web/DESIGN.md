@@ -105,7 +105,7 @@ Curto, com saída exponencial (`--saida`, `cubic-bezier(0.16, 1, 0.3, 1)`), nunc
 
 **Microtransições (20/11/2026, "dar vida" sem animação):**
 
-- **Botão:** encolhe para 97% ao apertar; o primário "acende" no hover com um halo verde curto, que some ao apertar.
+- **Botão:** encolhe para 97% ao apertar; no hover, só a cor muda (sem halo).
 - **Indicadores que deslizam** (`IndicadorDeslizante`): a plaqueta verde do item atual do menu, o cheio do segmentado e o traço da aba são um elemento só, movido por `transform`. Na primeira medida aparece no lugar; depois desliza.
 - **Trilha:** a estação nova se preenche de verde ao avançar (`acender`).
 - **Chegadas:** mensagens e o corpo da etapa entram com fade e 4px (`entrar`); linhas de tabela novas com fade curto, sem mexer embaixo do ponteiro.

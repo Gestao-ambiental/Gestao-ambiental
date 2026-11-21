@@ -240,7 +240,7 @@ export function PaginaMinhasVistorias() {
                 >
                   {ROTULO_DO_GRUPO[grupo]}
                 </h2>
-                <span className="min-w-6 rounded-(--raio-mini) bg-(--aperto) px-(--e-1) text-center text-xs font-[800] text-(--tinta-2) numero">
+                <span className="min-w-6 rounded-(--raio-mini) bg-(--aperto) px-(--e-1) text-center text-xs font-semibold text-(--tinta-2) numero">
                   {lista.length}
                 </span>
               </div>

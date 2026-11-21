@@ -21,8 +21,7 @@ export const variantesBotao = cva(
     variants: {
       aparencia: {
         primario:
-          // O destaque "acende" no hover: um halo curto em volta, que some ao sair.
-          'border-transparent bg-(--acao) text-(--acao-texto) hover:bg-(--acao-toque) hover:shadow-[0_0_0_4px_color-mix(in_srgb,var(--sinal)_35%,transparent)] active:bg-(--acao-aperto) active:shadow-none disabled:bg-(--off) disabled:shadow-none',
+          'border-transparent bg-(--acao) text-(--acao-texto) hover:bg-(--acao-toque) active:bg-(--acao-aperto) disabled:bg-(--off)',
         padrao:
           'border-(--regra-forte) bg-(--folha) text-(--tinta) hover:border-(--tinta-3) hover:bg-(--toque) active:bg-(--aperto) disabled:border-(--regra) disabled:bg-(--off)',
         sutil:

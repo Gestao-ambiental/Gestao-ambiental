@@ -4,7 +4,7 @@ import { MODELOS_DE_SERVICO } from './catalogo-servicos'
 
 // Referência tirada do catálogo antes de ele passar para o formato enxuto (14/11/2026):
 // SHA-256 do JSON.stringify do array completo de modelos no formato antigo.
-const SHA256_DO_CATALOGO_ANTIGO = 'e1e097d261853ebc72bb06121e0941706370eee16d2832944532a99fcbf2a58f'
+const SHA256_DO_CATALOGO_ANTIGO = '07b1ee9a1d56e2065801edbe0d7c034105b3c1cf13815438ad2add0466e15468'
 
 const NOTA_PADRAO =
   'Modelo de escopo para revisão técnica. Os itens não são uma lista universal de exigências. Confirmar atividade, porte, fase, competência e documentos existentes; preço, horas e despesas precisam ser preenchidos. ART: distinguir trabalho técnico e taxa de registro. Taxas não são honorários. Não há garantia de deferimento.'
@@ -15,6 +15,7 @@ async function sha256(texto: string) {
 }
 
 describe('catálogo de modelos de serviço', () => {
+  // Hash refeito em 21/11/2026: os travessões do catálogo viraram dois-pontos e vírgulas (unslop 13).
   it('devolve exatamente o mesmo conteúdo do formato antigo', async () => {
     expect(await sha256(JSON.stringify(MODELOS_DE_SERVICO))).toBe(SHA256_DO_CATALOGO_ANTIGO)
   })
@@ -36,7 +37,7 @@ describe('catálogo de modelos de serviço', () => {
       ['Conferência dos documentos do empreendimento', 1, true],
       ['Preenchimento do requerimento e protocolo', 1, true],
       ['Vistoria ou estudo complementar, se necessário', null, false],
-      ['Acompanhamento do pedido — limite a definir', null, false],
+      ['Acompanhamento do pedido, limite a definir', null, false],
     ])
     expect(danc?.nota).toBe(
       `${NOTA_PADRAO} Sugestão comercial inicial: 1h por etapa básica (3h no total), ajustável após conferir o caso. Não é prazo legal nem média medida.`,
@@ -46,7 +47,7 @@ describe('catálogo de modelos de serviço', () => {
   it('mantém um modelo sem despesa fixa item a item', () => {
     expect(MODELOS_DE_SERVICO.at(-1)).toEqual({
       id: 'mtr',
-      nome: 'MTR — manifesto de transporte de resíduos',
+      nome: 'MTR: manifesto de transporte de resíduos',
       categoria: 'Resíduos',
       jurisdicao: 'Joinville / SAMA',
       consultadoEm: '2026-11-11',
@@ -73,7 +74,7 @@ describe('catálogo de modelos de serviço', () => {
           horasSugeridas: null,
         },
         {
-          nome: 'Rotina mensal de emissão — definir volume',
+          nome: 'Rotina mensal de emissão, definir volume',
           marcada: false,
           condicional: true,
           horasSugeridas: null,

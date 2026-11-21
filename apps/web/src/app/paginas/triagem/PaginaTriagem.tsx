@@ -381,7 +381,7 @@ function ValorDaTaxa({ taxa }: { taxa: TaxaDoIma }) {
         ))}
         {taxa.fases.length > 1 ? (
           <Dado rotulo="Total">
-            <span className="font-[800] numero">{formatarReais(taxa.totalCentavos)}</span>
+            <span className="font-semibold numero">{formatarReais(taxa.totalCentavos)}</span>
           </Dado>
         ) : null}
       </dl>

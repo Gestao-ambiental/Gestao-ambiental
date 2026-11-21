@@ -48,7 +48,7 @@ export function Trilha({
               <span
                 aria-hidden
                 className={cn(
-                  'inline-flex size-7 shrink-0 items-center justify-center rounded-(--raio-redondo) text-xs font-[800] numero',
+                  'inline-flex size-7 shrink-0 items-center justify-center rounded-(--raio-redondo) text-xs font-semibold numero',
                   // Ao avançar, a estação nova "acende": preenche de verde (só a cor, sem movimento).
                   estado === 'atual' &&
                     'acender bg-(--sinal) text-(--sinal-texto) shadow-[0_0_0_2px_var(--folha),0_0_0_4px_var(--marca-linha)]',

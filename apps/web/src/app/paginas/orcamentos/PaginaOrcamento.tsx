@@ -1764,7 +1764,7 @@ function Editor({
                           <CampoRotulado
                             id="orcamento-margem"
                             rotulo="Acréscimo sobre horas de venda e contas (%)"
-                            apoio={`Sobre as horas de venda e as contas · referência ${formatarPontosBase(base.margemDesejadaPb)} · mínima ${formatarPontosBase(base.margemMinimaPb)}`}
+                            apoio={`Referência ${formatarPontosBase(base.margemDesejadaPb)} · mínima ${formatarPontosBase(base.margemMinimaPb)}`}
                           >
                             <div className="flex flex-wrap items-center gap-(--e-2)">
                               <input
@@ -2495,7 +2495,7 @@ function ResumoDeValores({
             <dt className="rotulo">{margem.rotulo}</dt>
             <dd
               className={cn(
-                'text-lg font-[800] whitespace-nowrap numero 2xl:text-xl',
+                'text-lg font-semibold whitespace-nowrap numero 2xl:text-xl',
                 abaixoDaMinima ? 'text-(--atraso-texto)' : 'text-(--tinta)',
               )}
             >

@@ -382,7 +382,7 @@ function Identificacao({
                 <option value="">Selecione o tipo</option>
                 {(tipos.data ?? []).map((t) => (
                   <option key={t.id} value={t.id}>
-                    {t.sigla} — {t.nome}
+                    {t.sigla}: {t.nome}
                   </option>
                 ))}
                 <option value={NOVO_TIPO}>Outro tipo…</option>

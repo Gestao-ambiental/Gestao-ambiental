@@ -173,7 +173,7 @@ function ItemDoChecklist({
         <span
           aria-hidden
           className={cn(
-            'flex size-7 shrink-0 items-center justify-center rounded-(--raio-mini) text-xs font-[800] numero',
+            'flex size-7 shrink-0 items-center justify-center rounded-(--raio-mini) text-xs font-semibold numero',
             registrado ? 'bg-(--ok-fundo) text-(--ok-texto)' : 'bg-(--aperto) text-(--tinta-2)',
           )}
         >
