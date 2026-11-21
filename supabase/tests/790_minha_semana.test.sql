@@ -164,6 +164,8 @@ select results_eq(
 -- Desligado: some a consultoria; desligado de todas, não vê mais nada
 -- ---------------------------------------------------------------------------
 reset role;
+-- Sem usuário na requisição (como a central): a trava de só leitura não barra esta escrita.
+select set_config('request.jwt.claims', '', true);
 update public.membro set situacao = 'desligado', desligado_em = now()
 where id = 'd0000000-0000-4000-8000-0000000000b3';
 
@@ -176,6 +178,8 @@ select results_eq(
 );
 
 reset role;
+-- Sem usuário na requisição (como a central): a trava de só leitura não barra esta escrita.
+select set_config('request.jwt.claims', '', true);
 update public.membro set situacao = 'desligado', desligado_em = now()
 where id = 'd0000000-0000-4000-8000-0000000000a3';
 
