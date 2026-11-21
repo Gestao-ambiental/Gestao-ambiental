@@ -27,6 +27,7 @@ function licenca(id: string, numero: string): LicencaNaLista {
     condicionantes: 3,
     criadoEm: '2026-10-01T12:00:00Z',
     passoCadastro: null,
+    somenteValidade: false,
   }
 }
 

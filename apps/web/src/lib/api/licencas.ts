@@ -147,6 +147,8 @@ export interface Instrumento {
   validade: DataCivil | null
   antecedencia: number
   pdf: { caminho: string; nome: string } | null
+  /** Licença importada sem condicionantes (ADR-0043): selo "Sem condicionantes". */
+  somenteValidade: boolean
 }
 
 export async function obterInstrumento(id: string): Promise<Instrumento | null> {
@@ -155,6 +157,7 @@ export async function obterInstrumento(id: string): Promise<Instrumento | null> 
     .select(
       `id, situacao, row_version, numero, orgao, tipo_id, unidade_id, empreendimento_id,
        emitido_em, assinado_em, publicado_em, recebido_em, marco, validade, antecedencia_renovacao_dias,
+       somente_validade,
        tipo:tipo_instrumento!instrumento_tipo_fk(sigla),
        unidade:unidade!instrumento_unidade_fk(nome, empreendimento:empreendimento!unidade_empreendimento_fk(nome)),
        documento:documento!instrumento_documento_fk(versao:documento_versao!documento_versao_vigente_fk(caminho, nome_original))`,
@@ -184,6 +187,7 @@ export async function obterInstrumento(id: string): Promise<Instrumento | null> 
     validade: data.validade as DataCivil | null,
     antecedencia: data.antecedencia_renovacao_dias,
     pdf: versao ? { caminho: versao.caminho, nome: versao.nome_original } : null,
+    somenteValidade: data.somente_validade,
   }
 }
 
@@ -444,6 +448,8 @@ export interface LicencaNaLista extends LicencaResumo {
   criadoEm: string
   /** Rascunho: índice (0 a 4) do passo do cadastro em que parou. Ativa: null. */
   passoCadastro: number | null
+  /** Licença importada sem condicionantes (ADR-0043): selo "Sem condicionantes". */
+  somenteValidade: boolean
 }
 
 /**
@@ -502,7 +508,7 @@ export async function listarLicencasDoEmpreendimento(
     .from('instrumento')
     .select(
       `id, numero, orgao, situacao, validade, criado_em, antecedencia_renovacao_dias, unidade_id,
-       tipo_id, marco,
+       tipo_id, marco, somente_validade,
        tipo:tipo_instrumento!instrumento_tipo_fk(sigla, nome),
        unidade:unidade!instrumento_unidade_fk(nome),
        plano:plano_renovacao!plano_renovacao_instrumento_fk(antecedencia_dias, dias_limite_protocolo, protocolado_em),
@@ -540,6 +546,7 @@ export async function listarLicencasDoEmpreendimento(
       condicionantes: linha.condicionante[0]?.count ?? 0,
       criadoEm: linha.criado_em,
       passoCadastro: passos.get(linha.id) ?? null,
+      somenteValidade: linha.somente_validade,
     })),
     total: count ?? data.length,
   }

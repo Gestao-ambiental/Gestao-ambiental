@@ -666,6 +666,7 @@ export type {
 export { chavesCitadas, chavesDaCitacao } from './base-legal'
 export { dobrarLinhaIcs, escaparTextoIcs, gerarIcs } from './ics'
 export type { EventoIcs, OpcoesDoIcs } from './ics'
+export * from './importacao'
 export {
   coresDasAreas,
   coresSemRepetir,

@@ -288,6 +288,18 @@ describe('passo 2: identificação (LIC-01)', () => {
     falso.reiniciar(cenario({ tabelas: { instrumento: [rascunho({ situacao: 'ativo' })] } }))
     renderizarApp('/licencas/i1/identificacao')
     expect(await screen.findByText('Esta licença já está ativa')).toBeInTheDocument()
+    expect(screen.queryByText('Sem condicionantes')).not.toBeInTheDocument()
+  })
+
+  it('licença importada sem condicionantes mostra o selo no lugar do texto do cadastro', async () => {
+    falso.reiniciar(
+      cenario({
+        tabelas: { instrumento: [rascunho({ situacao: 'ativo', somente_validade: true })] },
+      }),
+    )
+    renderizarApp('/licencas/i1/identificacao')
+    expect(await screen.findByText('Esta licença já está ativa')).toBeInTheDocument()
+    expect(screen.getByText('Sem condicionantes')).toBeInTheDocument()
   })
 })
 

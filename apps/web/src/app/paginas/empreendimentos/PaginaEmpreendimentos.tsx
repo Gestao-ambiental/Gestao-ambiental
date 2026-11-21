@@ -114,6 +114,14 @@ export function PaginaEmpreendimentos() {
         icone="briefcase"
         titulo="Nenhum empreendimento ainda"
         acaoPrincipal={botaoNovo}
+        acaoSecundaria={
+          // Importar planilha (ADR-0043): só a Gestão importa; o banco recusa a Equipe.
+          atual.papel === 'gestao' ? (
+            <Botao asChild>
+              <Link to="/configuracoes/importar/nova">Importar planilha</Link>
+            </Botao>
+          ) : null
+        }
       />
     )
   } else if (itens.length === 0) {

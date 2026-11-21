@@ -273,6 +273,27 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   // Avisos (ADR-0047)
   link_invalido: 'Este link não vale mais. Desligue o resumo pelo Perfil.',
   ligado_obrigatorio: 'Escolha ligar ou desligar.',
+  // Importar planilha (ADR-0043)
+  planilha_vazia: 'A planilha não tem linhas para importar.',
+  linhas_demais: 'Use até 1.000 linhas por importação.',
+  mapeamento_invalido: 'Não foi possível guardar as colunas escolhidas. Tente de novo.',
+  importacao_existente: 'Não foi possível criar a importação. Tente de novo.',
+  lote_grande_demais: 'Não foi possível enviar as linhas. Tente de novo.',
+  linha_invalida: 'Uma linha não pôde ser enviada. Escolha o arquivo de novo.',
+  cpf_nao_aceito: 'A planilha ainda tem CPF: nada foi enviado. Apague o CPF e tente de novo.',
+  importacao_encerrada: 'Esta importação já foi concluída. Recarregue para ver o resultado.',
+  linhas_incompletas: 'Nem todas as linhas chegaram. Escolha o arquivo de novo.',
+  importacao_nao_conferida: 'As linhas mudaram: confira de novo antes de importar.',
+  conferencia_divergente: 'A conferência mudou durante a importação. Nada foi importado.',
+  nada_para_importar: 'Nenhuma linha para importar: todas têm erro ou já estão cadastradas.',
+  importacao_nao_efetivada: 'Esta importação ainda não foi feita.',
+  prazo_para_desfazer_encerrado: 'Passaram 24 horas: esta importação não pode mais ser desfeita.',
+}
+
+// Códigos que a importação (ADR-0043) reaproveita com outro sentido.
+const MENSAGENS_DA_IMPORTACAO: Record<string, string> = {
+  entidade_invalida: 'Escolha Empreendimentos ou Licenças.',
+  nome_obrigatorio: 'O arquivo precisa ter nome.',
 }
 
 // Códigos que a vistoria (ADR-0033) reaproveita com outro sentido: a tela de Campo usa estas
@@ -368,6 +389,14 @@ export function mensagemDoErroDaVistoria(erro: unknown, padrao = MENSAGEM_PADRAO
   const { message } = comoObjeto(erro)
   if (typeof message === 'string' && Object.hasOwn(MENSAGENS_DA_VISTORIA, message))
     return MENSAGENS_DA_VISTORIA[message] ?? padrao
+  return mensagemDoErro(erro, padrao)
+}
+
+/** Como mensagemDoErro, com as mensagens próprias da importação para os códigos reaproveitados. */
+export function mensagemDoErroDaImportacao(erro: unknown, padrao = MENSAGEM_PADRAO): string {
+  const { message } = comoObjeto(erro)
+  if (typeof message === 'string' && Object.hasOwn(MENSAGENS_DA_IMPORTACAO, message))
+    return MENSAGENS_DA_IMPORTACAO[message] ?? padrao
   return mensagemDoErro(erro, padrao)
 }
 

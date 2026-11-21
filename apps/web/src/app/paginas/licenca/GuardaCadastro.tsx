@@ -4,6 +4,7 @@ import { Link } from 'react-router'
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
+import { Selo } from '@/components/ui/selo'
 import type { Instrumento } from '@/lib/api/licencas'
 
 import { MolduraCadastro } from './MolduraCadastro'
@@ -74,7 +75,14 @@ export function GuardaRascunho({
       <EstadoVazio
         icone="circle-check"
         titulo="Esta licença já está ativa"
-        descricao="Depois de ativado, o plano não muda pelo cadastro. Mudanças de validade, marco ou regra passam por revisão da gestão."
+        descricao={
+          consulta.data.somenteValidade ? (
+            // Licença importada sem condicionantes (ADR-0043).
+            <Selo>Sem condicionantes</Selo>
+          ) : (
+            'Depois de ativado, o plano não muda pelo cadastro. Mudanças de validade, marco ou regra passam por revisão da gestão.'
+          )
+        }
         acaoPrincipal={
           <Botao aparencia="primario" asChild>
             <Link to={`/empreendimentos/${consulta.data.empreendimentoId}`}>
