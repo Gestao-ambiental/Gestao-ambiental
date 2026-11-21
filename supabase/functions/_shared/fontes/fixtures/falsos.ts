@@ -63,6 +63,12 @@ export class BancoFalso implements BancoDaColeta {
   arquivos = new Map<string, { bytes: Uint8Array; mime: string }>()
   chamadas: string[] = []
   desligadas = new Set<string>()
+  vigiados: { ibge: string; nome: string }[] = []
+
+  municipiosVigiados(): Promise<{ ibge: string; nome: string }[]> {
+    this.chamadas.push('municipios_vigiados')
+    return Promise.resolve(this.vigiados)
+  }
 
   /** Norma da carga (sem versão). */
   carregar(norma: Partial<NormaFalsa> & { chave: string; fonte: string }): NormaFalsa {

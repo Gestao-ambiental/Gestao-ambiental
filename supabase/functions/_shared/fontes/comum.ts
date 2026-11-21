@@ -29,6 +29,7 @@ export const HOSTS_DAS_FONTES = [
   'sei.joinville.sc.gov.br',
   'inlabs.in.gov.br',
   'www.planalto.gov.br',
+  'dados.ciga.sc.gov.br',
 ] as const
 
 export const TIPOS_PDF = [
@@ -353,6 +354,8 @@ export interface BancoDaColeta {
     revogadaEm: string | null,
   ) => Promise<string>
   concluirColeta: (coletaId: string, itensNovos: number, erro: string | null) => Promise<void>
+  /** Municípios (IBGE e nome) onde alguma consultoria tem unidade: o que a coleta do CIGA olha. */
+  municipiosVigiados: () => Promise<{ ibge: string; nome: string }[]>
   /** Upload no bucket privado 'normas', no caminho '<norma_id>/<uuid>', sem sobrescrever. */
   enviarArquivo: (caminho: string, bytes: Uint8Array, mime: string) => Promise<void>
 }

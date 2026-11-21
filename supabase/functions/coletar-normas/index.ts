@@ -85,6 +85,9 @@ Deno.serve(
           p_erro: erro,
         })
       },
+      async municipiosVigiados() {
+        return (await rpc<{ ibge: string; nome: string }[] | null>('municipios_vigiados', {})) ?? []
+      },
       async enviarArquivo(caminho, bytes, mime) {
         const { error } = await admin.storage
           .from(BUCKET_DE_NORMAS)

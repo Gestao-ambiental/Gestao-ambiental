@@ -32,6 +32,7 @@ import { coletarPortariasDoIma, FONTE_IMA_PORTARIA } from './fontes/ima-portaria
 import { coletarDoemDeJoinville, FONTE_JOINVILLE_DOEM } from './fontes/joinville-doem.ts'
 import { coletarDouPeloInlabs, FONTE_INLABS } from './fontes/inlabs.ts'
 import { coletarLeisDoPlanalto, FONTE_PLANALTO } from './fontes/planalto.ts'
+import { coletarDiariosDoCiga, FONTE_CIGA } from './fontes/ciga.ts'
 
 export { buscarComEducacao, ErroDaColeta }
 
@@ -54,6 +55,7 @@ export const COLETORES: Readonly<Record<string, Coletor>> = {
   [FONTE_JOINVILLE_DOEM]: coletarDoemDeJoinville,
   [FONTE_INLABS]: coletarDouPeloInlabs,
   [FONTE_PLANALTO]: coletarLeisDoPlanalto,
+  [FONTE_CIGA]: coletarDiariosDoCiga,
 }
 
 export interface DependenciasDaColeta {
