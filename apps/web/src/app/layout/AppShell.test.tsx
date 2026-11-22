@@ -39,7 +39,7 @@ describe('shell do app', () => {
     expect(linkVisao).not.toHaveAttribute('aria-current')
   })
 
-  it('a Gestão vê 10 itens em três grupos; Triagem e Planejamento ficam fora do menu', async () => {
+  it('a Gestão vê 11 itens em três grupos, com a Triagem ao lado de Orçamentos; Planejamento fica fora', async () => {
     renderizarApp('/')
     const menu = await screen.findByRole('navigation', { name: 'Menu principal' })
     expect(
@@ -55,6 +55,7 @@ describe('shell do app', () => {
       'Campo',
       'Resíduos',
       'Orçamentos',
+      'Triagem',
       'Painel',
       'Configurações',
     ])
@@ -65,9 +66,7 @@ describe('shell do app', () => {
       'href',
       '/configuracoes',
     )
-    expect(
-      within(menu).queryByRole('link', { name: 'Triagem de licenciamento' }),
-    ).not.toBeInTheDocument()
+    expect(within(menu).getByRole('link', { name: 'Triagem' })).toHaveAttribute('href', '/triagem')
     expect(within(menu).queryByRole('link', { name: 'Planejamento' })).not.toBeInTheDocument()
   })
 
@@ -94,7 +93,7 @@ describe('shell do app', () => {
     expect(within(menu).queryByText('Gestão')).not.toBeInTheDocument()
   })
 
-  it('a rota da Triagem continua abrindo, mesmo fora do menu', async () => {
+  it('a rota da Triagem abre a página da triagem', async () => {
     renderizarApp('/triagem')
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Triagem de licenciamento' }),

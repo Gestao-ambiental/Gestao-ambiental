@@ -37,13 +37,17 @@ const ATALHOS_DE_CONFIGURACOES: readonly AtalhoDaBusca[] = ABAS_DE_CONFIGURACOES
 )
 
 export const ATALHOS_DA_BUSCA: readonly AtalhoDaBusca[] = [
-  ...ITENS_NAVEGACAO.map(({ para, rotulo, icone, somenteGestao }): AtalhoDaBusca => ({
-    para,
-    rotulo,
-    icone,
-    somenteGestao,
-    tipo: 'destino',
-  })),
+  // A Triagem está no menu só para a Gestão, mas no Ctrl+K continua aberta a todos, com o nome
+  // completo: por isso o item do menu sai daqui e o atalho próprio fica.
+  ...ITENS_NAVEGACAO.filter(({ para }) => para !== '/triagem').map(
+    ({ para, rotulo, icone, somenteGestao }): AtalhoDaBusca => ({
+      para,
+      rotulo,
+      icone,
+      somenteGestao,
+      tipo: 'destino',
+    }),
+  ),
   { para: '/triagem', rotulo: 'Triagem de licenciamento', icone: 'signpost', tipo: 'destino' },
   {
     para: '/planejamento',

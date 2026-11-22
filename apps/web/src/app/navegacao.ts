@@ -17,8 +17,8 @@ export interface ItemNavegacao {
 export const ROTULO_DO_GRUPO = { trabalho: 'Trabalho', gestao: 'Gestão' } as const
 
 /**
- * Itens do menu principal (ADR-0041): a Gestão vê 10, a Equipe 7. A Triagem de licenciamento e o
- * Planejamento ficam fora do menu (as rotas continuam); o Ctrl+K tem lista própria
+ * Itens do menu principal (ADR-0041): a Triagem entrou no grupo Gestão, ao lado de Orçamentos
+ * (22/11/2026). O Planejamento fica fora do menu (a rota continua); o Ctrl+K tem lista própria
  * (busca/atalhos.ts), então tirar um item daqui não o tira da busca.
  */
 export const ITENS_NAVEGACAO: readonly ItemNavegacao[] = [
@@ -46,6 +46,14 @@ export const ITENS_NAVEGACAO: readonly ItemNavegacao[] = [
     para: '/orcamentos',
     rotulo: 'Orçamentos',
     icone: 'receipt',
+    somenteGestao: true,
+    grupo: 'gestao',
+  },
+  // A triagem vira orçamento pelo "Orçar" (ADR-0056): fica ao lado de Orçamentos.
+  {
+    para: '/triagem',
+    rotulo: 'Triagem',
+    icone: 'signpost',
     somenteGestao: true,
     grupo: 'gestao',
   },
