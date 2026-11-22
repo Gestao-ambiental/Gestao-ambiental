@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { fireEvent, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import axe from 'axe-core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -91,6 +91,27 @@ describe('shell do app', () => {
       'Resíduos',
     ])
     expect(within(menu).queryByText('Gestão')).not.toBeInTheDocument()
+  })
+
+  it('a Equipe vê a logo da consultoria e o cartão volta a exibir só texto se a imagem falhar', async () => {
+    const caminho = 'consultoria-da-envora/consultoria/logo.png'
+    falso.reiniciar({
+      sessao: sessaoDe('ana@filtroville.test', 'Ana Ribeiro'),
+      rpc: {
+        meus_vinculos: { data: [vinculoFalso('Envora Ambiental', 'equipe')] },
+        obter_logo_da_consultoria: { data: caminho },
+      },
+    })
+    renderizarApp('/')
+    const cartao = within(
+      await screen.findByRole('group', { name: 'Consultoria: Envora Ambiental' }),
+    )
+    const imagem = await cartao.findByAltText('')
+    expect(imagem).toHaveAttribute('src', `https://falso.test/${caminho}`)
+    fireEvent.error(imagem)
+    expect(cartao.queryByAltText('')).not.toBeInTheDocument()
+    expect(cartao.getByText('Envora Ambiental')).toBeInTheDocument()
+    expect(cartao.getByText('Equipe')).toBeInTheDocument()
   })
 
   it('a rota da Triagem abre a página da triagem', async () => {

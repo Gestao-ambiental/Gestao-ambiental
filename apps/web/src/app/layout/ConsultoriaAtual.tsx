@@ -1,5 +1,8 @@
-import { NOMES_PAPEL } from '@/app/papeis'
+import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
+
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
+import { NOMES_PAPEL } from '@/app/papeis'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,12 +13,43 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Icone } from '@/components/ui/icone'
 import type { Vinculo } from '@/lib/api/acesso'
+import {
+  FRESCOR_DA_URL_LOGO_MS,
+  chaveDaLogoDaConsultoria,
+  obterLogoDaConsultoria,
+} from '@/lib/api/identidade'
 
-function Identificacao({ vinculo, papel }: { vinculo: Vinculo; papel?: string }) {
+function LogoDaConsultoria({ url }: { url: string }) {
+  const [falhou, setFalhou] = useState(false)
+  if (falhou) return null
   return (
-    <span className="flex min-w-0 flex-col text-left">
-      <span className="truncate corpo-medio text-(--tinta)">{vinculo.consultoriaNome}</span>
-      <span className="rotulo">{papel ?? NOMES_PAPEL[vinculo.papel]}</span>
+    <img
+      src={url}
+      alt=""
+      className="h-9 w-14 shrink-0 rounded-sm bg-white object-contain p-1"
+      onError={() => {
+        setFalhou(true)
+      }}
+    />
+  )
+}
+
+function Identificacao({
+  vinculo,
+  logoUrl,
+  papel,
+}: {
+  vinculo: Vinculo
+  logoUrl: string | null | undefined
+  papel?: string
+}) {
+  return (
+    <span className="flex min-w-0 items-center gap-(--e-2) text-left">
+      {logoUrl ? <LogoDaConsultoria key={logoUrl} url={logoUrl} /> : null}
+      <span className="flex min-w-0 flex-col">
+        <span className="truncate corpo-medio text-(--tinta)">{vinculo.consultoriaNome}</span>
+        <span className="rotulo">{papel ?? NOMES_PAPEL[vinculo.papel]}</span>
+      </span>
     </span>
   )
 }
@@ -27,6 +61,11 @@ function Identificacao({ vinculo, papel }: { vinculo: Vinculo; papel?: string })
 export function ConsultoriaAtual() {
   const { atual, vinculos, trocar, suporte } = useConsultoria()
   const ativos = vinculos.filter((v) => v.situacao === 'ativo')
+  const { data: logoUrl } = useQuery({
+    queryKey: chaveDaLogoDaConsultoria(atual.consultoriaId),
+    queryFn: () => obterLogoDaConsultoria(atual.consultoriaId),
+    staleTime: FRESCOR_DA_URL_LOGO_MS,
+  })
 
   // Modo suporte (ADR-0025): a consultoria fica fixa; sair é pela faixa do suporte.
   if (ativos.length <= 1 || suporte) {
@@ -36,7 +75,7 @@ export function ConsultoriaAtual() {
         aria-label={`Consultoria: ${atual.consultoriaNome}`}
         role="group"
       >
-        <Identificacao vinculo={atual} papel={suporte ? 'Suporte' : undefined} />
+        <Identificacao vinculo={atual} logoUrl={logoUrl} papel={suporte ? 'Suporte' : undefined} />
       </div>
     )
   }
@@ -47,7 +86,7 @@ export function ConsultoriaAtual() {
         aria-label={`Consultoria: ${atual.consultoriaNome}. Trocar consultoria`}
         className="flex w-full cursor-pointer items-center gap-(--e-2) rounded-(--raio) border px-(--e-3) py-(--e-2) transicao-estado hover:bg-(--toque)"
       >
-        <Identificacao vinculo={atual} />
+        <Identificacao vinculo={atual} logoUrl={logoUrl} />
         <Icone nome="chevron-down" className="ml-auto text-(--icone)" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-(--radix-dropdown-menu-trigger-width)">
