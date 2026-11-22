@@ -31,9 +31,11 @@ import {
   listarLinhasDaImportacao,
   listarLinhasPorResultado,
   obterImportacao,
+  obterPreviaDaImportacao,
   TAMANHO_PAGINA_LINHAS,
   type Importacao,
   type LinhaDaImportacao,
+  type PreviaDaLinha,
   type ResultadoDaLinha,
 } from '@/lib/api/importacao'
 import { formatarInstanteComHora, formatarInstanteComoData } from '@/lib/datas'
@@ -167,6 +169,14 @@ function Conferencia({ importacao }: { importacao: Importacao }) {
     placeholderData: keepPreviousData,
   })
 
+  // Cliente novo ou existente e unidade a criar por linha; a chave fica sob 'importacao-linhas'
+  // para renovar junto com as linhas (conferir de novo, corrigir).
+  const previa = useQuery({
+    queryKey: ['importacao-linhas', importacao.id, 'previa', resumo?.rowVersion ?? 0],
+    queryFn: () => obterPreviaDaImportacao(importacao.id),
+    enabled: resumo !== null,
+  })
+
   const renovarImportacao = () =>
     Promise.all([
       queryClient.invalidateQueries({ queryKey: chaveDaImportacao(importacao.id) }),
@@ -256,6 +266,21 @@ function Conferencia({ importacao }: { importacao: Importacao }) {
       <div className="flex flex-col gap-(--e-5)">
         <Cabecalho importacao={importacao} />
 
+        {resumo ? (
+          <Placar rotulo="O que a importação cria" tamanho="compacto">
+            {importacao.entidade === 'licenca' ? (
+              <ItemDoPlacar rotulo="Licenças" valor={resumo.aCriar.licencas} />
+            ) : null}
+            <ItemDoPlacar rotulo="Empreendimentos" valor={resumo.aCriar.empreendimentos} />
+            <ItemDoPlacar rotulo="Unidades" valor={resumo.aCriar.unidades} />
+            <ItemDoPlacar
+              rotulo="Clientes"
+              valor={previa.data ? previa.data.clientesACriar : '—'}
+              apagado={!previa.data || previa.data.clientesACriar === 0}
+            />
+          </Placar>
+        ) : null}
+
         {resumo && precisaConfirmar ? (
           <MensagemSecao tom="atencao" titulo="Passa do limite do plano">
             <dl className="grid max-w-[420px] grid-cols-[1fr_auto] gap-x-(--e-4) gap-y-(--e-1)">
@@ -284,6 +309,23 @@ function Conferencia({ importacao }: { importacao: Importacao }) {
         {conferir.isError ? <MensagemDeErro erro={conferir.error} /> : null}
         {importar.isError ? <MensagemDeErro erro={importar.error} /> : null}
         {baixarErros.isError ? <MensagemDeErro erro={baixarErros.error} /> : null}
+        {previa.isError ? (
+          <MensagemSecao
+            role="alert"
+            tom="perigo"
+            titulo="Não deu para ver os clientes e as unidades novas"
+            acoes={
+              <Botao
+                tamanho="compacto"
+                onClick={() => {
+                  void previa.refetch()
+                }}
+              >
+                Tentar de novo
+              </Botao>
+            }
+          />
+        ) : null}
         {importar.isPending ? (
           <p role="status" className="corpo text-(--tinta-2)">
             Importando
@@ -314,6 +356,7 @@ function Conferencia({ importacao }: { importacao: Importacao }) {
                 aoMudarPagina={setPagina}
                 vazio={`Nenhuma linha ${ABAS_DA_CONFERENCIA.find((a) => a.valor === grupo)?.rotulo.toLowerCase() ?? ''}`}
                 aoCorrigir={setCorrigindo}
+                previa={grupo === 'erro' ? undefined : previa.data?.linhas}
               />
             </PainelDeAba>
           </div>
@@ -343,6 +386,7 @@ function ListaDeLinhas({
   vazio,
   mostrar = 'problemas',
   aoCorrigir,
+  previa,
 }: {
   consulta: {
     isPending: boolean
@@ -356,6 +400,7 @@ function ListaDeLinhas({
   vazio: string
   mostrar?: 'problemas' | 'motivo'
   aoCorrigir?: (linha: LinhaDaImportacao) => void
+  previa?: ReadonlyMap<number, PreviaDaLinha>
 }) {
   if (consulta.isPending) return <Carregando rotulo="Carregando linhas" className="border-0" />
   if (consulta.isError || !consulta.data) {
@@ -378,6 +423,7 @@ function ListaDeLinhas({
         linhas={consulta.data.itens}
         mostrar={mostrar}
         aoCorrigir={aoCorrigir}
+        previa={previa}
       />
       <Paginacao
         pagina={pagina}

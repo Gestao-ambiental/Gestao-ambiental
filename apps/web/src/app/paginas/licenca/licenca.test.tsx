@@ -669,9 +669,11 @@ describe('passo 5: responsáveis e ativação (LIC-04, LIC-05)', () => {
     })
   })
 
-  it('tabela mostra a recorrência e o próximo prazo de cada condicionante', async () => {
+  // Regra mudada de propósito (piloto): a coluna mostra a primeira data, não o próximo prazo.
+  function cenarioDoCalendario(rpc: Cenario['rpc'] = {}) {
     falso.reiniciar(
       cenario({
+        rpc,
         tabelas: {
           condicionante: [
             condicionante('c1', '4.2', 'Relatório trimestral', {
@@ -679,11 +681,14 @@ describe('passo 5: responsáveis e ativação (LIC-04, LIC-05)', () => {
               primeira_data: '2023-05-14',
               prazo_confirmado_em: '2026-10-12T13:00:00Z',
             }),
-            condicionante('c2', '3.3.8', 'Anuência para alterações', {
-              recorrencia: 'unica',
-              primeira_data: '2021-08-20',
-              prazo_confirmado_em: '2026-10-12T13:00:00Z',
-            }),
+            {
+              ...condicionante('c2', '3.3.8', 'Anuência para alterações', {
+                recorrencia: 'unica',
+                primeira_data: '2021-08-20',
+                prazo_confirmado_em: '2026-10-12T13:00:00Z',
+              }),
+              responsavel_id: 'm-bruno',
+            },
             condicionante('c3', '2.1', 'Manter o sistema de drenagem', {
               natureza: 'condicao_continua',
             }),
@@ -691,22 +696,64 @@ describe('passo 5: responsáveis e ativação (LIC-04, LIC-05)', () => {
         },
       }),
     )
+  }
+
+  it('tabela mostra a recorrência e a primeira data de cada condicionante', async () => {
+    cenarioDoCalendario()
     renderizarApp('/licencas/i1/responsaveis')
 
     const tabela = await screen.findByRole('table')
     expect(within(tabela).getByRole('columnheader', { name: 'Recorrência' })).toBeInTheDocument()
-    expect(within(tabela).getByRole('columnheader', { name: 'Próximo prazo' })).toBeInTheDocument()
+    expect(within(tabela).getByRole('columnheader', { name: 'Primeira data' })).toBeInTheDocument()
+    expect(
+      within(tabela).queryByRole('columnheader', { name: 'Próximo prazo' }),
+    ).not.toBeInTheDocument()
     const linha = (codigo: string) => {
       const celula = within(tabela).getByText(codigo).closest('tr')
       if (!celula) throw new Error(`linha ${codigo} ausente`)
       return within(celula)
     }
     expect(linha('4.2').getByText('Trimestral')).toBeInTheDocument()
+    expect(linha('4.2').getByText('14/05/2023')).toBeInTheDocument()
     expect(linha('3.3.8').getByText('Única')).toBeInTheDocument()
     expect(linha('3.3.8').getByText('20/08/2021')).toBeInTheDocument()
-    expect(linha('3.3.8').getByText('Vencido')).toBeInTheDocument()
     expect(linha('2.1').getByText('Condição contínua')).toBeInTheDocument()
     expect(linha('2.1').getByText('Sem prazo')).toBeInTheDocument()
+  })
+
+  it('antes de salvar, mostra o calendário por mês com o responsável e o total de prazos', async () => {
+    const usuario = userEvent.setup()
+    cenarioDoCalendario()
+    renderizarApp('/licencas/i1/responsaveis')
+
+    // Trimestral de 14/05/2023 até a validade (15/02/2027): 16 entregas; a única: 1.
+    const calendario = await screen.findByRole('region', { name: 'Calendário' })
+    expect(within(calendario).getByText('17 prazos')).toBeInTheDocument()
+    expect(screen.getByText('17 prazos.')).toBeInTheDocument()
+
+    const meses = within(calendario).getByRole('list', { name: 'Meses' })
+    const agosto = within(meses).getByRole('list', { name: /agosto de 2021/ })
+    expect(within(agosto).getByText('20/08/2021')).toBeInTheDocument()
+    expect(within(agosto).getByText('Anuência para alterações')).toBeInTheDocument()
+    expect(within(agosto).getByText('Bruno Kist')).toBeInTheDocument()
+    const maio = within(meses).getByRole('list', { name: /maio de 2023/ })
+    expect(within(maio).getByText('Sem responsável')).toBeInTheDocument()
+
+    expect(within(calendario).getByText('Meses 1–6 de 17')).toBeInTheDocument()
+    expect(within(calendario).getByRole('button', { name: 'Meses anteriores' })).toBeDisabled()
+    await usuario.click(within(calendario).getByRole('button', { name: 'Próximos meses' }))
+    expect(within(calendario).getByText('Meses 7–12 de 17')).toBeInTheDocument()
+    expect(within(calendario).queryByText('agosto de 2021')).not.toBeInTheDocument()
+  })
+
+  it('o total do calendário bate com o que a ativação devolve', async () => {
+    const usuario = userEvent.setup()
+    cenarioDoCalendario({ ativar_plano: { data: 17 } })
+    renderizarApp('/licencas/i1/responsaveis')
+
+    expect(await screen.findByText('17 prazos.')).toBeInTheDocument()
+    await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
+    expect(await screen.findByText('Plano ativado. 17 ocorrências criadas.')).toBeInTheDocument()
   })
 
   it('não tem violações de acessibilidade detectáveis pelo axe', async () => {

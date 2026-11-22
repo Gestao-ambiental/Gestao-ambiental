@@ -9,7 +9,7 @@ import {
 
 import { Botao } from '@/components/ui/botao'
 import { Icone } from '@/components/ui/icone'
-import type { LinhaDaImportacao } from '@/lib/api/importacao'
+import type { LinhaDaImportacao, PreviaDaLinha } from '@/lib/api/importacao'
 import { useCelular } from '@/lib/usar-celular'
 import { cn } from '@/lib/utils'
 
@@ -60,17 +60,41 @@ function Observacoes({
   )
 }
 
+/** Na conferência: se o cliente é novo e se a unidade será criada (só linhas que entram). */
+function OQueCria({ previa }: { previa: PreviaDaLinha | undefined }) {
+  if (!previa) return <span className="text-(--tinta-3)">—</span>
+  return (
+    <span className="flex flex-col gap-(--e-05)">
+      {previa.cliente ? (
+        <span className={previa.cliente === 'novo' ? 'corpo-medio' : 'text-(--tinta-2)'}>
+          {previa.cliente === 'novo' ? 'Cliente novo' : 'Cliente existente'}
+        </span>
+      ) : null}
+      {previa.unidade && previa.unidadeNome ? (
+        <span className={previa.unidade === 'criar' ? 'corpo-medio' : 'text-(--tinta-2)'}>
+          {previa.unidade === 'criar'
+            ? `Nova unidade: ${previa.unidadeNome}`
+            : `Unidade: ${previa.unidadeNome}`}
+        </span>
+      ) : null}
+    </span>
+  )
+}
+
 export function TabelaDeLinhas({
   entidade,
   linhas,
   mostrar,
   aoCorrigir,
+  previa,
 }: {
   entidade: EntidadeDaImportacao
   linhas: readonly LinhaDaImportacao[]
   /** Na conferência, os problemas; depois de desfazer, o motivo de a linha ter ficado. */
   mostrar: 'problemas' | 'motivo'
   aoCorrigir?: (linha: LinhaDaImportacao) => void
+  /** Na conferência: o que cada linha cria (cliente e unidade). */
+  previa?: ReadonlyMap<number, PreviaDaLinha>
 }) {
   const celular = useCelular()
   const campos = CAMPOS_DA_IMPORTACAO[entidade]
@@ -97,6 +121,11 @@ export function TabelaDeLinhas({
                   .filter(Boolean)
                   .join(' · ')}
               </span>
+              {previa?.get(linha.numeroLinha) ? (
+                <span className="text-xs">
+                  <OQueCria previa={previa.get(linha.numeroLinha)} />
+                </span>
+              ) : null}
               <Observacoes linha={linha} entidade={entidade} mostrar={mostrar} />
               {aoCorrigir ? (
                 <Botao
@@ -130,6 +159,11 @@ export function TabelaDeLinhas({
                 {c.rotulo}
               </th>
             ))}
+            {previa ? (
+              <th scope="col" className={classeCabecalho}>
+                Cria
+              </th>
+            ) : null}
             <th scope="col" className={classeCabecalho}>
               {tituloDaObservacao}
             </th>
@@ -163,6 +197,11 @@ export function TabelaDeLinhas({
                   </td>
                 )
               })}
+              {previa ? (
+                <td className={cn(classeCelula, 'py-(--e-2) whitespace-nowrap')}>
+                  <OQueCria previa={previa.get(linha.numeroLinha)} />
+                </td>
+              ) : null}
               <td className={cn(classeCelula, 'min-w-[220px] py-(--e-2)')}>
                 <Observacoes linha={linha} entidade={entidade} mostrar={mostrar} />
               </td>

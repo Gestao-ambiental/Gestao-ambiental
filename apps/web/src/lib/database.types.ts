@@ -3660,6 +3660,9 @@ isOneToOne: false
               "dias": number,"empreendimento_id": string,"empreendimento_nome": string,"inicio": string,"obrigacao_id": string,"observacao": string,"prazo": string,"referencia": string,"tipo": string
             }[]
                            },
+"previa_da_importacao":
+{ Args: { "p_importacao_id": string }; Returns: Json
+                           },
 "prorrogar_exigencia":
 { Args: { "p_caminho"?: string,"p_exigencia_id": string,"p_meta_interna": string,"p_motivo": string,"p_nome_original"?: string,"p_prazo_novo": string,"p_prazo_novo_texto"?: string,"p_resposta_id": string,"p_row_version": number,"p_sha256"?: string,"p_versao_id"?: string }; Returns: number
                            },

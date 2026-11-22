@@ -92,6 +92,15 @@ export {
 } from './prazo'
 export type { LicencaResumo, Prazo, Recorrencia, SituacaoDaLicenca, UnidadeCiclo } from './prazo'
 
+export { entraNoPlano, previaDoCalendario } from './calendario-do-plano'
+export type {
+  ContextoDoPlano,
+  ItemDoPlano,
+  MesDaPrevia,
+  PrazoDaPrevia,
+  PreviaDoCalendario,
+} from './calendario-do-plano'
+
 export { recorrenciaSugerida } from './recorrencia-sugerida'
 export type { RecorrenciaSugerida } from './recorrencia-sugerida'
 
