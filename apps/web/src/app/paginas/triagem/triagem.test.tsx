@@ -1114,8 +1114,15 @@ describe('orçar da triagem (ADR-0056)', () => {
       rpc: { criar_orcamento_da_triagem: { data: { orcamento_id: 'o-novo', modelo_id: null } } },
     })
     const { usuario } = montar('/triagem?etapa=atividades')
+    expect(screen.queryByRole('group', { name: 'Ações da triagem' })).toBeNull()
     await enquadrar(usuario, '0,01')
-    await usuario.click(screen.getByRole('button', { name: 'Orçar' }))
+    const acoes = screen.getByRole('group', { name: 'Ações da triagem' })
+    expect(
+      within(screen.getByRole('region', { name: 'Conclusão da triagem' })).queryByRole('button', {
+        name: 'Orçar',
+      }),
+    ).toBeNull()
+    await usuario.click(within(acoes).getByRole('button', { name: 'Orçar' }))
     const dialogo = within(screen.getByRole('dialog', { name: 'Orçar para cliente novo' }))
     const criar = dialogo.getByRole('button', { name: 'Criar orçamento' })
     expect(criar).toBeDisabled()
