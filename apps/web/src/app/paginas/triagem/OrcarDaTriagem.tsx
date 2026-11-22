@@ -7,14 +7,16 @@ import {
   type TaxaDaAtividade,
 } from '@gestao-ambiental/domain'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useId, useRef, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router'
 
 import { Botao } from '@/components/ui/botao'
-import { CampoTexto } from '@/components/ui/campo-texto'
-import { Dialogo } from '@/components/ui/dialogo'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
-import { criarOrcamentoDaTriagem } from '@/lib/api/triagem-orcamento'
+import {
+  caminhoDoOrcamentoDaTriagem,
+  criarOrcamentoDaTriagem,
+  type EstadoDoNovoOrcamento,
+} from '@/lib/api/triagem-orcamento'
 import { mensagemDoErro } from '@/lib/erros'
 
 export function OrcarDaTriagem({
@@ -32,106 +34,46 @@ export function OrcarDaTriagem({
 }) {
   const navegar = useNavigate()
   const queryClient = useQueryClient()
-  const formulario = useId()
-  const [nome, setNome] = useState<string | null>(null)
-  // Repetir a mesma tentativa usa o mesmo id. Trocar o nome inicia outro pedido.
-  const pedido = useRef<{ id: string; nome: string } | null>(null)
+  const [id] = useState(() => crypto.randomUUID())
+  const taxa = despesaDaTaxa(orgao, taxas)
   const orcar = useMutation({
-    mutationFn: (nomeDoCliente: string) => {
-      if (pedido.current?.nome !== nomeDoCliente) {
-        pedido.current = { id: crypto.randomUUID(), nome: nomeDoCliente }
-      }
-      return criarOrcamentoDaTriagem({
-        id: pedido.current.id,
+    mutationFn: (destino: { id: string; nome: string }) =>
+      criarOrcamentoDaTriagem({
+        id,
         consultoriaId,
-        empreendimentoId: empreendimento?.id ?? null,
-        prospectoNome: empreendimento ? undefined : nomeDoCliente,
+        empreendimentoId: destino.id,
         modalidade,
-        objeto: objetoDoOrcamentoDaTriagem(modalidade, nomeDoCliente),
-        taxa: despesaDaTaxa(orgao, taxas),
-      })
-    },
-    onSuccess: ({ orcamentoId, modeloId }) => {
+        objeto: objetoDoOrcamentoDaTriagem(modalidade, destino.nome),
+        taxa,
+      }),
+    onSuccess: (criado) => {
       void queryClient.invalidateQueries({ queryKey: ['orcamentos', consultoriaId] })
-      void navegar(
-        modeloId
-          ? `/orcamentos/${orcamentoId}`
-          : `/orcamentos/${orcamentoId}?modalidade=${modalidade}&sem-valores=1`,
-      )
+      void navegar(caminhoDoOrcamentoDaTriagem(criado, modalidade))
     },
   })
-
-  function cancelar() {
-    if (orcar.isPending) return
-    orcar.reset()
-    setNome(null)
-  }
-
-  const erro = orcar.isError ? (
-    <MensagemSecao tom="perigo" role="alert">
-      {mensagemDoErro(orcar.error)}
-    </MensagemSecao>
-  ) : null
 
   return (
     <div className="flex flex-col gap-(--e-2)">
       <Botao
+        aparencia="primario"
         iconeAntes="file-plus"
         larguraTotal
         disabled={orcar.isPending}
         onClick={() => {
           if (empreendimento) {
-            orcar.mutate(empreendimento.nome)
+            orcar.mutate(empreendimento)
           } else {
-            setNome('')
+            const state: EstadoDoNovoOrcamento = { triagem: { consultoriaId, modalidade, taxa } }
+            void navegar('/orcamentos/novo', { state })
           }
         }}
       >
         {orcar.isPending ? 'Abrindo' : 'Orçar'}
       </Botao>
-      {empreendimento ? erro : null}
-      {nome !== null ? (
-        <Dialogo
-          aberto
-          aoMudar={cancelar}
-          titulo="Orçar para cliente novo"
-          acoes={
-            <>
-              <Botao disabled={orcar.isPending} onClick={cancelar}>
-                Cancelar
-              </Botao>
-              <Botao
-                type="submit"
-                form={formulario}
-                aparencia="primario"
-                disabled={orcar.isPending || !nome.trim()}
-              >
-                {orcar.isPending ? 'Criando orçamento' : 'Criar orçamento'}
-              </Botao>
-            </>
-          }
-        >
-          <form
-            id={formulario}
-            onSubmit={(evento) => {
-              evento.preventDefault()
-              if (!orcar.isPending && nome.trim()) orcar.mutate(nome.trim())
-            }}
-          >
-            <CampoTexto
-              rotulo="Nome da empresa ou do cliente"
-              autoComplete="organization"
-              maxLength={200}
-              required
-              readOnly={orcar.isPending}
-              value={nome}
-              onChange={(evento) => {
-                setNome(evento.target.value)
-              }}
-            />
-          </form>
-          {erro}
-        </Dialogo>
+      {orcar.isError ? (
+        <MensagemSecao tom="perigo" role="alert">
+          {mensagemDoErro(orcar.error)}
+        </MensagemSecao>
       ) : null}
     </div>
   )

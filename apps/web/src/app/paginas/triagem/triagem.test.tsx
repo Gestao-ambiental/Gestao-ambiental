@@ -8,6 +8,7 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ContextoConsultoria, type EstadoConsultoria } from '@/app/consultoria/contexto-consultoria'
+import { PaginaNovoOrcamento } from '@/app/paginas/orcamentos/PaginaNovoOrcamento'
 import type { ResultadoDoLocal } from '@/lib/api/consulta-de-local'
 import { falso, type Cenario } from '@/test/supabase-falso'
 
@@ -104,6 +105,7 @@ function montar(caminho = '/triagem', papel: PapelMembro = 'gestao') {
         <MemoryRouter initialEntries={[caminho]}>
           <Routes>
             <Route path="/triagem" element={<PaginaTriagem />} />
+            <Route path="/orcamentos/novo" element={<PaginaNovoOrcamento />} />
             <Route path="/orcamentos/:id" element={<DestinoDoOrcamento />} />
           </Routes>
         </MemoryRouter>
@@ -1108,7 +1110,7 @@ describe('orçar da triagem (ADR-0056)', () => {
     expect(screen.queryByRole('button', { name: 'Orçar' })).toBeNull()
   })
 
-  it('da triagem avulsa pede só o nome e abre o rascunho AuA com o repasse', async () => {
+  it('da triagem avulsa abre Novo orçamento e aplica o AuA e o repasse ao escolher o cliente', async () => {
     falso.reiniciar({
       ...cenario(),
       rpc: { criar_orcamento_da_triagem: { data: { orcamento_id: 'o-novo', modelo_id: null } } },
@@ -1123,15 +1125,19 @@ describe('orçar da triagem (ADR-0056)', () => {
       }),
     ).toBeNull()
     await usuario.click(within(acoes).getByRole('button', { name: 'Orçar' }))
-    const dialogo = within(screen.getByRole('dialog', { name: 'Orçar para cliente novo' }))
-    const criar = dialogo.getByRole('button', { name: 'Criar orçamento' })
-    expect(criar).toBeDisabled()
-    expect(falso.cliente.rpc).not.toHaveBeenCalled()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Novo orçamento' })).toBeVisible()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(falso.cliente.rpc).not.toHaveBeenCalledWith(
+      'criar_orcamento_da_triagem',
+      expect.anything(),
+    )
+    await usuario.click(screen.getByRole('button', { name: 'Cliente novo' }))
+    const form = within(screen.getByRole('form', { name: 'Cliente novo' }))
     await usuario.type(
-      dialogo.getByRole('textbox', { name: 'Nome da empresa ou do cliente' }),
+      form.getByRole('textbox', { name: 'Nome da empresa ou do cliente' }),
       '  Oficina Norte  ',
     )
-    await usuario.click(criar)
+    await usuario.click(form.getByRole('button', { name: 'Criar orçamento' }))
 
     expect(
       await screen.findByText('/orcamentos/o-novo?modalidade=AuA&sem-valores=1'),
@@ -1150,24 +1156,55 @@ describe('orçar da triagem (ADR-0056)', () => {
     })
   })
 
-  it('mantém o nome em caso de erro e permite cancelar sem sair do resultado', async () => {
+  it('permite vincular a triagem avulsa a um cliente cadastrado', async () => {
     falso.reiniciar({
       ...cenario(),
-      rpc: { criar_orcamento_da_triagem: { error: { message: 'sem_permissao' } } },
+      rpc: {
+        listar_empreendimentos: { data: [{ id: ID, nome: 'Metalúrgica Rio Cubatão', total: 1 }] },
+        criar_orcamento_da_triagem: {
+          data: { orcamento_id: 'o-novo', modelo_id: 'mod-trifasica' },
+        },
+      },
     })
     const { usuario } = montar('/triagem?etapa=atividades')
     await enquadrar(usuario)
     await usuario.click(screen.getByRole('button', { name: 'Orçar' }))
-    const dialogo = within(screen.getByRole('dialog'))
-    const nome = dialogo.getByRole('textbox', { name: 'Nome da empresa ou do cliente' })
+    await usuario.click(await screen.findByRole('option', { name: 'Metalúrgica Rio Cubatão' }))
+    expect(await screen.findByText('/orcamentos/o-novo')).toBeInTheDocument()
+    expect(falso.cliente.rpc).toHaveBeenCalledWith(
+      'criar_orcamento_da_triagem',
+      expect.objectContaining({
+        p_empreendimento_id: ID,
+        p_modalidade: 'trifasica',
+        p_objeto: 'Licenciamento trifásico (LAP, LAI e LAO) · Metalúrgica Rio Cubatão',
+      }),
+    )
+  })
+
+  it('mantém o contexto e o id da triagem ao tentar criar o mesmo orçamento de novo', async () => {
+    const resposta = vi
+      .fn()
+      .mockReturnValueOnce({ error: { message: 'sem_permissao' } })
+      .mockReturnValue({ data: { orcamento_id: 'o-novo', modelo_id: 'mod-trifasica' } })
+    falso.reiniciar({
+      ...cenario(),
+      rpc: { criar_orcamento_da_triagem: resposta },
+    })
+    const { usuario } = montar('/triagem?etapa=atividades')
+    await enquadrar(usuario)
+    await usuario.click(screen.getByRole('button', { name: 'Orçar' }))
+    await usuario.click(await screen.findByRole('button', { name: 'Cliente novo' }))
+    const nome = screen.getByRole('textbox', { name: 'Nome da empresa ou do cliente' })
     await usuario.type(nome, 'Oficina Norte{Enter}')
-    expect(await dialogo.findByRole('alert')).toHaveTextContent(
+    expect(await screen.findByRole('alert')).toHaveTextContent(
       'Você não tem permissão para esta ação.',
     )
-    expect(nome).toHaveValue('Oficina Norte')
-    await usuario.click(dialogo.getByRole('button', { name: 'Cancelar' }))
-    expect(screen.queryByRole('dialog')).toBeNull()
-    expect(screen.getByRole('button', { name: 'Orçar' })).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: 'Nome da empresa ou do cliente' })).toHaveValue(
+      'Oficina Norte',
+    )
+    await usuario.click(screen.getByRole('button', { name: 'Tentar de novo' }))
+    expect(await screen.findByText('/orcamentos/o-novo')).toBeInTheDocument()
+    expect(resposta.mock.calls[0]).toEqual(resposta.mock.calls[1])
   })
 
   it('na triagem avulsa, a Equipe também fica sem acesso a Orçar', async () => {

@@ -17,7 +17,7 @@ O Eduardo pediu: "Normalmente tu confere o enquadramento pra orçar algo pra um 
   - Idempotente pelo id.
 - **Sem valores**: o rascunho sai com a modalidade e a taxa; o editor mostra "Guardar como valores da modalidade". `salvar_valores_da_modalidade` guarda os itens do orçamento como o modelo da modalidade (sem a taxa do órgão) e manda o anterior para a lixeira dos modelos.
 - Mapeamento modalidade → licenças do pacote (trifásica: LAP, LAI, LAO), objeto, nome dos valores e despesa da taxa em `packages/domain/src/triagem-orcamento.ts`.
-- Na triagem sem empreendimento, **Orçar** pede o nome do prospecto e cria o rascunho com o mesmo modelo e repasse aplicáveis. O cadastro do empreendimento pode ser feito depois.
+- Na triagem sem empreendimento, **Orçar** abre **Novo orçamento** com a modalidade e a taxa da triagem. A seleção de cliente da própria tela permite escolher um empreendimento, usar só o nome do prospecto ou cadastrar o empreendimento. Quando o cliente é definido, o rascunho usa o mesmo modelo e repasse aplicáveis.
 
 ## Consequências
 

@@ -58,7 +58,7 @@ export function NovoEmpreendimento({
 }: {
   consultoriaId: string
   inicial: RascunhoDoEmpreendimento
-  aoCadastrar: (empreendimentoId: string, unidadeId: string) => void
+  aoCadastrar: (empreendimentoId: string, unidadeId: string, nome: string) => void
   aoCancelar: () => void
 }) {
   const queryClient = useQueryClient()
@@ -80,7 +80,7 @@ export function NovoEmpreendimento({
       }),
     onSuccess: async (unidadeId) => {
       await queryClient.invalidateQueries({ queryKey: ['empreendimentos', consultoriaId] })
-      aoCadastrar(ids.empreendimento, unidadeId)
+      aoCadastrar(ids.empreendimento, unidadeId, dados.nome.trim())
     },
   })
 
