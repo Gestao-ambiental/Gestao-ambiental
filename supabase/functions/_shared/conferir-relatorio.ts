@@ -7,7 +7,8 @@
 //    IA de novo.
 // 2. Extrai o texto (PDF, .docx ou o JSON do editor). Roda as regras fixas, que valem mesmo quando a
 //    IA não roda (plano sem IA, sem cota, provedor fora).
-// 3. Reserva a cota (somada com a extração) e chama o provedor pelo adapter, com tempo limite.
+// 3. Reserva a cota (somada com a extração; recusa sem a autorização da Gestão, ADR-0061) e chama o
+//    provedor pelo adapter, com tempo limite e o texto com os dados pessoais mascarados.
 // 4. Com a service role: grava os apontamentos (regras + IA) ou a falha com os das regras.
 
 import {
@@ -16,6 +17,7 @@ import {
   juntarApontamentos,
   LIMITE_ARQUIVO_BYTES,
   LIMITE_CARACTERES_CONFERENCIA,
+  mascararDadosPessoais,
   MIME_DOCX,
   MIME_PDF,
   MINIMO_CARACTERES,
@@ -38,6 +40,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export type MotivoDaConferencia =
   | 'ia_fora_do_plano'
+  | 'ia_nao_autorizada'
   | 'arquivo_sem_texto'
   | 'arquivo_grande_demais'
   | 'texto_longo_demais'
@@ -277,6 +280,8 @@ export function criarTratadorDaConferencia(deps: DependenciasDaConferencia) {
       }
 
       const reserva = await deps.reservar(id)
+      // Sem a autorização da Gestão (ADR-0061), nada vai à IA: ficam só as regras fixas.
+      if (reserva.erro?.includes('ia_nao_autorizada')) return await falhar('ia_nao_autorizada')
       if (reserva.erro !== null) {
         return await falhar('erro_interno', undefined, `reserva: ${reserva.erro.slice(0, 200)}`)
       }
@@ -287,7 +292,7 @@ export function criarTratadorDaConferencia(deps: DependenciasDaConferencia) {
         resultado = await deps
           .criarConferidor(chave, modelo)
           .conferir(
-            { contexto, texto },
+            { contexto, texto: mascararDadosPessoais(texto) },
             tempoLimite(Math.max(1, LIMITE_TEMPO_MS - (agora() - inicio))),
           )
       } catch (erro) {

@@ -16,6 +16,7 @@ A consultoria manda ao cliente, todo mês, um resumo do que fez e do que vem. Ho
   - protocolos de renovação e respostas a exigências do mês;
   - os próximos 90 dias, das fontes de `private.linhas_de_prazo`.
 - As respostas a exigências vêm de `private.relatorio_exigencias_do_mes`, vazia nesta camada; a camada de exigências (P3) a redefine ao ser juntada, com o mesmo retorno.
+  - Redefinida em `20261122041600_relatorio_mensal_com_exigencias.sql` (pgTAP 797): respostas (`exigencia_resposta` do tipo `resposta`) protocoladas no mês, de exigências não excluídas do empreendimento. Título "Resposta à exigência: Ofício N · assunto", detalhe com o número do protocolo. Ficam de fora notas, descrição da resposta, anexos, prorrogações e nomes.
 - `modelo-documento.ts` ganha **blocos repetíveis**: o nó `bloco_repetido` (`attrs.lista`, `attrs.vazio`) repete o conteúdo para cada item da lista (`licencas`, `entregas`, `protocolos`, `proximos`); dentro dele, `campo_do_item` puxa um dado do item. Bloco sem itens vira um parágrafo com o texto de vazio.
 - Modelo-semente "Resumo para o cliente" no domínio (`modeloResumoParaOCliente`). O texto diz "Licenças e validades", nunca "em dia": o Grama não afirma regularidade.
 - Ação no "…" do Empreendimento, só Gestão: "Gerar relatório do mês" › mês (vem o anterior), com "Baixar .docx" e "Escrever no Grama".

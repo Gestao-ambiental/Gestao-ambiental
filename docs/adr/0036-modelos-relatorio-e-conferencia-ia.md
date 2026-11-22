@@ -43,7 +43,7 @@ O Eduardo pediu para seguir as recomendações e ajustar depois. Por isso cada i
 5. A cota da conferência soma com a da extração: 10 por pessoa, 25 por consultoria e 100 no projeto em 24 horas.
 6. Cada versão reenviada é conferida de novo e conta na cota.
 7. O papel timbrado (logo, cabeçalho e rodapé) fica para depois. A logo da proposta (`identidade`) pode ser reaproveitada.
-8. O texto do relatório vai ao provedor de IA como já vai o da licença: OpenRouter, provedores sem coleta de dados. Falta confirmar com o Kadu se isso entra no aviso de privacidade.
+8. O texto do relatório vai ao provedor de IA como já vai o da licença: OpenRouter, provedores sem coleta de dados. Falta confirmar com o Kadu se isso entra no aviso de privacidade. **Mudou na ADR-0061:** só com a conferência ligada pela Gestão, e com dados pessoais mascarados.
 
 ## Consequências
 

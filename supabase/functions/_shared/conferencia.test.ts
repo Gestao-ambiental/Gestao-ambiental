@@ -5,6 +5,7 @@ import {
   textoDoDocumento,
   type ContextoDaConferencia,
   juntarApontamentos,
+  mascararDadosPessoais,
   regrasFixas,
   textoDoDocx,
   validarConferencia,
@@ -202,4 +203,17 @@ Deno.test('validarConferencia: guarda a substituição só quando há trecho', (
     resultado?.apontamentos.map((a) => a.substituicao),
     ['LAO 4821/2023', ''],
   )
+})
+
+Deno.test('mascararDadosPessoais: CPF, e-mail e telefone; CNPJ, datas e protocolos ficam', () => {
+  assert.equal(
+    mascararDadosPessoais(
+      'CPF 529.982.247-25 e 52998224725, fone (47) 3433-1234 e +55 47 99876-5432, ana@x.com',
+    ),
+    'CPF [CPF] e [CPF], fone [telefone] e [telefone], [e-mail]',
+  )
+  const fica =
+    'CNPJ 11.222.333/0001-81 e 11222333000181, coleta em 10/11/2026, protocolo 12345678901, ' +
+    'processo 1234-5678, LAO 4821/2023'
+  assert.equal(mascararDadosPessoais(fica), fica)
 })

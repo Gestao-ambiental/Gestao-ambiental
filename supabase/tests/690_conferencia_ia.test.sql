@@ -3,7 +3,7 @@
 -- a IA; a cota soma com a extração; só a service role conclui. Outra consultoria não vê nem pede.
 begin;
 
-select plan(21);
+select plan(22);
 
 select testes.criar_dados_sinteticos();
 select set_config('testes.hoje',
@@ -111,6 +111,19 @@ select throws_ok(
 );
 
 -- ---------------------------------------------------------------- service role
+reset role;
+set local role service_role;
+
+-- ADR-0061: sem a autorização da Gestão, nada vai à IA (as regras fixas rodam na função).
+select throws_ok(
+  $$select public.reservar_conferencia_ia('70000000-0000-4000-8000-000000000691')$$,
+  'P0001', 'ia_nao_autorizada',
+  'sem a autorização da Gestão a conferência não reserva a IA'
+);
+
+reset role;
+select testes.autenticar_como('eduardo@filtroville.test');
+select public.definir_autorizacao_ia('c0000000-0000-4000-8000-00000000000a', 'conferencia_relatorio', true);
 reset role;
 set local role service_role;
 
