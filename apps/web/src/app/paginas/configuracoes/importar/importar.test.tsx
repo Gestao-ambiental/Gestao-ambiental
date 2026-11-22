@@ -430,6 +430,109 @@ describe('conferência', () => {
     expect(resultado.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([])
   })
 
+  // Piloto: o placar mostra tudo o que será criado (com os clientes) e cada linha diz se o cliente é
+  // novo e se a unidade será criada.
+  const linhaPronta = (numero: number, empreendimento: string, cliente: string) => ({
+    ...linhaComErro,
+    numero_linha: numero,
+    dados: { ...linhaComErro.dados, empreendimento, cliente, validade: '2027-04-04' },
+    erros: [],
+    grupo: 'pronta',
+  })
+  const previaDoBanco = {
+    clientes_a_criar: 1,
+    linhas: {
+      '2': { cliente: 'novo', unidade: 'criar', unidade_nome: 'Matriz' },
+      '3': { cliente: 'existente', unidade: 'existente', unidade_nome: 'Sede' },
+    },
+  }
+  function cenarioComPrevia(previa: Cenario['rpc'] = {}) {
+    return cenario('gestao', {
+      rpc: { previa_da_importacao: { data: previaDoBanco }, ...previa },
+      tabelas: {
+        importacao_linha: [
+          linhaPronta(2, 'Nova Fábrica', 'Cliente N'),
+          linhaPronta(3, 'Metalúrgica Açores', 'Grupo Açoriano'),
+        ],
+      },
+    })
+  }
+
+  it('antes de importar, o placar soma licenças, empreendimentos, unidades e clientes a criar', async () => {
+    falso.reiniciar(cenarioComPrevia())
+    renderizarApp('/configuracoes/importar/imp1')
+
+    const placar = await screen.findByRole('group', { name: 'O que a importação cria' })
+    await waitFor(() => {
+      expect(within(placar).getByText('Clientes').closest('div')).toHaveTextContent('1')
+    })
+    expect(within(placar).getByText('Licenças').closest('div')).toHaveTextContent('2')
+    expect(within(placar).getByText('Empreendimentos').closest('div')).toHaveTextContent('2')
+    expect(within(placar).getByText('Unidades').closest('div')).toHaveTextContent('2')
+    expect(falso.cliente.rpc).toHaveBeenCalledWith('previa_da_importacao', {
+      p_importacao_id: 'imp1',
+    })
+    expect(screen.getByRole('button', { name: 'Importar 2 linhas' })).toBeEnabled()
+  })
+
+  it('cada linha diz se o cliente é novo e se a unidade será criada', async () => {
+    falso.reiniciar(cenarioComPrevia())
+    const { container } = renderizarApp('/configuracoes/importar/imp1')
+
+    const tabela = await screen.findByRole('table')
+    expect(within(tabela).getByRole('columnheader', { name: 'Cria' })).toBeInTheDocument()
+    const linha = (texto: string) => {
+      const tr = within(tabela).getByText(texto).closest('tr')
+      if (!tr) throw new Error(`linha ${texto} ausente`)
+      return within(tr)
+    }
+    expect(await linha('Nova Fábrica').findByText('Cliente novo')).toBeInTheDocument()
+    expect(linha('Nova Fábrica').getByText('Nova unidade: Matriz')).toBeInTheDocument()
+    expect(linha('Metalúrgica Açores').getByText('Cliente existente')).toBeInTheDocument()
+    expect(linha('Metalúrgica Açores').getByText('Unidade: Sede')).toBeInTheDocument()
+    const resultado = await axe.run(container, semContraste)
+    expect(resultado.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([])
+  })
+
+  it('no celular, a lista de linhas também diz o cliente e a unidade', async () => {
+    vi.stubGlobal('matchMedia', (consulta: string) => ({
+      matches: consulta === '(max-width: 767px)',
+      media: consulta,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }))
+    falso.reiniciar(cenarioComPrevia())
+    renderizarApp('/configuracoes/importar/imp1')
+
+    const lista = await screen.findByRole('list', { name: 'Linhas' })
+    expect(await within(lista).findByText('Cliente novo')).toBeInTheDocument()
+    expect(within(lista).getByText('Nova unidade: Matriz')).toBeInTheDocument()
+    expect(within(lista).getByText('Unidade: Sede')).toBeInTheDocument()
+  })
+
+  it('erro ao ler a prévia: aviso com "Tentar de novo", e importar continua possível', async () => {
+    falso.reiniciar(
+      cenarioComPrevia({ previa_da_importacao: { error: { message: 'falhou', code: 'XX000' } } }),
+    )
+    const usuario = userEvent.setup()
+    renderizarApp('/configuracoes/importar/imp1')
+
+    expect(
+      await screen.findByText('Não deu para ver os clientes e as unidades novas'),
+    ).toBeInTheDocument()
+    const placar = screen.getByRole('group', { name: 'O que a importação cria' })
+    expect(within(placar).getByText('Clientes').closest('div')).toHaveTextContent('—')
+    expect(screen.getByRole('button', { name: 'Importar 2 linhas' })).toBeEnabled()
+
+    falso.reiniciar(cenarioComPrevia())
+    await usuario.click(screen.getByRole('button', { name: 'Tentar de novo' }))
+    await waitFor(() => {
+      expect(
+        screen.queryByText('Não deu para ver os clientes e as unidades novas'),
+      ).not.toBeInTheDocument()
+    })
+  })
+
   it('passa do limite: só importa com a confirmação do adicional, que vai ao banco', async () => {
     falso.reiniciar(
       cenario('gestao', {

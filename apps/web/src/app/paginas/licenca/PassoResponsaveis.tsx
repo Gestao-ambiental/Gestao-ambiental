@@ -2,8 +2,8 @@ import {
   descreverRecorrencia,
   formatarDataCivil,
   hojeNoFuso,
-  proximaEntrega,
-  type DataCivil,
+  previaDoCalendario,
+  type PreviaDoCalendario,
 } from '@gestao-ambiental/domain'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -31,8 +31,11 @@ import {
 import { ehAdicionalNaoConfirmado } from '@/lib/api/plano'
 import { mensagemDoErro } from '@/lib/erros'
 
+import { CalendarioDoPlano } from './CalendarioDoPlano'
 import { GuardaRascunho } from './GuardaCadastro'
 import { MolduraCadastro, RodapeCadastro } from './MolduraCadastro'
+import { dataDoMarco } from './marco'
+import { totalDePrazos } from './total-de-prazos'
 import { useCondicionantes, useSalvamento } from './usar-rascunho'
 
 const classeCabecalho =
@@ -69,36 +72,11 @@ function Recorrencia({ item }: { item: Condicionante }) {
   )
 }
 
-function ProximoPrazo({
-  item,
-  validade,
-  hoje,
-}: {
-  item: Condicionante
-  validade: DataCivil | null
-  hoje: DataCivil
-}) {
-  const proxima =
-    item.natureza === 'obrigacao' && item.recorrencia
-      ? proximaEntrega(
-          {
-            recorrencia: item.recorrencia,
-            unidade: item.unidade,
-            intervalo: item.intervalo,
-            dataReferencia: item.dataReferencia,
-            primeiraData: item.primeiraData,
-          },
-          validade,
-          hoje,
-        )
-      : null
-  if (!proxima) return <span className="text-(--tinta-2)">Sem prazo</span>
-  return (
-    <span className="flex flex-col">
-      <span className="numero">{formatarDataCivil(proxima.data)}</span>
-      {proxima.vencida ? <span className="text-xs text-(--atraso-texto)">Vencido</span> : null}
-    </span>
-  )
+/** Primeira entrega do prazo (a mesma data que vira a primeira ocorrência na ativação). */
+function PrimeiraData({ item, previa }: { item: Condicionante; previa: PreviaDoCalendario }) {
+  const primeira = previa.porItem[item.id]?.primeiraData ?? null
+  if (!primeira) return <span className="text-(--tinta-2)">Sem prazo</span>
+  return <span className="numero">{formatarDataCivil(primeira)}</span>
 }
 
 /** Responsável mais frequente: o "geral"; quem difere dele é exceção (Protótipo 14). */
@@ -236,7 +214,30 @@ function Responsaveis({
     : 0
   const nomeDe = (id: string | null) => membros.data?.find((m) => m.id === id)?.nome
   const pessoas = (membros.data ?? []).map(pessoaDoSeletor)
-  const hoje = hojeNoFuso(new Date(), atual.fuso)
+  const previa = previaDoCalendario(
+    itens.map((i) => ({
+      id: i.id,
+      codigo: i.codigo,
+      titulo: i.titulo,
+      natureza: i.natureza,
+      revisao: i.revisao,
+      responsavelId: i.responsavelId,
+      prazo: i.recorrencia
+        ? {
+            recorrencia: i.recorrencia,
+            unidade: i.unidade,
+            intervalo: i.intervalo,
+            dataReferencia: i.dataReferencia,
+            primeiraData: i.primeiraData,
+          }
+        : null,
+    })),
+    {
+      validade: instrumento.validade,
+      referencia: dataDoMarco(instrumento),
+      siglaDoTipo: instrumento.tipoSigla,
+    },
+  )
 
   const definir = useMutation({
     mutationFn: ({
@@ -287,9 +288,14 @@ function Responsaveis({
       rodape={
         <RodapeCadastro
           aviso={
-            semResponsavel === 0
-              ? 'Todas com responsável. Salvar ativa o plano.'
-              : `${String(semResponsavel)} sem responsável. Salvar ativa o plano.`
+            <>
+              {consulta.isSuccess ? (
+                <span className="corpo-medio numero">{`${totalDePrazos(previa.total)}. `}</span>
+              ) : null}
+              {semResponsavel === 0
+                ? 'Todas com responsável. Salvar ativa o plano.'
+                : `${String(semResponsavel)} sem responsável. Salvar ativa o plano.`}
+            </>
           }
           voltarPara={`/licencas/${instrumento.id}/prazos`}
           aoContinuar={() => {
@@ -346,7 +352,7 @@ function Responsaveis({
                     Recorrência
                   </th>
                   <th scope="col" className={classeCabecalho}>
-                    Próximo prazo
+                    Primeira data
                   </th>
                   <th scope="col" className={classeCabecalho}>
                     <span className="flex items-center gap-(--e-2)">
@@ -381,7 +387,7 @@ function Responsaveis({
                         <Recorrencia item={item} />
                       </td>
                       <td className={`${classeCelula} whitespace-nowrap`}>
-                        <ProximoPrazo item={item} validade={instrumento.validade} hoje={hoje} />
+                        <PrimeiraData item={item} previa={previa} />
                       </td>
                       <td className={`${classeCelula} w-[300px] py-(--e-1)`}>
                         <span className="flex items-center gap-(--e-2)">
@@ -405,6 +411,9 @@ function Responsaveis({
             </table>
           </div>
         )}
+        {consulta.isSuccess && membros.isSuccess && itens.length > 0 ? (
+          <CalendarioDoPlano previa={previa} nomeDe={nomeDe} />
+        ) : null}
       </div>
 
       <Dialogo

@@ -40,26 +40,12 @@ import { cn } from '@/lib/utils'
 
 import { GuardaRascunho } from './GuardaCadastro'
 import { MolduraCadastro, RodapeCadastro } from './MolduraCadastro'
+import { dataDoMarco } from './marco'
 import { useCondicionantes, useSalvamento } from './usar-rascunho'
 
 const classeCabecalho =
   'h-10 border-b px-(--e-3) text-left rotulo-maiusculo whitespace-nowrap text-(--tinta-2)'
 const classeCelula = 'h-(--linha) border-b border-(--regra-leve) px-(--e-3) py-(--e-1) align-middle'
-
-function dataDoMarco(instrumento: Instrumento): DataCivil | null {
-  switch (instrumento.marco) {
-    case 'emissao':
-      return instrumento.emitidoEm
-    case 'assinatura':
-      return instrumento.assinadoEm
-    case 'publicacao':
-      return instrumento.publicadoEm
-    case 'recebimento':
-      return instrumento.recebidoEm
-    default:
-      return null
-  }
-}
 
 function nomeDaRecorrencia(recorrencia: Recorrencia): string {
   return recorrencia === 'personalizada' ? 'Personalizada' : descreverRecorrencia({ recorrencia })

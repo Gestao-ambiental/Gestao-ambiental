@@ -87,6 +87,18 @@ export interface LinhaDaImportacao {
   instrumentoId: string | null
 }
 
+/** O que a linha conferida cria (só as linhas que entram; as outras não aparecem). */
+export interface PreviaDaLinha {
+  cliente: 'novo' | 'existente' | null
+  unidade: 'criar' | 'existente' | null
+  unidadeNome: string | null
+}
+
+export interface PreviaDaImportacao {
+  clientesACriar: number
+  linhas: ReadonlyMap<number, PreviaDaLinha>
+}
+
 // ---------------------------------------------------------------------------
 // Leitura do JSON que o banco devolve (snake_case) para o formato da tela
 // ---------------------------------------------------------------------------
@@ -144,6 +156,20 @@ export function lerResultadoDaEfetivacao(json: unknown): ResultadoDaEfetivacao {
     licencasCriadas: inteiro(r.licencas_criadas),
     desfazerAte: textoOuNulo(r.desfazer_ate) ?? '',
   }
+}
+
+export function lerPrevia(json: unknown): PreviaDaImportacao {
+  const r = objeto(json)
+  const linhas = new Map<number, PreviaDaLinha>()
+  for (const [numero, valor] of Object.entries(objeto(r.linhas))) {
+    const l = objeto(valor)
+    linhas.set(Number(numero), {
+      cliente: l.cliente === 'novo' || l.cliente === 'existente' ? l.cliente : null,
+      unidade: l.unidade === 'criar' || l.unidade === 'existente' ? l.unidade : null,
+      unidadeNome: textoOuNulo(l.unidade_nome),
+    })
+  }
+  return { clientesACriar: inteiro(r.clientes_a_criar), linhas }
 }
 
 const MOTIVOS: readonly MotivoMantida[] = [
@@ -289,6 +315,15 @@ export async function conferirImportacao(importacaoId: string): Promise<ResumoDa
   })
   if (error) throw error
   return lerResumo(data)
+}
+
+/** Cliente novo ou existente e unidade a criar por linha, e o total de clientes a criar. */
+export async function obterPreviaDaImportacao(importacaoId: string): Promise<PreviaDaImportacao> {
+  const { data, error } = await obterSupabase().rpc('previa_da_importacao', {
+    p_importacao_id: importacaoId,
+  })
+  if (error) throw error
+  return lerPrevia(data)
 }
 
 export async function efetivarImportacao(
