@@ -51,7 +51,7 @@ import { useSearchParams } from 'react-router'
 import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { Pagina } from '@/app/paginas/Pagina'
 import { EstadoVazio } from '@/components/estados'
-import { Botao } from '@/components/ui/botao'
+import { Botao, variantesBotao } from '@/components/ui/botao'
 import { BotaoIcone } from '@/components/ui/botao-icone'
 import { CampoTexto } from '@/components/ui/campo-texto'
 import { classeCampo } from '@/components/ui/estilos-campo'
@@ -240,31 +240,42 @@ function BuscaDeAtividade({
           >
             {resultados.map((a) => {
               const incluida = jaIncluidas.has(a.codigo)
+              const idDescricao = `${idLista}-${a.codigo}`
               return (
-                <li
-                  key={a.codigo}
-                  className="flex min-h-(--linha) items-center gap-(--e-3) border-b border-(--regra-leve) px-(--e-3) py-(--e-2) last:border-b-0 hover:bg-(--toque) max-sm:flex-wrap"
-                >
-                  <span className="w-[76px] shrink-0 corpo-medio text-(--tinta) numero">
-                    {a.codigo}
-                  </span>
-                  <span className="flex min-w-0 flex-1 flex-col max-sm:order-last max-sm:basis-full">
-                    <span className="corpo text-(--tinta)">{a.descricao}</span>
-                    <span className="text-xs text-(--tinta-2)">{a.grupo}</span>
-                  </span>
-                  <Botao
-                    tamanho="compacto"
-                    iconeAntes={incluida ? 'check' : 'plus'}
-                    aparencia={incluida ? 'sutil' : 'padrao'}
+                <li key={a.codigo} className="border-b border-(--regra-leve) last:border-b-0">
+                  <button
+                    type="button"
                     disabled={incluida}
-                    className="max-sm:ml-auto"
+                    className="flex min-h-(--linha) w-full items-center gap-(--e-3) px-(--e-3) py-(--e-2) text-left enabled:cursor-pointer enabled:hover:bg-(--toque) focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--foco) max-sm:flex-wrap"
                     aria-label={incluida ? `${a.codigo} já incluída` : `Incluir ${a.codigo}`}
+                    aria-describedby={idDescricao}
                     onClick={() => {
                       aoIncluir(a.codigo)
                     }}
                   >
-                    {incluida ? 'Incluída' : 'Incluir'}
-                  </Botao>
+                    <span className="w-[76px] shrink-0 corpo-medio text-(--tinta) numero">
+                      {a.codigo}
+                    </span>
+                    <span className="flex min-w-0 flex-1 flex-col max-sm:order-last max-sm:basis-full">
+                      <span id={idDescricao} className="corpo text-(--tinta)">
+                        {a.descricao}
+                      </span>
+                      <span className="text-xs text-(--tinta-2)">{a.grupo}</span>
+                    </span>
+                    <span
+                      aria-hidden
+                      className={cn(
+                        variantesBotao({
+                          tamanho: 'compacto',
+                          aparencia: incluida ? 'sutil' : 'padrao',
+                        }),
+                        'max-sm:ml-auto',
+                      )}
+                    >
+                      <Icone nome={incluida ? 'check' : 'plus'} />
+                      {incluida ? 'Incluída' : 'Incluir'}
+                    </span>
+                  </button>
                 </li>
               )
             })}
