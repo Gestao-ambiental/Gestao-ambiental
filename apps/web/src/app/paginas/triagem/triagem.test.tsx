@@ -1181,6 +1181,41 @@ describe('orçar da triagem (ADR-0056)', () => {
     )
   })
 
+  it('leva a triagem ao orçamento do empreendimento cadastrado pelo formulário completo', async () => {
+    falso.reiniciar({
+      ...cenario(),
+      rpc: {
+        cadastrar_empreendimento_com_unidade: (args) => ({ data: args.p_unidade_id }),
+        criar_orcamento_da_triagem: {
+          data: { orcamento_id: 'o-novo', modelo_id: 'mod-trifasica' },
+        },
+      },
+    })
+    const { usuario } = montar('/triagem?etapa=atividades')
+    await enquadrar(usuario)
+    await usuario.click(screen.getByRole('button', { name: 'Orçar' }))
+    await usuario.click(await screen.findByRole('button', { name: 'Cliente novo' }))
+    await usuario.click(screen.getByRole('button', { name: 'Cadastrar com CNPJ e unidade' }))
+    const form = within(screen.getByRole('form', { name: 'Novo empreendimento' }))
+    await usuario.type(
+      form.getByRole('textbox', { name: 'Nome do empreendimento' }),
+      'Oficina Norte',
+    )
+    await usuario.click(form.getByRole('button', { name: 'Cadastrar e usar' }))
+    expect(await screen.findByText('/orcamentos/o-novo')).toBeInTheDocument()
+    const cadastro = falso.cliente.rpc.mock.calls.find(
+      ([nome]) => nome === 'cadastrar_empreendimento_com_unidade',
+    )?.[1]
+    expect(falso.cliente.rpc).toHaveBeenCalledWith(
+      'criar_orcamento_da_triagem',
+      expect.objectContaining({
+        p_empreendimento_id: cadastro?.p_empreendimento_id,
+        p_modalidade: 'trifasica',
+        p_objeto: 'Licenciamento trifásico (LAP, LAI e LAO) · Oficina Norte',
+      }),
+    )
+  })
+
   it('mantém o contexto e o id da triagem ao tentar criar o mesmo orçamento de novo', async () => {
     const resposta = vi
       .fn()
