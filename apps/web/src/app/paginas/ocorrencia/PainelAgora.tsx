@@ -14,6 +14,7 @@ import { Dialogo } from '@/components/ui/dialogo'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { Selo, type TomSelo } from '@/components/ui/selo'
 import {
+  aprovarEvidencia,
   concluirEtapa,
   concluirOcorrencia,
   concluirSemEvidencia,
@@ -116,7 +117,7 @@ export function PainelAgora({
         case 'devolver': {
           if (!ultima) throw new Error('sem evidência')
           return execucao.tipo === 'aprovar'
-            ? conferirEvidencia(ultima.id, 'aprovada', '')
+            ? aprovarEvidencia(ultima)
             : conferirEvidencia(ultima.id, 'devolvida', execucao.texto)
         }
         case 'concluir':

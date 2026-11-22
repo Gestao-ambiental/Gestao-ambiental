@@ -53,11 +53,14 @@ function evidencia(extra: Partial<Record<string, unknown>> = {}): Record<string,
     data_execucao: adicionarDias(hoje, -2),
     enviada_em: '2026-10-16T13:00:00Z',
     enviada_por: 'm-bruno',
+    documento_versao_id: 'v1',
     autor: { nome: 'Bruno Kist' },
     versao: {
       caminho: 'c-Filtroville/evidencia/v1.pdf',
       nome_original: 'laudo.pdf',
       tamanho_bytes: 2048,
+      sha256: 'a'.repeat(64),
+      conferencia_de_arquivo: null,
     },
     conferencia: null,
     ...extra,
@@ -80,7 +83,9 @@ function cenario(
       conferir_evidencia: { data: null },
       concluir_ocorrencia: { data: 4 },
       reabrir_ocorrencia: { data: 4 },
+      obter_evidencia_aprovada: { data: [] },
     },
+    funcoes: { 'conferir-arquivo': { data: { confere: true, sha256: 'a'.repeat(64) } } },
     tabelas: {
       etapa: [],
       evidencia: [],
@@ -282,6 +287,13 @@ describe('evidência (DEM-03, DEM-09)', () => {
         }) as unknown,
       )
     })
+    // Depois do envio, o servidor confere o hash da mesma versão.
+    const envio = falso.cliente.rpc.mock.calls.find(([nome]) => nome === 'enviar_evidencia')
+    await vi.waitFor(() => {
+      expect(falso.cliente.functions.invoke).toHaveBeenCalledWith('conferir-arquivo', {
+        body: { versaoId: (envio?.[1] as { p_versao_id: string }).p_versao_id },
+      })
+    })
   })
 
   it('quem enviou não confere: a tela explica e não oferece aprovar', async () => {
@@ -332,6 +344,159 @@ describe('evidência (DEM-03, DEM-09)', () => {
         p_motivo: '',
       })
     })
+    // Antes de aprovar, o servidor conferiu o hash da versão.
+    expect(falso.cliente.functions.invoke).toHaveBeenCalledWith('conferir-arquivo', {
+      body: { versaoId: 'v1' },
+    })
+  })
+
+  it('arquivo diferente do enviado: não aprova e diz por quê', async () => {
+    const usuario = userEvent.setup()
+    falso.reiniciar({
+      ...cenario('gestao', {
+        ocorrencia: ocorrencia({ situacao: 'em_conferencia' }),
+        tabelas: { evidencia: [evidencia()] },
+      }),
+      funcoes: { 'conferir-arquivo': { data: { confere: false, sha256: 'f'.repeat(64) } } },
+    })
+    renderizarApp('/ocorrencias/o1')
+    await usuario.click(await screen.findByRole('button', { name: 'Aprovar' }))
+    expect(
+      await screen.findByText(
+        'O arquivo guardado não é igual ao enviado. Devolva para um novo envio.',
+      ),
+    ).toBeInTheDocument()
+    expect(falso.cliente.rpc).not.toHaveBeenCalledWith('conferir_evidencia', expect.anything())
+  })
+})
+
+describe('evidência que vale (piloto 2a)', () => {
+  function aprovada(extra: Partial<Record<string, unknown>> = {}): Record<string, unknown> {
+    return {
+      evidencia_id: 'ev2',
+      numero: 2,
+      versao_id: 'v2',
+      caminho: 'c-Filtroville/evidencia/v2.pdf',
+      nome_original: 'laudo-v2.pdf',
+      sha256: '0123456789abcdef'.repeat(4),
+      arquivo_confere: true,
+      arquivo_conferido_em: '2026-10-17T12:00:00Z',
+      data_execucao: adicionarDias(hoje, -3),
+      enviada_por_nome: 'Bruno Kist',
+      enviada_em: '2026-10-16T13:00:00Z',
+      conferente_nome: 'Ana Ribeiro',
+      conferida_em: '2026-10-17T12:30:00Z',
+      concluida_por_nome: 'Ana Ribeiro',
+      concluida_em: '2026-10-18T14:00:00Z',
+      ...extra,
+    }
+  }
+
+  function comAprovada(
+    papel: 'gestao' | 'equipe',
+    resposta: { data?: unknown; error?: unknown },
+    extra: { ocorrencia?: Record<string, unknown> } = {},
+  ): Cenario {
+    const base = cenario(papel, extra)
+    return { ...base, rpc: { ...base.rpc, obter_evidencia_aprovada: resposta } }
+  }
+
+  it('mostra a versão aprovada, quem enviou, quem conferiu, quem concluiu e o hash', async () => {
+    const usuario = userEvent.setup()
+    const copiar = vi.fn(() => Promise.resolve())
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: copiar },
+      configurable: true,
+    })
+    falso.reiniciar(
+      comAprovada(
+        'gestao',
+        { data: [aprovada()] },
+        { ocorrencia: ocorrencia({ situacao: 'concluida', concluida_em: '2026-10-18T14:00:00Z' }) },
+      ),
+    )
+    renderizarApp('/ocorrencias/o1')
+
+    const destaque = await screen.findByRole('region', { name: 'Aprovada: v2' })
+    expect(within(destaque).getByText(/Enviada por Bruno Kist em 16\/10\/2026/)).toBeInTheDocument()
+    expect(
+      within(destaque).getByText(/conferida por Ana Ribeiro em 17\/10\/2026/),
+    ).toBeInTheDocument()
+    expect(
+      within(destaque).getByText(/Concluída por Ana Ribeiro em 18\/10\/2026/),
+    ).toBeInTheDocument()
+    expect(within(destaque).getByText('Arquivo conferido')).toBeInTheDocument()
+    expect(within(destaque).getByText('01234567…cdef')).toBeInTheDocument()
+
+    await usuario.click(within(destaque).getByRole('button', { name: 'Copiar SHA-256' }))
+    expect(copiar).toHaveBeenCalledWith('0123456789abcdef'.repeat(4))
+    expect(await within(destaque).findByText('Copiado')).toBeInTheDocument()
+
+    const abrir = vi.spyOn(window, 'open').mockImplementation(() => null)
+    await usuario.click(within(destaque).getByRole('button', { name: 'Baixar laudo-v2.pdf' }))
+    await vi.waitFor(() => {
+      expect(abrir).toHaveBeenCalledWith(
+        'https://falso.test/c-Filtroville/evidencia/v2.pdf',
+        '_blank',
+        'noopener,noreferrer',
+      )
+    })
+    abrir.mockRestore()
+  })
+
+  it('aprovada antes da conferência no servidor: oferece conferir o arquivo', async () => {
+    const usuario = userEvent.setup()
+    falso.reiniciar(
+      comAprovada(
+        'gestao',
+        {
+          data: [aprovada({ arquivo_confere: null, concluida_por_nome: null, concluida_em: null })],
+        },
+        { ocorrencia: ocorrencia({ situacao: 'em_conferencia' }) },
+      ),
+    )
+    renderizarApp('/ocorrencias/o1')
+    const destaque = await screen.findByRole('region', { name: 'Aprovada: v2' })
+    expect(within(destaque).getByText('Arquivo não conferido')).toBeInTheDocument()
+    expect(within(destaque).queryByText(/Concluída por/)).not.toBeInTheDocument()
+    await usuario.click(within(destaque).getByRole('button', { name: 'Conferir arquivo' }))
+    await vi.waitFor(() => {
+      expect(falso.cliente.functions.invoke).toHaveBeenCalledWith('conferir-arquivo', {
+        body: { versaoId: 'v2' },
+      })
+    })
+  })
+
+  it('sem evidência aprovada não há destaque', async () => {
+    falso.reiniciar(cenario('equipe'))
+    renderizarApp('/ocorrencias/o1')
+    expect(await screen.findByRole('heading', { level: 1 })).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: /Aprovada:/ })).not.toBeInTheDocument()
+  })
+
+  it('erro ao ler a evidência aprovada aparece com nova tentativa', async () => {
+    falso.reiniciar(comAprovada('gestao', { error: { message: 'falhou' } }))
+    renderizarApp('/ocorrencias/o1')
+    expect(
+      await screen.findByText(/Não foi possível carregar a evidência aprovada/),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Tentar de novo' })).toBeInTheDocument()
+  })
+
+  it('só a Gestão tem o link da auditoria', async () => {
+    falso.reiniciar(cenario('gestao'))
+    renderizarApp('/ocorrencias/o1')
+    expect(await screen.findByRole('link', { name: 'Auditoria' })).toHaveAttribute(
+      'href',
+      '/ocorrencias/o1/auditoria',
+    )
+  })
+
+  it('a Equipe não vê o link da auditoria', async () => {
+    falso.reiniciar(cenario('equipe'))
+    renderizarApp('/ocorrencias/o1')
+    expect(await screen.findByRole('heading', { level: 1 })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Auditoria' })).not.toBeInTheDocument()
   })
 })
 

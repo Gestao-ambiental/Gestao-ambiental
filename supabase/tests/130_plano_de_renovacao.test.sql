@@ -299,6 +299,9 @@ select results_eq(
   'a evidência enviada aparece aguardando conferência'
 );
 
+-- Aprovar exige o arquivo conferido no servidor (20261122071000).
+reset role;
+select public.registrar_conferencia_de_arquivo('50000001-0000-4000-8000-000000000000', repeat('a', 64));
 select testes.autenticar_como('eduardo@filtroville.test');
 select public.conferir_evidencia('70000000-0000-4000-8000-000000000001', 'aprovada', null);
 

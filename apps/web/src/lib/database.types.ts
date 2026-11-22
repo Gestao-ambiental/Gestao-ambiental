@@ -727,6 +727,32 @@ isOneToOne: false
       referencedColumns: ["consultoria_id","id"]
     }
                   ]
+                },"conferencia_de_arquivo": {
+                  Row: {
+                    "confere": boolean,"conferida_em": string,"consultoria_id": string,"documento_versao_id": string,"id": string,"sha256_calculado": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "confere": boolean,"conferida_em"?: string,"consultoria_id": string,"documento_versao_id": string,"id"?: string,"sha256_calculado": string
+                  }
+                  Update: {
+                    "confere"?: boolean,"conferida_em"?: string,"consultoria_id"?: string,"documento_versao_id"?: string,"id"?: string,"sha256_calculado"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "conferencia_de_arquivo_consultoria_id_fkey"
+      columns: ["consultoria_id"]
+isOneToOne: false
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "conferencia_de_arquivo_versao_fk"
+      columns: ["consultoria_id","documento_versao_id"]
+isOneToOne: false
+      referencedRelation: "documento_versao"
+      referencedColumns: ["consultoria_id","id"]
+    }
+                  ]
                 },"conferencia_ia": {
                   Row: {
                     "apontamentos": NonNullable<Json>,"concluida_em": string | null,"consultoria_id": string,"custo_micros": number | null,"detalhe": string | null,"duracao_ms": number | null,"evidencia_id": string | null,"ia_liberada": boolean,"id": string,"ignorados": (number)[],"iniciada_em": string,"modelo": string | null,"motivo": string | null,"relatorio_id": string | null,"relatorio_versao": number | null,"resumo": string | null,"situacao": string,"solicitada_por": string,"tokens_entrada": number | null,"tokens_saida": number | null,"versao_prompt": string | null
@@ -1615,14 +1641,14 @@ isOneToOne: false
                   ]
                 },"ocorrencia": {
                   Row: {
-                    "chave_idempotencia": string,"ciclo": number,"concluida_em": string | null,"concluida_por": string | null,"concluida_sem_evidencia": boolean,"condicionante_versao_id": string | null,"conferente_id": string | null,"consultoria_id": string,"criado_em": string,"id": string,"instrumento_id": string,"meta_interna": string | null,"prazo_oficial_atual": string,"prazo_oficial_original": string,"responsavel_id": string | null,"row_version": number,"situacao": Database["public"]['Enums']["situacao_ocorrencia"]
+                    "chave_idempotencia": string,"ciclo": number,"concluida_em": string | null,"concluida_por": string | null,"concluida_sem_evidencia": boolean,"condicionante_versao_id": string | null,"conferente_id": string | null,"consultoria_id": string,"criado_em": string,"evidencia_aprovada_id": string | null,"id": string,"instrumento_id": string,"meta_interna": string | null,"prazo_oficial_atual": string,"prazo_oficial_original": string,"responsavel_id": string | null,"row_version": number,"situacao": Database["public"]['Enums']["situacao_ocorrencia"]
                   }
                   ComputedFields: never
                   Insert: {
-                    "chave_idempotencia": string,"ciclo": number,"concluida_em"?: string | null,"concluida_por"?: string | null,"concluida_sem_evidencia"?: boolean,"condicionante_versao_id"?: string | null,"conferente_id"?: string | null,"consultoria_id": string,"criado_em"?: string,"id"?: string,"instrumento_id": string,"meta_interna"?: string | null,"prazo_oficial_atual": string,"prazo_oficial_original": string,"responsavel_id"?: string | null,"row_version"?: number,"situacao"?: Database["public"]['Enums']["situacao_ocorrencia"]
+                    "chave_idempotencia": string,"ciclo": number,"concluida_em"?: string | null,"concluida_por"?: string | null,"concluida_sem_evidencia"?: boolean,"condicionante_versao_id"?: string | null,"conferente_id"?: string | null,"consultoria_id": string,"criado_em"?: string,"evidencia_aprovada_id"?: string | null,"id"?: string,"instrumento_id": string,"meta_interna"?: string | null,"prazo_oficial_atual": string,"prazo_oficial_original": string,"responsavel_id"?: string | null,"row_version"?: number,"situacao"?: Database["public"]['Enums']["situacao_ocorrencia"]
                   }
                   Update: {
-                    "chave_idempotencia"?: string,"ciclo"?: number,"concluida_em"?: string | null,"concluida_por"?: string | null,"concluida_sem_evidencia"?: boolean,"condicionante_versao_id"?: string | null,"conferente_id"?: string | null,"consultoria_id"?: string,"criado_em"?: string,"id"?: string,"instrumento_id"?: string,"meta_interna"?: string | null,"prazo_oficial_atual"?: string,"prazo_oficial_original"?: string,"responsavel_id"?: string | null,"row_version"?: number,"situacao"?: Database["public"]['Enums']["situacao_ocorrencia"]
+                    "chave_idempotencia"?: string,"ciclo"?: number,"concluida_em"?: string | null,"concluida_por"?: string | null,"concluida_sem_evidencia"?: boolean,"condicionante_versao_id"?: string | null,"conferente_id"?: string | null,"consultoria_id"?: string,"criado_em"?: string,"evidencia_aprovada_id"?: string | null,"id"?: string,"instrumento_id"?: string,"meta_interna"?: string | null,"prazo_oficial_atual"?: string,"prazo_oficial_original"?: string,"responsavel_id"?: string | null,"row_version"?: number,"situacao"?: Database["public"]['Enums']["situacao_ocorrencia"]
                   }
                   Relationships: [
                     {
@@ -1643,6 +1669,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "consultoria"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "ocorrencia_evidencia_aprovada_fk"
+      columns: ["consultoria_id","evidencia_aprovada_id"]
+isOneToOne: false
+      referencedRelation: "evidencia"
+      referencedColumns: ["consultoria_id","id"]
     },{
       foreignKeyName: "ocorrencia_instrumento_fk"
       columns: ["consultoria_id","instrumento_id"]
@@ -3403,6 +3435,11 @@ isOneToOne: false
               "codigo": string,"descricao": string,"instrumento_id": string,"origem": string,"porte": string,"potencial": string,"registrado_em": string
             }[]
                            },
+"listar_auditoria_da_ocorrencia":
+{ Args: { "p_deslocamento"?: number,"p_limite"?: number,"p_ocorrencia_id": string }; Returns: {
+              "acao": Database["public"]['Enums']["acao_auditoria"],"antes": Json,"ator_nome": string,"depois": Json,"entidade": string,"id": number,"instante": string,"motivo": string,"total": number
+            }[]
+                           },
 "listar_calendario":
 { Args: { "p_ate": string,"p_consultoria_id": string,"p_de": string,"p_responsavel_id"?: string,"p_sem_responsavel"?: boolean,"p_unidade_id"?: string }; Returns: {
               "codigo": string,"data": string,"dias": number,"empreendimento_nome": string,"id": string,"instrumento_id": string,"licenca": string,"responsavel_id": string,"responsavel_nome": string,"sem_responsavel": boolean,"tipo_evento": string,"titulo": string,"unidade_nome": string
@@ -3569,6 +3606,11 @@ isOneToOne: false
 "obter_contratante_da_proposta":
 { Args: { "p_id": string }; Returns: Json
                            },
+"obter_evidencia_aprovada":
+{ Args: { "p_ocorrencia_id": string }; Returns: {
+              "arquivo_conferido_em": string,"arquivo_confere": boolean,"caminho": string,"concluida_em": string,"concluida_por_nome": string,"conferente_nome": string,"conferida_em": string,"data_execucao": string,"enviada_em": string,"enviada_por_nome": string,"evidencia_id": string,"nome_original": string,"numero": number,"sha256": string,"versao_id": string
+            }[]
+                           },
 "obter_identidade_da_consultoria":
 { Args: { "p_consultoria_id": string }; Returns: Json
                            },
@@ -3652,6 +3694,9 @@ isOneToOne: false
                            },
 "registrar_cdf":
 { Args: { "p_destinador_cnpj": string,"p_destinador_nome": string,"p_emitido_em": string,"p_empreendimento_id": string,"p_id": string,"p_mtrs": Json,"p_numero": string,"p_observacao"?: string,"p_periodo_fim": string,"p_periodo_inicio": string }; Returns: string
+                           },
+"registrar_conferencia_de_arquivo":
+{ Args: { "p_sha256": string,"p_versao_id": string }; Returns: boolean
                            },
 "registrar_envio_do_resumo":
 { Args: { "p_consultoria_id": string,"p_destinatarios": number,"p_mes": string }; Returns: boolean

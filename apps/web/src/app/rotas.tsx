@@ -30,6 +30,7 @@ import { PaginaMinhaSemana } from './paginas/minha-semana/PaginaMinhaSemana'
 import { PaginaModelo } from './paginas/modelos/PaginaModelo'
 import { PaginaModelos } from './paginas/modelos/PaginaModelos'
 import { PaginaNorma } from './paginas/normas/PaginaNorma'
+import { PaginaAuditoriaOcorrencia } from './paginas/ocorrencia/PaginaAuditoriaOcorrencia'
 import { PaginaOcorrencia } from './paginas/ocorrencia/PaginaOcorrencia'
 import { PaginaNaoEncontrada } from './paginas/paginas'
 import { PaginaPlanejamento } from './paginas/planejamento/PaginaPlanejamento'
@@ -223,6 +224,7 @@ export const rotas: RouteObject[] = [
                 ),
               },
               { path: 'ocorrencias/:id', element: <PaginaOcorrencia /> },
+              { path: 'ocorrencias/:id/auditoria', element: <PaginaAuditoriaOcorrencia /> },
               {
                 path: 'exigencias/:id',
                 lazy: carregarRota(() =>
