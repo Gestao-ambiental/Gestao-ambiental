@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import axe from 'axe-core'
-import { MemoryRouter } from 'react-router'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ContextoConsultoria, type EstadoConsultoria } from '@/app/consultoria/contexto-consultoria'
@@ -88,6 +88,11 @@ function consultoria(papel: PapelMembro): EstadoConsultoria {
   }
 }
 
+function DestinoDoOrcamento() {
+  const { pathname, search } = useLocation()
+  return <p>{pathname + search}</p>
+}
+
 function montar(caminho = '/triagem', papel: PapelMembro = 'gestao') {
   const usuario = userEvent.setup()
   const cliente = new QueryClient({
@@ -97,7 +102,10 @@ function montar(caminho = '/triagem', papel: PapelMembro = 'gestao') {
     <QueryClientProvider client={cliente}>
       <ContextoConsultoria.Provider value={consultoria(papel)}>
         <MemoryRouter initialEntries={[caminho]}>
-          <PaginaTriagem />
+          <Routes>
+            <Route path="/triagem" element={<PaginaTriagem />} />
+            <Route path="/orcamentos/:id" element={<DestinoDoOrcamento />} />
+          </Routes>
         </MemoryRouter>
       </ContextoConsultoria.Provider>
     </QueryClientProvider>,
@@ -1049,10 +1057,9 @@ describe('orçar da triagem (ADR-0056)', () => {
     })
   }
 
-  async function enquadrar(usuario: Usuario) {
-    await screen.findByRole('link', { name: 'Metalúrgica Rio Cubatão' })
+  async function enquadrar(usuario: Usuario, area = '0,5') {
     await incluir(usuario, '12.80.10', '12.80.10')
-    await digitarNoParametro(usuario, '12.80.10', /AU\(3\)/, '0,5')
+    await digitarNoParametro(usuario, '12.80.10', /AU\(3\)/, area)
     await irParaResultado(usuario)
   }
 
@@ -1063,6 +1070,7 @@ describe('orçar da triagem (ADR-0056)', () => {
       },
     })
     const { usuario } = montar(`/triagem?empreendimento=${ID}&etapa=atividades`)
+    await screen.findByRole('link', { name: 'Metalúrgica Rio Cubatão' })
     await enquadrar(usuario)
     await usuario.click(screen.getByRole('button', { name: 'Orçar' }))
     await waitFor(() => {
@@ -1079,11 +1087,13 @@ describe('orçar da triagem (ADR-0056)', () => {
         }),
       )
     })
+    expect(await screen.findByText('/orcamentos/o-novo')).toBeInTheDocument()
   })
 
   it('erro do banco aparece; a Equipe não vê o Orçar', async () => {
     comEmpreendimento({ criar_orcamento_da_triagem: { error: { message: 'sem_permissao' } } })
     const { usuario, unmount } = montar(`/triagem?empreendimento=${ID}&etapa=atividades`)
+    await screen.findByRole('link', { name: 'Metalúrgica Rio Cubatão' })
     await enquadrar(usuario)
     await usuario.click(screen.getByRole('button', { name: 'Orçar' }))
     expect(await screen.findByRole('alert')).toHaveTextContent(
@@ -1093,15 +1103,69 @@ describe('orçar da triagem (ADR-0056)', () => {
 
     comEmpreendimento()
     const equipe = montar(`/triagem?empreendimento=${ID}&etapa=atividades`, 'equipe')
+    await screen.findByRole('link', { name: 'Metalúrgica Rio Cubatão' })
     await enquadrar(equipe.usuario)
     expect(screen.queryByRole('button', { name: 'Orçar' })).toBeNull()
   })
 
-  it('sem empreendimento não há para quem orçar', async () => {
+  it('da triagem avulsa pede só o nome e abre o rascunho AuA com o repasse', async () => {
+    falso.reiniciar({
+      ...cenario(),
+      rpc: { criar_orcamento_da_triagem: { data: { orcamento_id: 'o-novo', modelo_id: null } } },
+    })
     const { usuario } = montar('/triagem?etapa=atividades')
-    await incluir(usuario, '12.80.10', '12.80.10')
-    await digitarNoParametro(usuario, '12.80.10', /AU\(3\)/, '0,5')
-    await irParaResultado(usuario)
+    await enquadrar(usuario, '0,01')
+    await usuario.click(screen.getByRole('button', { name: 'Orçar' }))
+    const dialogo = within(screen.getByRole('dialog', { name: 'Orçar para cliente novo' }))
+    const criar = dialogo.getByRole('button', { name: 'Criar orçamento' })
+    expect(criar).toBeDisabled()
+    expect(falso.cliente.rpc).not.toHaveBeenCalled()
+    await usuario.type(
+      dialogo.getByRole('textbox', { name: 'Nome da empresa ou do cliente' }),
+      '  Oficina Norte  ',
+    )
+    await usuario.click(criar)
+
+    expect(
+      await screen.findByText('/orcamentos/o-novo?modalidade=AuA&sem-valores=1'),
+    ).toBeInTheDocument()
+    expect(falso.cliente.rpc).toHaveBeenCalledWith('criar_orcamento_da_triagem', {
+      p_id: expect.any(String) as unknown,
+      p_consultoria_id: 'c1',
+      p_empreendimento_id: null,
+      p_prospecto_nome: 'Oficina Norte',
+      p_modalidade: 'AuA',
+      p_objeto: 'Autorização Ambiental (AuA) · Oficina Norte',
+      p_taxa: {
+        descricao: expect.stringContaining('Taxa do IMA') as unknown,
+        estimativa_centavos: 6856,
+      },
+    })
+  })
+
+  it('mantém o nome em caso de erro e permite cancelar sem sair do resultado', async () => {
+    falso.reiniciar({
+      ...cenario(),
+      rpc: { criar_orcamento_da_triagem: { error: { message: 'sem_permissao' } } },
+    })
+    const { usuario } = montar('/triagem?etapa=atividades')
+    await enquadrar(usuario)
+    await usuario.click(screen.getByRole('button', { name: 'Orçar' }))
+    const dialogo = within(screen.getByRole('dialog'))
+    const nome = dialogo.getByRole('textbox', { name: 'Nome da empresa ou do cliente' })
+    await usuario.type(nome, 'Oficina Norte{Enter}')
+    expect(await dialogo.findByRole('alert')).toHaveTextContent(
+      'Você não tem permissão para esta ação.',
+    )
+    expect(nome).toHaveValue('Oficina Norte')
+    await usuario.click(dialogo.getByRole('button', { name: 'Cancelar' }))
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Orçar' })).toBeInTheDocument()
+  })
+
+  it('na triagem avulsa, a Equipe também fica sem acesso a Orçar', async () => {
+    const { usuario } = montar('/triagem?etapa=atividades', 'equipe')
+    await enquadrar(usuario)
     expect(screen.queryByRole('button', { name: 'Orçar' })).toBeNull()
   })
 })

@@ -3179,7 +3179,7 @@ isOneToOne: false
 { Args: { "p_consultoria_id": string,"p_empreendimento_id": string,"p_id": string,"p_objeto": string,"p_prospecto"?: Json }; Returns: string
                            },
 "criar_orcamento_da_triagem":
-{ Args: { "p_consultoria_id": string,"p_empreendimento_id": string,"p_id": string,"p_modalidade": string,"p_objeto": string,"p_taxa"?: Json }; Returns: Json
+{ Args: { "p_consultoria_id": string,"p_empreendimento_id": string,"p_id": string,"p_modalidade": string,"p_objeto": string,"p_prospecto_nome"?: string,"p_taxa"?: Json }; Returns: Json
                            },
 "criar_orcamento_de_renovacao":
 { Args: { "p_consultoria_id": string,"p_id": string,"p_instrumento_id": string,"p_taxa_centavos"?: number }; Returns: string
