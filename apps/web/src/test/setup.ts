@@ -1,4 +1,6 @@
 import '@testing-library/jest-dom/vitest'
+// IndexedDB em memória para o rascunho do Campo (ADR-0060).
+import 'fake-indexeddb/auto'
 import { cleanup, configure } from '@testing-library/react'
 import { afterEach } from 'vitest'
 

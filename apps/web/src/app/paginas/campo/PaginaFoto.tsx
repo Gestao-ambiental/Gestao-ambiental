@@ -4,12 +4,13 @@ import {
   aceitaRegistro,
   conferirLocalizacao,
   descreverLocal,
+  fotoRepetida,
   localDoAparelho,
   localManual,
   rotuloDaPrecisao,
   type LocalDaFoto,
 } from '@gestao-ambiental/domain'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 
@@ -21,18 +22,21 @@ import { CampoTexto } from '@/components/ui/campo-texto'
 import { Icone } from '@/components/ui/icone'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import {
-  adicionarFotoDaVistoria,
   conferirArquivoDaFoto,
   type ItemDaVistoriaGravado,
   type ProblemaDaFoto,
   type Vistoria,
 } from '@/lib/api/vistorias'
 import { formatarInstanteComHora } from '@/lib/datas'
-import { mensagemDoErroDaVistoria } from '@/lib/erros'
+import { sha256 } from '@/lib/api/ocorrencias'
+import { filaDeCampo } from '@/lib/campo/fila'
 
-import { recarregarVistoria, useItensDaVistoria, useVistoria } from './consultas'
+import { useFotosDaVistoria, useItensDaVistoria, useVistoria } from './consultas'
 import { classeAcaoPrincipal, classeAcaoSecundaria } from './estilos'
 import { BarraDeAcao, ColunaCampo, ComVistoria, VoltarPara } from './pecas'
+import { useRascunhoDaVistoria } from './rascunho'
+
+const FOTO_REPETIDA = 'foto_repetida'
 
 const PROBLEMA_DA_FOTO: Record<ProblemaDaFoto, string> = {
   tipo: 'Use uma foto JPEG ou PNG.',
@@ -182,10 +186,18 @@ interface Captura {
   capturadaEm: string
 }
 
-function Foto({ vistoria, item }: { vistoria: Vistoria; item: ItemDaVistoriaGravado }) {
+function Foto({
+  vistoria,
+  item,
+  fotosDoItem,
+}: {
+  vistoria: Vistoria
+  item: ItemDaVistoriaGravado
+  /** Fotos do item no servidor e no aparelho, para recusar a mesma imagem de novo. */
+  fotosDoItem: readonly { itemId: string; sha256: string | null }[]
+}) {
   const { atual } = useConsultoria()
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
   const entrada = useRef<HTMLInputElement>(null)
   const { estado, setEstado, pedir } = useLocalizacao()
   const [captura, setCaptura] = useState<Captura | null>(null)
@@ -204,21 +216,36 @@ function Foto({ vistoria, item }: { vistoria: Vistoria; item: ItemDaVistoriaGrav
     [previa],
   )
 
+  // A foto vai primeiro para o aparelho e volta ao checklist na hora; a fila envia quando houver
+  // conexão (ADR-0060). `always`: sem sinal, gravar no aparelho não espera a rede.
   const vincular = useMutation({
-    mutationFn: (local: LocalDaFoto) => {
+    networkMode: 'always',
+    mutationFn: async (local: LocalDaFoto) => {
       if (!captura) throw new Error('sem_foto')
-      return adicionarFotoDaVistoria({
-        consultoriaId: vistoria.consultoriaId,
-        fotoId: captura.fotoId,
+      const [bytes, hash] = await Promise.all([
+        captura.arquivo.arrayBuffer(),
+        sha256(captura.arquivo),
+      ])
+      if (fotoRepetida(fotosDoItem, item.id, hash)) throw new Error(FOTO_REPETIDA)
+      await filaDeCampo.registrar({
+        tipo: 'foto',
+        vistoriaId: vistoria.id,
         itemId: item.id,
-        arquivo: captura.arquivo,
-        legenda: legenda.trim() || null,
-        capturadaEm: captura.capturadaEm,
-        local,
+        fotoId: captura.fotoId,
+        sha256: hash,
+        registradoEm: new Date().toISOString(),
+        dados: {
+          consultoriaId: vistoria.consultoriaId,
+          nome: captura.arquivo.name,
+          mime: captura.arquivo.type,
+          bytes,
+          legenda: legenda.trim() || null,
+          capturadaEm: captura.capturadaEm,
+          local,
+        },
       })
     },
     onSuccess: async () => {
-      await recarregarVistoria(queryClient, vistoria.id)
       await navigate(`${checklist}#item-${item.id}`)
     },
   })
@@ -384,9 +411,15 @@ function Foto({ vistoria, item }: { vistoria: Vistoria; item: ItemDaVistoriaGrav
           }}
         />
         {vincular.isError ? (
-          <MensagemSecao role="alert" tom="perigo" titulo="Não salvou">
-            {mensagemDoErroDaVistoria(vincular.error)}
-          </MensagemSecao>
+          vincular.error.message === FOTO_REPETIDA ? (
+            <MensagemSecao role="alert" tom="atencao" titulo="Foto repetida">
+              Esta imagem já está neste item.
+            </MensagemSecao>
+          ) : (
+            <MensagemSecao role="alert" tom="perigo" titulo="Não salvou no aparelho">
+              Libere espaço no celular e tente de novo.
+            </MensagemSecao>
+          )
         ) : null}
         <BarraDeAcao>
           <Botao
@@ -421,8 +454,10 @@ function Foto({ vistoria, item }: { vistoria: Vistoria; item: ItemDaVistoriaGrav
 
 function FotoDoItem({ vistoria, itemId }: { vistoria: Vistoria; itemId: string }) {
   const itens = useItensDaVistoria(vistoria.id, true)
+  const fotos = useFotosDaVistoria(vistoria.id, true)
+  const rascunho = useRascunhoDaVistoria(vistoria.id)
   const voltar = <VoltarPara para={`/campo/${vistoria.id}/checklist`} rotulo="Checklist" />
-  if (itens.isPending) {
+  if (itens.isPending || !rascunho.carregado) {
     return (
       <ColunaCampo>
         {voltar}
@@ -430,7 +465,7 @@ function FotoDoItem({ vistoria, itemId }: { vistoria: Vistoria; itemId: string }
       </ColunaCampo>
     )
   }
-  if (itens.isError) {
+  if (!itens.data) {
     return (
       <ColunaCampo>
         {voltar}
@@ -460,12 +495,22 @@ function FotoDoItem({ vistoria, itemId }: { vistoria: Vistoria; itemId: string }
       </ColunaCampo>
     )
   }
-  return <Foto vistoria={vistoria} item={item} />
+  const fotosDoItem = [
+    ...(fotos.data ?? []),
+    ...rascunho
+      .doItem(item.id)
+      .flatMap((p) =>
+        p.registro.tipo === 'foto'
+          ? [{ itemId: p.registro.itemId, sha256: p.registro.sha256 }]
+          : [],
+      ),
+  ]
+  return <Foto vistoria={vistoria} item={item} fotosDoItem={fotosDoItem} />
 }
 
 /**
  * /campo/:id/itens/:itemId/foto (ADR-0033 §5): câmera real, localização opcional e revisão antes
- * de vincular. A foto que falhou fica na tela para tentar de novo; nada é guardado no aparelho.
+ * de vincular. A foto vai para o aparelho e a fila envia quando houver conexão (ADR-0060).
  */
 export function PaginaFoto() {
   const { id = '', itemId = '' } = useParams()

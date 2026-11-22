@@ -3,6 +3,7 @@ import {
   ROTULO_DA_PENDENCIA,
   ROTULO_DO_RESULTADO,
   aceitaRegistro,
+  aplicarRascunho,
   pendenciasDoEnvio,
   progressoDaVistoria,
 } from '@gestao-ambiental/domain'
@@ -15,6 +16,7 @@ import { Botao } from '@/components/ui/botao'
 import { Icone } from '@/components/ui/icone'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { enviarVistoria, type Vistoria } from '@/lib/api/vistorias'
+import { contagemDaVistoria, filaDeCampo } from '@/lib/campo/fila'
 import { mensagemDoErroDaVistoria } from '@/lib/erros'
 import { cn } from '@/lib/utils'
 
@@ -31,19 +33,39 @@ import {
   CampoObservacao,
   ColunaCampo,
   ComVistoria,
+  PainelDoEnvio,
   VoltarPara,
 } from './pecas'
+import { useRascunhoDaVistoria } from './rascunho'
+
+/** Ainda há registros desta vistoria só no aparelho: ela não segue antes deles. */
+class RegistrosNoAparelho extends Error {
+  constructor(readonly quantos: number) {
+    super('registros_no_aparelho')
+  }
+}
 
 function Envio({ vistoria }: { vistoria: Vistoria }) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const itens = useItensDaVistoria(vistoria.id, true)
   const fotos = useFotosDaVistoria(vistoria.id, true)
+  const rascunho = useRascunhoDaVistoria(vistoria.id)
   const editavel = vistoria.podeRegistrar && aceitaRegistro(vistoria.situacao)
   const checklist = `/campo/${vistoria.id}/checklist`
 
+  // Primeiro esvazia a fila do aparelho; só com tudo no servidor a vistoria segue (ADR-0060).
+  // `always`: sem sinal, a resposta vem na hora em vez de esperar a rede.
   const enviar = useMutation({
-    mutationFn: () => enviarVistoria(vistoria.id, vistoria.rowVersion),
+    networkMode: 'always',
+    mutationFn: async () => {
+      if (contagemDaVistoria(filaDeCampo.obter().pendencias, vistoria.id).total > 0) {
+        await filaDeCampo.tentarDeNovo()
+        const restam = contagemDaVistoria(filaDeCampo.obter().pendencias, vistoria.id).total
+        if (restam > 0) throw new RegistrosNoAparelho(restam)
+      }
+      return enviarVistoria(vistoria.id, vistoria.rowVersion)
+    },
     onSuccess: async () => {
       await recarregarVistoria(queryClient, vistoria.id)
       await navigate(`/campo/${vistoria.id}`)
@@ -56,7 +78,7 @@ function Envio({ vistoria }: { vistoria: Vistoria }) {
     meta: vistoria.titulo,
   }
 
-  if (itens.isError || fotos.isError) {
+  if ((itens.isError && !itens.data) || (fotos.isError && !fotos.data)) {
     return (
       <ColunaCampo>
         <Pagina {...moldura}>
@@ -71,7 +93,7 @@ function Envio({ vistoria }: { vistoria: Vistoria }) {
       </ColunaCampo>
     )
   }
-  if (itens.isPending || fotos.isPending) {
+  if (!itens.data || !fotos.data || !rascunho.carregado) {
     return (
       <ColunaCampo>
         <Pagina {...moldura}>
@@ -81,21 +103,26 @@ function Envio({ vistoria }: { vistoria: Vistoria }) {
     )
   }
 
-  const progresso = progressoDaVistoria(itens.data)
-  const pendencias = pendenciasDoEnvio(itens.data)
-  const bloqueado = !editavel || pendencias.length > 0 || itens.data.length === 0
+  // O que a técnica registrou, no servidor ou ainda no aparelho.
+  const vistos = aplicarRascunho(itens.data, rascunho.registros)
+  const progresso = progressoDaVistoria(vistos)
+  const pendencias = pendenciasDoEnvio(vistos)
+  const noAparelho = rascunho.contagem.total
+  const bloqueado = !editavel || pendencias.length > 0 || vistos.length === 0
+  const fotosNoAparelho = rascunho.registros.filter((r) => r.tipo === 'foto').length
   const contagens = [
     ...RESULTADOS_DO_ITEM.map((resultado) => ({
       rotulo: ROTULO_DO_RESULTADO[resultado],
-      valor: itens.data.filter((i) => i.resultado === resultado).length,
+      valor: vistos.filter((i) => i.resultado === resultado).length,
     })),
-    { rotulo: 'Fotos', valor: fotos.data.length },
+    { rotulo: 'Fotos', valor: fotos.data.length + fotosNoAparelho },
   ]
 
   return (
     <ColunaCampo comBarra>
       <Pagina {...moldura}>
         <BarraDeProgresso {...progresso} />
+        <PainelDoEnvio vistoriaId={vistoria.id} />
 
         <dl
           className={cn(
@@ -159,9 +186,18 @@ function Envio({ vistoria }: { vistoria: Vistoria }) {
         <CampoObservacao vistoria={vistoria} editavel={editavel} />
 
         {enviar.isError ? (
-          <MensagemSecao role="alert" tom="perigo">
-            {mensagemDoErroDaVistoria(enviar.error)}
-          </MensagemSecao>
+          enviar.error instanceof RegistrosNoAparelho ? (
+            <MensagemSecao role="alert" tom="atencao" titulo="Vistoria não enviada">
+              {enviar.error.quantos === 1
+                ? 'Falta 1 registro chegar ao servidor.'
+                : `Faltam ${String(enviar.error.quantos)} registros chegar ao servidor.`}{' '}
+              Envie de novo quando houver conexão.
+            </MensagemSecao>
+          ) : (
+            <MensagemSecao role="alert" tom="perigo">
+              {mensagemDoErroDaVistoria(enviar.error)}
+            </MensagemSecao>
+          )
         ) : null}
 
         <BarraDeAcao>
@@ -177,7 +213,11 @@ function Envio({ vistoria }: { vistoria: Vistoria }) {
               enviar.mutate()
             }}
           >
-            {enviar.isPending ? 'Enviando…' : 'Enviar para conferência'}
+            {enviar.isPending
+              ? 'Enviando…'
+              : noAparelho > 0
+                ? 'Enviar registros e vistoria'
+                : 'Enviar para conferência'}
           </Botao>
         </BarraDeAcao>
       </Pagina>
@@ -185,7 +225,10 @@ function Envio({ vistoria }: { vistoria: Vistoria }) {
   )
 }
 
-/** /campo/:id/envio (ADR-0033 §5): resumo, pendências com link para o item e envio. */
+/**
+ * /campo/:id/envio (ADR-0033 §5, ADR-0060): resumo, pendências com link para o item e envio. Com
+ * registros no aparelho, envia primeiro esses e só então a vistoria.
+ */
 export function PaginaEnvio() {
   const { id = '' } = useParams()
   const consulta = useVistoria(id)

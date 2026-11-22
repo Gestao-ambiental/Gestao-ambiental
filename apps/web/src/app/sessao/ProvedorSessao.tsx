@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
 import { gravarBloqueio } from '@/app/bloqueio/contexto-bloqueio'
+import { useFilaDeCampoNaSessao } from '@/app/paginas/campo/rascunho'
 import { obterSupabase } from '@/lib/supabase'
 
 import { ContextoSessao, type EstadoSessao } from './contexto-sessao'
@@ -70,6 +71,9 @@ export function ProvedorSessao({ children }: { children: ReactNode }) {
     },
     [queryClient],
   )
+
+  // Rascunho do Campo (ADR-0060): o desta conta; o de outra conta sai do aparelho.
+  useFilaDeCampoNaSessao(estado.sessao?.user.id ?? null)
 
   const valor = useMemo(() => ({ ...estado, sair }), [estado, sair])
 

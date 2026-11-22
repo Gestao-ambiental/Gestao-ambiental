@@ -2,8 +2,11 @@ import { adicionarDias, hojeNoFuso } from '@gestao-ambiental/domain'
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import axe from 'axe-core'
+import { IDBFactory } from 'fake-indexeddb'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
+import { criarArmazem } from '@/lib/campo/armazem'
+import { filaDeCampo } from '@/lib/campo/fila'
 import { renderizarApp, vinculoFalso } from '@/test/renderizar'
 import { falso, sessaoDe, type Cenario } from '@/test/supabase-falso'
 
@@ -131,9 +134,33 @@ async function esperarChecklistCarregado() {
   expect(screen.getByRole('heading', { level: 1, name: 'Checklist' })).toBeInTheDocument()
 }
 
+// Sinal do aparelho (ADR-0060): o teste liga e desliga; a fila e o React Query ouvem os eventos.
+let conectado = true
+
+function semSinal() {
+  conectado = false
+  window.dispatchEvent(new Event('offline'))
+}
+
+function voltaSinal() {
+  conectado = true
+  window.dispatchEvent(new Event('online'))
+}
+
 beforeAll(() => {
   // jsdom não rola: a lista de pendências leva ao item por âncora.
   Element.prototype.scrollIntoView = vi.fn()
+  Object.defineProperty(window.navigator, 'onLine', { configurable: true, get: () => conectado })
+})
+
+// Cada teste começa com o aparelho vazio: nada do rascunho de um teste passa para o seguinte.
+beforeEach(() => {
+  globalThis.indexedDB = new IDBFactory()
+  filaDeCampo.trocarArmazem(criarArmazem())
+})
+
+afterEach(() => {
+  if (!conectado) voltaSinal()
 })
 
 describe('Minhas vistorias (/campo)', () => {
@@ -346,13 +373,14 @@ describe('checklist (/campo/:id/checklist)', () => {
     return within(elemento)
   }
 
-  it('não conforme sem comentário não grava; com comentário grava e mostra "Salvo"', async () => {
+  it('não conforme sem comentário não grava; com comentário grava e mostra "Salvo no servidor"', async () => {
     falso.reiniciar(cenario())
     const usuario = userEvent.setup()
     renderizarApp('/campo/v1/checklist')
 
     await screen.findByRole('heading', { level: 1, name: 'Checklist' })
     expect(await screen.findByText('0 de 2 itens')).toBeInTheDocument()
+    expect(screen.getByText('Tudo salvo no servidor')).toBeInTheDocument()
     const grupo = screen.getByRole('group', { name: 'Registrar área visitada' })
     await usuario.click(within(grupo).getByRole('button', { name: 'Não conforme' }))
 
@@ -369,14 +397,15 @@ describe('checklist (/campo/:id/checklist)', () => {
 
     await usuario.type(area.getByLabelText('Comentário (obrigatório)'), 'Piso rachado')
     await usuario.tab()
+    expect(await area.findByText('Salvo no servidor')).toBeInTheDocument()
     expect(falso.cliente.rpc).toHaveBeenCalledWith('registrar_item_da_vistoria', {
       p_item_id: 'i1',
       p_resultado: 'nao_conforme',
       p_comentario: 'Piso rachado',
     })
-    expect(await area.findByText('Salvo')).toBeInTheDocument()
     expect(screen.getByText('1 de 2 itens')).toBeInTheDocument()
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '50')
+    expect(screen.getByText('Tudo salvo no servidor')).toBeInTheDocument()
   })
 
   it('comentário opcional fica recolhido até "Comentar" e grava ao sair do campo', async () => {
@@ -393,27 +422,31 @@ describe('checklist (/campo/:id/checklist)', () => {
     )
     const respostas = within(screen.getByRole('group', { name: 'Registrar área visitada' }))
     await usuario.click(respostas.getByRole('button', { name: 'Conforme' }))
-    expect(await area.findByText('Salvo')).toBeInTheDocument()
+    expect(await area.findByText('Salvo no servidor')).toBeInTheDocument()
 
     await usuario.click(area.getByRole('button', { name: 'Comentar' }))
     const campo = area.getByLabelText('Comentário')
     expect(campo).toHaveFocus()
     await usuario.type(campo, 'Área limpa')
     await usuario.tab()
-    expect(falso.cliente.rpc).toHaveBeenLastCalledWith('registrar_item_da_vistoria', {
-      p_item_id: 'i1',
-      p_resultado: 'conforme',
-      p_comentario: 'Área limpa',
+    await waitFor(() => {
+      expect(falso.cliente.rpc).toHaveBeenLastCalledWith('registrar_item_da_vistoria', {
+        p_item_id: 'i1',
+        p_resultado: 'conforme',
+        p_comentario: 'Área limpa',
+      })
     })
   })
 
-  it('erro de gravação avisa "Não salvou" e tenta de novo', async () => {
+  // Regra mudou de propósito (ADR-0060): o que falha por conexão não some nem fica só na memória;
+  // fica no aparelho, conta no progresso e vai sozinho quando a conexão responde.
+  it('falha de conexão deixa o registro no aparelho e "Enviar agora" manda depois', async () => {
     let falhar = true
     falso.reiniciar(
       cenario({
         rpc: {
           registrar_item_da_vistoria: () =>
-            falhar ? { error: { message: 'erro de rede' } } : { data: null },
+            falhar ? { error: { message: 'TypeError: Failed to fetch' } } : { data: null },
         },
       }),
     )
@@ -423,99 +456,78 @@ describe('checklist (/campo/:id/checklist)', () => {
     const grupo = await screen.findByRole('group', { name: 'Identificar acompanhante' })
     await usuario.click(within(grupo).getByRole('button', { name: 'Conforme' }))
     const area = areaDoItem('i2')
-    expect(await area.findByText(/Não salvou/)).toBeInTheDocument()
-    expect(screen.getByText('0 de 2 itens')).toBeInTheDocument()
+    expect(await area.findByText('No aparelho, falta enviar')).toBeInTheDocument()
+    expect(screen.getByText('1 registro no aparelho, falta enviar')).toBeInTheDocument()
+    expect(screen.getByText('1 de 2 itens')).toBeInTheDocument()
 
     falhar = false
-    await usuario.click(area.getByRole('button', { name: 'Tentar de novo' }))
-    expect(await area.findByText('Salvo')).toBeInTheDocument()
+    await usuario.click(screen.getByRole('button', { name: 'Enviar agora' }))
+    expect(await area.findByText('Salvo no servidor')).toBeInTheDocument()
+    expect(screen.getByText('Tudo salvo no servidor')).toBeInTheDocument()
     expect(screen.getByText('1 de 2 itens')).toBeInTheDocument()
   })
 
-  it('comentário que não salvou pede confirmação antes de sair para a foto', async () => {
-    let falhar = true
-    falso.reiniciar(
-      cenario({
-        rpc: {
-          registrar_item_da_vistoria: () =>
-            falhar ? { error: { message: 'erro de rede' } } : { data: null },
-        },
-      }),
-    )
-    const usuario = userEvent.setup()
-    const { router } = renderizarApp('/campo/v1/checklist')
-
-    await screen.findByText('0 de 2 itens')
-    const area = areaDoItem('i1')
-    const grupo = screen.getByRole('group', { name: 'Registrar área visitada' })
-    await usuario.click(area.getByRole('button', { name: 'Comentar' }))
-    await usuario.type(area.getByLabelText('Comentário'), 'Abrigo sem cobertura')
-    await usuario.click(within(grupo).getByRole('button', { name: 'Requer avaliação' }))
-    expect(await area.findByText(/Não salvou/)).toBeInTheDocument()
-
-    await usuario.click(area.getByRole('link', { name: 'Tirar foto: Registrar área visitada' }))
-    const dialogo = await screen.findByRole('dialog', { name: 'Sair sem salvar?' })
-    await usuario.click(within(dialogo).getByRole('button', { name: 'Continuar aqui' }))
-    expect(router.state.location.pathname).toBe('/campo/v1/checklist')
-    expect(area.getByLabelText(/Comentário/)).toHaveValue('Abrigo sem cobertura')
-
-    // Depois de salvar, sai sem perguntar.
-    falhar = false
-    await usuario.click(area.getByRole('button', { name: 'Tentar de novo' }))
-    expect(await area.findByText('Salvo')).toBeInTheDocument()
-    await usuario.click(area.getByRole('link', { name: 'Tirar foto: Registrar área visitada' }))
-    await waitFor(() => {
-      expect(router.state.location.pathname).toBe('/campo/v1/itens/i1/foto')
-    })
-    expect(screen.queryByRole('dialog', { name: 'Sair sem salvar?' })).not.toBeInTheDocument()
-  })
-
-  it('sair com o comentário ainda gravando pede confirmação até o banco confirmar', async () => {
+  // Regra mudou de propósito (ADR-0060): com o comentário guardado no aparelho, sair para a foto
+  // não pergunta mais; nada se perde.
+  it('sem sinal, sair para a foto não pede confirmação e o comentário continua lá', async () => {
     falso.reiniciar(cenario())
-    // Cada gravação fica presa até o teste dizer como ela termina (sinal fraco no campo).
-    const padrao = falso.cliente.rpc.getMockImplementation()
-    if (!padrao) throw new Error('rpc falso sem implementação')
-    onTestFinished(() => {
-      falso.cliente.rpc.mockImplementation(padrao)
-    })
-    const gravacoes: ((resposta: { data: null; error: { message: string } | null }) => void)[] = []
-    falso.cliente.rpc.mockImplementation((nome: string, args?: Record<string, unknown>) =>
-      nome === 'registrar_item_da_vistoria'
-        ? new Promise((resolver) => gravacoes.push(resolver))
-        : padrao(nome, args),
-    )
     const usuario = userEvent.setup()
     const { router } = renderizarApp('/campo/v1/checklist')
 
     await screen.findByText('0 de 2 itens')
+    semSinal()
     const area = areaDoItem('i1')
     const grupo = screen.getByRole('group', { name: 'Registrar área visitada' })
     await usuario.click(within(grupo).getByRole('button', { name: 'Não conforme' }))
     await usuario.type(area.getByLabelText('Comentário (obrigatório)'), 'Abrigo sem cobertura')
 
-    // Tocar no link tira o foco da caixa: a gravação começa, e a saída espera por ela.
     await usuario.click(area.getByRole('link', { name: 'Tirar foto: Registrar área visitada' }))
-    const dialogo = await screen.findByRole('dialog', { name: 'Sair sem salvar?' })
-    expect(gravacoes).toHaveLength(1)
-    expect(router.state.location.pathname).toBe('/campo/v1/checklist')
-
-    // A gravação falha: o aviso continua, e o comentário fica na tela.
-    gravacoes[0]?.({ data: null, error: { message: 'erro de rede' } })
-    expect(await area.findByText(/Não salvou/)).toBeInTheDocument()
-    expect(screen.getByRole('dialog', { name: 'Sair sem salvar?' })).toBe(dialogo)
-    await usuario.click(within(dialogo).getByRole('button', { name: 'Continuar aqui' }))
-    expect(router.state.location.pathname).toBe('/campo/v1/checklist')
-    expect(area.getByLabelText(/Comentário/)).toHaveValue('Abrigo sem cobertura')
-
-    // Tentando de novo e saindo antes de terminar: quando o banco confirma, a saída segue sozinha.
-    await usuario.click(area.getByRole('button', { name: 'Tentar de novo' }))
-    await usuario.click(area.getByRole('link', { name: 'Tirar foto: Registrar área visitada' }))
-    expect(await screen.findByRole('dialog', { name: 'Sair sem salvar?' })).toBeInTheDocument()
-    expect(gravacoes).toHaveLength(2)
-    gravacoes[1]?.({ data: null, error: null })
     await waitFor(() => {
       expect(router.state.location.pathname).toBe('/campo/v1/itens/i1/foto')
     })
+    expect(screen.queryByRole('dialog', { name: 'Sair sem salvar?' })).not.toBeInTheDocument()
+    expect(falso.cliente.rpc).not.toHaveBeenCalledWith(
+      'registrar_item_da_vistoria',
+      expect.anything(),
+    )
+
+    await router.navigate('/campo/v1/checklist')
+    await esperarChecklistCarregado()
+    expect(areaDoItem('i1').getByLabelText(/Comentário/)).toHaveValue('Abrigo sem cobertura')
+    expect(areaDoItem('i1').getByText('No aparelho, falta enviar')).toBeInTheDocument()
+    expect(
+      screen.getByText('Sem conexão. Envia sozinho quando o sinal voltar.'),
+    ).toBeInTheDocument()
+  })
+
+  it('recusa do servidor para de tentar, mostra o motivo e deixa descartar', async () => {
+    falso.reiniciar(
+      cenario({ rpc: { registrar_item_da_vistoria: { error: { message: 'vistoria_fechada' } } } }),
+    )
+    const usuario = userEvent.setup()
+    renderizarApp('/campo/v1/checklist')
+
+    const grupo = await screen.findByRole('group', { name: 'Registrar área visitada' })
+    await usuario.click(within(grupo).getByRole('button', { name: 'Conforme' }))
+    const area = areaDoItem('i1')
+    expect(
+      await area.findByText(
+        /Não enviado: Esta vistoria não aceita mais registros. Recarregue para ver a situação./,
+      ),
+    ).toBeInTheDocument()
+    expect(screen.getByText('1 recusado pelo servidor.')).toBeInTheDocument()
+    const tentativas = () =>
+      falso.cliente.rpc.mock.calls.filter(([nome]) => nome === 'registrar_item_da_vistoria')
+    expect(tentativas()).toHaveLength(1)
+
+    // Voltar a conexão não reenvia o recusado sozinho.
+    voltaSinal()
+    await new Promise((resolver) => setTimeout(resolver, 50))
+    expect(tentativas()).toHaveLength(1)
+
+    await usuario.click(area.getByRole('button', { name: 'Descartar' }))
+    expect(await screen.findByText('Tudo salvo no servidor')).toBeInTheDocument()
+    expect(screen.getByText('0 de 2 itens')).toBeInTheDocument()
   })
 
   it('não tem violações de acessibilidade detectáveis pelo axe', async () => {
@@ -616,7 +628,9 @@ describe('foto e localização (/campo/:id/itens/:itemId/foto)', () => {
     )
   })
 
-  it('com GPS mostra a precisão e grava a coordenada; erro mantém a foto para tentar de novo', async () => {
+  // Regra mudou de propósito (ADR-0060): a foto não espera o servidor na tela da câmera; vai para
+  // o aparelho, aparece no item como "falta enviar" e a recusa se resolve no checklist.
+  it('com GPS grava a coordenada; recusa fica no item e "Tentar de novo" reenvia o mesmo id', async () => {
     let falhar = true
     falso.reiniciar(
       cenario({
@@ -637,13 +651,18 @@ describe('foto e localização (/campo/:id/itens/:itemId/foto)', () => {
     expect(await screen.findByText('Precisão ± 8 m')).toBeInTheDocument()
     await escolherFoto(usuario)
     await usuario.click(await screen.findByRole('button', { name: 'Vincular foto' }))
+    await esperarChecklistCarregado()
+    const area = within(document.getElementById('item-i1') ?? document.body)
     expect(
-      await screen.findByText('A foto não chegou ao armazenamento. Tente de novo.'),
+      await area.findByText(/Não enviado: A foto não chegou ao armazenamento. Tente de novo./),
+    ).toBeInTheDocument()
+    expect(
+      area.getByRole('img', { name: 'Foto 1 (no aparelho, falta enviar)' }),
     ).toBeInTheDocument()
 
     falhar = false
-    await usuario.click(screen.getByRole('button', { name: 'Tentar de novo' }))
-    await esperarChecklistCarregado()
+    await usuario.click(area.getByRole('button', { name: 'Tentar de novo' }))
+    expect(await screen.findByText('Tudo salvo no servidor')).toBeInTheDocument()
     const chamadas = falso.cliente.rpc.mock.calls.filter(
       ([nome]) => nome === 'adicionar_foto_da_vistoria',
     )
@@ -657,6 +676,229 @@ describe('foto e localização (/campo/:id/itens/:itemId/foto)', () => {
       p_precisao_m: 8.2,
       p_local_manual: null,
     })
+  })
+})
+
+describe('sem sinal (ADR-0060)', () => {
+  afterEach(() => {
+    Reflect.deleteProperty(navigator, 'geolocation')
+  })
+
+  function areaDe(id: string) {
+    const elemento = document.getElementById(`item-${id}`)
+    if (!elemento) throw new Error(`item ${id} ausente`)
+    return within(elemento)
+  }
+
+  /**
+   * Servidor que guarda o que recebe: o que confirmou aparece na releitura. `escritasCaem` simula
+   * sinal fraco: a leitura passa e a gravação cai.
+   */
+  function servidorQueGuarda() {
+    const rede = { escritasCaem: false }
+    const caiu = () => !navigator.onLine || rede.escritasCaem
+    const itens = ITENS.map((i) => ({ ...i }))
+    const fotos: Record<string, unknown>[] = []
+    const cena = cenario({
+      rpc: {
+        registrar_item_da_vistoria: (args) => {
+          if (caiu()) return { error: { message: 'TypeError: Failed to fetch' } }
+          const alvo = itens.find((i) => i.id === args.p_item_id)
+          if (alvo)
+            Object.assign(alvo, { resultado: args.p_resultado, comentario: args.p_comentario })
+          return { data: null }
+        },
+        adicionar_foto_da_vistoria: (args) => {
+          if (caiu()) return { error: { message: 'TypeError: Failed to fetch' } }
+          if (!fotos.some((f) => f.id === args.p_foto_id))
+            fotos.push({
+              id: args.p_foto_id,
+              item_id: args.p_item_id,
+              caminho: args.p_caminho,
+              legenda: args.p_legenda,
+              capturada_em: args.p_capturada_em,
+              sha256: args.p_sha256,
+            })
+          return { data: args.p_foto_id }
+        },
+      },
+      tabelas: { vistoria_item: itens, vistoria_foto: fotos },
+    })
+    return { cena, fotos, rede }
+  }
+
+  async function fotografar(
+    usuario: ReturnType<typeof userEvent.setup>,
+    arquivo = new File(['jpg'], 'abrigo.jpg', { type: 'image/jpeg' }),
+  ) {
+    await usuario.click(
+      areaDe('i1').getByRole('link', { name: 'Tirar foto: Registrar área visitada' }),
+    )
+    await usuario.click(await screen.findByRole('button', { name: 'Seguir sem local' }))
+    const entrada = document.querySelector<HTMLInputElement>('input[type="file"]')
+    if (!entrada) throw new Error('campo de arquivo ausente')
+    await usuario.upload(entrada, arquivo)
+    await usuario.click(await screen.findByRole('button', { name: 'Vincular foto' }))
+  }
+
+  function semGps() {
+    Object.defineProperty(navigator, 'geolocation', {
+      configurable: true,
+      value: {
+        getCurrentPosition: (_ok: PositionCallback, erro: PositionErrorCallback) => {
+          erro({ code: 2, PERMISSION_DENIED: 1 } as GeolocationPositionError)
+        },
+      },
+    })
+  }
+
+  it('marca, fotografa, recarrega, volta o sinal e envia uma vez só', async () => {
+    const { cena, fotos, rede } = servidorQueGuarda()
+    falso.reiniciar(cena)
+    semGps()
+    const usuario = userEvent.setup()
+    const primeira = renderizarApp('/campo/v1/checklist')
+    await esperarChecklistCarregado()
+
+    semSinal()
+    const grupo = screen.getByRole('group', { name: 'Registrar área visitada' })
+    await usuario.click(within(grupo).getByRole('button', { name: 'Conforme' }))
+    expect(await areaDe('i1').findByText('No aparelho, falta enviar')).toBeInTheDocument()
+
+    await fotografar(usuario)
+    await esperarChecklistCarregado()
+    expect(await screen.findByText('2 registros no aparelho, falta enviar')).toBeInTheDocument()
+    expect(
+      areaDe('i1').getByRole('img', { name: 'Foto 1 (no aparelho, falta enviar)' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('Sem conexão. Envia sozinho quando o sinal voltar.'),
+    ).toBeInTheDocument()
+    expect(falso.cliente.storage.from().upload).not.toHaveBeenCalled()
+
+    // Fecha e reabre com sinal fraco (lê, mas não grava): o rascunho volta do aparelho.
+    rede.escritasCaem = true
+    voltaSinal()
+    primeira.unmount()
+    filaDeCampo.descarregar()
+    renderizarApp('/campo/v1/checklist')
+    await esperarChecklistCarregado()
+    expect(await screen.findByText('2 registros no aparelho, falta enviar')).toBeInTheDocument()
+    expect(
+      within(screen.getByRole('group', { name: 'Registrar área visitada' })).getByRole('button', {
+        name: 'Conforme',
+      }),
+    ).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByText('1 de 2 itens')).toBeInTheDocument()
+
+    // O sinal volta: envia sozinho, cada registro uma vez, a foto no item certo.
+    rede.escritasCaem = false
+    voltaSinal()
+    expect(await screen.findByText('Tudo salvo no servidor')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(fotos).toHaveLength(1)
+    })
+    expect(fotos[0]).toMatchObject({ item_id: 'i1' })
+    const caminhos = new Set(falso.cliente.storage.from().upload.mock.calls.map(([c]) => c))
+    expect([...caminhos]).toEqual([fotos[0]?.caminho])
+    // As tentativas com sinal fraco repetem o mesmo registro; nenhuma outra versão foi enviada.
+    const chamadas = (nome: string) =>
+      falso.cliente.rpc.mock.calls.filter(([n]) => n === nome).map(([, args]) => args)
+    expect(new Set(chamadas('registrar_item_da_vistoria').map((a) => JSON.stringify(a)))).toEqual(
+      new Set([JSON.stringify({ p_item_id: 'i1', p_resultado: 'conforme', p_comentario: null })]),
+    )
+    expect(screen.getByText('1 de 2 itens')).toBeInTheDocument()
+
+    // Com tudo confirmado, o aparelho fica vazio e voltar o sinal de novo não reenvia nada.
+    expect(await criarArmazem().listar('u-ana@filtroville.test')).toEqual([])
+    const antes = falso.cliente.rpc.mock.calls.length
+    voltaSinal()
+    await new Promise((resolver) => setTimeout(resolver, 50))
+    expect(
+      falso.cliente.rpc.mock.calls
+        .slice(antes)
+        .filter(
+          ([nome]) =>
+            nome === 'registrar_item_da_vistoria' || nome === 'adicionar_foto_da_vistoria',
+        ),
+    ).toEqual([])
+  })
+
+  it('a mesma imagem duas vezes no mesmo item não duplica', async () => {
+    const { cena } = servidorQueGuarda()
+    falso.reiniciar(cena)
+    semGps()
+    const usuario = userEvent.setup()
+    const { router } = renderizarApp('/campo/v1/checklist')
+    await esperarChecklistCarregado()
+    semSinal()
+
+    await fotografar(usuario)
+    await esperarChecklistCarregado()
+    expect(await screen.findByText('1 registro no aparelho, falta enviar')).toBeInTheDocument()
+
+    await fotografar(usuario, new File(['jpg'], 'de-novo.jpg', { type: 'image/jpeg' }))
+    expect(await screen.findByText('Esta imagem já está neste item.')).toBeInTheDocument()
+    await router.navigate('/campo/v1/checklist')
+    await esperarChecklistCarregado()
+    expect(screen.getByText('1 registro no aparelho, falta enviar')).toBeInTheDocument()
+  })
+
+  it('concluir com registros no aparelho avisa e só envia a vistoria depois deles', async () => {
+    const { cena } = servidorQueGuarda()
+    falso.reiniciar(cena)
+    const usuario = userEvent.setup()
+    const { router } = renderizarApp('/campo/v1/checklist')
+    await esperarChecklistCarregado()
+    semSinal()
+
+    for (const titulo of ['Registrar área visitada', 'Identificar acompanhante']) {
+      const grupo = screen.getByRole('group', { name: titulo })
+      await usuario.click(within(grupo).getByRole('button', { name: 'Conforme' }))
+    }
+    expect(await screen.findByText('2 registros no aparelho, falta enviar')).toBeInTheDocument()
+    await router.navigate('/campo/v1/envio')
+
+    const enviar = await screen.findByRole('button', { name: 'Enviar registros e vistoria' })
+    expect(screen.getByText('Nenhuma pendência')).toBeInTheDocument()
+    await usuario.click(enviar)
+    expect(await screen.findByText('Vistoria não enviada')).toBeInTheDocument()
+    expect(screen.getByText(/Faltam 2 registros chegar ao servidor./)).toBeInTheDocument()
+    expect(falso.cliente.rpc).not.toHaveBeenCalledWith('enviar_vistoria', expect.anything())
+
+    // Com sinal: primeiro os registros, depois a vistoria.
+    voltaSinal()
+    await usuario.click(screen.getByRole('button', { name: 'Enviar registros e vistoria' }))
+    await waitFor(() => {
+      expect(falso.cliente.rpc).toHaveBeenCalledWith('enviar_vistoria', {
+        p_id: 'v1',
+        p_row_version: 2,
+      })
+    })
+    const nomes = falso.cliente.rpc.mock.calls
+      .map(([nome]) => nome)
+      .filter((nome) => nome === 'registrar_item_da_vistoria' || nome === 'enviar_vistoria')
+    expect(nomes.slice(-3)).toEqual([
+      'registrar_item_da_vistoria',
+      'registrar_item_da_vistoria',
+      'enviar_vistoria',
+    ])
+  })
+
+  it('não guarda token nem sessão no aparelho', async () => {
+    const { cena } = servidorQueGuarda()
+    falso.reiniciar(cena)
+    const usuario = userEvent.setup()
+    renderizarApp('/campo/v1/checklist')
+    await esperarChecklistCarregado()
+    semSinal()
+    const grupo = screen.getByRole('group', { name: 'Registrar área visitada' })
+    await usuario.click(within(grupo).getByRole('button', { name: 'Conforme' }))
+    await screen.findByText('1 registro no aparelho, falta enviar')
+
+    const linhas = await criarArmazem().listar('u-ana@filtroville.test')
+    expect(linhas).toHaveLength(1)
+    expect(JSON.stringify(linhas)).not.toMatch(/token|refresh|access/i)
   })
 })
 
