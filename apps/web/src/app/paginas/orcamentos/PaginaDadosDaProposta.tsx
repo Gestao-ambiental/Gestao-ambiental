@@ -11,6 +11,7 @@ import { Carregando, EstadoErro, SemPermissao } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import {
+  chaveDaLogoDaConsultoria,
   enviarLogo,
   obterIdentidade,
   removerLogo,
@@ -121,6 +122,13 @@ function Formulario({
     await queryClient.invalidateQueries({ queryKey: ['identidade', consultoriaId] })
   }
 
+  async function atualizarLogo() {
+    await Promise.all([
+      atualizar(),
+      queryClient.invalidateQueries({ queryKey: chaveDaLogoDaConsultoria(consultoriaId) }),
+    ])
+  }
+
   const salvar = useMutation({
     mutationFn: () => salvarIdentidade(consultoriaId, identidade.rowVersion, d),
     onSuccess: async () => {
@@ -132,9 +140,12 @@ function Formulario({
   })
   const logo = useMutation({
     mutationFn: (arquivo: File) => enviarLogo(consultoriaId, arquivo),
-    onSuccess: atualizar,
+    onSuccess: atualizarLogo,
   })
-  const tirar = useMutation({ mutationFn: () => removerLogo(consultoriaId), onSuccess: atualizar })
+  const tirar = useMutation({
+    mutationFn: () => removerLogo(consultoriaId),
+    onSuccess: atualizarLogo,
+  })
   const ocupado = salvar.isPending || logo.isPending || tirar.isPending
   const erroDaLogo =
     problemaDaLogo ??
@@ -157,6 +168,9 @@ function Formulario({
     <div className="flex flex-col gap-(--e-6)">
       <section aria-label="Logo" className="flex flex-col gap-(--e-3)">
         <Titulo className="titulo-secao text-(--tinta)">Logo</Titulo>
+        <p className="corpo text-(--tinta-2)">
+          A logo aparece nas propostas e no menu da consultoria.
+        </p>
         <div className="flex flex-wrap items-center gap-(--e-3)">
           {identidade.logoUrl ? (
             <img

@@ -799,6 +799,7 @@ function ResumoDaTriagem({
   habilitacao,
   atividades,
   enquadramento,
+  className,
 }: {
   ponto: PontoMarcado | null
   local: ResultadoDoLocal | null
@@ -806,12 +807,16 @@ function ResumoDaTriagem({
   habilitacao: ReactNode
   atividades: number
   enquadramento: { valor: string; detalhe: string | null } | null
+  className?: string
 }) {
   const areaHa = local?.lote?.areaM2 != null ? metrosQuadradosParaHectares(local.lote.areaM2) : null
   return (
     <section
       aria-label="Resumo da triagem"
-      className="flex flex-col gap-(--e-4) rounded-(--raio-painel) border bg-(--folha) p-(--e-4) xl:sticky xl:top-(--e-4) xl:p-(--e-5)"
+      className={cn(
+        'flex flex-col gap-(--e-4) rounded-(--raio-painel) border bg-(--folha) p-(--e-4) xl:sticky xl:top-(--e-4) xl:p-(--e-5)',
+        className,
+      )}
     >
       <dl className="flex flex-col gap-(--e-4)">
         <div className="flex flex-col gap-(--e-05) border-b pb-(--e-4)">
@@ -1201,6 +1206,10 @@ export function PaginaTriagem() {
     limparGravacao()
   }, [itens, limparGravacao])
   const doEmpreendimento = ehGestao && paraGravar.length > 0 ? empreendimento.data : undefined
+  const modalidadeDoOrcamento =
+    etapa === 2 && ehGestao && (parametroEmpreendimento === null || empreendimento.data)
+      ? conclusao.modalidade
+      : null
 
   return (
     <Pagina
@@ -1224,9 +1233,10 @@ export function PaginaTriagem() {
         gravada={gravar.isSuccess ? gravar.variables.destino : null}
         erro={gravar.error}
       />
-      <div className="grid max-w-[1280px] gap-(--e-4) xl:grid-cols-[minmax(0,1fr)_300px] xl:items-start xl:gap-(--e-6)">
-        <div className="flex min-w-0 flex-col gap-(--e-4)">
+      <div className="grid max-w-[1280px] gap-(--e-4) xl:grid-cols-[minmax(0,1fr)_300px] xl:items-start xl:gap-x-(--e-6)">
+        <div className="flex min-w-0 flex-col gap-(--e-4) xl:contents">
           <Trilha
+            className="min-w-0 xl:col-start-1 xl:row-start-1 xl:self-center"
             compactaNoCelular
             rotulo="Etapas da triagem"
             atual={etapa}
@@ -1251,9 +1261,29 @@ export function PaginaTriagem() {
             ]}
           />
 
+          {modalidadeDoOrcamento ? (
+            <div
+              role="group"
+              aria-label="Ações da triagem"
+              className="min-w-0 xl:col-start-2 xl:row-start-1 xl:self-center xl:px-(--e-2)"
+            >
+              <OrcarDaTriagem
+                key={atual.consultoriaId + ':' + (empreendimento.data?.id ?? '')}
+                consultoriaId={atual.consultoriaId}
+                empreendimento={empreendimento.data ?? null}
+                modalidade={modalidadeDoOrcamento}
+                orgao={orgao}
+                taxas={calculados.flatMap((c) => {
+                  const centavos = centavosNoIma(c)
+                  return centavos === null ? [] : [{ codigo: c.atividade.codigo, centavos }]
+                })}
+              />
+            </div>
+          ) : null}
+
           <section
             aria-labelledby="titulo-da-etapa"
-            className="flex min-w-0 flex-col overflow-hidden rounded-(--raio-painel) border bg-(--folha)"
+            className="flex min-w-0 flex-col overflow-hidden rounded-(--raio-painel) border bg-(--folha) xl:col-start-1 xl:row-start-2"
           >
             <h2
               id="titulo-da-etapa"
@@ -1350,21 +1380,6 @@ export function PaginaTriagem() {
                     nivel={nivel}
                     calculados={calculados}
                   />
-                  {ehGestao &&
-                  conclusao.modalidade &&
-                  (parametroEmpreendimento === null || empreendimento.data) ? (
-                    <OrcarDaTriagem
-                      key={atual.consultoriaId + ':' + (empreendimento.data?.id ?? '')}
-                      consultoriaId={atual.consultoriaId}
-                      empreendimento={empreendimento.data ?? null}
-                      modalidade={conclusao.modalidade}
-                      orgao={orgao}
-                      taxas={calculados.flatMap((c) => {
-                        const centavos = centavosNoIma(c)
-                        return centavos === null ? [] : [{ codigo: c.atividade.codigo, centavos }]
-                      })}
-                    />
-                  ) : null}
                 </section>
                 <div
                   role="group"
@@ -1392,6 +1407,10 @@ export function PaginaTriagem() {
         </div>
 
         <ResumoDaTriagem
+          className={cn(
+            'xl:col-start-2',
+            modalidadeDoOrcamento ? 'xl:row-start-2' : 'xl:row-span-2 xl:row-start-1',
+          )}
           ponto={ponto}
           local={local}
           consultando={consulta.isPending}

@@ -1,9 +1,9 @@
 -- Situação manual, identidade da proposta, ART/RRT e apresentação (ADR-0018, fatia 6; ORC-04, P2, P8,
 -- P9). Sair do rascunho exige horas e preço; reabrir é nova revisão; o histórico diz quem e quando.
--- Identidade e logo só pela Gestão; nada atravessa consultorias.
+-- Identidade e edição da logo só pela Gestão. A Equipe lê só o caminho da logo do menu.
 begin;
 
-select plan(31);
+select plan(36);
 
 select testes.criar_dados_sinteticos();
 
@@ -215,6 +215,30 @@ select results_eq(
   'a leitura traz os dados limpos e o caminho da logo'
 );
 
+select testes.autenticar_como('ana@filtroville.test');
+select is(
+  public.obter_logo_da_consultoria('c0000000-0000-4000-8000-00000000000a'),
+  'c0000000-0000-4000-8000-00000000000a/consultoria/91000001-0000-4000-8000-000000000000.png'::text,
+  'Equipe pode obter o caminho da logo para o menu'
+);
+select is(
+  public.obter_identidade_da_consultoria('c0000000-0000-4000-8000-00000000000a'),
+  null::jsonb,
+  'o acesso à logo não libera a identidade da proposta'
+);
+
+select testes.autenticar_como('gustavo@verdesul.test');
+select is(
+  public.obter_logo_da_consultoria('c0000000-0000-4000-8000-00000000000a'),
+  null::text,
+  'Gestão de outra consultoria não lê a logo'
+);
+select ok(
+  not has_function_privilege('anon', 'public.obter_logo_da_consultoria(uuid)', 'EXECUTE'),
+  'a RPC da logo não está disponível para visitantes'
+);
+
+select testes.autenticar_como('eduardo@filtroville.test');
 select lives_ok(
   $$select public.remover_logo_da_consultoria('c0000000-0000-4000-8000-00000000000a')$$,
   'Gestão tira a logo'
@@ -224,6 +248,11 @@ select is(
   public.obter_identidade_da_consultoria('c0000000-0000-4000-8000-00000000000a') ->> 'logo_caminho',
   null,
   'sem logo depois de tirar'
+);
+select is(
+  public.obter_logo_da_consultoria('c0000000-0000-4000-8000-00000000000a'),
+  null::text,
+  'o menu também fica sem logo depois de tirar'
 );
 
 -- ---------------------------------------------------------------- negativos

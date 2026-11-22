@@ -14,6 +14,31 @@ const EXTENSOES: Record<(typeof TIPOS_DE_FOTO)[number], string> = {
 }
 /** A URL assinada da logo vale 1 h; a proposta relê ao abrir. */
 const VALIDADE_URL_LOGO = 60 * 60
+export const FRESCOR_DA_URL_LOGO_MS = (VALIDADE_URL_LOGO - 5 * 60) * 1000
+
+export function chaveDaLogoDaConsultoria(consultoriaId: string) {
+  return ['logo-da-consultoria', consultoriaId] as const
+}
+
+async function assinarLogo(
+  supabase: ReturnType<typeof obterSupabase>,
+  caminho: string | null,
+): Promise<string | null> {
+  if (!caminho) return null
+  const assinada = await supabase.storage
+    .from('arquivos')
+    .createSignedUrl(caminho, VALIDADE_URL_LOGO)
+  return assinada.error ? null : assinada.data.signedUrl
+}
+
+export async function obterLogoDaConsultoria(consultoriaId: string): Promise<string | null> {
+  const supabase = obterSupabase()
+  const { data, error } = await supabase.rpc('obter_logo_da_consultoria', {
+    p_consultoria_id: consultoriaId,
+  })
+  if (error) throw error
+  return assinarLogo(supabase, data)
+}
 
 export interface IdentidadeDaConsultoria {
   razaoSocial: string
@@ -53,14 +78,6 @@ export async function obterIdentidade(consultoriaId: string): Promise<Identidade
   if (error) throw error
   const i = objeto(data)
   if (!i) return IDENTIDADE_VAZIA
-  const caminho = texto(i.logo_caminho)
-  let logoUrl: string | null = null
-  if (caminho) {
-    const assinada = await supabase.storage
-      .from('arquivos')
-      .createSignedUrl(caminho, VALIDADE_URL_LOGO)
-    logoUrl = assinada.error ? null : assinada.data.signedUrl
-  }
   return {
     razaoSocial: texto(i.razao_social),
     cnpj: texto(i.cnpj),
@@ -69,7 +86,7 @@ export async function obterIdentidade(consultoriaId: string): Promise<Identidade
     email: texto(i.email),
     site: texto(i.site),
     textoApresentacao: texto(i.texto_apresentacao),
-    logoUrl,
+    logoUrl: await assinarLogo(supabase, texto(i.logo_caminho)),
     rowVersion: typeof i.row_version === 'number' ? i.row_version : 0,
   }
 }

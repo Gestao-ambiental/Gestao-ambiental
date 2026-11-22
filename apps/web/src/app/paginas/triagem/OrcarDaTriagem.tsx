@@ -74,9 +74,10 @@ export function OrcarDaTriagem({
   ) : null
 
   return (
-    <div className="flex flex-col items-start gap-(--e-2)">
+    <div className="flex flex-col gap-(--e-2)">
       <Botao
         iconeAntes="file-plus"
+        larguraTotal
         disabled={orcar.isPending}
         onClick={() => {
           if (empreendimento) {
