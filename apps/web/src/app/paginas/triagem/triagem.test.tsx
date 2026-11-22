@@ -679,11 +679,29 @@ describe('atividades e resultado', () => {
     ).toBeInTheDocument()
   })
 
-  it('não inclui a mesma atividade duas vezes', async () => {
+  it('inclui pelo código ou pela descrição e não repete atividades', async () => {
     const { usuario } = montar('/triagem?etapa=atividades')
-    await incluir(usuario, '12.80.10', '12.80.10')
+    const busca = screen.getByRole('searchbox', { name: /Atividade/ })
+    await usuario.type(busca, '12.80.10')
+    const linha = screen.getByRole('button', { name: 'Incluir 12.80.10' })
+    await usuario.click(within(linha).getByText('12.80.10'))
     expect(screen.getByRole('button', { name: '12.80.10 já incluída' })).toBeDisabled()
     expect(screen.getAllByRole('article')).toHaveLength(1)
+
+    await usuario.clear(busca)
+    await usuario.type(busca, '71.00.00')
+    const outra = screen.getByRole('button', { name: 'Incluir 71.00.00' })
+    await usuario.click(within(outra).getByText(/Serviços de reparação e manutenção/))
+    expect(screen.getAllByRole('article')).toHaveLength(2)
+  })
+
+  it('inclui a atividade com Enter ao focar a linha', async () => {
+    const { usuario } = montar('/triagem?etapa=atividades')
+    await usuario.type(screen.getByRole('searchbox', { name: /Atividade/ }), '12.80.10')
+    await usuario.tab()
+    expect(screen.getByRole('button', { name: 'Incluir 12.80.10' })).toHaveFocus()
+    await usuario.keyboard('{Enter}')
+    expect(screen.getByRole('article', { name: /^12\.80\.10/ })).toBeInTheDocument()
   })
 
   it('busca de atividade sem resultado avisa', async () => {
