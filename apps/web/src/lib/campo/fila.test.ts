@@ -89,8 +89,9 @@ describe('fila de envio do Campo', () => {
     const enviados: unknown[] = []
     falso.reiniciar({ rpc: {} })
     const padrao = falso.cliente.rpc.getMockImplementation()
+    if (!padrao) throw new Error('rpc falso sem implementação')
     falso.cliente.rpc.mockImplementation((nome: string, args?: Record<string, unknown>) => {
-      if (nome !== 'registrar_item_da_vistoria') return padrao?.(nome, args)
+      if (nome !== 'registrar_item_da_vistoria') return padrao(nome, args)
       enviados.push(args?.p_comentario)
       if (enviados.length > 1) return Promise.resolve({ data: null, error: null })
       return new Promise((resolver) => {
@@ -110,7 +111,7 @@ describe('fila de envio do Campo', () => {
       expect(fila.obter().pendencias).toEqual([])
     })
     expect(enviados).toEqual(['primeiro', 'segundo'])
-    if (padrao) falso.cliente.rpc.mockImplementation(padrao)
+    falso.cliente.rpc.mockImplementation(padrao)
   })
 
   it('recusa do servidor para aquele registro e segue com os outros', async () => {
