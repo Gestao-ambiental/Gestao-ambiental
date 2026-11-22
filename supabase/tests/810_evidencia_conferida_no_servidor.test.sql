@@ -118,10 +118,7 @@ select lives_ok(
 );
 
 -- v2 corrigida, com o hash conferido igual.
-reset role;
-insert into storage.objects (bucket_id, name, metadata) values
-  ('arquivos', 'c0000000-0000-4000-8000-00000000000a/evidencia/50000002-0000-4000-8000-000000000000.pdf',
-   '{"mimetype": "application/pdf", "size": 4096}');
+-- O objeto da v2 já está no Storage (inserido no começo).
 select testes.autenticar_como('bruno@filtroville.test');
 select public.enviar_evidencia(current_setting('testes.o1')::uuid, '70000000-0000-4000-8000-000000000002',
   '50000002-0000-4000-8000-000000000000',
