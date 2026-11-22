@@ -4,7 +4,10 @@
 export {
   adicionarDias,
   adicionarMeses,
+  DATA_CIVIL_MAXIMA,
+  DATA_CIVIL_MINIMA,
   dataCivil,
+  dataCivilNaFaixa,
   dataEHoraNoFuso,
   diaDaSemana,
   diferencaEmDias,
@@ -753,3 +756,4 @@ export {
   rotuloDoDia,
 } from './minha-semana'
 export type { DiaDaMinhaSemana, ItemDaMinhaSemana } from './minha-semana'
+export { LIMITE_DE_ETAPAS } from './limites'

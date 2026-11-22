@@ -175,3 +175,15 @@ export function dataEHoraNoFuso(instante: Date, fuso: string): DataEHoraNoFuso {
 export function hojeNoFuso(instante: Date, fuso: string): DataCivil {
   return dataEHoraNoFuso(instante, fuso).data
 }
+
+/**
+ * Faixa aceita para datas civis gravadas (prazos, validades, marcos). Fora dela o banco recusa
+ * (constraint data_civil_*) e as leituras de prazo ignoram o item, sem derrubar a lista.
+ */
+export const DATA_CIVIL_MINIMA = '1900-01-01' as DataCivil
+export const DATA_CIVIL_MAXIMA = '2199-12-31' as DataCivil
+
+/** Data civil existente e dentro da faixa aceita (1900-01-01 a 2199-12-31). */
+export function dataCivilNaFaixa(texto: unknown): texto is DataCivil {
+  return ehDataCivil(texto) && texto >= DATA_CIVIL_MINIMA && texto <= DATA_CIVIL_MAXIMA
+}

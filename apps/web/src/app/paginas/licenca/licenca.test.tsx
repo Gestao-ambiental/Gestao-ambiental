@@ -231,7 +231,7 @@ describe('passo 2: identificação (LIC-01)', () => {
       't-lao',
     )
     const emissao = screen.getByLabelText('Emissão')
-    await usuario.type(emissao, '01/01/2999')
+    await usuario.type(emissao, '01/01/2199')
     expect(emissao).toHaveAccessibleDescription('Datas futuras ficam bloqueadas para emissão')
     await usuario.clear(emissao)
     await usuario.type(screen.getByLabelText('Assinatura'), '14/02/2023')

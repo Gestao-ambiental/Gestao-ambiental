@@ -1,6 +1,7 @@
 import {
   adicionarDias,
   adicionarMeses,
+  dataCivilNaFaixa,
   dataPorExtenso,
   diaDaSemana,
   formatarDataCivil,
@@ -145,7 +146,10 @@ export function CampoData({
     const leitura = lerDataDigitada(mascarado)
     setTexto(colado && leitura.situacao === 'valida' ? formatarDataCivil(leitura.data) : mascarado)
     if (leitura.situacao === 'valida') {
-      if (foraDoLimite(leitura.data, minimo, maximo)) {
+      if (!dataCivilNaFaixa(leitura.data)) {
+        setErroDigitado('Use uma data entre 01/01/1900 e 31/12/2199.')
+        emitir(null)
+      } else if (foraDoLimite(leitura.data, minimo, maximo)) {
         setErroDigitado(erroDoLimite())
         emitir(null)
       } else {

@@ -233,7 +233,9 @@ function criar() {
   })
 
   function consulta(tabela: string) {
-    const linhas = () => cenario.tabelas?.[tabela] ?? []
+    let faixa: [number, number] | null = null
+    const todas = () => cenario.tabelas?.[tabela] ?? []
+    const linhas = () => (faixa ? todas().slice(faixa[0], faixa[1] + 1) : todas())
     let colunas = ''
     const construtor = {
       select: (lidas = '') => {
@@ -245,7 +247,10 @@ function criar() {
       in: () => construtor,
       is: () => construtor,
       order: () => construtor,
-      range: () => construtor,
+      range: (de: number, ate: number) => {
+        faixa = [de, ate]
+        return construtor
+      },
       maybeSingle: () => {
         // A leitura do cadastro (lib/api/perfil: COLUNAS_CADASTRO) vem do cenário, não da tabela.
         if (tabela === 'membro' && colunas === 'profissao, profissao_em_curso, genero') {
@@ -259,7 +264,7 @@ function criar() {
         return Promise.resolve({ data: linhas()[0] ?? null, error: null })
       },
       then: (resolver: (valor: unknown) => unknown, rejeitar?: (erro: unknown) => unknown) =>
-        Promise.resolve({ data: linhas(), error: null, count: linhas().length }).then(
+        Promise.resolve({ data: linhas(), error: null, count: todas().length }).then(
           resolver,
           rejeitar,
         ),

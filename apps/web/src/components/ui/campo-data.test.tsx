@@ -57,6 +57,20 @@ describe('CampoData', () => {
     expect(aoMudar).toHaveBeenLastCalledWith(null)
   })
 
+  it('data fora de 1900 a 2199 vira erro no campo e valor vazio (ADR-0059)', async () => {
+    const usuario = userEvent.setup()
+    const aoMudar = vi.fn()
+    render(<Campo inicial={'2027-02-15'} aoMudar={aoMudar} />)
+    const campo = screen.getByLabelText('Validade confirmada *')
+    await usuario.clear(campo)
+    await usuario.type(campo, '01/01/2200')
+    expect(campo).toHaveAccessibleDescription('Use uma data entre 01/01/1900 e 31/12/2199.')
+    expect(aoMudar).toHaveBeenLastCalledWith(null)
+    await usuario.clear(campo)
+    await usuario.type(campo, '31/12/2199')
+    expect(aoMudar).toHaveBeenLastCalledWith('2199-12-31')
+  })
+
   it('data incompleta avisa ao sair do campo', async () => {
     const usuario = userEvent.setup()
     render(<Campo />)

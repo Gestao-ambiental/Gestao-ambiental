@@ -1,10 +1,11 @@
 // Detalhe e execução da ocorrência (épico 6). Escrita só por RPC (o banco decide quem confere,
 // quem conclui e a independência); o arquivo vai direto ao Storage e vira versão pela RPC.
 
-import type {
-  DataCivil,
-  SituacaoDaEvidencia,
-  SituacaoGravadaDaOcorrencia,
+import {
+  LIMITE_DE_ETAPAS,
+  type DataCivil,
+  type SituacaoDaEvidencia,
+  type SituacaoGravadaDaOcorrencia,
 } from '@gestao-ambiental/domain'
 
 import { conferirPdf, type ProblemaDoPdf } from '@/lib/api/licencas'
@@ -93,26 +94,37 @@ export interface Etapa {
   concluida: boolean
 }
 
+/**
+ * Todas as etapas, em páginas de LIMITE_DE_ETAPAS (ADR-0059). O banco recusa a 201ª; as
+ * ocorrências antigas com mais etapas continuam vendo todas.
+ */
 export async function listarEtapas(ocorrenciaId: string): Promise<Etapa[]> {
-  const { data, error } = await obterSupabase()
-    .from('etapa')
-    .select(
-      'id, titulo, modo, responsavel_externo, meta, horas_estimadas, concluida_em, responsavel:membro!etapa_responsavel_fk(nome)',
-    )
-    .eq('ocorrencia_id', ocorrenciaId)
-    .order('posicao')
-    .range(0, 199)
-  if (error) throw error
-  return data.map((e) => ({
-    id: e.id,
-    titulo: e.titulo,
-    modo: e.modo,
-    responsavelNome: e.responsavel?.nome ?? null,
-    responsavelExterno: e.responsavel_externo,
-    meta: e.meta as DataCivil | null,
-    horas: e.horas_estimadas,
-    concluida: e.concluida_em !== null,
-  }))
+  const etapas: Etapa[] = []
+  for (let de = 0; ; de += LIMITE_DE_ETAPAS) {
+    const { data, error } = await obterSupabase()
+      .from('etapa')
+      .select(
+        'id, titulo, modo, responsavel_externo, meta, horas_estimadas, concluida_em, responsavel:membro!etapa_responsavel_fk(nome)',
+      )
+      .eq('ocorrencia_id', ocorrenciaId)
+      .order('posicao')
+      .order('id')
+      .range(de, de + LIMITE_DE_ETAPAS - 1)
+    if (error) throw error
+    for (const e of data) {
+      etapas.push({
+        id: e.id,
+        titulo: e.titulo,
+        modo: e.modo,
+        responsavelNome: e.responsavel?.nome ?? null,
+        responsavelExterno: e.responsavel_externo,
+        meta: e.meta as DataCivil | null,
+        horas: e.horas_estimadas,
+        concluida: e.concluida_em !== null,
+      })
+    }
+    if (data.length < LIMITE_DE_ETAPAS) return etapas
+  }
 }
 
 export interface DadosEtapa {

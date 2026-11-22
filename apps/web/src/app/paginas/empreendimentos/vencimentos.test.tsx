@@ -295,7 +295,7 @@ describe('vencimentos do empreendimento (ADR-0046)', () => {
     renderizarApp('/empreendimentos/e1')
     const usuario = await acaoDaLinha('ART ART 77', 'Editar')
     const dialogo = await screen.findByRole('dialog', { name: 'Editar ART ART 77' })
-    await usuario.type(await within(dialogo).findByLabelText('Emitido em'), '01/01/2999')
+    await usuario.type(await within(dialogo).findByLabelText('Emitido em'), '01/01/2199')
     await usuario.click(within(dialogo).getByRole('button', { name: 'Salvar vencimento' }))
     expect(
       await within(dialogo).findByText('A emissão não pode ser depois da validade'),

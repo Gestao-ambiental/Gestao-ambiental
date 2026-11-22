@@ -10,6 +10,8 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   empreendimento_existente: 'Não foi possível salvar o empreendimento. Tente de novo.',
   unidade_existente: 'Não foi possível salvar a unidade. Tente de novo.',
   consultoria_existente: 'Não foi possível criar a consultoria. Tente de novo.',
+  data_fora_da_faixa: 'Use uma data entre 01/01/1900 e 31/12/2199.',
+  limite_de_etapas: 'Esta ocorrência já tem 200 etapas.',
   cnpj_obrigatorio: 'Informe o CNPJ',
   convite_do_beta_obrigatorio:
     'Durante o beta, só abre consultoria quem recebeu o convite no e-mail desta conta.',
@@ -393,6 +395,8 @@ function comoObjeto(erro: unknown): ErroComCodigo {
 export function codigoDoErro(erro: unknown): string | undefined {
   const { code, message } = comoObjeto(erro)
   if (typeof message === 'string' && message in MENSAGENS_DO_BANCO) return message
+  // Constraint data_civil_* (ADR-0059): data fora de 1900-01-01 a 2199-12-31.
+  if (typeof message === 'string' && message.includes('"data_civil_')) return 'data_fora_da_faixa'
   if (typeof code === 'string' && code in MENSAGENS_DO_AUTH) return code
   return undefined
 }
