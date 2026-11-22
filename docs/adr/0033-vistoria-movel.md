@@ -15,7 +15,7 @@ O protótipo de 14/10/2026 tem seis telas no celular: Minhas vistorias, Detalhe 
 1. **Primeiro caso:** vistoria de condicionante. Toda vistoria nasce de uma **ocorrência** (CAMPO-01). Inspeção geral sem ocorrência fica para depois.
 2. **Biologia e medições técnicas:** fora. Sem campos estruturados (parâmetro, unidade, método, táxon) nesta fatia.
 3. **Checklist:** digitado ao agendar a vistoria, com quatro itens sugeridos (os do protótipo). O texto fica gravado na própria vistoria. Modelos de checklist versionados por consultoria ficam para depois.
-4. **Sem modo offline.** Cada registro grava no servidor na hora. A tela mostra "Salvando", "Salvo" ou "Não salvou" e nunca diz que salvou o que não chegou ao banco. Uma foto que falhou fica na tela para tentar de novo, mas não é guardada no aparelho.
+4. **Sem modo offline** (revisto pela [ADR-0060](0060-vistoria-sem-sinal-etapa-1.md): o registro vai primeiro para o aparelho e segue ao servidor quando o sinal volta). Cada registro grava no servidor na hora. A tela mostra "Salvando", "Salvo" ou "Não salvou" e nunca diz que salvou o que não chegou ao banco. Uma foto que falhou fica na tela para tentar de novo, mas não é guardada no aparelho.
 5. **Quem agenda:** qualquer membro ativo, como nas etapas. **Quem registra e envia:** o responsável da vistoria ou a Gestão.
 6. **Localização:** visível para os membros da consultoria. Ainda não existe exportação nem acesso do cliente.
 7. **Um responsável por vistoria.** Dividir os itens entre várias pessoas fica para depois.

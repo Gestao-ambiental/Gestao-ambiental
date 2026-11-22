@@ -13,8 +13,16 @@ import {
 
 export const chaveDaVistoria = (id: string) => ['vistoria', id] as const
 
+// Sem sinal a releitura falha; a última leitura fica guardada o dia inteiro para a técnica seguir
+// navegando entre vistoria, checklist e foto (ADR-0060). Abrir uma vistoria nunca lida é outra etapa.
+const UM_DIA = 24 * 60 * 60 * 1000
+
 export function useVistoria(id: string) {
-  return useQuery({ queryKey: chaveDaVistoria(id), queryFn: () => obterVistoria(id) })
+  return useQuery({
+    queryKey: chaveDaVistoria(id),
+    queryFn: () => obterVistoria(id),
+    gcTime: UM_DIA,
+  })
 }
 
 export function useItensDaVistoria(id: string, habilitado: boolean) {
@@ -22,6 +30,7 @@ export function useItensDaVistoria(id: string, habilitado: boolean) {
     queryKey: [...chaveDaVistoria(id), 'itens'],
     queryFn: () => listarItensDaVistoria(id),
     enabled: habilitado,
+    gcTime: UM_DIA,
   })
 }
 
@@ -30,6 +39,7 @@ export function useFotosDaVistoria(id: string, habilitado: boolean) {
     queryKey: [...chaveDaVistoria(id), 'fotos'],
     queryFn: () => listarFotosDaVistoria(id),
     enabled: habilitado,
+    gcTime: UM_DIA,
   })
 }
 

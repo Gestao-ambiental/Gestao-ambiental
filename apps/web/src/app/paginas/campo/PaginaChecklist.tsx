@@ -3,11 +3,11 @@ import {
   RESULTADOS_DO_ITEM,
   ROTULO_DO_RESULTADO,
   aceitaRegistro,
+  aplicarRascunho,
   exigeComentario,
   progressoDaVistoria,
   type ResultadoDoItem,
 } from '@gestao-ambiental/domain'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router'
 
@@ -18,21 +18,11 @@ import { Botao } from '@/components/ui/botao'
 import { classeAreaTexto } from '@/components/ui/estilos-campo'
 import { Icone, type NomeIcone } from '@/components/ui/icone'
 import { Selo, type TomSelo } from '@/components/ui/selo'
-import {
-  registrarItemDaVistoria,
-  type FotoDaVistoria,
-  type ItemDaVistoriaGravado,
-  type Vistoria,
-} from '@/lib/api/vistorias'
+import type { FotoDaVistoria, ItemDaVistoriaGravado, Vistoria } from '@/lib/api/vistorias'
+import { filaDeCampo, type Pendencia } from '@/lib/campo/fila'
 import { cn } from '@/lib/utils'
 
-import {
-  chaveDaVistoria,
-  useFotosDaVistoria,
-  useItensDaVistoria,
-  useUrlsDasFotos,
-  useVistoria,
-} from './consultas'
+import { useFotosDaVistoria, useItensDaVistoria, useUrlsDasFotos, useVistoria } from './consultas'
 import { classeAcaoPrincipal, classeAcaoSecundaria, classePainel } from './estilos'
 import {
   BarraDeAcao,
@@ -41,9 +31,11 @@ import {
   ColunaCampo,
   ComVistoria,
   Miniaturas,
-  SituacaoDaGravacao,
+  PainelDoEnvio,
+  SituacaoDoEnvio,
   VoltarPara,
 } from './pecas'
+import { useFotosDoAparelho, useRascunhoDaVistoria } from './rascunho'
 
 interface Registro {
   resultado: ResultadoDoItem
@@ -86,6 +78,8 @@ const TOM_DO_RESULTADO: Record<ResultadoDoItem, TomSelo> = {
 function ItemDoChecklist({
   vistoria,
   item,
+  noServidor,
+  pendencias,
   posicao,
   fotos,
   urls,
@@ -93,15 +87,19 @@ function ItemDoChecklist({
   aoMudarNaoSalvo,
 }: {
   vistoria: Vistoria
+  /** O item como a técnica vê: o rascunho do aparelho por cima do servidor. */
   item: ItemDaVistoriaGravado
+  /** Algo deste item já chegou ao servidor (resultado ou foto)? */
+  noServidor: boolean
+  /** Registros deste item ainda no aparelho. */
+  pendencias: readonly Pendencia[]
   posicao: number
   fotos: readonly FotoDaVistoria[]
   urls: Readonly<Record<string, string>> | undefined
   editavel: boolean
-  /** Há comentário digitado que ainda não foi enviado, ou gravação que falhou? */
+  /** Há escolha ou comentário que ainda não foi guardado no aparelho? */
   aoMudarNaoSalvo: (itemId: string, naoSalvo: boolean) => void
 }) {
-  const queryClient = useQueryClient()
   const idComentario = useId()
   const campoComentario = useRef<HTMLTextAreaElement>(null)
   const [resultado, setResultado] = useState<ResultadoDoItem>(item.resultado)
@@ -110,39 +108,32 @@ function ItemDoChecklist({
   const comentarioDigitado = useRef(comentario)
   const [erroComentario, setErroComentario] = useState<string | null>(null)
   const [comentando, setComentando] = useState(false)
+  // O registro que não coube no aparelho, para "Tentar de novo".
+  const [naoGuardado, setNaoGuardado] = useState<Registro | null>(null)
+  const doAparelho = useFotosDoAparelho(pendencias)
 
-  const salvar = useMutation({
-    mutationFn: (registro: Registro) =>
-      registrarItemDaVistoria(item.id, registro.resultado, registro.comentario.trim() || null),
-    onSuccess: (_, registro) => {
-      // Só o que chegou ao banco entra no progresso.
-      queryClient.setQueryData<ItemDaVistoriaGravado[]>(
-        [...chaveDaVistoria(vistoria.id), 'itens'],
-        (itens) =>
-          itens?.map((i) =>
-            i.id === item.id
-              ? {
-                  ...i,
-                  resultado: registro.resultado,
-                  comentario: registro.comentario.trim() || null,
-                }
-              : i,
-          ),
+  // Grava primeiro no aparelho; a fila envia ao servidor quando puder (ADR-0060). Até o aparelho
+  // confirmar, sair da tela pede confirmação.
+  function guardar(registro: Registro) {
+    aoMudarNaoSalvo(item.id, true)
+    filaDeCampo
+      .registrar({
+        tipo: 'item',
+        vistoriaId: vistoria.id,
+        itemId: item.id,
+        resultado: registro.resultado,
+        comentario: registro.comentario.trim() || null,
+        registradoEm: new Date().toISOString(),
+      })
+      .then(
+        () => {
+          setNaoGuardado(null)
+          aoMudarNaoSalvo(item.id, comentarioDigitado.current.trim() !== registro.comentario.trim())
+        },
+        () => {
+          setNaoGuardado(registro)
+        },
       )
-      void queryClient.invalidateQueries({ queryKey: ['vistorias'] })
-      // Só agora o comentário está no banco; o que foi digitado depois continua pendente.
-      aoMudarNaoSalvo(item.id, comentarioDigitado.current.trim() !== registro.comentario.trim())
-    },
-    // O texto só existe nesta tela: sair agora o perderia.
-    onError: () => {
-      aoMudarNaoSalvo(item.id, true)
-    },
-  })
-
-  // O item segue "não salvo" até o banco confirmar: sair com a gravação em curso pede
-  // confirmação, e o aviso se fecha sozinho quando ela termina bem.
-  function enviar(registro: Registro) {
-    salvar.mutate(registro)
   }
 
   function gravar(registro: Registro) {
@@ -152,7 +143,7 @@ function ItemDoChecklist({
       return
     }
     setErroComentario(null)
-    enviar(registro)
+    guardar(registro)
   }
 
   useEffect(() => {
@@ -197,13 +188,12 @@ function ItemDoChecklist({
                 key={opcao}
                 type="button"
                 aria-pressed={marcada}
-                disabled={salvar.isPending}
                 onClick={() => {
                   setResultado(opcao)
                   gravar({ resultado: opcao, comentario })
                 }}
                 className={cn(
-                  'flex min-h-13 cursor-pointer items-center justify-center gap-(--e-2) rounded-(--raio) border px-(--e-2) text-center corpo-medio transicao-estado active:translate-y-px disabled:cursor-wait',
+                  'flex min-h-13 cursor-pointer items-center justify-center gap-(--e-2) rounded-(--raio) border px-(--e-2) text-center corpo-medio transicao-estado active:translate-y-px',
                   marcada
                     ? cn('ring-1 ring-current ring-inset', visual.marcada)
                     : 'border-(--regra-forte) bg-(--folha) text-(--tinta) hover:bg-(--toque)',
@@ -245,8 +235,8 @@ function ItemDoChecklist({
               )
             }}
             onBlur={() => {
-              const salvo = item.comentario ?? ''
-              if (resultado !== item.resultado || comentario.trim() !== salvo.trim())
+              const guardado = item.comentario ?? ''
+              if (resultado !== item.resultado || comentario.trim() !== guardado.trim())
                 gravar({ resultado, comentario })
             }}
           />
@@ -260,7 +250,7 @@ function ItemDoChecklist({
         <p className="corpo whitespace-pre-line text-(--tinta)">{item.comentario}</p>
       ) : null}
 
-      <Miniaturas fotos={fotos} urls={urls} />
+      <Miniaturas fotos={fotos} urls={urls} doAparelho={doAparelho} />
 
       {editavel ? (
         <div className="flex flex-wrap items-center gap-(--e-2)">
@@ -286,19 +276,12 @@ function ItemDoChecklist({
             </Botao>
           )}
           <span className="ml-auto">
-            <SituacaoDaGravacao
-              estado={
-                salvar.isPending
-                  ? 'salvando'
-                  : salvar.isError
-                    ? 'erro'
-                    : salvar.isSuccess
-                      ? 'salvo'
-                      : null
-              }
-              erro={salvar.error}
-              aoTentarDeNovo={() => {
-                if (salvar.variables) enviar(salvar.variables)
+            <SituacaoDoEnvio
+              pendencias={pendencias}
+              noServidor={noServidor}
+              erroNoAparelho={naoGuardado !== null}
+              aoGravarDeNovo={() => {
+                if (naoGuardado) guardar(naoGuardado)
               }}
             />
           </span>
@@ -313,10 +296,11 @@ function Checklist({ vistoria }: { vistoria: Vistoria }) {
   const itens = useItensDaVistoria(vistoria.id, true)
   const fotos = useFotosDaVistoria(vistoria.id, true)
   const urls = useUrlsDasFotos(vistoria.id, fotos.data ?? [])
+  const rascunho = useRascunhoDaVistoria(vistoria.id)
   const editavel = vistoria.podeRegistrar && aceitaRegistro(vistoria.situacao)
-  const carregado = itens.isSuccess
-  // Itens com comentário que não chegou ao banco: sair da tela (por exemplo, para tirar a foto)
-  // pede confirmação, porque o texto só vive aqui.
+  const carregado = itens.data !== undefined && fotos.data !== undefined && rascunho.carregado
+  // Itens com escolha ou comentário que ainda não foram guardados no aparelho: sair da tela pede
+  // confirmação, porque só aí eles se perderiam.
   const naoSalvos = useRef(new Set<string>())
   const [temNaoSalvo, setTemNaoSalvo] = useState(false)
   const mudarNaoSalvo = useCallback((itemId: string, naoSalvo: boolean) => {
@@ -334,22 +318,23 @@ function Checklist({ vistoria }: { vistoria: Vistoria }) {
   const voltar = { para: `/campo/${vistoria.id}`, rotulo: 'Vistoria' }
   const meta = [vistoria.empreendimentoNome, vistoria.licenca].filter(Boolean).join(' · ')
 
-  if (itens.isError || fotos.isError) {
-    return (
-      <ColunaCampo>
-        <Pagina titulo="Checklist" voltar={voltar} meta={meta}>
-          <EstadoErro
-            titulo="Não foi possível carregar o checklist."
-            aoTentarDeNovo={() => {
-              void itens.refetch()
-              void fotos.refetch()
-            }}
-          />
-        </Pagina>
-      </ColunaCampo>
-    )
-  }
-  if (itens.isPending || fotos.isPending) {
+  // Sem sinal, a releitura falha, mas o que já foi lido continua na tela.
+  if (!itens.data || !fotos.data || !rascunho.carregado) {
+    if ((itens.isError && !itens.data) || (fotos.isError && !fotos.data)) {
+      return (
+        <ColunaCampo>
+          <Pagina titulo="Checklist" voltar={voltar} meta={meta}>
+            <EstadoErro
+              titulo="Não foi possível carregar o checklist."
+              aoTentarDeNovo={() => {
+                void itens.refetch()
+                void fotos.refetch()
+              }}
+            />
+          </Pagina>
+        </ColunaCampo>
+      )
+    }
     return (
       <ColunaCampo>
         <Pagina titulo="Checklist" voltar={voltar} meta={meta}>
@@ -359,28 +344,41 @@ function Checklist({ vistoria }: { vistoria: Vistoria }) {
     )
   }
 
-  const progresso = progressoDaVistoria(itens.data)
+  const doServidor = itens.data
+  const vistos = aplicarRascunho(doServidor, rascunho.registros)
+  const progresso = progressoDaVistoria(vistos)
+  const fotosDoServidor = fotos.data
   return (
     <ColunaCampo comBarra>
       <Pagina titulo="Checklist" voltar={voltar} meta={<span className="numero">{meta}</span>}>
         <div className="flex flex-col">
           <BarraDeProgresso {...progresso} fixa />
+          {editavel || rascunho.contagem.total > 0 ? (
+            <PainelDoEnvio vistoriaId={vistoria.id} />
+          ) : null}
           <ul
             aria-label="Itens do checklist"
             className={cn(classePainel, 'mt-(--e-2) flex flex-col')}
           >
-            {itens.data.map((item, indice) => (
-              <ItemDoChecklist
-                key={item.id}
-                vistoria={vistoria}
-                item={item}
-                posicao={indice + 1}
-                fotos={fotos.data.filter((f) => f.itemId === item.id)}
-                urls={urls.data}
-                editavel={editavel}
-                aoMudarNaoSalvo={mudarNaoSalvo}
-              />
-            ))}
+            {vistos.map((item, indice) => {
+              const fotosDoItem = fotosDoServidor.filter((f) => f.itemId === item.id)
+              return (
+                <ItemDoChecklist
+                  key={item.id}
+                  vistoria={vistoria}
+                  item={item}
+                  noServidor={
+                    doServidor[indice]?.resultado !== 'pendente' || fotosDoItem.length > 0
+                  }
+                  pendencias={rascunho.doItem(item.id)}
+                  posicao={indice + 1}
+                  fotos={fotosDoItem}
+                  urls={urls.data}
+                  editavel={editavel}
+                  aoMudarNaoSalvo={mudarNaoSalvo}
+                />
+              )
+            })}
           </ul>
         </div>
 
@@ -389,7 +387,7 @@ function Checklist({ vistoria }: { vistoria: Vistoria }) {
         <AvisoDeSaida
           bloquear={() => naoSalvos.current.size > 0}
           sujo={temNaoSalvo}
-          descricao="Um comentário do checklist ainda não foi salvo. Se sair agora, ele se perde."
+          descricao="Um registro do checklist ainda não foi guardado no aparelho. Se sair agora, ele se perde."
         />
 
         <BarraDeAcao>
@@ -410,7 +408,10 @@ function Checklist({ vistoria }: { vistoria: Vistoria }) {
   )
 }
 
-/** /campo/:id/checklist (ADR-0033 §5): resultado, comentário e fotos por item; observação geral. */
+/**
+ * /campo/:id/checklist (ADR-0033 §5, ADR-0060): resultado, comentário e fotos por item; observação
+ * geral. Tudo vai primeiro para o aparelho e segue ao servidor quando houver conexão.
+ */
 export function PaginaChecklist() {
   const { id = '' } = useParams()
   const consulta = useVistoria(id)

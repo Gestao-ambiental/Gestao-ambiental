@@ -1,5 +1,6 @@
 import {
   formatarDataCivil,
+  aplicarRascunho,
   progressoDaVistoria,
   rotuloDoDiaDaVistoria,
 } from '@gestao-ambiental/domain'
@@ -20,7 +21,15 @@ import { mensagemDoErroDaVistoria } from '@/lib/erros'
 
 import { useItensDaVistoria, useRecarregarVistoria, useVistoria } from './consultas'
 import { classeAcaoPrincipal, classeAcaoSecundaria } from './estilos'
-import { BarraDeAcao, ColunaCampo, ComVistoria, SeloDaVistoria, VoltarPara } from './pecas'
+import {
+  BarraDeAcao,
+  ColunaCampo,
+  ComVistoria,
+  PainelDoEnvio,
+  SeloDaVistoria,
+  VoltarPara,
+} from './pecas'
+import { useRascunhoDaVistoria } from './rascunho'
 
 function Linha({ rotulo, children }: { rotulo: string; children: ReactNode }) {
   return (
@@ -167,12 +176,17 @@ function DialogoAprovar({
 /** Linha do checklist no detalhe: progresso "x de y" e o caminho para registrar. */
 function ResumoDoChecklist({ vistoria }: { vistoria: Vistoria }) {
   const itens = useItensDaVistoria(vistoria.id, true)
-  const progresso = itens.data ? progressoDaVistoria(itens.data) : null
+  const rascunho = useRascunhoDaVistoria(vistoria.id)
+  // O que a técnica registrou, no servidor ou ainda no aparelho (ADR-0060).
+  const progresso = itens.data
+    ? progressoDaVistoria(aplicarRascunho(itens.data, rascunho.registros))
+    : null
   return (
     <section aria-labelledby="titulo-checklist" className="flex flex-col gap-(--e-3)">
       <h2 id="titulo-checklist" className="titulo-secao text-(--tinta)">
         Checklist
       </h2>
+      {rascunho.contagem.total > 0 ? <PainelDoEnvio vistoriaId={vistoria.id} /> : null}
       <Link
         to={`/campo/${vistoria.id}/checklist`}
         className="flex min-h-14 items-center gap-(--e-4) rounded-(--raio-painel) border bg-(--folha) px-(--e-4) py-(--e-3) text-(--tinta) no-underline transicao-estado hover:bg-(--toque) hover:no-underline"

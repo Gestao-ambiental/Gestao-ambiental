@@ -238,13 +238,15 @@ export interface FotoDaVistoria {
   caminho: string
   legenda: string | null
   capturadaEm: string
+  /** Para não aceitar a mesma imagem duas vezes no mesmo item (ADR-0060). */
+  sha256: string | null
 }
 
 /** Fotos vigentes (a exclusão é lógica). */
 export async function listarFotosDaVistoria(vistoriaId: string): Promise<FotoDaVistoria[]> {
   const { data, error } = await obterSupabase()
     .from('vistoria_foto')
-    .select('id, item_id, caminho, legenda, capturada_em')
+    .select('id, item_id, caminho, legenda, capturada_em, sha256')
     .eq('vistoria_id', vistoriaId)
     .is('excluida_em', null)
     .order('capturada_em')
@@ -256,6 +258,7 @@ export async function listarFotosDaVistoria(vistoriaId: string): Promise<FotoDaV
     caminho: f.caminho,
     legenda: f.legenda,
     capturadaEm: f.capturada_em,
+    sha256: f.sha256,
   }))
 }
 

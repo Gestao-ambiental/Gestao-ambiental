@@ -544,6 +544,23 @@ export type {
   ResultadoDoItem,
   SituacaoDaVistoria,
 } from './vistoria'
+export {
+  ESPERA_MAXIMA_MS,
+  ESPERA_MINIMA_MS,
+  aplicarRascunho,
+  chaveDoRegistro,
+  contarPendencias,
+  esperaAntesDaTentativa,
+  fotoRepetida,
+  ordemDeEnvio,
+} from './fila-de-campo'
+export type {
+  ContagemDaFila,
+  FotoNaFila,
+  ObservacaoNaFila,
+  RegistroDeItemNaFila,
+  RegistroNaFila,
+} from './fila-de-campo'
 export { CATALOGO_CONSEMA_250 } from './catalogo-consema-250'
 export { CATALOGO_CONSEMA_251 } from './catalogo-consema-251'
 export {
