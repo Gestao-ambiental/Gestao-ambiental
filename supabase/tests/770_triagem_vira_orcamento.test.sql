@@ -5,7 +5,7 @@ begin;
 
 set local timezone to 'America/Sao_Paulo';
 
-select plan(13);
+select plan(20);
 
 select testes.criar_dados_sinteticos();
 
@@ -100,6 +100,50 @@ select results_eq(
   'um modelo vivo por modalidade; o anterior vai para a lixeira'
 );
 
+-- ---------------------------------------------------------------- triagem avulsa
+select is(
+  public.criar_orcamento_da_triagem(
+    'f7700000-0000-4000-8000-000000000003', 'c0000000-0000-4000-8000-00000000000a',
+    null, 'trifasica', 'Licenciamento trifásico · Oficina Norte',
+    '{"descricao": "Taxa do IMA", "estimativa_centavos": 42100}', '  Oficina Norte  '
+  ) ->> 'modelo_id',
+  'a7700000-0000-4000-8000-000000000002',
+  'triagem avulsa também usa os valores da modalidade'
+);
+select results_eq(
+  $$select empreendimento_id, prospecto_nome, modalidade, situacao::text
+    from public.orcamento where id = 'f7700000-0000-4000-8000-000000000003'$$,
+  $$values (null::uuid, 'Oficina Norte'::text, 'trifasica'::text, 'rascunho'::text)$$,
+  'o rascunho usa o nome do prospecto sem vínculo com empreendimento'
+);
+select is(
+  public.criar_orcamento_da_triagem(
+    'f7700000-0000-4000-8000-000000000003', 'c0000000-0000-4000-8000-00000000000a',
+    null, 'trifasica', 'Outra tentativa',
+    '{"descricao": "Taxa do IMA", "estimativa_centavos": 99900}', 'Oficina Norte'
+  ) ->> 'orcamento_id',
+  'f7700000-0000-4000-8000-000000000003',
+  'repetir a criação para prospecto abre o mesmo rascunho'
+);
+select results_eq(
+  $$select descricao, preco_fechado_centavos from public.orcamento_item
+    where orcamento_id = 'f7700000-0000-4000-8000-000000000003' order by ordem$$,
+  $$values ('LAP: estudo e protocolo'::text, 800000::bigint), ('LAI e LAO: acompanhamento', 450000::bigint)$$,
+  'os itens e preços do modelo são importados uma vez para o prospecto'
+);
+select results_eq(
+  $$select estimativa_centavos, tratamento::text from public.orcamento_despesa
+    where orcamento_id = 'f7700000-0000-4000-8000-000000000003' and descricao like 'Taxa do IMA%'$$,
+  $$values (42100::bigint, 'cliente_direto'::text)$$,
+  'a taxa original do prospecto fica como repasse, sem duplicação'
+);
+select throws_ok(
+  $$select public.criar_orcamento_da_triagem(gen_random_uuid(), 'c0000000-0000-4000-8000-00000000000a',
+      null, 'AuA', 'Autorização Ambiental', null, '   ')$$,
+  '22023', 'prospecto_sem_nome',
+  'um prospecto com nome em branco é recusado'
+);
+
 -- ---------------------------------------------------------------- acesso
 select testes.autenticar_como('ana@filtroville.test');
 select throws_ok(
@@ -110,6 +154,12 @@ select throws_ok(
 );
 
 select testes.autenticar_como('gustavo@verdesul.test');
+select throws_ok(
+  $$select public.criar_orcamento_da_triagem(gen_random_uuid(), 'c0000000-0000-4000-8000-00000000000a',
+      null, 'AuA', 'Autorização Ambiental', null, 'Oficina Norte')$$,
+  '42501', 'sem_permissao',
+  'Gestão de B também não orça para prospecto de A'
+);
 select throws_ok(
   $$select public.criar_orcamento_da_triagem(gen_random_uuid(), 'c0000000-0000-4000-8000-00000000000a',
       'e7700000-0000-4000-8000-000000000001', 'trifasica', 'X', null)$$,

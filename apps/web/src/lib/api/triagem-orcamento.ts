@@ -7,7 +7,8 @@ import { obterSupabase } from '@/lib/supabase'
 export async function criarOrcamentoDaTriagem(dados: {
   id: string
   consultoriaId: string
-  empreendimentoId: string
+  empreendimentoId: string | null
+  prospectoNome?: string
   modalidade: Modalidade
   objeto: string
   taxa: DespesaDaTaxa | null
@@ -15,7 +16,7 @@ export async function criarOrcamentoDaTriagem(dados: {
   const { data, error } = await obterSupabase().rpc('criar_orcamento_da_triagem', {
     p_id: dados.id,
     p_consultoria_id: dados.consultoriaId,
-    p_empreendimento_id: dados.empreendimentoId,
+    p_empreendimento_id: aceitaNulo(dados.empreendimentoId),
     p_modalidade: dados.modalidade,
     p_objeto: dados.objeto,
     p_taxa: aceitaNulo(
@@ -23,6 +24,7 @@ export async function criarOrcamentoDaTriagem(dados: {
         ? { descricao: dados.taxa.descricao, estimativa_centavos: dados.taxa.estimativaCentavos }
         : null,
     ),
+    ...(dados.prospectoNome === undefined ? {} : { p_prospecto_nome: dados.prospectoNome }),
   })
   if (error) throw error
   const r = data as { orcamento_id: string; modelo_id: string | null }

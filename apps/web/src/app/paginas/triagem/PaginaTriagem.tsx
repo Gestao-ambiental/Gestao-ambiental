@@ -1350,10 +1350,13 @@ export function PaginaTriagem() {
                     nivel={nivel}
                     calculados={calculados}
                   />
-                  {conclusao.modalidade && empreendimento.data && ehGestao ? (
+                  {ehGestao &&
+                  conclusao.modalidade &&
+                  (parametroEmpreendimento === null || empreendimento.data) ? (
                     <OrcarDaTriagem
+                      key={atual.consultoriaId + ':' + (empreendimento.data?.id ?? '')}
                       consultoriaId={atual.consultoriaId}
-                      empreendimento={empreendimento.data}
+                      empreendimento={empreendimento.data ?? null}
                       modalidade={conclusao.modalidade}
                       orgao={orgao}
                       taxas={calculados.flatMap((c) => {
