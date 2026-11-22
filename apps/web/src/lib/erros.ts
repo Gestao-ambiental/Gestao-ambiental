@@ -76,6 +76,8 @@ const MENSAGENS_DO_BANCO: Record<string, string> = {
   decisao_obrigatoria: 'Escolha aprovar ou devolver.',
   motivo_obrigatorio: 'Informe o motivo',
   evidencia_nao_aprovada: 'A evidência precisa estar aprovada para concluir.',
+  arquivo_nao_conferido: 'O servidor ainda não conferiu o arquivo. Tente aprovar de novo.',
+  arquivo_divergente: 'O arquivo guardado não é igual ao enviado. Devolva para um novo envio.',
   justificativa_obrigatoria: 'Informe a justificativa',
   // Renovação de LAO (épico 7)
   antecedencia_invalida: 'Use um número inteiro de 0 ou mais.',

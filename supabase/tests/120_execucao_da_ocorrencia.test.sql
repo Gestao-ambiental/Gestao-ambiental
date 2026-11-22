@@ -227,6 +227,9 @@ select throws_ok(
 
 select testes.autenticar_como('eduardo@filtroville.test');
 select public.designar_conferente(current_setting('testes.o1')::uuid, 'd0000000-0000-4000-8000-0000000000a4');
+-- Aprovar exige o arquivo conferido no servidor (20261122071000): a Edge Function grava o hash.
+reset role;
+select public.registrar_conferencia_de_arquivo('50000002-0000-4000-8000-000000000000', repeat('b', 64));
 select testes.autenticar_como('camila@filtroville.test');
 
 select lives_ok(

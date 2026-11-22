@@ -34,6 +34,7 @@ import {
 import { atribuirOcorrencia } from '@/lib/api/prazos'
 import { ehSemPermissao, mensagemDoErro } from '@/lib/erros'
 
+import { EvidenciaQueVale } from './EvidenciaQueVale'
 import { PainelAgora } from './PainelAgora'
 import { SecaoEtapas } from './SecaoEtapas'
 import { SecaoEvidencia } from './SecaoEvidencia'
@@ -354,6 +355,8 @@ export function PaginaOcorrencia() {
         aoEnviarEvidencia={irParaEnvio}
       />
 
+      <EvidenciaQueVale ocorrenciaId={dados.id} fuso={atual.fuso} />
+
       <div className="grid gap-(--e-8) lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="flex min-w-0 flex-col gap-(--e-8)">
           <section aria-labelledby="titulo-origem" className="flex flex-col gap-(--e-2)">
@@ -422,6 +425,11 @@ export function PaginaOcorrencia() {
           ) : (
             <SecaoHistorico eventos={historico.data} fuso={atual.fuso} />
           )}
+          {ehGestao ? (
+            <Botao tamanho="compacto" iconeAntes="list" asChild className="w-fit">
+              <Link to={`/ocorrencias/${dados.id}/auditoria`}>Auditoria</Link>
+            </Botao>
+          ) : null}
         </aside>
       </div>
     </Pagina>

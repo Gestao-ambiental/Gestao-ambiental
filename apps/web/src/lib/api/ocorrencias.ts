@@ -8,6 +8,8 @@ import {
   type SituacaoGravadaDaOcorrencia,
 } from '@gestao-ambiental/domain'
 
+import { FunctionsHttpError } from '@supabase/supabase-js'
+
 import { conferirPdf, type ProblemaDoPdf } from '@/lib/api/licencas'
 import { aceitaNulo } from '@/lib/api/nulo'
 import { obterSupabase } from '@/lib/supabase'
@@ -171,7 +173,16 @@ export interface Evidencia {
   enviadaEm: string
   enviadaPorId: string
   enviadaPorNome: string
-  arquivo: { caminho: string; nome: string; tamanho: number; mime: string }
+  versaoId: string
+  arquivo: {
+    caminho: string
+    nome: string
+    tamanho: number
+    mime: string
+    sha256: string
+    /** Hash recalculado no servidor: true confere, false diverge, null ainda não conferido. */
+    confere: boolean | null
+  }
   conferencia: {
     decisao: 'aprovada' | 'devolvida'
     motivo: string | null
@@ -184,9 +195,10 @@ export async function listarEvidencias(ocorrenciaId: string): Promise<Evidencia[
   const { data, error } = await obterSupabase()
     .from('evidencia')
     .select(
-      `id, numero, situacao, data_execucao, enviada_em, enviada_por,
+      `id, numero, situacao, data_execucao, enviada_em, enviada_por, documento_versao_id,
        autor:membro!evidencia_enviada_por_fk(nome),
-       versao:documento_versao!evidencia_versao_fk(caminho, nome_original, tamanho_bytes, mime),
+       versao:documento_versao!evidencia_versao_fk(caminho, nome_original, tamanho_bytes, mime, sha256,
+         conferencia_de_arquivo(confere)),
        conferencia(decisao, motivo, decidida_em, conferente:membro!conferencia_conferente_fk(nome))`,
     )
     .eq('ocorrencia_id', ocorrenciaId)
@@ -196,6 +208,10 @@ export async function listarEvidencias(ocorrenciaId: string): Promise<Evidencia[
   return data.map((e) => {
     // Um-para-um (evidencia_id único): o PostgREST devolve objeto, o gerador de tipos diz lista.
     const conferencia = primeiro<(typeof e.conferencia)[number]>(e.conferencia)
+    // Também um-para-um (uma conferência por versão).
+    const arquivoConferido = primeiro<(typeof e.versao.conferencia_de_arquivo)[number]>(
+      e.versao.conferencia_de_arquivo,
+    )
     return {
       id: e.id,
       numero: e.numero,
@@ -204,11 +220,14 @@ export async function listarEvidencias(ocorrenciaId: string): Promise<Evidencia[
       enviadaEm: e.enviada_em,
       enviadaPorId: e.enviada_por,
       enviadaPorNome: e.autor.nome,
+      versaoId: e.documento_versao_id,
       arquivo: {
         caminho: e.versao.caminho,
         nome: e.versao.nome_original,
         tamanho: e.versao.tamanho_bytes,
         mime: e.versao.mime,
+        sha256: e.versao.sha256,
+        confere: arquivoConferido?.confere ?? null,
       },
       conferencia: conferencia
         ? {
@@ -312,7 +331,83 @@ export async function enviarEvidencia(
     p_data_execucao: dataExecucao,
   })
   if (error) throw error
+  // Conferência do hash no servidor logo depois do envio. Se falhar (sinal fraco, função fora), a
+  // evidência fica registrada mesmo assim e a conferência roda de novo na hora de aprovar.
+  await conferirArquivo(versaoId).catch(() => null)
   return data
+}
+
+/**
+ * Pede ao servidor (Edge Function conferir-arquivo) para recalcular o SHA-256 do objeto guardado e
+ * comparar com o declarado no envio. Repetir devolve o resultado já gravado.
+ */
+export async function conferirArquivo(
+  versaoId: string,
+): Promise<{ confere: boolean; sha256: string }> {
+  const resposta = await obterSupabase().functions.invoke('conferir-arquivo', {
+    body: { versaoId },
+  })
+  const error: unknown = resposta.error
+  if (!error) return resposta.data as { confere: boolean; sha256: string }
+  if (error instanceof FunctionsHttpError) {
+    const corpo = (await (error.context as Response).json().catch(() => ({}))) as {
+      erro?: string
+    }
+    throw new Error(corpo.erro ?? 'erro_interno')
+  }
+  throw new Error('arquivo_nao_conferido')
+}
+
+/** Aprova só depois de o servidor confirmar que o arquivo guardado é o enviado. */
+export async function aprovarEvidencia(evidencia: Pick<Evidencia, 'id' | 'versaoId'>) {
+  const { confere } = await conferirArquivo(evidencia.versaoId)
+  if (!confere) throw new Error('arquivo_divergente')
+  await conferirEvidencia(evidencia.id, 'aprovada', '')
+}
+
+export interface EvidenciaAprovada {
+  evidenciaId: string
+  numero: number
+  versaoId: string
+  caminho: string
+  nomeOriginal: string
+  sha256: string
+  arquivoConfere: boolean | null
+  dataExecucao: DataCivil
+  enviadaPorNome: string
+  enviadaEm: string
+  conferenteNome: string | null
+  conferidaEm: string | null
+  concluidaPorNome: string | null
+  concluidaEm: string | null
+}
+
+/** A versão que vale: a ligada à conclusão ou, antes de concluir, a última se aprovada. */
+export async function obterEvidenciaAprovada(
+  ocorrenciaId: string,
+): Promise<EvidenciaAprovada | null> {
+  const { data, error } = await obterSupabase().rpc('obter_evidencia_aprovada', {
+    p_ocorrencia_id: ocorrenciaId,
+  })
+  if (error) throw error
+  const e = data[0]
+  if (!e) return null
+  return {
+    evidenciaId: e.evidencia_id,
+    numero: e.numero,
+    versaoId: e.versao_id,
+    caminho: e.caminho,
+    nomeOriginal: e.nome_original,
+    sha256: e.sha256,
+    arquivoConfere: anulavel(e.arquivo_confere),
+    dataExecucao: e.data_execucao as DataCivil,
+    enviadaPorNome: e.enviada_por_nome,
+    enviadaEm: e.enviada_em,
+    conferenteNome: anulavel(e.conferente_nome),
+    conferidaEm: anulavel(e.conferida_em),
+    concluidaPorNome: anulavel(e.concluida_por_nome),
+    concluidaEm: anulavel(e.concluida_em),
+  }
 }
 
 export async function urlDoArquivo(caminho: string): Promise<string> {
@@ -408,4 +503,46 @@ export async function listarHistorico(ocorrenciaId: string): Promise<EventoDoHis
     evidenciaNumero: h.evidencia_numero,
     detalhe: h.detalhe,
   }))
+}
+
+// ---------------------------------------------------------------------------
+// Auditoria (só Gestão)
+// ---------------------------------------------------------------------------
+
+export const ITENS_POR_PAGINA_DA_AUDITORIA = 50
+
+export interface RegistroDeAuditoria {
+  id: number
+  instante: string
+  entidade: string
+  acao: 'insert' | 'update' | 'delete'
+  atorNome: string | null
+  antes: Record<string, unknown> | null
+  depois: Record<string, unknown> | null
+  motivo: string | null
+}
+
+export async function listarAuditoriaDaOcorrencia(
+  ocorrenciaId: string,
+  pagina: number,
+): Promise<{ registros: RegistroDeAuditoria[]; total: number }> {
+  const { data, error } = await obterSupabase().rpc('listar_auditoria_da_ocorrencia', {
+    p_ocorrencia_id: ocorrenciaId,
+    p_limite: ITENS_POR_PAGINA_DA_AUDITORIA,
+    p_deslocamento: pagina * ITENS_POR_PAGINA_DA_AUDITORIA,
+  })
+  if (error) throw error
+  return {
+    total: data[0]?.total ?? 0,
+    registros: data.map((a) => ({
+      id: a.id,
+      instante: a.instante,
+      entidade: a.entidade,
+      acao: a.acao,
+      atorNome: anulavel(a.ator_nome),
+      antes: anulavel(a.antes) as Record<string, unknown> | null,
+      depois: anulavel(a.depois) as Record<string, unknown> | null,
+      motivo: anulavel(a.motivo),
+    })),
+  }
 }
