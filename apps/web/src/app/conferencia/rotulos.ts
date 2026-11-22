@@ -12,6 +12,7 @@ export const CATEGORIAS: Record<CategoriaDoApontamento, string> = {
 
 export const MOTIVOS: Record<string, string> = {
   ia_fora_do_plano: 'o plano não inclui IA',
+  ia_nao_autorizada: 'a Gestão não ligou a conferência por IA (Configurações › IA)',
   tipo_sem_texto: 'imagem não tem texto para conferir',
   arquivo_sem_texto: 'o texto está vazio ou ilegível',
   arquivo_grande_demais: 'arquivo acima de 15 MB',

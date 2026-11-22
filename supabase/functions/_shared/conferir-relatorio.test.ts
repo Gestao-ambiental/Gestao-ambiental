@@ -62,6 +62,7 @@ interface Chamadas {
   baixar: number
   reservar: number
   conferir: number
+  textoEnviado: string | null
   concluido: { resumo: string; apontamentos: Apontamento[] } | null
   falhas: { motivo: string; apontamentos: Apontamento[] }[]
 }
@@ -76,7 +77,14 @@ function montar(
     chave?: string | undefined
   } = {},
 ) {
-  const chamadas: Chamadas = { baixar: 0, reservar: 0, conferir: 0, concluido: null, falhas: [] }
+  const chamadas: Chamadas = {
+    baixar: 0,
+    reservar: 0,
+    conferir: 0,
+    textoEnviado: null,
+    concluido: null,
+    falhas: [],
+  }
   const deps: DependenciasDaConferencia = {
     env: (nome) =>
       nome === 'OPENROUTER_API_KEY'
@@ -98,8 +106,9 @@ function montar(
       return Promise.resolve(extra.reserva ?? { dados: true, erro: null })
     },
     criarConferidor: () => ({
-      conferir: () => {
+      conferir: (entrada) => {
         chamadas.conferir++
+        chamadas.textoEnviado = entrada.texto
         return extra.provedor
           ? extra.provedor()
           : Promise.resolve({
@@ -179,6 +188,29 @@ Deno.test('sem cota: falha com limite_atingido e não chama o provedor', async (
   const resposta = await tratar(pedido())
   assert.equal((await resposta.json()).motivo, 'limite_atingido')
   assert.equal(chamadas.conferir, 0)
+})
+
+Deno.test('sem a autorização da Gestão: ia_nao_autorizada, só as regras fixas', async () => {
+  const { tratar, chamadas } = montar({ reserva: { dados: null, erro: 'ia_nao_autorizada' } })
+  const resposta = await tratar(pedido())
+  assert.deepEqual(await resposta.json(), {
+    situacao: 'falhou',
+    motivo: 'ia_nao_autorizada',
+    apontamentos: 1,
+  })
+  assert.equal(chamadas.conferir, 0)
+  assert.equal(chamadas.falhas[0]?.motivo, 'ia_nao_autorizada')
+})
+
+Deno.test('o texto vai à IA com CPF, e-mail e telefone mascarados', async () => {
+  const pessoal =
+    TEXTO + ' Responsável técnico: CPF 529.982.247-25, joao.silva@exemplo.com.br, (47) 99876-5432.'
+  const { tratar, chamadas } = montar({ texto: pessoal })
+  await tratar(pedido())
+  const enviado = chamadas.textoEnviado ?? ''
+  assert.ok(enviado.includes('CPF [CPF], [e-mail], [telefone].'))
+  assert.ok(!enviado.includes('529.982.247-25'))
+  assert.ok(enviado.includes('11.222.333/0001-81'))
 })
 
 Deno.test('arquivo sem texto não vai à IA', async () => {

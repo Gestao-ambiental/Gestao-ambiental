@@ -27,3 +27,4 @@ Quando a pessoa anexa o relatório para a Gestão conferir, o Eduardo quer que u
 - A migration foi criada pela CLI e renomeada para `20261119600000`, para vir depois das migrations da `vistoria-geral` das quais depende.
 - O CI checa os tipos de `conferir-relatorio/index.ts`; o deploy já publica todas as funções.
 - Falta confirmar com o Kadu se o envio do texto do relatório ao provedor entra no aviso de privacidade. É o mesmo tratamento que a licença já recebe.
+- **Mudou na ADR-0061:** a IA só é chamada depois que a Gestão liga a conferência (Configurações › IA); sem isso, só as regras fixas rodam (`ia_nao_autorizada`). CPF, e-mail e telefone vão mascarados.

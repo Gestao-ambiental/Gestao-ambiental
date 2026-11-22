@@ -23,6 +23,8 @@ values ('f0000000-0000-4000-8000-000000000700', 'c0000000-0000-4000-8000-0000000
         'e0000000-0000-4000-8000-000000000700', 'Matriz');
 
 select testes.autenticar_como('eduardo@filtroville.test');
+-- A Gestão liga a conferência por IA (ADR-0061).
+select public.definir_autorizacao_ia('c0000000-0000-4000-8000-00000000000a', 'conferencia_relatorio', true);
 select public.criar_instrumento('10000000-0000-4000-8000-000000000700', 'f0000000-0000-4000-8000-000000000700');
 select public.salvar_identificacao('10000000-0000-4000-8000-000000000700', 1, 'f0000000-0000-4000-8000-000000000700',
   (select id from public.tipo_instrumento where sigla = 'LAO' and consultoria_id = 'c0000000-0000-4000-8000-00000000000a'),

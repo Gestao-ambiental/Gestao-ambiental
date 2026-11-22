@@ -343,6 +343,32 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"autorizacao_ia": {
+                  Row: {
+                    "autorizada": boolean,"consultoria_id": string,"decidida_em": string,"decidida_por": string,"finalidade": string,"id": string,"ordem": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "autorizada": boolean,"consultoria_id": string,"decidida_em"?: string,"decidida_por": string,"finalidade": string,"id"?: string,"ordem"?: never
+                  }
+                  Update: {
+                    "autorizada"?: boolean,"consultoria_id"?: string,"decidida_em"?: string,"decidida_por"?: string,"finalidade"?: string,"id"?: string,"ordem"?: never
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "autorizacao_ia_consultoria_id_fkey"
+      columns: ["consultoria_id"]
+isOneToOne: false
+      referencedRelation: "consultoria"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "autorizacao_ia_decidida_por_fk"
+      columns: ["consultoria_id","decidida_por"]
+isOneToOne: false
+      referencedRelation: "membro"
+      referencedColumns: ["consultoria_id","id"]
+    }
+                  ]
                 },"avaliacao_conformidade": {
                   Row: {
                     "avaliada_em": string,"avaliada_por": string,"consultoria_id": string,"criado_em": string,"id": string,"norma_versao_id": string | null,"observacao": string | null,"requisito_id": string,"resultado": string
@@ -2822,6 +2848,11 @@ isOneToOne: false
 "atribuir_ocorrencia":
 { Args: { "p_membro_id": string,"p_ocorrencia_id": string,"p_row_version": number }; Returns: number
                            },
+"autorizacao_ia_atual":
+{ Args: { "p_consultoria_id": string }; Returns: {
+              "autorizada": boolean,"decidida_em": string,"decidida_por_nome": string,"finalidade": string
+            }[]
+                           },
 "autorizar_acesso_de_suporte":
 { Args: { "p_consultoria_id": string,"p_horas": number,"p_id": string,"p_motivo"?: string }; Returns: string
                            },
@@ -3158,6 +3189,9 @@ isOneToOne: false
                            },
 "definir_antecedencia_renovacao":
 { Args: { "p_antecedencia": number,"p_plano_id": string,"p_row_version": number }; Returns: number
+                           },
+"definir_autorizacao_ia":
+{ Args: { "p_autorizada": boolean,"p_consultoria_id": string,"p_finalidade": string }; Returns: boolean
                            },
 "definir_cadastro_federal":
 { Args: { "p_membro_id": string,"p_numero"?: string,"p_valido_ate"?: string }; Returns: undefined

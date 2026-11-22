@@ -105,6 +105,38 @@ describe('relatório do mês ao cliente', () => {
     expect(conteudo).not.toContain('bloco_repetido')
   })
 
+  it('as respostas a exigências do mês entram no relatório (P3 + P6)', async () => {
+    falso.reiniciar(
+      cenario('gestao', {
+        criar_relatorio: { data: 1 },
+        dados_para_relatorio_mensal: {
+          data: {
+            ...dados,
+            protocolos: [
+              {
+                data: '2026-10-14',
+                titulo: 'Resposta à exigência: Ofício 45/2026 · Laudo de ruído',
+                detalhe: 'PROT-797',
+              },
+            ],
+          },
+        },
+      }),
+    )
+    const { usuario, dialogo } = await abrir()
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Escrever no Grama' }))
+    await waitFor(() => {
+      expect(falso.cliente.rpc).toHaveBeenCalledWith('criar_relatorio', expect.anything())
+    })
+    const chamada = falso.cliente.rpc.mock.calls.find((c) => c[0] === 'criar_relatorio')
+    const [, args] = chamada as [string, Record<string, unknown>]
+    const conteudo = JSON.stringify(args.p_conteudo)
+    expect(conteudo).toContain('14/10/2026')
+    expect(conteudo).toContain('Resposta à exigência: Ofício 45/2026 · Laudo de ruído')
+    expect(conteudo).toContain('PROT-797')
+    expect(conteudo).not.toContain('Nenhum protocolo no mês.')
+  })
+
   it('mostra o erro do banco e não baixa nada', async () => {
     falso.reiniciar(
       cenario('gestao', { dados_para_relatorio_mensal: { error: { message: 'sem_permissao' } } }),

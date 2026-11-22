@@ -48,6 +48,13 @@ export const ABAS_DE_CONFIGURACOES: readonly AbaDeConfiguracoes[] = [
     icone: 'upload',
   },
   {
+    para: '/configuracoes/ia',
+    rotulo: 'IA',
+    rotuloNaBusca: 'Conferência por IA',
+    icone: 'sparkles',
+    recurso: 'ia',
+  },
+  {
     para: '/configuracoes/vencimentos',
     rotulo: 'Vencimentos',
     rotuloNaBusca: 'Tipos de vencimento',
