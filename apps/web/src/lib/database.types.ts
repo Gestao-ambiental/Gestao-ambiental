@@ -3608,7 +3608,7 @@ isOneToOne: false
                            },
 "obter_evidencia_aprovada":
 { Args: { "p_ocorrencia_id": string }; Returns: {
-              "arquivo_conferido_em": string,"arquivo_confere": boolean,"caminho": string,"concluida_em": string,"concluida_por_nome": string,"conferente_nome": string,"conferida_em": string,"data_execucao": string,"enviada_em": string,"enviada_por_nome": string,"evidencia_id": string,"nome_original": string,"numero": number,"sha256": string,"versao_id": string
+              "arquivo_confere": boolean,"arquivo_conferido_em": string,"caminho": string,"concluida_em": string,"concluida_por_nome": string,"conferente_nome": string,"conferida_em": string,"data_execucao": string,"enviada_em": string,"enviada_por_nome": string,"evidencia_id": string,"nome_original": string,"numero": number,"sha256": string,"versao_id": string
             }[]
                            },
 "obter_identidade_da_consultoria":
