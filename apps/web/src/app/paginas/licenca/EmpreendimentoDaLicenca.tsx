@@ -58,7 +58,7 @@ export function NovoEmpreendimento({
 }: {
   consultoriaId: string
   inicial: RascunhoDoEmpreendimento
-  aoCadastrar: (empreendimentoId: string, unidadeId: string) => void
+  aoCadastrar: (empreendimentoId: string, unidadeId: string, nome: string) => void
   aoCancelar: () => void
 }) {
   const queryClient = useQueryClient()
@@ -69,18 +69,18 @@ export function NovoEmpreendimento({
   const [dados, setDados] = useState(inicial)
   const [tentou, setTentou] = useState(false)
   const cadastrar = useMutation({
-    mutationFn: () =>
+    mutationFn: (rascunho: RascunhoDoEmpreendimento) =>
       cadastrarEmpreendimentoComUnidade(consultoriaId, {
         empreendimentoId: ids.empreendimento,
         unidadeId: ids.unidade,
-        nome: dados.nome,
-        cnpj: dados.cnpj,
-        unidadeNome: dados.unidade,
-        unidadeEndereco: dados.endereco,
+        nome: rascunho.nome,
+        cnpj: rascunho.cnpj,
+        unidadeNome: rascunho.unidade,
+        unidadeEndereco: rascunho.endereco,
       }),
-    onSuccess: async (unidadeId) => {
+    onSuccess: async (unidadeId, rascunho) => {
       await queryClient.invalidateQueries({ queryKey: ['empreendimentos', consultoriaId] })
-      aoCadastrar(ids.empreendimento, unidadeId)
+      aoCadastrar(ids.empreendimento, unidadeId, rascunho.nome.trim())
     },
   })
 
@@ -91,7 +91,7 @@ export function NovoEmpreendimento({
   function enviar() {
     setTentou(true)
     if (!dados.nome.trim() || !dados.unidade.trim() || erroCnpj) return
-    cadastrar.mutate()
+    cadastrar.mutate(dados)
   }
 
   return (

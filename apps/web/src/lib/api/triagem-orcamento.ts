@@ -4,6 +4,24 @@ import type { DespesaDaTaxa, Modalidade } from '@gestao-ambiental/domain'
 import { aceitaNulo } from '@/lib/api/nulo'
 import { obterSupabase } from '@/lib/supabase'
 
+export interface DadosDaTriagemParaOrcamento {
+  modalidade: Modalidade
+  taxa: DespesaDaTaxa | null
+}
+
+export interface EstadoDoNovoOrcamento {
+  triagem?: DadosDaTriagemParaOrcamento & { consultoriaId: string }
+}
+
+export function caminhoDoOrcamentoDaTriagem(
+  { orcamentoId, modeloId }: { orcamentoId: string; modeloId: string | null },
+  modalidade: Modalidade,
+) {
+  return modeloId
+    ? `/orcamentos/${orcamentoId}`
+    : `/orcamentos/${orcamentoId}?modalidade=${modalidade}&sem-valores=1`
+}
+
 export async function criarOrcamentoDaTriagem(dados: {
   id: string
   consultoriaId: string

@@ -12,12 +12,16 @@ import { CampoTexto } from '@/components/ui/campo-texto'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { Trilha } from '@/components/ui/trilha'
 import type { ParaQuem } from '@/lib/api/orcamentos'
+import type {
+  DadosDaTriagemParaOrcamento,
+  EstadoDoNovoOrcamento,
+} from '@/lib/api/triagem-orcamento'
 import { mensagemDoErro } from '@/lib/erros'
 import { ehUuid } from '@/lib/texto'
 
 import { BuscaDoCliente, type EscolhaDoCliente } from './BuscaDoCliente'
 import { ETAPAS } from './comum'
-import { CHAVE_DO_NOVO_ORCAMENTO, useCriarRascunho } from './criar-rascunho'
+import { CHAVE_DO_NOVO_ORCAMENTO, useCriarRascunho, type PedidoDeRascunho } from './criar-rascunho'
 import { NovoOrcamentoDaRenovacao } from './NovoOrcamentoDaRenovacao'
 import { SeloSituacaoOrcamento } from './SeloSituacaoOrcamento'
 
@@ -32,7 +36,10 @@ export function PaginaNovoOrcamento() {
   const [parametros] = useSearchParams()
   const renovacao = parametros.get('renovacao')
   // Cada chegada à tela (key da navegação) confere de novo se a licença já tem orçamento vivo.
-  const { key: chegada } = useLocation()
+  const { key: chegada, state } = useLocation() as {
+    key: string
+    state: EstadoDoNovoOrcamento | null
+  }
   if (atual.papel !== 'gestao') {
     return (
       <Pagina titulo="Novo orçamento">
@@ -49,10 +56,17 @@ export function PaginaNovoOrcamento() {
       />
     )
   }
-  return <CriacaoDoOrcamento consultoriaId={atual.consultoriaId} />
+  const triagem = state?.triagem?.consultoriaId === atual.consultoriaId ? state.triagem : undefined
+  return <CriacaoDoOrcamento key={chegada} consultoriaId={atual.consultoriaId} triagem={triagem} />
 }
 
-function CriacaoDoOrcamento({ consultoriaId }: { consultoriaId: string }) {
+function CriacaoDoOrcamento({
+  consultoriaId,
+  triagem,
+}: {
+  consultoriaId: string
+  triagem?: DadosDaTriagemParaOrcamento
+}) {
   const [parametros] = useSearchParams()
   const doEmpreendimento = parametros.get('empreendimento')
   const navegar = useNavigate()
@@ -65,7 +79,7 @@ function CriacaoDoOrcamento({ consultoriaId }: { consultoriaId: string }) {
   const [cadastrar, setCadastrar] = useState<string | null>(null)
   const [criando, setCriando] = useState(Boolean(doEmpreendimento))
   const [falha, setFalha] = useState<string | null>(null)
-  const [ultimoPedido, setUltimoPedido] = useState<ParaQuem | null>(null)
+  const [ultimoPedido, setUltimoPedido] = useState<PedidoDeRascunho | null>(null)
 
   // Tempo ativo do orçamento (ADR-0027): começa aqui e segue com o id do orçamento criado.
   const tarefas = useTarefas()
@@ -74,18 +88,25 @@ function CriacaoDoOrcamento({ consultoriaId }: { consultoriaId: string }) {
     tarefas.iniciar(CHAVE_DO_NOVO_ORCAMENTO)
   }, [tarefas])
 
-  async function criarPara(paraQuem: ParaQuem) {
-    setUltimoPedido(paraQuem)
+  async function enviarPedido(pedido: PedidoDeRascunho) {
+    setUltimoPedido(pedido)
     setFalha(null)
     setCriando(true)
     try {
-      const id = await criar({ paraQuem })
+      const { caminho } = await criar(pedido)
       await queryClient.invalidateQueries({ queryKey: ['orcamentos', consultoriaId] })
-      void navegar(`/orcamentos/${id}`, { replace: true })
+      void navegar(caminho, { replace: true })
     } catch (erro) {
       setFalha(mensagemDoErro(erro))
       setCriando(false)
     }
+  }
+
+  function criarPara(paraQuem: ParaQuem, nomeDoCliente: string | null = null) {
+    void enviarPedido({
+      paraQuem,
+      triagem: triagem ? { ...triagem, nomeDoCliente } : undefined,
+    })
   }
 
   // Cadastro completo aberto: o foco vai para o primeiro campo vazio (o nome já veio da busca).
@@ -115,9 +136,7 @@ function CriacaoDoOrcamento({ consultoriaId }: { consultoriaId: string }) {
       setErroDoNome('Informe o nome do cliente')
       return
     }
-    void criarPara({
-      prospecto: { nome, cnpj: null, contato: null, email: null, telefone: null },
-    })
+    criarPara({ prospecto: { nome, cnpj: null, contato: null, email: null, telefone: null } }, nome)
   }
 
   // Do menu do empreendimento: cria uma vez, já para ele.
@@ -125,18 +144,21 @@ function CriacaoDoOrcamento({ consultoriaId }: { consultoriaId: string }) {
   useEffect(() => {
     if (!doEmpreendimento || pedidoDaUrl.current) return
     pedidoDaUrl.current = true
-    void criarPara({ empreendimentoId: doEmpreendimento })
+    criarPara({ empreendimentoId: doEmpreendimento })
     // criarPara muda a cada render; o pedido da URL vale uma vez só.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doEmpreendimento])
 
   function escolher(escolha: EscolhaDoCliente) {
     if (escolha.tipo === 'empreendimento') {
-      void criarPara({ empreendimentoId: escolha.id })
+      criarPara({ empreendimentoId: escolha.id }, escolha.nome)
     } else if (escolha.tipo === 'prospecto') {
-      void criarPara({
-        prospecto: { nome: escolha.nome, cnpj: null, contato: null, email: null, telefone: null },
-      })
+      criarPara(
+        {
+          prospecto: { nome: escolha.nome, cnpj: null, contato: null, email: null, telefone: null },
+        },
+        escolha.nome,
+      )
     } else {
       setCadastrar(escolha.nome)
     }
@@ -156,7 +178,7 @@ function CriacaoDoOrcamento({ consultoriaId }: { consultoriaId: string }) {
               <Botao
                 tamanho="compacto"
                 onClick={() => {
-                  void criarPara(ultimoPedido)
+                  void enviarPedido(ultimoPedido)
                 }}
               >
                 Tentar de novo
@@ -249,9 +271,9 @@ function CriacaoDoOrcamento({ consultoriaId }: { consultoriaId: string }) {
             <NovoEmpreendimento
               consultoriaId={consultoriaId}
               inicial={{ nome: cadastrar, cnpj: '', unidade: 'Matriz', endereco: '' }}
-              aoCadastrar={(empreendimentoId) => {
+              aoCadastrar={(empreendimentoId, _unidadeId, nome) => {
                 setCadastrar(null)
-                void criarPara({ empreendimentoId })
+                criarPara({ empreendimentoId }, nome)
               }}
               aoCancelar={() => {
                 setCadastrar(null)

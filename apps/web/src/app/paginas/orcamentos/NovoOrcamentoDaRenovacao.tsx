@@ -138,7 +138,7 @@ export function NovoOrcamentoDaRenovacao({
     setFalha(null)
     setCriando(true)
     try {
-      const id = await criar({
+      const { caminho } = await criar({
         paraQuem: { empreendimentoId: dados.empreendimentoId },
         renovacao: { instrumentoId, taxaCentavos },
       })
@@ -147,7 +147,7 @@ export function NovoOrcamentoDaRenovacao({
         queryClient.invalidateQueries({ queryKey: ['renovacoes', consultoriaId] }),
         queryClient.invalidateQueries({ queryKey: ['orcamento-da-licenca', instrumentoId] }),
       ])
-      void navegar(`/orcamentos/${id}`, { replace: true })
+      void navegar(caminho, { replace: true })
     } catch (erro) {
       setFalha(mensagemDoErro(erro))
       setCriando(false)

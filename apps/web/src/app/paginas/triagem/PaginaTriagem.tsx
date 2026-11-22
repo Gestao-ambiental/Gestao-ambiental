@@ -799,7 +799,6 @@ function ResumoDaTriagem({
   habilitacao,
   atividades,
   enquadramento,
-  className,
 }: {
   ponto: PontoMarcado | null
   local: ResultadoDoLocal | null
@@ -807,16 +806,12 @@ function ResumoDaTriagem({
   habilitacao: ReactNode
   atividades: number
   enquadramento: { valor: string; detalhe: string | null } | null
-  className?: string
 }) {
   const areaHa = local?.lote?.areaM2 != null ? metrosQuadradosParaHectares(local.lote.areaM2) : null
   return (
     <section
       aria-label="Resumo da triagem"
-      className={cn(
-        'flex flex-col gap-(--e-4) rounded-(--raio-painel) border bg-(--folha) p-(--e-4) xl:sticky xl:top-(--e-4) xl:p-(--e-5)',
-        className,
-      )}
+      className="flex flex-col gap-(--e-4) rounded-(--raio-painel) border bg-(--folha) p-(--e-4) xl:sticky xl:top-(--e-4) xl:col-start-2 xl:row-start-2 xl:p-(--e-5)"
     >
       <dl className="flex flex-col gap-(--e-4)">
         <div className="flex flex-col gap-(--e-05) border-b pb-(--e-4)">
@@ -1407,10 +1402,6 @@ export function PaginaTriagem() {
         </div>
 
         <ResumoDaTriagem
-          className={cn(
-            'xl:col-start-2',
-            modalidadeDoOrcamento ? 'xl:row-start-2' : 'xl:row-span-2 xl:row-start-1',
-          )}
           ponto={ponto}
           local={local}
           consultando={consulta.isPending}
