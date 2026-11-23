@@ -99,7 +99,7 @@ Stack de sistema (`-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, …`).
 
 ### Espaço e densidade
 
-Grade de 4px (`--space-050` a `--space-800`). Botão e campo 32px, compacto 24px, linha de tabela 40px, topbar 56px, rail 240px. Padding de página 24px, entre cards 16px, dentro do card 12px. Quinze linhas sem rolagem é o correto.
+Grade de 4px (`--space-050` a `--space-800`). Botão e campo 38px (44 no celular), compacto 30px, linha de tabela 48px (valem os tokens de `apps/web/src/styles/tokens.css`; hierarquia e uso em [botoes-e-campos.md](botoes-e-campos.md)), topbar 56px, rail 240px. Padding de página 24px, entre cards 16px, dentro do quadro 16px, igual para título e conteúdo. Quinze linhas sem rolagem é o correto.
 
 ### Forma, borda e sombra
 
