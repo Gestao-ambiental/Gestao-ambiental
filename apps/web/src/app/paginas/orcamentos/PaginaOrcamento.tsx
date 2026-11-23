@@ -846,24 +846,6 @@ function Editor({
           }}
         />
       ),
-      art: (
-        <div className="mt-(--e-1)">
-          <select
-            aria-label={`ART ou RRT do item ${n}`}
-            className={`${classeCampo} w-full py-0 text-xs`}
-            value={item.responsabilidade}
-            disabled={!editavel}
-            onChange={(e) => {
-              const valor = e.target.value as ResponsabilidadeTecnica | ''
-              mudarItem(item.id, (x) => ({ ...x, responsabilidade: valor }))
-            }}
-          >
-            <option value="">Sem ART/RRT</option>
-            <option value="art">Com ART</option>
-            <option value="rrt">Com RRT</option>
-          </select>
-        </div>
-      ),
       horas: (
         <CampoNumero
           rotulo={`Horas do item ${n}`}
@@ -1037,18 +1019,6 @@ function Editor({
             </option>
           ))}
         </select>
-      ),
-      outros: (
-        <CampoNumero
-          rotulo={`Outros custos do item ${n}`}
-          reais
-          valor={item.extra}
-          invalido={lerReaisOuZero(item.extra) === null}
-          desabilitado={!editavel}
-          aoMudar={(valor) => {
-            mudarItem(item.id, (x) => ({ ...x, extra: valor }))
-          }}
-        />
       ),
       remover: () => {
         mudar((a) => ({
@@ -1411,23 +1381,7 @@ function Editor({
                             const campos = camposDoItem(item, indice)
                             return (
                               <tr key={item.id}>
-                                <td className={classeCelulaDoItem}>
-                                  {campos.servico}
-                                  {/* Notebook: outros custos e ART/RRT recolhidos, para o nome e o mês
-                                  terem espaço; o resumo diz o que há dentro (ADR-0019 §3). */}
-                                  <details className="mt-(--e-1)">
-                                    <summary className="cursor-pointer text-xs text-(--tinta-2)">
-                                      {resumoDosDetalhes(item)}{' '}
-                                      <span className="sr-only">do item {campos.n}</span>
-                                    </summary>
-                                    <div className="mt-(--e-15) flex flex-col gap-(--e-2)">
-                                      <CampoDoCartao rotulo="Outros custos (R$)">
-                                        {campos.outros}
-                                      </CampoDoCartao>
-                                      <CampoDoCartao rotulo="ART/RRT">{campos.art}</CampoDoCartao>
-                                    </div>
-                                  </details>
-                                </td>
+                                <td className={classeCelulaDoItem}>{campos.servico}</td>
                                 <td className={classeCelulaDoItem}>{campos.horas}</td>
                                 <td className={classeCelulaDoItem}>{campos.tabela}</td>
                                 <td className={classeCelulaDoItem}>{campos.responsavel}</td>
@@ -2313,22 +2267,11 @@ interface CamposDoItem {
   preco: number | null
   rotuloDoPreco: string
   servico: ReactNode
-  art: ReactNode
   horas: ReactNode
   tabela: ReactNode
   responsavel: ReactNode
   mes: ReactNode
-  outros: ReactNode
   remover: () => void
-}
-
-/** Resumo dos detalhes recolhidos do serviço, para ver sem abrir. */
-function resumoDosDetalhes(item: LinhaItem): string {
-  const partes: string[] = []
-  const extra = lerReaisOuZero(item.extra)
-  if (extra) partes.push(`outros custos ${formatarCentavos(extra)}`)
-  if (item.responsabilidade) partes.push(item.responsabilidade === 'art' ? 'com ART' : 'com RRT')
-  return partes.length > 0 ? `Detalhes: ${partes.join(' · ')}` : 'Detalhes do serviço'
 }
 
 /** O que falta no serviço, em texto (não só cor). */
@@ -2426,8 +2369,6 @@ function ServicosEmCartoes({
                 <CampoDoCartao rotulo="Horas estimadas">{campos.horas}</CampoDoCartao>
                 <CampoDoCartao rotulo="Responsável">{campos.responsavel}</CampoDoCartao>
                 <CampoDoCartao rotulo="Mês previsto">{campos.mes}</CampoDoCartao>
-                <CampoDoCartao rotulo="Outros custos (R$)">{campos.outros}</CampoDoCartao>
-                <CampoDoCartao rotulo="ART/RRT">{campos.art}</CampoDoCartao>
                 <dl className="grid grid-cols-[1fr_auto] gap-x-(--e-3) gap-y-(--e-1) corpo">
                   <dt className="text-(--tinta-2)">Custo estimado</dt>
                   <dd className="text-right numero">

@@ -523,10 +523,16 @@ describe('orçamentos (onda 5)', () => {
     expect(within(painel).getByRole('button', { name: 'Marcar como recusada' })).toBeEnabled()
   })
 
-  it('serviço com ART e texto de apresentação próprio vão no salvar', async () => {
+  it('ART e outros custos já gravados seguem no salvar sem campo na tela; o texto de apresentação vai junto', async () => {
     const usuario = userEvent.setup()
     renderizarApp('/orcamentos/o1')
-    await usuario.selectOptions(await screen.findByLabelText('ART ou RRT do item 2'), 'art')
+    // Pedido do Eduardo (23/11/2026): o serviço não tem mais "Detalhes" (outros custos e ART/RRT).
+    await screen.findByLabelText('Serviço do item 1')
+    expect(screen.queryByLabelText('ART ou RRT do item 2')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Outros custos do item 1')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Detalhes/)).not.toBeInTheDocument()
+    // Uma mudança qualquer, para o Salvar aparecer.
+    await usuario.type(screen.getByLabelText('Serviço do item 1'), '.')
     expect(screen.getByRole('button', { name: 'Marcar como enviada' })).toBeDisabled()
     await usuario.click(
       within(screen.getByRole('navigation', { name: 'Etapas do orçamento' })).getByRole('button', {
@@ -542,11 +548,16 @@ describe('orçamentos (onda 5)', () => {
     const chamada = falso.cliente.rpc.mock.calls.find(([nome]) => nome === 'salvar_orcamento')
     const dados = (
       chamada?.[1] as {
-        p_dados: { apresentacao: string; itens: { responsabilidade_tecnica: string | null }[] }
+        p_dados: {
+          apresentacao: string
+          itens: { responsabilidade_tecnica: string | null; custo_direto_extra_centavos: number }[]
+        }
       }
     ).p_dados
     expect(dados.apresentacao).toBe('Prezada Marina, segue a proposta.')
-    expect(dados.itens.map((i) => i.responsabilidade_tecnica)).toEqual([null, 'art', null])
+    expect(dados.itens.map((i) => i.responsabilidade_tecnica)).toEqual([null, null, null])
+    // Os outros custos gravados (240,00 no item 1) não se perdem por não aparecerem.
+    expect(dados.itens.map((i) => i.custo_direto_extra_centavos)).toEqual([24_000, 26_000, 0])
   })
 
   it('o responsável do serviço pode ser um terceirizado, sem login (ADR-0031)', async () => {
@@ -1393,16 +1404,6 @@ describe('orçamentos (onda 5)', () => {
     })
     expect(await screen.findByRole('heading', { name: 'Indústria Horizonte' })).toBeInTheDocument()
     expect(screen.getByText(/Cópia criada como rascunho/)).toBeInTheDocument()
-  })
-
-  it('no notebook, outros custos e ART ficam recolhidos com um resumo do que há dentro', async () => {
-    const usuario = userEvent.setup()
-    renderizarApp('/orcamentos/o1')
-    expect(await screen.findByText('Detalhes: outros custos 240,00')).toBeInTheDocument()
-    expect(screen.queryByRole('columnheader', { name: 'Outros custos (R$)' })).toBeNull()
-    expect(screen.getByRole('columnheader', { name: 'Tabela de preços' })).toBeInTheDocument()
-    await usuario.selectOptions(screen.getByLabelText('ART ou RRT do item 1'), 'art')
-    expect(screen.getByText('Detalhes: outros custos 240,00 · com ART')).toBeInTheDocument()
   })
 
   it('no celular (375 px), os serviços viram cartões que abrem para editar', async () => {
