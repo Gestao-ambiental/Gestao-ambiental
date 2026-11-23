@@ -92,6 +92,9 @@ import { SeloSituacaoOrcamento } from './SeloSituacaoOrcamento'
 
 /** Texto longo quebra linha e o campo cresce com ele (Chromium e Safari; nos demais, rola). */
 const classeTextoQueCresce = `${classeCampoBase} min-h-(--controle) resize-none py-(--e-15) [field-sizing:content] max-md:min-h-(--controle-toque)`
+/** Tabela de serviços: o nome cresce em linhas, então as células ficam no topo e os outros campos
+ * alinham com a primeira linha do nome (texto solto usa a altura do controle como entrelinha). */
+const classeCelulaDoItem = cn(classeCelula, 'align-top')
 
 /** Etapas do orçamento, na ordem em que ele se forma (pedido do Eduardo, 11/11/2026). */
 type IdDaEtapa = (typeof ETAPAS)[number]['id']
@@ -1213,8 +1216,10 @@ function Editor({
         </MensagemSecao>
       ) : null}
 
-      <div className="grid gap-(--e-4) 2xl:grid-cols-[minmax(0,1fr)_280px] 2xl:items-start 2xl:gap-(--e-6)">
-        <div className="flex min-w-0 flex-col gap-(--e-4)">
+      {/* No 2xl a coluna da esquerda vira "contents": a trilha ocupa a 1ª linha e o resumo de
+      valores começa na 2ª, alinhado ao topo do quadro da etapa (não ao da trilha). */}
+      <div className="grid gap-(--e-4) 2xl:grid-cols-[minmax(0,1fr)_280px] 2xl:items-start 2xl:gap-x-(--e-6)">
+        <div className="flex min-w-0 flex-col gap-(--e-4) 2xl:contents">
           <Trilha
             compactaNoCelular
             rotulo="Etapas do orçamento"
@@ -1239,7 +1244,7 @@ function Editor({
             role="group"
             tabIndex={-1}
             aria-label={`Etapa ${String(etapa + 1)} de ${String(ETAPAS.length)}: ${ETAPAS[etapa]?.titulo ?? ''}`}
-            className="scroll-mt-(--e-4) overflow-hidden rounded-(--raio-painel) border bg-(--folha) outline-none"
+            className="min-w-0 scroll-mt-(--e-4) overflow-hidden rounded-(--raio-painel) border bg-(--folha) outline-none 2xl:col-start-1 2xl:row-start-2"
           >
             {calculo.pendencia && calculo.pendencia !== 'sem_itens' ? (
               <div className="border-b p-(--e-4)">
@@ -1272,7 +1277,7 @@ function Editor({
                       </Botao>
                     }
                   >
-                    <div className="flex flex-col gap-(--e-3) px-(--e-3) pb-(--e-3)">
+                    <div className="flex flex-col gap-(--e-3) px-(--e-4) pb-(--e-3)">
                       <p className="text-xs text-(--tinta-2)">
                         {alterado
                           ? 'Salve as alterações antes de cadastrar o prospecto.'
@@ -1328,7 +1333,7 @@ function Editor({
                   }
                 >
                   {aplicado ? (
-                    <div className="px-(--e-3) pb-(--e-2)">
+                    <div className="px-(--e-4) pb-(--e-2)">
                       <MensagemSecao role="status" tom="sucesso">
                         {aplicado}
                       </MensagemSecao>
@@ -1358,7 +1363,7 @@ function Editor({
                             <th scope="col" className={`${classeCabecalho} min-w-56`}>
                               Serviço
                             </th>
-                            <th scope="col" className={`${classeCabecalho} w-20 text-right`}>
+                            <th scope="col" className={`${classeCabecalho} w-24 text-right`}>
                               Horas
                             </th>
                             <th scope="col" className={`${classeCabecalho} w-44`}>
@@ -1400,7 +1405,7 @@ function Editor({
                             const campos = camposDoItem(item, indice)
                             return (
                               <tr key={item.id}>
-                                <td className={classeCelula}>
+                                <td className={classeCelulaDoItem}>
                                   {campos.servico}
                                   {/* Notebook: outros custos e ART/RRT recolhidos, para o nome e o mês
                                   terem espaço; o resumo diz o que há dentro (ADR-0019 §3). */}
@@ -1417,11 +1422,11 @@ function Editor({
                                     </div>
                                   </details>
                                 </td>
-                                <td className={classeCelula}>{campos.horas}</td>
-                                <td className={classeCelula}>{campos.tabela}</td>
-                                <td className={classeCelula}>{campos.responsavel}</td>
-                                <td className={classeCelula}>{campos.mes}</td>
-                                <td className={`${classeCelula} text-right numero`}>
+                                <td className={classeCelulaDoItem}>{campos.horas}</td>
+                                <td className={classeCelulaDoItem}>{campos.tabela}</td>
+                                <td className={classeCelulaDoItem}>{campos.responsavel}</td>
+                                <td className={classeCelulaDoItem}>{campos.mes}</td>
+                                <td className={`${classeCelulaDoItem} text-right numero leading-(--controle)`}>
                                   {campos.custo === null ? (
                                     <span className="text-(--tinta-2)">—</span>
                                   ) : (
@@ -1429,7 +1434,7 @@ function Editor({
                                   )}
                                 </td>
                                 {pelaTabela ? (
-                                  <td className={`${classeCelula} text-right numero`}>
+                                  <td className={`${classeCelulaDoItem} text-right numero leading-(--controle)`}>
                                     {campos.preco === null ? (
                                       <span className="text-(--tinta-2)">—</span>
                                     ) : (
@@ -1438,7 +1443,7 @@ function Editor({
                                   </td>
                                 ) : null}
                                 {editavel ? (
-                                  <td className={classeCelula}>
+                                  <td className={classeCelulaDoItem}>
                                     <BotaoIcone
                                       icone="trash-2"
                                       rotulo={`Remover item ${campos.n}`}
@@ -1453,7 +1458,7 @@ function Editor({
                       </table>
                     </div>
                   )}
-                  <div className="flex flex-wrap items-center justify-between gap-(--e-2) px-(--e-3) py-(--e-2)">
+                  <div className="flex flex-wrap items-center justify-between gap-(--e-2) px-(--e-4) py-(--e-2)">
                     {editavel ? (
                       <Botao
                         aparencia="link"
@@ -1480,7 +1485,7 @@ function Editor({
 
                 {/* Visitas técnicas */}
                 <Secao titulo="Visitas técnicas">
-                  <div className="flex flex-col gap-(--e-3) px-(--e-3) pb-(--e-3)">
+                  <div className="flex flex-col gap-(--e-3) px-(--e-4) pb-(--e-3)">
                     <div className="grid gap-(--e-3) sm:grid-cols-3">
                       <CampoRotulado id="visitas-quantidade" rotulo="Quantidade de visitas">
                         <input
@@ -1674,7 +1679,7 @@ function Editor({
                     </table>
                   </div>
                   {editavel ? (
-                    <div className="flex flex-wrap items-center justify-between gap-(--e-2) px-(--e-3) py-(--e-2)">
+                    <div className="flex flex-wrap items-center justify-between gap-(--e-2) px-(--e-4) py-(--e-2)">
                       <Botao
                         aparencia="link"
                         iconeAntes="plus"
@@ -1705,7 +1710,7 @@ function Editor({
               <>
                 {/* Preço e margem: a margem entra só aqui, depois dos serviços */}
                 <Secao titulo="Preço e margem">
-                  <div className="flex flex-col gap-(--e-4) px-(--e-3) pb-(--e-4)">
+                  <div className="flex flex-col gap-(--e-4) px-(--e-4) pb-(--e-4)">
                     {base ? (
                       <>
                         <fieldset className="flex flex-col gap-(--e-2)">
@@ -2064,7 +2069,7 @@ function Editor({
                       </tbody>
                     </table>
                   </div>
-                  <div className="flex flex-wrap items-center justify-between gap-(--e-2) px-(--e-3) py-(--e-2)">
+                  <div className="flex flex-wrap items-center justify-between gap-(--e-2) px-(--e-4) py-(--e-2)">
                     {editavel ? (
                       <Botao
                         aparencia="link"
@@ -2099,7 +2104,7 @@ function Editor({
                 {/* Fim do orçamento: a proposta como o cliente recebe (ORC-05). */}
                 <section
                   aria-label="Proposta pronta"
-                  className="flex flex-wrap items-center justify-between gap-(--e-3) border-b px-(--e-3) py-(--e-3)"
+                  className="flex flex-wrap items-center justify-between gap-(--e-3) border-b px-(--e-4) py-(--e-3)"
                 >
                   <p className="corpo-medio text-(--tinta)">
                     {alterado
@@ -2337,7 +2342,7 @@ function ServicosEmCartoes({
 }) {
   if (itens.length === 0) {
     return (
-      <p className="px-(--e-3) py-(--e-2) text-(--tinta-2)">
+      <p className="px-(--e-4) py-(--e-2) text-(--tinta-2)">
         Nenhum serviço ainda. Escolha um modelo ou adicione os itens.
       </p>
     )
@@ -2476,7 +2481,7 @@ function ResumoDeValores({
       aria-label="Resumo de valores"
       className={cn(
         'sticky bottom-0 z-20 -mx-(--e-4) border-t border-(--regra-forte) bg-(--folha) px-(--e-4) py-(--e-2) md:mx-0 md:rounded-(--raio-painel) md:border md:px-(--e-5) md:py-(--e-3)',
-        '2xl:top-(--e-4) 2xl:bottom-auto 2xl:px-(--e-5) 2xl:py-(--e-5)',
+        '2xl:top-(--e-4) 2xl:bottom-auto 2xl:col-start-2 2xl:row-start-2 2xl:px-(--e-5) 2xl:py-(--e-5)',
       )}
     >
       <dl className="flex flex-wrap items-end gap-x-(--e-6) gap-y-(--e-1) 2xl:flex-col 2xl:items-stretch 2xl:gap-y-(--e-4)">
@@ -2615,14 +2620,14 @@ function Recolhido({
 }) {
   return (
     <details className="group border-b last:border-b-0">
-      <summary className="flex cursor-pointer list-none items-center gap-(--e-2) px-(--e-3) py-(--e-3) corpo text-(--tinta) hover:bg-(--toque) [&::-webkit-details-marker]:hidden">
+      <summary className="flex cursor-pointer list-none items-center gap-(--e-2) px-(--e-4) py-(--e-3) corpo text-(--tinta) hover:bg-(--toque) [&::-webkit-details-marker]:hidden">
         <span aria-hidden className="w-3 text-(--tinta-2) group-open:rotate-45">
           +
         </span>
         <span className="flex-1">{titulo}</span>
         <span className="text-(--tinta-2)">{resumo}</span>
       </summary>
-      <div className="px-(--e-3) pb-(--e-4)">{children}</div>
+      <div className="px-(--e-4) pb-(--e-4)">{children}</div>
     </details>
   )
 }

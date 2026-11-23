@@ -173,6 +173,10 @@ describe('orçamento rápido, sem custos e taxas configurados', () => {
     const preco = screen.getByLabelText('Preço digitado do item 1')
     await digitarReais(usuario, preco, '1500')
     expect(preco).toHaveValue('1.500')
+    // Alinhamento (pedido do Eduardo, 23/11/2026): o nome do serviço cresce em linhas, então as
+    // células ficam no topo e os campos ao lado alinham com a primeira linha do nome.
+    expect(screen.getByLabelText('Serviço do item 1').closest('td')).toHaveClass('align-top')
+    expect(preco.closest('td')).toHaveClass('align-top')
 
     // Visitas sem a base: quantidade × valor de cada visita, sem km.
     expect(screen.queryByLabelText('Km por visita, ida e volta')).not.toBeInTheDocument()
@@ -182,6 +186,8 @@ describe('orçamento rápido, sem custos e taxas configurados', () => {
     // O total aparece; custo e margem não são calculados (nunca zero).
     // Os números ficam no resumo de valores, sempre à vista (lateral ou rodapé fixo).
     const numeros = screen.getByRole('region', { name: 'Resumo de valores' })
+    // No 2xl o resumo começa na linha do quadro da etapa, não na da trilha.
+    expect(numeros).toHaveClass('2xl:col-start-2', '2xl:row-start-2')
     expect(within(numeros).getByText('R$ 1.900,00')).toBeInTheDocument()
     expect(within(numeros).getByText('não calculado')).toBeInTheDocument()
     expect(screen.queryByText(/Custos e taxas ainda não configurados/)).not.toBeInTheDocument()
