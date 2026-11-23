@@ -182,7 +182,7 @@ function Legenda({
               aoFiltrar(ativa ? null : categoria.chave)
             }}
             className={cn(
-              'inline-flex h-8 shrink-0 cursor-pointer items-center gap-(--e-15) rounded-(--raio-redondo) border px-(--e-3) text-xs font-[650] whitespace-nowrap text-(--tinta) transicao-estado max-md:min-h-(--controle-toque)',
+              'inline-flex h-(--controle-mini) shrink-0 cursor-pointer items-center gap-(--e-15) rounded-(--raio-redondo) border px-(--e-3) text-xs font-[650] whitespace-nowrap text-(--tinta) transicao-estado max-md:min-h-(--controle-toque)',
               ativa
                 ? 'border-(--marca-linha) bg-(--escolha)'
                 : 'border-(--regra) bg-(--folha) hover:bg-(--toque)',

@@ -254,7 +254,7 @@ function ItemDoChecklist({
 
       {editavel ? (
         <div className="flex flex-wrap items-center gap-(--e-2)">
-          <Botao asChild className="h-11 min-h-11">
+          <Botao asChild className="h-(--controle-toque) min-h-(--controle-toque)">
             <Link
               to={`/campo/${vistoria.id}/itens/${item.id}/foto`}
               aria-label={`Tirar foto: ${item.titulo}`}
@@ -267,7 +267,7 @@ function ItemDoChecklist({
             <Botao
               aparencia="sutil"
               iconeAntes="message-square"
-              className="h-11 min-h-11"
+              className="h-(--controle-toque) min-h-(--controle-toque)"
               onClick={() => {
                 setComentando(true)
               }}

@@ -1128,6 +1128,31 @@ describe('orçar da triagem (ADR-0056)', () => {
     expect(screen.queryByRole('button', { name: 'Orçar' })).toBeNull()
   })
 
+  // Regra mudou de propósito (pedido do Eduardo, 23/11/2026, padrão de botões): um primário por
+  // tela. Antes, o Gravar do cabeçalho era verde junto do Continuar da etapa e do Orçar.
+  it('um primário por vez: Continuar nas etapas, Gravar no resultado, Orçar sem o Gravar', async () => {
+    const primarios = () =>
+      Array.from(document.querySelectorAll(':is(button, a)[class~="bg-(--acao)"]')).map(
+        (b) => b.textContent,
+      )
+    comEmpreendimento()
+    const { usuario, unmount } = montar(`/triagem?empreendimento=${ID}&etapa=atividades`)
+    await screen.findByRole('link', { name: 'Metalúrgica Rio Cubatão' })
+    await incluir(usuario, '12.80.10', '12.80.10')
+    await digitarNoParametro(usuario, '12.80.10', /AU\(3\)/, '0,5')
+    await screen.findByRole('button', { name: /^Gravar/ })
+    expect(primarios()).toEqual(['Continuar para resultado'])
+    await irParaResultado(usuario)
+    expect(screen.getByRole('button', { name: 'Orçar' })).not.toHaveClass('bg-(--acao)')
+    expect(primarios()).toEqual([expect.stringMatching(/^Gravar/)])
+    unmount()
+
+    falso.reiniciar(cenario())
+    const avulsa = montar('/triagem?etapa=atividades')
+    await enquadrar(avulsa.usuario)
+    expect(primarios()).toEqual(['Orçar'])
+  })
+
   it('da triagem avulsa abre Novo orçamento e aplica o AuA e o repasse ao escolher o cliente', async () => {
     falso.reiniciar({
       ...cenario(),

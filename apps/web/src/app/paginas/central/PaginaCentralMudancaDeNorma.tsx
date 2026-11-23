@@ -552,8 +552,8 @@ function Revisao({
           >
             {gerar.isPending ? 'Gerando…' : detalhe.resumo ? 'Gerar de novo' : 'Gerar resumo'}
           </Botao>
+          {/* O gatilho de algo destrutivo é de contorno; o vermelho cheio fica no diálogo. */}
           <Botao
-            aparencia="perigo"
             disabled={ocupado}
             onClick={() => {
               descartar.reset()

@@ -659,6 +659,10 @@ describe('orçamentos (onda 5)', () => {
     })
     expect(acessibilidade.violations.map((v) => v.id)).toEqual([])
     expect(screen.getByRole('button', { name: 'Enviar logo' })).toBeDisabled()
+    // Regra mudou de propósito (padrão de botões, 23/11/2026): nunca salvo e sem alteração, não há
+    // Salvar apagado nem "Salvo"; o Salvar aparece ao digitar e vira "Salvo" depois de salvar.
+    expect(screen.queryByRole('button', { name: 'Salvar' })).not.toBeInTheDocument()
+    expect(screen.queryByText('Salvo')).not.toBeInTheDocument()
     await usuario.type(screen.getByLabelText('Razão social'), 'Filtroville Ltda.')
     await usuario.type(screen.getByLabelText('CNPJ'), '11.222.333/0001-81')
     await usuario.type(screen.getByLabelText('Texto de apresentação padrão'), 'Agradecemos.')
@@ -672,7 +676,8 @@ describe('orçamentos (onda 5)', () => {
         texto_apresentacao: 'Agradecemos.',
       }) as unknown,
     })
-    expect(await screen.findByText('Dados da proposta salvos.')).toBeInTheDocument()
+    expect(await screen.findByText('Salvo')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Salvar' })).not.toBeInTheDocument()
   })
 
   it('o editor vai por etapas: serviços, preço e margem, parcelas', async () => {
@@ -2070,7 +2075,12 @@ describe('orçamentos (onda 5)', () => {
     await screen.findByText('Falta configurar para calcular o preço')
     await usuario.type(screen.getByLabelText('Custo da hora técnica (R$)'), '95,00')
     await usuario.type(screen.getByLabelText('Horas faturáveis por mês'), '320')
-    await usuario.click(screen.getByRole('button', { name: 'Detalhar contas do mês' }))
+    const detalhar = screen.getByRole('button', { name: 'Detalhar contas do mês' })
+    // Regra mudou de propósito (pedido do Eduardo, 23/11/2026, padrão de botões): ação da seção é
+    // terciária (sutil, 38px), não link de 22px.
+    expect(detalhar).toHaveClass('h-(--controle)')
+    expect(detalhar).not.toHaveClass('h-auto')
+    await usuario.click(detalhar)
     // Sugestões só com o nome: nenhum valor inventado.
     expect(screen.getByLabelText('Conta 2')).toHaveValue('Energia elétrica')
     expect(screen.getByLabelText('Valor por mês da conta 2')).toHaveValue('')

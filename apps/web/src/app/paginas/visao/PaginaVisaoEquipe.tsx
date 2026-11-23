@@ -385,7 +385,7 @@ export function PaginaVisaoEquipe() {
         descricao="Quando a consultoria tiver licenças com o plano ativado, os prazos da equipe aparecem aqui."
         acaoPrincipal={
           ehGestao ? (
-            <Botao aparencia="primario" asChild>
+            <Botao asChild>
               <Link to="/empreendimentos">Ir para Empreendimentos</Link>
             </Botao>
           ) : undefined

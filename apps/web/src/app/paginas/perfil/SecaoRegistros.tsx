@@ -20,6 +20,7 @@ import { Botao } from '@/components/ui/botao'
 import { BotaoIcone } from '@/components/ui/botao-icone'
 import { CampoData } from '@/components/ui/campo-data'
 import { CampoTexto } from '@/components/ui/campo-texto'
+import { ConfirmacaoSalva } from '@/components/ui/confirmacao-salva'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { classeCampo } from '@/components/ui/estilos-campo'
 import { Selo } from '@/components/ui/selo'
@@ -50,6 +51,7 @@ export function SecaoRegistros({ perfil }: { perfil: MembroAtivo }) {
   const [uf, setUf] = useState('')
   const [validoAte, setValidoAte] = useState<DataCivil | null>(null)
   const [falta, setFalta] = useState<'profissao' | 'conselho' | 'numero' | null>(null)
+  const [registroSalvo, setRegistroSalvo] = useState(false)
 
   const elegiveis = profissoesComRegistro(perfil)
   const registros = useQuery({
@@ -75,6 +77,7 @@ export function SecaoRegistros({ perfil }: { perfil: MembroAtivo }) {
 
   function escolherProfissao(codigo: CodigoProfissao | '') {
     setProfissao(codigo)
+    setRegistroSalvo(false)
     setFalta(null)
     const salvo = registros.data?.find((r) => r.profissao === codigo)
     setConselho(salvo?.conselho ?? (codigo ? (conselhoSugerido(codigo) ?? '') : ''))
@@ -95,6 +98,7 @@ export function SecaoRegistros({ perfil }: { perfil: MembroAtivo }) {
       }),
     onSuccess: async () => {
       limpar()
+      setRegistroSalvo(true)
       await atualizar()
     },
   })
@@ -278,14 +282,16 @@ export function SecaoRegistros({ perfil }: { perfil: MembroAtivo }) {
             hoje={hoje}
             aoMudar={setValidoAte}
           />
-          <div className="flex items-end">
-            <Botao
-              type="submit"
-              aparencia={profissao ? 'primario' : 'padrao'}
-              disabled={salvar.isPending}
-            >
-              {salvar.isPending ? 'Salvando…' : 'Salvar registro'}
-            </Botao>
+          {/* Regra 1.3 do padrão de botões: sem profissão escolhida não há o que salvar, então o
+          botão não aparece; logo depois de salvar, fica a confirmação. */}
+          <div className="flex items-end empty:hidden">
+            <BarraDeSalvar
+              mudou={Boolean(profissao)}
+              salvando={salvar.isPending}
+              salvo={registroSalvo}
+              rotulo="Salvar registro"
+              confirmacao="Registro salvo."
+            />
           </div>
         </form>
       )}
@@ -343,21 +349,56 @@ export function SecaoCadastroFederal({ perfil }: { perfil: MembroAtivo }) {
             setSalvo(false)
           }}
         />
-        <div className="flex items-center gap-(--e-3) sm:col-span-2">
-          <Botao
-            type="submit"
-            aparencia={mudou ? 'primario' : 'padrao'}
-            disabled={!mudou || salvar.isPending}
-          >
-            {salvar.isPending ? 'Salvando…' : 'Salvar cadastro'}
-          </Botao>
-          {salvo && !mudou ? (
-            <span role="status" className="rotulo">
-              Cadastro salvo.
-            </span>
-          ) : null}
+        <div className="empty:hidden sm:col-span-2">
+          <BarraDeSalvar
+            mudou={mudou}
+            salvando={salvar.isPending}
+            salvo={salvo}
+            rotulo="Salvar cadastro"
+            confirmacao="Cadastro salvo."
+          />
         </div>
       </form>
     </section>
+  )
+}
+
+/**
+ * Rodapé de uma seção que salva sozinha. Um primário por vez (docs/design-system/botoes-e-campos.md,
+ * regra 1.3): sem alteração, não há botão verde apagado; aparece só a confirmação, logo depois de
+ * salvar, ou nada. Com alteração, o Salvar volta como primário.
+ */
+export function BarraDeSalvar({
+  mudou,
+  salvando,
+  salvo,
+  rotulo,
+  confirmacao,
+}: {
+  mudou: boolean
+  salvando: boolean
+  salvo: boolean
+  rotulo: string
+  confirmacao: string
+}) {
+  if (mudou || salvando) {
+    return (
+      <div className="flex items-center gap-(--e-3)">
+        <Botao
+          type="submit"
+          aparencia="primario"
+          disabled={salvando}
+          aria-busy={salvando || undefined}
+        >
+          {salvando ? 'Salvando…' : rotulo}
+        </Botao>
+      </div>
+    )
+  }
+  if (!salvo) return null
+  return (
+    <div className="flex items-center gap-(--e-3)">
+      <ConfirmacaoSalva>{confirmacao}</ConfirmacaoSalva>
+    </div>
   )
 }

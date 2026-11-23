@@ -55,12 +55,15 @@ function LinhaDaVistoria({
   hoje,
   fuso,
   ordem,
+  proxima,
 }: {
   vistoria: VistoriaDaLista
   grupo: GrupoDaVistoria
   hoje: DataCivil
   fuso: string
   ordem: number
+  /** A primeira de hoje: o único "Abrir" verde da lista (um primário por tela). */
+  proxima: boolean
 }) {
   const dias = diferencaEmDias(vistoria.dataPlanejada, hoje)
   const enviada = grupo === 'enviadas'
@@ -140,9 +143,10 @@ function LinhaDaVistoria({
 
         {grupo === 'hoje' ? (
           <Botao
-            aparencia="primario"
+            aparencia={proxima ? 'primario' : 'padrao'}
+            tamanho="compacto"
             asChild
-            className="relative z-[1] mt-(--e-2) h-12 w-full md:col-start-7 md:row-start-1 md:mt-0 md:h-(--controle-mini) md:w-auto md:px-(--e-3)"
+            className="relative z-[1] mt-(--e-2) w-full md:col-start-7 md:row-start-1 md:mt-0 md:w-auto"
           >
             <Link to={`/campo/${vistoria.id}`} aria-label={`Abrir vistoria ${vistoria.titulo}`}>
               Abrir
@@ -245,11 +249,12 @@ export function PaginaMinhasVistorias() {
                 </span>
               </div>
               <ul className="flex flex-col">
-                {lista.map((vistoria) => (
+                {lista.map((vistoria, indice) => (
                   <LinhaDaVistoria
                     key={vistoria.id}
                     vistoria={vistoria}
                     grupo={grupo}
+                    proxima={grupo === 'hoje' && indice === 0}
                     hoje={hoje}
                     fuso={atual.fuso}
                     ordem={ordem++}

@@ -96,6 +96,21 @@ describe('meu perfil: registro profissional e Cadastro Técnico Federal', () => 
     })
   })
 
+  // Padrão de botões (23/11/2026): sem profissão escolhida não há o que salvar, então o botão não
+  // aparece (antes ficava como secundário); depois de salvar, fica a confirmação.
+  it('o Salvar registro só aparece com uma profissão escolhida', async () => {
+    const usuario = userEvent.setup()
+    renderizarApp('/perfil')
+
+    const profissao = await screen.findByRole('combobox', { name: 'Profissão do registro' })
+    expect(screen.queryByRole('button', { name: 'Salvar registro' })).not.toBeInTheDocument()
+    await usuario.selectOptions(profissao, 'Bióloga')
+    await usuario.type(screen.getByRole('textbox', { name: 'Número do registro' }), '12345')
+    await usuario.click(screen.getByRole('button', { name: 'Salvar registro' }))
+    expect(await screen.findByText('Registro salvo.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Salvar registro' })).not.toBeInTheDocument()
+  })
+
   it('sem número, avisa no campo e não chama o banco', async () => {
     const usuario = userEvent.setup()
     renderizarApp('/perfil')
@@ -163,11 +178,12 @@ describe('meu perfil: registro profissional e Cadastro Técnico Federal', () => 
 
     const numero = await screen.findByRole('textbox', { name: 'Número no cadastro' })
     expect(numero).toHaveValue('111')
-    const salvar = screen.getByRole('button', { name: 'Salvar cadastro' })
-    expect(salvar).toBeDisabled()
+    // Regra mudou de propósito (padrão de botões, 23/11/2026): sem alteração o botão não aparece
+    // (antes ficava cinza e desabilitado).
+    expect(screen.queryByRole('button', { name: 'Salvar cadastro' })).not.toBeInTheDocument()
     await usuario.clear(numero)
     await usuario.type(numero, '1234567')
-    await usuario.click(salvar)
+    await usuario.click(screen.getByRole('button', { name: 'Salvar cadastro' }))
     expect(falso.cliente.rpc).toHaveBeenCalledWith('definir_cadastro_federal', {
       p_membro_id: 'm-ana',
       p_numero: '1234567',

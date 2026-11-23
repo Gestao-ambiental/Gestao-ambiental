@@ -200,6 +200,19 @@ describe('visão da equipe (EQ-01 a EQ-03)', () => {
     expect(await screen.findByText('Nenhum prazo para mostrar')).toBeInTheDocument()
   })
 
+  // Regra mudou de propósito (pedido do Eduardo, 23/11/2026, padrão de botões): um primário por
+  // tela. O "Ir para Empreendimentos" do estado vazio era verde ao lado do "Cadastrar licença".
+  it('estado vazio mostra um só botão primário (o Cadastrar licença)', async () => {
+    falso.reiniciar(cenario('gestao', { rpc: { listar_prazos: { data: [] } } }))
+    renderizarApp('/')
+    const irParaEmpreendimentos = await screen.findByRole('link', {
+      name: 'Ir para Empreendimentos',
+    })
+    expect(irParaEmpreendimentos).not.toHaveClass('bg-(--acao)')
+    const primarios = document.querySelectorAll(':is(button, a)[class~="bg-(--acao)"]')
+    expect(Array.from(primarios).map((b) => b.textContent)).toEqual(['Cadastrar licença'])
+  })
+
   it('não tem violações de acessibilidade detectáveis pelo axe', async () => {
     const { container } = renderizarApp('/')
     await screen.findByRole('table')

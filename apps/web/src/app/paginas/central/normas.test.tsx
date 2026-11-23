@@ -303,8 +303,13 @@ describe('Central: revisão de uma mudança de norma (LEG-04)', () => {
     )
     renderizarApp('/admin/normas/m1')
 
-    await usuario.click(await screen.findByRole('button', { name: 'Descartar' }))
+    const gatilho = await screen.findByRole('button', { name: 'Descartar' })
+    // Regra mudou de propósito (pedido do Eduardo, 23/11/2026, padrão de botões): vermelho cheio só
+    // no botão de confirmar do diálogo; o gatilho na tela é de contorno.
+    expect(gatilho).not.toHaveClass('bg-(--atraso)')
+    await usuario.click(gatilho)
     const dialogo = await screen.findByRole('dialog', { name: 'Descartar mudança' })
+    expect(within(dialogo).getByRole('button', { name: 'Descartar' })).toHaveClass('bg-(--atraso)')
     await usuario.click(within(dialogo).getByRole('button', { name: 'Descartar' }))
     expect(within(dialogo).getByText('Informe o motivo')).toBeInTheDocument()
     expect(falso.cliente.rpc).not.toHaveBeenCalledWith(

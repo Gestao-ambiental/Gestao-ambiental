@@ -351,6 +351,28 @@ describe('passo 3: condicionantes (LIC-02)', () => {
       }) as unknown,
     )
   })
+
+  // Regra mudou de propósito (pedido do Eduardo, 23/11/2026, padrão de botões): um primário por
+  // tela. O Continuar do rodapé era primário (apagado) ao lado do Obrigação e do Adicionar.
+  it('um primário por vez: o Continuar cede ao Obrigação e ao Adicionar', async () => {
+    falso.reiniciar(cenario())
+    const usuario = userEvent.setup()
+    renderizarApp('/licencas/i1/condicionantes')
+    const primarios = () =>
+      Array.from(document.querySelectorAll(':is(button, a)[class~="bg-(--acao)"]')).map(
+        (b) => b.textContent,
+      )
+
+    await screen.findAllByText('Adicione a primeira condicionante')
+    expect(screen.getByRole('button', { name: 'Continuar' })).not.toHaveClass('bg-(--acao)')
+    expect(primarios()).toEqual(['Obrigação'])
+
+    const detalhe = screen.getByRole('region', { name: 'Detalhe da condicionante' })
+    await usuario.click(within(detalhe).getByRole('button', { name: 'Obrigação' }))
+    await usuario.keyboard('Relatório trimestral de efluentes{Enter}')
+    await screen.findByRole('form', { name: 'Nova condicionante' })
+    expect(primarios()).toEqual(['Adicionar'])
+  })
 })
 
 describe('passo 4: prazos (LIC-03)', () => {

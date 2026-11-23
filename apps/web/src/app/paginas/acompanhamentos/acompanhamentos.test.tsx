@@ -258,6 +258,13 @@ describe('plano de renovação (REN-01)', () => {
       ),
     ).toBeInTheDocument()
 
+    // Regra mudou de propósito (pedido do Eduardo, 23/11/2026, padrão de botões): um primário por
+    // tela. Com a antecedência alterada, o Registrar protocolo deixa de ser verde.
+    expect(screen.getByRole('button', { name: 'Salvar antecedência' })).toHaveClass('bg-(--acao)')
+    expect(screen.getByRole('button', { name: 'Registrar protocolo' })).not.toHaveClass(
+      'bg-(--acao)',
+    )
+
     await usuario.click(screen.getByRole('button', { name: 'Salvar antecedência' }))
     await vi.waitFor(() => {
       expect(falso.cliente.rpc).toHaveBeenCalledWith('definir_antecedencia_renovacao', {
