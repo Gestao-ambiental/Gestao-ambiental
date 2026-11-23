@@ -413,7 +413,8 @@ export function Equipe({
         <Botao aparencia="link" iconeAntes="plus" onClick={aoAdicionar}>
           Adicionar pessoa
         </Botao>
-        <Botao aparencia="link" onClick={aoVoltar}>
+        {/* Troca de modo é ação da seção (terciário, 38px), não link de 22px. */}
+        <Botao aparencia="sutil" onClick={aoVoltar}>
           Digitar o custo da hora e as horas
         </Botao>
       </div>
@@ -520,7 +521,7 @@ export function ContasDoMes({
       <>
         {children}
         <div className="flex flex-wrap gap-(--e-2)">
-          <Botao aparencia="link" iconeAntes="list" onClick={sugerir}>
+          <Botao aparencia="sutil" iconeAntes="list" onClick={sugerir}>
             Detalhar contas do mês
           </Botao>
         </div>

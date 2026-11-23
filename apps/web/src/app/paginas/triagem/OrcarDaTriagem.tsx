@@ -25,12 +25,15 @@ export function OrcarDaTriagem({
   modalidade,
   orgao,
   taxas,
+  primario = true,
 }: {
   consultoriaId: string
   empreendimento: { id: string; nome: string } | null
   modalidade: Modalidade
   orgao: 'estadual' | 'municipal' | null
   taxas: readonly TaxaDaAtividade[]
+  /** Com o Gravar no cabeçalho, o Orçar desce para secundário (um primário por tela). */
+  primario?: boolean
 }) {
   const navegar = useNavigate()
   const queryClient = useQueryClient()
@@ -55,7 +58,7 @@ export function OrcarDaTriagem({
   return (
     <div className="flex flex-col gap-(--e-2)">
       <Botao
-        aparencia="primario"
+        aparencia={primario ? 'primario' : 'padrao'}
         iconeAntes="file-plus"
         larguraTotal
         disabled={orcar.isPending}

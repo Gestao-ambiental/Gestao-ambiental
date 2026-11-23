@@ -294,7 +294,7 @@ function Detalhe({ vistoria }: { vistoria: Vistoria }) {
               <Linha rotulo="Condicionante">
                 <Link
                   to={`/ocorrencias/${vistoria.ocorrenciaId}`}
-                  className="max-md:inline-flex max-md:min-h-11 max-md:items-center"
+                  className="max-md:inline-flex max-md:min-h-(--controle-toque) max-md:items-center"
                 >
                   {[vistoria.condicionanteCodigo, vistoria.condicionanteTitulo]
                     .filter(Boolean)

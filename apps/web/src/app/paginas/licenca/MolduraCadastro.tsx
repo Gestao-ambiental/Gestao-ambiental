@@ -139,6 +139,7 @@ export function RodapeCadastro({
   rotuloContinuar = 'Continuar',
   podeContinuar,
   continuando,
+  destaque = true,
 }: {
   aoSalvar?: () => void
   salvando?: boolean
@@ -148,6 +149,8 @@ export function RodapeCadastro({
   rotuloContinuar?: string
   podeContinuar: boolean
   continuando?: boolean
+  /** Falso quando outro primário está à vista ou não dá para continuar: vira contorno. */
+  destaque?: boolean
 }) {
   return (
     <>
@@ -168,7 +171,7 @@ export function RodapeCadastro({
         </Botao>
       ) : null}
       <Botao
-        aparencia="primario"
+        aparencia={destaque ? 'primario' : 'padrao'}
         iconeDepois={continuando || rotuloContinuar !== 'Continuar' ? undefined : 'arrow-right'}
         disabled={!podeContinuar || continuando}
         aria-busy={continuando ? true : undefined}

@@ -351,7 +351,7 @@ function EntradaData({
       }}
       onBlur={aoSair}
       className={cn(
-        'h-(--controle) w-full rounded-(--raio) border bg-(--campo) pr-10 pl-(--e-2) corpo text-(--tinta) tabular-nums transicao-estado outline-none placeholder:text-(--tinta-3)',
+        'h-(--controle) max-md:h-(--controle-toque) w-full rounded-(--raio) border bg-(--campo) pr-10 pl-(--e-2) corpo text-(--tinta) tabular-nums transicao-estado outline-none placeholder:text-(--tinta-3)',
         'border-(--campo-borda) border-b-(--campo-borda) hover:bg-(--toque) focus:border-b-(--campo-borda-ativa) focus:bg-(--campo-foco) focus:shadow-[inset_0_-1px_0_0_var(--campo-borda-ativa)]',
         'disabled:cursor-not-allowed disabled:bg-(--off) disabled:text-(--tinta-off) disabled:hover:bg-(--off)',
         aberto &&

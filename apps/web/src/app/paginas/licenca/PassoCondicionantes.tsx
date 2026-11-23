@@ -197,7 +197,7 @@ function LinhaNova({
             }
           }}
           onBlur={confirmar}
-          className="h-7 min-w-0 flex-1 rounded-(--raio) border border-(--marca-linha) bg-(--campo) px-(--e-15) corpo text-(--tinta) outline-none"
+          className="h-(--controle-mini) min-w-0 flex-1 rounded-(--raio) border border-(--marca-linha) bg-(--campo) px-(--e-15) corpo text-(--tinta) outline-none"
         />
       ) : (
         <span className="flex min-w-0 flex-1 items-center gap-(--e-2)">
@@ -222,6 +222,7 @@ function Editor({
   aoSalvar,
   aoVerPagina,
   aoAbrirPdf,
+  aoMudarEditando,
 }: {
   instrumentoId: string
   edicao: Edicao
@@ -230,6 +231,8 @@ function Editor({
   aoSalvar: (id: string) => Promise<void>
   aoVerPagina: (pagina: number, trechos: readonly string[]) => void
   aoAbrirPdf: () => void
+  /** Avisa a tela quando o "Salvar" (primário) aparece, para o Continuar do rodapé ceder. */
+  aoMudarEditando: (editando: boolean) => void
 }) {
   const textoId = useId()
   const [id] = useState(() => (edicao.tipo === 'existente' ? edicao.id : crypto.randomUUID()))
@@ -246,6 +249,12 @@ function Editor({
   const [erroTitulo, setErroTitulo] = useState<string | null>(null)
   // Item já revisado fica travado até "Editar" (Protótipo 12); proposto e novo, não.
   const [editando, setEditando] = useState(false)
+  useEffect(() => {
+    aoMudarEditando(editando)
+    return () => {
+      aoMudarEditando(false)
+    }
+  }, [editando, aoMudarEditando])
   // Texto literal que já existe só muda depois de "Editar texto".
   const [editandoTexto, setEditandoTexto] = useState(!item?.textoLiteral)
 
@@ -573,6 +582,13 @@ function Condicionantes({
   const ativos = itens.length - contagem.descartada
   const podeContinuar = ativos > 0 && contagem.pendente === 0
   const selecionado = edicao?.tipo === 'existente' ? porId.get(edicao.id) : undefined
+  const [editandoItem, setEditandoItem] = useState(false)
+  // Um primário por tela (docs/design-system/botoes-e-campos.md): com Adicionar, Aceitar ou
+  // Salvar no editor, o Continuar do rodapé fica de contorno.
+  const editorComPrimario =
+    edicao !== null &&
+    !(edicao.tipo === 'nova' && nomeando) &&
+    (edicao.tipo === 'nova' || selecionado?.revisao === 'pendente' || editandoItem)
   const revisados = contagem.aceita + contagem.descartada
   // Como no explorador do VS Code: o novo entra no agrupador selecionado ou junto do item.
   const destino = destinoDoNovo(selecionado)
@@ -816,6 +832,7 @@ function Condicionantes({
             void navegar(`/licencas/${instrumento.id}/prazos`)
           }}
           podeContinuar={podeContinuar}
+          destaque={podeContinuar && !editorComPrimario}
         />
       }
     >
@@ -901,7 +918,7 @@ function Condicionantes({
                     setFiltro(chave)
                   }}
                   className={cn(
-                    'inline-flex h-10 cursor-pointer shrink-0 items-center gap-(--e-1) border-b-[3px] text-xs font-[750] whitespace-nowrap transicao-estado max-md:h-(--controle-toque)',
+                    'inline-flex h-(--controle) cursor-pointer shrink-0 items-center gap-(--e-1) border-b-[3px] text-xs font-[750] whitespace-nowrap transicao-estado max-md:h-(--controle-toque)',
                     filtro === chave
                       ? 'border-(--marca-linha) text-(--tinta)'
                       : 'border-transparent text-(--tinta-2) hover:text-(--tinta)',
@@ -1125,6 +1142,7 @@ function Condicionantes({
               aoAbrirPdf={() => {
                 setPdfAberto(true)
               }}
+              aoMudarEditando={setEditandoItem}
             />
           ) : (
             <div className="relative flex h-full flex-col items-center justify-center">

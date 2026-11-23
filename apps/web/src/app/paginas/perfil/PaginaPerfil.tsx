@@ -10,7 +10,6 @@ import { Carregando, EstadoErro, SemPermissao } from '@/components/estados'
 import { Avatar } from '@/components/ui/avatar'
 import { Botao } from '@/components/ui/botao'
 import { CampoTexto } from '@/components/ui/campo-texto'
-import { ConfirmacaoSalva } from '@/components/ui/confirmacao-salva'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import {
   conferirFoto,
@@ -29,7 +28,7 @@ import { ehSemPermissao, mensagemDoErro } from '@/lib/erros'
 import { CamposProfissaoECargo } from '../equipe/CamposProfissaoECargo'
 import { Pagina } from '../Pagina'
 import { SecaoAvisos } from './SecaoAvisos'
-import { SecaoCadastroFederal, SecaoRegistros } from './SecaoRegistros'
+import { BarraDeSalvar, SecaoCadastroFederal, SecaoRegistros } from './SecaoRegistros'
 
 const PROBLEMAS_DA_FOTO: Record<ProblemaDaFoto, string> = {
   tipo: 'Envie uma imagem PNG ou JPEG.',
@@ -258,16 +257,15 @@ function Perfil({ perfil }: { perfil: MembroAtivo }) {
               {mensagemDoErro(salvarNome.error)}
             </MensagemSecao>
           ) : null}
-          <div className="flex items-center gap-(--e-3)">
-            <Botao
-              type="submit"
-              aparencia={nomeMudou ? 'primario' : 'padrao'}
-              disabled={!nomeMudou || salvarNome.isPending}
-            >
-              {salvarNome.isPending ? 'Salvando…' : 'Salvar nome'}
-            </Botao>
-            {nomeSalvo && !nomeMudou ? <ConfirmacaoSalva>Nome salvo.</ConfirmacaoSalva> : null}
-          </div>
+          {/* Um primário por vez (docs/design-system/botoes-e-campos.md, regra 1.3): o Salvar só
+          aparece quando o nome mudou; logo depois de salvar, fica a confirmação. */}
+          <BarraDeSalvar
+            mudou={nomeMudou}
+            salvando={salvarNome.isPending}
+            salvo={nomeSalvo}
+            rotulo="Salvar nome"
+            confirmacao="Nome salvo."
+          />
         </form>
       </section>
 
@@ -299,18 +297,13 @@ function Perfil({ perfil }: { perfil: MembroAtivo }) {
               {mensagemDoErro(salvarGenero.error)}
             </MensagemSecao>
           ) : null}
-          <div className="flex items-center gap-(--e-3)">
-            <Botao
-              type="submit"
-              aparencia={generoMudou ? 'primario' : 'padrao'}
-              disabled={!genero || !generoMudou || salvarGenero.isPending}
-            >
-              {salvarGenero.isPending ? 'Salvando…' : 'Salvar gênero'}
-            </Botao>
-            {generoSalvo && !generoMudou ? (
-              <ConfirmacaoSalva>Gênero salvo.</ConfirmacaoSalva>
-            ) : null}
-          </div>
+          <BarraDeSalvar
+            mudou={Boolean(genero) && generoMudou}
+            salvando={salvarGenero.isPending}
+            salvo={generoSalvo}
+            rotulo="Salvar gênero"
+            confirmacao="Gênero salvo."
+          />
         </form>
       </section>
 
@@ -358,18 +351,13 @@ function Perfil({ perfil }: { perfil: MembroAtivo }) {
               {mensagemDoErro(salvar.error)}
             </MensagemSecao>
           ) : null}
-          <div className="flex items-center gap-(--e-3)">
-            <Botao
-              type="submit"
-              aparencia={mudou ? 'primario' : 'padrao'}
-              disabled={!mudou || salvar.isPending}
-            >
-              {salvar.isPending ? 'Salvando…' : 'Salvar profissão e cargo'}
-            </Botao>
-            {salvo && !mudou ? (
-              <ConfirmacaoSalva>Profissão e cargo salvos.</ConfirmacaoSalva>
-            ) : null}
-          </div>
+          <BarraDeSalvar
+            mudou={mudou}
+            salvando={salvar.isPending}
+            salvo={salvo}
+            rotulo="Salvar profissão e cargo"
+            confirmacao="Profissão e cargo salvos."
+          />
         </form>
       </section>
 

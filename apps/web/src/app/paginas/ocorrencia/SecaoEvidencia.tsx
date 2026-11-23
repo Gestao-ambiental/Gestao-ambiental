@@ -181,9 +181,10 @@ function EnvioDeEvidencia({
         </MensagemSecao>
       ) : null}
       <div className="flex justify-end max-md:[&>*]:flex-1">
+        {/* Sem arquivo não há o que enviar: o botão fica de contorno, sem verde apagado. */}
         <Botao
           type="submit"
-          aparencia="primario"
+          aparencia={arquivo ? 'primario' : 'padrao'}
           iconeAntes="send"
           disabled={!arquivo || envio.isPending}
         >

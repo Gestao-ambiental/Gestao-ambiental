@@ -9,6 +9,7 @@ import { useConsultoria } from '@/app/consultoria/contexto-consultoria'
 import { PaginaDeConfiguracoes } from '@/app/paginas/configuracoes/PaginaDeConfiguracoes'
 import { Carregando, EstadoErro, SemPermissao } from '@/components/estados'
 import { Botao } from '@/components/ui/botao'
+import { ConfirmacaoSalva } from '@/components/ui/confirmacao-salva'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import {
   chaveDaLogoDaConsultoria,
@@ -115,7 +116,7 @@ function Formulario({
     textoApresentacao: identidade.textoApresentacao,
   }))
   const [alterado, setAlterado] = useState(false)
-  const [aviso, setAviso] = useState<string | null>(null)
+  const [salvoAgora, setSalvoAgora] = useState(false)
   const [problemaDaLogo, setProblemaDaLogo] = useState<string | null>(null)
 
   async function atualizar() {
@@ -132,7 +133,7 @@ function Formulario({
   const salvar = useMutation({
     mutationFn: () => salvarIdentidade(consultoriaId, identidade.rowVersion, d),
     onSuccess: async () => {
-      setAviso('Dados da proposta salvos.')
+      setSalvoAgora(true)
       setAlterado(false)
       aoAlterar?.(false)
       await atualizar()
@@ -159,7 +160,6 @@ function Formulario({
         setD((a) => ({ ...a, [chave]: valor }))
         setAlterado(true)
         aoAlterar?.(true)
-        setAviso(null)
       },
     }
   }
@@ -263,23 +263,27 @@ function Formulario({
           {mensagemDoErro(salvar.error)}
         </MensagemSecao>
       ) : null}
-      {aviso ? (
-        <MensagemSecao role="status" tom="sucesso">
-          {aviso}
-        </MensagemSecao>
+      {/* Um primário por vez (docs/design-system/botoes-e-campos.md, regra 1.3): sem alteração, o
+      Salvar vira a confirmação "Salvo" (ou nada, se os dados nunca foram salvos) em vez de um botão
+      verde apagado. */}
+      {alterado || salvar.isPending ? (
+        <div className="flex justify-end max-md:[&>*]:w-full">
+          <Botao
+            aparencia="primario"
+            disabled={ocupado}
+            aria-busy={salvar.isPending || undefined}
+            onClick={() => {
+              salvar.mutate()
+            }}
+          >
+            {salvar.isPending ? 'Salvando…' : rotuloSalvar}
+          </Botao>
+        </div>
+      ) : identidade.rowVersion > 0 || salvoAgora ? (
+        <div className="flex justify-end">
+          <ConfirmacaoSalva>Salvo</ConfirmacaoSalva>
+        </div>
       ) : null}
-      <div className="flex justify-end max-md:[&>*]:w-full">
-        <Botao
-          aparencia="primario"
-          disabled={!alterado || ocupado}
-          aria-busy={salvar.isPending || undefined}
-          onClick={() => {
-            salvar.mutate()
-          }}
-        >
-          {salvar.isPending ? 'Salvando…' : rotuloSalvar}
-        </Botao>
-      </div>
     </div>
   )
 }

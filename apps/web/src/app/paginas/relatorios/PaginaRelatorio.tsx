@@ -290,9 +290,13 @@ function EdicaoDoRelatorio({
       }
       acao={
         <>
-          {podeEditar ? (
+          {/* Regra 1.3 do padrão de botões (docs/design-system/botoes-e-campos.md): sem alteração
+          não há Salvar apagado na barra; o "Salvo" do cabeçalho já diz o estado. O primário
+          (Aprovar, Enviar ou Exportar) é sempre um só. */}
+          {podeEditar && (sujo || salvar.isPending) ? (
             <Botao
-              disabled={ocupado || !sujo}
+              disabled={ocupado}
+              aria-busy={salvar.isPending || undefined}
               onClick={() => {
                 salvar.mutate()
               }}

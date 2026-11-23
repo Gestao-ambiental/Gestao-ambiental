@@ -338,6 +338,32 @@ describe('relatório escrito no Grama', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Isto foi alterado em outro lugar')
   })
 
+  // Regra mudou de propósito (padrão de botões, pedido do Eduardo, 23/11/2026): o Salvar não fica
+  // mais apagado na barra; só aparece com alteração, e o "Salvo" do cabeçalho diz o estado.
+  it('sem alteração não há botão Salvar; editar mostra o botão e salvar o tira de novo', async () => {
+    const usuario = userEvent.setup()
+    renderizarApp('/relatorios/r1')
+    const titulo = await screen.findByLabelText('Título')
+    expect(screen.getByText('Salvo')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Salvar' })).not.toBeInTheDocument()
+    // O primário continua sendo um só.
+    expect(screen.getByRole('button', { name: 'Enviar para revisão' })).toBeInTheDocument()
+
+    await usuario.type(titulo, ' 2026')
+    expect(screen.getByText('Não salvo')).toBeInTheDocument()
+    await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
+    await waitFor(() => {
+      expect(falso.cliente.rpc).toHaveBeenCalledWith(
+        'salvar_relatorio',
+        expect.objectContaining({ p_id: 'r1' }),
+      )
+    })
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: 'Salvar' })).not.toBeInTheDocument()
+    })
+    expect(screen.getByText('Salvo')).toBeInTheDocument()
+  })
+
   it('relatório que não existe (ou de outra consultoria) mostra o estado vazio', async () => {
     falso.reiniciar({ ...cenario(autor), tabelas: { relatorio: [], conferencia_ia: [] } })
     renderizarApp('/relatorios/r9')

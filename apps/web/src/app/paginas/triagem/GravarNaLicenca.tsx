@@ -41,19 +41,23 @@ const NO_EMPREENDIMENTO = 'Gravar no empreendimento'
 /**
  * Ação principal da triagem com empreendimento. Com `licencaPedida` (vinda do plano de renovação)
  * que seja deste empreendimento, grava direto nela. Sem licenças, grava no empreendimento. Com
- * licenças, um menu: o empreendimento primeiro, depois as licenças dele.
+ * licenças, um menu: o empreendimento primeiro, depois as licenças dele. É primário só quando não
+ * há outro primário à vista (um primário por tela, docs/design-system/botoes-e-campos.md).
  */
 export function AcaoGravar({
   empreendimento,
   licencaPedida,
   gravando,
+  primario = true,
   aoGravar,
 }: {
   empreendimento: EmpreendimentoParaGravar
   licencaPedida: string | null
   gravando: boolean
+  primario?: boolean
   aoGravar: (destino: DestinoDaGravacao) => void
 }) {
+  const aparencia = primario ? 'primario' : 'padrao'
   const licencas = useQuery({
     queryKey: ['licencas-para-triagem', empreendimento.id],
     // Primeira página (50): empreendimento com mais licenças é raro; as mais novas vêm antes.
@@ -71,7 +75,7 @@ export function AcaoGravar({
 
   if (licencas.isPending) {
     return (
-      <Botao aparencia="primario" disabled>
+      <Botao aparencia={aparencia} disabled>
         Gravar
       </Botao>
     )
@@ -81,7 +85,7 @@ export function AcaoGravar({
   if (pedida) {
     return (
       <Botao
-        aparencia="primario"
+        aparencia={aparencia}
         disabled={gravando}
         aria-label={`${NA_LICENCA}: ${pedida.rotulo}`}
         onClick={() => {
@@ -94,7 +98,7 @@ export function AcaoGravar({
   }
   if (!licencas.isError && lista.length === 0) {
     return (
-      <Botao aparencia="primario" disabled={gravando} onClick={gravarNoEmpreendimento}>
+      <Botao aparencia={aparencia} disabled={gravando} onClick={gravarNoEmpreendimento}>
         {gravando ? 'Gravando…' : NO_EMPREENDIMENTO}
       </Botao>
     )
@@ -103,7 +107,7 @@ export function AcaoGravar({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Botao aparencia="primario" iconeDepois="chevron-down" disabled={gravando}>
+        <Botao aparencia={aparencia} iconeDepois="chevron-down" disabled={gravando}>
           {gravando ? 'Gravando…' : 'Gravar'}
         </Botao>
       </DropdownMenuTrigger>

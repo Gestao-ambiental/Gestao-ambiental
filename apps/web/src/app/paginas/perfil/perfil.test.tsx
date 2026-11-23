@@ -49,16 +49,18 @@ describe('meu perfil: foto, profissão e cargo', () => {
 
     const nome = await screen.findByRole('textbox', { name: 'Nome' })
     expect(nome).toHaveValue('Ana Ribeiro')
-    const salvar = screen.getByRole('button', { name: 'Salvar nome' })
-    expect(salvar).toBeDisabled()
+    // Regra mudou de propósito (padrão de botões, 23/11/2026): sem alteração o Salvar não aparece
+    // (antes ficava cinza e desabilitado); depois de salvar, fica só a confirmação.
+    expect(screen.queryByRole('button', { name: 'Salvar nome' })).not.toBeInTheDocument()
 
     await usuario.clear(nome)
     await usuario.type(nome, '  Ana   Paula Ribeiro ')
-    await usuario.click(salvar)
+    await usuario.click(screen.getByRole('button', { name: 'Salvar nome' }))
     expect(falso.cliente.auth.updateUser).toHaveBeenCalledWith({
       data: { nome: 'Ana Paula Ribeiro' },
     })
     expect(await screen.findByText('Nome salvo.')).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Salvar nome' })).not.toBeInTheDocument()
   })
 
   it('nome vazio avisa e não grava', async () => {
@@ -92,12 +94,14 @@ describe('meu perfil: foto, profissão e cargo', () => {
     renderizarApp('/perfil')
 
     const profissao = await screen.findByRole('combobox', { name: 'Profissão' })
-    const salvar = screen.getByRole('button', { name: 'Salvar profissão e cargo' })
-    expect(salvar).toBeDisabled()
+    // Padrão de botões (23/11/2026): sem alteração, nada de Salvar apagado.
+    expect(
+      screen.queryByRole('button', { name: 'Salvar profissão e cargo' }),
+    ).not.toBeInTheDocument()
     expect(screen.queryByRole('textbox', { name: 'Cargo' })).not.toBeInTheDocument()
     await usuario.selectOptions(profissao, 'Engenheiro ambiental')
     await usuario.selectOptions(screen.getByRole('combobox', { name: 'Cargo' }), 'Estagiário')
-    await usuario.click(salvar)
+    await usuario.click(screen.getByRole('button', { name: 'Salvar profissão e cargo' }))
     expect(falso.cliente.rpc).toHaveBeenCalledWith('definir_profissao_e_cargo', {
       p_membro_id: 'm-ana',
       p_profissao: 'eng_ambiental',
@@ -114,11 +118,11 @@ describe('meu perfil: foto, profissão e cargo', () => {
 
     const cursando = await screen.findByRole('checkbox', { name: 'Ainda estou cursando' })
     expect(cursando).not.toBeChecked()
-    const salvar = screen.getByRole('button', { name: 'Salvar profissão e cargo' })
-    expect(salvar).toBeDisabled()
+    expect(
+      screen.queryByRole('button', { name: 'Salvar profissão e cargo' }),
+    ).not.toBeInTheDocument()
     await usuario.click(cursando)
-    expect(salvar).toBeEnabled()
-    await usuario.click(salvar)
+    await usuario.click(screen.getByRole('button', { name: 'Salvar profissão e cargo' }))
     expect(falso.cliente.rpc).toHaveBeenCalledWith('definir_profissao_e_cargo', {
       p_membro_id: 'm-ana',
       p_profissao: 'eng_ambiental',
@@ -175,8 +179,8 @@ describe('meu perfil: foto, profissão e cargo', () => {
         .queryAllByRole('listitem')
         .map((item) => item.textContent)
     expect(itens()).toEqual(['Biólogo'])
-    const salvar = screen.getByRole('button', { name: 'Salvar profissão e cargo' })
-    expect(salvar).toBeDisabled()
+    const botaoSalvar = () => screen.queryByRole('button', { name: 'Salvar profissão e cargo' })
+    expect(botaoSalvar()).not.toBeInTheDocument()
 
     const adicionar = within(grupo).getByRole('combobox', { name: 'Adicionar outra formação' })
     expect(adicionar).toBeEnabled()
@@ -188,14 +192,14 @@ describe('meu perfil: foto, profissão e cargo', () => {
     await usuario.selectOptions(adicionar, 'Geólogo')
     expect(itens()).toEqual(['Biólogo', 'Geólogo'])
     expect(adicionar).toHaveDisplayValue('Adicionar outra formação')
-    expect(salvar).toBeEnabled()
+    expect(botaoSalvar()).toBeEnabled()
 
     await usuario.click(within(grupo).getByRole('button', { name: 'Tirar Biólogo' }))
     expect(itens()).toEqual(['Geólogo'])
     // A que saiu volta a poder ser adicionada.
     expect(within(adicionar).getByRole('option', { name: 'Biólogo' })).toBeInTheDocument()
 
-    await usuario.click(salvar)
+    await usuario.click(screen.getByRole('button', { name: 'Salvar profissão e cargo' }))
     expect(falso.cliente.rpc).toHaveBeenCalledWith('definir_profissao_e_cargo', {
       p_membro_id: 'm-ana',
       p_profissao: 'eng_ambiental',
@@ -212,14 +216,13 @@ describe('meu perfil: foto, profissão e cargo', () => {
 
     const grupo = await screen.findByRole('group', { name: 'Gênero' })
     expect(within(grupo).getByRole('radio', { name: 'Masculino' })).toBeChecked()
-    const salvar = screen.getByRole('button', { name: 'Salvar gênero' })
-    expect(salvar).toBeDisabled()
+    expect(screen.queryByRole('button', { name: 'Salvar gênero' })).not.toBeInTheDocument()
     const profissao = screen.getByRole('combobox', { name: 'Profissão' })
     expect(profissao).toHaveDisplayValue('Engenheiro ambiental')
 
     await usuario.click(within(grupo).getByRole('radio', { name: 'Feminino' }))
     expect(profissao).toHaveDisplayValue('Engenheira ambiental')
-    await usuario.click(salvar)
+    await usuario.click(screen.getByRole('button', { name: 'Salvar gênero' }))
     expect(falso.cliente.rpc).toHaveBeenCalledWith('definir_meu_genero', { p_genero: 'feminino' })
     // Gênero não vai junto da profissão e do cargo.
     expect(falso.cliente.rpc).not.toHaveBeenCalledWith(

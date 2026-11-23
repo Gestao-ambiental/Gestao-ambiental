@@ -184,6 +184,26 @@ describe('detalhe da ocorrência (DEM-01, DEM-02)', () => {
     expect(screen.getByText('Nenhuma etapa.')).toBeInTheDocument()
   })
 
+  // Regra mudou de propósito (pedido do Eduardo, 23/11/2026, padrão de botões): um primário por
+  // tela. Antes, "Enviar evidência" (topo) e "Enviar para conferência" (formulário) eram verdes.
+  it('o envio da evidência tem um só primário, e só com o arquivo escolhido', async () => {
+    const usuario = userEvent.setup()
+    renderizarApp('/ocorrencias/o1')
+    const atalho = await screen.findByRole('button', { name: 'Enviar evidência' })
+    expect(atalho).not.toHaveClass('bg-(--acao)')
+    expect(screen.getByRole('button', { name: 'Enviar para conferência' })).not.toHaveClass(
+      'bg-(--acao)',
+    )
+    const entrada = document.querySelector<HTMLInputElement>('input[type="file"]')
+    if (!entrada) throw new Error('campo de arquivo ausente')
+    await usuario.upload(entrada, new File(['png'], 'foto.png', { type: 'image/png' }))
+    expect(await screen.findByText(/foto\.png/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Enviar para conferência' })).toHaveClass(
+      'bg-(--acao)',
+    )
+    expect(document.querySelectorAll(':is(button, a)[class~="bg-(--acao)"]')).toHaveLength(1)
+  })
+
   it('erro ao concluir a etapa aparece no topo', async () => {
     const usuario = userEvent.setup()
     falso.reiniciar({

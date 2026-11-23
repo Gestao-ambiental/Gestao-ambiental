@@ -209,6 +209,8 @@ export function PaginaPlanoRenovacao() {
   const podeEditar = ehGestao && !protocolado
   const textoRascunho = rascunho ?? String(dados.antecedencia)
   const diasPrevia = /^\d{1,4}$/.test(textoRascunho) ? Number(textoRascunho) : dados.antecedencia
+  // Com "Salvar antecedência" à vista, o Registrar protocolo vira secundário (um primário por vez).
+  const antecedenciaMudou = diasPrevia !== dados.antecedencia
   const { inicioPreparacao, limiteProtocolo } = datasRenovacaoLao(
     dados.validade,
     diasPrevia,
@@ -266,7 +268,7 @@ export function PaginaPlanoRenovacao() {
           />
           {podeEditar ? (
             <Botao
-              aparencia="primario"
+              aparencia={antecedenciaMudou ? 'padrao' : 'primario'}
               onClick={() => {
                 setProtocoloAberto(true)
               }}

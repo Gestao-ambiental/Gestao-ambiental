@@ -221,6 +221,29 @@ describe('Minhas vistorias (/campo)', () => {
     )
   })
 
+  // Regra mudou de propósito (pedido do Eduardo, 23/11/2026, padrão de botões): um primário por
+  // tela. Antes, toda vistoria de hoje tinha um "Abrir" verde; agora só a primeira.
+  it('só a primeira vistoria de hoje tem o Abrir primário', async () => {
+    falso.reiniciar(
+      cenario({
+        rpc: {
+          listar_vistorias: {
+            data: [
+              linhaDaLista({ id: 'h1', titulo: 'Primeira de hoje' }),
+              linhaDaLista({ id: 'h2', titulo: 'Segunda de hoje', hora_planejada: '16:00:00' }),
+            ].map((linha) => ({ ...linha, total: 2 })),
+          },
+        },
+      }),
+    )
+    renderizarApp('/campo')
+    const primeira = await screen.findByRole('link', { name: 'Abrir vistoria Primeira de hoje' })
+    expect(primeira).toHaveClass('bg-(--acao)')
+    expect(screen.getByRole('link', { name: 'Abrir vistoria Segunda de hoje' })).not.toHaveClass(
+      'bg-(--acao)',
+    )
+  })
+
   it('com dois vínculos pede só as vistorias da consultoria selecionada', async () => {
     const sessao = sessaoDe('ana@filtroville.test', 'Ana Ribeiro')
     window.localStorage.setItem(`grama:consultoria:${sessao.user.id}`, 'c-Verdeplan')

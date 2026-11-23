@@ -246,7 +246,8 @@ export function PainelAgora({
       )
     } else if (possoEnviar) {
       principal = (
-        <Botao aparencia="primario" iconeAntes="upload" onClick={aoEnviarEvidencia}>
+        // Só leva ao envio da evidência, mais abaixo; o primário é o "Enviar para conferência".
+        <Botao iconeAntes="upload" onClick={aoEnviarEvidencia}>
           {exibida === 'devolvida' ? 'Reenviar evidência' : 'Enviar evidência'}
         </Botao>
       )

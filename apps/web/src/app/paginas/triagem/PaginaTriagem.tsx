@@ -1228,6 +1228,8 @@ export function PaginaTriagem() {
             empreendimento={doEmpreendimento}
             licencaPedida={licencaPedida}
             gravando={gravar.isPending}
+            // Antes do resultado, o primário é o Continuar do rodapé da etapa.
+            primario={etapa === 2}
             aoGravar={(destino) => {
               gravar.mutate({ destino, atividades: paraGravar })
             }}
@@ -1279,6 +1281,7 @@ export function PaginaTriagem() {
                 empreendimento={empreendimento.data ?? null}
                 modalidade={modalidadeDoOrcamento}
                 orgao={orgao}
+                primario={!doEmpreendimento}
                 taxas={calculados.flatMap((c) => {
                   const centavos = centavosNoIma(c)
                   return centavos === null ? [] : [{ codigo: c.atividade.codigo, centavos }]

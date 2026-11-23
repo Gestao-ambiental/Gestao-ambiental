@@ -71,12 +71,18 @@ Levantamento no código de `camada/beta-integrado` (d95d067). É lista para conf
 | Resumo de valores começando na altura da trilha | Orçamento | Corrigido neste PR |
 | Recuo 12px no conteúdo e 16px no título | Orçamento, todas as seções | Corrigido neste PR |
 | Coluna de horas estreita (80px) | Orçamento | Corrigido neste PR (96px) |
-| Mais de um primário no mesmo arquivo (conferir se aparecem juntos) | PaginaConvite (6), GravarNaLicenca, PaginaRelatorio, PainelAgora, PaginaImportacao, PaginaDetalheVistoria (4 cada), PassoCondicionantes, PaginaExigencia, PaginaFoto, PaginaPlanoRenovacao, PaginaRedefinirSenha (3 cada) | A conferir |
+| Mais de um primário no mesmo arquivo (conferir se aparecem juntos) | PaginaConvite (6), GravarNaLicenca, PaginaRelatorio, PainelAgora, PaginaImportacao, PaginaDetalheVistoria (4 cada), PassoCondicionantes, PaginaExigencia, PaginaFoto, PaginaPlanoRenovacao, PaginaRedefinirSenha (3 cada) | Conferido (PR do app, 23/11): corrigidos Visão da equipe, Triagem, Ocorrência, Condicionantes, Plano de renovação, Minhas vistorias e Relatório; os demais já tinham um primário por estado. Resta: ocorrência com etapa pendente e arquivo escolhido mostra dois verdes |
 | `<button>` cru fora dos componentes | 20 arquivos (BuscaGlobal, PaginaCalendario, PaginaTriagem, PaginaMinhaSemana, PaginaVisaoEquipe, TabelaLicencas e outros) | A conferir: linha clicável pode ficar |
-| Altura escrita à mão | 28 ocorrências: PassoCondicionantes (5), PaginaVisaoEquipe, PaginaMinhasVistorias, PaginaChecklist, PaginaCalendario (4 cada) e outras | A trocar por token |
+| Altura escrita à mão | 28 ocorrências: PassoCondicionantes (5), PaginaVisaoEquipe, PaginaMinhasVistorias, PaginaChecklist, PaginaCalendario (4 cada) e outras | Trocado nos controles (campo, calendário, condicionantes, campo de data). Ficam cabeçalhos de tabela, células, logo e abas (o componente Abas usa 44px) |
 | Salvar primário desabilitado e cinza ao lado de "Ver proposta" | Orçamento, cabeçalho | Corrigido neste PR: sem alteração, aparece "Salvo" |
 | Dois primários (Salvar e "Continuar para…") com alteração pendente | Orçamento | Corrigido neste PR: com o Salvar à vista, o Continuar vira secundário |
 | "Escolher modelo" com contorno no título da seção | Orçamento | Corrigido neste PR: terciário (sutil) |
 | "Mudar situação" numa segunda linha, em tamanho compacto | Orçamento | Proposta: levar para a barra do cabeçalho (regra 1.4) |
 | Campos de visitas em grade de três colunas iguais | Orçamento | Corrigido neste PR: 160px cada |
 | README diz botão de 32px; o código usa 38px | docs/design-system/README.md | Corrigido neste PR |
+
+### Rodada do app inteiro (23/11/2026)
+
+- **Salvar por seção** (Perfil, Dados da proposta, Relatório): o botão só aparece com alteração; depois de salvar, "Salvo".
+- **Detalhes do serviço** saiu do editor de orçamento (pedido do Eduardo): outros custos e ART/RRT por serviço não são mais editados ali; os valores gravados continuam.
+- **Ações de "acrescentar linha"** (Adicionar pessoa, conta, faixa) seguem como link de 22px, pela regra 1. Os atalhos "Digitar o custo da hora" e "Detalhar contas do mês" viraram sutil (38px).
