@@ -31,6 +31,7 @@ import { Carregando, EstadoErro, EstadoVazio, SemPermissao } from '@/components/
 import { Botao } from '@/components/ui/botao'
 import { BotaoIcone } from '@/components/ui/botao-icone'
 import { BotaoMais } from '@/components/ui/botao-mais'
+import { ConfirmacaoSalva } from '@/components/ui/confirmacao-salva'
 import { MensagemSecao } from '@/components/ui/mensagem-secao'
 import { Segmentado, type OpcaoSegmentada } from '@/components/ui/segmentado'
 import { Trilha } from '@/components/ui/trilha'
@@ -1129,15 +1130,19 @@ function Editor({
             />
           )}
           {verProposta(editavel ? 'padrao' : 'primario')}
-          {editavel ? (
+          {/* Um primário por vez (docs/design-system/botoes-e-campos.md): sem alteração, o Salvar
+          vira a confirmação "Salvo" em vez de um botão verde apagado. */}
+          {editavel && (alterado || salvando) ? (
             <Botao
               aparencia="primario"
-              disabled={salvando || !alterado}
+              disabled={salvando}
               aria-busy={salvando || undefined}
               onClick={() => void salvar()}
             >
               {salvando ? 'Salvando…' : 'Salvar'}
             </Botao>
+          ) : editavel ? (
+            <ConfirmacaoSalva className="px-(--e-2)">Salvo</ConfirmacaoSalva>
           ) : null}
         </>
       }
@@ -1321,6 +1326,7 @@ function Editor({
                   acoes={
                     editavel ? (
                       <Botao
+                        aparencia="sutil"
                         tamanho="compacto"
                         iconeAntes="list"
                         onClick={() => {
@@ -1426,7 +1432,9 @@ function Editor({
                                 <td className={classeCelulaDoItem}>{campos.tabela}</td>
                                 <td className={classeCelulaDoItem}>{campos.responsavel}</td>
                                 <td className={classeCelulaDoItem}>{campos.mes}</td>
-                                <td className={`${classeCelulaDoItem} text-right numero leading-(--controle)`}>
+                                <td
+                                  className={`${classeCelulaDoItem} text-right numero leading-(--controle)`}
+                                >
                                   {campos.custo === null ? (
                                     <span className="text-(--tinta-2)">—</span>
                                   ) : (
@@ -1434,7 +1442,9 @@ function Editor({
                                   )}
                                 </td>
                                 {pelaTabela ? (
-                                  <td className={`${classeCelulaDoItem} text-right numero leading-(--controle)`}>
+                                  <td
+                                    className={`${classeCelulaDoItem} text-right numero leading-(--controle)`}
+                                  >
                                     {campos.preco === null ? (
                                       <span className="text-(--tinta-2)">—</span>
                                     ) : (
@@ -1486,7 +1496,7 @@ function Editor({
                 {/* Visitas técnicas */}
                 <Secao titulo="Visitas técnicas">
                   <div className="flex flex-col gap-(--e-3) px-(--e-4) pb-(--e-3)">
-                    <div className="grid gap-(--e-3) sm:grid-cols-3">
+                    <div className="flex flex-wrap items-start gap-(--e-3) [&>*]:w-40">
                       <CampoRotulado id="visitas-quantidade" rotulo="Quantidade de visitas">
                         <input
                           id="visitas-quantidade"
@@ -2211,7 +2221,12 @@ function Editor({
               </>
             ) : null}
 
-            <NavegacaoDasEtapas etapa={etapa} aoIr={irPara} titulos={ETAPAS.map((e) => e.titulo)} />
+            <NavegacaoDasEtapas
+              etapa={etapa}
+              aoIr={irPara}
+              titulos={ETAPAS.map((e) => e.titulo)}
+              comSalvarPendente={editavel && alterado}
+            />
           </div>
         </div>
 
@@ -2834,15 +2849,18 @@ function NavegacaoDasEtapas({
   etapa,
   aoIr,
   titulos,
+  comSalvarPendente,
 }: {
   etapa: number
   aoIr: (indice: number) => void
   titulos: readonly string[]
+  /** Com o Salvar à vista, ele é o primário e o Continuar desce para secundário. */
+  comSalvarPendente: boolean
 }) {
   const anterior = titulos[etapa - 1]
   const proxima = titulos[etapa + 1]
   return (
-    <div className="flex flex-wrap items-center justify-between gap-(--e-2) border-t p-(--e-3)">
+    <div className="flex flex-wrap items-center justify-between gap-(--e-2) border-t px-(--e-4) py-(--e-3)">
       {anterior ? (
         <Botao
           iconeAntes="arrow-left"
@@ -2857,7 +2875,7 @@ function NavegacaoDasEtapas({
       )}
       {proxima ? (
         <Botao
-          aparencia="primario"
+          aparencia={comSalvarPendente ? 'padrao' : 'primario'}
           iconeDepois="arrow-right"
           onClick={() => {
             aoIr(etapa + 1)

@@ -1371,7 +1371,9 @@ describe('orçamentos (onda 5)', () => {
     await usuario.keyboard('{Escape}')
     await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Salvar' })).toBeDisabled()
+      // Sem alteração, o Salvar vira a confirmação "Salvo" (um primário por vez).
+      expect(screen.queryByRole('button', { name: 'Salvar' })).not.toBeInTheDocument()
+      expect(screen.getByText('Salvo')).toBeInTheDocument()
     })
     await usuario.click(screen.getByRole('button', { name: 'Mais ações' }))
     const duplicar = await screen.findByRole('menuitem', { name: 'Duplicar' })

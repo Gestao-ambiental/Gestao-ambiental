@@ -74,7 +74,9 @@ Levantamento no código de `camada/beta-integrado` (d95d067). É lista para conf
 | Mais de um primário no mesmo arquivo (conferir se aparecem juntos) | PaginaConvite (6), GravarNaLicenca, PaginaRelatorio, PainelAgora, PaginaImportacao, PaginaDetalheVistoria (4 cada), PassoCondicionantes, PaginaExigencia, PaginaFoto, PaginaPlanoRenovacao, PaginaRedefinirSenha (3 cada) | A conferir |
 | `<button>` cru fora dos componentes | 20 arquivos (BuscaGlobal, PaginaCalendario, PaginaTriagem, PaginaMinhaSemana, PaginaVisaoEquipe, TabelaLicencas e outros) | A conferir: linha clicável pode ficar |
 | Altura escrita à mão | 28 ocorrências: PassoCondicionantes (5), PaginaVisaoEquipe, PaginaMinhasVistorias, PaginaChecklist, PaginaCalendario (4 cada) e outras | A trocar por token |
-| Salvar primário desabilitado e cinza ao lado de "Ver proposta" | Orçamento, cabeçalho | Proposta: trocar por "Salvo" (regra 1.3) |
+| Salvar primário desabilitado e cinza ao lado de "Ver proposta" | Orçamento, cabeçalho | Corrigido neste PR: sem alteração, aparece "Salvo" |
+| Dois primários (Salvar e "Continuar para…") com alteração pendente | Orçamento | Corrigido neste PR: com o Salvar à vista, o Continuar vira secundário |
+| "Escolher modelo" com contorno no título da seção | Orçamento | Corrigido neste PR: terciário (sutil) |
 | "Mudar situação" numa segunda linha, em tamanho compacto | Orçamento | Proposta: levar para a barra do cabeçalho (regra 1.4) |
-| Campos de visitas em grade de três colunas iguais | Orçamento | Proposta: larguras pelo conteúdo (regra 3.2) |
+| Campos de visitas em grade de três colunas iguais | Orçamento | Corrigido neste PR: 160px cada |
 | README diz botão de 32px; o código usa 38px | docs/design-system/README.md | Corrigido neste PR |
