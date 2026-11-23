@@ -296,19 +296,21 @@
   --entrelinha-painel: 26px;
   --entrelinha-tela: 38px;
 
-  /* Papéis compostos */
+  /* Papéis compostos. Quatro níveis de texto (docs/design-system/tipografia.md): título da
+  página (Anton), título de seção (16/600), texto (14/400) e texto secundário (12/400, cinza).
+  Negrito só em título de seção, número-chave e rótulo de botão. */
   --tipo-tela: 400 var(--tam-tela) / var(--entrelinha-tela) var(--fonte-destaque);
-  --tipo-painel: 650 var(--tam-painel) / var(--entrelinha-painel) var(--fonte);
-  --tipo-secao: 650 var(--tam-secao) / var(--entrelinha-secao) var(--fonte);
+  --tipo-painel: var(--tipo-secao); /* era 20/650: título de estado vazio vira título de seção */
+  --tipo-secao: 600 var(--tam-secao) / var(--entrelinha-secao) var(--fonte);
   --tipo-corpo: 400 var(--tam-corpo) / var(--entrelinha-corpo) var(--fonte);
-  --tipo-corpo-forte: 600 var(--tam-corpo) / var(--entrelinha-corpo) var(--fonte);
-  --tipo-rotulo: 600 var(--tam-legenda) / var(--entrelinha-legenda) var(--fonte);
-  --tipo-coluna: 650 11px / 16px var(--fonte); /* cabeçalho do quadro, em maiúsculas */
+  --tipo-corpo-forte: 600 var(--tam-corpo) / var(--entrelinha-corpo) var(--fonte); /* botão, número-chave */
+  --tipo-rotulo: 400 var(--tam-legenda) / var(--entrelinha-legenda) var(--fonte); /* texto secundário */
+  --tipo-coluna: 400 var(--tam-legenda) / var(--entrelinha-legenda) var(--fonte); /* cabeçalho, em maiúsculas */
   --tipo-contagem: 400 var(--tam-contagem) / 1 var(--fonte-destaque);
   --tipo-numero: 400 var(--tam-numero) / 1 var(--fonte-destaque);
 
   --tracking-tela: 0.01em;
-  --tracking-coluna: 0.08em;
+  --tracking-coluna: 0.04em;
 }
 
 /* ---------- Espaço: grade de 4 px ---------- */

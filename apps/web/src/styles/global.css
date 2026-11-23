@@ -90,7 +90,6 @@
 }
 @utility titulo-painel {
   font: var(--tipo-painel);
-  letter-spacing: -0.01em;
 }
 @utility titulo-secao {
   font: var(--tipo-secao);
